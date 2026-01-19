@@ -174,17 +174,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <summary>
         /// Triggers field validation event
         /// </summary>
-        public bool TriggerFieldValidation(string blockName, string fieldName, object value)
+        public bool TriggerFieldValidation(string blockName, string FieldName, object value)
         {
             try
             {
-                var args = new ValidationTriggerEventArgs(blockName, fieldName, value);
+                var args = new ValidationTriggerEventArgs(blockName, FieldName, value);
                 OnValidateField?.Invoke(this, args);
                 return args.IsValid;
             }
             catch (Exception ex)
             {
-                LogError($"Error triggering field validation for '{fieldName}' in block '{blockName}'", ex);
+                LogError($"Error triggering field validation for '{FieldName}' in block '{blockName}'", ex);
                 return false;
             }
         }

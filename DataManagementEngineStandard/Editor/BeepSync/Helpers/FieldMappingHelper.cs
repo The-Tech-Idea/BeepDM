@@ -122,17 +122,17 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 foreach (var sourceField in sourceStructure.Fields)
                 {
                     var matchingDestField = destStructure.Fields.FirstOrDefault(df => 
-                        string.Equals(df.fieldname, sourceField.fieldname, StringComparison.OrdinalIgnoreCase));
+                        string.Equals(df.FieldName, sourceField.FieldName, StringComparison.OrdinalIgnoreCase));
 
                     if (matchingDestField != null)
                     {
                         mappings.Add(new FieldSyncData
                         {
                             Id = Guid.NewGuid().ToString(),
-                            SourceField = sourceField.fieldname,
-                            DestinationField = matchingDestField.fieldname,
-                            SourceFieldType = sourceField.fieldtype,
-                            DestinationFieldType = matchingDestField.fieldtype
+                            SourceField = sourceField.FieldName,
+                            DestinationField = matchingDestField.FieldName,
+                            SourceFieldType = sourceField.Fieldtype,
+                            DestinationFieldType = matchingDestField.Fieldtype
                         });
                     }
                 }

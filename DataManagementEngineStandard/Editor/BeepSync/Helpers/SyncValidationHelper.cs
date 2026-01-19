@@ -207,7 +207,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     if (sourceStructure?.Fields != null)
                     {
                         var sourceSyncField = sourceStructure.Fields.FirstOrDefault(f => 
-                            string.Equals(f.fieldname, schema.SourceSyncDataField, StringComparison.OrdinalIgnoreCase));
+                            string.Equals(f.FieldName, schema.SourceSyncDataField, StringComparison.OrdinalIgnoreCase));
                         
                         if (sourceSyncField == null)
                             errors.Add(new ErrorsInfo { Message = $"Source sync field '{schema.SourceSyncDataField}' not found in entity '{schema.SourceEntityName}'" });
@@ -222,7 +222,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     if (destStructure?.Fields != null)
                     {
                         var destSyncField = destStructure.Fields.FirstOrDefault(f => 
-                            string.Equals(f.fieldname, schema.DestinationSyncDataField, StringComparison.OrdinalIgnoreCase));
+                            string.Equals(f.FieldName, schema.DestinationSyncDataField, StringComparison.OrdinalIgnoreCase));
                         
                         if (destSyncField == null)
                             errors.Add(new ErrorsInfo { Message = $"Destination sync field '{schema.DestinationSyncDataField}' not found in entity '{schema.DestinationEntityName}'" });
@@ -273,10 +273,10 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
         /// <summary>
         /// Helper method to validate required fields
         /// </summary>
-        private void ValidateRequiredField(string fieldValue, string fieldName, List<ErrorsInfo> errors)
+        private void ValidateRequiredField(string fieldValue, string FieldName, List<ErrorsInfo> errors)
         {
             if (string.IsNullOrWhiteSpace(fieldValue))
-                errors.Add(new ErrorsInfo { Message = $"{fieldName} is empty or null" });
+                errors.Add(new ErrorsInfo { Message = $"{FieldName} is empty or null" });
         }
     }
 }

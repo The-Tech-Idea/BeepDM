@@ -104,14 +104,14 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         /// <summary>
         /// Creates a basic EntityField with common defaults.
         /// </summary>
-        /// <param name="fieldName">Name of the field</param>
-        /// <param name="fieldType">Type of the field</param>
+        /// <param name="FieldName">Name of the field</param>
+        /// <param name="Fieldtype">Type of the field</param>
         /// <param name="allowNull">Whether the field allows null values</param>
         /// <param name="isKey">Whether the field is a primary key</param>
         /// <returns>A new EntityField with the specified properties</returns>
-        public static EntityField CreateBasicField(string fieldName, string fieldType, bool allowNull = true, bool isKey = false)
+        public static EntityField CreateBasicField(string FieldName, string Fieldtype, bool allowNull = true, bool isKey = false)
         {
-            return DatabaseEntityTypeHelper.CreateBasicField(fieldName, fieldType, allowNull, isKey);
+            return DatabaseEntityTypeHelper.CreateBasicField(FieldName, Fieldtype, allowNull, isKey);
         }
 
         #endregion

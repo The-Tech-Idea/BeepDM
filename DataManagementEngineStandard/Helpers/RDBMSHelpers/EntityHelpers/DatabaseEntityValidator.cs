@@ -74,61 +74,61 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         public static List<string> ValidateEntityFields(List<EntityField> fields)
         {
             var errors = new List<string>();
-            var fieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var FieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var field in fields)
             {
                 // Check for empty field names (using the correct property name)
-                if (string.IsNullOrWhiteSpace(field.fieldname))
+                if (string.IsNullOrWhiteSpace(field.FieldName))
                 {
                     errors.Add("Field has empty or null name");
                     continue;
                 }
 
                 // Check for duplicate field names
-                if (fieldNames.Contains(field.fieldname))
+                if (FieldNames.Contains(field.FieldName))
                 {
-                    errors.Add($"Duplicate field name: {field.fieldname}");
+                    errors.Add($"Duplicate field name: {field.FieldName}");
                 }
                 else
                 {
-                    fieldNames.Add(field.fieldname);
+                    FieldNames.Add(field.FieldName);
                 }
 
                 // Check for invalid field types (using the correct property name)
-                if (string.IsNullOrWhiteSpace(field.fieldtype))
+                if (string.IsNullOrWhiteSpace(field.Fieldtype))
                 {
-                    errors.Add($"Field '{field.fieldname}' has no data type specified");
+                    errors.Add($"Field '{field.FieldName}' has no data type specified");
                 }
 
                 // Check for reasonable field sizes
                 if (field.Size1 < 0)
                 {
-                    errors.Add($"Field '{field.fieldname}' has negative size");
+                    errors.Add($"Field '{field.FieldName}' has negative size");
                 }
 
                 // Validate primary key constraints
                 if (field.IsKey && field.AllowDBNull)
                 {
-                    errors.Add($"Primary key field '{field.fieldname}' cannot allow null values");
+                    errors.Add($"Primary key field '{field.FieldName}' cannot allow null values");
                 }
 
                 // Validate auto-increment fields
-                if (field.IsAutoIncrement && !DatabaseEntityTypeHelper.IsNumericType(field.fieldtype))
+                if (field.IsAutoIncrement && !DatabaseEntityTypeHelper.IsNumericType(field.Fieldtype))
                 {
-                    errors.Add($"Auto-increment field '{field.fieldname}' must be a numeric type");
+                    errors.Add($"Auto-increment field '{field.FieldName}' must be a numeric type");
                 }
 
                 // Validate required fields that allow null
                 if (field.IsRequired && field.AllowDBNull)
                 {
-                    errors.Add($"Required field '{field.fieldname}' cannot allow null values");
+                    errors.Add($"Required field '{field.FieldName}' cannot allow null values");
                 }
 
                 // Validate indexed fields
-                if (field.IsIndexed && field.fieldtype?.ToUpper().Contains("TEXT") == true && field.Size1 > 8000)
+                if (field.IsIndexed && field.Fieldtype?.ToUpper().Contains("TEXT") == true && field.Size1 > 8000)
                 {
-                    errors.Add($"Indexed text field '{field.fieldname}' has size too large for efficient indexing");
+                    errors.Add($"Indexed text field '{field.FieldName}' has size too large for efficient indexing");
                 }
             }
 

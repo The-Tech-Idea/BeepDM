@@ -39,7 +39,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                     DestinationEntityName = e.EntityName,
                     DestinationDataSourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName) ? e.EntityName : e.DatasourceEntityName,
                     SourceEntity = e,
-                    ScriptType = DDLScriptType.CreateEntity,
+                   ScriptType= DDLScriptType.CreateEntity,
                     CopyData = copyData,
                     Active = true,
                     Mapping = new EntityDataMap_DTL(),
@@ -69,7 +69,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                     DestinationEntityName = e.EntityName,
                     DestinationDataSourceEntityName = string.IsNullOrEmpty(e.DatasourceEntityName) ? e.EntityName : e.DatasourceEntityName,
                     SourceEntity = e,
-                    ScriptType = DDLScriptType.CopyData,
+                   ScriptType= DDLScriptType.CopyData,
                     Active = true,
                     Mapping = new EntityDataMap_DTL(),
                     Tracking = new List<SyncErrorsandTracking>()

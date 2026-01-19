@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     var firstField = entity.Fields.FirstOrDefault();
                     if (firstField != null)
                     {
-                        sb.AppendLine($"            entity.{firstField.fieldname} = GetValidTestValue();");
+                        sb.AppendLine($"            entity.{firstField.FieldName} = GetValidTestValue();");
                     }
                 }
                 sb.AppendLine();
@@ -208,30 +208,30 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 {
                     foreach (var field in entity.Fields)
                     {
-                        if (field != null && !string.IsNullOrWhiteSpace(field.fieldname))
+                        if (field != null && !string.IsNullOrWhiteSpace(field.FieldName))
                         {
-                            sb.AppendLine($"            RuleFor(x => x.{field.fieldname})");
+                            sb.AppendLine($"            RuleFor(x => x.{field.FieldName})");
                             
-                            if (field.fieldtype.ToLower().Contains("string"))
+                            if (field.Fieldtype.ToLower().Contains("string"))
                             {
-                                sb.AppendLine($"                .NotEmpty().WithMessage(\"{field.fieldname} is required\")");
-                                sb.AppendLine($"                .MaximumLength(256).WithMessage(\"{field.fieldname} must not exceed 256 characters\");");
+                                sb.AppendLine($"                .NotEmpty().WithMessage(\"{field.FieldName} is required\")");
+                                sb.AppendLine($"                .MaximumLength(256).WithMessage(\"{field.FieldName} must not exceed 256 characters\");");
                             }
-                            else if (field.fieldtype.ToLower().Contains("int") || field.fieldtype.ToLower().Contains("long"))
+                            else if (field.Fieldtype.ToLower().Contains("int") || field.Fieldtype.ToLower().Contains("long"))
                             {
-                                sb.AppendLine($"                .GreaterThanOrEqualTo(0).WithMessage(\"{field.fieldname} must be greater than or equal to 0\");");
+                                sb.AppendLine($"                .GreaterThanOrEqualTo(0).WithMessage(\"{field.FieldName} must be greater than or equal to 0\");");
                             }
-                            else if (field.fieldtype.ToLower().Contains("decimal") || field.fieldtype.ToLower().Contains("double"))
+                            else if (field.Fieldtype.ToLower().Contains("decimal") || field.Fieldtype.ToLower().Contains("double"))
                             {
-                                sb.AppendLine($"                .GreaterThanOrEqualTo(0).WithMessage(\"{field.fieldname} must be greater than or equal to 0\");");
+                                sb.AppendLine($"                .GreaterThanOrEqualTo(0).WithMessage(\"{field.FieldName} must be greater than or equal to 0\");");
                             }
-                            else if (field.fieldtype.ToLower().Contains("date"))
+                            else if (field.Fieldtype.ToLower().Contains("date"))
                             {
-                                sb.AppendLine($"                .LessThanOrEqualTo(DateTime.Now).WithMessage(\"{field.fieldname} cannot be in the future\");");
+                                sb.AppendLine($"                .LessThanOrEqualTo(DateTime.Now).WithMessage(\"{field.FieldName} cannot be in the future\");");
                             }
                             else
                             {
-                                sb.AppendLine($"                .NotNull().WithMessage(\"{field.fieldname} is required\");");
+                                sb.AppendLine($"                .NotNull().WithMessage(\"{field.FieldName} is required\");");
                             }
                         }
                     }

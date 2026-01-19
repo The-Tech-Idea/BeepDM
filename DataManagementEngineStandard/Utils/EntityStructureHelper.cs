@@ -48,9 +48,9 @@ namespace TheTechIdea.Beep.Utils
             return new EntityField
             {
                 EntityName = col.Table.TableName,
-                fieldname = col.ColumnName,
-                fieldtype = t.ToString(),
-                fieldCategory = cat,
+               FieldName = col.ColumnName,
+                Fieldtype = t.ToString(),
+               FieldCategory = cat,
                 AllowDBNull = col.AllowDBNull,
                 IsAutoIncrement = col.AutoIncrement,
                 IsUnique = col.Unique,
@@ -96,9 +96,9 @@ namespace TheTechIdea.Beep.Utils
 
             return new EntityField
             {
-                fieldname = prop.Name,
-                fieldtype = t.FullName,
-                fieldCategory = cat
+               FieldName = prop.Name,
+                Fieldtype = t.FullName,
+               FieldCategory = cat
             };
         }
 

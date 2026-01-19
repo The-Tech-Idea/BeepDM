@@ -276,14 +276,14 @@ namespace TheTechIdea.Beep.Caching
                     {
                         if (!fieldMap.ContainsKey(kvp.Key))
                         {
-                            var fieldType = InferFieldType(kvp.Value);
+                            var Fieldtype = InferFieldtype(kvp.Value);
                             fieldMap[kvp.Key] = new EntityField
                             {
-                                fieldname = kvp.Key,
-                                fieldtype = fieldType,
+                               FieldName = kvp.Key,
+                                Fieldtype = Fieldtype,
                                 EntityName = entityName,
                                 AllowDBNull = true,
-                                Size1 = GetFieldSize(kvp.Value, fieldType)
+                                Size1 = GetFieldSize(kvp.Value, Fieldtype)
                             };
                         }
                     }
@@ -302,7 +302,7 @@ namespace TheTechIdea.Beep.Caching
             return entity;
         }
 
-        private string InferFieldType(object value)
+        private string InferFieldtype(object value)
         {
             if (value == null) return "System.String";
             
@@ -319,9 +319,9 @@ namespace TheTechIdea.Beep.Caching
             };
         }
 
-        private int GetFieldSize(object value, string fieldType)
+        private int GetFieldSize(object value, string Fieldtype)
         {
-            if (fieldType == "System.String" && value != null)
+            if (Fieldtype == "System.String" && value != null)
             {
                 return Math.Max(50, value.ToString().Length + 20); // Add some buffer
             }
@@ -669,7 +669,7 @@ namespace TheTechIdea.Beep.Caching
             if (entityStructure?.PrimaryKeys?.Any() == true)
             {
                 var pkField = entityStructure.PrimaryKeys.First();
-                var pkValue = GetFieldValue(data, pkField.fieldname);
+                var pkValue = GetFieldValue(data, pkField.FieldName);
                 if (pkValue != null)
                 {
                     return pkValue.ToString();
@@ -685,15 +685,15 @@ namespace TheTechIdea.Beep.Caching
             return Guid.NewGuid().ToString();
         }
 
-        private object GetFieldValue(object data, string fieldName)
+        private object GetFieldValue(object data, string FieldName)
         {
             if (data is Dictionary<string, object> dict)
             {
-                return dict.TryGetValue(fieldName, out var value) ? value : null;
+                return dict.TryGetValue(FieldName, out var value) ? value : null;
             }
             
             // Use reflection for object properties
-            var property = data.GetType().GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var property = data.GetType().GetProperty(FieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
             return property?.GetValue(data);
         }
 
@@ -732,13 +732,13 @@ namespace TheTechIdea.Beep.Caching
             {
                 var field = new EntityField
                 {
-                    fieldname = kvp.Key,
-                    fieldtype = InferFieldType(kvp.Value),
+                   FieldName = kvp.Key,
+                    Fieldtype = InferFieldtype(kvp.Value),
                     EntityName = entityName,
                     FieldIndex = fieldIndex++,
                     AllowDBNull = true,
                     IsKey = kvp.Key.Equals("Id", StringComparison.OrdinalIgnoreCase),
-                    Size1 = GetFieldSize(kvp.Value, InferFieldType(kvp.Value))
+                    Size1 = GetFieldSize(kvp.Value, InferFieldtype(kvp.Value))
                 };
                 
                 entity.Fields.Add(field);

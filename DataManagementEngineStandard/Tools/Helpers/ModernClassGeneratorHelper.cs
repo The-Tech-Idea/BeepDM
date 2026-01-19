@@ -51,10 +51,10 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 for (int i = 0; i < entity.Fields.Count; i++)
                 {
                     var field = entity.Fields[i];
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname, i);
-                    var nullableSuffix = _helper.IsReferenceType(field.fieldtype) ? "?" : "?";
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName, i);
+                    var nullableSuffix = _helper.IsReferenceType(field.Fieldtype) ? "?" : "?";
 
-                    sb.Append($"        {field.fieldtype}{nullableSuffix} {safePropertyName}");
+                    sb.Append($"        {field.Fieldtype}{nullableSuffix} {safePropertyName}");
 
                     // Add comma if not the last field
                     if (i < entity.Fields.Count - 1)
@@ -124,24 +124,24 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 // Properties with nullable annotations
                 foreach (var field in entity.Fields)
                 {
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
 
                     if (generateNullableAnnotations)
                     {
-                        var isReferenceType = _helper.IsReferenceType(field.fieldtype);
+                        var isReferenceType = _helper.IsReferenceType(field.Fieldtype);
                         var nullableAnnotation = isReferenceType ? "?" : "";
 
                         sb.AppendLine($"        /// <summary>");
                         sb.AppendLine($"        /// Gets or sets the {safePropertyName}");
                         sb.AppendLine($"        /// </summary>");
-                        sb.AppendLine($"        public {field.fieldtype}{nullableAnnotation} {safePropertyName} {{ get; set; }}");
+                        sb.AppendLine($"        public {field.Fieldtype}{nullableAnnotation} {safePropertyName} {{ get; set; }}");
                     }
                     else
                     {
                         sb.AppendLine($"        /// <summary>");
                         sb.AppendLine($"        /// Gets or sets the {safePropertyName}");
                         sb.AppendLine($"        /// </summary>");
-                        sb.AppendLine($"        public {field.fieldtype} {safePropertyName} {{ get; set; }}");
+                        sb.AppendLine($"        public {field.Fieldtype} {safePropertyName} {{ get; set; }}");
                     }
                     sb.AppendLine();
                 }
@@ -205,13 +205,13 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 // Private fields
                 foreach (var field in entity.Fields)
                 {
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
-                    sb.AppendLine($"        private readonly {field.fieldtype}? _{safePropertyName.ToLower()};");
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
+                    sb.AppendLine($"        private readonly {field.Fieldtype}? _{safePropertyName.ToLower()};");
                 }
                 sb.AppendLine();
 
                 // Add ID field if not present
-                if (!entity.Fields.Any(f => f.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase)))
+                if (!entity.Fields.Any(f => f.FieldName.Equals("Id", StringComparison.OrdinalIgnoreCase)))
                 {
                     sb.AppendLine("        private readonly Guid _id;");
                     sb.AppendLine();
@@ -227,8 +227,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 for (int i = 0; i < entity.Fields.Count; i++)
                 {
                     var field = entity.Fields[i];
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
-                    sb.Append($"            {field.fieldtype}? {safePropertyName.ToLower()}");
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
+                    sb.Append($"            {field.Fieldtype}? {safePropertyName.ToLower()}");
 
                     if (i < entity.Fields.Count - 1)
                     {
@@ -243,7 +243,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 sb.AppendLine("        {");
 
                 // Initialize ID if not in the fields
-                if (!entity.Fields.Any(f => f.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase)))
+                if (!entity.Fields.Any(f => f.FieldName.Equals("Id", StringComparison.OrdinalIgnoreCase)))
                 {
                     sb.AppendLine("            _id = Guid.NewGuid();");
                 }
@@ -251,7 +251,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 // Set fields from parameters
                 foreach (var field in entity.Fields)
                 {
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                     sb.AppendLine($"            _{safePropertyName.ToLower()} = {safePropertyName.ToLower()};");
                 }
 
@@ -261,11 +261,11 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 // Properties (getters only for immutability)
                 foreach (var field in entity.Fields)
                 {
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                     sb.AppendLine("        /// <summary>");
                     sb.AppendLine($"        /// Gets the {safePropertyName}");
                     sb.AppendLine("        /// </summary>");
-                    sb.AppendLine($"        public {field.fieldtype}? {safePropertyName} => _{safePropertyName.ToLower()};");
+                    sb.AppendLine($"        public {field.Fieldtype}? {safePropertyName} => _{safePropertyName.ToLower()};");
                     sb.AppendLine();
                 }
 
@@ -277,13 +277,13 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
                 // Factory method parameters (exclude ID fields)
                 var nonIdFields = entity.Fields.Where(f => 
-                    !f.fieldname.Equals("Id", StringComparison.OrdinalIgnoreCase)).ToList();
+                    !f.FieldName.Equals("Id", StringComparison.OrdinalIgnoreCase)).ToList();
                 
                 for (int i = 0; i < nonIdFields.Count; i++)
                 {
                     var field = nonIdFields[i];
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
-                    sb.Append($"{field.fieldtype}? {safePropertyName.ToLower()}");
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
+                    sb.Append($"{field.Fieldtype}? {safePropertyName.ToLower()}");
 
                     if (i < nonIdFields.Count - 1)
                     {
@@ -298,7 +298,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 for (int i = 0; i < entity.Fields.Count; i++)
                 {
                     var field = entity.Fields[i];
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                     sb.Append($"{safePropertyName.ToLower()}");
 
                     if (i < entity.Fields.Count - 1)

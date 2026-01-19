@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         #endregion
 
         #region Validation
-        bool ValidateField(string blockName, string fieldName, object value);
+        bool ValidateField(string blockName, string FieldName, object value);
         bool ValidateBlock(string blockName);
         bool ValidateForm();
         #endregion
@@ -102,7 +102,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void TriggerBlockEnter(string blockName);
         void TriggerBlockLeave(string blockName);
         void TriggerError(string blockName, Exception ex);
-        bool TriggerFieldValidation(string blockName, string fieldName, object value);
+        bool TriggerFieldValidation(string blockName, string FieldName, object value);
         bool TriggerRecordValidation(string blockName, object record);
     }
 
@@ -112,9 +112,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     public interface IFormsSimulationHelper
     {
         void SetAuditDefaults(object record, string currentUser = null);
-        bool SetFieldValue(object record, string fieldName, object value);
-        object GetFieldValue(object record, string fieldName);
-        bool ExecuteSequence(string blockName, object record, string fieldName, string sequenceName);
+        bool SetFieldValue(object record, string FieldName, object value);
+        object GetFieldValue(object record, string FieldName);
+        bool ExecuteSequence(string blockName, object record, string FieldName, string sequenceName);
         object GetPropertyValue(object obj, string propertyName);
     }
 

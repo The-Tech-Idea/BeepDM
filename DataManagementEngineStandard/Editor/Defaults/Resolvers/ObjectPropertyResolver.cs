@@ -124,9 +124,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             try
             {
                 var content = ExtractParenthesesContent(rule);
-                var fieldName = RemoveQuotes(content.Trim());
+                var FieldName = RemoveQuotes(content.Trim());
 
-                if (string.IsNullOrWhiteSpace(fieldName))
+                if (string.IsNullOrWhiteSpace(FieldName))
                 {
                     LogError("FIELD requires a field name parameter");
                     return null;
@@ -139,7 +139,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     return null;
                 }
 
-                return GetFieldValue(targetObject, fieldName);
+                return GetFieldValue(targetObject, FieldName);
             }
             catch (Exception ex)
             {
@@ -501,15 +501,15 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             return null;
         }
 
-        private object GetFieldValue(object obj, string fieldName)
+        private object GetFieldValue(object obj, string FieldName)
         {
-            if (obj == null || string.IsNullOrWhiteSpace(fieldName))
+            if (obj == null || string.IsNullOrWhiteSpace(FieldName))
                 return null;
 
             try
             {
                 var type = obj.GetType();
-                var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                var field = type.GetField(FieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 
                 if (field != null)
                 {
@@ -518,7 +518,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
                 // Try case-insensitive search
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
-                field = fields.FirstOrDefault(f => f.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+                field = fields.FirstOrDefault(f => f.Name.Equals(FieldName, StringComparison.OrdinalIgnoreCase));
                 
                 if (field != null)
                 {
@@ -527,7 +527,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             }
             catch (Exception ex)
             {
-                LogWarning($"Error getting field '{fieldName}': {ex.Message}");
+                LogWarning($"Error getting field '{FieldName}': {ex.Message}");
             }
 
             return null;

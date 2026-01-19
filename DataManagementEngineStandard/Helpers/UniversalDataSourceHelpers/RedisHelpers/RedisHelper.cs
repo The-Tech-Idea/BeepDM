@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers
 
         #endregion
 
-        #region DDL Operations (Create, Alter, Drop) - Level 1 Schema Operations
+        #region Ddl Operations (Create, Alter, Drop) - Level 1 Schema Operations
 
         /// <summary>
         /// Redis doesn't require explicit table/collection creation.
@@ -108,7 +108,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers
             string schemaName = null,
             DataSourceType? dataSourceType = null)
         {
-            return ("", true, "Redis keys are created implicitly - no DDL needed");
+            return ("", true, "Redis keys are created implicitly - no Ddl needed");
         }
 
         /// <summary>

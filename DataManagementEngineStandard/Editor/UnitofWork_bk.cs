@@ -2039,7 +2039,7 @@ namespace TheTechIdea.Beep.Editor
         {
             if(Units == null || Units.Count==0)
             {
-                Get(new List<AppFilter>() { new AppFilter() { FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } });
+                Get(new List<AppFilter>() { new AppFilter() {FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } });
             }
             
             var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
@@ -2781,7 +2781,7 @@ namespace TheTechIdea.Beep.Editor
                 {
                     if (!string.IsNullOrEmpty(PrimaryKey))
                     {
-                        EntityStructure.PrimaryKeys.Add(new EntityField() { fieldname = PrimaryKey, EntityName = EntityStructure.EntityName });
+                        EntityStructure.PrimaryKeys.Add(new EntityField() {FieldName = PrimaryKey, EntityName = EntityStructure.EntityName });
                     }
 
                 }

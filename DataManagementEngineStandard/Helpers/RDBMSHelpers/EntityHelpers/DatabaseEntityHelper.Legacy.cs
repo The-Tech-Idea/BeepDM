@@ -50,12 +50,12 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         /// <summary>
         /// Checks if a field type is numeric.
         /// </summary>
-        /// <param name="fieldType">The field type to check</param>
+        /// <param name="Fieldtype">The field type to check</param>
         /// <returns>True if numeric, false otherwise</returns>
         [Obsolete("This method is deprecated. Use DatabaseEntityTypeHelper.IsNumericType instead.", false)]
-        public static bool IsNumericType(string fieldType)
+        public static bool IsNumericType(string Fieldtype)
         {
-            return DatabaseEntityTypeHelper.IsNumericType(fieldType);
+            return DatabaseEntityTypeHelper.IsNumericType(Fieldtype);
         }
 
         /// <summary>
@@ -73,23 +73,23 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         /// <summary>
         /// Gets the default size for a field type.
         /// </summary>
-        /// <param name="fieldType">The field type</param>
+        /// <param name="Fieldtype">The field type</param>
         /// <returns>Default size for the field type</returns>
         [Obsolete("This method is deprecated. Use DatabaseEntityTypeHelper.GetDefaultSizeForType instead.", false)]
-        public static int GetDefaultSizeForType(string fieldType)
+        public static int GetDefaultSizeForType(string Fieldtype)
         {
-            return DatabaseEntityTypeHelper.GetDefaultSizeForType(fieldType);
+            return DatabaseEntityTypeHelper.GetDefaultSizeForType(Fieldtype);
         }
 
         /// <summary>
         /// Gets the field category for a field type.
         /// </summary>
-        /// <param name="fieldType">The field type</param>
+        /// <param name="Fieldtype">The field type</param>
         /// <returns>DbFieldCategory for the field type</returns>
         [Obsolete("This method is deprecated. Use DatabaseEntityTypeHelper.GetFieldCategoryForType instead.", false)]
-        public static DbFieldCategory GetFieldCategoryForType(string fieldType)
+        public static DbFieldCategory GetFieldCategoryForType(string Fieldtype)
         {
-            return DatabaseEntityTypeHelper.GetFieldCategoryForType(fieldType);
+            return DatabaseEntityTypeHelper.GetFieldCategoryForType(Fieldtype);
         }
 
         #endregion

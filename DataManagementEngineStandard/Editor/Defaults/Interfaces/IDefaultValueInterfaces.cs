@@ -67,18 +67,18 @@ namespace TheTechIdea.Beep.Editor.Defaults.Interfaces
         /// Gets a specific default value by field name
         /// </summary>
         /// <param name="dataSourceName">Name of the data source</param>
-        /// <param name="fieldName">Name of the field</param>
+        /// <param name="FieldName">Name of the field</param>
         /// <returns>Default value or null if not found</returns>
-        DefaultValue GetDefaultForField(string dataSourceName, string fieldName);
+        DefaultValue GetDefaultForField(string dataSourceName, string FieldName);
 
         /// <summary>
         /// Creates a new default value entry
         /// </summary>
-        /// <param name="fieldName">Field name</param>
+        /// <param name="FieldName">Field name</param>
         /// <param name="value">Default value</param>
         /// <param name="rule">Optional rule</param>
         /// <returns>New default value</returns>
-        DefaultValue CreateDefaultValue(string fieldName, string value, string rule = null);
+        DefaultValue CreateDefaultValue(string FieldName, string value, string rule = null);
 
         /// <summary>
         /// Validates a default value configuration
@@ -150,8 +150,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Interfaces
         /// Validates field name for data source
         /// </summary>
         /// <param name="dataSourceName">Data source name</param>
-        /// <param name="fieldName">Field name</param>
+        /// <param name="FieldName">Field name</param>
         /// <returns>Validation result</returns>
-        IErrorsInfo ValidateFieldName(string dataSourceName, string fieldName);
+        IErrorsInfo ValidateFieldName(string dataSourceName, string FieldName);
     }
 }

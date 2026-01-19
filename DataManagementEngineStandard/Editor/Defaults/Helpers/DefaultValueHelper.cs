@@ -76,22 +76,22 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
             }
         }
 
-        public DefaultValue GetDefaultForField(string dataSourceName, string fieldName)
+        public DefaultValue GetDefaultForField(string dataSourceName, string FieldName)
         {
             var defaults = GetDefaults(dataSourceName);
             return defaults.FirstOrDefault(d => 
-                d.PropertyName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+                d.PropertyName.Equals(FieldName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public DefaultValue CreateDefaultValue(string fieldName, string value, string rule = null)
+        public DefaultValue CreateDefaultValue(string FieldName, string value, string rule = null)
         {
             var defaultValue = new DefaultValue
             {
-                PropertyName = fieldName,
+                PropertyName = FieldName,
                 PropertyValue = value, // Now correctly assigns string to object
                 Rule = rule,
                 PropertyCategory = "Default",
-                Description = $"Default value for {fieldName}",
+                Description = $"Default value for {FieldName}",
                 IsEnabled = true
             };
 
@@ -353,20 +353,20 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
         /// <summary>
         /// Creates a default value with enhanced type detection and validation
         /// </summary>
-        /// <param name="fieldName">Name of the field</param>
+        /// <param name="FieldName">Name of the field</param>
         /// <param name="value">Static value (can be any type)</param>
         /// <param name="rule">Rule string</param>
         /// <param name="description">Optional description</param>
         /// <returns>Configured DefaultValue instance</returns>
-        public DefaultValue CreateDefaultValue(string fieldName, object value, string rule = null, string description = null)
+        public DefaultValue CreateDefaultValue(string FieldName, object value, string rule = null, string description = null)
         {
             var defaultValue = new DefaultValue
             {
-                PropertyName = fieldName,
+                PropertyName = FieldName,
                 PropertyValue = value,
                 Rule = rule,
                 PropertyCategory = "Default",
-                Description = description ?? $"Default value for {fieldName}",
+                Description = description ?? $"Default value for {FieldName}",
                 IsEnabled = true
             };
 

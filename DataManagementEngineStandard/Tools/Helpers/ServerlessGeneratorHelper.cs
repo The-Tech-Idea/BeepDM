@@ -78,10 +78,10 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 {
                     foreach (var field in entity.Fields)
                     {
-                        if (field != null && !string.IsNullOrWhiteSpace(field.fieldname))
+                        if (field != null && !string.IsNullOrWhiteSpace(field.FieldName))
                         {
-                            string protoType = MapToProtoType(field.fieldtype);
-                            protoSb.AppendLine($"  {protoType} {field.fieldname.ToLower()} = {fieldNumber};");
+                            string protoType = MapToProtoType(field.Fieldtype);
+                            protoSb.AppendLine($"  {protoType} {field.FieldName.ToLower()} = {fieldNumber};");
                             fieldNumber++;
                         }
                     }
@@ -257,12 +257,12 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// <summary>
         /// Maps database field type to Protocol Buffers type.
         /// </summary>
-        private string MapToProtoType(string fieldType)
+        private string MapToProtoType(string Fieldtype)
         {
-            if (string.IsNullOrEmpty(fieldType))
+            if (string.IsNullOrEmpty(Fieldtype))
                 return "string";
 
-            string lowerType = fieldType.ToLower();
+            string lowerType = Fieldtype.ToLower();
 
             if (lowerType.Contains("int"))
                 return "int32";

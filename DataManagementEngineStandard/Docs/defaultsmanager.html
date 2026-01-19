@@ -269,7 +269,7 @@ else
                             <p>Resolves a specific DefaultValue object, executing rules if present or returning static values.</p>
                             
                             <div class="method-signature">
-                                <code><span class="return-type">object</span> ResolveDefaultValue(IDMEEditor editor, <span class="parameter-type">string</span> dataSourceName, <span class="parameter-type">string</span> fieldName, IPassedArgs parameters)</code>
+                                <code><span class="return-type">object</span> ResolveDefaultValue(IDMEEditor editor, <span class="parameter-type">string</span> dataSourceName, <span class="parameter-type">string</span> FieldName, IPassedArgs parameters)</code>
                             </div>
                             <p>Resolves a default value by data source and field name with automatic default lookup.</p>
                         </div>
@@ -336,15 +336,15 @@ if (statusValue != null)
 var fieldsToResolve = new[] { "CreatedDate", "Status", "CreatedBy", "ModifiedDate" };
 var resolvedValues = new Dictionary&lt;string, object&gt;();
 
-foreach (var fieldName in fieldsToResolve)
+foreach (var FieldName in fieldsToResolve)
 {
     var value = DefaultsManager.ResolveDefaultValue(
-        dmeEditor, "OrderDatabase", fieldName, parameters);
+        dmeEditor, "OrderDatabase", FieldName, parameters);
     
     if (value != null)
     {
-        resolvedValues[fieldName] = value;
-        Console.WriteLine($"{fieldName}: {value}");
+        resolvedValues[FieldName] = value;
+        Console.WriteLine($"{FieldName}: {value}");
     }
 }
 

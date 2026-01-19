@@ -637,8 +637,8 @@ using TheTechIdea.Beep.Utilities;
                 get { return _kerberosConfigPath; }
                 set { SetProperty(ref _kerberosConfigPath, value); }
             }
-
-            #endregion
+          public List<string> Regions { get; set; } = new List<string>();
+              #endregion
 
             #region Web API Authentication (OAuth2, API Key, Certificates)
 

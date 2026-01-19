@@ -42,10 +42,10 @@ namespace TheTechIdea.Beep.Editor.Defaults
                     return CreateError("Column name cannot be empty");
 
                 // Create field identifier for entity column
-                var fieldName = $"{entityName}.{columnName}";
+                var FieldName = $"{entityName}.{columnName}";
                 
                 // Create default value
-                var (validation, defaultValueObj) = CreateDefaultValue(editor, fieldName, 
+                var (validation, defaultValueObj) = CreateDefaultValue(editor, FieldName, 
                     isRule ? null : defaultValue, 
                     isRule ? defaultValue : null);
 
@@ -56,7 +56,7 @@ namespace TheTechIdea.Beep.Editor.Defaults
                 var defaults = GetDefaults(editor, dataSourceName);
                 
                 // Remove existing default for this field if it exists
-                defaults.RemoveAll(d => d.PropertyName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+                defaults.RemoveAll(d => d.PropertyName.Equals(FieldName, StringComparison.OrdinalIgnoreCase));
                 
                 // Add new default
                 defaults.Add(defaultValueObj);
@@ -84,8 +84,8 @@ namespace TheTechIdea.Beep.Editor.Defaults
         {
             EnsureInitialized(editor);
 
-            var fieldName = $"{entityName}.{columnName}";
-            return ResolveDefaultValue(editor, dataSourceName, fieldName, parameters);
+            var FieldName = $"{entityName}.{columnName}";
+            return ResolveDefaultValue(editor, dataSourceName, FieldName, parameters);
         }
 
         /// <summary>
@@ -102,10 +102,10 @@ namespace TheTechIdea.Beep.Editor.Defaults
 
             try
             {
-                var fieldName = $"{entityName}.{columnName}";
+                var FieldName = $"{entityName}.{columnName}";
                 var defaults = GetDefaults(editor, dataSourceName);
                 
-                var removed = defaults.RemoveAll(d => d.PropertyName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+                var removed = defaults.RemoveAll(d => d.PropertyName.Equals(FieldName, StringComparison.OrdinalIgnoreCase));
                 
                 if (removed > 0)
                 {
@@ -189,8 +189,8 @@ namespace TheTechIdea.Beep.Editor.Defaults
                 {
                     try
                     {
-                        var fieldName = $"{entityName}.{kvp.Key}";
-                        var (validation, defaultValue) = CreateDefaultValue(editor, fieldName,
+                        var FieldName = $"{entityName}.{kvp.Key}";
+                        var (validation, defaultValue) = CreateDefaultValue(editor, FieldName,
                             kvp.Value.isRule ? null : kvp.Value.value,
                             kvp.Value.isRule ? kvp.Value.value : null);
 

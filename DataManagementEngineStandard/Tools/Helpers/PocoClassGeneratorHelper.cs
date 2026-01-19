@@ -31,7 +31,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             string implementations, string extracode, string outputpath, 
             string nameSpacestring = "TheTechIdea.ProjectClasses", bool generateCSharpCodeFiles = true)
         {
-            return CreateClassFromTemplate(classname, entity, "public :FIELDTYPE? :FIELDNAME { get; set; }", 
+            return CreateClassFromTemplate(classname, entity, "public :Fieldtype? :FieldName { get; set; }", 
                 usingheader, implementations, extracode, outputpath, nameSpacestring, generateCSharpCodeFiles);
         }
 
@@ -136,9 +136,9 @@ using TheTechIdea.Beep.DataBase;";
 ";
 
             var fieldTemplate = @"
-private :FIELDTYPE? :BACKINGFIELD;
+private :Fieldtype? :BACKINGFIELD;
 
-public :FIELDTYPE? :FIELDNAME
+public :Fieldtype? :FieldName
 {
     get => :BACKINGFIELD;
     set => SetProperty(ref :BACKINGFIELD, value);
@@ -296,12 +296,12 @@ public :FIELDTYPE? :FIELDNAME
             for (int i = 0; i < entity.Fields.Count; i++)
             {
                 var field = entity.Fields[i];
-                var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname, i);
+                var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName, i);
                 var backingFieldName = _helper.GenerateBackingFieldName(safePropertyName);
 
                 var fieldCode = template
-                    .Replace(":FIELDTYPE", field.fieldtype)
-                    .Replace(":FIELDNAME", safePropertyName)
+                    .Replace(":Fieldtype", field.Fieldtype)
+                    .Replace(":FieldName", safePropertyName)
                     .Replace(":BACKINGFIELD", backingFieldName);
 
                 sb.AppendLine($"        {fieldCode}");
@@ -341,14 +341,14 @@ public :FIELDTYPE? :FIELDNAME
         private string GenerateNotifyPropertyTemplate()
         {
             return @"
-private :FIELDTYPE? :BACKINGFIELD;
+private :Fieldtype? :BACKINGFIELD;
 
-public :FIELDTYPE? :FIELDNAME
+public :Fieldtype? :FieldName
 {
     get => :BACKINGFIELD;
     set
     {
-        if (!EqualityComparer<:FIELDTYPE>.Default.Equals(:BACKINGFIELD, value))
+        if (!EqualityComparer<:Fieldtype>.Default.Equals(:BACKINGFIELD, value))
         {
             :BACKINGFIELD = value;
             NotifyPropertyChanged();

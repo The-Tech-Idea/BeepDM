@@ -45,7 +45,7 @@ namespace TheTechIdea.Beep.Editor
         public bool CopyData { get; set; }= false;
         public List<AppFilter> FilterConditions { get; set; }=new List<AppFilter>();
        
-        public DDLScriptType ScriptType { get; set; }=new DDLScriptType();
+        public DDLScriptType ScriptType  { get; set; }=new DDLScriptType();
         public EntityDataMap_DTL Mapping { get; set; }
         public List<SyncErrorsandTracking> Tracking { get; set; } = new List<SyncErrorsandTracking>();
         public List<ETLScriptDet> CopyDataScripts { get; set; } = new List<ETLScriptDet>();

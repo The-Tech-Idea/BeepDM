@@ -93,14 +93,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <summary>
         /// Sets a field value on a record using reflection with enhanced error handling and type conversion
         /// </summary>
-        public bool SetFieldValue(object record, string fieldName, object value)
+        public bool SetFieldValue(object record, string FieldName, object value)
         {
-            if (record == null || string.IsNullOrWhiteSpace(fieldName))
+            if (record == null || string.IsNullOrWhiteSpace(FieldName))
                 return false;
 
             try
             {
-                var property = GetCachedProperty(record.GetType(), fieldName);
+                var property = GetCachedProperty(record.GetType(), FieldName);
                 if (property == null || !property.CanWrite)
                     return false;
 
@@ -113,7 +113,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             }
             catch (Exception ex)
             {
-                LogError($"Error setting field '{fieldName}' on {record.GetType().Name}", ex);
+                LogError($"Error setting field '{FieldName}' on {record.GetType().Name}", ex);
                 return false;
             }
         }
@@ -121,19 +121,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <summary>
         /// Gets a field value from a record using reflection with caching
         /// </summary>
-        public object GetFieldValue(object record, string fieldName)
+        public object GetFieldValue(object record, string FieldName)
         {
-            if (record == null || string.IsNullOrWhiteSpace(fieldName))
+            if (record == null || string.IsNullOrWhiteSpace(FieldName))
                 return null;
 
             try
             {
-                var property = GetCachedProperty(record.GetType(), fieldName);
+                var property = GetCachedProperty(record.GetType(), FieldName);
                 return property?.GetValue(record);
             }
             catch (Exception ex)
             {
-                LogError($"Error getting field '{fieldName}' from {record.GetType().Name}", ex);
+                LogError($"Error getting field '{FieldName}' from {record.GetType().Name}", ex);
                 return null;
             }
         }
@@ -141,10 +141,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <summary>
         /// Executes a sequence generator for a field (Oracle sequence simulation)
         /// </summary>
-        public bool ExecuteSequence(string blockName, object record, string fieldName, string sequenceName)
+        public bool ExecuteSequence(string blockName, object record, string FieldName, string sequenceName)
         {
             if (string.IsNullOrWhiteSpace(blockName) || record == null || 
-                string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrWhiteSpace(sequenceName))
+                string.IsNullOrWhiteSpace(FieldName) || string.IsNullOrWhiteSpace(sequenceName))
                 return false;
 
             try
@@ -164,10 +164,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     var sequenceValue = getSeqMethod.Invoke(blockInfo.UnitOfWork, new object[] { sequenceName });
                     if (sequenceValue != null && Convert.ToInt32(sequenceValue) > 0)
                     {
-                        var success = SetFieldValue(record, fieldName, sequenceValue);
+                        var success = SetFieldValue(record, FieldName, sequenceValue);
                         if (success)
                         {
-                            LogOperation($"Sequence '{sequenceName}' value {sequenceValue} set to field '{fieldName}' in block '{blockName}'");
+                            LogOperation($"Sequence '{sequenceName}' value {sequenceValue} set to field '{FieldName}' in block '{blockName}'");
                         }
                         return success;
                     }
@@ -238,11 +238,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <summary>
         /// Validates field constraints similar to Oracle Forms
         /// </summary>
-        public ValidationResult ValidateField(object record, string fieldName, object value, FieldConstraints constraints = null)
+        public ValidationResult ValidateField(object record, string FieldName, object value, FieldConstraints constraints = null)
         {
-            var result = new ValidationResult { IsValid = true, FieldName = fieldName };
+            var result = new ValidationResult { IsValid = true,FieldName = FieldName };
 
-            if (record == null || string.IsNullOrWhiteSpace(fieldName))
+            if (record == null || string.IsNullOrWhiteSpace(FieldName))
             {
                 result.IsValid = false;
                 result.ErrorMessage = "Invalid parameters for field validation";
@@ -251,13 +251,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
             try
             {
-                constraints ??= GetDefaultConstraints(record.GetType(), fieldName);
+                constraints ??= GetDefaultConstraints(record.GetType(), FieldName);
 
                 // Required field validation
                 if (constraints.Required && IsNullOrEmpty(value))
                 {
                     result.IsValid = false;
-                    result.ErrorMessage = $"Field '{fieldName}' is required";
+                    result.ErrorMessage = $"Field '{FieldName}' is required";
                     return result;
                 }
 
@@ -267,7 +267,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     if (stringValue.Length > constraints.MaxLength)
                     {
                         result.IsValid = false;
-                        result.ErrorMessage = $"Field '{fieldName}' exceeds maximum length of {constraints.MaxLength}";
+                        result.ErrorMessage = $"Field '{FieldName}' exceeds maximum length of {constraints.MaxLength}";
                         return result;
                     }
                 }
@@ -280,14 +280,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     if (constraints.MinValue.HasValue && numericValue < constraints.MinValue.Value)
                     {
                         result.IsValid = false;
-                        result.ErrorMessage = $"Field '{fieldName}' must be at least {constraints.MinValue.Value}";
+                        result.ErrorMessage = $"Field '{FieldName}' must be at least {constraints.MinValue.Value}";
                         return result;
                     }
                     
                     if (constraints.MaxValue.HasValue && numericValue > constraints.MaxValue.Value)
                     {
                         result.IsValid = false;
-                        result.ErrorMessage = $"Field '{fieldName}' must not exceed {constraints.MaxValue.Value}";
+                        result.ErrorMessage = $"Field '{FieldName}' must not exceed {constraints.MaxValue.Value}";
                         return result;
                     }
                 }
@@ -304,12 +304,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     }
                 }
 
-                LogOperation($"Field '{fieldName}' validation passed");
+                LogOperation($"Field '{FieldName}' validation passed");
                 return result;
             }
             catch (Exception ex)
             {
-                LogError($"Error validating field '{fieldName}'", ex);
+                LogError($"Error validating field '{FieldName}'", ex);
                 result.IsValid = false;
                 result.ErrorMessage = $"Validation error: {ex.Message}";
                 return result;
@@ -401,7 +401,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                    Array.Exists(numericTypes, t => t == Nullable.GetUnderlyingType(type));
         }
 
-        private FieldConstraints GetDefaultConstraints(Type recordType, string fieldName)
+        private FieldConstraints GetDefaultConstraints(Type recordType, string FieldName)
         {
             // This could be enhanced to read from entity structure or annotations
             return new FieldConstraints();

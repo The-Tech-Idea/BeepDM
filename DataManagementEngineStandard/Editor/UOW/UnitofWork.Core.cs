@@ -652,7 +652,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 {
                     if (!string.IsNullOrEmpty(PrimaryKey))
                     {
-                        EntityStructure.PrimaryKeys.Add(new EntityField() { fieldname = PrimaryKey, EntityName = EntityStructure.EntityName });
+                        EntityStructure.PrimaryKeys.Add(new EntityField() {FieldName = PrimaryKey, EntityName = EntityStructure.EntityName });
                     }
                 }
             }

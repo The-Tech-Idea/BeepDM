@@ -410,7 +410,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
                     foreach (var field in requiredFields)
                     {
-                        var property = entity.GetType().GetProperty(field.fieldname, 
+                        var property = entity.GetType().GetProperty(field.FieldName, 
                             BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                         if (property != null)
@@ -419,12 +419,12 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                             
                             if (value == null)
                             {
-                                missingFields.Add(field.fieldname);
+                                missingFields.Add(field.FieldName);
                             }
                             else if (property.PropertyType == typeof(string) && 
                                     string.IsNullOrWhiteSpace(value.ToString()))
                             {
-                                missingFields.Add(field.fieldname);
+                                missingFields.Add(field.FieldName);
                             }
                         }
                     }
@@ -470,7 +470,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 {
                     foreach (var field in _entityStructure.Fields)
                     {
-                        var property = entity.GetType().GetProperty(field.fieldname, 
+                        var property = entity.GetType().GetProperty(field.FieldName, 
                             BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                         if (property != null)
@@ -481,7 +481,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                                 var fieldError = ValidateFieldDataType(field, value, property.PropertyType);
                                 if (!string.IsNullOrEmpty(fieldError))
                                 {
-                                    errors.Add($"{field.fieldname}: {fieldError}");
+                                    errors.Add($"{field.FieldName}: {fieldError}");
                                 }
                             }
                         }
@@ -522,7 +522,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                     {
                         if (field.Size1 > 0) // Only validate if size is specified
                         {
-                            var property = entity.GetType().GetProperty(field.fieldname, 
+                            var property = entity.GetType().GetProperty(field.FieldName, 
                                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                             if (property != null && property.PropertyType == typeof(string))
@@ -530,7 +530,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                                 var value = property.GetValue(entity)?.ToString();
                                 if (!string.IsNullOrEmpty(value) && value.Length > field.Size1)
                                 {
-                                    errors.Add($"{field.fieldname}: Length {value.Length} exceeds maximum {field.Size1}");
+                                    errors.Add($"{field.FieldName}: Length {value.Length} exceeds maximum {field.Size1}");
                                 }
                             }
                         }
@@ -745,7 +745,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         private bool IsIdentityField()
         {
             return _entityStructure?.Fields?.Any(f => 
-                f.fieldname.Equals(_primaryKeyName, StringComparison.OrdinalIgnoreCase) && 
+                f.FieldName.Equals(_primaryKeyName, StringComparison.OrdinalIgnoreCase) && 
                 f.IsAutoIncrement) ?? false;
         }
 

@@ -76,7 +76,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 "SEQUENCE(1000) - Start sequence from 1000",
                 "SEQUENCE(OrderNumber, 1) - Named sequence starting at 1",
-                "INCREMENT(fieldname) - Increment based on existing field",
+                "INCREMENT(FieldName) - Increment based on existing field",
                 "AUTOINCREMENT(1) - Auto increment starting from 1", 
                 "RANDOM(1, 100) - Random number between 1 and 100",
                 "RANDOMVALUE(10) - Random number between 0 and 10",
@@ -163,8 +163,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     else
                     {
                         // Field name - would typically look up max value and increment
-                        var fieldName = RemoveQuotes(parts[0].Trim());
-                        LogInfo($"INCREMENT for field '{fieldName}' - would typically query max value");
+                        var FieldName = RemoveQuotes(parts[0].Trim());
+                        LogInfo($"INCREMENT for field '{FieldName}' - would typically query max value");
                         return DateTime.Now.Ticks % 1000000;
                     }
                 }

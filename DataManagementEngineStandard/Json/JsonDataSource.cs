@@ -311,7 +311,7 @@ namespace TheTechIdea.Beep.Json
             JObject newEntityObject = new JObject();
             foreach (var field in entity.Fields)
             {
-                newEntityObject.Add(new JProperty(field.fieldname, JValue.CreateNull()));
+                newEntityObject.Add(new JProperty(field.FieldName, JValue.CreateNull()));
             }
 
             // Add to root array
@@ -690,10 +690,10 @@ namespace TheTechIdea.Beep.Json
                             {
                                 try
                                 {
-                                    var fieldInfo = entityStructure.Fields.FirstOrDefault(p => p.fieldname == property.Name);
+                                    var fieldInfo = entityStructure.Fields.FirstOrDefault(p => p.FieldName == property.Name);
                                     if (fieldInfo != null)
                                     {
-                                        Type fieldType = Type.GetType(fieldInfo.fieldtype);
+                                        Type Fieldtype = Type.GetType(fieldInfo.Fieldtype);
                                         object value;
 
                                         // Handle $oid
@@ -703,7 +703,7 @@ namespace TheTechIdea.Beep.Json
                                         }
                                         else
                                         {
-                                            value = property.Value.ToObject(fieldType);
+                                            value = property.Value.ToObject(Fieldtype);
                                         }
 
                                         propInfo.SetValue(entity, value);
@@ -994,14 +994,14 @@ namespace TheTechIdea.Beep.Json
                 {
                     var field = CreateEntityField(property);
 
-                    // Convert "object" fieldtype to "string" if necessary
-                    if (field.fieldtype.Equals("object", StringComparison.InvariantCultureIgnoreCase))
+                    // Convert "object" Fieldtype to "string" if necessary
+                    if (field.Fieldtype.Equals("object", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        field.fieldtype = "string";
+                        field.Fieldtype = "string";
                     }
 
                     // Arrays currently not fully supported as fields
-                    if (!field.fieldtype.Equals("array", StringComparison.InvariantCultureIgnoreCase))
+                    if (!field.Fieldtype.Equals("array", StringComparison.InvariantCultureIgnoreCase))
                     {
                         currentStructure.Fields.Add(field);
                     }
@@ -1098,9 +1098,9 @@ namespace TheTechIdea.Beep.Json
         {
             return new EntityField
             {
-                fieldname = property.Name,
+               FieldName = property.Name,
                 BaseColumnName = property.Name,
-                fieldtype = JsonExtensions.DetermineFieldType(property.Value),
+                Fieldtype = JsonExtensions.DetermineFieldtype(property.Value),
             };
         }
 
@@ -1112,17 +1112,17 @@ namespace TheTechIdea.Beep.Json
         {
             foreach (var property in record.Properties())
             {
-                bool fieldExists = entityStructure.Fields.Any(f => f.fieldname == property.Name);
+                bool fieldExists = entityStructure.Fields.Any(f => f.FieldName == property.Name);
                 if (!fieldExists)
                 {
                     var field = CreateEntityField(property);
 
-                    if (field.fieldtype.Equals("object", StringComparison.InvariantCultureIgnoreCase))
+                    if (field.Fieldtype.Equals("object", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        field.fieldtype = "string";
+                        field.Fieldtype = "string";
                     }
 
-                    if (!field.fieldtype.Equals("array", StringComparison.InvariantCultureIgnoreCase))
+                    if (!field.Fieldtype.Equals("array", StringComparison.InvariantCultureIgnoreCase))
                     {
                         entityStructure.Fields.Add(field);
                     }
@@ -1156,7 +1156,7 @@ namespace TheTechIdea.Beep.Json
         {
             if (_rootJsonArray == null) return;
 
-            var currentFields = DataStruct.Fields.Select(f => f.fieldname).ToList();
+            var currentFields = DataStruct.Fields.Select(f => f.FieldName).ToList();
             var jsonFields = _rootJsonArray.FirstOrDefault() is JObject firstRecord
                 ? firstRecord.Properties().Select(p => p.Name).ToList()
                 : new List<string>();
@@ -1194,12 +1194,12 @@ namespace TheTechIdea.Beep.Json
                 ? firstRecord.Properties().Select(p => p.Name).ToList()
                 : new List<string>();
 
-            var missingFields = DataStruct.Fields.Where(f => !jsonFields.Contains(f.fieldname)).ToList();
-            var extraFields = jsonFields.Except(DataStruct.Fields.Select(f => f.fieldname)).ToList();
+            var missingFields = DataStruct.Fields.Where(f => !jsonFields.Contains(f.FieldName)).ToList();
+            var extraFields = jsonFields.Except(DataStruct.Fields.Select(f => f.FieldName)).ToList();
 
             if (missingFields.Any() || extraFields.Any())
             {
-                Logger?.LogWarning($"Schema mismatch: Missing fields - {string.Join(", ", missingFields.Select(f => f.fieldname))}; Extra fields - {string.Join(", ", extraFields)}");
+                Logger?.LogWarning($"Schema mismatch: Missing fields - {string.Join(", ", missingFields.Select(f => f.FieldName))}; Extra fields - {string.Join(", ", extraFields)}");
                 return false;
             }
 

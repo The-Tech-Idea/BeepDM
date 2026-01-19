@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
                 var queries = new List<string>();
                 foreach (var primaryKeyField in primaryKeyFields)
                 {
-                    string query = GeneratePrimaryKeyQuery(entity.DatabaseType, entity.EntityName, primaryKeyField.fieldname, MapDataType(primaryKeyField.fieldtype, entity.DatabaseType));
+                    string query = GeneratePrimaryKeyQuery(entity.DatabaseType, entity.EntityName, primaryKeyField.FieldName, MapDataType(primaryKeyField.Fieldtype, entity.DatabaseType));
                     queries.Add(query);
                 }
 
@@ -178,7 +178,7 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
                 var queries = new List<string>();
                 foreach (var uniqueField in uniqueFields)
                 {
-                    string query = GenerateCreateIndexQuery(entity.DatabaseType, entity.EntityName, $"{entity.EntityName}_{uniqueField.fieldname}_ux", new[] { uniqueField.fieldname }, new Dictionary<string, object> { { "unique", true } });
+                    string query = GenerateCreateIndexQuery(entity.DatabaseType, entity.EntityName, $"{entity.EntityName}_{uniqueField.FieldName}_ux", new[] { uniqueField.FieldName }, new Dictionary<string, object> { { "unique", true } });
                     queries.Add(query);
                 }
 
@@ -281,26 +281,26 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
         /// <returns>Column definition string</returns>
         private static string GenerateColumnDefinition(EntityField field, DataSourceType databaseType)
         {
-            var dataType = MapDataType(field.fieldtype, databaseType);
+            var dataType = MapDataType(field.Fieldtype, databaseType);
             var nullable = field.AllowDBNull ? "" : " NOT NULL";
             var identity = field.IsAutoIncrement ? GetIdentityClause(databaseType) : "";
             
-            return $"{field.fieldname} {dataType}{nullable}{identity}";
+            return $"{field.FieldName} {dataType}{nullable}{identity}";
         }
 
         /// <summary>
         /// Maps .NET data types to database-specific data types.
         /// </summary>
-        /// <param name="fieldType">The .NET field type</param>
+        /// <param name="Fieldtype">The .NET field type</param>
         /// <param name="databaseType">The target database type</param>
         /// <returns>Database-specific data type</returns>
-        private static string MapDataType(string fieldType, DataSourceType databaseType)
+        private static string MapDataType(string Fieldtype, DataSourceType databaseType)
         {
-            if (string.IsNullOrEmpty(fieldType))
+            if (string.IsNullOrEmpty(Fieldtype))
                 return "VARCHAR(255)"; // Default fallback
 
             // Normalize the field type
-            string normalizedType = fieldType.ToUpper().Trim();
+            string normalizedType = Fieldtype.ToUpper().Trim();
             
             // Remove System. prefix if present for mapping purposes
             string baseType = normalizedType.StartsWith("SYSTEM.") ? normalizedType.Substring(7) : normalizedType;
@@ -311,12 +311,12 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
             {
                 // Look for exact .NET type match
                 var exactMatch = mappings.FirstOrDefault(m => 
-                    m.NetDataType.Equals(fieldType, StringComparison.OrdinalIgnoreCase) && m.Fav);
+                    m.NetDataType.Equals(Fieldtype, StringComparison.OrdinalIgnoreCase) && m.Fav);
                 
                 if (exactMatch == null)
                 {
                     exactMatch = mappings.FirstOrDefault(m => 
-                        m.NetDataType.Equals(fieldType, StringComparison.OrdinalIgnoreCase));
+                        m.NetDataType.Equals(Fieldtype, StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (exactMatch != null)

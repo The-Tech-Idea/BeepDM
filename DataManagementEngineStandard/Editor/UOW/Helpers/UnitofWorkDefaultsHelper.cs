@@ -74,13 +74,13 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 {
                     if (!property.CanWrite) continue;
 
-                    var fieldName = $"{_entityName}.{property.Name}";
+                    var FieldName = $"{_entityName}.{property.Name}";
                     var currentValue = property.GetValue(entity);
 
                     // Apply defaults only if current value is null or default
                     if (ShouldApplyDefault(currentValue, property.PropertyType, context))
                     {
-                        ApplyDefaultToProperty(entity, property, fieldName, parameters);
+                        ApplyDefaultToProperty(entity, property, FieldName, parameters);
                     }
                 }
             }
@@ -110,24 +110,24 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         /// <summary>
         /// Checks if defaults are configured for a specific field
         /// </summary>
-        /// <param name="fieldName">Name of the field to check</param>
+        /// <param name="FieldName">Name of the field to check</param>
         /// <returns>True if defaults exist for the field</returns>
-        public bool HasDefaults(string fieldName)
+        public bool HasDefaults(string FieldName)
         {
             EnsureCacheUpdated();
-            var fullFieldName = fieldName.Contains('.') ? fieldName : $"{_entityName}.{fieldName}";
+            var fullFieldName = FieldName.Contains('.') ? FieldName : $"{_entityName}.{FieldName}";
             return _cachedDefaults.ContainsKey(fullFieldName);
         }
 
         /// <summary>
         /// Gets the default value configuration for a specific field
         /// </summary>
-        /// <param name="fieldName">Name of the field</param>
+        /// <param name="FieldName">Name of the field</param>
         /// <returns>Default value configuration or null if not found</returns>
-        public DefaultValue GetDefaultForField(string fieldName)
+        public DefaultValue GetDefaultForField(string FieldName)
         {
             EnsureCacheUpdated();
-            var fullFieldName = fieldName.Contains('.') ? fieldName : $"{_entityName}.{fieldName}";
+            var fullFieldName = FieldName.Contains('.') ? FieldName : $"{_entityName}.{FieldName}";
             return _cachedDefaults.TryGetValue(fullFieldName, out var defaultValue) ? defaultValue : null;
         }
 
@@ -192,9 +192,9 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 foreach (var property in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
                 {
                     var value = property.GetValue(entity);
-                    var fieldName = $"{_entityName}.{property.Name}";
+                    var FieldName = $"{_entityName}.{property.Name}";
                     
-                    if (HasDefaults(fieldName))
+                    if (HasDefaults(FieldName))
                     {
                         var validationError = ValidateDefaultValue(property, value);
                         if (!string.IsNullOrEmpty(validationError))
@@ -304,13 +304,13 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         /// </summary>
         /// <param name="entity">Entity to apply default to</param>
         /// <param name="property">Property to set</param>
-        /// <param name="fieldName">Field name for default lookup</param>
+        /// <param name="FieldName">Field name for default lookup</param>
         /// <param name="parameters">Parameters for default resolution</param>
-        private void ApplyDefaultToProperty(T entity, PropertyInfo property, string fieldName, IPassedArgs parameters)
+        private void ApplyDefaultToProperty(T entity, PropertyInfo property, string FieldName, IPassedArgs parameters)
         {
             try
             {
-                var defaultValue = GetDefaultForField(fieldName);
+                var defaultValue = GetDefaultForField(FieldName);
                 if (defaultValue == null) return;
 
                 var resolvedValue = DefaultsManager.ResolveDefaultValue(_editor, defaultValue, parameters);
@@ -350,16 +350,16 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
             {
                 if (!property.CanWrite) continue;
 
-                var fieldName = $"{_entityName}.{property.Name}";
+                var FieldName = $"{_entityName}.{property.Name}";
                 
                 // For updates, only apply to specific audit fields or explicitly configured fields
                 if (isUpdate && !updateFields.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    var defaultValue = GetDefaultForField(fieldName);
+                    var defaultValue = GetDefaultForField(FieldName);
                     if (defaultValue?.propertyType != DefaultValueType.Rule) continue; // Only rule-based defaults for non-audit fields on update
                 }
 
-                ApplyDefaultToProperty(entity, property, fieldName, parameters);
+                ApplyDefaultToProperty(entity, property, FieldName, parameters);
             }
         }
 

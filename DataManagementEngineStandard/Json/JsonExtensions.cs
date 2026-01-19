@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Json
 {
     public static class JsonExtensions
     {
-        public static string DetermineFieldType(JToken token)
+        public static string DetermineFieldtype(JToken token)
         {
             // Example implementation - adjust based on your needs
             switch (token.Type)

@@ -45,11 +45,11 @@ namespace TheTechIdea.Beep.Json.Helpers
                 Type runtimeType = SafeGetType(entityName);
                 Dictionary<string, PropertyInfo> propMap = runtimeType != null
                     ? es.Fields
-                        .GroupBy(f => f.fieldname, StringComparer.OrdinalIgnoreCase)
+                        .GroupBy(f => f.FieldName, StringComparer.OrdinalIgnoreCase)
                         .Select(g => g.First())
-                        .Select(f => new { f.fieldname, PI = runtimeType.GetProperty(f.fieldname, BindingFlags.Public | BindingFlags.Instance) })
+                        .Select(f => new { f.FieldName, PI = runtimeType.GetProperty(f.FieldName, BindingFlags.Public | BindingFlags.Instance) })
                         .Where(x => x.PI != null && x.PI.CanWrite)
-                        .ToDictionary(x => x.fieldname, x => x.PI, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(x => x.FieldName, x => x.PI, StringComparer.OrdinalIgnoreCase)
                     : null;
 
                 foreach (var obj in source)

@@ -42,7 +42,7 @@ namespace TheTechIdea.Beep.Editor.Mapping.Helpers
                 return;
 
             var destFieldNames = (destFields ?? Array.Empty<EntityField>())
-                .Select(f => f.fieldname)
+                .Select(f => f.FieldName)
                 .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
 
             foreach (var def in defaults)

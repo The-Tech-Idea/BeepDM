@@ -128,13 +128,13 @@ namespace TheTechIdea.Beep.Editor.Mapping
 
                 foreach (var destField in datamap.SelectedDestFields ?? Enumerable.Empty<EntityField>())
                 {
-                    var srcField = srcent.Fields?.FirstOrDefault(f => f.fieldname.Equals(destField.fieldname, StringComparison.InvariantCultureIgnoreCase));
+                    var srcField = srcent.Fields?.FirstOrDefault(f => f.FieldName.Equals(destField.FieldName, StringComparison.InvariantCultureIgnoreCase));
                     retval.Add(new Mapping_rep_fields
                     {
-                        ToFieldName = destField.fieldname,
-                        ToFieldType = destField.fieldtype,
-                        FromFieldName = srcField?.fieldname,
-                        FromFieldType = srcField?.fieldtype
+                        ToFieldName = destField.FieldName,
+                       ToFieldType = destField.Fieldtype,
+                        FromFieldName = srcField?.FieldName,
+                        FromFieldType = srcField?.Fieldtype
                     });
                 }
             }

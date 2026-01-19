@@ -40,12 +40,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         
         /// <summary>Initializes a new instance of the ValidationTriggerEventArgs class</summary>
         /// <param name="blockName">The name of the block</param>
-        /// <param name="fieldName">Optional field name being validated</param>
+        /// <param name="FieldName">Optional field name being validated</param>
         /// <param name="value">Optional value being validated</param>
-        public ValidationTriggerEventArgs(string blockName, string fieldName = null, object value = null)
+        public ValidationTriggerEventArgs(string blockName, string FieldName = null, object value = null)
         {
             BlockName = blockName;
-            FieldName = fieldName;
+           FieldName = FieldName;
             Value = value;
         }
 

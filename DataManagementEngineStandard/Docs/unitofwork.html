@@ -273,8 +273,8 @@ var allCustomers = await customerUoW.Get();
 // Get customers with filters
 var filters = new List&lt;AppFilter&gt; 
 {
-    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" },
-    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" }
+    new AppFilter {FieldName = "Country", Operator = "=", FilterValue = "USA" },
+    new AppFilter {FieldName = "Status", Operator = "=", FilterValue = "Active" }
 };
 var filteredCustomers = await customerUoW.Get(filters);
 

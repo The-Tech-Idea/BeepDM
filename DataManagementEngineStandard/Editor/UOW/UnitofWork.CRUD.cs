@@ -228,7 +228,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         {
             if (Units == null || Units.Count == 0)
             {
-                Get(new List<AppFilter>() { new AppFilter() { FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } });
+                Get(new List<AppFilter>() { new AppFilter() {FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } });
             }
 
             var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);

@@ -20,7 +20,7 @@ namespace TheTechIdea.Beep.Json.Helpers
             {
                 foreach (var f in e.Fields ?? new List<EntityField>())
                 {
-                    _knownFieldKey.Add(Key(e.EntityName, f.fieldname));
+                    _knownFieldKey.Add(Key(e.EntityName, f.FieldName));
                 }
             }
             _dirty = false;
@@ -31,7 +31,7 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (es == null || field == null) return;
             lock (_lock)
             {
-                var k = Key(es.EntityName, field.fieldname);
+                var k = Key(es.EntityName, field.FieldName);
                 if (_knownFieldKey.Add(k))
                 {
                     _dirty = true;

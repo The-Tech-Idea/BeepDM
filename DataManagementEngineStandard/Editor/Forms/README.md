@@ -249,7 +249,7 @@ public async Task OracleFormsWorkflow()
     // 3. Execute query (EXECUTE_QUERY)
     var filters = new List<AppFilter> 
     {
-        new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" }
+        new AppFilter {FieldName = "Country", Operator = "=", FilterValue = "USA" }
     };
     await uowManager.ExecuteQueryAndEnterCrudModeAsync("CUSTOMERS", filters);
     

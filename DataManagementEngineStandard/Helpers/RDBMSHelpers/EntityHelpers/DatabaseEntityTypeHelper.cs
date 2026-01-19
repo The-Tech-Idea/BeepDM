@@ -14,14 +14,14 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         /// <summary>
         /// Checks if a field type is numeric.
         /// </summary>
-        /// <param name="fieldType">The field type to check</param>
+        /// <param name="Fieldtype">The field type to check</param>
         /// <returns>True if numeric, false otherwise</returns>
-        public static bool IsNumericType(string fieldType)
+        public static bool IsNumericType(string Fieldtype)
         {
-            if (string.IsNullOrWhiteSpace(fieldType))
+            if (string.IsNullOrWhiteSpace(Fieldtype))
                 return false;
 
-            var normalizedType = fieldType.ToUpperInvariant().Replace("SYSTEM.", "");
+            var normalizedType = Fieldtype.ToUpperInvariant().Replace("SYSTEM.", "");
             
             return normalizedType switch
             {
@@ -36,33 +36,33 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         /// <summary>
         /// Creates a basic EntityField with common defaults.
         /// </summary>
-        /// <param name="fieldName">Name of the field</param>
-        /// <param name="fieldType">Type of the field</param>
+        /// <param name="FieldName">Name of the field</param>
+        /// <param name="Fieldtype">Type of the field</param>
         /// <param name="allowNull">Whether the field allows null values</param>
         /// <param name="isKey">Whether the field is a primary key</param>
         /// <returns>A new EntityField with the specified properties</returns>
-        public static EntityField CreateBasicField(string fieldName, string fieldType, bool allowNull = true, bool isKey = false)
+        public static EntityField CreateBasicField(string FieldName, string Fieldtype, bool allowNull = true, bool isKey = false)
         {
             return new EntityField
             {
-                fieldname = fieldName,
-                fieldtype = fieldType,
+               FieldName = FieldName,
+                Fieldtype = Fieldtype,
                 AllowDBNull = allowNull,
                 IsKey = isKey,
                 IsRequired = !allowNull,
-                Size1 = GetDefaultSizeForType(fieldType),
-                fieldCategory = GetFieldCategoryForType(fieldType)
+                Size1 = GetDefaultSizeForType(Fieldtype),
+               FieldCategory = GetFieldCategoryForType(Fieldtype)
             };
         }
 
         /// <summary>
         /// Gets the default size for a field type.
         /// </summary>
-        /// <param name="fieldType">The field type</param>
+        /// <param name="Fieldtype">The field type</param>
         /// <returns>Default size for the field type</returns>
-        public static int GetDefaultSizeForType(string fieldType)
+        public static int GetDefaultSizeForType(string Fieldtype)
         {
-            var normalizedType = fieldType?.ToUpperInvariant() ?? "";
+            var normalizedType = Fieldtype?.ToUpperInvariant() ?? "";
             
             return normalizedType switch
             {
@@ -83,11 +83,11 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
         /// <summary>
         /// Gets the field category for a field type.
         /// </summary>
-        /// <param name="fieldType">The field type</param>
+        /// <param name="Fieldtype">The field type</param>
         /// <returns>DbFieldCategory for the field type</returns>
-        public static DbFieldCategory GetFieldCategoryForType(string fieldType)
+        public static DbFieldCategory GetFieldCategoryForType(string Fieldtype)
         {
-            var normalizedType = fieldType?.ToUpperInvariant() ?? "";
+            var normalizedType = Fieldtype?.ToUpperInvariant() ?? "";
             
             return normalizedType switch
             {

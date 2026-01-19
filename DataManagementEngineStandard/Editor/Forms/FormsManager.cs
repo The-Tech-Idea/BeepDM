@@ -462,15 +462,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Validates a specific field in a block
         /// </summary>
-        public bool ValidateField(string blockName, string fieldName, object value)
+        public bool ValidateField(string blockName, string FieldName, object value)
         {
             try
             {
-                return _eventManager.TriggerFieldValidation(blockName, fieldName, value);
+                return _eventManager.TriggerFieldValidation(blockName, FieldName, value);
             }
             catch (Exception ex)
             {
-                LogError($"Error validating field '{fieldName}' in block '{blockName}'", ex, blockName);
+                LogError($"Error validating field '{FieldName}' in block '{blockName}'", ex, blockName);
                 _eventManager.TriggerError(blockName, ex);
                 return false;
             }
@@ -514,25 +514,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Sets a field value on a record using reflection
         /// </summary>
-        public bool SetFieldValue(object record, string fieldName, object value)
+        public bool SetFieldValue(object record, string FieldName, object value)
         {
-            return _formsSimulationHelper.SetFieldValue(record, fieldName, value);
+            return _formsSimulationHelper.SetFieldValue(record, FieldName, value);
         }
 
         /// <summary>
         /// Gets a field value from a record using reflection
         /// </summary>
-        public object GetFieldValue(object record, string fieldName)
+        public object GetFieldValue(object record, string FieldName)
         {
-            return _formsSimulationHelper.GetFieldValue(record, fieldName);
+            return _formsSimulationHelper.GetFieldValue(record, FieldName);
         }
 
         /// <summary>
         /// Executes a sequence generator for a field
         /// </summary>
-        public bool ExecuteSequence(string blockName, object record, string fieldName, string sequenceName)
+        public bool ExecuteSequence(string blockName, object record, string FieldName, string sequenceName)
         {
-            return _formsSimulationHelper.ExecuteSequence(blockName, record, fieldName, sequenceName);
+            return _formsSimulationHelper.ExecuteSequence(blockName, record, FieldName, sequenceName);
         }
 
         #endregion

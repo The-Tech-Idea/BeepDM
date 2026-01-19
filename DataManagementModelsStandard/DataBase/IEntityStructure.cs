@@ -23,6 +23,7 @@ namespace TheTechIdea.Beep.DataBase
         int Id { get; set; }
         string DefaultChartType { get; set; }
         int ParentId { get; set; }
+        string PrimaryKeyString { get; set; }
         List<EntityField> PrimaryKeys { get; set; }
         List<RelationShipKeys> Relations { get; set; }
         List<EntityParameters> Parameters { get; set; }

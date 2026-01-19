@@ -166,12 +166,12 @@ namespace TheTechIdea.Beep.Editor.ETL
                 {
                     foreach (var field in srcStructure.Fields)
                     {
-                        if (!destStructure.Fields.Any(f => f.fieldname.Equals(field.fieldname, StringComparison.InvariantCultureIgnoreCase)))
+                        if (!destStructure.Fields.Any(f => f.FieldName.Equals(field.FieldName, StringComparison.InvariantCultureIgnoreCase)))
                         {
                             errorObject.Flag = Errors.Failed;
                             errorObject.Errors.Add(new ErrorsInfo
                             {
-                                Message = $"Field {field.fieldname} in source entity {srcEntity} does not exist in destination entity {destEntity}."
+                                Message = $"Field {field.FieldName} in source entity {srcEntity} does not exist in destination entity {destEntity}."
                             });
                         }
                     }

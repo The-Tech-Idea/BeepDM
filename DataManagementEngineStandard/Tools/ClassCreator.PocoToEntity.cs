@@ -383,7 +383,7 @@ namespace TheTechIdea.Beep.Tools
                 if (entity?.Fields != null)
                 {
                     entity.Fields = entity.Fields
-                        .Where(f => !IsNavigationProperty(efType, f.fieldname))
+                        .Where(f => !IsNavigationProperty(efType, f.FieldName))
                         .ToList();
                 }
 
@@ -442,7 +442,7 @@ namespace TheTechIdea.Beep.Tools
                 if (entity?.Fields != null)
                 {
                     entity.Fields = entity.Fields
-                        .Where(f => !IsNavigationProperty(efType, f.fieldname))
+                        .Where(f => !IsNavigationProperty(efType, f.FieldName))
                         .ToList();
                 }
 
@@ -507,11 +507,11 @@ namespace TheTechIdea.Beep.Tools
 
             foreach (var field in entity.Fields ?? new List<EntityField>())
             {
-                var csharpType = MapFieldTypeToCSHarpType(field.fieldtype);
-                var propertyName = _generationHelper.GenerateSafePropertyName(field.fieldname);
+                var csharpType = MapFieldtypeToCSHarpType(field.Fieldtype);
+                var propertyName = _generationHelper.GenerateSafePropertyName(field.FieldName);
                 
                 sb.AppendLine($"        /// <summary>");
-                sb.AppendLine($"        /// {field.fieldname}");
+                sb.AppendLine($"        /// {field.FieldName}");
                 sb.AppendLine($"        /// </summary>");
                 sb.AppendLine($"        public {csharpType} {propertyName} {{ get; set; }}");
                 sb.AppendLine();
@@ -524,12 +524,12 @@ namespace TheTechIdea.Beep.Tools
         /// <summary>
         /// Maps database field type to C# type
         /// </summary>
-        private string MapFieldTypeToCSHarpType(string fieldType)
+        private string MapFieldtypeToCSHarpType(string Fieldtype)
         {
-            if (string.IsNullOrEmpty(fieldType))
+            if (string.IsNullOrEmpty(Fieldtype))
                 return "string";
 
-            var lowerType = fieldType.ToLower();
+            var lowerType = Fieldtype.ToLower();
             
             if (lowerType.Contains("int"))
                 return "int";

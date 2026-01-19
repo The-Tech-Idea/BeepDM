@@ -94,41 +94,41 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers
 
         #endregion
 
-        #region DDL Operations (Create, Alter, Drop) - Level 1 Schema Operations
+        #region Ddl Operations (Create, Alter, Drop) - Level 1 Schema Operations
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(
             EntityStructure entity,
             string schemaName = null,
             DataSourceType? dataSourceType = null)
         {
-            return ("", false, "REST APIs do not support DDL operations like CREATE TABLE");
+            return ("", false, "REST APIs do not support Ddl operations like CREATE TABLE");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateDropTableSql(string tableName, string schemaName = null)
         {
-            return ("", false, "REST APIs do not support DDL operations like DROP TABLE");
+            return ("", false, "REST APIs do not support Ddl operations like DROP TABLE");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateTruncateTableSql(string tableName, string schemaName = null)
         {
-            return ("", false, "REST APIs do not support DDL operations like TRUNCATE TABLE");
+            return ("", false, "REST APIs do not support Ddl operations like TRUNCATE TABLE");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateIndexSql(
             string tableName,
@@ -136,52 +136,52 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers
             string[] columns,
             Dictionary<string, object> options = null)
         {
-            return ("", false, "REST APIs do not support DDL operations like CREATE INDEX");
+            return ("", false, "REST APIs do not support Ddl operations like CREATE INDEX");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateAddColumnSql(string tableName, EntityField column)
         {
-            return ("", false, "REST APIs do not support DDL operations like ADD COLUMN");
+            return ("", false, "REST APIs do not support Ddl operations like ADD COLUMN");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateAlterColumnSql(string tableName, string columnName, EntityField newColumn)
         {
-            return ("", false, "REST APIs do not support DDL operations like ALTER COLUMN");
+            return ("", false, "REST APIs do not support Ddl operations like ALTER COLUMN");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateDropColumnSql(string tableName, string columnName)
         {
-            return ("", false, "REST APIs do not support DDL operations like DROP COLUMN");
+            return ("", false, "REST APIs do not support Ddl operations like DROP COLUMN");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateRenameTableSql(string oldTableName, string newTableName)
         {
-            return ("", false, "REST APIs do not support DDL operations like RENAME TABLE");
+            return ("", false, "REST APIs do not support Ddl operations like RENAME TABLE");
         }
 
         /// <summary>
-        /// REST APIs typically don't support DDL operations.
-        /// Returns error indicating DDL is not supported.
+        /// REST APIs typically don't support Ddl operations.
+        /// Returns error indicating Ddl is not supported.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateRenameColumnSql(string tableName, string oldColumnName, string newColumnName)
         {
-            return ("", false, "REST APIs do not support DDL operations like RENAME COLUMN");
+            return ("", false, "REST APIs do not support Ddl operations like RENAME COLUMN");
         }
 
         #endregion

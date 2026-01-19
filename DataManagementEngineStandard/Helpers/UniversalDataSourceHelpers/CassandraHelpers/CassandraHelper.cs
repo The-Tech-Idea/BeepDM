@@ -117,7 +117,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers
 
         #endregion
 
-        #region DDL Operations (Create, Alter, Drop) - Level 1 Schema Operations
+        #region Ddl Operations (Create, Alter, Drop) - Level 1 Schema Operations
 
         /// <summary>
         /// Generates CQL to create a table from an entity structure.
@@ -139,18 +139,18 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers
 
                 foreach (var field in entity.Fields)
                 {
-                    // Convert fieldtype string to Type
-                    Type fieldClrType = Type.GetType(field.fieldtype) ?? typeof(string);
+                    // Convert Fieldtype string to Type
+                    Type fieldClrType = Type.GetType(field.Fieldtype) ?? typeof(string);
                     string cassandraType = MapClrTypeToDatasourceType(fieldClrType);
-                    columns.Add($"{QuoteIdentifier(field.fieldname)} {cassandraType}");
+                    columns.Add($"{QuoteIdentifier(field.FieldName)} {cassandraType}");
 
                     // Assume first field is partition key if not specified
                     if (partitionKeys.Count == 0)
-                        partitionKeys.Add(field.fieldname);
+                        partitionKeys.Add(field.FieldName);
 
                     // Add other fields as clustering keys if needed
                     if (fieldClrType == typeof(DateTime) && clusteringKeys.Count == 0)
-                        clusteringKeys.Add(field.fieldname);
+                        clusteringKeys.Add(field.FieldName);
                 }
 
                 string keyspace = schemaName ?? "default_keyspace";
@@ -253,9 +253,9 @@ CREATE TABLE IF NOT EXISTS {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableNam
                     return ("", false, "Invalid table name or column");
 
                 string keyspace = "default_keyspace"; // Would need to extract from tableName
-                Type columnClrType = Type.GetType(column.fieldtype) ?? typeof(string);
+                Type columnClrType = Type.GetType(column.Fieldtype) ?? typeof(string);
                 string cassandraType = MapClrTypeToDatasourceType(columnClrType);
-                string cql = $"ALTER TABLE {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableName)} ADD {QuoteIdentifier(column.fieldname)} {cassandraType};";
+                string cql = $"ALTER TABLE {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableName)} ADD {QuoteIdentifier(column.FieldName)} {cassandraType};";
 
                 return (cql, true, "");
             }
@@ -678,7 +678,7 @@ CREATE TABLE IF NOT EXISTS {QuoteIdentifier(keyspace)}.{QuoteIdentifier(tableNam
                 // Cassandra requires at least one partition key
                 bool hasPartitionKey = entity.Fields.Any(f =>
                 {
-                    Type fType = Type.GetType(f.fieldtype) ?? typeof(string);
+                    Type fType = Type.GetType(f.Fieldtype) ?? typeof(string);
                     return f.IsKey == true || f.IsAutoIncrement == true ||
                         fType == typeof(string) || fType == typeof(int) || fType == typeof(long);
                 });

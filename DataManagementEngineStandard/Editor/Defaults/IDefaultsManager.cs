@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Editor.Defaults
         static abstract IDefaultValueValidationHelper ValidationHelper { get; }
 
         static abstract object ApplyDefaultsToRecord(IDMEEditor editor, string dataSourceName, string entityName, object record, IPassedArgs parameters = null);
-        static abstract (IErrorsInfo validation, DefaultValue defaultValue) CreateDefaultValue(IDMEEditor editor, string fieldName, string value, string rule = null);
+        static abstract (IErrorsInfo validation, DefaultValue defaultValue) CreateDefaultValue(IDMEEditor editor, string FieldName, string value, string rule = null);
         static abstract List<DefaultValue> CreateDefaultValueTemplate(IDMEEditor editor, DefaultValueTemplateType templateType);
         static abstract string ExportDefaults(IDMEEditor editor, string dataSourceName);
         static abstract Dictionary<string, IEnumerable<string>> GetAvailableResolvers(IDMEEditor editor);
@@ -25,7 +25,7 @@ namespace TheTechIdea.Beep.Editor.Defaults
         static abstract void RegisterCustomResolver(IDMEEditor editor, IDefaultValueResolver resolver);
         static abstract IErrorsInfo RemoveColumnDefault(IDMEEditor editor, string dataSourceName, string entityName, string columnName);
         static abstract object ResolveDefaultValue(IDMEEditor editor, DefaultValue defaultValue, IPassedArgs parameters);
-        static abstract object ResolveDefaultValue(IDMEEditor editor, string dataSourceName, string fieldName, IPassedArgs parameters);
+        static abstract object ResolveDefaultValue(IDMEEditor editor, string dataSourceName, string FieldName, IPassedArgs parameters);
         static abstract IErrorsInfo SaveDefaults(IDMEEditor editor, List<DefaultValue> defaults, string dataSourceName);
         static abstract IErrorsInfo SetColumnDefault(IDMEEditor editor, string dataSourceName, string entityName, string columnName, string defaultValue, bool isRule = false);
         static abstract IErrorsInfo SetMultipleColumnDefaults(IDMEEditor editor, string dataSourceName, string entityName, Dictionary<string, (string value, bool isRule)> columnDefaults);

@@ -3056,7 +3056,7 @@
             <summary>
             Delete schema from storage
             </summary>
-            <param name="schemaId">ID of schema to delete</param>
+            <param name="schemaId">Id of schema to delete</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.CreateBackupAsync">
             <summary>
@@ -3472,7 +3472,7 @@
             </summary>
             <param name="editor">The DME Editor instance</param>
             <param name="dataSourceName">The name of the data source.</param>
-            <param name="fieldName">The name of the field to find the default for.</param>
+            <param name="FieldName">The name of the field to find the default for.</param>
             <param name="parameters">The parameters to pass to the rule, if applicable.</param>
             <returns>The resolved value.</returns>
         </member>
@@ -3490,7 +3490,7 @@
             Creates a new default value with validation
             </summary>
             <param name="editor">The DME Editor instance</param>
-            <param name="fieldName">Name of the field</param>
+            <param name="FieldName">Name of the field</param>
             <param name="value">Default value (can be null if rule is provided)</param>
             <param name="rule">Optional rule for dynamic value generation</param>
             <returns>Validation result and created default value</returns>
@@ -3878,7 +3878,7 @@
             <summary>
             Creates a default value with enhanced type detection and validation
             </summary>
-            <param name="fieldName">Name of the field</param>
+            <param name="FieldName">Name of the field</param>
             <param name="value">Static value (can be any type)</param>
             <param name="rule">Rule string</param>
             <param name="description">Optional description</param>
@@ -3978,14 +3978,14 @@
             Gets a specific default value by field name
             </summary>
             <param name="dataSourceName">Name of the data source</param>
-            <param name="fieldName">Name of the field</param>
+            <param name="FieldName">Name of the field</param>
             <returns>Default value or null if not found</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Defaults.Interfaces.IDefaultValueHelper.CreateDefaultValue(System.String,System.String,System.String)">
             <summary>
             Creates a new default value entry
             </summary>
-            <param name="fieldName">Field name</param>
+            <param name="FieldName">Field name</param>
             <param name="value">Default value</param>
             <param name="rule">Optional rule</param>
             <returns>New default value</returns>
@@ -4059,7 +4059,7 @@
             Validates field name for data source
             </summary>
             <param name="dataSourceName">Data source name</param>
-            <param name="fieldName">Field name</param>
+            <param name="FieldName">Field name</param>
             <returns>Validation result</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Defaults.Resolvers.BaseDefaultValueResolver">
@@ -4356,7 +4356,7 @@
             <summary>Generates an ETL script detail object based on the provided parameters.</summary>
             <param name="item">The entity structure object representing the source entity.</param>
             <param name="destSource">The name of the destination data source.</param>
-            <param name="scriptType">The type of DDL script.</param>
+            <param name="scriptType">The type of Ddl script.</param>
             <returns>An ETLScriptDet object representing the generated script.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ETL.ETLEditor.GetCreateEntityScript(TheTechIdea.Beep.IDataSource,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean)">
@@ -5726,34 +5726,34 @@
             <summary>
             Sets a field value in the current record using reflection
             </summary>
-            <param name="fieldName">Name of the field to set</param>
+            <param name="FieldName">Name of the field to set</param>
             <param name="value">Value to assign</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.DMLTriggerEventArgs.GetFieldValue(System.String)">
             <summary>
             Gets a field value from the current record using reflection
             </summary>
-            <param name="fieldName">Name of the field to get</param>
+            <param name="FieldName">Name of the field to get</param>
             <returns>Field value or null if not found</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.DMLTriggerEventArgs.SetCurrentDateTime(System.String)">
             <summary>
             Sets the current date/time to a field - common Oracle Forms pattern
             </summary>
-            <param name="fieldName">Name of the date field</param>
+            <param name="FieldName">Name of the date field</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.DMLTriggerEventArgs.SetCurrentUser(System.String,System.String)">
             <summary>
             Sets the current user to a field - common Oracle Forms pattern
             </summary>
-            <param name="fieldName">Name of the user field</param>
+            <param name="FieldName">Name of the user field</param>
             <param name="currentUser">Current user name</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.DMLTriggerEventArgs.IsFieldNullOrEmpty(System.String)">
             <summary>
             Checks if a field is null or empty
             </summary>
-            <param name="fieldName">Name of the field to check</param>
+            <param name="FieldName">Name of the field to check</param>
             <returns>True if field is null or empty</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.ErrorTriggerEventArgs">
@@ -6448,7 +6448,7 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTriggerEventArgs.#ctor(System.String,System.String,System.Object)">
             <summary>Initializes a new instance of the ValidationTriggerEventArgs class</summary>
             <param name="blockName">The name of the block</param>
-            <param name="fieldName">Optional field name being validated</param>
+            <param name="FieldName">Optional field name being validated</param>
             <param name="value">Optional value being validated</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTriggerEventArgs.AddValidationError(System.String)">
@@ -8872,14 +8872,14 @@
             <summary>
             Checks if defaults are configured for a specific field
             </summary>
-            <param name="fieldName">Name of the field to check</param>
+            <param name="FieldName">Name of the field to check</param>
             <returns>True if defaults exist for the field</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDefaultsHelper`1.GetDefaultForField(System.String)">
             <summary>
             Gets the default value configuration for a specific field
             </summary>
-            <param name="fieldName">Name of the field</param>
+            <param name="FieldName">Name of the field</param>
             <returns>Default value configuration or null if not found</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDefaultsHelper`1.ApplyInsertDefaults(`0)">
@@ -8926,7 +8926,7 @@
             </summary>
             <param name="entity">Entity to apply default to</param>
             <param name="property">Property to set</param>
-            <param name="fieldName">Field name for default lookup</param>
+            <param name="FieldName">Field name for default lookup</param>
             <param name="parameters">Parameters for default resolution</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDefaultsHelper`1.ApplyConditionalDefaults(`0,TheTechIdea.Beep.Editor.UOW.Interfaces.DefaultValueContext,System.Boolean)">
@@ -9175,14 +9175,14 @@
             <summary>
             Checks if defaults are configured for a specific field
             </summary>
-            <param name="fieldName">Name of the field to check</param>
+            <param name="FieldName">Name of the field to check</param>
             <returns>True if defaults exist for the field</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Interfaces.IUnitofWorkDefaults`1.GetDefaultForField(System.String)">
             <summary>
             Gets the default value configuration for a specific field
             </summary>
-            <param name="fieldName">Name of the field</param>
+            <param name="FieldName">Name of the field</param>
             <returns>Default value configuration or null if not found</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Interfaces.IUnitofWorkDefaults`1.ApplyInsertDefaults(`0)">
@@ -10724,7 +10724,7 @@
             <param name="DataSource">The IDataSource instance.</param>
             <param name="Entity">The EntityStructure instance.</param>
             <param name="record">The record object.</param>
-            <param name="fieldname">The name of the field to check.</param>
+            <param name="FieldName">The name of the field to check.</param>
             <param name="fldval">The value of the field to check.</param>
             <returns>True if the field value is not unique, otherwise false.</returns>
         </member>
@@ -10736,7 +10736,7 @@
             <param name="DataSource">The data source to check for the parent entity.</param>
             <param name="Entity">The structure of the entity.</param>
             <param name="record">The record object.</param>
-            <param name="fieldname">The name of the field.</param>
+            <param name="FieldName">The name of the field.</param>
             <param name="fldval">The value of the field.</param>
             <returns>True if the parent entity exists, otherwise false.</returns>
         </member>
@@ -13500,7 +13500,7 @@
         <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeFieldMappingHelper.GetDataTypeMappingForString(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the datatype mapping for a given class name, field type, entity field, and DME editor.</summary>
             <param name="className">The name of the class.</param>
-            <param name="fieldType">The type of the field.</param>
+            <param name="Fieldtype">The type of the field.</param>
             <param name="fld">The entity field.</param>
             <param name="DMEEditor">The DME editor.</param>
             <returns>The datatype mapping for the given parameters.</returns>
@@ -13538,7 +13538,7 @@
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The List of DataTypeMapping for DataSource.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeFieldMappingHelper.GetFieldTypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeFieldMappingHelper.GetFieldtypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>Gets the field type without conversion.</summary>
             <param name="DSname">The name of the data source.</param>
             <param name="fld">The entity field.</param>
@@ -14010,7 +14010,7 @@
             Gets the datatype mapping for a given class name, field type, entity field, and DME editor with caching.
             </summary>
             <param name="className">The name of the class.</param>
-            <param name="fieldType">The type of the field.</param>
+            <param name="Fieldtype">The type of the field.</param>
             <param name="fld">The entity field.</param>
             <param name="DMEEditor">The DME editor.</param>
             <returns>The datatype mapping for the given parameters.</returns>
@@ -14042,7 +14042,7 @@
             <param name="DMEEditor">The IDMEEditor instance used for accessing the data source.</param>
             <returns>The data type of the specified field.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeMappingLookup.GetFieldTypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeMappingLookup.GetFieldtypeWoConversion(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
             Gets the field type without conversion with enhanced caching and error handling.
             </summary>
@@ -14260,7 +14260,7 @@
             <param name="fld">The entity field.</param>
             <returns>A fallback .NET data type.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetFallbackFieldType(TheTechIdea.Beep.DataBase.EntityField)">
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelper.GetFallbackFieldtype(TheTechIdea.Beep.DataBase.EntityField)">
             <summary>
             Gets a fallback field type for database schema.
             </summary>
@@ -15612,7 +15612,7 @@
             <summary>
             Maps .NET data types to database-specific data types.
             </summary>
-            <param name="fieldType">The .NET field type</param>
+            <param name="Fieldtype">The .NET field type</param>
             <param name="databaseType">The target database type</param>
             <returns>Database-specific data type</returns>
         </member>
@@ -16514,8 +16514,8 @@
             <summary>
             Creates a basic EntityField with common defaults.
             </summary>
-            <param name="fieldName">Name of the field</param>
-            <param name="fieldType">Type of the field</param>
+            <param name="FieldName">Name of the field</param>
+            <param name="Fieldtype">Type of the field</param>
             <param name="allowNull">Whether the field allows null values</param>
             <param name="isKey">Whether the field is a primary key</param>
             <returns>A new EntityField with the specified properties</returns>
@@ -16545,7 +16545,7 @@
             <summary>
             Checks if a field type is numeric.
             </summary>
-            <param name="fieldType">The field type to check</param>
+            <param name="Fieldtype">The field type to check</param>
             <returns>True if numeric, false otherwise</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers.DatabaseEntityHelper.IsReservedKeyword(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
@@ -16560,14 +16560,14 @@
             <summary>
             Gets the default size for a field type.
             </summary>
-            <param name="fieldType">The field type</param>
+            <param name="Fieldtype">The field type</param>
             <returns>Default size for the field type</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers.DatabaseEntityHelper.GetFieldCategoryForType(System.String)">
             <summary>
             Gets the field category for a field type.
             </summary>
-            <param name="fieldType">The field type</param>
+            <param name="Fieldtype">The field type</param>
             <returns>DbFieldCategory for the field type</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers.DatabaseEntityNamingValidator">
@@ -16672,15 +16672,15 @@
             <summary>
             Checks if a field type is numeric.
             </summary>
-            <param name="fieldType">The field type to check</param>
+            <param name="Fieldtype">The field type to check</param>
             <returns>True if numeric, false otherwise</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers.DatabaseEntityTypeHelper.CreateBasicField(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
             Creates a basic EntityField with common defaults.
             </summary>
-            <param name="fieldName">Name of the field</param>
-            <param name="fieldType">Type of the field</param>
+            <param name="FieldName">Name of the field</param>
+            <param name="Fieldtype">Type of the field</param>
             <param name="allowNull">Whether the field allows null values</param>
             <param name="isKey">Whether the field is a primary key</param>
             <returns>A new EntityField with the specified properties</returns>
@@ -16689,14 +16689,14 @@
             <summary>
             Gets the default size for a field type.
             </summary>
-            <param name="fieldType">The field type</param>
+            <param name="Fieldtype">The field type</param>
             <returns>Default size for the field type</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers.DatabaseEntityTypeHelper.GetFieldCategoryForType(System.String)">
             <summary>
             Gets the field category for a field type.
             </summary>
-            <param name="fieldType">The field type</param>
+            <param name="Fieldtype">The field type</param>
             <returns>DbFieldCategory for the field type</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers.DatabaseEntityValidator">
@@ -17973,7 +17973,7 @@
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
             <summary>
             MongoDB collections are created implicitly when first document is inserted.
-            This method acknowledges that DDL is not needed for collection creation.
+            This method acknowledges that Ddl is not needed for collection creation.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers.MongoDBHelper.GenerateDropTableSql(System.String,System.String)">
@@ -18132,7 +18132,7 @@
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper">
             <summary>
-            Partial class for RdbmsHelper providing constraint and relationship DDL operations
+            Partial class for RdbmsHelper providing constraint and relationship Ddl operations
             (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK constraints).
             
             Each method generates database-agnostic SQL, then adapts for specific RDBMS syntax.
@@ -18147,7 +18147,7 @@
             
             This implementation delegates to the legacy helper classes:
             - DatabaseSchemaQueryHelper - Schema and metadata queries
-            - DatabaseObjectCreationHelper - DDL operations
+            - DatabaseObjectCreationHelper - Ddl operations
             - DatabaseDMLHelper - DML operations (INSERT, UPDATE, DELETE, SELECT)
             - DatabaseEntityHelper - Entity analysis and validation
             </summary>
@@ -18232,25 +18232,25 @@
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
             <summary>
             Generates CREATE TABLE SQL from an EntityStructure.
-            Implementation of IDataSourceHelper DDL create table.
+            Implementation of IDataSourceHelper Ddl create table.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropTableSql(System.String,System.String)">
             <summary>
             Generates DROP TABLE SQL.
-            Implementation of IDataSourceHelper DDL drop table.
+            Implementation of IDataSourceHelper Ddl drop table.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateTruncateTableSql(System.String,System.String)">
             <summary>
             Generates TRUNCATE TABLE SQL.
-            Implementation of IDataSourceHelper DDL truncate table.
+            Implementation of IDataSourceHelper Ddl truncate table.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>
             Generates CREATE INDEX SQL.
-            Implementation of IDataSourceHelper DDL create index.
+            Implementation of IDataSourceHelper Ddl create index.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateInsertSql(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
@@ -18630,56 +18630,56 @@
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateCreateTableSql(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType})">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateDropTableSql(System.String,System.String)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateTruncateTableSql(System.String,System.String)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateCreateIndexSql(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAddColumnSql(System.String,TheTechIdea.Beep.DataBase.EntityField)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateDropColumnSql(System.String,System.String)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateRenameTableSql(System.String,System.String)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateRenameColumnSql(System.String,System.String,System.String)">
             <summary>
-            REST APIs typically don't support DDL operations.
-            Returns error indicating DDL is not supported.
+            REST APIs typically don't support Ddl operations.
+            Returns error indicating Ddl is not supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers.RestApiHelper.GenerateAddPrimaryKeySql(System.String,System.String[])">
@@ -20223,7 +20223,7 @@
             Generates Entity class code for an EntityStructure
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.MapFieldTypeToCSHarpType(System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.MapFieldtypeToCSHarpType(System.String)">
             <summary>
             Maps database field type to C# type
             </summary>
@@ -20352,7 +20352,7 @@
             Determines if a type is an integral type
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.Helpers.ClassGenerationHelper.MapFieldTypeToSqlType(System.String)">
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.ClassGenerationHelper.MapFieldtypeToSqlType(System.String)">
             <summary>
             Maps C# field types to SQL Server types
             </summary>

@@ -513,7 +513,7 @@ namespace TheTechIdea.Beep.Utils
             for (int i = 0; i < entity.Fields.Count; i++)
             {
                 EntityField prop = entity.Fields[i];
-                table.Columns.Add(prop.fieldname, Type.GetType(prop.fieldtype));
+                table.Columns.Add(prop.FieldName, Type.GetType(prop.Fieldtype));
             }
             return table;
         }
@@ -664,7 +664,7 @@ namespace TheTechIdea.Beep.Utils
 
         //    for (int i = 0; i <= enttype.Fields.Count - 1; i++)
         //    {
-        //        properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+        //        properties.Add(enttype.Fields[i].FieldName, type.GetProperty(enttype.Fields[i].FieldName));
         //    }
         //    foreach (DataRow row in dt.Rows)
         //    {
@@ -679,11 +679,11 @@ namespace TheTechIdea.Beep.Utils
         //        {
         //            try
         //            {
-        //                f = enttype.Fields[i].fieldname + "-" + enttype.Fields[i].fieldtype + "-" + row[enttype.Fields[i].fieldname];
+        //                f = enttype.Fields[i].FieldName + "-" + enttype.Fields[i].Fieldtype + "-" + row[enttype.Fields[i].FieldName];
         //                try
         //                {
-        //                    v = Convert.ChangeType(row[enttype.Fields[i].fieldname], Type.GetType(enttype.Fields[i].fieldtype));
-        //                    if ((row[enttype.Fields[i].fieldname] == null || row[enttype.Fields[i].fieldname] == "")) //&& (v.GetType().ToString()!="System.String")
+        //                    v = Convert.ChangeType(row[enttype.Fields[i].FieldName], Type.GetType(enttype.Fields[i].Fieldtype));
+        //                    if ((row[enttype.Fields[i].FieldName] == null || row[enttype.Fields[i].FieldName] == "")) //&& (v.GetType().ToString()!="System.String")
         //                    {
         //                        v = null;
         //                    }
@@ -695,10 +695,10 @@ namespace TheTechIdea.Beep.Utils
         //                    v = null;
         //                    //Logger.WriteLog($"Error in Creating Record or Setting Value." + f);
         //                }
-        //                accessor[x, enttype.Fields[i].fieldname] = v;
-        //                //Dynamic.InvokeSet(x, enttype.Fields[i].fieldname, v);
-        //                //properties[enttype.Fields[i].fieldname].SetValue(x, v, null);
-        //                //  type.GetProperty(enttype.Fields[i].fieldname).SetValue(x, v, null);
+        //                accessor[x, enttype.Fields[i].FieldName] = v;
+        //                //Dynamic.InvokeSet(x, enttype.Fields[i].FieldName, v);
+        //                //properties[enttype.Fields[i].FieldName].SetValue(x, v, null);
+        //                //  type.GetProperty(enttype.Fields[i].FieldName).SetValue(x, v, null);
         //                // Logger.WriteLog($"Creating Field and Value." + f);
         //            }
         //            catch (Exception ex)
@@ -737,10 +737,10 @@ namespace TheTechIdea.Beep.Utils
             // Initialize properties dictionary based on EntityStructure
             foreach (var field in enttype.Fields)
             {
-                PropertyInfo prop = type.GetProperty(field.fieldname, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                PropertyInfo prop = type.GetProperty(field.FieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (prop != null)
                 {
-                    properties.Add(field.fieldname.ToLower(), prop);
+                    properties.Add(field.FieldName.ToLower(), prop);
                 }
             }
 
@@ -754,7 +754,7 @@ namespace TheTechIdea.Beep.Utils
                     if (row[item.ColumnName] != DBNull.Value && properties.ContainsKey(columnName))
                     {
                         string stringValue = row[item.ColumnName].ToString();
-                        Type targetType = Type.GetType(enttype.Fields.FirstOrDefault(p => p.fieldname.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase))?.fieldtype);
+                        Type targetType = Type.GetType(enttype.Fields.FirstOrDefault(p => p.FieldName.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase))?.Fieldtype);
                         var convertedValue = Convert.ChangeType(row[item.ColumnName], targetType);
                         if (!string.IsNullOrWhiteSpace(stringValue))
                         {
@@ -778,7 +778,7 @@ namespace TheTechIdea.Beep.Utils
           
             for (int i = 0; i <= enttype.Fields.Count - 1; i++)
             {
-                properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+                properties.Add(enttype.Fields[i].FieldName, type.GetProperty(enttype.Fields[i].FieldName));
             }
             foreach (DataRow row in dt.Rows)
             {
@@ -790,7 +790,7 @@ namespace TheTechIdea.Beep.Utils
                     if (row[item.ColumnName] != DBNull.Value)
                     {
                         string st = row[item.ColumnName].ToString();
-                        Type tp = Type.GetType(enttype.Fields.Where(p => p.fieldname.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().fieldtype);
+                        Type tp = Type.GetType(enttype.Fields.Where(p => p.FieldName.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().Fieldtype);
                         var v = Convert.ChangeType(row[item.ColumnName],tp);
                         if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
                         {
@@ -813,8 +813,8 @@ namespace TheTechIdea.Beep.Utils
             {
                 EntityField field = new EntityField();
                 field.EntityName = dt.TableName;
-                field.fieldname=item.ColumnName;
-                field.fieldtype = item.DataType.ToString();
+                field.FieldName=item.ColumnName;
+                field.Fieldtype = item.DataType.ToString();
                 field = SetField(item, field);
                 flds.Add(field);
 
@@ -832,7 +832,7 @@ namespace TheTechIdea.Beep.Utils
             }
             //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
             //{
-            //    properties.Add(enttype.Fields[i].fieldname, type.GetProperty(enttype.Fields[i].fieldname));
+            //    properties.Add(enttype.Fields[i].FieldName, type.GetProperty(enttype.Fields[i].FieldName));
             //}
             //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
             //{}
@@ -979,8 +979,8 @@ namespace TheTechIdea.Beep.Utils
                 {
                     EntityField field = new EntityField
                     {
-                        fieldname = propInfo.Name,
-                        fieldtype = propInfo.PropertyType.FullName
+                       FieldName = propInfo.Name,
+                        Fieldtype = propInfo.PropertyType.FullName
                     };
 
                     // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
@@ -1016,8 +1016,8 @@ namespace TheTechIdea.Beep.Utils
             {
                 EntityField field = new EntityField
                 {
-                    fieldname = propInfo.Name,
-                    fieldtype = propInfo.PropertyType.ToString(),
+                   FieldName = propInfo.Name,
+                    Fieldtype = propInfo.PropertyType.ToString(),
                     // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
                     // might need to be inferred or set to default values as they are not directly available from PropertyInfo
                 };
@@ -1120,9 +1120,9 @@ namespace TheTechIdea.Beep.Utils
             }
             EntityField field = new EntityField
             {
-                fieldname = propInfo.Name,
-                fieldtype = propInfo.PropertyType.FullName,
-                fieldCategory = fldcat
+               FieldName = propInfo.Name,
+                Fieldtype = propInfo.PropertyType.FullName,
+               FieldCategory = fldcat
             };
             // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
             // might not be directly available or applicable for every property type.
@@ -1212,9 +1212,9 @@ namespace TheTechIdea.Beep.Utils
             EntityField field = new EntityField
             {
                 EntityName=col.Table.TableName,
-                fieldname = col.ColumnName,
-                fieldtype = col.DataType.ToString(),
-                fieldCategory = fldcat,
+               FieldName = col.ColumnName,
+                Fieldtype = col.DataType.ToString(),
+               FieldCategory = fldcat,
                 ValueRetrievedFromParent = false,
                 FieldIndex = col.Ordinal
 
@@ -1302,9 +1302,9 @@ namespace TheTechIdea.Beep.Utils
             }
             EntityField field = new EntityField
             {
-                fieldname = propInfo.Name,
-                fieldtype = propInfo.PropertyType.FullName,
-                fieldCategory = fldcat
+               FieldName = propInfo.Name,
+                Fieldtype = propInfo.PropertyType.FullName,
+               FieldCategory = fldcat
             };
             // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
             // might not be directly available or applicable for every property type.
@@ -1337,50 +1337,50 @@ namespace TheTechIdea.Beep.Utils
                     EntityField x = new EntityField();
                     try
                     {
-                        x.fieldname = item.ColumnName;
-                        x.fieldtype = item.DataType.ToString(); //"ColumnSize"
-                        DbFieldCategory fieldCategory = DbFieldCategory.String;
+                        x.FieldName = item.ColumnName;
+                        x.Fieldtype = item.DataType.ToString(); //"ColumnSize"
+                        x.FieldCategory = DbFieldCategory.String;
                         if (item.DataType == typeof(string))
                         {
-                            fieldCategory = DbFieldCategory.String;
+                            x.FieldCategory = DbFieldCategory.String;
                         }
                         else if (item.DataType == typeof(int) || item.DataType == typeof(long) || item.DataType == typeof(float) || item.DataType == typeof(double) || item.DataType == typeof(decimal))
                         {
-                            fieldCategory = DbFieldCategory.Numeric;
+                            x.FieldCategory = DbFieldCategory.Numeric;
                         }
                         else if (item.DataType == typeof(DateTime))
                         {
-                            fieldCategory = DbFieldCategory.Date;
+                            x.FieldCategory = DbFieldCategory.Date;
                         }
                         else if (item.DataType == typeof(bool))
                         {
-                            fieldCategory = DbFieldCategory.Boolean;
+                            x.FieldCategory = DbFieldCategory.Boolean;
                         }
                         else if (item.DataType == typeof(byte[]))
                         {
-                            fieldCategory = DbFieldCategory.Binary;
+                            x.FieldCategory = DbFieldCategory.Binary;
                         }
                         else if (item.DataType == typeof(Guid))
                         {
-                            fieldCategory = DbFieldCategory.Guid;
+                            x.FieldCategory = DbFieldCategory.Guid;
                         }
                         else if (item.DataType == typeof(JsonDocument))
                         {
-                            fieldCategory = DbFieldCategory.Json;
+                            x.FieldCategory = DbFieldCategory.Json;
                         }
                         else if (item.DataType == typeof(XmlDocument))
                         {
-                            fieldCategory = DbFieldCategory.Xml;
+                            x.FieldCategory = DbFieldCategory.Xml;
                         }
                         else if (item.DataType == typeof(decimal))
                         {
-                            fieldCategory = DbFieldCategory.Currency;
+                            x.FieldCategory = DbFieldCategory.Currency;
                         }
                         else if (item.DataType.IsEnum)
                         {
-                            fieldCategory = DbFieldCategory.Enum;
+                            x.FieldCategory = DbFieldCategory.Enum;
                         }
-                        x.fieldCategory = fieldCategory;
+                       
                         x.Size1 = item.MaxLength;
                         try
                         {
@@ -1434,12 +1434,12 @@ namespace TheTechIdea.Beep.Utils
                 var entityInstance = Activator.CreateInstance(enttype);
                 foreach (EntityField col in ent.Fields)
                 {
-                    PropertyInfo propertyInfo = entityInstance.GetType().GetProperty(col.fieldname);
-                    if (propertyInfo != null && dr[col.fieldname] != DBNull.Value)
+                    PropertyInfo propertyInfo = entityInstance.GetType().GetProperty(col.FieldName);
+                    if (propertyInfo != null && dr[col.FieldName] != DBNull.Value)
                     {
                         try
                         {
-                            object value = Convert.ChangeType(dr[col.fieldname], propertyInfo.PropertyType);
+                            object value = Convert.ChangeType(dr[col.FieldName], propertyInfo.PropertyType);
                             propertyInfo.SetValue(entityInstance, value);
                         }
                         catch (Exception ex)
@@ -1464,7 +1464,7 @@ namespace TheTechIdea.Beep.Utils
                 var entityInstance = Activator.CreateInstance(enttype);
                 foreach (EntityField col in ent.Fields)
                 {
-                    PropertyInfo propertyInfo = entityInstance.GetType().GetProperty(col.fieldname);
+                    PropertyInfo propertyInfo = entityInstance.GetType().GetProperty(col.FieldName);
                     if (propertyInfo != null)
                     {
                         var defaultValue = propertyInfo.PropertyType.IsValueType ? Activator.CreateInstance(propertyInfo.PropertyType) : null;
@@ -1482,8 +1482,8 @@ namespace TheTechIdea.Beep.Utils
             DataRow dr;
             foreach (EntityField col in ent.Fields)
             {
-                DataColumn co=dt.Columns.Add(col.fieldname.ToUpper());
-                co.DataType = Type.GetType(col.fieldtype);
+                DataColumn co=dt.Columns.Add(col.FieldName.ToUpper());
+                co.DataType = Type.GetType(col.Fieldtype);
 
             }
             
@@ -1529,50 +1529,50 @@ namespace TheTechIdea.Beep.Utils
             foreach (DataColumn item in dr.Table.Columns)
             {
                 EntityField f = new EntityField();
-                f.fieldname = item.ColumnName;
-                f.fieldtype = item.DataType.FullName;
-                DbFieldCategory fieldCategory = DbFieldCategory.String;
+                f.FieldName = item.ColumnName;
+                f.Fieldtype = item.DataType.FullName;
+                f.FieldCategory = DbFieldCategory.String;
                 if (item.DataType == typeof(string))
                 {
-                    fieldCategory = DbFieldCategory.String;
+                    f.FieldCategory = DbFieldCategory.String;
                 }
                 else if (item.DataType == typeof(int) || item.DataType == typeof(long) || item.DataType == typeof(float) || item.DataType == typeof(double) || item.DataType == typeof(decimal))
                 {
-                    fieldCategory = DbFieldCategory.Numeric;
+                    f.FieldCategory = DbFieldCategory.Numeric;
                 }
                 else if (item.DataType == typeof(DateTime))
                 {
-                    fieldCategory = DbFieldCategory.Date;
+                    f.FieldCategory = DbFieldCategory.Date;
                 }
                 else if (item.DataType == typeof(bool))
                 {
-                    fieldCategory = DbFieldCategory.Boolean;
+                    f.FieldCategory = DbFieldCategory.Boolean;
                 }
                 else if (item.DataType == typeof(byte[]))
                 {
-                    fieldCategory = DbFieldCategory.Binary;
+                    f.FieldCategory = DbFieldCategory.Binary;
                 }
                 else if (item.DataType == typeof(Guid))
                 {
-                    fieldCategory = DbFieldCategory.Guid;
+                    f.FieldCategory = DbFieldCategory.Guid;
                 }
                 else if (item.DataType == typeof(JsonDocument))
                 {
-                    fieldCategory = DbFieldCategory.Json;
+                    f.FieldCategory = DbFieldCategory.Json;
                 }
                 else if (item.DataType == typeof(XmlDocument))
                 {
-                    fieldCategory = DbFieldCategory.Xml;
+                    f.FieldCategory = DbFieldCategory.Xml;
                 }
                 else if (item.DataType == typeof(decimal))
                 {
-                    fieldCategory = DbFieldCategory.Currency;
+                    f.FieldCategory = DbFieldCategory.Currency;
                 }
                 else if (item.DataType.IsEnum)
                 {
-                    fieldCategory = DbFieldCategory.Enum;
+                    f.FieldCategory = DbFieldCategory.Enum;
                 }
-                f.fieldCategory = fieldCategory;
+              
 
                 try
                 {
@@ -1647,11 +1647,11 @@ namespace TheTechIdea.Beep.Utils
                 {
                     try
                     {
-                        PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+                        PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.FieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
 
                         //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
                         //{
-                        PropertyInfo PropAInfo = enttype.GetProperty(col.fieldname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+                        PropertyInfo PropAInfo = enttype.GetProperty(col.FieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
                         if (GetPropAInfo != null && PropAInfo !=null)
                         {
                             result = GetPropAInfo.GetValue(UploadDataRow);
@@ -1671,7 +1671,7 @@ namespace TheTechIdea.Beep.Utils
                     }
                     //if (result != null && result != System.DBNull.Value)
                     //{
-                    //    if (col.fieldtype.Contains("Date"))
+                    //    if (col.Fieldtype.Contains("Date"))
                     //    {
 
                     //        DateTime? dt = (DateTime)result;
@@ -1683,7 +1683,7 @@ namespace TheTechIdea.Beep.Utils
                     //    }
                     //}
 
-                    dr[col.fieldname] = result;
+                    dr[col.FieldName] = result;
                 }
             }
             return dr;
@@ -1712,9 +1712,9 @@ namespace TheTechIdea.Beep.Utils
 
 
         }
-        public object GetFieldValueFromObject(string fieldname, object sourceobj)
+        public object GetFieldValueFromObject(string FieldName, object sourceobj)
         {
-            PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(fieldname);
+            PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(FieldName);
             return SrcPropAInfo.GetValue(sourceobj, null);
 
         }
@@ -1771,11 +1771,11 @@ namespace TheTechIdea.Beep.Utils
                 return typeof(object);
             return null;
         }
-        public IErrorsInfo SetFieldValueFromObject(string fieldname, object sourceobj, object value)
+        public IErrorsInfo SetFieldValueFromObject(string FieldName, object sourceobj, object value)
         {
             try
             {
-                PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(fieldname);
+                PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(FieldName);
                 //dynamic v = Convert.ChangeType(value, SrcPropAInfo.PropertyType);
                 int v;
                 string vs;

@@ -138,8 +138,8 @@ namespace TheTechIdea.Beep.Report
                     try
                     {
 
-                        x.fieldname = item.ColumnName;
-                        x.fieldtype = item.DataType.ToString(); //"ColumnSize"
+                        x.FieldName = item.ColumnName;
+                        x.Fieldtype = item.DataType.ToString(); //"ColumnSize"
                         x.Size1 = item.MaxLength;
                         try
                         {

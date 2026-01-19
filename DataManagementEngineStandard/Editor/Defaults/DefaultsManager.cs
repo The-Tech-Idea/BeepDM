@@ -180,15 +180,15 @@ namespace TheTechIdea.Beep.Editor.Defaults
         /// </summary>
         /// <param name="editor">The DME Editor instance</param>
         /// <param name="dataSourceName">The name of the data source.</param>
-        /// <param name="fieldName">The name of the field to find the default for.</param>
+        /// <param name="FieldName">The name of the field to find the default for.</param>
         /// <param name="parameters">The parameters to pass to the rule, if applicable.</param>
         /// <returns>The resolved value.</returns>
-        public static object ResolveDefaultValue(IDMEEditor editor, string dataSourceName, string fieldName, IPassedArgs parameters)
+        public static object ResolveDefaultValue(IDMEEditor editor, string dataSourceName, string FieldName, IPassedArgs parameters)
         {
             EnsureInitialized(editor);
 
             // Get the DefaultValue for the specified field name
-            var defaultValue = _defaultValueHelper.GetDefaultForField(dataSourceName, fieldName);
+            var defaultValue = _defaultValueHelper.GetDefaultForField(dataSourceName, FieldName);
             if (defaultValue == null)
                 return null;
 
@@ -217,16 +217,16 @@ namespace TheTechIdea.Beep.Editor.Defaults
         /// Creates a new default value with validation
         /// </summary>
         /// <param name="editor">The DME Editor instance</param>
-        /// <param name="fieldName">Name of the field</param>
+        /// <param name="FieldName">Name of the field</param>
         /// <param name="value">Default value (can be null if rule is provided)</param>
         /// <param name="rule">Optional rule for dynamic value generation</param>
         /// <returns>Validation result and created default value</returns>
         public static (IErrorsInfo validation, DefaultValue defaultValue) CreateDefaultValue(
-            IDMEEditor editor, string fieldName, string value, string rule = null)
+            IDMEEditor editor, string FieldName, string value, string rule = null)
         {
             EnsureInitialized(editor);
 
-            var defaultValue = _defaultValueHelper.CreateDefaultValue(fieldName, value, rule);
+            var defaultValue = _defaultValueHelper.CreateDefaultValue(FieldName, value, rule);
             var validation = _validationHelper.ValidateDefaultValue(defaultValue);
 
             return (validation, defaultValue);

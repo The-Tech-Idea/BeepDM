@@ -13,6 +13,7 @@ namespace TheTechIdea.Beep.WebAPI
     /// </summary>
     public class WebAPIConnectionProperties : IConnectionProperties
     {
+        public List<string> Regions { get; set; } = new List<string>();
         #region Core Connection Properties
 
         /// <summary>

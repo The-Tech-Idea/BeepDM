@@ -45,11 +45,11 @@ namespace TheTechIdea.Beep.Tools
                 foreach (var field in entity.Fields)
                 {
                     // Convert .NET type to appropriate database type if needed
-                    var netType = Type.GetType(field.fieldtype);
+                    var netType = Type.GetType(field.Fieldtype);
                     if (netType != null)
                     {
                         // Use DataTypesHelper to get proper field category
-                        field.fieldCategory = EntitiesExtensions.GetFieldCategory(netType);
+                        field.FieldCategory = EntitiesExtensions.GetFieldCategory(netType);
                     }
                 }
             }
@@ -292,22 +292,22 @@ namespace TheTechIdea.Beep.Tools
                         var netType = DMEEditor.typesHelper.GetDataType(dataSourceName, field);
                         if (!string.IsNullOrEmpty(netType))
                         {
-                            field.fieldtype = netType;
+                            field.Fieldtype = netType;
                         }
 
                         // Get field category if not set
-                        if (field.fieldCategory == DbFieldCategory.String)
+                        if (field.FieldCategory == DbFieldCategory.String)
                         {
-                            var type = Type.GetType(field.fieldtype);
+                            var type = Type.GetType(field.Fieldtype);
                             if (type != null)
                             {
-                                field.fieldCategory = EntitiesExtensions.GetFieldCategory(type);
+                                field.FieldCategory = EntitiesExtensions.GetFieldCategory(type);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        LogMessage($"Warning: Could not map type for field {field.fieldname}: {ex.Message}", Errors.Warning);
+                        LogMessage($"Warning: Could not map type for field {field.FieldName}: {ex.Message}", Errors.Warning);
                     }
                 }
             }

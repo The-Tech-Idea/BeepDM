@@ -86,7 +86,7 @@ namespace TheTechIdea.Beep
                             {
                                 foreach (EntityField fld in Entity.Fields)
                                 {
-                                    var fldval = DMEEditor.Utilfunction.GetFieldValueFromObject(fld.fieldname, record);
+                                    var fldval = DMEEditor.Utilfunction.GetFieldValueFromObject(fld.FieldName, record);
                                     if (fld.AllowDBNull == false)
                                     {
 
@@ -95,13 +95,13 @@ namespace TheTechIdea.Beep
                                     }
                                     if (fld.IsUnique)
                                     {
-                                        retval = TrueifNotUnique(DMEEditor, DataSource, Entity, record, fld.fieldname, fldval);
+                                        retval = TrueifNotUnique(DMEEditor, DataSource, Entity, record, fld.FieldName, fldval);
 
 
                                     }
                                     if (fld.ValueRetrievedFromParent)
                                     {
-                                        retval = TrueifNotUnique(DMEEditor, DataSource, Entity, record, fld.fieldname, fldval);
+                                        retval = TrueifNotUnique(DMEEditor, DataSource, Entity, record, fld.FieldName, fldval);
                                     }
                                 }
 
@@ -136,10 +136,10 @@ namespace TheTechIdea.Beep
         /// <param name="DataSource">The IDataSource instance.</param>
         /// <param name="Entity">The EntityStructure instance.</param>
         /// <param name="record">The record object.</param>
-        /// <param name="fieldname">The name of the field to check.</param>
+        /// <param name="FieldName">The name of the field to check.</param>
         /// <param name="fldval">The value of the field to check.</param>
         /// <returns>True if the field value is not unique, otherwise false.</returns>
-        public static EntityValidatorMesseges TrueifNotUnique(IDMEEditor DMEEditor, IDataSource DataSource, EntityStructure Entity, object record, string fieldname, object fldval)
+        public static EntityValidatorMesseges TrueifNotUnique(IDMEEditor DMEEditor, IDataSource DataSource, EntityStructure Entity, object record, string FieldName, object fldval)
         {
 
 
@@ -166,11 +166,11 @@ namespace TheTechIdea.Beep
                                 {
                                     if (int.TryParse(strval, out intval))
                                     {
-                                        cnt = (int)DataSource.GetScalar($"select count(*)  from {Entity.EntityName} where {fieldname}={intval}");
+                                        cnt = (int)DataSource.GetScalar($"select count(*)  from {Entity.EntityName} where {FieldName}={intval}");
                                     }
                                     else
                                     {
-                                        cnt = (int)DataSource.GetScalar($"select count(*)  from {Entity.EntityName} where {fieldname}='{strval}'");
+                                        cnt = (int)DataSource.GetScalar($"select count(*)  from {Entity.EntityName} where {FieldName}='{strval}'");
                                     }
                                     if (cnt == 0)
                                     {
@@ -199,10 +199,10 @@ namespace TheTechIdea.Beep
         /// <param name="DataSource">The data source to check for the parent entity.</param>
         /// <param name="Entity">The structure of the entity.</param>
         /// <param name="record">The record object.</param>
-        /// <param name="fieldname">The name of the field.</param>
+        /// <param name="FieldName">The name of the field.</param>
         /// <param name="fldval">The value of the field.</param>
         /// <returns>True if the parent entity exists, otherwise false.</returns>
-        public static EntityValidatorMesseges TrueifParentExist(IDMEEditor DMEEditor, IDataSource DataSource, EntityStructure Entity, object record, string fieldname, object fldval)
+        public static EntityValidatorMesseges TrueifParentExist(IDMEEditor DMEEditor, IDataSource DataSource, EntityStructure Entity, object record, string FieldName, object fldval)
         {
 
 
@@ -230,7 +230,7 @@ namespace TheTechIdea.Beep
                                 Entity = DataSource.GetEntityStructure(Entity.EntityName, false);
                                 if (Entity != null)
                                 {
-                                    List<RelationShipKeys> rels = Entity.Relations.Where(p => p.EntityColumnID == fieldname).ToList();
+                                    List<RelationShipKeys> rels = Entity.Relations.Where(p => p.EntityColumnID == FieldName).ToList();
                                     if (rels.Count > 0)
                                     {
                                         foreach (RelationShipKeys rel in rels)
@@ -323,7 +323,7 @@ namespace TheTechIdea.Beep
                 {
                     results.Add(new ComparisonOutput
                     {
-                        FieldName = "DataSource",
+                       FieldName = "DataSource",
                         SourceDetail = sourceDataSource?.Category.ToString() ?? "NULL",
                         TargetDetail = targetDataSource?.Category.ToString() ?? "NULL",
                         Issue = "One or both data sources are null"
@@ -339,7 +339,7 @@ namespace TheTechIdea.Beep
                 {
                     results.Add(new ComparisonOutput
                     {
-                        FieldName = "EntityStructure",
+                       FieldName = "EntityStructure",
                         SourceDetail = sourceEntity != null ? sourceEntityName : "Not Found",
                         TargetDetail = targetEntity != null ? targetEntityName : "Not Found",
                         Issue = "Entity structure not found"
@@ -357,7 +357,7 @@ namespace TheTechIdea.Beep
             {
                 results.Add(new ComparisonOutput
                 {
-                    FieldName = "Exception",
+                   FieldName = "Exception",
                     SourceDetail = "Error",
                     TargetDetail = "Error",
                     Issue = ex.Message
@@ -372,21 +372,21 @@ namespace TheTechIdea.Beep
         /// </summary>
         private static void CompareFieldsToList(EntityStructure sourceEntity, EntityStructure targetEntity, List<ComparisonOutput> results)
         {
-            var sourceFields = sourceEntity.Fields.ToDictionary(f => f.fieldname.ToLower());
-            var targetFields = targetEntity.Fields.ToDictionary(f => f.fieldname.ToLower());
+            var sourceFields = sourceEntity.Fields.ToDictionary(f => f.FieldName.ToLower());
+            var targetFields = targetEntity.Fields.ToDictionary(f => f.FieldName.ToLower());
 
             foreach (var sourceField in sourceFields)
             {
                 if (targetFields.TryGetValue(sourceField.Key, out var targetField))
                 {
                     // Check data types
-                    if (!string.Equals(sourceField.Value.fieldtype, targetField.fieldtype, StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(sourceField.Value.Fieldtype, targetField.Fieldtype, StringComparison.OrdinalIgnoreCase))
                     {
                         results.Add(new ComparisonOutput
                         {
-                            FieldName = sourceField.Value.fieldname,
-                            SourceDetail = sourceField.Value.fieldtype,
-                            TargetDetail = targetField.fieldtype,
+                           FieldName = sourceField.Value.FieldName,
+                            SourceDetail = sourceField.Value.Fieldtype,
+                            TargetDetail = targetField.Fieldtype,
                             Issue = "Type Mismatch"
                         });
                     }
@@ -396,7 +396,7 @@ namespace TheTechIdea.Beep
                     {
                         results.Add(new ComparisonOutput
                         {
-                            FieldName = sourceField.Value.fieldname,
+                           FieldName = sourceField.Value.FieldName,
                             SourceDetail = sourceField.Value.AllowDBNull.ToString(),
                             TargetDetail = targetField.AllowDBNull.ToString(),
                             Issue = "Nullability Mismatch"
@@ -408,7 +408,7 @@ namespace TheTechIdea.Beep
                     {
                         results.Add(new ComparisonOutput
                         {
-                            FieldName = sourceField.Value.fieldname,
+                           FieldName = sourceField.Value.FieldName,
                             SourceDetail = sourceField.Value.IsUnique.ToString(),
                             TargetDetail = targetField.IsUnique.ToString(),
                             Issue = "Uniqueness Mismatch"
@@ -419,7 +419,7 @@ namespace TheTechIdea.Beep
                 {
                     results.Add(new ComparisonOutput
                     {
-                        FieldName = sourceField.Value.fieldname,
+                       FieldName = sourceField.Value.FieldName,
                         SourceDetail = "Exists",
                         TargetDetail = "Does Not Exist",
                         Issue = "Missing in Target"
@@ -433,7 +433,7 @@ namespace TheTechIdea.Beep
                 {
                     results.Add(new ComparisonOutput
                     {
-                        FieldName = targetField.Value.fieldname,
+                       FieldName = targetField.Value.FieldName,
                         SourceDetail = "Does Not Exist",
                         TargetDetail = "Exists",
                         Issue = "Missing in Source"
@@ -468,7 +468,7 @@ namespace TheTechIdea.Beep
                     {
                         results.Add(new ComparisonOutput
                         {
-                            FieldName = sourceRel.EntityColumnID,
+                           FieldName = sourceRel.EntityColumnID,
                             SourceDetail = $"{sourceRel.EntityColumnID} -> {sourceRel.RelatedEntityID}.{sourceRel.RelatedEntityColumnID}",
                             TargetDetail = "Missing",
                             Issue = "Relationship Missing in Target"
@@ -487,7 +487,7 @@ namespace TheTechIdea.Beep
                     {
                         results.Add(new ComparisonOutput
                         {
-                            FieldName = targetRel.EntityColumnID,
+                           FieldName = targetRel.EntityColumnID,
                             SourceDetail = "Missing",
                             TargetDetail = $"{targetRel.EntityColumnID} -> {targetRel.RelatedEntityID}.{targetRel.RelatedEntityColumnID}",
                             Issue = "Relationship Missing in Source"
@@ -529,7 +529,7 @@ namespace TheTechIdea.Beep
             {
                 results.Add(new ComparisonOutput
                 {
-                    FieldName = "Data",
+                   FieldName = "Data",
                     SourceDetail = sourceData == null ? "No Data" : "Exists",
                     TargetDetail = targetData == null ? "No Data" : "Exists",
                     Issue = "Data Missing in Source or Target"
@@ -545,7 +545,7 @@ namespace TheTechIdea.Beep
             {
                 results.Add(new ComparisonOutput
                 {
-                    FieldName = "DataFormat",
+                   FieldName = "DataFormat",
                     SourceDetail = sourceRows == null ? "Invalid Format" : "Valid",
                     TargetDetail = targetRows == null ? "Invalid Format" : "Valid",
                     Issue = "Incompatible Data Format"
@@ -567,7 +567,7 @@ namespace TheTechIdea.Beep
                         {
                             results.Add(new ComparisonOutput
                             {
-                                FieldName = key,
+                               FieldName = key,
                                 SourceDetail = sourceDict[sourceKey][key]?.ToString(),
                                 TargetDetail = targetRow[key]?.ToString(),
                                 Issue = "Value Mismatch"
@@ -579,7 +579,7 @@ namespace TheTechIdea.Beep
                 {
                     results.Add(new ComparisonOutput
                     {
-                        FieldName = "PrimaryKey",
+                       FieldName = "PrimaryKey",
                         SourceDetail = sourceKey,
                         TargetDetail = "Not Found",
                         Issue = "Missing Record in Target"
@@ -593,7 +593,7 @@ namespace TheTechIdea.Beep
                 {
                     results.Add(new ComparisonOutput
                     {
-                        FieldName = "PrimaryKey",
+                       FieldName = "PrimaryKey",
                         SourceDetail = "Not Found",
                         TargetDetail = targetKey,
                         Issue = "Missing Record in Source"

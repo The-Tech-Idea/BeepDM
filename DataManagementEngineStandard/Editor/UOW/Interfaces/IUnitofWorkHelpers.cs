@@ -70,16 +70,16 @@ namespace TheTechIdea.Beep.Editor.UOW.Interfaces
         /// <summary>
         /// Checks if defaults are configured for a specific field
         /// </summary>
-        /// <param name="fieldName">Name of the field to check</param>
+        /// <param name="FieldName">Name of the field to check</param>
         /// <returns>True if defaults exist for the field</returns>
-        bool HasDefaults(string fieldName);
+        bool HasDefaults(string FieldName);
 
         /// <summary>
         /// Gets the default value configuration for a specific field
         /// </summary>
-        /// <param name="fieldName">Name of the field</param>
+        /// <param name="FieldName">Name of the field</param>
         /// <returns>Default value configuration or null if not found</returns>
-        DefaultValue GetDefaultForField(string fieldName);
+        DefaultValue GetDefaultForField(string FieldName);
 
         /// <summary>
         /// Applies defaults for insert operations

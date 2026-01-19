@@ -243,8 +243,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
         {
             var field = new EntityField
             {
-                fieldname = prop.Name,
-                fieldtype = MapClrTypeToDbType(prop.PropertyType),
+               FieldName = prop.Name,
+                Fieldtype = MapClrTypeToDbType(prop.PropertyType),
                 Size1 = int.TryParse(GetFieldSize(prop), out int size) ? size : 0,
                 AllowDBNull = IsNullable(prop),
                 IsAutoIncrement = HasAutoIncrementAttribute(prop),
@@ -467,8 +467,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
             // Generate properties
             foreach (var field in entity.Fields)
             {
-                var backingField = $"_{char.ToLowerInvariant(field.fieldname[0])}{field.fieldname.Substring(1)}";
-                var clrType = GetClrTypeName(field.fieldtype, field.AllowDBNull);
+                var backingField = $"_{char.ToLowerInvariant(field.FieldName[0])}{field.FieldName.Substring(1)}";
+                var clrType = GetClrTypeName(field.Fieldtype, field.AllowDBNull);
 
                 // Backing field
                 sb.AppendLine($"        private {clrType} {backingField};");
@@ -485,7 +485,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     sb.AppendLine($"        [StringLength({field.Size1})]");
 
                 // Property
-                sb.AppendLine($"        public {clrType} {field.fieldname}");
+                sb.AppendLine($"        public {clrType} {field.FieldName}");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            get => {backingField};");
                 sb.AppendLine("            set");
@@ -493,7 +493,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 sb.AppendLine($"                if ({backingField} != value)");
                 sb.AppendLine("                {");
                 sb.AppendLine($"                    {backingField} = value;");
-                sb.AppendLine($"                    OnPropertyChanged(nameof({field.fieldname}));");
+                sb.AppendLine($"                    OnPropertyChanged(nameof({field.FieldName}));");
                 sb.AppendLine("                }");
                 sb.AppendLine("            }");
                 sb.AppendLine("        }");
@@ -670,17 +670,17 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
             foreach (var field in entity.Fields)
             {
-                var backingField = $"_{char.ToLowerInvariant(field.fieldname[0])}{field.fieldname.Substring(1)}";
-                var clrType = GetClrTypeName(field.fieldtype, field.AllowDBNull);
+                var backingField = $"_{char.ToLowerInvariant(field.FieldName[0])}{field.FieldName.Substring(1)}";
+                var clrType = GetClrTypeName(field.Fieldtype, field.AllowDBNull);
 
                 sb.AppendLine($"        private {clrType} {backingField};");
                 if (field.IsKey) sb.AppendLine("        [Key]");
                 if (field.IsAutoIncrement) sb.AppendLine("        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
                 
-                sb.AppendLine($"        public {clrType} {field.fieldname}");
+                sb.AppendLine($"        public {clrType} {field.FieldName}");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            get => {backingField};");
-                sb.AppendLine($"            set {{ if ({backingField} != value) {{ {backingField} = value; OnPropertyChanged(nameof({field.fieldname})); }} }}");
+                sb.AppendLine($"            set {{ if ({backingField} != value) {{ {backingField} = value; OnPropertyChanged(nameof({field.FieldName})); }} }}");
                 sb.AppendLine("        }");
                 sb.AppendLine();
             }

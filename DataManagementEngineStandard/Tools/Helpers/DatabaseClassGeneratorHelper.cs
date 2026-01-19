@@ -126,7 +126,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 var primaryKeyField = entity.Fields.FirstOrDefault(f => f.IsKey);
                 if (primaryKeyField != null)
                 {
-                    var safePropertyName = _helper.GenerateSafePropertyName(primaryKeyField.fieldname);
+                    var safePropertyName = _helper.GenerateSafePropertyName(primaryKeyField.FieldName);
                     sb.AppendLine($"                entity.HasKey(e => e.{safePropertyName});");
                 }
                 
@@ -175,16 +175,16 @@ namespace TheTechIdea.Beep.Tools.Helpers
             // Configure properties
             foreach (var field in entity.Fields)
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                 sb.AppendLine($"            builder.Property(e => e.{safePropertyName})");
-                sb.AppendLine($"                   .HasColumnName(\"{field.fieldname}\")");
+                sb.AppendLine($"                   .HasColumnName(\"{field.FieldName}\")");
                 
                 if (field.IsRequired)
                 {
                     sb.AppendLine("                   .IsRequired()");
                 }
                 
-                if (field.Size > 0 && _helper.IsReferenceType(field.fieldtype))
+                if (field.Size > 0 && _helper.IsReferenceType(field.Fieldtype))
                 {
                     sb.AppendLine($"                   .HasMaxLength({field.Size})");
                 }
@@ -197,7 +197,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             var primaryKeyField = entity.Fields.FirstOrDefault(f => f.IsKey);
             if (primaryKeyField != null)
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(primaryKeyField.fieldname);
+                var safePropertyName = _helper.GenerateSafePropertyName(primaryKeyField.FieldName);
                 sb.AppendLine($"            builder.HasKey(e => e.{safePropertyName});");
                 sb.AppendLine();
             }
@@ -206,7 +206,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             var indexFields = entity.Fields.Where(f => f.IsUnique || f.IsIndexed).ToList();
             foreach (var field in indexFields)
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                 sb.AppendLine($"            builder.HasIndex(e => e.{safePropertyName})");
                 
                 if (field.IsUnique)
@@ -214,7 +214,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     sb.AppendLine("                   .IsUnique()");
                 }
                 
-                sb.AppendLine($"                   .HasDatabaseName(\"IX_{entity.EntityName}_{field.fieldname}\");");
+                sb.AppendLine($"                   .HasDatabaseName(\"IX_{entity.EntityName}_{field.FieldName}\");");
                 sb.AppendLine();
             }
 
@@ -357,7 +357,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             sb.AppendLine("        {");
             sb.AppendLine("            var filters = new List<AppFilter>");
             sb.AppendLine("            {");
-            sb.AppendLine("                new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() }");
+            sb.AppendLine("                new AppFilter {FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() }");
             sb.AppendLine("            };");
             sb.AppendLine($"            return _dataSource.GetEntity(\"{entity.EntityName}\", filters);");
             sb.AppendLine("        }");
@@ -389,7 +389,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             sb.AppendLine("        {");
             sb.AppendLine("            var filters = new List<AppFilter>");
             sb.AppendLine("            {");
-            sb.AppendLine("                new AppFilter { FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() }");
+            sb.AppendLine("                new AppFilter {FieldName = \"Id\", Operator = \"=\", FilterValue = id.ToString() }");
             sb.AppendLine("            };");
             sb.AppendLine($"            _dataSource.DeleteEntity(\"{entity.EntityName}\", filters);");
             sb.AppendLine("        }");
@@ -446,11 +446,11 @@ namespace TheTechIdea.Beep.Tools.Helpers
             // Generate columns
             foreach (var field in entity.Fields)
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
-                var sqlType = _helper.MapFieldTypeToSqlType(field.fieldtype);
+                var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
+                var sqlType = _helper.MapFieldtypeToSqlType(field.Fieldtype);
                 var nullable = field.IsRequired ? "false" : "true";
 
-                sb.AppendLine($"                    {safePropertyName} = table.Column<{field.fieldtype}>(type: \"{sqlType}\", nullable: {nullable}),");
+                sb.AppendLine($"                    {safePropertyName} = table.Column<{field.Fieldtype}>(type: \"{sqlType}\", nullable: {nullable}),");
             }
 
             sb.AppendLine($"                }},");
@@ -461,7 +461,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
             var primaryKeyField = entity.Fields.FirstOrDefault(f => f.IsKey);
             if (primaryKeyField != null)
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(primaryKeyField.fieldname);
+                var safePropertyName = _helper.GenerateSafePropertyName(primaryKeyField.FieldName);
                 sb.AppendLine($"                    table.PrimaryKey(\"PK_{entity.EntityName}\", x => x.{safePropertyName});");
             }
 
@@ -474,9 +474,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 sb.AppendLine();
                 foreach (var field in indexFields)
                 {
-                    var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                    var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                     sb.AppendLine($"            migrationBuilder.CreateIndex(");
-                    sb.AppendLine($"                name: \"IX_{entity.EntityName}_{field.fieldname}\",");
+                    sb.AppendLine($"                name: \"IX_{entity.EntityName}_{field.FieldName}\",");
                     sb.AppendLine($"                table: \"{entity.EntityName}\",");
                     sb.AppendLine($"                column: \"{safePropertyName}\",");
                     sb.AppendLine($"                unique: {field.IsUnique.ToString().ToLower()});");

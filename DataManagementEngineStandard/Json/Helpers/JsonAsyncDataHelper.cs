@@ -88,11 +88,11 @@ namespace TheTechIdea.Beep.Json.Helpers
 
         private static Dictionary<string, System.Reflection.PropertyInfo> BuildPropertyMap(Type t, EntityStructure es)
             => es.Fields
-                .GroupBy(f => f.fieldname, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(f => f.FieldName, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.First())
-                .Select(f => new { f.fieldname, PI = t.GetProperty(f.fieldname) })
+                .Select(f => new { f.FieldName, PI = t.GetProperty(f.FieldName) })
                 .Where(x => x.PI != null && x.PI.CanWrite)
-                .ToDictionary(x => x.fieldname, x => x.PI, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(x => x.FieldName, x => x.PI, StringComparer.OrdinalIgnoreCase);
 
         private static object TryMaterializeTyped(JObject obj, Type t, Dictionary<string, System.Reflection.PropertyInfo> map)
         {

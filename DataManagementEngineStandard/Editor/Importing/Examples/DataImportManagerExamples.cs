@@ -96,7 +96,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
                 // Add filters for incremental import
                 config.SourceFilters.Add(new AppFilter
                 {
-                    FieldName = "ModifiedDate",
+                   FieldName = "ModifiedDate",
                     Operator = ">=",
                     FilterValue = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd")
                 });

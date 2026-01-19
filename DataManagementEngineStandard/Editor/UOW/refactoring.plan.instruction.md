@@ -118,8 +118,8 @@ public interface IUnitofWorkDefaults<T> where T : Entity, new()
 {
     void ApplyDefaults(T entity, DefaultValueContext context);
     Task<T> ApplyDefaultsAsync(T entity, DefaultValueContext context);
-    bool HasDefaults(string fieldName);
-    DefaultValue GetDefaultForField(string fieldName);
+    bool HasDefaults(string FieldName);
+    DefaultValue GetDefaultForField(string FieldName);
 }
 ```
 

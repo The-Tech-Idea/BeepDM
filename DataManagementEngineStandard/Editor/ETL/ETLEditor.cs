@@ -139,7 +139,7 @@ namespace TheTechIdea.Beep.Editor.ETL
         /// <summary>Generates an ETL script detail object based on the provided parameters.</summary>
         /// <param name="item">The entity structure object representing the source entity.</param>
         /// <param name="destSource">The name of the destination data source.</param>
-        /// <param name="scriptType">The type of DDL script.</param>
+        /// <param name="scriptType">The type of Ddl script.</param>
         /// <returns>An ETLScriptDet object representing the generated script.</returns>
         private ETLScriptDet GenerateScript(EntityStructure item, string destSource, DDLScriptType scriptType)
         {
@@ -898,7 +898,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 errorcount = 0;
                 ScriptCount = 0;
                 LoadDataLogs.Clear();
-                Script.ScriptDetails.Add(new ETLScriptDet() { Active = true, DestinationDataSourceName = mapping.EntityDataSource, DestinationDataSourceEntityName = mapping.EntityName, DestinationEntityName = mapping.EntityName, ScriptType = DDLScriptType.CopyData, Mapping = SelectedMapping, SourceDataSourceName = SelectedMapping.EntityDataSource, SourceDataSourceEntityName = SelectedMapping.EntityName, SourceEntityName = SelectedMapping.EntityName });
+                Script.ScriptDetails.Add(new ETLScriptDet() { Active = true, DestinationDataSourceName = mapping.EntityDataSource, DestinationDataSourceEntityName = mapping.EntityName, DestinationEntityName = mapping.EntityName,ScriptType= DDLScriptType.CopyData, Mapping = SelectedMapping, SourceDataSourceName = SelectedMapping.EntityDataSource, SourceDataSourceEntityName = SelectedMapping.EntityName, SourceEntityName = SelectedMapping.EntityName });
                 DMEEditor.AddLogMessage("OK", $"Generated Copy Data script", DateTime.Now, -1, "CopyDatabase", Errors.Ok);
             }
             catch (Exception ex)
@@ -1001,9 +1001,9 @@ namespace TheTechIdea.Beep.Editor.ETL
                 {
                     foreach (DefaultValue _defaultValue in CurrrentDBDefaults.Where(p => p.propertyType == DefaultValueType.Rule))
                     {
-                        if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(_defaultValue.PropertyName, StringComparison.InvariantCultureIgnoreCase)))
+                        if (destEntitystructure.Fields.Any(p => p.FieldName.Equals(_defaultValue.PropertyName, StringComparison.InvariantCultureIgnoreCase)))
                         {
-                            string fieldname = _defaultValue.PropertyName;
+                            string FieldName = _defaultValue.PropertyName;
                             DMEEditor.Passedarguments.DatasourceName = destds.DatasourceName;
                             DMEEditor.Passedarguments.CurrentEntity = destentity;
                             ObjectItem ob = DMEEditor.Passedarguments.Objects.Find(p => p.Name == destentity);
@@ -1012,11 +1012,11 @@ namespace TheTechIdea.Beep.Editor.ETL
                                 DMEEditor.Passedarguments.Objects.Remove(ob);
                             }
                             DMEEditor.Passedarguments.Objects.Add(new ObjectItem() { Name = destentity, obj = retval });
-                            DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{fieldname}.{_defaultValue.PropertyValue}";
+                            DMEEditor.Passedarguments.ParameterString1 = $":{_defaultValue.Rule}.{FieldName}.{_defaultValue.PropertyValue}";
                             //var value = RulesEngine.SolveRule(_defaultValue.Rule,DMEEditor.Passedarguments);
                             //if (value != null)
                             //{
-                            //    DMEEditor.Utilfunction.SetFieldValueFromObject(fieldname, retval, value);
+                            //    DMEEditor.Utilfunction.SetFieldValueFromObject(FieldName, retval, value);
                             //}
                         }
                     }
@@ -1025,7 +1025,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 {
                     foreach (RelationShipKeys item in destEntitystructure.Relations) // .Where(p => !p.RelatedEntityID.Equals(destEntitystructure.EntityName, StringComparison.InvariantCultureIgnoreCase)
                     {
-                        //if (destEntitystructure.Fields.Any(p => p.fieldname.Equals(item.EntityColumnID, StringComparison.InvariantCultureIgnoreCase)))
+                        //if (destEntitystructure.Fields.Any(p => p.FieldName.Equals(item.EntityColumnID, StringComparison.InvariantCultureIgnoreCase)))
                         //{
                         if (!string.IsNullOrEmpty(item.RelatedEntityID))
                         {

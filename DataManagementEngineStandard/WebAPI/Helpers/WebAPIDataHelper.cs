@@ -452,7 +452,7 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         {
             try
             {
-                return new EntityField { fieldname = property.Name, fieldtype = InferDataTypeFromJsonValue(property.Value), IsKey = IsLikelyIdField(property.Name), AllowDBNull = true, IsUnique = IsLikelyIdField(property.Name) };
+                return new EntityField {FieldName = property.Name, Fieldtype = InferDataTypeFromJsonValue(property.Value), IsKey = IsLikelyIdField(property.Name), AllowDBNull = true, IsUnique = IsLikelyIdField(property.Name) };
             }
             catch (Exception ex) { _logger?.WriteLog($"Error creating field '{property.Name}': {ex.Message}"); return null; }
         }
@@ -469,8 +469,8 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
                 default: return "System.String";
             }
         }
-        private bool IsLikelyIdField(string fieldName)
-        { var idFields = new[] { "id", "_id", "uuid", "key", "pk", "primarykey" }; return idFields.Contains(fieldName.ToLower()); }
+        private bool IsLikelyIdField(string FieldName)
+        { var idFields = new[] { "id", "_id", "uuid", "key", "pk", "primarykey" }; return idFields.Contains(FieldName.ToLower()); }
         #endregion
     }
 }

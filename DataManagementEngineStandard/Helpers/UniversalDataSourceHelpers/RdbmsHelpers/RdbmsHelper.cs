@@ -23,7 +23,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
     /// 
     /// This implementation delegates to the legacy helper classes:
     /// - DatabaseSchemaQueryHelper - Schema and metadata queries
-    /// - DatabaseObjectCreationHelper - DDL operations
+    /// - DatabaseObjectCreationHelper - Ddl operations
     /// - DatabaseDMLHelper - DML operations (INSERT, UPDATE, DELETE, SELECT)
     /// - DatabaseEntityHelper - Entity analysis and validation
     /// </summary>
@@ -122,11 +122,11 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 
         #endregion
 
-        #region DDL Operations
+        #region Ddl Operations
 
         /// <summary>
         /// Generates CREATE TABLE SQL from an EntityStructure.
-        /// Implementation of IDataSourceHelper DDL create table.
+        /// Implementation of IDataSourceHelper Ddl create table.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(
             EntityStructure entity,
@@ -155,7 +155,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 
         /// <summary>
         /// Generates DROP TABLE SQL.
-        /// Implementation of IDataSourceHelper DDL drop table.
+        /// Implementation of IDataSourceHelper Ddl drop table.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateDropTableSql(string tableName, string schemaName = null)
         {
@@ -172,7 +172,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 
         /// <summary>
         /// Generates TRUNCATE TABLE SQL.
-        /// Implementation of IDataSourceHelper DDL truncate table.
+        /// Implementation of IDataSourceHelper Ddl truncate table.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateTruncateTableSql(string tableName, string schemaName = null)
         {
@@ -189,7 +189,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 
         /// <summary>
         /// Generates CREATE INDEX SQL.
-        /// Implementation of IDataSourceHelper DDL create index.
+        /// Implementation of IDataSourceHelper Ddl create index.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateIndexSql(
             string tableName,
@@ -597,14 +597,14 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                     // Validate fields
                     foreach (var field in entity.Fields)
                     {
-                        if (string.IsNullOrWhiteSpace(field.fieldname))
+                        if (string.IsNullOrWhiteSpace(field.FieldName))
                         {
                             errors.Add("All fields must have a name");
                         }
 
-                        if (DatabaseEntityReservedKeywordChecker.IsReservedKeyword(field.fieldname, SupportedType))
+                        if (DatabaseEntityReservedKeywordChecker.IsReservedKeyword(field.FieldName, SupportedType))
                         {
-                            errors.Add($"Field name '{field.fieldname}' is a reserved keyword in {SupportedType}");
+                            errors.Add($"Field name '{field.FieldName}' is a reserved keyword in {SupportedType}");
                         }
                     }
                 }
@@ -693,9 +693,9 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = ResolveFieldType(column);
+                var dataType = column.fieldtype;
                 var quotedTable = QuoteIdentifier(tableName);
-                var quotedColumn = QuoteIdentifier(column.fieldname);
+                var quotedColumn = QuoteIdentifier(column.FieldName);
                 var sql = $"ALTER TABLE {quotedTable} ADD {quotedColumn} {dataType}";
                 return (sql, true, string.Empty);
             }
@@ -757,7 +757,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = newColumn.fieldtype;
+                var dataType = newColumn.Fieldtype;
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(columnName);
                 var sql = SupportedType switch

@@ -1,0 +1,213 @@
+# Windsurf Rules for BeepDM
+
+## Project Context
+BeepDM is the orchestration engine providing interfaces and implementation for managing 287+ datasources. It's the "mother class" that BeepDataSources and client applications depend on.
+
+## Quick Facts
+
+- **Language:** C# (.NET 9.0)
+- **Main Components:** DMEEditor (orchestrator), ConfigEditor (config management), ETLEditor (data operations), AssemblyHandler (plugin discovery)
+- **Core Interfaces:** IDMEEditor, IDataSource, IConfigEditor, IDataTypesHelper, IETL, IAssemblyHandler
+- **Helper Implementations:** 5 core (RDBMS, MongoDB, Redis, Cassandra, RestApi), 9 planned
+- **Discovery Pattern:** [AddinAttribute] for datasources, ILoaderExtention for extensions
+- **Build:** `dotnet build BeepDM.sln`
+
+## Critical Rules
+
+1. **Never break IDMEEditor interface** — It's the public API contract
+2. **Implement IDataSource fully** — All 40+ methods required
+3. **Use [AddinAttribute]** — Required for AssemblyHandler discovery
+4. **Set ErrorObject always** — Set Flag and Message on failures
+5. **Populate Entities list** — Initialize in Openconnection()
+6. **Support async variants** — GetEntityAsync, GetScalarAsync required
+7. **Log via Logger.WriteLog()** — Don't use Console.WriteLine
+8. **Configure via JSON** — DataConnections.json, QueryList.json, etc.
+9. **Singleton pattern** — DMEEditor should be shared across application
+10. **Use partial classes** — Organize complex classes by feature
+
+## Implementation Checklist (New IDataSourceHelper)
+
+- [ ] Create helper class inheriting IDataSourceHelper
+- [ ] Set `SupportedType` property to target datasource type
+- [ ] Implement `GenerateCreateTableSql()`
+- [ ] Implement `GenerateSelectSql()`
+- [ ] Implement `GenerateInsertSql()`
+- [ ] Implement `GenerateUpdateSql()`
+- [ ] Implement `GenerateDeleteSql()`
+- [ ] Implement `GenerateDropTableSql()`
+- [ ] Implement `GenerateTruncateTableSql()`
+- [ ] Implement `GenerateBeginTransactionSql()`, `GenerateCommitSql()`, `GenerateRollbackSql()`
+- [ ] Implement `GetSchemaQuery()`, `GetTableExistsQuery()`, `GetColumnInfoQuery()`
+- [ ] Implement `QuoteIdentifier()`
+- [ ] Implement `SupportsCapability()`
+- [ ] Return tuple: (Sql, Parameters/Dict, Success, ErrorMessage)
+- [ ] Register in DataSourceHelperFactory
+- [ ] Write unit tests
+- [ ] Test with real datasource if possible
+
+## Common Patterns
+
+### IDataSourceHelper Template
+```csharp
+public class {DataSourceName}Helper : IDataSourceHelper
+{
+    public DataSourceType SupportedType { get; set; } = DataSourceType.{Type};
+    public string Name => "{DataSourceName}";
+    public DataSourceCapabilities Capabilities { get; set; }
+    
+    public (string Sql, bool Success) GetSchemaQuery(string userName)
+    {
+        string sql = "SELECT * FROM information_schema.tables WHERE...";
+        return (sql, true);
+    }
+    
+    public (string Sql, Dictionary<string, object> Parameters, bool Success, string ErrorMessage) 
+        GenerateSelectSql(string tableName, IEnumerable<string> columns, Dictionary<string, object> conditions, 
+                         string orderBy = null, int? skip = null, int? take = null)
+    {
+        var sb = new StringBuilder("SELECT ");
+        sb.Append(string.Join(", ", columns.Select(QuoteIdentifier)));
+        sb.Append($" FROM {QuoteIdentifier(tableName)}");
+        
+        var parameters = new Dictionary<string, object>();
+        if (conditions?.Any() == true)
+        {
+            sb.Append(" WHERE ");
+            var conditionList = new List<string>();
+            int paramIndex = 0;
+            
+            foreach (var kvp in conditions)
+            {
+                var paramName = $"@param{paramIndex++}";
+                conditionList.Add($"{QuoteIdentifier(kvp.Key)} = {paramName}");
+                parameters[paramName] = kvp.Value;
+            }
+            
+            sb.Append(string.Join(" AND ", conditionList));
+        }
+        
+        if (!string.IsNullOrEmpty(orderBy))
+            sb.Append($" ORDER BY {orderBy}");
+        
+        if (skip.HasValue)
+            sb.Append($" OFFSET {skip} ROWS");
+        
+        if (take.HasValue)
+            sb.Append($" FETCH NEXT {take} ROWS ONLY");
+        
+        return (sb.ToString(), parameters, true, null);
+    }
+    
+    public string QuoteIdentifier(string identifier) => $"`{identifier}`";
+    
+    public bool SupportsCapability(CapabilityType capability) => true;
+}
+```
+
+### DMEEditor Partial Class Pattern
+```csharp
+// DMEEditor.DataSources.cs
+public partial class DMEEditor : IDMEEditor, IDisposable
+{
+    public virtual IDataSource GetDataSource(string pdatasourcename)
+    {
+        // Implementation
+    }
+    
+    public virtual IDataSource CreateNewDataSourceConnection(string pdatasourcename)
+    {
+        // Implementation
+    }
+}
+```
+
+### ConfigEditor Manager Pattern
+```csharp
+private readonly ConfigPathManager _pathManager;
+private readonly DataConnectionManager _connectionManager;
+private readonly QueryManager _queryManager;
+private readonly EntityMappingManager _entityManager;
+
+public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader, ...)
+{
+    _pathManager = new ConfigPathManager(logger, folderpath, containerfolder);
+    _connectionManager = new DataConnectionManager(logger, jsonloader, _pathManager.ConfigPath);
+    _queryManager = new QueryManager(logger, jsonloader, _pathManager.ConfigPath);
+    // ... delegate to managers
+}
+```
+
+## Test Cases to Verify
+
+1. DMEEditor can be instantiated via DI
+2. ConfigEditor loads JSON configs correctly
+3. GetDataSource creates new datasources on demand
+4. AssemblyHandler discovers [AddinAttribute] datasources
+5. IDataSourceHelper returns correct SQL for each dialect
+6. Error handling: ErrorObject.Flag set correctly
+7. Partial classes compile without conflicts
+8. Thread safety: Concurrent datasource access works
+
+## File Structure
+
+```
+BeepDM/
+├── DataManagementEngineStandard/
+│   ├── Editor/DM/
+│   │   ├── DMEEditor.cs (main)
+│   │   ├── DMEEditor.DataSources.cs (partial)
+│   │   ├── DMEEditor.Logging.cs (partial)
+│   │   └── DMEEditor.ETL.cs (partial)
+│   ├── ConfigUtil/
+│   │   ├── ConfigEditor.cs
+│   │   └── Managers/
+│   │       ├── DataConnectionManager.cs
+│   │       ├── QueryManager.cs
+│   │       └── EntityMappingManager.cs
+│   ├── Helpers/UniversalDataSourceHelpers/
+│   │   ├── RdbmsHelper.cs
+│   │   ├── MongoDBHelper.cs
+│   │   ├── RedisHelper.cs
+│   │   ├── CassandraHelper.cs
+│   │   └── RestApiHelper.cs
+│   └── Editor/Forms/FormsManager.cs
+├── DataManagementModelsStandard/
+│   ├── IDMEEditor.cs
+│   ├── IDataSource.cs
+│   ├── IConfigEditor.cs
+│   └── ...
+└── idatasourceimplementationplan.md
+```
+
+## Deployment
+
+```bash
+# Build BeepDM
+dotnet build BeepDM.sln
+
+# Build and test
+dotnet build && dotnet test
+
+# Release build
+dotnet build -c Release
+```
+
+## Key Gotchas
+
+- ❌ Breaking IDMEEditor interface → All dependent apps break
+- ❌ Missing [AddinAttribute] on datasources → Won't be discovered
+- ❌ Not implementing IDataSource fully → Runtime errors
+- ❌ Throwing exceptions → Use IErrorsInfo instead
+- ❌ Not setting ErrorObject → Callers don't know what failed
+- ❌ Blocking on async → Use .ConfigureAwait(false)
+- ❌ Not initializing Entities list → Metadata unavailable
+- ❌ Hard-coding SQL → Use IDataSourceHelper instead
+- ❌ Not using partial classes → DMEEditor becomes unwieldy
+
+## Where to Ask Questions
+
+- Interface/contract issues: Review IDMEEditor.cs, IDataSource.cs
+- Configuration: Check ConfigEditor.cs and JSON file formats
+- Datasource lifecycle: Look at GetDataSource, CreateNewDataSourceConnection
+- Assembly discovery: Check AssemblyHandler.Core.cs and [AddinAttribute]
+- Helper generation: Check IDataSourceHelper implementations and factory

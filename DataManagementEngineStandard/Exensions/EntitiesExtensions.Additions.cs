@@ -20,24 +20,24 @@ namespace TheTechIdea.Beep.DataBase
             var removed = new List<EntityField>();
             var changed = new List<FieldChange>();
 
-            var otherMap = other.Fields.ToDictionary(f => f.fieldname, StringComparer.OrdinalIgnoreCase);
-            var thisMap = entity.Fields.ToDictionary(f => f.fieldname, StringComparer.OrdinalIgnoreCase);
+            var otherMap = other.Fields.ToDictionary(f => f.FieldName, StringComparer.OrdinalIgnoreCase);
+            var thisMap = entity.Fields.ToDictionary(f => f.FieldName, StringComparer.OrdinalIgnoreCase);
 
             foreach (var field in entity.Fields)
             {
-                if (!otherMap.TryGetValue(field.fieldname, out var otherField))
+                if (!otherMap.TryGetValue(field.FieldName, out var otherField))
                 {
                     removed.Add(field);
                 }
                 else if (!FieldsEqual(field, otherField))
                 {
-                    changed.Add(new FieldChange(field.fieldname, field, otherField));
+                    changed.Add(new FieldChange(field.FieldName, field, otherField));
                 }
             }
 
             foreach (var field in other.Fields)
             {
-                if (!thisMap.ContainsKey(field.fieldname))
+                if (!thisMap.ContainsKey(field.FieldName))
                 {
                     added.Add(field);
                 }
@@ -53,7 +53,7 @@ namespace TheTechIdea.Beep.DataBase
 
             foreach (var sourceField in sourceEntity.Fields)
             {
-                var existing = entity.GetField(sourceField.fieldname);
+                var existing = entity.GetField(sourceField.FieldName);
                 if (existing == null)
                 {
                     entity.AddField((EntityField)sourceField.Clone());
@@ -76,7 +76,7 @@ namespace TheTechIdea.Beep.DataBase
                 if (strategy == FieldMergeStrategy.PreferNonNull)
                 {
                     var merged = (EntityField)existing.Clone();
-                    merged.fieldtype = string.IsNullOrWhiteSpace(existing.fieldtype) ? sourceField.fieldtype : existing.fieldtype;
+                    merged.Fieldtype = string.IsNullOrWhiteSpace(existing.Fieldtype) ? sourceField.Fieldtype : existing.Fieldtype;
                     merged.Description = string.IsNullOrWhiteSpace(existing.Description) ? sourceField.Description : existing.Description;
                     merged.AllowDBNull = existing.AllowDBNull && sourceField.AllowDBNull;
                     merged.IsKey = existing.IsKey || sourceField.IsKey;
@@ -101,7 +101,7 @@ namespace TheTechIdea.Beep.DataBase
             var field = entity.GetField(oldName);
             if (field == null) return entity;
 
-            field.fieldname = newName;
+            field.FieldName = newName;
             if (entity.PrimaryKeys.Contains(field))
             {
                 entity.PrimaryKeys.Remove(field);
@@ -116,7 +116,7 @@ namespace TheTechIdea.Beep.DataBase
             if (orderedNames == null || orderedNames.Length == 0) return entity;
 
             var orderMap = orderedNames.Select((n, i) => new { n, i }).ToDictionary(x => x.n, x => x.i, StringComparer.OrdinalIgnoreCase);
-            entity.Fields = entity.Fields.OrderBy(f => orderMap.TryGetValue(f.fieldname, out var idx) ? idx : int.MaxValue).ToList();
+            entity.Fields = entity.Fields.OrderBy(f => orderMap.TryGetValue(f.FieldName, out var idx) ? idx : int.MaxValue).ToList();
             return entity;
         }
 
@@ -126,7 +126,7 @@ namespace TheTechIdea.Beep.DataBase
             ArgumentNullException.ThrowIfNull(namer);
             foreach (var f in entity.Fields)
             {
-                f.fieldname = namer(f.fieldname);
+                f.FieldName = namer(f.FieldName);
             }
             return entity;
         }
@@ -150,9 +150,9 @@ namespace TheTechIdea.Beep.DataBase
 
             foreach (var field in entity.Fields)
             {
-                if (!string.IsNullOrWhiteSpace(field.fieldtype) && Type.GetType(field.fieldtype) == null)
+                if (!string.IsNullOrWhiteSpace(field.Fieldtype) && Type.GetType(field.Fieldtype) == null)
                 {
-                    result.Errors.Add($"Field '{field.fieldname}' has an unknown type '{field.fieldtype}'.");
+                    result.Errors.Add($"Field '{field.FieldName}' has an unknown type '{field.Fieldtype}'.");
                 }
             }
 
@@ -167,9 +167,9 @@ namespace TheTechIdea.Beep.DataBase
             keyType ??= typeof(int);
             var field = new EntityField
             {
-                fieldname = keyName,
-                fieldtype = keyType.FullName,
-                fieldCategory = DbFieldCategory.Integer,
+               FieldName = keyName,
+                Fieldtype = keyType.FullName,
+               FieldCategory = DbFieldCategory.Integer,
                 AllowDBNull = false,
                 IsKey = true,
                 EntityName = entity.EntityName,
@@ -202,10 +202,10 @@ namespace TheTechIdea.Beep.DataBase
                 var row = table.NewRow();
                 foreach (var field in entity.Fields)
                 {
-                    var prop = item.GetType().GetProperty(field.fieldname, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    var prop = item.GetType().GetProperty(field.FieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                     if (prop != null)
                     {
-                        row[field.fieldname] = prop.GetValue(item) ?? DBNull.Value;
+                        row[field.FieldName] = prop.GetValue(item) ?? DBNull.Value;
                     }
                 }
                 table.Rows.Add(row);
@@ -240,9 +240,9 @@ namespace TheTechIdea.Beep.DataBase
 
                 var field = new EntityField
                 {
-                    fieldname = name,
-                    fieldtype = type.FullName,
-                    fieldCategory = GetFieldCategory(type),
+                   FieldName = name,
+                    Fieldtype = type.FullName,
+                   FieldCategory = GetFieldCategory(type),
                     AllowDBNull = row.Table.Columns.Contains("AllowDBNull") && row["AllowDBNull"] is bool canNull && canNull,
                     IsKey = isKey,
                     EntityName = entity.EntityName
@@ -262,9 +262,9 @@ namespace TheTechIdea.Beep.DataBase
 
         #region Lookups
 
-        public static bool TryGetField(this EntityStructure entity, string fieldName, out EntityField field)
+        public static bool TryGetField(this EntityStructure entity, string FieldName, out EntityField field)
         {
-            field = entity.GetField(fieldName);
+            field = entity.GetField(FieldName);
             return field != null;
         }
 
@@ -303,7 +303,7 @@ namespace TheTechIdea.Beep.DataBase
                 var row = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                 foreach (var field in entity.Fields)
                 {
-                    row[field.fieldname] = GenerateSampleValue(field, rng, i);
+                    row[field.FieldName] = GenerateSampleValue(field, rng, i);
                 }
                 rows.Add(row);
             }
@@ -313,13 +313,13 @@ namespace TheTechIdea.Beep.DataBase
 
         private static object GenerateSampleValue(EntityField field, Random rng, int index)
         {
-            var type = field.fieldtype?.ToLowerInvariant() ?? string.Empty;
+            var type = field.Fieldtype?.ToLowerInvariant() ?? string.Empty;
             if (type.Contains("int")) return index;
             if (type.Contains("decimal") || type.Contains("double") || type.Contains("float")) return rng.NextDouble() * 100;
             if (type.Contains("bool")) return rng.Next(0, 2) == 0;
             if (type.Contains("date")) return DateTime.UtcNow.AddDays(-rng.Next(0, 30));
             if (type.Contains("guid")) return Guid.NewGuid();
-            return $"Sample_{field.fieldname}_{index}";
+            return $"Sample_{field.FieldName}_{index}";
         }
 
         #endregion
@@ -328,8 +328,8 @@ namespace TheTechIdea.Beep.DataBase
 
         private static bool FieldsEqual(EntityField a, EntityField b)
         {
-            return string.Equals(a.fieldname, b.fieldname, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(a.fieldtype, b.fieldtype, StringComparison.OrdinalIgnoreCase)
+            return string.Equals(a.FieldName, b.FieldName, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(a.Fieldtype, b.Fieldtype, StringComparison.OrdinalIgnoreCase)
                 && a.AllowDBNull == b.AllowDBNull
                 && a.IsKey == b.IsKey
                 && a.IsUnique == b.IsUnique;

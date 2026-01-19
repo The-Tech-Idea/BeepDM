@@ -600,22 +600,22 @@ catch (Exception ex)
 var complexFilters = new List&lt;AppFilter&gt;
 {
     // Date range filtering
-    new AppFilter { FieldName = "CreatedDate", Operator = ">=", FilterValue = "2023-01-01" },
-    new AppFilter { FieldName = "CreatedDate", Operator = "<=", FilterValue = "2023-12-31" },
+    new AppFilter {FieldName = "CreatedDate", Operator = ">=", FilterValue = "2023-01-01" },
+    new AppFilter {FieldName = "CreatedDate", Operator = "<=", FilterValue = "2023-12-31" },
     
     // Status filtering
-    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" },
+    new AppFilter {FieldName = "Status", Operator = "=", FilterValue = "Active" },
     
     // Exclude specific values
-    new AppFilter { FieldName = "Country", Operator = "!=", FilterValue = "Unknown" },
+    new AppFilter {FieldName = "Country", Operator = "!=", FilterValue = "Unknown" },
     
     // Numeric comparisons
-    new AppFilter { FieldName = "TotalOrders", Operator = ">", FilterValue = "5" },
-    new AppFilter { FieldName = "TotalSpent", Operator = ">=", FilterValue = "1000.00" },
+    new AppFilter {FieldName = "TotalOrders", Operator = ">", FilterValue = "5" },
+    new AppFilter {FieldName = "TotalSpent", Operator = ">=", FilterValue = "1000.00" },
     
     // Text searching (depends on database support)
-    new AppFilter { FieldName = "Name", Operator = "LIKE", FilterValue = "%Smith%" },
-    new AppFilter { FieldName = "Email", Operator = "LIKE", FilterValue = "%@gmail.com" }
+    new AppFilter {FieldName = "Name", Operator = "LIKE", FilterValue = "%Smith%" },
+    new AppFilter {FieldName = "Email", Operator = "LIKE", FilterValue = "%@gmail.com" }
 };
 
 var filteredCustomers = await customerUoW.Get(complexFilters);
@@ -634,7 +634,7 @@ public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteri
     {
         filters.Add(new AppFilter 
         { 
-            FieldName = "Name", 
+           FieldName = "Name", 
             Operator = "LIKE", 
             FilterValue = $"%{criteria.Name}%" 
         });
@@ -644,7 +644,7 @@ public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteri
     {
         filters.Add(new AppFilter 
         { 
-            FieldName = "Email", 
+           FieldName = "Email", 
             Operator = "LIKE", 
             FilterValue = $"%{criteria.Email}%" 
         });
@@ -654,7 +654,7 @@ public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteri
     {
         filters.Add(new AppFilter 
         { 
-            FieldName = "Status", 
+           FieldName = "Status", 
             Operator = "=", 
             FilterValue = criteria.Status.ToString() 
         });
@@ -664,7 +664,7 @@ public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteri
     {
         filters.Add(new AppFilter 
         { 
-            FieldName = "TotalOrders", 
+           FieldName = "TotalOrders", 
             Operator = ">=", 
             FilterValue = criteria.MinOrderCount.Value.ToString() 
         });
@@ -674,7 +674,7 @@ public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteri
     {
         filters.Add(new AppFilter 
         { 
-            FieldName = "CreatedDate", 
+           FieldName = "CreatedDate", 
             Operator = ">=", 
             FilterValue = criteria.CreatedAfter.Value.ToString("yyyy-MM-dd") 
         });

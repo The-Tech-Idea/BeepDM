@@ -159,7 +159,7 @@ public void ProcessCustomer(Customer customer)
     {
         var filters = new List&lt;AppFilter&gt;
         {
-            new AppFilter { FieldName = "IsActive", Operator = "=", FilterValue = true }
+            new AppFilter {FieldName = "IsActive", Operator = "=", FilterValue = true }
         };
         
         var result = await _customerUoW.Get(filters);
@@ -472,9 +472,9 @@ public async Task&lt;List&lt;Customer&gt;&gt; GetActiveCustomersAsync(DateTime s
 {
     var filters = new List&lt;AppFilter&gt;
     {
-        new AppFilter { FieldName = "IsActive", Operator = "=", FilterValue = true },
-        new AppFilter { FieldName = "LastOrderDate", Operator = "&gt;=", FilterValue = since },
-        new AppFilter { FieldName = "CustomerType", Operator = "IN", FilterValue = new[] { "Premium", "Gold" } }
+        new AppFilter {FieldName = "IsActive", Operator = "=", FilterValue = true },
+        new AppFilter {FieldName = "LastOrderDate", Operator = "&gt;=", FilterValue = since },
+        new AppFilter {FieldName = "CustomerType", Operator = "IN", FilterValue = new[] { "Premium", "Gold" } }
     };
     
     var result = await _customerUoW.Get(filters);

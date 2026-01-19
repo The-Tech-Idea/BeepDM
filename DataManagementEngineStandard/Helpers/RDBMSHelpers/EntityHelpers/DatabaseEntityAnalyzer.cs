@@ -40,9 +40,9 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
                 info["SupportsViews"] = DatabaseFeatureHelper.SupportsViews(entity.DatabaseType);
                 info["DatabaseFeatures"] = DatabaseFeatureHelper.GetSupportedFeatures(entity.DatabaseType);
                 info["PrimaryKeyCount"] = entity.Fields?.Count(f => f.IsKey) ?? 0;
-                info["AutoIncrementFields"] = entity.Fields?.Where(f => f.IsAutoIncrement).Select(f => f.fieldname).ToList() ?? new List<string>();
-                info["UniqueFields"] = entity.Fields?.Where(f => f.IsUnique).Select(f => f.fieldname).ToList() ?? new List<string>();
-                info["IndexedFields"] = entity.Fields?.Where(f => f.IsIndexed).Select(f => f.fieldname).ToList() ?? new List<string>();
+                info["AutoIncrementFields"] = entity.Fields?.Where(f => f.IsAutoIncrement).Select(f => f.FieldName).ToList() ?? new List<string>();
+                info["UniqueFields"] = entity.Fields?.Where(f => f.IsUnique).Select(f => f.FieldName).ToList() ?? new List<string>();
+                info["IndexedFields"] = entity.Fields?.Where(f => f.IsIndexed).Select(f => f.FieldName).ToList() ?? new List<string>();
             }
 
             return info;
@@ -63,40 +63,40 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
             // Check for missing unique constraints on potential unique fields
             var potentialUniqueFields = entity.Fields
                 .Where(f => !f.IsKey && !f.IsUnique && 
-                           (f.fieldname.ToLower().Contains("email") || 
-                            f.fieldname.ToLower().Contains("code") ||
-                            f.fieldname.ToLower().Contains("number") ||
-                            f.fieldname.ToLower().Contains("username")))
+                           (f.FieldName.ToLower().Contains("email") || 
+                            f.FieldName.ToLower().Contains("code") ||
+                            f.FieldName.ToLower().Contains("number") ||
+                            f.FieldName.ToLower().Contains("username")))
                 .ToList();
             
             foreach (var field in potentialUniqueFields)
             {
-                suggestions.Add($"Consider making field '{field.fieldname}' unique if it should contain unique values");
+                suggestions.Add($"Consider making field '{field.FieldName}' unique if it should contain unique values");
             }
 
             // Check for overly long varchar/text fields
             var textFields = entity.Fields
-                .Where(f => f.fieldtype.ToUpper().Contains("VARCHAR") || 
-                           f.fieldtype.ToUpper().Contains("CHAR") ||
-                           f.fieldtype.ToUpper().Contains("TEXT"))
+                .Where(f => f.Fieldtype.ToUpper().Contains("VARCHAR") || 
+                           f.Fieldtype.ToUpper().Contains("CHAR") ||
+                           f.Fieldtype.ToUpper().Contains("TEXT"))
                 .Where(f => f.Size1 > 1000)
                 .ToList();
             
             foreach (var field in textFields)
             {
-                suggestions.Add($"Field '{field.fieldname}' has a very large size ({field.Size1}). Consider using appropriate TEXT type for better performance");
+                suggestions.Add($"Field '{field.FieldName}' has a very large size ({field.Size1}). Consider using appropriate TEXT type for better performance");
             }
 
             // Check for missing created/modified timestamp fields
             var hasCreatedField = entity.Fields.Any(f => 
-                f.fieldname.ToLower().Contains("created") || 
-                f.fieldname.ToLower().Contains("inserted") ||
-                f.fieldname.ToLower().Contains("createdate"));
+                f.FieldName.ToLower().Contains("created") || 
+                f.FieldName.ToLower().Contains("inserted") ||
+                f.FieldName.ToLower().Contains("createdate"));
             
             var hasModifiedField = entity.Fields.Any(f => 
-                f.fieldname.ToLower().Contains("modified") || 
-                f.fieldname.ToLower().Contains("updated") ||
-                f.fieldname.ToLower().Contains("modifydate"));
+                f.FieldName.ToLower().Contains("modified") || 
+                f.FieldName.ToLower().Contains("updated") ||
+                f.FieldName.ToLower().Contains("modifydate"));
 
             if (!hasCreatedField)
             {
@@ -111,14 +111,14 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
             // Check for fields that should be indexed
             var potentialIndexFields = entity.Fields
                 .Where(f => !f.IsIndexed && !f.IsKey &&
-                           (f.fieldname.ToLower().Contains("id") && !f.fieldname.Equals("id", StringComparison.OrdinalIgnoreCase) ||
-                            f.fieldname.ToLower().Contains("code") ||
-                            f.fieldname.ToLower().Contains("status")))
+                           (f.FieldName.ToLower().Contains("id") && !f.FieldName.Equals("id", StringComparison.OrdinalIgnoreCase) ||
+                            f.FieldName.ToLower().Contains("code") ||
+                            f.FieldName.ToLower().Contains("status")))
                 .ToList();
 
             foreach (var field in potentialIndexFields)
             {
-                suggestions.Add($"Consider adding an index on field '{field.fieldname}' if it's frequently used in WHERE clauses");
+                suggestions.Add($"Consider adding an index on field '{field.FieldName}' if it's frequently used in WHERE clauses");
             }
 
             // Check for missing descriptions
@@ -172,13 +172,13 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
 
             if (entity.Fields != null && entity.Fields.Any())
             {
-                var fieldTypes = entity.Fields
-                    .GroupBy(f => f.fieldtype)
+                var Fieldtypes = entity.Fields
+                    .GroupBy(f => f.Fieldtype)
                     .ToDictionary(g => g.Key, g => g.Count());
-                stats["FieldTypeDistribution"] = fieldTypes;
+                stats["FieldtypeDistribution"] = Fieldtypes;
 
                 var fieldCategories = entity.Fields
-                    .GroupBy(f => f.fieldCategory)
+                    .GroupBy(f => f.FieldCategory)
                     .ToDictionary(g => g.Key.ToString(), g => g.Count());
                 stats["FieldCategoryDistribution"] = fieldCategories;
             }

@@ -172,11 +172,10 @@ namespace TheTechIdea.Beep.Helpers
             }
             catch (Exception ex)
             {
-                DMEEditor?.AddLogMessage("Beep", $"Error getting data type for {DSname}.{fld.fieldname}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                DMEEditor?.AddLogMessage("Beep", $"Error getting data type for {DSname}.{fld.FieldName}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
                 return GetFallbackDataType(fld);
             }
         }
-
         /// <summary>Gets the field type without conversion with enhanced error handling.</summary>
         /// <param name="DSname">The name of the data source.</param>
         /// <param name="fld">The entity field.</param>
@@ -185,20 +184,25 @@ namespace TheTechIdea.Beep.Helpers
         {
             if (string.IsNullOrWhiteSpace(DSname) || fld == null)
             {
-                DMEEditor?.AddLogMessage("Beep", "Invalid parameters for GetFieldTypeWoConversion", DateTime.Now, 0, null, Errors.Warning);
+                DMEEditor?.AddLogMessage("Beep", "Invalid parameters for GetFieldtypeWoConversion", DateTime.Now, 0, null, Errors.Warning);
                 return "varchar"; // Default fallback
             }
 
             try
             {
-                return DataTypeFieldMappingHelper.GetFieldTypeWoConversion(DSname, fld, DMEEditor);
+                return DataTypeFieldMappingHelper.GetFieldtypeWoConversion(DSname, fld, DMEEditor);
             }
             catch (Exception ex)
             {
-                DMEEditor?.AddLogMessage("Beep", $"Error getting field type without conversion for {DSname}.{fld.fieldname}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
-                return GetFallbackFieldType(fld);
+                DMEEditor?.AddLogMessage("Beep", $"Error getting field type without conversion for {DSname}.{fld.FieldName}: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                return GetFallbackFieldtype(fld);
             }
         }
+       
+        //public string GetFieldtypeWoConversion(string DSname, EntityField fld)
+        //{
+           
+        //}
 
         /// <summary>Returns an array of .NET data types with caching.</summary>
         /// <returns>An array of .NET data types.</returns>
@@ -327,30 +331,30 @@ namespace TheTechIdea.Beep.Helpers
             try
             {
                 // Analyze field properties to determine best fallback
-                if (fld.fieldtype?.ToLowerInvariant().Contains("int") == true)
+                if (fld.Fieldtype?.ToLowerInvariant().Contains("int") == true)
                 {
                     return fld.Size1 > 10 ? "System.Int64" : "System.Int32";
                 }
                 
-                if (fld.fieldtype?.ToLowerInvariant().Contains("decimal") == true || 
-                    fld.fieldtype?.ToLowerInvariant().Contains("numeric") == true)
+                if (fld.Fieldtype?.ToLowerInvariant().Contains("decimal") == true || 
+                    fld.Fieldtype?.ToLowerInvariant().Contains("numeric") == true)
                 {
                     return "System.Decimal";
                 }
                 
-                if (fld.fieldtype?.ToLowerInvariant().Contains("float") == true || 
-                    fld.fieldtype?.ToLowerInvariant().Contains("double") == true)
+                if (fld.Fieldtype?.ToLowerInvariant().Contains("float") == true || 
+                    fld.Fieldtype?.ToLowerInvariant().Contains("double") == true)
                 {
                     return "System.Double";
                 }
                 
-                if (fld.fieldtype?.ToLowerInvariant().Contains("bool") == true)
+                if (fld.Fieldtype?.ToLowerInvariant().Contains("bool") == true)
                 {
                     return "System.Boolean";
                 }
                 
-                if (fld.fieldtype?.ToLowerInvariant().Contains("date") == true || 
-                    fld.fieldtype?.ToLowerInvariant().Contains("time") == true)
+                if (fld.Fieldtype?.ToLowerInvariant().Contains("date") == true || 
+                    fld.Fieldtype?.ToLowerInvariant().Contains("time") == true)
                 {
                     return "System.DateTime";
                 }
@@ -368,7 +372,7 @@ namespace TheTechIdea.Beep.Helpers
         /// </summary>
         /// <param name="fld">The entity field.</param>
         /// <returns>A fallback database field type.</returns>
-        private string GetFallbackFieldType(EntityField fld)
+        private string GetFallbackFieldtype(EntityField fld)
         {
             if (fld == null) return "varchar";
 
@@ -432,6 +436,9 @@ namespace TheTechIdea.Beep.Helpers
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+      
+
         #endregion
     }
 }

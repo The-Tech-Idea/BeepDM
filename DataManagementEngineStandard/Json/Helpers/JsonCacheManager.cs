@@ -29,11 +29,11 @@ namespace TheTechIdea.Beep.Json.Helpers
             if (t == null || es == null) return null;
             return _propertyMapCache.GetOrAdd(t.FullName, _ =>
                 es.Fields
-                  .GroupBy(f => f.fieldname, StringComparer.OrdinalIgnoreCase)
+                  .GroupBy(f => f.FieldName, StringComparer.OrdinalIgnoreCase)
                   .Select(g => g.First())
-                  .Select(f => new { f.fieldname, PI = t.GetProperty(f.fieldname, BindingFlags.Instance | BindingFlags.Public) })
+                  .Select(f => new { f.FieldName, PI = t.GetProperty(f.FieldName, BindingFlags.Instance | BindingFlags.Public) })
                   .Where(x => x.PI != null && x.PI.CanWrite)
-                  .ToDictionary(x => x.fieldname, x => x.PI, StringComparer.OrdinalIgnoreCase)
+                  .ToDictionary(x => x.FieldName, x => x.PI, StringComparer.OrdinalIgnoreCase)
             );
         }
 

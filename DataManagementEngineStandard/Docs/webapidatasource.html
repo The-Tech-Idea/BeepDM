@@ -418,8 +418,8 @@ if (connectionResult == ConnectionState.Open)
     // Get repository information
     var filters = new List&lt;AppFilter&gt; 
     {
-        new AppFilter { FieldName = "owner", FilterValue = "microsoft", Operator = "=" },
-        new AppFilter { FieldName = "repo", FilterValue = "vscode", Operator = "=" }
+        new AppFilter {FieldName = "owner", FilterValue = "microsoft", Operator = "=" },
+        new AppFilter {FieldName = "repo", FilterValue = "vscode", Operator = "=" }
     };
 
     var repoData = githubDataSource.GetEntity("repos", filters);
@@ -427,9 +427,9 @@ if (connectionResult == ConnectionState.Open)
     // Get issues with pagination
     var issueFilters = new List&lt;AppFilter&gt;
     {
-        new AppFilter { FieldName = "owner", FilterValue = "microsoft", Operator = "=" },
-        new AppFilter { FieldName = "repo", FilterValue = "vscode", Operator = "=" },
-        new AppFilter { FieldName = "state", FilterValue = "open", Operator = "=" }
+        new AppFilter {FieldName = "owner", FilterValue = "microsoft", Operator = "=" },
+        new AppFilter {FieldName = "repo", FilterValue = "vscode", Operator = "=" },
+        new AppFilter {FieldName = "state", FilterValue = "open", Operator = "=" }
     };
     
     var pagedIssues = githubDataSource.GetEntity("issues", issueFilters, 1, 50);
@@ -471,15 +471,15 @@ var webApiProps = new WebAPIConnectionProperties
                         <div class="code-example">
                             <pre><code class="language-csharp">// Search for recent tweets
 var tweetFilters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "query", FilterValue = "#CSharp", Operator = "=" },
-    new AppFilter { FieldName = "max_results", FilterValue = "100", Operator = "=" }
+    new AppFilter {FieldName = "query", FilterValue = "#CSharp", Operator = "=" },
+    new AppFilter {FieldName = "max_results", FilterValue = "100", Operator = "=" }
 };
 
 var tweets = webApiDS.GetEntity("Tweets", tweetFilters);
 
 // Get user information
 var userFilters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "username", FilterValue = "GitHub", Operator = "=" }
+    new AppFilter {FieldName = "username", FilterValue = "GitHub", Operator = "=" }
 };
 
 var userData = webApiDS.GetEntity("Users", userFilters);</code></pre>
@@ -529,8 +529,8 @@ var insertResult = webApiDS.InsertEntity("Customers", newCustomer);
 
 // Get charges with filtering
 var chargeFilters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "customer", FilterValue = "cus_1234567890", Operator = "=" },
-    new AppFilter { FieldName = "limit", FilterValue = "50", Operator = "=" }
+    new AppFilter {FieldName = "customer", FilterValue = "cus_1234567890", Operator = "=" },
+    new AppFilter {FieldName = "limit", FilterValue = "50", Operator = "=" }
 };
 
 var charges = webApiDS.GetEntity("Charges", chargeFilters);</code></pre>
@@ -571,8 +571,8 @@ var employees = webApiDS.GetEntity("Employees", null);
 
 // Get projects with filtering
 var projectFilters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "status", FilterValue = "active", Operator = "=" },
-    new AppFilter { FieldName = "department", FilterValue = "engineering", Operator = "=" }
+    new AppFilter {FieldName = "status", FilterValue = "active", Operator = "=" },
+    new AppFilter {FieldName = "department", FilterValue = "engineering", Operator = "=" }
 };
 
 var projects = webApiDS.GetEntity("Projects", projectFilters);
@@ -607,13 +607,13 @@ var allUsers = webApiDS.GetEntity("Users", null);
 
 // READ - Get with filtering
 var filters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "department", FilterValue = "Engineering", Operator = "=" }
+    new AppFilter {FieldName = "department", FilterValue = "Engineering", Operator = "=" }
 };
 var engineers = webApiDS.GetEntity("Users", filters);
 
 // READ - Get single record by ID
 var userFilters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "id", FilterValue = "123", Operator = "=" }
+    new AppFilter {FieldName = "id", FilterValue = "123", Operator = "=" }
 };
 var user = webApiDS.GetEntity("Users", userFilters);
 
@@ -990,8 +990,8 @@ var customStructure = new EntityStructure
 {
     EntityName = "CustomEntity",
     Fields = new List&lt;EntityField&gt; {
-        new EntityField { fieldname = "id", fieldtype = "System.Int32" },
-        new EntityField { fieldname = "name", fieldtype = "System.String" }
+        new EntityField {FieldName = "id", Fieldtype = "System.Int32" },
+        new EntityField {FieldName = "name", Fieldtype = "System.String" }
     }
 };</code></pre>
                     </div>
@@ -1051,7 +1051,7 @@ var users = webApiDS.GetEntity("Users", null);
                     <div class="code-example">
                         <pre><code class="language-csharp">// Database-style operations work seamlessly
 var filters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "status", FilterValue = "active", Operator = "=" }
+    new AppFilter {FieldName = "status", FilterValue = "active", Operator = "=" }
 };
 
 var activeUsers = webApiDS.GetEntity("Users", filters); // Just like RDBSource!
@@ -1102,7 +1102,7 @@ var users = webApiDS.GetEntity("Users", null);
                     <div class="code-block">
 // Database-style operations work seamlessly
 var filters = new List&lt;AppFilter&gt; {
-    new AppFilter { FieldName = "status", FilterValue = "active", Operator = "=" }
+    new AppFilter {FieldName = "status", FilterValue = "active", Operator = "=" }
 };
 
 var activeUsers = webApiDS.GetEntity("Users", filters); // Just like RDBSource!

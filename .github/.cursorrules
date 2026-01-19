@@ -1,0 +1,196 @@
+# Cursor Rules for BeepDM
+
+## Project Context
+BeepDM is the core data management engine for BeepDataSources. It defines interfaces (IDMEEditor, IDataSource, IConfigEditor) and provides the orchestration layer for 287+ datasources.
+
+## Code Style & Conventions
+
+### Naming
+- Interfaces: I{Name} (e.g., IDMEEditor, IDataSource, IConfigEditor)
+- Classes: {Name} (e.g., DMEEditor, ConfigEditor, DataTypesHelper)
+- Properties: PascalCase (e.g., DatasourceName, ConnectionStatus)
+- Methods: PascalCase (e.g., GetDataSource, OpenConnection)
+- Private fields: _camelCase (e.g., `_datasources`, `_typeCache`)
+- Constants: UPPER_SNAKE_CASE
+
+### Class Organization
+- Using statements first
+- Namespace declaration
+- Interface/class declaration
+- Constants/static fields
+- Properties
+- Constructors
+- Public methods (grouped by responsibility)
+- Private/internal methods
+- IDisposable implementation last
+- Use #region directives for logical grouping
+
+### Partial Classes Pattern
+BeepDM uses partial classes for complex components:
+- **DMEEditor.Core.cs** — Properties, constructor, initialization
+- **DMEEditor.DataSources.cs** — GetDataSource, CreateNewDataSourceConnection, etc.
+- **DMEEditor.Logging.cs** — AddLogMessage, error handling
+- **DMEEditor.ETL.cs** — ETL-related operations
+- Organize logically by feature, not alphabetically
+
+## Architecture Rules
+
+### For Interface Definitions (IDataSource, IDMEEditor, etc.)
+1. Keep interfaces stable (they're public API contracts)
+2. Use nullable reference types where appropriate
+3. Document all members with XML comments
+4. Never break existing interface signatures
+5. Add new methods as extensions if possible
+
+### For Interface Implementations (DMEEditor, ConfigEditor, etc.)
+1. Implement all required members explicitly
+2. Use dependency injection in constructors
+3. Provide sensible defaults for optional behaviors
+4. Log operations via Logger.WriteLog()
+5. Always populate ErrorObject on failure
+6. Support thread safety if concurrent access likely
+
+### For Configuration Management (ConfigEditor)
+1. Load JSON configs at initialization
+2. Support programmatic overrides
+3. Cache frequently accessed items
+4. Save changes back to JSON atomically
+5. Validate configuration consistency
+6. Handle missing files gracefully
+
+### For Helper Implementations (IDataSourceHelper)
+1. Set SupportedType property accurately
+2. Implement full DDL/DML/Schema/Transaction support
+3. Use proper dialect-specific SQL generation
+4. Quote identifiers to prevent SQL injection
+5. Return tuple with (Sql, Parameters, Success, ErrorMessage)
+6. Support capability checking via SupportsCapability()
+
+## Error Handling
+- Never throw exceptions for expected failures
+- Always set `ErrorObject.Flag` and `ErrorObject.Message`
+- Log via `Logger.WriteLog(message)` for diagnostics
+- Use `IErrorsInfo` return type for operation results
+- Raise `PassEvent?.Invoke(this, args)` for state changes
+
+## Async Patterns
+- Use async/await consistently
+- Provide async variants (GetEntityAsync, GetScalarAsync)
+- Use `.ConfigureAwait(false)` in library code
+- Never block on async operations (.Result is forbidden)
+- Handle CancellationToken where appropriate
+
+## Dependency Injection
+- Constructor injection preferred over property injection
+- Support both Autofac and Microsoft.Extensions.DependencyInjection
+- Register as Singleton for DMEEditor/ConfigEditor (thread-safe shared state)
+- Register as Scoped for web applications
+- Lazy load complex dependencies
+
+## Testing
+- Unit test each interface implementation
+- Integration tests for datasource lifecycle
+- Test assembly discovery (AssemblyHandler)
+- Test configuration load/save operations
+- Mock external dependencies (databases, APIs)
+- Verify error handling and logging
+
+## Common Patterns
+
+### Datasource Retrieval with Caching
+```csharp
+public virtual IDataSource GetDataSource(string pdatasourcename)
+{
+    if (ds1 != null && pdatasourcename.Equals(ds1.DatasourceName, StringComparison.InvariantCultureIgnoreCase))
+        return ds1;
+    
+    try
+    {
+        ds1 = DataSources.FirstOrDefault(f => f.DatasourceName.Equals(pdatasourcename, StringComparison.InvariantCultureIgnoreCase));
+    }
+    catch (Exception ex)
+    {
+        AddLogMessage(ex.Message, "Could not find datasource", DateTime.Now, -1, "", Errors.Failed);
+    }
+    
+    if (ds1 == null)
+        ds1 = CreateNewDataSourceConnection(pdatasourcename);
+    
+    return ds1;
+}
+```
+
+### Configuration Loading
+```csharp
+public ConfigandSettings LoadConfigValues()
+{
+    string path = Path.Combine(ExePath, "Config.json");
+    Config = JsonLoader.DeserializeSingleObject<ConfigandSettings>(path);
+    return Config;
+}
+```
+
+### Error Handling with ErrorObject
+```csharp
+public IErrorsInfo Init()
+{
+    ErrorObject.Flag = Errors.Ok;
+    try
+    {
+        InitConfig();
+        InitDataConnections();
+        // ... more initialization
+    }
+    catch (Exception ex)
+    {
+        ErrorObject.Flag = Errors.Failed;
+        ErrorObject.Ex = ex;
+        ErrorObject.Message = ex.Message;
+        Logger.WriteLog($"Error Initialization Lists ({ex.Message})");
+    }
+    return ErrorObject;
+}
+```
+
+## Performance Considerations
+- Cache datasources in `DataSources` list (avoid repeated creation)
+- Cache type lookups in AssemblyHandler (`_typeCache`)
+- Use ConcurrentDictionary for thread-safe collections
+- Lazy load complex objects (configurations, assemblies)
+- Dispose resources properly to prevent memory leaks
+- Use connection pooling for database datasources
+
+## Documentation
+- Add XML doc comments to public methods and properties
+- Include examples in docstrings
+- Document thread safety assumptions
+- Document configuration format changes
+- Document async behavior and cancellation support
+- Keep README.md updated with key APIs
+
+## Files to Review Before Coding
+
+- `DataManagementModelsStandard/IDMEEditor.cs` — Interface contract
+- `DataManagementModelsStandard/IDataSource.cs` — Datasource contract
+- `DataManagementEngineStandard/Editor/DM/DMEEditor.cs` — Main orchestrator
+- `DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs` — Config management
+- `DataManagementEngineStandard/Helpers/UniversalDataSourceHelpers/` — Helper implementations
+- `idatasourceimplementationplan.md` — IDataSourceHelper roadmap
+
+## Build Commands
+```bash
+dotnet build BeepDM.sln
+dotnet test
+dotnet build -c Release
+```
+
+## Key Principles
+
+1. **Interface Stability** — Never break IDMEEditor or IDataSource signatures
+2. **Configuration-Driven** — Behavior comes from JSON configs
+3. **Dependency Injection** — Use constructor injection
+4. **Thread Safety** — Singleton pattern for shared state
+5. **Comprehensive Logging** — All operations logged via Logger
+6. **Error Handling** — IErrorsInfo, not exceptions, for expected failures
+7. **Async Support** — Async methods for long operations
+8. **Plugin Architecture** — External datasources loaded dynamically

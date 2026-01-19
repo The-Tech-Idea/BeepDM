@@ -261,12 +261,12 @@ namespace TheTechIdea.Beep.Tools
             // Document each field
             foreach (var field in entity.Fields)
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                 sb.AppendLine($"        <member name=\"P:{entity.EntityName}.{safePropertyName}\">");
                 sb.AppendLine("            <summary>");
                 sb.AppendLine($"            {(!string.IsNullOrEmpty(field.Description) ? field.Description : $"The {safePropertyName} property")}");
                 sb.AppendLine("            </summary>");
-                sb.AppendLine($"            <value>A {field.fieldtype} value representing {safePropertyName}</value>");
+                sb.AppendLine($"            <value>A {field.Fieldtype} value representing {safePropertyName}</value>");
 
                 if (!string.IsNullOrEmpty(field.DefaultValue))
                     sb.AppendLine($"            <remarks>Default value: {field.DefaultValue}</remarks>");
@@ -309,18 +309,18 @@ namespace TheTechIdea.Beep.Tools
             // Field differences
             sb.AppendLine("## Field Changes");
 
-            var originalFields = originalEntity.Fields.ToDictionary(f => f.fieldname);
-            var newFields = newEntity.Fields.ToDictionary(f => f.fieldname);
+            var originalFields = originalEntity.Fields.ToDictionary(f => f.FieldName);
+            var newFields = newEntity.Fields.ToDictionary(f => f.FieldName);
 
             // Fields removed
             var removedFields = originalFields.Keys.Except(newFields.Keys).ToList();
             if (removedFields.Any())
             {
                 sb.AppendLine("### Removed Fields");
-                foreach (var fieldName in removedFields)
+                foreach (var FieldName in removedFields)
                 {
-                    var field = originalFields[fieldName];
-                    sb.AppendLine($"- {field.fieldname} ({field.fieldtype})");
+                    var field = originalFields[FieldName];
+                    sb.AppendLine($"- {field.FieldName} ({field.Fieldtype})");
                 }
                 sb.AppendLine();
             }
@@ -330,10 +330,10 @@ namespace TheTechIdea.Beep.Tools
             if (addedFields.Any())
             {
                 sb.AppendLine("### Added Fields");
-                foreach (var fieldName in addedFields)
+                foreach (var FieldName in addedFields)
                 {
-                    var field = newFields[fieldName];
-                    sb.AppendLine($"- {field.fieldname} ({field.fieldtype})");
+                    var field = newFields[FieldName];
+                    sb.AppendLine($"- {field.FieldName} ({field.Fieldtype})");
                 }
                 sb.AppendLine();
             }
@@ -427,7 +427,7 @@ namespace TheTechIdea.Beep.Tools
             // Generate form fields
             foreach (var field in entity.Fields.Take(5)) // Limit for brevity
             {
-                var safePropertyName = _helper.GenerateSafePropertyName(field.fieldname);
+                var safePropertyName = _helper.GenerateSafePropertyName(field.FieldName);
                 sb.AppendLine("            <div class=\"form-group\">");
                 sb.AppendLine($"                <label for=\"{safePropertyName}\">{_helper.GetDisplayName(safePropertyName)}</label>");
                 sb.AppendLine($"                <input type=\"text\" class=\"form-control\" id=\"{safePropertyName}\" />");
@@ -512,8 +512,8 @@ namespace TheTechIdea.Beep.Tools
             int fieldNumber = 1;
             foreach (var field in entity.Fields)
             {
-                var protoType = _helper.MapCSharpToProtoType(field.fieldtype);
-                var snakeCaseName = _helper.ToSnakeCase(field.fieldname);
+                var protoType = _helper.MapCSharpToProtoType(field.Fieldtype);
+                var snakeCaseName = _helper.ToSnakeCase(field.FieldName);
                 protoSb.AppendLine($"  {protoType} {snakeCaseName} = {fieldNumber++};");
             }
 
