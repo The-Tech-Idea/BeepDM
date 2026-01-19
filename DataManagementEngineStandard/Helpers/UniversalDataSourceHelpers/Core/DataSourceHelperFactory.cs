@@ -7,6 +7,12 @@ using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RedisHelpers;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.CassandraHelpers;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RestApiHelpers;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.SearchHelpers;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.GraphHelpers;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.TimeSeriesHelpers;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.VectorHelpers;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.StreamingHelpers;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.FileHelpers;
 
 namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
 {
@@ -59,7 +65,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
                 { DataSourceType.LiteDB, (dme) => { var h = new MongoDBHelper(dme); h.SupportedType = DataSourceType.LiteDB; return h; } },
                 { DataSourceType.Firebase, (dme) => { var h = new MongoDBHelper(dme); h.SupportedType = DataSourceType.Firebase; return h; } },
                 { DataSourceType.DynamoDB, (dme) => { var h = new MongoDBHelper(dme); h.SupportedType = DataSourceType.DynamoDB; return h; } },
-                { DataSourceType.VistaDB, (dme) => { var h = new MongoDBHelper(dme); h.SupportedType = DataSourceType.VistaDB; return h; } },
+                { DataSourceType.VistaDB, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.VistaDB; return h; } },
 
                 // Key-Value stores
                 { DataSourceType.Redis, (dme) => { var h = new RedisHelper(dme); h.SupportedType = DataSourceType.Redis; return h; } },
@@ -74,28 +80,28 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
                 { DataSourceType.ClickHouse, (dme) => { var h = new CassandraHelper(dme); h.SupportedType = DataSourceType.ClickHouse; return h; } },
 
                 // Graph databases
-                { DataSourceType.Neo4j, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Neo4j; return h; } },
-                { DataSourceType.TigerGraph, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.TigerGraph; return h; } },
-                { DataSourceType.JanusGraph, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.JanusGraph; return h; } },
+                { DataSourceType.Neo4j, (dme) => { var h = new GraphDbHelper(dme); h.SupportedType = DataSourceType.Neo4j; return h; } },
+                { DataSourceType.TigerGraph, (dme) => { var h = new GraphDbHelper(dme); h.SupportedType = DataSourceType.TigerGraph; return h; } },
+                { DataSourceType.JanusGraph, (dme) => { var h = new GraphDbHelper(dme); h.SupportedType = DataSourceType.JanusGraph; return h; } },
 
                 // Search engines
-                { DataSourceType.ElasticSearch, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ElasticSearch; return h; } },
-                { DataSourceType.Solr, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Solr; return h; } },
+                { DataSourceType.ElasticSearch, (dme) => { var h = new SearchEngineHelper(dme); h.SupportedType = DataSourceType.ElasticSearch; return h; } },
+                { DataSourceType.Solr, (dme) => { var h = new SearchEngineHelper(dme); h.SupportedType = DataSourceType.Solr; return h; } },
 
                 // Time series databases
-                { DataSourceType.InfluxDB, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.InfluxDB; return h; } },
-                { DataSourceType.TimeScale, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.TimeScale; return h; } },
+                { DataSourceType.InfluxDB, (dme) => { var h = new TimeSeriesHelper(dme); h.SupportedType = DataSourceType.InfluxDB; return h; } },
+                { DataSourceType.TimeScale, (dme) => { var h = new TimeSeriesHelper(dme); h.SupportedType = DataSourceType.TimeScale; return h; } },
 
                 // Vector databases
-                { DataSourceType.ChromaDB, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ChromaDB; return h; } },
-                { DataSourceType.PineCone, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.PineCone; return h; } },
-                { DataSourceType.Qdrant, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Qdrant; return h; } },
-                { DataSourceType.Weaviate, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Weaviate; return h; } },
-                { DataSourceType.Milvus, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Milvus; return h; } },
-                { DataSourceType.Zilliz, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Zilliz; return h; } },
-                { DataSourceType.Vespa, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Vespa; return h; } },
-                { DataSourceType.ShapVector, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ShapVector; return h; } },
-                { DataSourceType.RedisVector, (dme) => { var h = new RedisHelper(dme); h.SupportedType = DataSourceType.RedisVector; return h; } },
+                { DataSourceType.ChromaDB, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.ChromaDB; return h; } },
+                { DataSourceType.PineCone, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.PineCone; return h; } },
+                { DataSourceType.Qdrant, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.Qdrant; return h; } },
+                { DataSourceType.Weaviate, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.Weaviate; return h; } },
+                { DataSourceType.Milvus, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.Milvus; return h; } },
+                { DataSourceType.Zilliz, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.Zilliz; return h; } },
+                { DataSourceType.Vespa, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.Vespa; return h; } },
+                { DataSourceType.ShapVector, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.ShapVector; return h; } },
+                { DataSourceType.RedisVector, (dme) => { var h = new VectorDbHelper(dme); h.SupportedType = DataSourceType.RedisVector; return h; } },
 
                 // Big data / columnar
                 { DataSourceType.Hadoop, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Hadoop; return h; } },
@@ -127,17 +133,17 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
                 { DataSourceType.Supabase, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Supabase; return h; } },
 
                 // Streaming and messaging
-                { DataSourceType.Kafka, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Kafka; return h; } },
-                { DataSourceType.RabbitMQ, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.RabbitMQ; return h; } },
-                { DataSourceType.ActiveMQ, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ActiveMQ; return h; } },
-                { DataSourceType.Pulsar, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Pulsar; return h; } },
-                { DataSourceType.MassTransit, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.MassTransit; return h; } },
-                { DataSourceType.Nats, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Nats; return h; } },
-                { DataSourceType.ZeroMQ, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ZeroMQ; return h; } },
-                { DataSourceType.AWSKinesis, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.AWSKinesis; return h; } },
-                { DataSourceType.AWSSQS, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.AWSSQS; return h; } },
-                { DataSourceType.AWSSNS, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.AWSSNS; return h; } },
-                { DataSourceType.AzureServiceBus, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.AzureServiceBus; return h; } },
+                { DataSourceType.Kafka, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.Kafka; return h; } },
+                { DataSourceType.RabbitMQ, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.RabbitMQ; return h; } },
+                { DataSourceType.ActiveMQ, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.ActiveMQ; return h; } },
+                { DataSourceType.Pulsar, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.Pulsar; return h; } },
+                { DataSourceType.MassTransit, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.MassTransit; return h; } },
+                { DataSourceType.Nats, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.Nats; return h; } },
+                { DataSourceType.ZeroMQ, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.ZeroMQ; return h; } },
+                { DataSourceType.AWSKinesis, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.AWSKinesis; return h; } },
+                { DataSourceType.AWSSQS, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.AWSSQS; return h; } },
+                { DataSourceType.AWSSNS, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.AWSSNS; return h; } },
+                { DataSourceType.AzureServiceBus, (dme) => { var h = new StreamingHelper(dme); h.SupportedType = DataSourceType.AzureServiceBus; return h; } },
 
                 // Stream processing
                 { DataSourceType.ApacheFlink, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ApacheFlink; return h; } },
@@ -147,27 +153,28 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
                 // Machine learning data formats
                 { DataSourceType.TFRecord, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.TFRecord; return h; } },
                 { DataSourceType.ONNX, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ONNX; return h; } },
+                { DataSourceType.Onnx, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Onnx; return h; } },
                 { DataSourceType.PyTorchData, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.PyTorchData; return h; } },
                 { DataSourceType.ScikitLearnData, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.ScikitLearnData; return h; } },
 
                 // File formats
-                { DataSourceType.FlatFile, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.FlatFile; return h; } },
-                { DataSourceType.CSV, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.CSV; return h; } },
-                { DataSourceType.TSV, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.TSV; return h; } },
-                { DataSourceType.Text, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Text; return h; } },
-                { DataSourceType.YAML, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.YAML; return h; } },
-                { DataSourceType.Json, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Json; return h; } },
-                { DataSourceType.Markdown, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Markdown; return h; } },
-                { DataSourceType.Log, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Log; return h; } },
-                { DataSourceType.INI, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.INI; return h; } },
-                { DataSourceType.XML, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.XML; return h; } },
-                { DataSourceType.Xls, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Xls; return h; } },
-                { DataSourceType.Doc, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Doc; return h; } },
-                { DataSourceType.Docx, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Docx; return h; } },
-                { DataSourceType.PPT, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.PPT; return h; } },
-                { DataSourceType.PPTX, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.PPTX; return h; } },
-                { DataSourceType.PDF, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.PDF; return h; } },
-                { DataSourceType.RecordIO, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.RecordIO; return h; } },
+                { DataSourceType.FlatFile, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.FlatFile; return h; } },
+                { DataSourceType.CSV, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.CSV; return h; } },
+                { DataSourceType.TSV, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.TSV; return h; } },
+                { DataSourceType.Text, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Text; return h; } },
+                { DataSourceType.YAML, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.YAML; return h; } },
+                { DataSourceType.Json, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Json; return h; } },
+                { DataSourceType.Markdown, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Markdown; return h; } },
+                { DataSourceType.Log, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Log; return h; } },
+                { DataSourceType.INI, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.INI; return h; } },
+                { DataSourceType.XML, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.XML; return h; } },
+                { DataSourceType.Xls, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Xls; return h; } },
+                { DataSourceType.Doc, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Doc; return h; } },
+                { DataSourceType.Docx, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.Docx; return h; } },
+                { DataSourceType.PPT, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.PPT; return h; } },
+                { DataSourceType.PPTX, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.PPTX; return h; } },
+                { DataSourceType.PDF, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.PDF; return h; } },
+                { DataSourceType.RecordIO, (dme) => { var h = new FileFormatHelper(dme); h.SupportedType = DataSourceType.RecordIO; return h; } },
 
                 // Specialized formats
                 { DataSourceType.Hdf5, (dme) => { var h = new RdbmsHelper(dme); h.SupportedType = DataSourceType.Hdf5; return h; } },
@@ -432,7 +439,12 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
                 { DataSourceType.JSONRPC, (dme) => { var h = new RestApiHelper(dme); h.SupportedType = DataSourceType.JSONRPC; return h; } },
                 { DataSourceType.GRPC, (dme) => { var h = new RestApiHelper(dme); h.SupportedType = DataSourceType.GRPC; return h; } },
                 { DataSourceType.WebSocket, (dme) => { var h = new RestApiHelper(dme); h.SupportedType = DataSourceType.WebSocket; return h; } },
-                { DataSourceType.SSE, (dme) => { var h = new RestApiHelper(dme); h.SupportedType = DataSourceType.SSE; return h; } }
+                { DataSourceType.SSE, (dme) => { var h = new RestApiHelper(dme); h.SupportedType = DataSourceType.SSE; return h; } },
+
+                // Defaults and unknowns
+                { DataSourceType.NONE, (dme) => { var h = new DefaultDataSourceHelper(dme); h.SupportedType = DataSourceType.NONE; return h; } },
+                { DataSourceType.Unknown, (dme) => { var h = new DefaultDataSourceHelper(dme); h.SupportedType = DataSourceType.Unknown; return h; } },
+                { DataSourceType.Other, (dme) => { var h = new DefaultDataSourceHelper(dme); h.SupportedType = DataSourceType.Other; return h; } }
             };
         }
 
@@ -448,7 +460,8 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
                 return factory(_dmeEditor);
             }
 
-            return null;
+            var fallback = new DefaultDataSourceHelper(_dmeEditor) { SupportedType = datasourceType };
+            return fallback;
         }
 
         /// <summary>

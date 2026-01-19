@@ -693,7 +693,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = column.fieldtype;
+                var dataType = ResolveFieldType(column);
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(column.fieldname);
                 var sql = $"ALTER TABLE {quotedTable} ADD {quotedColumn} {dataType}";
@@ -703,6 +703,51 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             {
                 return (string.Empty, false, ex.Message);
             }
+        }
+
+        private string ResolveFieldType(EntityField column)
+        {
+            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+                return "VARCHAR(255)";
+
+            var clrType = ResolveClrType(column.fieldtype);
+            if (clrType != null)
+            {
+                int? size = column.Size > 0 ? column.Size : null;
+                int? precision = column.NumericPrecision > 0 ? column.NumericPrecision : null;
+                int? scale = column.NumericScale > 0 ? column.NumericScale : null;
+                return MapClrTypeToDatasourceType(clrType, size, precision, scale);
+            }
+
+            return column.fieldtype;
+        }
+
+        private static Type ResolveClrType(string fieldType)
+        {
+            var type = Type.GetType(fieldType);
+            if (type != null)
+                return type;
+
+            type = Type.GetType($"System.{fieldType}");
+            if (type != null)
+                return type;
+
+            return fieldType.ToLowerInvariant() switch
+            {
+                "string" => typeof(string),
+                "int" or "int32" => typeof(int),
+                "long" or "int64" => typeof(long),
+                "short" or "int16" => typeof(short),
+                "byte" => typeof(byte),
+                "decimal" => typeof(decimal),
+                "double" => typeof(double),
+                "float" => typeof(float),
+                "single" => typeof(float),
+                "bool" or "boolean" => typeof(bool),
+                "datetime" => typeof(DateTime),
+                "guid" => typeof(Guid),
+                _ => null
+            };
         }
 
         /// <summary>

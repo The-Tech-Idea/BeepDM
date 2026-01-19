@@ -164,7 +164,27 @@ return #keys";
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateAddColumnSql(string tableName, EntityField column)
         {
-            return ("", true, "Redis is schema-less - fields are added dynamically");
+            if (string.IsNullOrWhiteSpace(tableName) || column == null)
+                return ("", false, "Table name or column is missing");
+
+            switch (SupportedType)
+            {
+                case DataSourceType.ApacheIgnite:
+                case DataSourceType.GridGain:
+                case DataSourceType.Hazelcast:
+                    return GenerateSqlAddColumn(tableName, column);
+                case DataSourceType.Redis:
+                case DataSourceType.Memcached:
+                case DataSourceType.ChronicleMap:
+                case DataSourceType.InMemoryCache:
+                case DataSourceType.CachedMemory:
+                case DataSourceType.RealIM:
+                case DataSourceType.Petastorm:
+                case DataSourceType.RocketSet:
+                    return ("", true, $"{SupportedType} is schema-less - no DDL required");
+                default:
+                    return ("", true, "Schema is flexible - no DDL required");
+            }
         }
 
         /// <summary>
@@ -222,6 +242,58 @@ end";
         }
 
         #endregion
+
+        private (string Sql, bool Success, string ErrorMessage) GenerateSqlAddColumn(string tableName, EntityField column)
+        {
+            var dataType = ResolveFieldType(column);
+            var sql = $"ALTER TABLE {tableName} ADD {column.fieldname} {dataType}";
+            return (sql, true, "SQL add-column for in-memory grid");
+        }
+
+        private string ResolveFieldType(EntityField column)
+        {
+            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+                return "VARCHAR(255)";
+
+            var clrType = ResolveClrType(column.fieldtype);
+            if (clrType != null)
+            {
+                int? size = column.Size > 0 ? column.Size : null;
+                int? precision = column.NumericPrecision > 0 ? column.NumericPrecision : null;
+                int? scale = column.NumericScale > 0 ? column.NumericScale : null;
+                return MapClrTypeToDatasourceType(clrType, size, precision, scale);
+            }
+
+            return column.fieldtype;
+        }
+
+        private static Type ResolveClrType(string fieldType)
+        {
+            var type = Type.GetType(fieldType);
+            if (type != null)
+                return type;
+
+            type = Type.GetType($"System.{fieldType}");
+            if (type != null)
+                return type;
+
+            return fieldType.ToLowerInvariant() switch
+            {
+                "string" => typeof(string),
+                "int" or "int32" => typeof(int),
+                "long" or "int64" => typeof(long),
+                "short" or "int16" => typeof(short),
+                "byte" => typeof(byte),
+                "decimal" => typeof(decimal),
+                "double" => typeof(double),
+                "float" => typeof(float),
+                "single" => typeof(float),
+                "bool" or "boolean" => typeof(bool),
+                "datetime" => typeof(DateTime),
+                "guid" => typeof(Guid),
+                _ => null
+            };
+        }
 
         #region Constraint Operations - Level 2 Schema Integrity
 

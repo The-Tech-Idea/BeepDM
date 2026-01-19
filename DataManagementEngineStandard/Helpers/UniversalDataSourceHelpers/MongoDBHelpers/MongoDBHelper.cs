@@ -206,7 +206,26 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateAddColumnSql(string collectionName, EntityField column)
         {
-            return ("", true, "MongoDB is schema-less - columns are added dynamically");
+            if (column == null || string.IsNullOrWhiteSpace(collectionName))
+                return ("", false, "Collection name or column is missing");
+
+            switch (SupportedType)
+            {
+                case DataSourceType.OrientDB:
+                    return GenerateOrientDbAddProperty(collectionName, column);
+                case DataSourceType.MongoDB:
+                    return GenerateMongoDbAddProperty(collectionName, column);
+                case DataSourceType.ArangoDB:
+                case DataSourceType.CouchDB:
+                case DataSourceType.Couchbase:
+                case DataSourceType.DynamoDB:
+                case DataSourceType.Firebase:
+                case DataSourceType.LiteDB:
+                case DataSourceType.RavenDB:
+                    return ("", true, $"{SupportedType} is schema-less - no DDL required");
+                default:
+                    return ("", true, "Schema is flexible - no DDL required");
+            }
         }
 
         /// <summary>
@@ -256,6 +275,62 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
         }
 
         #endregion
+
+        private (string Sql, bool Success, string ErrorMessage) GenerateMongoDbAddProperty(string collectionName, EntityField column)
+        {
+            var bsonType = MapToMongoBsonType(column);
+            var json = $"{{ \"collMod\": \"{collectionName}\", \"validator\": {{ \"$jsonSchema\": {{ \"bsonType\": \"object\", \"properties\": {{ \"{column.fieldname}\": {{ \"bsonType\": \"{bsonType}\" }} }} }} }} }}";
+            return (json, true, "MongoDB validator update for new field");
+        }
+
+        private (string Sql, bool Success, string ErrorMessage) GenerateOrientDbAddProperty(string className, EntityField column)
+        {
+            var typeName = MapToOrientDbType(column);
+            var sql = $"CREATE PROPERTY {className}.{column.fieldname} {typeName}";
+            return (sql, true, "OrientDB property creation");
+        }
+
+        private string MapToMongoBsonType(EntityField column)
+        {
+            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+                return "string";
+
+            var t = column.fieldtype.ToLowerInvariant();
+            if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
+                return "int";
+            if (t.Contains("decimal") || t.Contains("numeric") || t.Contains("double") || t.Contains("float"))
+                return "double";
+            if (t.Contains("bool"))
+                return "bool";
+            if (t.Contains("date") || t.Contains("time"))
+                return "date";
+            if (t.Contains("guid"))
+                return "string";
+            if (t.Contains("byte") || t.Contains("binary"))
+                return "binData";
+            return "string";
+        }
+
+        private string MapToOrientDbType(EntityField column)
+        {
+            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+                return "STRING";
+
+            var t = column.fieldtype.ToLowerInvariant();
+            if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
+                return "INTEGER";
+            if (t.Contains("decimal") || t.Contains("numeric"))
+                return "DECIMAL";
+            if (t.Contains("double") || t.Contains("float"))
+                return "DOUBLE";
+            if (t.Contains("bool"))
+                return "BOOLEAN";
+            if (t.Contains("date") || t.Contains("time"))
+                return "DATETIME";
+            if (t.Contains("byte") || t.Contains("binary"))
+                return "BINARY";
+            return "STRING";
+        }
 
         #region Constraint Operations - Level 2 Schema Integrity
 

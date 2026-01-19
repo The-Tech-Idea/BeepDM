@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Utilities;
@@ -1975,6 +1975,1736 @@ namespace TheTechIdea.Beep.Core
                 },
 
                 #endregion
+                #region Auto Defaults
+                {
+                    DataSourceType.ActiveCampaign, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ADO, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Adyen, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Airtable, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.AmazonS3, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Amplitude, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.AnyDo, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ApacheFlink, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.ApacheSparkStreaming, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.ApacheStorm, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.ArduinoCloud, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Asana, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.AuthorizeNet, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.AWSIoT, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.AWSIoTAnalytics, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.AWSIoTCore, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.AWSStepFunctions, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.AWSSWF, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.AzureBoards, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.AzureCloud, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.AzureDevOps, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.AzureIoTHub, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Backblaze, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Basecamp, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.BenchAccounting, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.BigCartel, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.BigCommerce, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Bitbucket, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.BitcoinCore, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.BitPay, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Bluesky, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Box, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Braintree, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Buffer, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Calendly, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.CampaignMonitor, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Chanty, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.CircleCI, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.CitrixShareFile, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ClickSend, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ClickUp, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Coinbase, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ConstantContact, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ConvertKit, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Copper, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Criteo, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Cyfe, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Databox, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Discord, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Doc, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.DocuSign, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Docx, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Doodle, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Drift, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Drip, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Dropbox, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Ecwid, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Egnyte, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Ethereum, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Etsy, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Eventbrite, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Facebook, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Fathom, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Firebolt, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Flock, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.FreshBooks, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Freshdesk, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Freshsales, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Front, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Geckoboard, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GitHub, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GitLab, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Gmail, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GoogleAds, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GoogleAnalytics, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GoogleChat, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GoogleCloudStorage, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GoogleDrive, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.GoogleSheets, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Heap, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.HelpScout, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Hologres, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Hootsuite, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.HootsuiteMarketing, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Hotjar, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.HubSpot, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Hyperledger, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.iCloud, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Insightly, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Instagram, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Integromat, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Intercom, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Jenkins, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Jira, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Jotform, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Kayako, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Klaviyo, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Kudosity, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.LinkedIn, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.LiveAgent, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Loomly, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Magento, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Mailchimp, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MailerLite, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Mailgun, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Make, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Marketo, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Mastodon, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Mattermost, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MediaFire, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Mega, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MicrosoftDynamics365, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MicrosoftPowerAutomate, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MicrosoftTeams, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MiModel, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Mixpanel, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Monday, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.MYOB, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Nest, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.NONE, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = false,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: unspecified helper"
+                    }
+                },
+                {
+                    DataSourceType.Notion, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Nutshell, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ODBC, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.OLEDB, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.OneDrive, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Onnx, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.ONNX, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.OPC, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.OpenCart, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.OracleCRM, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Other, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = false,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: unspecified helper"
+                    }
+                },
+                {
+                    DataSourceType.Outlook, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Particle, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Payoneer, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.PayPal, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.pCloud, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.PDF, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Petastorm, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = false,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: key-value helper"
+                    }
+                },
+                {
+                    DataSourceType.PhilipsHue, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Pinterest, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Pipedrive, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Plaid, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Podio, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Postman, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.PowerBI, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.PPT, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.PPTX, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.PrestaShop, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Presto, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.PyTorchData, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.QuickBooks, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.QuickBooksOnline, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Razorpay, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.RecordIO, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Reddit, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.RocketChat, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.RocketChatComm, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.RocketSet, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = false,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: key-value helper"
+                    }
+                },
+                {
+                    DataSourceType.SageBusinessCloud, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SageIntacct, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Salesforce, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SAPCRM, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ScikitLearnData, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.SendGrid, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Sendinblue, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Shopify, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Slack, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Smartsheet, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SmartsheetPM, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SmartThings, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Snapchat, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SonarQube, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Square, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Squarespace, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Stripe, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SugarCRM, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.SwaggerHub, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Tableau, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Teamwork, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Telegram, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.TFRecord, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Threads, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.TikTok, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.TikTokAds, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.TLDV, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.TrayIO, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Trello, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Trino, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: RDBMS helper"
+                    }
+                },
+                {
+                    DataSourceType.Tuya, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Twilio, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Twist, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Twitter, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.TwoCheckout, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Typeform, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Unknown, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = false,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: unspecified helper"
+                    }
+                },
+                {
+                    DataSourceType.Venmo, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.VistaDB, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = false,
+                        SupportsSchemaEvolution = true,
+                        Notes = "Default: document helper"
+                    }
+                },
+                {
+                    DataSourceType.Volusion, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.WaveApps, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.WebApi, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.WhatsAppBusiness, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Wise, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Wix, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.WooCommerce, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.WordPress, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Worldpay, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Wrike, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Xero, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Yahoo, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.YouTube, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Zapier, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Zendesk, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Zoho, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ZohoBooks, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.ZohoDesk, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                {
+                    DataSourceType.Zoom, new DataSourceCapabilities
+                    {
+                        IsSchemaEnforced = true,
+                        SupportsSchemaEvolution = false,
+                        Notes = "Default: REST API helper"
+                    }
+                },
+                #endregion
             };
 
         /// <summary>
@@ -2194,3 +3924,5 @@ namespace TheTechIdea.Beep.Core
         }
     }
 }
+
+

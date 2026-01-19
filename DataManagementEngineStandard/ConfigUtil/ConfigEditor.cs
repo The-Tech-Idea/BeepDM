@@ -35,6 +35,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 		private readonly QueryManager _queryManager;
 		private readonly EntityMappingManager _entityManager;
 		private readonly ComponentConfigManager _componentManager;
+		private readonly MigrationHistoryManager _migrationHistoryManager;
 
         /// <summary>Initializes a new instance of the ConfigEditor class.</summary>
         /// <param name="logger">The logger object used for logging.</param>
@@ -66,6 +67,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 			// Initialize entity manager after config is set
 			_entityManager = new EntityMappingManager(logger, jsonloader, Config, _pathManager);
+			_migrationHistoryManager = new MigrationHistoryManager(logger, jsonloader, Config, _pathManager);
 
 			// Initialize remaining properties
 			InitializeProperties();
@@ -75,6 +77,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 			// Update entity manager with fully initialized Config (Config may have been replaced in Init())
 			_entityManager.Config = Config;
+			_migrationHistoryManager.Config = Config;
 		}
 
 		private void InitializeProperties()
@@ -271,6 +274,13 @@ namespace TheTechIdea.Beep.ConfigUtil
 		public void SaveEntityStructure(string filepath, EntityStructure entity) => _entityManager.SaveEntityStructure(filepath, entity);
 		public EntityStructure LoadEntityStructure(string filepath, string EntityName, string DataSourceID) => _entityManager.LoadEntityStructure(filepath, EntityName, DataSourceID);
         #endregion
+
+		#region "Migration History Operations - Delegated to MigrationHistoryManager"
+		public MigrationHistory LoadMigrationHistory(string dataSourceName) => _migrationHistoryManager.Load(dataSourceName);
+		public void SaveMigrationHistory(MigrationHistory history) => _migrationHistoryManager.Save(history);
+		public void AppendMigrationRecord(string dataSourceName, DataSourceType dataSourceType, MigrationRecord record) =>
+			_migrationHistoryManager.AppendRecord(dataSourceName, dataSourceType, record);
+		#endregion
 
         #region "Mapping Operations - Delegated to EntityMappingManager"
         public void SaveMappingSchemaValue(string schemaname, Map_Schema mapping_Rep) => _entityManager.SaveMappingSchemaValue(schemaname, mapping_Rep);
