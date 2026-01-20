@@ -279,23 +279,23 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
         private (string Sql, bool Success, string ErrorMessage) GenerateMongoDbAddProperty(string collectionName, EntityField column)
         {
             var bsonType = MapToMongoBsonType(column);
-            var json = $"{{ \"collMod\": \"{collectionName}\", \"validator\": {{ \"$jsonSchema\": {{ \"bsonType\": \"object\", \"properties\": {{ \"{column.fieldname}\": {{ \"bsonType\": \"{bsonType}\" }} }} }} }} }}";
+            var json = $"{{ \"collMod\": \"{collectionName}\", \"validator\": {{ \"$jsonSchema\": {{ \"bsonType\": \"object\", \"properties\": {{ \"{column.FieldName}\": {{ \"bsonType\": \"{bsonType}\" }} }} }} }} }}";
             return (json, true, "MongoDB validator update for new field");
         }
 
         private (string Sql, bool Success, string ErrorMessage) GenerateOrientDbAddProperty(string className, EntityField column)
         {
             var typeName = MapToOrientDbType(column);
-            var sql = $"CREATE PROPERTY {className}.{column.fieldname} {typeName}";
+            var sql = $"CREATE PROPERTY {className}.{column.FieldName} {typeName}";
             return (sql, true, "OrientDB property creation");
         }
 
         private string MapToMongoBsonType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "string";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
                 return "int";
             if (t.Contains("decimal") || t.Contains("numeric") || t.Contains("double") || t.Contains("float"))
@@ -313,10 +313,10 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.MongoDBHelpers
 
         private string MapToOrientDbType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "STRING";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
                 return "INTEGER";
             if (t.Contains("decimal") || t.Contains("numeric"))

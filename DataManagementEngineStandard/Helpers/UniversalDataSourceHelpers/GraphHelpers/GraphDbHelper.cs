@@ -76,15 +76,15 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.GraphHelpers
 
         private (string Sql, bool Success, string ErrorMessage) GenerateNeo4jConstraint(string label, EntityField column)
         {
-            var constraintName = $"constraint_{label}_{column.fieldname}";
-            var sql = $"CREATE CONSTRAINT {constraintName} IF NOT EXISTS FOR (n:{label}) REQUIRE n.{column.fieldname} IS NOT NULL";
+            var constraintName = $"constraint_{label}_{column.FieldName}";
+            var sql = $"CREATE CONSTRAINT {constraintName} IF NOT EXISTS FOR (n:{label}) REQUIRE n.{column.FieldName} IS NOT NULL";
             return (sql, true, "Neo4j property existence constraint");
         }
 
         private (string Sql, bool Success, string ErrorMessage) GenerateTigerGraphAlter(string vertexType, EntityField column)
         {
             var typeName = MapToGraphType(column);
-            var sql = $"ALTER VERTEX {vertexType} ADD {column.fieldname} {typeName};";
+            var sql = $"ALTER VERTEX {vertexType} ADD {column.FieldName} {typeName};";
             return (sql, true, "TigerGraph add vertex attribute");
         }
 
@@ -92,7 +92,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.GraphHelpers
         {
             var typeName = MapToGraphType(column);
             var script = "mgmt = graph.openManagement();\n" +
-                         $"prop = mgmt.makePropertyKey('{column.fieldname}').dataType({typeName}.class).make();\n" +
+                         $"prop = mgmt.makePropertyKey('{column.FieldName}').dataType({typeName}.class).make();\n" +
                          $"mgmt.addPropertyKey('{label}', prop);\n" +
                          "mgmt.commit();";
             return (script, true, "JanusGraph schema update (Gremlin)");
@@ -100,10 +100,10 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.GraphHelpers
 
         private string MapToGraphType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "String";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
                 return "Integer";
             if (t.Contains("decimal") || t.Contains("numeric") || t.Contains("double") || t.Contains("float"))

@@ -40,7 +40,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.FileHelpers
             if (!IsDelimitedType())
                 return (string.Empty, false, "Create file is not supported for this file type");
 
-            var header = string.Join(",", entity.Fields?.ConvertAll(f => f.fieldname) ?? new List<string>());
+            var header = string.Join(",", entity.Fields?.ConvertAll(f => f.FieldName) ?? new List<string>());
             return ($"CREATE FILE {entity.EntityName} WITH HEADER {header}", true, "Create file with header");
         }
 
@@ -71,7 +71,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.FileHelpers
             if (!IsDelimitedType())
                 return (string.Empty, true, "Schema is flexible - no DDL required");
 
-            return ($"ALTER FILE {tableName} ADD COLUMN {column.fieldname}", true, "Add column to delimited file");
+            return ($"ALTER FILE {tableName} ADD COLUMN {column.FieldName}", true, "Add column to delimited file");
         }
 
         public (string Sql, bool Success, string ErrorMessage) GenerateAlterColumnSql(string tableName, string columnName, EntityField newColumn)

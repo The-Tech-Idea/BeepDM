@@ -246,16 +246,16 @@ end";
         private (string Sql, bool Success, string ErrorMessage) GenerateSqlAddColumn(string tableName, EntityField column)
         {
             var dataType = ResolveFieldType(column);
-            var sql = $"ALTER TABLE {tableName} ADD {column.fieldname} {dataType}";
+            var sql = $"ALTER TABLE {tableName} ADD {column.FieldName} {dataType}";
             return (sql, true, "SQL add-column for in-memory grid");
         }
 
         private string ResolveFieldType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "VARCHAR(255)";
 
-            var clrType = ResolveClrType(column.fieldtype);
+            var clrType = ResolveClrType(column.Fieldtype);
             if (clrType != null)
             {
                 int? size = column.Size > 0 ? column.Size : null;
@@ -264,7 +264,7 @@ end";
                 return MapClrTypeToDatasourceType(clrType, size, precision, scale);
             }
 
-            return column.fieldtype;
+            return column.Fieldtype;
         }
 
         private static Type ResolveClrType(string fieldType)

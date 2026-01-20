@@ -1362,6 +1362,11 @@
             Reads a JSON file containing datatype mappings and returns a list of DatatypeMapping objects.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.Managers.MigrationHistoryManager">
+            <summary>
+            Manages migration history stored in the central configuration/metadata store.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.Managers.QueryManager">
             <summary>
             Manages SQL queries and query repositories with enhanced capabilities through RDBMSHelper integration
@@ -17866,9 +17871,27 @@
             </summary>
             <returns>Collection of supported datasource types</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.DefaultDataSourceHelper">
+            <summary>
+            Default helper for datasource types without a dedicated implementation.
+            Uses capability matrix to determine supported operations.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core.GeneralDataSourceHelper">
             <summary>
             General implementation of IDataSourceHelper that delegates to specific helpers based on datasource type.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.FileHelpers.FileFormatHelper">
+            <summary>
+            Helper for file-based datasources (CSV/TSV/Text/JSON/XML/etc.).
+            Provides DDL-like commands and basic file structure operations.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.GraphHelpers.GraphDbHelper">
+            <summary>
+            Helper for graph databases (Neo4j, TigerGraph, JanusGraph).
+            Graph schemas are typically flexible; DDL is limited.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Mapping.RelationshipToEntityMapper">
@@ -18799,6 +18822,28 @@
             <summary>
             REST APIs typically don't have numeric precision limits.
             Returns 0 to indicate unlimited.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.SearchHelpers.SearchEngineHelper">
+            <summary>
+            Helper for search engines (Elasticsearch, Solr).
+            Schema is flexible and mappings are updated dynamically.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.StreamingHelpers.StreamingHelper">
+            <summary>
+            Helper for streaming and queue systems (Kafka, RabbitMQ, ActiveMQ, Pulsar, Kinesis, SQS, SNS, Azure Service Bus).
+            Generates command-like strings for create/drop/purge/partition operations.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.TimeSeriesHelpers.TimeSeriesHelper">
+            <summary>
+            Helper for time series databases (InfluxDB, TimeScale).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.VectorHelpers.VectorDbHelper">
+            <summary>
+            Helper for vector databases (Pinecone, Qdrant, Weaviate, Milvus, etc.).
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Helpers.ValidationResult">

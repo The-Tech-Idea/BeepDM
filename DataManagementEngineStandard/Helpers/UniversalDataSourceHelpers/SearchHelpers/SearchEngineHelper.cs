@@ -75,23 +75,23 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.SearchHelpers
         private (string Sql, bool Success, string ErrorMessage) GenerateElasticAddField(string indexName, EntityField column)
         {
             var elasticType = MapToElasticType(column);
-            var json = $"PUT /{indexName}/_mapping{Environment.NewLine}{{\"properties\":{{\"{column.fieldname}\":{{\"type\":\"{elasticType}\"}}}}}}";
+            var json = $"PUT /{indexName}/_mapping{Environment.NewLine}{{\"properties\":{{\"{column.FieldName}\":{{\"type\":\"{elasticType}\"}}}}}}";
             return (json, true, "Elasticsearch mapping update");
         }
 
         private (string Sql, bool Success, string ErrorMessage) GenerateSolrAddField(EntityField column)
         {
             var solrType = MapToSolrType(column);
-            var json = $"POST /solr/{Environment.NewLine}{{\"add-field\":{{\"name\":\"{column.fieldname}\",\"type\":\"{solrType}\",\"stored\":true,\"indexed\":true}}}}";
+            var json = $"POST /solr/{Environment.NewLine}{{\"add-field\":{{\"name\":\"{column.FieldName}\",\"type\":\"{solrType}\",\"stored\":true,\"indexed\":true}}}}";
             return (json, true, "Solr schema API add-field");
         }
 
         private string MapToElasticType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "keyword";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int"))
                 return "integer";
             if (t.Contains("long"))
@@ -109,10 +109,10 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.SearchHelpers
 
         private string MapToSolrType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "string";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int"))
                 return "pint";
             if (t.Contains("long"))

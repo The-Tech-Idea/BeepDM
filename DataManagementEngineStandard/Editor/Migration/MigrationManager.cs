@@ -70,7 +70,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 var addResult = AddColumn(entity, column);
                 if (addResult.Flag != Errors.Ok)
-                    failures.Add($"{column.fieldname}: {addResult.Message}");
+                    failures.Add($"{column.FieldName}: {addResult.Message}");
             }
 
             if (failures.Count > 0)
@@ -106,10 +106,10 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return new List<EntityField>();
 
             var existing = new HashSet<string>(
-                current.Fields.Select(f => f.fieldname),
+                current.Fields.Select(f => f.FieldName),
                 StringComparer.OrdinalIgnoreCase);
 
-            return desired.Fields.Where(f => !existing.Contains(f.fieldname)).ToList();
+            return desired.Fields.Where(f => !existing.Contains(f.FieldName)).ToList();
         }
 
         public IErrorsInfo CreateEntity(EntityStructure entity)
@@ -392,7 +392,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (IsFileDataSource(MigrateDataSource))
             {
                 var fileResult = AddColumnToFile(column);
-                TrackMigration("AddColumn", entity.EntityName, column.fieldname, string.Empty, fileResult);
+                TrackMigration("AddColumn", entity.EntityName, column.FieldName, string.Empty, fileResult);
                 return fileResult;
             }
 
@@ -407,7 +407,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(sql))
             {
                 var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("AddColumn", entity.EntityName, column.fieldname, string.Empty, noDdlResult);
+                TrackMigration("AddColumn", entity.EntityName, column.FieldName , string.Empty, noDdlResult);
                 return noDdlResult;
             }
 
@@ -415,14 +415,14 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (result == null)
             {
                 var noResult = CreateErrorsInfo(Errors.Failed, "Datasource returned no result for add-column SQL");
-                TrackMigration("AddColumn", entity.EntityName, column.fieldname, sql, noResult);
+                TrackMigration("AddColumn", entity.EntityName, column.FieldName, sql, noResult);
                 return noResult;
             }
 
             var finalResult = result.Flag == Errors.Ok
-                ? CreateErrorsInfo(Errors.Ok, $"Added column '{column.fieldname}'")
+                ? CreateErrorsInfo(Errors.Ok, $"Added column '{column.FieldName}'")
                 : result;
-            TrackMigration("AddColumn", entity.EntityName, column.fieldname, sql, finalResult);
+            TrackMigration("AddColumn", entity.EntityName, column.FieldName, sql, finalResult);
             return finalResult;
         }
 
@@ -432,10 +432,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(filePath))
                 return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
 
-            var ok = FileHelper.AddColumnToFile(filePath, column.fieldname, column.DefaultValue ?? string.Empty);
+            var ok = FileHelper.AddColumnToFile(filePath, column.FieldName, column.DefaultValue ?? string.Empty);
             return ok
-                ? CreateErrorsInfo(Errors.Ok, $"Added column '{column.fieldname}' to file")
-                : CreateErrorsInfo(Errors.Failed, $"Failed to add column '{column.fieldname}' to file");
+                ? CreateErrorsInfo(Errors.Ok, $"Added column '{column.FieldName}' to file")
+                : CreateErrorsInfo(Errors.Failed, $"Failed to add column '{column.FieldName}' to file");
         }
 
         private static bool IsFileDataSource(IDataSource dataSource)
@@ -472,7 +472,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
 
             var delimiter = GetFileDelimiter(MigrateDataSource);
-            var header = string.Join(delimiter, entity.Fields?.Select(f => f.fieldname) ?? Enumerable.Empty<string>());
+            var header = string.Join(delimiter, entity.Fields?.Select(f => f.FieldName) ?? Enumerable.Empty<string>());
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             File.WriteAllText(filePath, header + Environment.NewLine);
             return CreateErrorsInfo(Errors.Ok, $"File created at '{filePath}'");
@@ -530,7 +530,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (!File.Exists(filePath))
                 return CreateErrorsInfo(Errors.Failed, $"File '{filePath}' does not exist");
 
-            var updated = new EntityStructure(entityName) { Fields = new List<EntityField> { new EntityField { fieldname = columnName } } };
+            var updated = new EntityStructure(entityName) { Fields = new List<EntityField> { new EntityField { FieldName = columnName } } };
             var ok = FileHelper.UpdateFileStructure(_editor, updated, filePath, addColumn: false);
             return ok
                 ? CreateErrorsInfo(Errors.Ok, $"Removed column '{columnName}' from file")

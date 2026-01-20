@@ -76,23 +76,23 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.VectorHelpers
         private (string Sql, bool Success, string ErrorMessage) GenerateWeaviateAddProperty(string className, EntityField column)
         {
             var dataType = MapToWeaviateType(column);
-            var json = $"POST /v1/schema/{className}/properties{Environment.NewLine}{{\"name\":\"{column.fieldname}\",\"dataType\":[\"{dataType}\"]}}";
+            var json = $"POST /v1/schema/{className}/properties{Environment.NewLine}{{\"name\":\"{column.FieldName}\",\"dataType\":[\"{dataType}\"]}}";
             return (json, true, "Weaviate schema add property");
         }
 
         private (string Sql, bool Success, string ErrorMessage) GenerateQdrantPayloadSchema(string collectionName, EntityField column)
         {
             var dataType = MapToQdrantType(column);
-            var json = $"PUT /collections/{collectionName}/payload_schema{Environment.NewLine}{{\"{column.fieldname}\":{{\"data_type\":\"{dataType}\"}}}}";
+            var json = $"PUT /collections/{collectionName}/payload_schema{Environment.NewLine}{{\"{column.FieldName}\":{{\"data_type\":\"{dataType}\"}}}}";
             return (json, true, "Qdrant payload schema update");
         }
 
         private string MapToWeaviateType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "text";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
                 return "int";
             if (t.Contains("double") || t.Contains("float") || t.Contains("decimal") || t.Contains("numeric"))
@@ -106,10 +106,10 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.VectorHelpers
 
         private string MapToQdrantType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "keyword";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int") || t.Contains("long") || t.Contains("short"))
                 return "integer";
             if (t.Contains("double") || t.Contains("float") || t.Contains("decimal") || t.Contains("numeric"))

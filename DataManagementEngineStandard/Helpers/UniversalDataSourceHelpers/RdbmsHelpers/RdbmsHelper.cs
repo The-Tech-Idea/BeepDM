@@ -693,7 +693,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = column.fieldtype;
+                var dataType = column.Fieldtype;
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(column.FieldName);
                 var sql = $"ALTER TABLE {quotedTable} ADD {quotedColumn} {dataType}";
@@ -707,10 +707,10 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 
         private string ResolveFieldType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "VARCHAR(255)";
 
-            var clrType = ResolveClrType(column.fieldtype);
+            var clrType = ResolveClrType(column.Fieldtype);
             if (clrType != null)
             {
                 int? size = column.Size > 0 ? column.Size : null;
@@ -719,7 +719,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                 return MapClrTypeToDatasourceType(clrType, size, precision, scale);
             }
 
-            return column.fieldtype;
+            return column.Fieldtype;
         }
 
         private static Type ResolveClrType(string fieldType)

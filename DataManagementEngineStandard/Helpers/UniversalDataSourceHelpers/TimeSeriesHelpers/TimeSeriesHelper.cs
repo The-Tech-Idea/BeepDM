@@ -74,16 +74,16 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.TimeSeriesHelpers
         private (string Sql, bool Success, string ErrorMessage) GenerateTimeScaleAddColumn(string tableName, EntityField column)
         {
             var dataType = ResolveFieldType(column);
-            var sql = $"ALTER TABLE {tableName} ADD COLUMN {column.fieldname} {dataType}";
+            var sql = $"ALTER TABLE {tableName} ADD COLUMN {column.FieldName} {dataType}";
             return (sql, true, "TimeScale (PostgreSQL) add-column");
         }
 
         private string ResolveFieldType(EntityField column)
         {
-            if (column == null || string.IsNullOrWhiteSpace(column.fieldtype))
+            if (column == null || string.IsNullOrWhiteSpace(column.Fieldtype))
                 return "TEXT";
 
-            var t = column.fieldtype.ToLowerInvariant();
+            var t = column.Fieldtype.ToLowerInvariant();
             if (t.Contains("int"))
                 return "INTEGER";
             if (t.Contains("long"))
