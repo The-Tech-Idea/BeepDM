@@ -22,7 +22,19 @@ namespace TheTechIdea.Beep.Vis
         SubEntity = 1 << 5,   // 32
         Function = 1 << 6,    // 64
         Report = 1 << 7,      // 128
-        Global = 1 << 8       // 256
+        Global = 1 << 8  ,     // 256
+        Form = 1 << 9   ,      // 512
+        Block = 1 << 10  ,     // 1024
+        Item = 1 << 11   ,     // 2048
+            Trigger = 1 << 12 ,
+            View = 1 << 13,
+            Schema = 1 << 14,
+            DataBase = 1 << 15,
+            Table = 1 << 16,
+            Class = 1 << 17,
+            All = Genre | Root | DataPoint | Category | Entity | SubEntity | Function | Report | Global | Form | Block | Item | Trigger | View | Schema | DataBase | Table | Class
+
+
     }
 
     [Flags]

@@ -33,11 +33,20 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
-
+  <!-- Conditional package references for Microsoft.Extensions.Logging based on target framework -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.2" />
-    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.120" />
+    <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.121" />
     <!-- NuGet SDK for direct package downloading -->
     <PackageReference Include="NuGet.Protocol" Version="7.0.1" />
     <PackageReference Include="NuGet.Packaging" Version="7.0.1" />
