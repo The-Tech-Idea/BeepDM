@@ -86,7 +86,10 @@ namespace TheTechIdea.Beep.Vis
         /// Gets or sets a value indicating whether the command is left-aligned in the UI. Defaults to true.
         /// </summary>
         public bool IsLeftAligned { get; set; } = true;
-
+        /// <summary>
+        /// Gets or sets the type name of the data returned by the command.
+        /// </summary>
+        public string ReturnDataTypeName { get; set; }
         /// <summary>
         /// Gets or sets the display order of the command. Defaults to 0.
         /// </summary>

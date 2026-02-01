@@ -8218,6 +8218,151 @@
             </summary>
             <returns>Diagnostic configured mapper</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationSummary">
+            <summary>
+            Summary of migration status comparing Entity classes with database state.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.EntitiesToCreate">
+            <summary>
+            List of entity names that need to be created in the database.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.EntitiesToUpdate">
+            <summary>
+            List of entity names that need updates (missing columns, etc.).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.EntitiesUpToDate">
+            <summary>
+            List of entity names that are up-to-date with their Entity classes.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.Errors">
+            <summary>
+            List of errors encountered during migration summary generation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.TotalPendingMigrations">
+            <summary>
+            Total count of entities that need migration.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.HasPendingMigrations">
+            <summary>
+            Indicates if there are any pending migrations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.DiscoverEntityTypes(System.String,System.Reflection.Assembly,System.Boolean)">
+            <summary>
+            Discovers all types that inherit from Entity in the specified namespace(s).
+            Similar to EF Core's DbContext discovery pattern.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.DiscoverAllEntityTypes(System.Boolean)">
+            <summary>
+            Discovers all types that inherit from Entity in all loaded assemblies.
+            Scans all assemblies in AppDomain and DMEEditor's assembly handler.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Ensures database is created with all discovered Entity types.
+            Similar to EF Core's Database.EnsureCreated().
+            Creates entities for all classes that inherit from Entity.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Applies migrations for all discovered Entity types.
+            Compares Entity classes with database schema and applies changes.
+            Similar to EF Core's Database.Migrate().
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean)">
+            <summary>
+            Gets migration summary comparing Entity classes with current database state.
+            Returns list of entities that need creation or updates.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationManager">
+            <summary>
+            MigrationManager provides datasource-agnostic schema migration capabilities.
+            
+            Key Design Principles:
+            1. Entity Creation: Uses IDataSource.CreateEntityAs() for datasource-agnostic entity creation.
+               Each datasource implementation handles .NET type mapping to its native type system internally.
+            2. Type Mapping: Uses DataTypesHelper to map .NET types (Fieldtype) to datasource-specific types (FieldType).
+               This ensures CreateEntityAs receives properly typed EntityStructure for any datasource type.
+            3. Schema Modifications: Column operations (AddColumn, AlterColumn, DropColumn) use IDataSourceHelper
+               for SQL generation when direct IDataSource methods are not available. These operations are
+               primarily for RDBMS datasources that support DDL operations.
+            4. Validation: Uses IDataSourceHelper.ValidateEntity() before creation to catch issues early.
+            
+            This approach ensures compatibility with all 200+ datasource types (RDBMS, NoSQL, File-based, Cloud, etc.)
+            by leveraging each datasource's own CreateEntityAs implementation rather than generating SQL directly.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureEntityStructureTypes(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Ensures EntityStructure fields have proper type mappings for the target datasource using DataTypesHelper.
+            This is critical for datasource-agnostic entity creation via CreateEntityAs.
+            Maps .NET types (Fieldtype) to datasource-specific types (FieldType) for the target datasource.
+            Each datasource's CreateEntityAs implementation uses these mappings to create entities in its native format.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InferNetTypeFromDataSourceType(System.String)">
+            <summary>
+            Infers .NET type from datasource-specific type name (fallback method).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InferDataSourceTypeFromNetType(System.String)">
+            <summary>
+            Infers datasource-specific type from .NET type name (fallback method).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.DiscoverEntityTypes(System.String,System.Reflection.Assembly,System.Boolean)">
+            <summary>
+            Discovers all types that inherit from Entity in the specified namespace(s).
+            Similar to EF Core's DbContext discovery pattern.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.DiscoverAllEntityTypes(System.Boolean)">
+            <summary>
+            Discovers all types that inherit from Entity in all loaded assemblies.
+            Scans all assemblies in AppDomain and DMEEditor's assembly handler.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Ensures database is created with all discovered Entity types.
+            Similar to EF Core's Database.EnsureCreated().
+            Creates entities for all classes that inherit from Entity.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Applies migrations for all discovered Entity types.
+            Compares Entity classes with database schema and applies changes.
+            Similar to EF Core's Database.Migrate().
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean)">
+            <summary>
+            Gets migration summary comparing Entity classes with current database state.
+            Returns list of entities that need creation or updates.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.IsEntityType(System.Type,System.String,System.Boolean)">
+            <summary>
+            Checks if a type inherits from Entity (or implements IEntity) and matches namespace filter.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetSearchableAssemblies">
+            <summary>
+            Gets all searchable assemblies from current AppDomain and DMEEditor's assembly handler.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UnitofWork_bk`1">
             <summary>
             Represents a unit of work for managing entities of type T.

@@ -3996,6 +3996,11 @@
             Gets or sets a value indicating whether the command is left-aligned in the UI. Defaults to true.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.ReturnDataTypeName">
+            <summary>
+            Gets or sets the type name of the data returned by the command.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Vis.CommandAttribute.Order">
             <summary>
             Gets or sets the display order of the command. Defaults to 0.
