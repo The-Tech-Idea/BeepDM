@@ -35,7 +35,12 @@ namespace TheTechIdea.Beep.Editor.UOW
             {
                 return default;
             }
-            return Units[Getindex(id)];
+            var index = Getindex(id);
+            if (index < 0 || index >= Units.Count)
+            {
+                return default;
+            }
+            return Units[index];
         }
 
         /// <summary>
@@ -216,6 +221,10 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>The value associated with the specified key</returns>
         public virtual T Get(int key)
         {
+            if (Units == null || key < 0 || key >= Units.Count)
+            {
+                return default;
+            }
             return Units[key];
         }
 
@@ -228,10 +237,26 @@ namespace TheTechIdea.Beep.Editor.UOW
         {
             if (Units == null || Units.Count == 0)
             {
-                Get(new List<AppFilter>() { new AppFilter() {FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } });
+                // Await the async Get to ensure data is loaded before querying
+                Get(new List<AppFilter>() { new AppFilter() {FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } }).GetAwaiter().GetResult();
             }
 
-            var retval = Units.FirstOrDefault(p => p.GetType().GetProperty(PrimaryKey).GetValue(p, null).ToString() == PrimaryKeyid);
+            if (string.IsNullOrEmpty(PrimaryKey))
+            {
+                return default;
+            }
+
+            var pkProperty = typeof(T).GetProperty(PrimaryKey, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            if (pkProperty == null)
+            {
+                return default;
+            }
+
+            var retval = Units.FirstOrDefault(p =>
+            {
+                var val = pkProperty.GetValue(p, null);
+                return val != null && val.ToString() == PrimaryKeyid;
+            });
             return retval;
         }
 
@@ -670,8 +695,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>An object containing information about any errors that occurred during the insertion</returns>
         public IErrorsInfo InsertDoc(T doc)
         {
-            string[] classnames = doc.ToString().Split(new char[] { ' ', ',', '.', '-', '\n', '\t' });
-            string cname = classnames[classnames.Count() - 1];
+            string cname = typeof(T).Name;
 
             // Apply GUID key if specified
             if (!string.IsNullOrEmpty(GuidKey))
@@ -715,7 +739,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 int idx = Getindex(doc);
                 if (idx > -1)
                 {
-                    _units[Getindex(doc)] = doc;
+                    _units[idx] = doc;
                     retval = new ErrorsInfo { Flag = Errors.Ok, Message = "object already there, updated" };
                 }
                 else
@@ -736,11 +760,10 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         /// <param name="doc">The document to update</param>
         /// <returns>An object containing information about any errors that occurred during the update</returns>
-        private IErrorsInfo UpdateDoc(T doc)
+        public IErrorsInfo UpdateDoc(T doc)
         {
             IErrorsInfo retval;
-            string[] classnames = doc.ToString().Split(new char[] { ' ', ',', '.', '-', '\n', '\t' });
-            string cname = classnames[classnames.Count() - 1];
+            string cname = typeof(T).Name;
             
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreUpdate };
             PreUpdate?.Invoke(doc, ps);
@@ -758,7 +781,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 int idx = Getindex(doc);
                 if (idx > -1)
                 {
-                    _units[Getindex(doc)] = doc;
+                    _units[idx] = doc;
                     retval = new ErrorsInfo { Flag = Errors.Ok, Message = "Update Done" };
                 }
                 else

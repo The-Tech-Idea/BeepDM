@@ -7,6 +7,8 @@ using TheTechIdea.Beep.Tools;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -143,6 +145,208 @@ namespace TheTechIdea.Beep.Tools
 
         #endregion
 
+#region ConvertToEntityStructure
+        /// <summary>
+        /// Converts an Entity/POCO type to EntityStructure using FromType extension
+        /// then enriches fields with data annotation attributes ([Key], [Required], 
+        /// [MaxLength], [DatabaseGenerated], [Column], [Table], [NotMapped]).
+        /// Supports both Entity-derived types and plain POCOs.
+        /// </summary>
+        public EntityStructure ConvertEntityTypeToEntityStructure(Type EntityType,
+            KeyDetectionStrategy strategy = KeyDetectionStrategy.AttributeThenConvention,
+            string entityName = null, string datasourceName = null)
+        {
+            if (EntityType == null)
+                throw new ArgumentNullException(nameof(EntityType));
+
+            // Step 1: Use FromType extension to populate basic structure from reflection
+            EntityStructure entity = new EntityStructure();
+            entity.FromType(EntityType);
+
+            // Step 2: Set datasource name if provided
+            if (!string.IsNullOrWhiteSpace(datasourceName))
+            {
+                entity.DataSourceID = datasourceName;
+               
+            }
+
+            // Step 3: Override entity name if provided, or from [Table] attribute
+            var tableAttr = EntityType.GetCustomAttribute<TableAttribute>();
+            if (!string.IsNullOrWhiteSpace(entityName))
+            {
+                entity.EntityName = entityName;
+                entity.DatasourceEntityName = entityName;
+                entity.Caption = entityName;
+            }
+            else if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+            {
+                entity.DatasourceEntityName = tableAttr.Name;
+            }
+
+            // Step 4: Build property lookup for attribute reading
+            var properties = EntityType.GetProperties();
+            var propertyMap = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            foreach (var prop in properties)
+            {
+                propertyMap[prop.Name] = prop;
+            }
+
+            // Step 5: Remove [NotMapped] fields and navigation properties
+            var fieldsToRemove = new List<EntityField>();
+            foreach (var field in entity.Fields)
+            {
+                if (propertyMap.TryGetValue(field.FieldName, out var prop))
+                {
+                    if (prop.GetCustomAttribute<NotMappedAttribute>() != null)
+                    {
+                        fieldsToRemove.Add(field);
+                        continue;
+                    }
+                    if (IsNavigationProperty(prop.PropertyType))
+                    {
+                        fieldsToRemove.Add(field);
+                        continue;
+                    }
+                }
+            }
+            foreach (var f in fieldsToRemove)
+            {
+                entity.Fields.Remove(f);
+                entity.PrimaryKeys.Remove(f);
+            }
+
+            // Step 6: Enrich fields with data annotation attributes
+            entity.PrimaryKeys.Clear();
+            int fieldIndex = 0;
+            foreach (var field in entity.Fields)
+            {
+                field.FieldIndex = fieldIndex++;
+                field.EntityName = entity.EntityName;
+
+                if (!propertyMap.TryGetValue(field.FieldName, out var prop))
+                    continue;
+
+                // [Column] - override column name
+                var columnAttr = prop.GetCustomAttribute<ColumnAttribute>();
+                if (columnAttr != null && !string.IsNullOrWhiteSpace(columnAttr.Name))
+                {
+                    field.Originalfieldname = field.FieldName;
+                    field.FieldName = columnAttr.Name;
+                }
+
+                // [Key] - primary key
+                if (prop.GetCustomAttribute<KeyAttribute>() != null)
+                {
+                    field.IsKey = true;
+                }
+
+                // [DatabaseGenerated(Identity)] - auto increment
+                var dbGenAttr = prop.GetCustomAttribute<DatabaseGeneratedAttribute>();
+                if (dbGenAttr != null && dbGenAttr.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity)
+                {
+                    field.IsAutoIncrement = true;
+                }
+
+                // [Required] - not nullable
+                if (prop.GetCustomAttribute<RequiredAttribute>() != null)
+                {
+                    field.AllowDBNull = false;
+                }
+
+                // [MaxLength] - field size
+                var maxLenAttr = prop.GetCustomAttribute<MaxLengthAttribute>();
+                if (maxLenAttr != null && maxLenAttr.Length > 0)
+                {
+                    field.Size1 = maxLenAttr.Length;
+                }
+                else
+                {
+                    // [StringLength] fallback
+                    var strLenAttr = prop.GetCustomAttribute<StringLengthAttribute>();
+                    if (strLenAttr != null && strLenAttr.MaximumLength > 0)
+                    {
+                        field.Size1 = strLenAttr.MaximumLength;
+                    }
+                }
+
+                if (field.IsKey)
+                {
+                    entity.PrimaryKeys.Add(field);
+                }
+            }
+
+            // Step 7: Convention-based key detection if no [Key] found
+            if (entity.PrimaryKeys.Count == 0 &&
+                (strategy == KeyDetectionStrategy.ConventionOnly ||
+                 strategy == KeyDetectionStrategy.AttributeThenConvention))
+            {
+                ApplyConventionBasedKeyDetection(entity, EntityType);
+            }
+
+            return entity;
+        }
+
+        /// <summary>
+        /// Checks if a property type is a navigation property (collection or complex type)
+        /// that should be excluded from entity fields.
+        /// </summary>
+        private static bool IsNavigationProperty(Type propType)
+        {
+            var underlyingType = Nullable.GetUnderlyingType(propType);
+            if (underlyingType != null)
+                return false;
+
+            if (propType.IsPrimitive || propType == typeof(string) || propType == typeof(decimal) ||
+                propType == typeof(DateTime) || propType == typeof(DateTimeOffset) ||
+                propType == typeof(TimeSpan) || propType == typeof(Guid) ||
+                propType == typeof(byte[]) || propType.IsEnum)
+            {
+                return false;
+            }
+
+            if (propType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(propType))
+            {
+                return true;
+            }
+
+            if (propType.IsClass && propType != typeof(string) && propType != typeof(byte[]))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Applies convention-based key detection: looks for "Id" or "{TypeName}Id" properties.
+        /// </summary>
+        private static void ApplyConventionBasedKeyDetection(EntityStructure entity, Type entityType)
+        {
+            var idField = entity.Fields.FirstOrDefault(f =>
+                string.Equals(f.FieldName, "Id", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f.Originalfieldname, "Id", StringComparison.OrdinalIgnoreCase));
+
+            if (idField == null)
+            {
+                string typeNameId = entityType.Name + "Id";
+                idField = entity.Fields.FirstOrDefault(f =>
+                    string.Equals(f.FieldName, typeNameId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(f.Originalfieldname, typeNameId, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (idField != null)
+            {
+                idField.IsKey = true;
+                entity.PrimaryKeys.Add(idField);
+
+                if (idField.Fieldtype == typeof(int).FullName ||
+                    idField.Fieldtype == typeof(long).FullName)
+                {
+                    idField.IsAutoIncrement = true;
+                }
+            }
+        }
+#endregion
         #region Cache Management
 
         /// <summary>
@@ -154,33 +358,38 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>
-        /// Converts a POCO type to EntityStructure using generic type with KeyDetectionStrategy
+        /// Converts a POCO type to EntityStructure using generic type with KeyDetectionStrategy.
+        /// Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
         /// </summary>
         public EntityStructure ConvertToEntityStructure<T>(
             KeyDetectionStrategy strategy = KeyDetectionStrategy.AttributeThenConvention,
             string entityName = null) where T : class
         {
-            return ConvertPocoToEntity(typeof(T));
+            return ConvertEntityTypeToEntityStructure(typeof(T), strategy, entityName);
         }
 
         /// <summary>
-        /// Converts a runtime POCO type to EntityStructure with KeyDetectionStrategy
+        /// Converts a runtime POCO/Entity type to EntityStructure with KeyDetectionStrategy.
+        /// Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
         /// </summary>
         public EntityStructure ConvertToEntityStructure(Type pocoType,
             KeyDetectionStrategy strategy = KeyDetectionStrategy.AttributeThenConvention,
             string entityName = null)
         {
-            return ConvertPocoToEntity(pocoType);
+            return ConvertEntityTypeToEntityStructure(pocoType, strategy, entityName);
         }
 
         /// <summary>
-        /// Converts a POCO object instance to EntityStructure with KeyDetectionStrategy
+        /// Converts a POCO/Entity object instance to EntityStructure with KeyDetectionStrategy.
+        /// Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
         /// </summary>
         public EntityStructure ConvertToEntityStructure(object instance,
             KeyDetectionStrategy strategy = KeyDetectionStrategy.AttributeThenConvention,
             string entityName = null)
         {
-            return ConvertPocoToEntity(instance.GetType());
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+            return ConvertEntityTypeToEntityStructure(instance.GetType(), strategy, entityName);
         }
 
         /// <summary>

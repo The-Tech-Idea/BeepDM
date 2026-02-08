@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,16 +21,25 @@ namespace TheTechIdea.Beep.Editor
         string DatasourceName { get; set; }
         string EntityName { get; set; }
         EntityStructure EntityStructure { get; set; }
+        Type EntityType { get; set; }
         string Sequencer { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }
         List<Entity> DeletedUnits { get; set; }
         Dictionary<int, string> InsertedKeys { get; set; }
         string PrimaryKey { get; set; }
+        bool IsIdentity { get; set; }
+        string GuidKey { get; set; }
 
         // Here is the Units property specifically for Entity.
         ObservableBindingList<Entity> Units { get; set; }
 
         Dictionary<int, string> UpdatedKeys { get; set; }
+
+        // Paging
+        int PageIndex { get; set; }
+        int PageSize { get; set; }
+        int TotalItemCount { get; }
+
         // commit methods
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
@@ -40,6 +49,7 @@ namespace TheTechIdea.Beep.Editor
         void New();
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete();
+        ErrorsInfo Update(string id, Entity entity);
         ErrorsInfo Update(Func<Entity, bool> predicate, Entity updatedEntity);
         ErrorsInfo Delete(Func<Entity, bool> predicate);
 
@@ -84,6 +94,14 @@ namespace TheTechIdea.Beep.Editor
         Tracking GetTrackingItem(Entity item);
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);
+
+        // Batch operations
+        Task<IErrorsInfo> AddRange(IEnumerable<Entity> entities);
+        Task<IErrorsInfo> UpdateRange(IEnumerable<Entity> entities);
+        Task<IErrorsInfo> DeleteRange(IEnumerable<Entity> entities);
+
+        // Change audit
+        List<ChangeRecord> GetChangeLog();
 
         event EventHandler<UnitofWorkParams> PreDelete;
         event EventHandler<UnitofWorkParams> PreInsert;

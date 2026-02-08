@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,70 +34,90 @@ namespace TheTechIdea.Beep.Editor
         string PrimaryKey { get; set; }
         ObservableBindingList<T> Units { get; set; }
         Dictionary<int, string> UpdatedKeys { get; set; }
+        bool IsIdentity { get; set; }
+
+        // Paging and filtering
+        int PageIndex { get; set; }
+        int PageSize { get; set; }
+        int TotalItemCount { get; }
+        ObservableBindingList<T> FilteredUnits { get; set; }
+        string FilterExpression { get; set; }
+
+        // Commit / Rollback
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
      
+        // Read operations
         T Read(Func<T, bool> predicate);
         Task<ObservableBindingList<T>> MultiRead(Func<T, bool> predicate);
-   
+        T Read(string id);
+        T Get(string PrimaryKeyid);
+        T Get(int key);
+        Task<ObservableBindingList<T>> GetQuery(string query);
+        Task<ObservableBindingList<T>> Get();
+        Task<ObservableBindingList<T>> Get(List<AppFilter> filters);
+
+        // Create operations
+        void New();
+        void Add(T entity);
+
+        // Update operations
+        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
+        IErrorsInfo Update(T entity);
+        IErrorsInfo Update(string id, T entity);
+        Task<IErrorsInfo> UpdateAsync(T doc);
+        IErrorsInfo UpdateDoc(T doc);
+
+        // Delete operations
+        ErrorsInfo Delete(Func<T, bool> predicate);
+        IErrorsInfo Delete(T doc);
+        IErrorsInfo Delete(string id);
+        IErrorsInfo Delete();
+        Task<IErrorsInfo> DeleteAsync(T doc);
+        IErrorsInfo DeleteDoc(T doc);
+
+        // Insert operations
+        Task<IErrorsInfo> InsertAsync(T doc);
+        IErrorsInfo InsertDoc(T doc);
+
+        // Batch operations
+        Task<IErrorsInfo> AddRange(IEnumerable<T> entities);
+        Task<IErrorsInfo> UpdateRange(IEnumerable<T> entities);
+        Task<IErrorsInfo> DeleteRange(IEnumerable<T> entities);
+
+        // Navigation
+        void MoveFirst();
+        void MoveNext();
+        void MovePrevious();
+        void MoveLast();
+        void MoveTo(int index);
+
+        // Utility / Tracking
         void UndoLastChange();
         int DocExist(T doc);
         int DocExistByKey(T doc);
         int FindDocIdx(T doc);
-        T Get(string PrimaryKeyid);
-        bool IsIdentity { get; set; }
         double GetLastIdentity();
         IEnumerable<int> GetAddedEntities();
-        Task<ObservableBindingList<T>> GetQuery(string query);
-        Task<ObservableBindingList<T>> Get();
-        Task<ObservableBindingList<T>> Get(List<AppFilter> filters);
         IEnumerable<T> GetDeletedEntities();
-        T Get(int key);
-        T Read(string id);
-
-
         object GetIDValue(T entity);
         int Getindex(string id);
         int Getindex(T entity);
         IEnumerable<int> GetModifiedEntities();
         int GetPrimaryKeySequence(T doc);
         int GetSeq(string SeqName);
-     
-        T GetItemFroCurrentList(int index);
+        T GetItemFromCurrentList(int index);
+        Tracking GetTrackingItem(T item);
 
-        Tracking GetTrackingITem(T item);
-    //    Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
-    //    bool SaveLog(string pathandname);
-        void MoveFirst();
-         void MoveNext();
-         void MovePrevious();
-         void MoveLast();
-         void MoveTo(int index);
+        // Logging
+        Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
+        bool SaveLog(string pathandname);
 
-        // Crud Operations
-        ErrorsInfo Update(Func<T, bool> predicate, T updatedEntity);
-        ErrorsInfo Delete(Func<T, bool> predicate);
-     
-        void New();
-        
-        Task<IErrorsInfo> UpdateAsync(T doc);
-        Task<IErrorsInfo> InsertAsync(T doc);
-        Task<IErrorsInfo> DeleteAsync(T doc);
+        // Change audit
+        List<ChangeRecord> GetChangeLog();
 
-        // duplicate ----------- needs refactoring
-        //void Add(T entity);
-        //IErrorsInfo InsertDoc(T doc);
-        //IErrorsInfo UpdateDoc(T doc);
-        //IErrorsInfo Update(T entity);
-        //IErrorsInfo DeleteDoc(T doc);
-        //IErrorsInfo Delete(T doc);
-        //----------------------
-
-        IErrorsInfo Delete(string id);
-        IErrorsInfo Delete();
-        IErrorsInfo Update(string id, T entity);
-
+        // Events
         event EventHandler<UnitofWorkParams> PreDelete;
         event EventHandler<UnitofWorkParams> PreInsert;
         event EventHandler<UnitofWorkParams> PreCreate;
@@ -112,10 +132,8 @@ namespace TheTechIdea.Beep.Editor
         event EventHandler<UnitofWorkParams> PostDelete;
         event EventHandler<UnitofWorkParams> PostCommit;
         event EventHandler<UnitofWorkParams> PreCommit;
-
-
-
     }
+
     public class UnitofWorkParams : PassedArgs
     {
         public EventAction EventAction { get; set; }
@@ -124,8 +142,8 @@ namespace TheTechIdea.Beep.Editor
         public string PropertyValue { get; set; }
         public string EntityName { get; set; }
         public object Record { get; set; }
-
     }
+
     public enum EventAction
     {
         PreInsert,
@@ -140,8 +158,41 @@ namespace TheTechIdea.Beep.Editor
         PostQuery,
         PostCreate,
         PostCommit,
-        PreCommit
-
+        PreCommit,
+        PreBatchInsert,
+        PostBatchInsert,
+        PreBatchUpdate,
+        PostBatchUpdate,
+        PreBatchDelete,
+        PostBatchDelete,
+        PreRollback,
+        PostRollback
     }
 
+    /// <summary>
+    /// Concurrency mode for optimistic concurrency control
+    /// </summary>
+    public enum ConcurrencyMode
+    {
+        /// <summary>No concurrency checking</summary>
+        None,
+        /// <summary>Last write wins - overwrites without checking</summary>
+        LastWriteWins,
+        /// <summary>Throws exception if entity was modified by another user</summary>
+        ThrowOnConflict
+    }
+
+    /// <summary>
+    /// Represents a single change record for audit trail purposes
+    /// </summary>
+    public class ChangeRecord
+    {
+        public object Entity { get; set; }
+        public string PropertyName { get; set; }
+        public object OldValue { get; set; }
+        public object NewValue { get; set; }
+        public DateTime Timestamp { get; set; }
+        public EntityState Action { get; set; }
+        public string EntityName { get; set; }
+    }
 }

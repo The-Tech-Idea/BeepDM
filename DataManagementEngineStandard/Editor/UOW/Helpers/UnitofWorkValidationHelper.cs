@@ -591,8 +591,29 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
             try
             {
-                // Add insert-specific validation logic here
-                // For example: check if entity already exists, validate unique constraints, etc.
+                // Validate that required fields have values for insert
+                if (_entityStructure?.Fields != null)
+                {
+                    var requiredFields = _entityStructure.Fields
+                        .Where(f => !f.AllowDBNull && !f.IsAutoIncrement);
+
+                    foreach (var field in requiredFields)
+                    {
+                        var property = typeof(T).GetProperty(field.FieldName,
+                            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                        if (property != null)
+                        {
+                            var value = property.GetValue(entity);
+                            if (value == null || (property.PropertyType == typeof(string) && string.IsNullOrWhiteSpace(value.ToString())))
+                            {
+                                result.Flag = Errors.Failed;
+                                result.Message = $"Required field '{field.FieldName}' is missing for insert";
+                                return result;
+                            }
+                        }
+                    }
+                }
 
                 result.Message = "Insert-specific validation passed";
             }
@@ -617,8 +638,26 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
             try
             {
-                // Add update-specific validation logic here
-                // For example: optimistic concurrency checks, version validation, etc.
+                // Verify primary key is set (entity must exist to be updated)
+                if (_primaryKeyProperty != null)
+                {
+                    var pkValue = _primaryKeyProperty.GetValue(entity);
+                    if (pkValue == null)
+                    {
+                        result.Flag = Errors.Failed;
+                        result.Message = "Cannot update entity without a primary key value";
+                        return result;
+                    }
+
+                    // For numeric keys, verify non-zero (unless identity auto-assigned)
+                    if (IsNumericType(_primaryKeyProperty.PropertyType) &&
+                        Convert.ToDouble(pkValue) == 0 && !IsIdentityField())
+                    {
+                        result.Flag = Errors.Failed;
+                        result.Message = "Cannot update entity with zero primary key (non-identity)";
+                        return result;
+                    }
+                }
 
                 result.Message = "Update-specific validation passed";
             }
@@ -643,8 +682,17 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
             try
             {
-                // Add delete-specific validation logic here
-                // For example: check referential integrity, cascade delete rules, etc.
+                // Verify primary key is set (entity must be identifiable to delete)
+                if (_primaryKeyProperty != null)
+                {
+                    var pkValue = _primaryKeyProperty.GetValue(entity);
+                    if (pkValue == null)
+                    {
+                        result.Flag = Errors.Failed;
+                        result.Message = "Cannot delete entity without a primary key value";
+                        return result;
+                    }
+                }
 
                 result.Message = "Delete-specific validation passed";
             }

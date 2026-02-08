@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -21,6 +21,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         private static readonly ConcurrentDictionary<string, Type> _typeCache = new();
         private static readonly ConcurrentDictionary<string, ConstructorInfo> _constructorCache = new();
+        private static readonly ConcurrentDictionary<string, Type[]> _assemblyTypeCache = new();
 
         #endregion
 
@@ -31,6 +32,8 @@ namespace TheTechIdea.Beep.Editor.UOW
         {
             public static bool EnableCaching { get; set; } = true;
             public static bool EnableValidation { get; set; } = true;
+            /// <summary>Maximum number of entries in each cache before eviction</summary>
+            public static int MaxCacheSize { get; set; } = 500;
         }
 
         #endregion
@@ -242,6 +245,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
             if (Configuration.EnableCaching)
             {
+                TrimCacheIfNeeded();
                 _typeCache.TryAdd(cacheKey, entityType);
             }
 
@@ -259,8 +263,15 @@ namespace TheTechIdea.Beep.Editor.UOW
                         var type = assembly.GetType(typeName);
                         if (type != null) return type;
 
-                        // Also try simple name matching
-                        foreach (var t in assembly.GetTypes())
+                        // Cache GetTypes() per assembly to avoid repeated expensive calls
+                        var assemblyKey = assembly.FullName;
+                        var types = _assemblyTypeCache.GetOrAdd(assemblyKey, _ =>
+                        {
+                            try { return assembly.GetTypes(); }
+                            catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t != null).ToArray(); }
+                        });
+
+                        foreach (var t in types)
                         {
                             if (t.Name == typeName || t.FullName == typeName)
                                 return t;
@@ -278,6 +289,30 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Evicts oldest entries if cache exceeds max size
+        /// </summary>
+        private static void TrimCacheIfNeeded()
+        {
+            if (_typeCache.Count > Configuration.MaxCacheSize)
+            {
+                // Remove roughly half the entries to avoid frequent eviction
+                var keysToRemove = _typeCache.Keys.Take(_typeCache.Count / 2).ToList();
+                foreach (var key in keysToRemove)
+                {
+                    _typeCache.TryRemove(key, out _);
+                }
+            }
+            if (_constructorCache.Count > Configuration.MaxCacheSize)
+            {
+                var keysToRemove = _constructorCache.Keys.Take(_constructorCache.Count / 2).ToList();
+                foreach (var key in keysToRemove)
+                {
+                    _constructorCache.TryRemove(key, out _);
+                }
+            }
         }
 
         #endregion
@@ -324,6 +359,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         {
             _typeCache.Clear();
             _constructorCache.Clear();
+            _assemblyTypeCache.Clear();
         }
 
         /// <summary>Gets cache statistics</summary>

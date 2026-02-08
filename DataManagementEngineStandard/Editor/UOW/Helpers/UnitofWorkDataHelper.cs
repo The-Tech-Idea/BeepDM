@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,6 +19,12 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         #region Private Fields
 
         private readonly IDMEEditor _editor;
+
+        /// <summary>
+        /// Static cache for PropertyInfo arrays, keyed by Type. 
+        /// Avoids repeated reflection calls across all UnitofWork instances.
+        /// </summary>
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
 
         #endregion
 
@@ -47,10 +54,13 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
             try
             {
+                var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+                visited.Add(entity);
+
                 var clonedEntity = new T();
                 var entityType = typeof(T);
 
-                foreach (var property in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var property in GetCachedProperties(entityType))
                 {
                     if (property.CanRead && property.CanWrite)
                     {
@@ -59,7 +69,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                         // Handle deep cloning for complex types if needed
                         if (value != null && IsComplexType(property.PropertyType))
                         {
-                            value = CloneComplexValue(value);
+                            value = CloneComplexValue(value, visited);
                         }
                         
                         property.SetValue(clonedEntity, value);
@@ -99,7 +109,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 var targetType = typeof(T);
 
                 // Map properties from source to target
-                foreach (var targetProperty in targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var targetProperty in GetCachedProperties(targetType))
                 {
                     if (!targetProperty.CanWrite) continue;
 
@@ -146,7 +156,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
             {
                 var entityType = typeof(T);
                 
-                foreach (var property in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var property in GetCachedProperties(entityType))
                 {
                     if (property.CanRead)
                     {
@@ -216,7 +226,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
             {
                 // Handle case where one entity is null
                 var entityType = typeof(T);
-                foreach (var property in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var property in GetCachedProperties(entityType))
                 {
                     if (property.CanRead)
                     {
@@ -232,7 +242,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
             {
                 var entityType = typeof(T);
 
-                foreach (var property in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var property in GetCachedProperties(entityType))
                 {
                     if (property.CanRead)
                     {
@@ -261,6 +271,16 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         #region Private Methods
 
         /// <summary>
+        /// Gets cached PropertyInfo array for a type, avoiding repeated reflection
+        /// </summary>
+        /// <param name="type">The type to get properties for</param>
+        /// <returns>Array of PropertyInfo</returns>
+        public static PropertyInfo[] GetCachedProperties(Type type)
+        {
+            return _propertyCache.GetOrAdd(type, t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance));
+        }
+
+        /// <summary>
         /// Checks if a type is a complex type that needs deep cloning
         /// </summary>
         /// <param name="type">Type to check</param>
@@ -277,13 +297,31 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         }
 
         /// <summary>
-        /// Clones a complex value
+        /// Clones a complex value (entry point - creates visited set)
         /// </summary>
         /// <param name="value">Value to clone</param>
         /// <returns>Cloned value</returns>
         private object CloneComplexValue(object value)
         {
+            return CloneComplexValue(value, new HashSet<object>(ReferenceEqualityComparer.Instance));
+        }
+
+        /// <summary>
+        /// Clones a complex value with circular reference protection
+        /// </summary>
+        /// <param name="value">Value to clone</param>
+        /// <param name="visited">Set of already-visited objects to prevent infinite recursion</param>
+        /// <returns>Cloned value</returns>
+        private object CloneComplexValue(object value, HashSet<object> visited)
+        {
             if (value == null) return null;
+
+            // Prevent circular references
+            if (visited.Contains(value))
+            {
+                return value; // Return original reference for circular refs
+            }
+            visited.Add(value);
 
             try
             {
@@ -292,7 +330,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 // Handle collections
                 if (value is System.Collections.IEnumerable enumerable && valueType != typeof(string))
                 {
-                    return CloneEnumerable(enumerable, valueType);
+                    return CloneEnumerable(enumerable, valueType, visited);
                 }
 
                 // Handle objects with parameterless constructor
@@ -305,9 +343,9 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                         if (property.CanRead && property.CanWrite)
                         {
                             var propertyValue = property.GetValue(value);
-                            if (IsComplexType(property.PropertyType))
+                            if (propertyValue != null && IsComplexType(property.PropertyType))
                             {
-                                propertyValue = CloneComplexValue(propertyValue);
+                                propertyValue = CloneComplexValue(propertyValue, visited);
                             }
                             property.SetValue(clonedObject, propertyValue);
                         }
@@ -333,8 +371,10 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         /// <param name="enumerable">Enumerable to clone</param>
         /// <param name="enumerableType">Type of enumerable</param>
         /// <returns>Cloned enumerable</returns>
-        private object CloneEnumerable(System.Collections.IEnumerable enumerable, Type enumerableType)
+        private object CloneEnumerable(System.Collections.IEnumerable enumerable, Type enumerableType, HashSet<object> visited = null)
         {
+            visited ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
+
             try
             {
                 // Handle List<T>
@@ -347,7 +387,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
                     foreach (var item in enumerable)
                     {
-                        var clonedItem = IsComplexType(elementType) ? CloneComplexValue(item) : item;
+                        var clonedItem = IsComplexType(elementType) ? CloneComplexValue(item, visited) : item;
                         addMethod.Invoke(clonedList, new[] { clonedItem });
                     }
 
@@ -363,7 +403,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
 
                     for (int i = 0; i < items.Length; i++)
                     {
-                        var clonedItem = IsComplexType(elementType) ? CloneComplexValue(items[i]) : items[i];
+                        var clonedItem = IsComplexType(elementType) ? CloneComplexValue(items[i], visited) : items[i];
                         clonedArray.SetValue(clonedItem, i);
                     }
 
@@ -479,6 +519,21 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Compares objects by reference identity (not by value equality)
+    /// Used for circular reference detection in cloning
+    /// </summary>
+    internal class ReferenceEqualityComparer : IEqualityComparer<object>
+    {
+        public static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
+
+        private ReferenceEqualityComparer() { }
+
+        public new bool Equals(object x, object y) => ReferenceEquals(x, y);
+
+        public int GetHashCode(object obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
     }
 
     /// <summary>

@@ -57,25 +57,36 @@ namespace TheTechIdea.Beep.Editor.UOW
                     }
 
                     var index = Units.IndexOf(entity);
-                    Units.RemoveAt(index);
                     
-                    // Track as deleted
-                    if (_entityStates.ContainsKey(index))
+                    // Determine whether entity was newly added (not yet persisted)
+                    bool wasAdded = index >= 0 && _entityStates.ContainsKey(index) && _entityStates[index] == EntityState.Added;
+
+                    // Remove from collection - this shifts all indices above 'index' down by 1
+                    if (index >= 0)
                     {
-                        if (_entityStates[index] != EntityState.Added)
-                        {
-                            _entityStates[index] = EntityState.Deleted;
-                            DeletedUnits.Add(entity);
-                        }
-                        else
-                        {
-                            // If it was just added and not yet persisted, just remove it
-                            _entityStates.Remove(index);
-                        }
+                        Units.RemoveAt(index);
                     }
-                    else
+                    
+                    // Re-key entity states to account for index shift after removal
+                    var newStates = new Dictionary<int, EntityState>();
+                    foreach (var kvp in _entityStates)
                     {
-                        _entityStates[index] = EntityState.Deleted;
+                        if (kvp.Key < index)
+                        {
+                            newStates[kvp.Key] = kvp.Value;
+                        }
+                        else if (kvp.Key > index)
+                        {
+                            // Shift down by 1
+                            newStates[kvp.Key - 1] = kvp.Value;
+                        }
+                        // kvp.Key == index is intentionally dropped (the deleted item)
+                    }
+                    _entityStates = newStates;
+
+                    // Track as deleted only if it was previously persisted
+                    if (!wasAdded)
+                    {
                         DeletedUnits.Add(entity);
                     }
 
@@ -184,7 +195,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
             try
             {
-                IErrorsInfo retval = await DeleteDoc(doc);
+                IErrorsInfo retval = DeleteDoc(doc);
                 
                 if (retval.Flag == Errors.Ok)
                 {
@@ -212,7 +223,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         /// <param name="doc">The document to delete</param>
         /// <returns>Result of the delete operation</returns>
-        private async Task<IErrorsInfo> DeleteDoc(T doc)
+        public IErrorsInfo DeleteDoc(T doc)
         {
             IErrorsInfo retval;
             
@@ -220,8 +231,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             {
                 if (!IsInListMode)
                 {
-                    string[] classnames = doc.ToString().Split(new char[] { ' ', ',', '.', '-', '\n', '\t' });
-                    string cname = classnames[classnames.Count() - 1];
+                    string cname = typeof(T).Name;
                     
                     retval = DataSource.DeleteEntity(cname, doc);
                 }
@@ -491,6 +501,155 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         #endregion
 
+        #region Batch Operations
+
+        /// <summary>
+        /// Adds a range of entities to the collection
+        /// </summary>
+        /// <param name="entities">Entities to add</param>
+        /// <returns>Result of the operation</returns>
+        public async Task<IErrorsInfo> AddRange(IEnumerable<T> entities)
+        {
+            var result = new ErrorsInfo { Flag = Errors.Ok };
+            if (entities == null)
+            {
+                result.Flag = Errors.Failed;
+                result.Message = "Entities collection is null";
+                return result;
+            }
+
+            try
+            {
+                _suppressNotification = true;
+                int count = 0;
+                foreach (var entity in entities)
+                {
+                    Add(entity);
+                    count++;
+                }
+                _suppressNotification = false;
+                OnPropertyChanged(nameof(Units));
+
+                result.Message = $"Added {count} entities";
+            }
+            catch (Exception ex)
+            {
+                _suppressNotification = false;
+                result.Flag = Errors.Failed;
+                result.Message = $"AddRange failed: {ex.Message}";
+                result.Ex = ex;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Updates a range of entities
+        /// </summary>
+        /// <param name="entities">Entities to update</param>
+        /// <returns>Result of the operation</returns>
+        public async Task<IErrorsInfo> UpdateRange(IEnumerable<T> entities)
+        {
+            var result = new ErrorsInfo { Flag = Errors.Ok };
+            if (entities == null)
+            {
+                result.Flag = Errors.Failed;
+                result.Message = "Entities collection is null";
+                return result;
+            }
+
+            try
+            {
+                int successCount = 0;
+                int failCount = 0;
+                foreach (var entity in entities)
+                {
+                    var updateResult = Update(entity);
+                    if (updateResult.Flag == Errors.Ok)
+                        successCount++;
+                    else
+                        failCount++;
+                }
+
+                result.Message = $"Updated {successCount} entities, {failCount} failed";
+                if (failCount > 0 && successCount == 0)
+                    result.Flag = Errors.Failed;
+            }
+            catch (Exception ex)
+            {
+                result.Flag = Errors.Failed;
+                result.Message = $"UpdateRange failed: {ex.Message}";
+                result.Ex = ex;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Deletes a range of entities
+        /// </summary>
+        /// <param name="entities">Entities to delete</param>
+        /// <returns>Result of the operation</returns>
+        public async Task<IErrorsInfo> DeleteRange(IEnumerable<T> entities)
+        {
+            var result = new ErrorsInfo { Flag = Errors.Ok };
+            if (entities == null)
+            {
+                result.Flag = Errors.Failed;
+                result.Message = "Entities collection is null";
+                return result;
+            }
+
+            try
+            {
+                // Materialize to avoid modifying collection during iteration
+                var entityList = new List<T>(entities);
+                int successCount = 0;
+                int failCount = 0;
+
+                foreach (var entity in entityList)
+                {
+                    var deleteResult = Delete(entity);
+                    if (deleteResult.Flag == Errors.Ok)
+                        successCount++;
+                    else
+                        failCount++;
+                }
+
+                result.Message = $"Deleted {successCount} entities, {failCount} failed";
+                if (failCount > 0 && successCount == 0)
+                    result.Flag = Errors.Failed;
+            }
+            catch (Exception ex)
+            {
+                result.Flag = Errors.Failed;
+                result.Message = $"DeleteRange failed: {ex.Message}";
+                result.Ex = ex;
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Change Audit
+
+        /// <summary>
+        /// Change log for tracking modifications
+        /// </summary>
+        private readonly List<ChangeRecord> _changeLog = new List<ChangeRecord>();
+
+        /// <summary>
+        /// Gets the change log containing all tracked changes
+        /// </summary>
+        /// <returns>List of change records</returns>
+        public List<ChangeRecord> GetChangeLog()
+        {
+            return new List<ChangeRecord>(_changeLog);
+        }
+
+        #endregion
+
         #region Logging Support
 
         /// <summary>
@@ -573,20 +732,6 @@ namespace TheTechIdea.Beep.Editor.UOW
         #endregion
     }
 
-    #region Supporting Classes for Logging
-
-    /// <summary>
-    /// Represents a log entry for entity updates/inserts
-    /// </summary>
-    public class EntityUpdateInsertLog
-    {
-        public DateTime Timestamp { get; set; }
-        public string EntityName { get; set; }
-        public string Operation { get; set; }
-        public string EntityId { get; set; }
-        public Dictionary<string, object> Changes { get; set; }
-        public string UserName { get; set; }
-    }
-
-    #endregion
+    // EntityUpdateInsertLog class is defined in ObservableBindingList.cs (canonical location)
+    // Duplicate definition was removed from here to avoid compilation conflicts.
 }

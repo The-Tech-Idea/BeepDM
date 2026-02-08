@@ -32,8 +32,16 @@ namespace TheTechIdea.Beep.Editor.UOW
                 DetachHandlers(_units);
                 DetachHandlers(_filteredunits);
 
-                // Clear collections
-                _units?.Clear();
+                // Ensure _units is always initialized (not just cleared)
+                if (_units == null)
+                {
+                    _units = new ObservableBindingList<T>();
+                }
+                else
+                {
+                    _units.Clear();
+                }
+
                 _filteredunits?.Clear();
                 DeletedUnits?.Clear();
 
@@ -188,7 +196,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         /// <param name="index">The index</param>
         /// <returns>The entity at the specified index</returns>
-        public T GetItemFroCurrentList(int index)
+        public T GetItemFromCurrentList(int index)
         {
             if (Units == null || index < 0 || index >= Units.Count)
                 return default(T);
@@ -377,12 +385,16 @@ namespace TheTechIdea.Beep.Editor.UOW
                             _entityStates[index] = EntityState.Modified;
                         }
 
+                        // Record change for audit trail
+                        var newValue = GetPropertyValue(item, e.PropertyName);
+                        RecordChange(item, e.PropertyName, null, newValue, EntityState.Modified);
+
                         // Fire PostEdit event
                         var eventArgs = new UnitofWorkParams
                         {
                             EventAction = EventAction.PostEdit,
                             PropertyName = e.PropertyName,
-                            PropertyValue = GetPropertyValue(item, e.PropertyName)?.ToString(),
+                            PropertyValue = newValue?.ToString(),
                             Record = item
                         };
 
@@ -396,6 +408,30 @@ namespace TheTechIdea.Beep.Editor.UOW
                 DMEEditor.AddLogMessage("UnitofWork",
                     $"Error handling property change: {ex.Message}",
                     DateTime.Now, -1, null, Errors.Failed);
+            }
+        }
+
+        /// <summary>
+        /// Records a change to the audit trail
+        /// </summary>
+        private void RecordChange(T entity, string propertyName, object oldValue, object newValue, EntityState action)
+        {
+            try
+            {
+                _changeLog.Add(new ChangeRecord
+                {
+                    Entity = entity,
+                    PropertyName = propertyName,
+                    OldValue = oldValue,
+                    NewValue = newValue,
+                    Timestamp = DateTime.UtcNow,
+                    Action = action,
+                    EntityName = EntityName
+                });
+            }
+            catch
+            {
+                // Non-critical - don't let audit logging break the operation
             }
         }
 
@@ -636,12 +672,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         /// <param name="item">The entity</param>
         /// <returns>Tracking information</returns>
-        public Tracking GetTrackingITem(T item)
+        public Tracking GetTrackingItem(T item)
         {
             if (Units == null || item == null)
                 return null;
 
-            return Units.GetTrackingITem(item);
+            return Units.GetTrackingItem(item);
         }
 
         #endregion

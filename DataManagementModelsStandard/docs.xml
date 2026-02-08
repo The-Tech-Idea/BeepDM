@@ -1785,6 +1785,48 @@
             Check the capability matrix first to determine supported operations.
             </remarks>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.ConcurrencyMode">
+            <summary>
+            Concurrency mode for optimistic concurrency control
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConcurrencyMode.None">
+            <summary>No concurrency checking</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConcurrencyMode.LastWriteWins">
+            <summary>Last write wins - overwrites without checking</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConcurrencyMode.ThrowOnConflict">
+            <summary>Throws exception if entity was modified by another user</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ChangeRecord">
+            <summary>
+            Represents a single change record for audit trail purposes
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._propertyInfoCache">
+            <summary>
+            Static cache for PropertyInfo lookups to avoid repeated reflection calls.
+            Key is "TypeFullName.PropertyName".
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetCachedProperty(System.String)">
+            <summary>
+            Gets a cached PropertyInfo for the given property name on type T.
+            Returns null if the property does not exist.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetCachedProperties">
+            <summary>
+            Gets all cached PropertyInfo for type T.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.Trackings">
+            <summary>
+            Backward-compatible list view of all tracking records.
+            Prefer internal dictionary lookups for performance.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.WhereContains(System.String,System.String,System.Boolean)">
             <summary>
             Finds items where a string property contains the search text
@@ -1861,6 +1903,34 @@
             </summary>
             <param name="predicate">Search predicate function</param>
             <returns>Number of items found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearItems">
+            <summary>
+            Override ClearItems to unhook PropertyChanged handlers before clearing,
+            and reset all tracking state.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Dispose">
+            <summary>
+            Disposes the ObservableBindingList, unhooking all event handlers.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ToDataTable(System.String)">
+            <summary>
+            Exports the current items to a DataTable. Mirror of the DataTable import constructor.
+            </summary>
+            <param name="tableName">Optional name for the DataTable. Defaults to the type name.</param>
+            <returns>A DataTable containing all items and their property values.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Removes a range of items with a single notification event.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveAll(System.Func{`0,System.Boolean})">
+            <summary>
+            Removes all items matching the predicate with a single notification event.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Enums.DynamicEnumEntry">
             <summary>

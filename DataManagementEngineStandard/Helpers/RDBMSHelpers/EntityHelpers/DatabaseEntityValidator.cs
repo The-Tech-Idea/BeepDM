@@ -101,10 +101,10 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.EntityHelpers
                     errors.Add($"Field '{field.FieldName}' has no data type specified");
                 }
 
-                // Check for reasonable field sizes
-                if (field.Size1 < 0)
+                // Check for reasonable field sizes (-1 means unlimited/TEXT, which is valid)
+                if (field.Size1 < -1)
                 {
-                    errors.Add($"Field '{field.FieldName}' has negative size");
+                    errors.Add($"Field '{field.FieldName}' has invalid negative size ({field.Size1})");
                 }
 
                 // Validate primary key constraints

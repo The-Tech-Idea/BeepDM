@@ -1,5 +1,6 @@
-﻿using System.Collections;
+using System.Collections;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -15,8 +16,47 @@ using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Beep.Editor
 {
-    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged where T : class, INotifyPropertyChanged, new()
+    public class ObservableBindingList<T> : BindingList<T>, IBindingListView, INotifyCollectionChanged, IDisposable where T : class, INotifyPropertyChanged, new()
     {
+        private bool _isDisposed = false;
+
+        /// <summary>
+        /// Static cache for PropertyInfo lookups to avoid repeated reflection calls.
+        /// Key is "TypeFullName.PropertyName".
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, PropertyInfo> _propertyInfoCache
+            = new ConcurrentDictionary<string, PropertyInfo>();
+
+        /// <summary>
+        /// Gets a cached PropertyInfo for the given property name on type T.
+        /// Returns null if the property does not exist.
+        /// </summary>
+        private static PropertyInfo GetCachedProperty(string propertyName)
+        {
+            string key = $"{typeof(T).FullName}.{propertyName}";
+            return _propertyInfoCache.GetOrAdd(key, _ => typeof(T).GetProperty(propertyName));
+        }
+
+        /// <summary>
+        /// Gets all cached PropertyInfo for type T.
+        /// </summary>
+        private static PropertyInfo[] GetCachedProperties()
+        {
+            // Use a sentinel key for "all properties"
+            string key = $"{typeof(T).FullName}.*";
+            if (_propertyInfoCache.TryGetValue(key, out _))
+            {
+                // We stored the "all" sentinel; now return from per-property cache
+            }
+            var props = typeof(T).GetProperties();
+            // Cache each property individually
+            foreach (var p in props)
+            {
+                string propKey = $"{typeof(T).FullName}.{p.Name}";
+                _propertyInfoCache.TryAdd(propKey, p);
+            }
+            return props;
+        }
 
         public int PageSize { get; private set; } = 20;
         public int CurrentPage { get; private set; } = 1;
@@ -28,7 +68,57 @@ namespace TheTechIdea.Beep.Editor
         public event EventHandler<ItemValidatingEventArgs<T>> ItemValidating;
         public event EventHandler<ItemValidatingEventArgs<T>> ItemDeleting;
       
-        public List<Tracking> Trackings { get; set; } = new List<Tracking>();
+        // Primary dictionary keyed by UniqueId for O(1) lookup by Guid
+        private Dictionary<Guid, Tracking> _trackingsByGuid = new Dictionary<Guid, Tracking>();
+        // Secondary index for O(1) lookup by OriginalIndex
+        private Dictionary<int, Tracking> _trackingsByOriginalIndex = new Dictionary<int, Tracking>();
+
+        /// <summary>
+        /// Backward-compatible list view of all tracking records.
+        /// Prefer internal dictionary lookups for performance.
+        /// </summary>
+        public List<Tracking> Trackings
+        {
+            get => _trackingsByGuid.Values.ToList();
+            set
+            {
+                ClearTrackings();
+                if (value != null)
+                {
+                    foreach (var tr in value)
+                        AddTracking(tr);
+                }
+            }
+        }
+
+        private void AddTracking(Tracking tr)
+        {
+            _trackingsByGuid[tr.UniqueId] = tr;
+            // Only index non-deleted items by OriginalIndex (deleted ones may collide)
+            if (tr.EntityState != EntityState.Deleted)
+                _trackingsByOriginalIndex[tr.OriginalIndex] = tr;
+        }
+
+        private void RemoveTracking(Tracking tr)
+        {
+            _trackingsByGuid.Remove(tr.UniqueId);
+            if (_trackingsByOriginalIndex.TryGetValue(tr.OriginalIndex, out var existing) && existing.UniqueId == tr.UniqueId)
+                _trackingsByOriginalIndex.Remove(tr.OriginalIndex);
+        }
+
+        private void ClearTrackings()
+        {
+            _trackingsByGuid.Clear();
+            _trackingsByOriginalIndex.Clear();
+        }
+
+        private Tracking FindTrackingByOriginalIndex(int originalIndex)
+        {
+            _trackingsByOriginalIndex.TryGetValue(originalIndex, out var tr);
+            return tr;
+        }
+
+        private int TrackingsCount => _trackingsByGuid.Count;
         public bool SuppressNotification { get; set; } = false;
         public bool IsSorted => isSorted;
         public bool IsSynchronized => false;
@@ -42,8 +132,6 @@ namespace TheTechIdea.Beep.Editor
         #region "Current and Movement"
         private int _currentIndex = -1;
         public int CurrentIndex { get { return _currentIndex; } }
-        // public T Current => (_currentIndex >= 0 && _currentIndex < Items.Count) ? Items[_currentIndex] : default;
-        //private T _current;
         public T Current
         {
             get 
@@ -245,7 +333,7 @@ namespace TheTechIdea.Beep.Editor
             var items = Items as List<T>;
             if (items != null)
             {
-                var property = typeof(T).GetProperty(prop.Name);
+                var property = GetCachedProperty(prop.Name);
                 if (property != null)
                 {
                     // Parallel quicksort with insertion sort for small subarrays
@@ -292,7 +380,7 @@ namespace TheTechIdea.Beep.Editor
 
             foreach (ListSortDescription sortDesc in sorts)
             {
-                var property = typeof(T).GetProperty(sortDesc.PropertyDescriptor.Name);
+                var property = GetCachedProperty(sortDesc.PropertyDescriptor.Name);
                 if (property == null)
                     throw new InvalidOperationException($"No property '{sortDesc.PropertyDescriptor.Name}' on type '{typeof(T)}'");
 
@@ -323,15 +411,14 @@ namespace TheTechIdea.Beep.Editor
             SuppressNotification = false;
             RaiseListChangedEvents = true;
         }
-        private ListSortDirection _sortDirection;
         public ListSortDirection SortDirection
         {
-            get => _sortDirection;
+            get => sortDirection;
             set
             {
-                if (_sortDirection != value)
+                if (sortDirection != value)
                 {
-                    _sortDirection = value;
+                    sortDirection = value;
                     OnPropertyChanged("SortDirection");
                 }
             }
@@ -340,7 +427,7 @@ namespace TheTechIdea.Beep.Editor
         {
             SuppressNotification = true;
             RaiseListChangedEvents = false;
-            var prop = typeof(T).GetProperty(propertyName);
+            var prop = GetCachedProperty(propertyName);
             if (prop == null)
             {
                 throw new ArgumentException($"'{propertyName}' is not a valid property of type '{typeof(T).Name}'.");
@@ -471,7 +558,7 @@ namespace TheTechIdea.Beep.Editor
         }
         public T Find(string propertyName, object value)
         {
-            var prop = typeof(T).GetProperty(propertyName);
+            var prop = GetCachedProperty(propertyName);
             if (prop == null)
             {
                 throw new ArgumentException($"'{propertyName}' is not a valid property of type '{typeof(T).Name}'.");
@@ -535,7 +622,7 @@ namespace TheTechIdea.Beep.Editor
             if (string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(searchText))
                 return originalList.ToList();
 
-            var property = typeof(T).GetProperty(propertyName);
+            var property = GetCachedProperty(propertyName);
             if (property == null)
                 throw new ArgumentException($"Property '{propertyName}' not found on type {typeof(T).Name}");
 
@@ -583,10 +670,11 @@ namespace TheTechIdea.Beep.Editor
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal;
 
-            // Get all string properties if propertyNames is null
+            // Get all string properties if propertyNames is null (using cached reflection)
+            var allProps = GetCachedProperties();
             var properties = propertyNames == null
-                ? typeof(T).GetProperties().Where(p => p.PropertyType == typeof(string)).ToList()
-                : typeof(T).GetProperties().Where(p =>
+                ? allProps.Where(p => p.PropertyType == typeof(string)).ToList()
+                : allProps.Where(p =>
                     propertyNames.Contains(p.Name) && p.PropertyType == typeof(string)).ToList();
 
             if (!properties.Any())
@@ -857,141 +945,162 @@ namespace TheTechIdea.Beep.Editor
         private Expression<Func<T, bool>> ParseFilter(string filter)
         {
             var parameter = Expression.Parameter(typeof(T), "x");
-            Expression expression = null;
 
-            // Simple tokenization of filter string
-            // Example filter: "Name LIKE '%John%' AND Age > 30"
-            var filters = filter.Split(new string[] { " AND " }, StringSplitOptions.RemoveEmptyEntries);
+            // Split by OR first, then each OR-group by AND
+            // Example: "Name LIKE '%John%' AND Age > 30 OR City = 'NY'"
+            var orGroups = filter.Split(new string[] { " OR " }, StringSplitOptions.RemoveEmptyEntries);
+            Expression orExpression = null;
 
-            foreach (var f in filters)
+            foreach (var orGroup in orGroups)
             {
-                var parts = f.Trim().Split(new[] { ' ' }, 3);
-                if (parts.Length < 3)
-                    continue;
+                var andFilters = orGroup.Split(new string[] { " AND " }, StringSplitOptions.RemoveEmptyEntries);
+                Expression andExpression = null;
 
-                string propName = parts[0];
-                string op = parts[1];
-                string value = parts[2].Trim('\'');
-
-                var property = Expression.Property(parameter, propName);
-                var propertyType = Nullable.GetUnderlyingType(property.Type) ?? property.Type;
-
-                Expression comparison = null;
-
-                bool treatAsString = value.Contains("%");
-
-                if ((op.ToUpper() == "LIKE") && (propertyType == typeof(string) || treatAsString))
+                foreach (var f in andFilters)
                 {
-                    var nullCheck = Expression.NotEqual(property, Expression.Constant(null, property.Type));
-                    var propertyAsString = Expression.Call(property, typeof(object).GetMethod("ToString", Type.EmptyTypes));
-
-                    Expression containsExpression = null;
-                    if (value.StartsWith("%") && value.EndsWith("%"))
+                    var comparison = ParseSingleCondition(f.Trim(), parameter);
+                    if (comparison != null)
                     {
-                        value = value.Trim('%');
-                        containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("Contains", new[] { typeof(string) }), Expression.Constant(value));
-                    }
-                    else if (value.StartsWith("%"))
-                    {
-                        value = value.TrimStart('%');
-                        containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), Expression.Constant(value));
-                    }
-                    else if (value.EndsWith("%"))
-                    {
-                        value = value.TrimEnd('%');
-                        containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), Expression.Constant(value));
-                    }
-
-                    comparison = Expression.AndAlso(nullCheck, containsExpression);
-                }
-                else
-                {
-                    // Ensure the value is converted to the correct type
-                    object convertedValue = null;
-                    try
-                    {
-                        if (propertyType == typeof(string) || treatAsString)
-                        {
-                            convertedValue = value;
-                        }
-                        else if (propertyType.IsEnum)
-                        {
-                            convertedValue = Enum.Parse(propertyType, value);
-                        }
-                        else if (propertyType == typeof(DateTime))
-                        {
-                            convertedValue = DateTime.Parse(value);
-                        }
-                        else if (IsNumericType(propertyType))
-                        {
-                            convertedValue = Convert.ChangeType(value, propertyType);
-                        }
-                        else
-                        {
-                            convertedValue = Convert.ChangeType(value, propertyType);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new InvalidCastException($"Failed to convert value '{value}' to type '{propertyType}'", ex);
-                    }
-
-                    var valueExpression = Expression.Constant(convertedValue, treatAsString ? typeof(string) : property.Type);
-
-                    switch (op.ToUpper())
-                    {
-                        case "=":
-                            comparison = Expression.Equal(property, valueExpression);
-                            break;
-                        case ">":
-                            comparison = Expression.GreaterThan(property, valueExpression);
-                            break;
-                        case "<":
-                            comparison = Expression.LessThan(property, valueExpression);
-                            break;
-                            // Add other cases as needed
+                        andExpression = andExpression == null ? comparison : Expression.AndAlso(andExpression, comparison);
                     }
                 }
 
-                if (comparison != null)
+                if (andExpression != null)
                 {
-                    expression = expression == null ? comparison : Expression.AndAlso(expression, comparison);
+                    orExpression = orExpression == null ? andExpression : Expression.OrElse(orExpression, andExpression);
                 }
             }
 
-            return expression != null ? Expression.Lambda<Func<T, bool>>(expression, parameter) : null;
+            return orExpression != null ? Expression.Lambda<Func<T, bool>>(orExpression, parameter) : null;
+        }
+
+        private Expression ParseSingleCondition(string condition, ParameterExpression parameter)
+        {
+            var parts = condition.Split(new[] { ' ' }, 3);
+            if (parts.Length < 3)
+                return null;
+
+            string propName = parts[0];
+            string op = parts[1];
+            string value = parts[2].Trim('\'');
+
+            var property = Expression.Property(parameter, propName);
+            var propertyType = Nullable.GetUnderlyingType(property.Type) ?? property.Type;
+
+            Expression comparison = null;
+            bool treatAsString = value.Contains("%");
+
+            if ((op.ToUpper() == "LIKE") && (propertyType == typeof(string) || treatAsString))
+            {
+                var nullCheck = Expression.NotEqual(property, Expression.Constant(null, property.Type));
+                var propertyAsString = Expression.Call(property, typeof(object).GetMethod("ToString", Type.EmptyTypes));
+
+                Expression containsExpression = null;
+                if (value.StartsWith("%") && value.EndsWith("%"))
+                {
+                    value = value.Trim('%');
+                    containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("Contains", new[] { typeof(string) }), Expression.Constant(value));
+                }
+                else if (value.StartsWith("%"))
+                {
+                    value = value.TrimStart('%');
+                    containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), Expression.Constant(value));
+                }
+                else if (value.EndsWith("%"))
+                {
+                    value = value.TrimEnd('%');
+                    containsExpression = Expression.Call(propertyAsString, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), Expression.Constant(value));
+                }
+
+                comparison = containsExpression != null ? Expression.AndAlso(nullCheck, containsExpression) : null;
+            }
+            else
+            {
+                // Ensure the value is converted to the correct type
+                object convertedValue = null;
+                try
+                {
+                    if (propertyType == typeof(string) || treatAsString)
+                    {
+                        convertedValue = value;
+                    }
+                    else if (propertyType.IsEnum)
+                    {
+                        convertedValue = Enum.Parse(propertyType, value);
+                    }
+                    else if (propertyType == typeof(DateTime))
+                    {
+                        convertedValue = DateTime.Parse(value);
+                    }
+                    else if (IsNumericType(propertyType))
+                    {
+                        convertedValue = Convert.ChangeType(value, propertyType);
+                    }
+                    else
+                    {
+                        convertedValue = Convert.ChangeType(value, propertyType);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidCastException($"Failed to convert value '{value}' to type '{propertyType}'", ex);
+                }
+
+                var valueExpression = Expression.Constant(convertedValue, treatAsString ? typeof(string) : property.Type);
+
+                switch (op.ToUpper())
+                {
+                    case "=":
+                        comparison = Expression.Equal(property, valueExpression);
+                        break;
+                    case "!=":
+                        comparison = Expression.NotEqual(property, valueExpression);
+                        break;
+                    case ">":
+                        comparison = Expression.GreaterThan(property, valueExpression);
+                        break;
+                    case "<":
+                        comparison = Expression.LessThan(property, valueExpression);
+                        break;
+                    case ">=":
+                        comparison = Expression.GreaterThanOrEqual(property, valueExpression);
+                        break;
+                    case "<=":
+                        comparison = Expression.LessThanOrEqual(property, valueExpression);
+                        break;
+                }
+            }
+
+            return comparison;
         }
         private void ResetItems(List<T> items)
         {
-          
             // Create a copy of the list for safe iteration
             var itemsCopy = new List<T>(items);
 
-            bool raiseEvent = itemsCopy.Count != this.Count;
-            // Use Batch update to minimize events
-           
-            // Clear the current items
-            ClearItems();
-          //  Trackings=new List<Tracking>();
-            // Use the copy for adding items to avoid modification issues
+            // Bypass InsertItem override by using Items directly.
+            // This avoids re-adding to originalList and corrupting Trackings.
+            // Unhook PropertyChanged from current items first
+            foreach (var item in Items)
+            {
+                if (item is INotifyPropertyChanged npc)
+                    npc.PropertyChanged -= Item_PropertyChanged;
+            }
+            Items.Clear();
+
+            // Add items directly to the underlying list (no InsertItem override)
             foreach (var item in itemsCopy)
             {
-                this.Add(item);
+                Items.Add(item);
+                if (item is INotifyPropertyChanged npc)
+                    npc.PropertyChanged += Item_PropertyChanged;
             }
-          
-            //if (raiseEvent)
-            //{
-            //    OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
-            //}
-           
+
             UpdateIndexTrackingAfterFilterorSort(); // Update index mapping after resetting items
-          
         }
         public new void ResetBindings()
         {
-           // RaiseListChangedEvents = false;
             OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
-          //  RaiseListChangedEvents = true;
         }
         #endregion
         #region "Constructor"
@@ -1002,6 +1111,60 @@ namespace TheTechIdea.Beep.Editor
           
             ChangedValues = new Dictionary<T, Dictionary<string, object>>();
         }
+
+        /// <summary>
+        /// Override ClearItems to unhook PropertyChanged handlers before clearing,
+        /// and reset all tracking state.
+        /// </summary>
+        protected override void ClearItems()
+        {
+            // Unhook PropertyChanged from all items to prevent memory leaks
+            foreach (var item in Items)
+            {
+                if (item is INotifyPropertyChanged npc)
+                    npc.PropertyChanged -= Item_PropertyChanged;
+            }
+            base.ClearItems();
+        }
+
+        /// <summary>
+        /// Disposes the ObservableBindingList, unhooking all event handlers.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    // Unhook all PropertyChanged handlers from active items
+                    foreach (var item in Items)
+                    {
+                        if (item is INotifyPropertyChanged npc)
+                            npc.PropertyChanged -= Item_PropertyChanged;
+                    }
+                    // Unhook from deleted items too
+                    foreach (var item in DeletedList)
+                    {
+                        if (item is INotifyPropertyChanged npc)
+                            npc.PropertyChanged -= Item_PropertyChanged;
+                    }
+
+                    ClearTrackings();
+                    originalList.Clear();
+                    DeletedList.Clear();
+                    UpdateLog?.Clear();
+                    ChangedValues?.Clear();
+                }
+                _isDisposed = true;
+            }
+        }
+
         public ObservableBindingList() : base()
         {
             // Initialize the list with no items and subscribe to AddingNew event.
@@ -1033,14 +1196,9 @@ namespace TheTechIdea.Beep.Editor
             ClearAll();
             foreach (T item in list)
             {
-
                 item.PropertyChanged += Item_PropertyChanged;
-         //       this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
                 originalList.Add(item);
             }
-               
-
-            //  HookupCollectionChangedEvent();
 
             AddingNew += ObservableBindingList_AddingNew;
             this.AllowNew = true;
@@ -1058,14 +1216,10 @@ namespace TheTechIdea.Beep.Editor
             ClearAll();
             foreach (T item in bindinglist)
             {
-
                 item.PropertyChanged += Item_PropertyChanged;
-                this.Add(item); // Adds the item to the list and hooks up PropertyChanged event
+                this.Add(item);
                 originalList.Add(item);
             }
-
-
-            //  HookupCollectionChangedEvent();
 
             AddingNew += ObservableBindingList_AddingNew;
             this.AllowNew = true;
@@ -1078,10 +1232,6 @@ namespace TheTechIdea.Beep.Editor
         }
         public ObservableBindingList(DataTable dataTable) : base()
         {
-            //if (dataTable == null)
-            //{
-            //    throw new ArgumentNullException(nameof(dataTable));
-            //}
             SuppressNotification = true;
             RaiseListChangedEvents = false;
             ClearAll();
@@ -1288,13 +1438,15 @@ namespace TheTechIdea.Beep.Editor
         }
 
         private Dictionary<T, Dictionary<string, object>> ChangedValues = new Dictionary<T, Dictionary<string, object>>();
-        public bool IsLoggin { get; set; } = false;
+        [Obsolete("Use IsLogging instead. This property name contains a typo.")]
+        public bool IsLoggin { get => IsLogging; set => IsLogging = value; }
+        public bool IsLogging { get; set; } = false;
         public Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         private Dictionary<string, object> GetChangedFields(T oldItem, T newItem)
         {
             var changedFields = new Dictionary<string, object>();
 
-            foreach (var property in typeof(T).GetProperties())
+            foreach (var property in GetCachedProperties())
             {
                 var oldValue = property.GetValue(oldItem);
                 var newValue = property.GetValue(newItem);
@@ -1373,18 +1525,17 @@ namespace TheTechIdea.Beep.Editor
             // Continue with change notification
             int trackingindex = -1;
             Tracking tracking = null;
-            if (Trackings.Count > 0)
+            if (TrackingsCount > 0)
             {
-                tracking = GetTrackingITem(removedItem);
+                tracking = GetTrackingItem(removedItem);
             }
             if (removedItem != null)
             {
                 removedItem.PropertyChanged -= Item_PropertyChanged;
                 DeletedList.Add(removedItem);
             }
-     //       int deletedindex = DeletedList.IndexOf(removedItem);
 
-            if (IsLoggin)
+            if (IsLogging)
             {
                 CreateLogEntry(removedItem, LogAction.Delete, tracking);
             }
@@ -1392,9 +1543,11 @@ namespace TheTechIdea.Beep.Editor
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
             Items.RemoveAt(index);
             
+            int removedOriginalIndex = -1;
             if (tracking != null)
             {
-                originalList.RemoveAt(tracking.OriginalIndex);
+                removedOriginalIndex = tracking.OriginalIndex;
+                originalList.RemoveAt(removedOriginalIndex);
                 tracking.EntityState = EntityState.Deleted;
                 tracking.IsSaved = false; // Optional, mark as pending
             }
@@ -1404,13 +1557,33 @@ namespace TheTechIdea.Beep.Editor
                 int originalIndex = originalList.IndexOf(removedItem);
                 if (originalIndex >= 0)
                 {
+                    removedOriginalIndex = originalIndex;
                     originalList.RemoveAt(originalIndex);
                     var newTracking = new Tracking(Guid.NewGuid(), originalIndex, index)
                     {
                         EntityState = EntityState.Deleted,
                         IsSaved = false
                     };
-                    Trackings.Add(newTracking);
+                    AddTracking(newTracking);
+                }
+            }
+
+            // Fix index-shift: decrement OriginalIndex for all tracking entries
+            // that pointed to an originalList position after the removed one
+            if (removedOriginalIndex >= 0)
+            {
+                // Rebuild the OriginalIndex secondary index after shifting
+                var affectedTrackings = _trackingsByGuid.Values
+                    .Where(tr => tr.OriginalIndex > removedOriginalIndex && tr.EntityState != EntityState.Deleted)
+                    .ToList();
+                foreach (var tr in affectedTrackings)
+                {
+                    // Remove old index entry
+                    if (_trackingsByOriginalIndex.TryGetValue(tr.OriginalIndex, out var existing) && existing.UniqueId == tr.UniqueId)
+                        _trackingsByOriginalIndex.Remove(tr.OriginalIndex);
+                    tr.OriginalIndex--;
+                    // Re-add with new index
+                    _trackingsByOriginalIndex[tr.OriginalIndex] = tr;
                 }
             }
             
@@ -1447,8 +1620,8 @@ namespace TheTechIdea.Beep.Editor
                         tr.OriginalIndex = originalList.Count - 1;
 
                     }
-                    Trackings.Add(tr);
-                    if (IsLoggin)
+                    AddTracking(tr);
+                    if (IsLogging)
                     {
                         CreateLogEntry(item, LogAction.Insert, tr);
                     }
@@ -1490,13 +1663,18 @@ namespace TheTechIdea.Beep.Editor
             base.SetItem(index, item);
             if (string.IsNullOrEmpty(filterString))
             {
-                if (Trackings.Count > 0)
+                if (TrackingsCount > 0)
                 {
-                    Tracking tr = Trackings.Where(p => p.CurrentIndex == index || p.OriginalIndex == index).FirstOrDefault();
+                    // Try lookup by OriginalIndex first, then scan for CurrentIndex match
+                    Tracking tr = FindTrackingByOriginalIndex(index);
+                    if (tr == null)
+                    {
+                        tr = _trackingsByGuid.Values.FirstOrDefault(p => p.CurrentIndex == index);
+                    }
                     if (tr != null)
                     {
                         originalList[tr.OriginalIndex] = item;
-                        if (IsLoggin)
+                        if (IsLogging)
                         {
                             CreateLogEntry(item, LogAction.Update, tr, changedFields);
                         }
@@ -1512,8 +1690,8 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 EntityState = EntityState.Modified
                             };
-                            Trackings.Add(tr);
-                            if (IsLoggin)
+                            AddTracking(tr);
+                            if (IsLogging)
                             {
                                 CreateLogEntry(item, LogAction.Update, tr, changedFields);
                             }
@@ -1531,12 +1709,12 @@ namespace TheTechIdea.Beep.Editor
             }
             else
             {
-                Tracking tracking = Trackings.Where(p => p.CurrentIndex == index).FirstOrDefault();
+                Tracking tracking = _trackingsByGuid.Values.FirstOrDefault(p => p.CurrentIndex == index);
                 if (tracking != null)
                 {
                     originalList[tracking.OriginalIndex] = item;
                     tracking.EntityState = EntityState.Modified;
-                    if (IsLoggin)
+                    if (IsLogging)
                     {
                         CreateLogEntry(item, LogAction.Update, tracking, changedFields);
                     }
@@ -1573,13 +1751,13 @@ namespace TheTechIdea.Beep.Editor
                 
                 if (itemToOriginalIndex.TryGetValue(currentItem, out int originallistidx))
                 {
-                    if (Trackings.Count > 0)
+                    if (TrackingsCount > 0)
                     {
-                        int idx = Trackings.FindIndex(p => p.OriginalIndex == originallistidx);
-                        if (idx != -1)
+                        var existingTr = FindTrackingByOriginalIndex(originallistidx);
+                        if (existingTr != null)
                         {
-                            Trackings[idx].CurrentIndex = newlistidx;
-                            UpdateLogEntries(Trackings[idx], newlistidx);
+                            existingTr.CurrentIndex = newlistidx;
+                            UpdateLogEntries(existingTr, newlistidx);
                         }
                         else
                         {
@@ -1588,7 +1766,7 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 EntityState = EntityState.Unchanged
                             };
-                            Trackings.Add(newTracking);
+                            AddTracking(newTracking);
                         }
                     }
                 }
@@ -1600,11 +1778,16 @@ namespace TheTechIdea.Beep.Editor
             {
                 var item = Items[i];
                 var originalIndex = originalList.IndexOf(item);
-                var tracking = Trackings.FirstOrDefault(t => t.CurrentIndex == i);
+                var tracking = _trackingsByGuid.Values.FirstOrDefault(t => t.CurrentIndex == i);
 
                 if (tracking != null)
                 {
+                    // Update OriginalIndex and rebuild secondary index
+                    if (_trackingsByOriginalIndex.TryGetValue(tracking.OriginalIndex, out var existing) && existing.UniqueId == tracking.UniqueId)
+                        _trackingsByOriginalIndex.Remove(tracking.OriginalIndex);
                     tracking.OriginalIndex = originalIndex;
+                    if (originalIndex >= 0 && tracking.EntityState != EntityState.Deleted)
+                        _trackingsByOriginalIndex[originalIndex] = tracking;
                 }
             }
         }
@@ -1642,7 +1825,7 @@ namespace TheTechIdea.Beep.Editor
                 {
                     Tracking tr = new Tracking(Guid.NewGuid(), i,i);
                     tr.EntityState = EntityState.Unchanged;
-                    Trackings.Add(tr);
+                    AddTracking(tr);
 
                 }
             }
@@ -1680,7 +1863,7 @@ namespace TheTechIdea.Beep.Editor
         {
             return GetItemFromCurrentList(index);
         }
-        public Tracking GetTrackingITem(T item)
+        public Tracking GetTrackingItem(T item)
         {
             if (item == null)
                 return null;
@@ -1693,33 +1876,33 @@ namespace TheTechIdea.Beep.Editor
                 int originalIndex = originalList.IndexOf(item);
                 if (originalIndex >= 0)
                 {
-                    retval = Trackings.Where(p => p.OriginalIndex == originalIndex).FirstOrDefault();
+                    retval = FindTrackingByOriginalIndex(originalIndex);
                 }
                 if (retval != null)
                     return retval;
             }
 
-            // Check by original index
+            // Check by original index (O(1) via dictionary)
             int index = GetOriginalIndex(item);
             if (index >= 0)
             {
-                retval = Trackings.Where(p => p.OriginalIndex == index).FirstOrDefault();
+                retval = FindTrackingByOriginalIndex(index);
                 if (retval != null)
                     return retval;
             }
             
-            // Check by current index as fallback
+            // Check by current index as fallback (linear scan needed - no secondary index for CurrentIndex)
             int currentIndex = Items.IndexOf(item);
             if (currentIndex >= 0)
             {
-                retval = Trackings.Where(p => p.CurrentIndex == currentIndex).FirstOrDefault();
+                retval = _trackingsByGuid.Values.FirstOrDefault(p => p.CurrentIndex == currentIndex);
             }
             
             return retval;
         }
         public void MarkAsCommitted(T item)
         {
-            var tracking = GetTrackingITem(item);
+            var tracking = GetTrackingItem(item);
             if (tracking != null)
             {
                 tracking.IsSaved = true;
@@ -1782,7 +1965,7 @@ namespace TheTechIdea.Beep.Editor
             }
 
             // 3. Reset tracking state
-            foreach (var track in Trackings)
+            foreach (var track in _trackingsByGuid.Values)
             {
                 track.IsSaved = false;
                 track.IsNew = false;
@@ -1806,7 +1989,7 @@ namespace TheTechIdea.Beep.Editor
     Func<T, Task<IErrorsInfo>> deleteAsync)
         {
             var errors = new ErrorsInfo();
-            var tracking = GetTrackingITem(item);
+            var tracking = GetTrackingItem(item);
 
             if (tracking == null)
             {
@@ -1889,13 +2072,33 @@ namespace TheTechIdea.Beep.Editor
         {
             var changes = new ObservableChanges<T>();
 
-            foreach (var tracking in Trackings)
+            // Build O(1) lookup dictionaries to avoid O(n^2) scanning
+            // Map: item -> tracking Guid for items in the active list
+            var itemTrackingMap = new Dictionary<Guid, T>();
+            foreach (var item in Items)
+            {
+                var tr = GetTrackingItem(item);
+                if (tr != null)
+                    itemTrackingMap[tr.UniqueId] = item;
+            }
+            // Map: item -> tracking Guid for deleted items
+            var deletedTrackingMap = new Dictionary<Guid, T>();
+            foreach (var item in DeletedList)
+            {
+                var tr = GetTrackingItem(item);
+                if (tr != null)
+                    deletedTrackingMap[tr.UniqueId] = item;
+            }
+
+            foreach (var tracking in _trackingsByGuid.Values)
             {
                 if (!tracking.IsSaved)
                 {
-                    var item = tracking.EntityState == EntityState.Deleted
-                        ? DeletedList.FirstOrDefault(d => GetTrackingITem(d)?.UniqueId == tracking.UniqueId)
-                        : Items.FirstOrDefault(i => GetTrackingITem(i)?.UniqueId == tracking.UniqueId);
+                    T item = default;
+                    if (tracking.EntityState == EntityState.Deleted)
+                        deletedTrackingMap.TryGetValue(tracking.UniqueId, out item);
+                    else
+                        itemTrackingMap.TryGetValue(tracking.UniqueId, out item);
 
                     if (item == null) continue;
 
@@ -1915,6 +2118,51 @@ namespace TheTechIdea.Beep.Editor
             }
 
             return changes;
+        }
+        #endregion
+        #region "Export"
+        /// <summary>
+        /// Exports the current items to a DataTable. Mirror of the DataTable import constructor.
+        /// </summary>
+        /// <param name="tableName">Optional name for the DataTable. Defaults to the type name.</param>
+        /// <returns>A DataTable containing all items and their property values.</returns>
+        public DataTable ToDataTable(string tableName = null)
+        {
+            var dt = new DataTable(tableName ?? typeof(T).Name);
+            var properties = GetCachedProperties();
+
+            // Create columns
+            foreach (var prop in properties)
+            {
+                var colType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                // DataTable doesn't support generic types - use string as fallback
+                if (colType.IsGenericType || colType.IsArray || !colType.IsValueType && colType != typeof(string))
+                    colType = typeof(string);
+                dt.Columns.Add(prop.Name, colType);
+            }
+
+            // Populate rows
+            foreach (var item in Items)
+            {
+                var row = dt.NewRow();
+                foreach (var prop in properties)
+                {
+                    var value = prop.GetValue(item);
+                    var colType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                    if (colType.IsGenericType || colType.IsArray || !colType.IsValueType && colType != typeof(string))
+                    {
+                        // Convert complex types to string representation
+                        row[prop.Name] = value?.ToString() ?? (object)DBNull.Value;
+                    }
+                    else
+                    {
+                        row[prop.Name] = value ?? DBNull.Value;
+                    }
+                }
+                dt.Rows.Add(row);
+            }
+
+            return dt;
         }
         #endregion
         #region "Pagination"
@@ -1962,171 +2210,138 @@ namespace TheTechIdea.Beep.Editor
         }
         public void AddRange(IEnumerable<T> items)
         {
-            foreach (var item in items)
+            if (items == null) return;
+            
+            var savedSuppress = SuppressNotification;
+            var savedRaiseEvents = RaiseListChangedEvents;
+            
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
+            try
             {
-                Add(item);
+                foreach (var item in items)
+                {
+                    // Use base InsertItem to avoid per-item events
+                    int idx = Items.Count;
+                    base.InsertItem(idx, item);
+                    
+                    // Track the item
+                    originalList.Add(item);
+                    var tr = new Tracking(Guid.NewGuid(), originalList.Count - 1, idx)
+                    {
+                        EntityState = EntityState.Added,
+                        IsNew = true,
+                        IsSaved = false
+                    };
+                    AddTracking(tr);
+                    
+                    // Hook PropertyChanged
+                    item.PropertyChanged += Item_PropertyChanged;
+                }
             }
+            finally
+            {
+                SuppressNotification = savedSuppress;
+                RaiseListChangedEvents = savedRaiseEvents;
+            }
+            
+            // Fire a single Reset event instead of per-item events
+            OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        /// <summary>
+        /// Removes a range of items with a single notification event.
+        /// </summary>
+        public void RemoveRange(IEnumerable<T> items)
+        {
+            if (items == null) return;
+
+            var itemsToRemove = items.ToList(); // Materialize to avoid modification during enumeration
+            if (itemsToRemove.Count == 0) return;
+
+            var savedSuppress = SuppressNotification;
+            var savedRaiseEvents = RaiseListChangedEvents;
+
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
+            try
+            {
+                foreach (var item in itemsToRemove)
+                {
+                    int index = Items.IndexOf(item);
+                    if (index >= 0)
+                    {
+                        // Unhook event
+                        item.PropertyChanged -= Item_PropertyChanged;
+                        DeletedList.Add(item);
+
+                        // Track deletion
+                        var tracking = GetTrackingItem(item);
+                        if (tracking != null)
+                        {
+                            int removedOriginalIndex = tracking.OriginalIndex;
+                            originalList.RemoveAt(removedOriginalIndex);
+                            tracking.EntityState = EntityState.Deleted;
+                            tracking.IsSaved = false;
+
+                            // Fix index-shift for remaining trackings
+                            foreach (var tr in _trackingsByGuid.Values)
+                            {
+                                if (tr.OriginalIndex > removedOriginalIndex && tr.EntityState != EntityState.Deleted)
+                                    tr.OriginalIndex--;
+                            }
+                        }
+                        else
+                        {
+                            int originalIndex = originalList.IndexOf(item);
+                            if (originalIndex >= 0)
+                            {
+                                originalList.RemoveAt(originalIndex);
+                                var newTr = new Tracking(Guid.NewGuid(), originalIndex, index)
+                                {
+                                    EntityState = EntityState.Deleted,
+                                    IsSaved = false
+                                };
+                                AddTracking(newTr);
+                            }
+                        }
+
+                        Items.RemoveAt(index);
+                    }
+                }
+            }
+            finally
+            {
+                SuppressNotification = savedSuppress;
+                RaiseListChangedEvents = savedRaiseEvents;
+            }
+
+            // Rebuild secondary index after batch removal
+            _trackingsByOriginalIndex.Clear();
+            foreach (var tr in _trackingsByGuid.Values)
+            {
+                if (tr.EntityState != EntityState.Deleted)
+                    _trackingsByOriginalIndex[tr.OriginalIndex] = tr;
+            }
+
+            OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        /// <summary>
+        /// Removes all items matching the predicate with a single notification event.
+        /// </summary>
+        public void RemoveAll(Func<T, bool> predicate)
+        {
+            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
+            var itemsToRemove = Items.Where(predicate).ToList();
+            RemoveRange(itemsToRemove);
         }
 
         #endregion "CRUD"
     }
-    public class Tracking
-    {
-        public Guid UniqueId { get; set; }
-        public int OriginalIndex { get; set; }
-        public int CurrentIndex { get; set; }
-        public EntityState EntityState { get; set; } = EntityState.Unchanged;
-        public bool IsSaved { get; set; } = false;
-        public bool IsNew { get; set; } = false;
-        public string EntityName { get; set; }
-        public string PKFieldName { get; set; }
-        public string PKFieldValue { get; set; }
-        public string PKFieldNameType { get; set; } // Can Int or string or Guid
-        public Tracking(Guid uniqueId, int originalIndex)
-        {
-            UniqueId = uniqueId;
-            OriginalIndex = originalIndex;
-            CurrentIndex = originalIndex;
-        }
-        public Tracking(Guid uniqueId, int originalIndex,int currentindex)
-        {
-            UniqueId = uniqueId;
-            OriginalIndex = originalIndex;
-            CurrentIndex = currentindex;
-        }
-
-    }
-    public enum EntityState
-    {
-        Added,
-        Modified,
-        Deleted,
-        Unchanged
-    }
-    public class EntityUpdateInsertLog
-    {
-      //  [JsonProperty("ID")]
-        [JsonPropertyName("ID")]
-        public int Id { get; set; }
-      //  [JsonProperty("RecordID")]
-        [JsonPropertyName("RecordID")]
-        public int RecordId { get; set; }
-        public string RecordGuidKey { get; set; }
-        public string GuidKey { get; set; } = Guid.NewGuid().ToString();
-        public Dictionary<string, object> UpdatedFields { get; set; }
-        public DateTime LogDateandTime { get; set; }
-        public string LogUser { get; set; }
-        public LogAction LogAction { get; set; }
-        public string LogEntity { get; set; }
-        public Tracking TrackingRecord { get; set; }
-        public EntityUpdateInsertLog()
-        {
-
-        }
-        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser, LogAction logAction, string logEntity, string recordGuidKey)
-        {
-            UpdatedFields = updatedFields;
-            LogDateandTime = logDateandTime;
-            LogUser = logUser;
-            LogAction = logAction;
-            LogEntity = logEntity;
-            RecordGuidKey = recordGuidKey;
-        }
-
-        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser, LogAction logAction, string logEntity)
-        {
-            UpdatedFields = updatedFields;
-            LogDateandTime = logDateandTime;
-            LogUser = logUser;
-            LogAction = logAction;
-            LogEntity = logEntity;
-        }
-        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser, LogAction logAction)
-        {
-            UpdatedFields = updatedFields;
-            LogDateandTime = logDateandTime;
-            LogUser = logUser;
-            LogAction = logAction;
-        }
-        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime, string logUser)
-        {
-            UpdatedFields = updatedFields;
-            LogDateandTime = logDateandTime;
-            LogUser = logUser;
-        }
-        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields, DateTime logDateandTime)
-        {
-            UpdatedFields = updatedFields;
-            LogDateandTime = logDateandTime;
-        }
-        public EntityUpdateInsertLog(Dictionary<string, object> updatedFields)
-        {
-            UpdatedFields = updatedFields;
-        }
-
-
-
-    }
-    public class PropertyComparer<T> : IComparer<T>
-    {
-        private readonly PropertyDescriptor _property;
-        private readonly ListSortDirection _direction;
-
-        public PropertyComparer(PropertyDescriptor property, ListSortDirection direction)
-        {
-            _property = property;
-            _direction = direction;
-        }
-
-        public int Compare(T x, T y)
-        {
-            var valueX = _property.GetValue(x);
-            var valueY = _property.GetValue(y);
-
-            int result = Comparer.Default.Compare(valueX, valueY);
-
-            return _direction == ListSortDirection.Ascending ? result : -result;
-        }
-    }
-    public class ObservableChanges<T>
-    {
-        public List<T> Added { get; set; } = new();
-        public List<T> Modified { get; set; } = new();
-        public List<T> Deleted { get; set; } = new();
-    }
-    public class ItemAddedEventArgs<T> : EventArgs
-    {
-        public T Item { get; }
-        public ItemAddedEventArgs(T item) => Item = item;
-    }
-
-    public class ItemRemovedEventArgs<T> : EventArgs
-    {
-        public T Item { get; }
-        public ItemRemovedEventArgs(T item) => Item = item;
-    }
-
-    public class ItemChangedEventArgs<T> : EventArgs
-    {
-        public T Item { get; }
-        public string PropertyName { get; }
-        public ItemChangedEventArgs(T item, string propertyName)
-        {
-            Item = item;
-            PropertyName = propertyName;
-        }
-    }
-    public class ItemValidatingEventArgs<T> : EventArgs
-    {
-        public T Item { get; }
-        public bool Cancel { get; set; } = false;
-        public string ErrorMessage { get; set; }
-
-        public ItemValidatingEventArgs(T item)
-        {
-            Item = item;
-        }
-    }
-
-
+    // Supporting classes have been extracted to separate files:
+    // Tracking.cs, EntityState.cs, EntityUpdateInsertLog.cs,
+    // PropertyComparer.cs, ObservableChanges.cs, ObservableBindingListEventArgs.cs
 }

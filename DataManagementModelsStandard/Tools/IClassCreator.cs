@@ -17,7 +17,9 @@ namespace TheTechIdea.Beep.Tools
         string outputpath { get; set; }
 
         void CompileClassFromText(string SourceString, string output);
-       
+        public EntityStructure ConvertEntityTypeToEntityStructure(Type EntityType,
+            KeyDetectionStrategy strategy = KeyDetectionStrategy.AttributeThenConvention,
+            string entityName =null, string datasourceName=null);
         Assembly CreateAssemblyFromCode(string code);
         string CreateClass(string classname, List<EntityField> flds, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true);
         string CreateClass(string classname, EntityStructure entity, string poutputpath, string NameSpacestring = "TheTechIdea.ProjectClasses", bool GenerateCSharpCodeFiles = true);

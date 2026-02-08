@@ -1,22 +1,22 @@
 ---
 name: beepsync
-description: Expert guidance for data synchronization between datasources using BeepSyncManager. Use when synchronizing data between different datasources, managing sync schemas, or implementing bidirectional data sync operations.
+description: Expert guidance for data synchronization between datasources using DataSyncManager. Use when synchronizing data between different datasources, managing sync schemas, or implementing bidirectional data sync operations.
 ---
 
 # BeepSync Data Synchronization Guide
 
-Expert guidance for synchronizing data between different datasources using BeepSyncManager, a modern helper-based architecture for reliable data synchronization.
+Expert guidance for synchronizing data between different datasources using DataSyncManager, a modern helper-based architecture for reliable data synchronization.
 
 ## Overview
 
-**BeepSyncManager** provides data synchronization capabilities between any two datasources supported by BeepDM. It uses a helper-based architecture following Single Responsibility Principle for maintainability and testability.
+**DataSyncManager** provides data synchronization capabilities between any two datasources supported by BeepDM. It uses a helper-based architecture following Single Responsibility Principle for maintainability and testability.
 
 ## Architecture
 
 ### Helper-Based Design
 
 ```
-BeepSyncManager (Main Coordinator)
+DataSyncManager (Main Coordinator)
 ├── IDataSourceHelper - DataSource operations
 ├── IFieldMappingHelper - Field mapping and transformation
 ├── ISyncValidationHelper - Schema and operation validation
@@ -72,7 +72,7 @@ public class FieldSyncData
 ### Initialization
 
 ```csharp
-var syncManager = new BeepSyncManager(dmeEditor);
+var syncManager = new DataSyncManager(dmeEditor);
 ```
 
 ### Create Sync Schema
@@ -126,7 +126,7 @@ var cancellationToken = new CancellationTokenSource().Token;
 var result = await syncManager.SyncDataAsync(schema, cancellationToken, progress);
 
 // Save schemas
-await syncManager.SaveSchemasAsync();
+syncManager.SaveSchemas();
 ```
 
 ## Sync Operations

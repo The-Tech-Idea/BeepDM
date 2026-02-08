@@ -8253,23 +8253,42 @@
             Indicates if there are any pending migrations.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.RegisterAssembly(System.Reflection.Assembly)">
+            <summary>
+            Register additional assemblies for entity type discovery.
+            Use this when entity classes live in separate projects/DLLs that may not be
+            automatically found by AppDomain scanning (e.g., lazily-loaded assemblies).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.RegisterAssemblies(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
+            <summary>
+            Register multiple assemblies for entity type discovery.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetRegisteredAssemblies">
+            <summary>
+            Gets all currently registered assemblies (manual + auto-discovered).
+            Useful for diagnostics when entity types are not being found.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.DiscoverEntityTypes(System.String,System.Reflection.Assembly,System.Boolean)">
             <summary>
             Discovers all types that inherit from Entity in the specified namespace(s).
-            Similar to EF Core's DbContext discovery pattern.
+            Searches in the given assembly, registered assemblies, AppDomain assemblies,
+            the entry assembly and its referenced assemblies, and DMEEditor's assembly handler.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.DiscoverAllEntityTypes(System.Boolean)">
             <summary>
-            Discovers all types that inherit from Entity in all loaded assemblies.
-            Scans all assemblies in AppDomain and DMEEditor's assembly handler.
+            Discovers all types that inherit from Entity in all searchable assemblies.
+            Scans registered assemblies, AppDomain, entry assembly references, and DMEEditor's assembly handler.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Ensures database is created with all discovered Entity types.
             Similar to EF Core's Database.EnsureCreated().
-            Creates entities for all classes that inherit from Entity.
+            Creates entities for all classes that inherit from Entity in the given namespace/assembly.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
@@ -8285,6 +8304,24 @@
             Returns list of entities that need creation or updates.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Ensures database is created for the given entity types.
+            Use this when you know exactly which types to create — bypasses assembly discovery entirely.
+            This is the most reliable approach for cross-project scenarios.
+            </summary>
+            <example>
+            migrationManager.EnsureDatabaseCreatedForTypes(
+                new[] { typeof(Customer), typeof(Product), typeof(Invoice) },
+                progress: progressReporter);
+            </example>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Applies migrations for the given entity types.
+            Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationManager">
             <summary>
             MigrationManager provides datasource-agnostic schema migration capabilities.
@@ -8292,45 +8329,49 @@
             Key Design Principles:
             1. Entity Creation: Uses IDataSource.CreateEntityAs() for datasource-agnostic entity creation.
                Each datasource implementation handles .NET type mapping to its native type system internally.
-            2. Type Mapping: Uses DataTypesHelper to map .NET types (Fieldtype) to datasource-specific types (FieldType).
-               This ensures CreateEntityAs receives properly typed EntityStructure for any datasource type.
+               The MigrationManager does NOT do any type mapping — it passes EntityStructure with .NET types
+               (e.g., "System.String", "System.Int32") and the datasource converts them.
+            2. Type Discovery: Uses ConvertToEntityStructure  to convert POCO/Entity classes to EntityStructure.
+               This produces .NET type names which are universal across all datasources.
             3. Schema Modifications: Column operations (AddColumn, AlterColumn, DropColumn) use IDataSourceHelper
                for SQL generation when direct IDataSource methods are not available. These operations are
                primarily for RDBMS datasources that support DDL operations.
-            4. Validation: Uses IDataSourceHelper.ValidateEntity() before creation to catch issues early.
+            4. Assembly Discovery: Scans registered assemblies, entry assembly references, AppDomain,
+               and DMEEditor's assembly handler to find Entity types across projects.
             
             This approach ensures compatibility with all 200+ datasource types (RDBMS, NoSQL, File-based, Cloud, etc.)
             by leveraging each datasource's own CreateEntityAs implementation rather than generating SQL directly.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureEntityStructureTypes(TheTechIdea.Beep.DataBase.EntityStructure)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RegisterAssembly(System.Reflection.Assembly)">
             <summary>
-            Ensures EntityStructure fields have proper type mappings for the target datasource using DataTypesHelper.
-            This is critical for datasource-agnostic entity creation via CreateEntityAs.
-            Maps .NET types (Fieldtype) to datasource-specific types (FieldType) for the target datasource.
-            Each datasource's CreateEntityAs implementation uses these mappings to create entities in its native format.
+            Register an additional assembly for entity type discovery.
+            Use this when entity classes live in separate projects/DLLs that may not be
+            automatically found by AppDomain scanning (e.g., lazily-loaded assemblies).
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InferNetTypeFromDataSourceType(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RegisterAssemblies(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
             <summary>
-            Infers .NET type from datasource-specific type name (fallback method).
+            Register multiple assemblies for entity type discovery.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InferDataSourceTypeFromNetType(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetRegisteredAssemblies">
             <summary>
-            Infers datasource-specific type from .NET type name (fallback method).
+            Gets all currently registered assemblies (manual + auto-discovered).
+            Useful for diagnostics when entity types are not being found.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.DiscoverEntityTypes(System.String,System.Reflection.Assembly,System.Boolean)">
             <summary>
             Discovers all types that inherit from Entity in the specified namespace(s).
-            Similar to EF Core's DbContext discovery pattern.
+            Searches in the given assembly, registered assemblies, entry assembly and its references,
+            AppDomain assemblies, and DMEEditor's assembly handler.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.DiscoverAllEntityTypes(System.Boolean)">
             <summary>
-            Discovers all types that inherit from Entity in all loaded assemblies.
-            Scans all assemblies in AppDomain and DMEEditor's assembly handler.
+            Discovers all types that inherit from Entity in all searchable assemblies.
+            Scans registered assemblies, AppDomain, entry assembly references, and DMEEditor's assembly handler.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
@@ -8360,454 +8401,31 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetSearchableAssemblies">
             <summary>
-            Gets all searchable assemblies from current AppDomain and DMEEditor's assembly handler.
+            Gets all searchable assemblies from multiple sources:
+            1. Manually registered assemblies (RegisterAssembly / RegisterAssemblies)
+            2. Entry assembly and all its referenced assemblies (covers projects referenced by the exe)
+            3. All loaded assemblies from AppDomain.CurrentDomain
+            4. DMEEditor's assembly handler (plugin assemblies)
+            This ensures entity classes from other projects loaded in the exe are always found.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.UnitofWork_bk`1">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
-            Represents a unit of work for managing entities of type T.
+            Ensures database is created for the given entity types.
+            Use this when you know exactly which types to create — bypasses assembly discovery entirely.
+            This is the most reliable approach for cross-project scenarios where discovery might miss assemblies.
             </summary>
-            <typeparam name="T">The type of entity.</typeparam>
+            <example>
+            migrationManager.EnsureDatabaseCreatedForTypes(
+                new[] { typeof(Customer), typeof(Product), typeof(Invoice) },
+                progress: progressReporter);
+            </example>
         </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1._suppressNotification">
-            <summary>Indicates whether notifications should be suppressed.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.tokenSource">
-            <summary>A source for creating cancellation tokens.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.token">
-            <summary>A token that can be used to request cancellation of an operation.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.IsPrimaryKeyString">
-            <summary>Indicates whether the primary key is a string.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Ivalidated">
-            <summary>Indicates whether the object has been validated.</summary>
-            <remarks>
-            This property is used to track whether the object has been validated or not.
-            It is initially set to false and should be set to true after the validation process is completed.
-            </remarks>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.IsNewRecord">
-            <summary>Indicates whether a new record is being created.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.IsFilterOn">
-            <summary>Indicates whether the filter is currently turned on.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UnitofWork_bk`1.IsDirty">
-            <summary>Gets a value indicating whether the object is dirty.</summary>
-            <returns>True if the object is dirty; otherwise, false.</returns>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Tempunits">
-            <summary>A private observable binding list of type T.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1._units">
-            <summary>The collection of units.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UnitofWork_bk`1._filteredunits">
-            <summary>The filtered units collection.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UnitofWork_bk`1.FilteredUnits">
-            <summary>Gets or sets the filtered units.</summary>
-            <value>The filtered units.</value>
-            <remarks>
-            This property represents a collection of units that have been filtered based on certain criteria.
-            When setting the value, the property will unsubscribe from the previous collection's PropertyChanged event and CollectionChanged event, if applicable.
-            It will then subscribe to the new collection's PropertyChanged event and CollectionChanged event, if applicable.
-            </remarks>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Units">
-            <summary>Gets or sets the collection of units.</summary>
-            <value>The collection of units.</value>
-            <remarks>
-            If the filter is applied, the filtered units collection will be returned.
-            Otherwise, the original units collection will be returned.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.SetUnits(TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
-            <summary>Sets the units collection and raises the PropertyChanged event for the Units property.</summary>
-            <param name="value">The new units collection.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.DetachHandlers(TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
-            <summary>Detaches event handlers from the specified collection and its items.</summary>
-            <param name="collection">The collection to detach event handlers from.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.AttachHandlers(TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
-            <summary>Attaches event handlers to a collection and its items.</summary>
-            <param name="collection">The collection to attach event handlers to.</param>
-            <remarks>
-            This method attaches a PropertyChanged event handler to each item in the collection,
-            and a CollectionChanged event handler to the collection itself.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String)">
-            <summary>Initializes a new instance of the UnitofWork class.</summary>
-            <param name="dMEEditor">The IDMEEditor instance.</param>
-            <param name="datasourceName">The name of the data source.</param>
-            <param name="entityName">The name of the entity.</param>
-            <param name="primaryKey">The primary key.</param>
-        </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Boolean,TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.String)" -->
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Clear">
-            <summary>Clears the data in the collection.</summary>
-            <remarks>
-            This method clears the data in the collection by performing the following steps:
-            1. Sets the <c>IsFilterOn</c> property to <c>false</c>.
-            2. Clears the <c>Units</c> collection if it is not null.
-            3. Initializes a new instance of the <c>_deletedentities</c> dictionary.
-            4. If the collection is not in list mode, sets the <c>EntityType</c> property to the entity type obtained from the data source.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.getPrimaryKey(`0)">
-            <summary>Determines the primary key of a document.</summary>
-            <typeparam name="T">The type of the document.</typeparam>
-            <param name="doc">The document.</param>
-            <remarks>
-            If the primary key is already set, this method does nothing.
-            Otherwise, it attempts to find the primary key property of the document using the provided primary key name.
-            If the primary key property is found, it checks if its type is string and sets the IsPrimaryKeyString flag accordingly.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.init">
-            <summary>Initializes the object.</summary>
-            <remarks>
-            This method performs initialization tasks for the object. It first validates all necessary conditions
-            using the Validateall() method. If the validation fails, the method returns without performing any further
-            initialization. If the validation succeeds, the method proceeds to clear any existing data using the Clear() method.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Units_CurrentChanged(System.Object,System.EventArgs)">
-            <summary>Handles the event when the current unit is changed.</summary>
-            <param name="sender">The object that raised the event.</param>
-            <param name="e">The event arguments.</param>
-            <remarks>
-            This method is called when the current unit is changed. It checks if the notification is suppressed and returns if it is.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.SetIDValue(`0,System.Object)">
-            <summary>Sets the value of the primary key property for the specified entity.</summary>
-            <typeparam name="T">The type of the entity.</typeparam>
-            <param name="entity">The entity object.</param>
-            <param name="value">The value to set.</param>
-            <exception cref="T:System.ArgumentException">Thrown when the primary key property is not found on the entity.</exception>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetIDValue(`0)">
-            <summary>Retrieves the value of the primary key property for the specified entity.</summary>
-            <typeparam name="T">The type of the entity.</typeparam>
-            <param name="entity">The entity object.</param>
-            <returns>The value of the primary key property.</returns>
-            <remarks>
-            If the primary key property is not valid or cannot be retrieved, null is returned.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Getindex(System.String)">
-            <summary>Returns the index of an entity with the specified ID.</summary>
-            <param name="id">The ID of the entity.</param>
-            <returns>The index of the entity in the collection, or -1 if not found.</returns>
-            <remarks>
-            This method first validates all entities in the collection using the Validateall() method.
-            If validation fails, -1 is returned.
-            Otherwise, it searches for an entity with a matching ID using reflection.
-            If found, it returns the index of the entity in the collection.
-            If not found, -1 is returned.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Getindex(`0)">
-            <summary>Returns the index of the specified entity in the list of units.</summary>
-            <param name="entity">The entity to find the index of.</param>
-            <returns>The index of the entity in the list of units. Returns -1 if the list is not valid.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetLastIdentity">
-            <summary>Returns the Last identity of the specified entity in the list of units.</summary>
-            <param name="entity">The entity to find the Idnetity of.</param>
-            <returns>The Identity of the entity in the list of units. Returns -1 if the list is not valid.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Read(System.String)">
-            <summary>Reads an item from a collection based on its ID.</summary>
-            <param name="id">The ID of the item to read.</param>
-            <returns>The item with the specified ID, or the default value of the item type if the ID is not found or the collection is not valid.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.UpdateAsync(`0)">
-            <summary>Updates a document asynchronously.</summary>
-            <param name="doc">The document to be updated.</param>
-            <returns>An object containing information about any errors that occurred during the update.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.InsertAsync(`0)">
-            <summary>Inserts a document asynchronously.</summary>
-            <param name="doc">The document to be inserted.</param>
-            <returns>An object containing information about any errors that occurred during the insertion process.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.DeleteAsync(`0)">
-            <summary>Deletes a document asynchronously.</summary>
-            <param name="doc">The document to be deleted.</param>
-            <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.InsertDoc(`0)">
-            <summary>Inserts a document into the data source.</summary>
-            <typeparam name="T">The type of the document.</typeparam>
-            <param name="doc">The document to insert.</param>
-            <returns>An object containing information about any errors that occurred during the insertion.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.UpdateDoc(`0)">
-            <summary>Updates a document and returns information about any errors that occurred.</summary>
-            <param name="doc">The document to update.</param>
-            <returns>An object containing information about any errors that occurred during the update.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.DeleteDoc(`0)">
-            <summary>Deletes a document and returns information about any errors that occurred.</summary>
-            <param name="doc">The document to delete.</param>
-            <returns>An object containing information about any errors that occurred during the deletion process.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.New">
-            <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
-            <param name="entity">The entity to be added.</param>
-            <remarks>
-            This method first validates all entities in the collection using the Validateall method.
-            If the validation fails, the method returns without adding the entity.
-            Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Add(`0)">
-            <summary>Adds a new entity to the collection and subscribes to its PropertyChanged event.</summary>
-            <param name="entity">The entity to be added.</param>
-            <remarks>
-            This method first validates all entities in the collection using the Validateall method.
-            If the validation fails, the method returns without adding the entity.
-            Otherwise, the entity is added to the Units collection and the ItemPropertyChangedHandler is subscribed to its PropertyChanged event.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Delete(System.String)">
-            <summary>Deletes an object based on its ID.</summary>
-            <param name="id">The ID of the object to delete.</param>
-            <returns>An ErrorsInfo object indicating the result of the delete operation.</returns>
-            <remarks>
-            If the validation fails, the ErrorsInfo object will have a message of "Validation Failed" and a flag of Errors.Failed.
-            If the object is found and successfully deleted, the ErrorsInfo object will have a message of "Delete Done" and a flag of Errors.Ok.
-            If the object is not found, the ErrorsInfo object will have a message of "Object not found" and a flag of Errors.Failed.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Delete(`0)">
-            <summary>Deletes an entity and returns information about the operation.</summary>
-            <param name="entity">The entity to delete.</param>
-            <returns>An ErrorsInfo object containing information about the delete operation.</returns>
-            <remarks>
-            If the entity passes validation, it will be deleted and the ErrorsInfo object will have a Flag of Errors.Ok and a Message of "Delete Done".
-            If the entity fails validation, the ErrorsInfo object will have a Flag of Errors.Failed and a Message of "Validation Failed".
-            If the entity is not found, the ErrorsInfo object will have a Flag of Errors.Failed and a Message of "Object not found".
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Update(`0)">
-            <summary>Updates an entity and returns information about the operation.</summary>
-            <param name="entity">The entity to be updated.</param>
-            <returns>An ErrorsInfo object containing information about the update operation.</returns>
-            <remarks>
-            If the entity fails validation, the ErrorsInfo object will have a message indicating the failure and a flag set to Errors.Failed.
-            If the entity is successfully updated, the ErrorsInfo object will have a message indicating the success and a flag set to Errors.Ok.
-            If the entity is not found, the ErrorsInfo object will have a message indicating the failure and a flag set to Errors.Failed.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Update(System.String,`0)">
-            <summary>Updates an entity with the specified ID.</summary>
-            <param name="id">The ID of the entity to update.</param>
-            <param name="entity">The updated entity.</param>
-            <returns>An ErrorsInfo object indicating the result of the update operation.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Commit(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
-            <summary>Commits changes and returns information about any errors that occurred.</summary>
-            <param name="progress">An object that reports progress during the commit process.</param>
-            <param name="token">A cancellation token that can be used to cancel the commit process.</param>
-            <returns>An object containing information about any errors that occurred during the commit process.</returns>
-        </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Commit" -->
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetSeq(System.String)">
-            <summary>Gets the next value of a sequence.</summary>
-            <param name="SeqName">The name of the sequence.</param>
-            <returns>The next value of the sequence.</returns>
-            <remarks>
-            This method retrieves the next value of a sequence from the data source.
-            If the data source is a relational database management system (RDBMS),
-            it generates a query to fetch the next sequence value and executes it.
-            The method returns -1 if the sequence value cannot be retrieved or if the data source is not an RDBMS.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetPrimaryKeySequence(`0)">
-            <summary>Gets the primary key sequence for a document.</summary>
-            <param name="doc">The document for which to retrieve the primary key sequence.</param>
-            <returns>The primary key sequence value.</returns>
-            <remarks>
-            This method retrieves the primary key sequence for a document. It checks if the data source category is RDBMS
-            and if a sequencer is specified. If both conditions are met, it retrieves the sequence value using the specified sequencer.
-            If the sequence value is greater than 0, it sets the ID value of the document to the sequence value.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetQuery(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
-            Retrieves a list of items based on the specified filters.
+            Applies migrations for the given entity types.
+            Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
             </summary>
-            <param name="filters">The list of filters to apply.</param>
-            <returns>
-            A task that represents the asynchronous operation.
-            The task result contains the list of items that match the filters.
-            </returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Get(System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>
-            Retrieves a list of items based on the specified filters.
-            </summary>
-            <param name="filters">The list of filters to apply.</param>
-            <returns>
-            A task that represents the asynchronous operation.
-            The task result contains the list of items that match the filters.
-            </returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Get">
-            <summary>Retrieves a collection of entities asynchronously.</summary>
-            <returns>An observable binding list of entities.</returns>
-            <remarks>
-            This method retrieves a collection of entities from the data source. If the application is not in list mode,
-            it first gets the entity data from the data source and then processes the data in units. If an exception occurs
-            during the data processing, a log message is added. Finally, the method returns the observable binding list of entities.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Get(System.Int32)">
-            <summary>Retrieves the value associated with the specified key.</summary>
-            <param name="key">The key of the value to retrieve.</param>
-            <returns>The value associated with the specified key.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Get(System.String)">
-            <summary>Returns an object of type T based on the provided primary key.</summary>
-            <param name="PrimaryKeyid">The value of the primary key.</param>
-            <returns>An object of type T that matches the provided primary key, or null if no match is found.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetDataInUnits(System.Object)">
-            <summary>Converts data to units and updates the internal state.</summary>
-            <param name="retval">The data to be converted.</param>
-            <returns>True if the conversion was successful, false otherwise.</returns>
-            <exception cref="T:System.Exception">Thrown when an error occurs during the conversion.</exception>
-        </member>
-        <!-- Badly formed XML comment ignored for member "M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.FindDocIdx(`0)" -->
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.DocExistByKey(`0)">
-            <summary>Checks if a document exists in the collection based on its primary key.</summary>
-            <typeparam name="T">The type of document.</typeparam>
-            <param name="doc">The document to check.</param>
-            <returns>The index of the document in the collection if it exists, otherwise -1.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.DocExist(`0)">
-            <summary>Checks if a document exists in the collection and returns its index.</summary>
-            <typeparam name="T">The type of document.</typeparam>
-            <param name="doc">The document to check.</param>
-            <returns>The index of the document if it exists in the collection, otherwise -1.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetIsDirty">
-            <summary>Checks if the object is dirty.</summary>
-            <returns>True if the object is dirty, false otherwise.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetAddedEntities">
-            <summary>Returns a collection of all the added entities.</summary>
-            <returns>An IEnumerable of integers representing the added entities.</returns>
-            <remarks>
-            If the validation of all entities fails, null is returned.
-            The added entities are determined by filtering the _entityStates dictionary
-            and selecting the keys (integers) where the corresponding value is EntityState.Added.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetModifiedEntities">
-            <summary>Returns a collection of modified entity IDs.</summary>
-            <returns>An IEnumerable of integers representing the IDs of modified entities.</returns>
-            <remarks>
-            If all entities pass the validation, the method returns the IDs of entities whose EntityState is set to Modified.
-            If the validation fails, the method returns null.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.GetDeletedEntities">
-            <summary>Returns a collection of deleted entities.</summary>
-            <typeparam name="T">The type of entities.</typeparam>
-            <returns>A collection of deleted entities.</returns>
-            <remarks>
-            This method checks if all entities are valid using the Validateall() method.
-            If not all entities are valid, it returns null.
-            Otherwise, it returns a collection of entities that have been marked as deleted.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Units_ListChanged(System.Object,System.ComponentModel.ListChangedEventArgs)">
-            <summary>Handles the event when the list of units changes.</summary>
-            <param name="sender">The object that triggered the event.</param>
-            <param name="e">The event arguments containing information about the change.</param>
-            <remarks>
-            This method is called when the list of units changes. It checks if the notification is suppressed,
-            and if so, it returns without performing any further actions. If the change type is an item change,
-            it retrieves the item at the specified index from the list of units. If the item's primary key value
-            is not already present in the UpdatedKeys collection, it adds the key value to the collection along
-            with an incremented index value.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Units_CollectionChanged(System.Object,System.Collections.Specialized.NotifyCollectionChangedEventArgs)">
-            <summary>Handles the CollectionChanged event of the Units collection.</summary>
-            <param name="sender">The sender of the event.</param>
-            <param name="e">The event arguments.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.ItemPropertyChangedHandler(System.Object,System.ComponentModel.PropertyChangedEventArgs)">
-            <summary>
-            Event handler for property changes in an item.
-            </summary>
-            <param name="sender">The object that triggered the event.</param>
-            <param name="e">The event arguments containing information about the changed property.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.FilterCollection(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>Filters a collection based on a list of filters.</summary>
-            <param name="originalCollection">The original collection to filter.</param>
-            <param name="filters">The list of filters to apply.</param>
-            <returns>A filtered collection.</returns>
-            <remarks>
-            This method uses reflection to dynamically build an expression tree based on the provided filters.
-            Each filter is applied to the specified property of the collection's elements.
-            If an error occurs during the filtering process, a log message is added and null is returned.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.FilterCollection(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.String,System.Object)">
-            <summary>Filters a collection based on a specified property and value.</summary>
-            <param name="originalCollection">The original collection to filter.</param>
-            <param name="propertyName">The name of the property to filter on.</param>
-            <param name="value">The value to filter by.</param>
-            <returns>A filtered collection based on the specified property and value.</returns>
-            <remarks>
-            This method uses reflection to dynamically filter the collection based on the specified property and value.
-            If an error occurs during the filtering process, an error message is logged and null is returned.
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.UndoDelete(`0,System.Int32)">
-            <summary>Undoes a delete operation by reinserting an item at a specified index.</summary>
-            <param name="itemToReinsert">The item to be reinserted.</param>
-            <param name="indexToReinsertAt">The index at which the item should be reinserted.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.UndoDelete">
-            <summary>Undoes the most recent deletion operation.</summary>
-            <remarks>
-            This method retrieves the most recently deleted item from the undo delete stack and reinserts it into the original collection at the original index.
-            </remarks>
-            <typeparam name="T">The type of items in the collection.</typeparam>
-            <param name="Units">The collection of items.</param>
-            <param name="undoDeleteStack">The stack that stores the deleted items and their original indices.</param>
-            <exception cref="T:System.InvalidOperationException">Thrown when the undo delete stack is empty.</exception>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.IsRequirmentsValidated">
-            <summary>Checks if the requirements for a valid operation are validated.</summary>
-            <returns>True if the requirements are validated, false otherwise.</returns>
-            <remarks>
-            The method checks for the following requirements:
-            - EntityStructure: If it is null, sets the ErrorObject flag to Errors.Failed and the ErrorObject message to "Missing Entity Structure".
-            - Entity PrimaryKey: Sets the ErrorObject flag to Errors.Failed and the ErrorObject message to "Missing Entity PrimaryKey".
-            - DataSource: If it is null, sets the ErrorObject flag to Errors.Failed and the ErrorObject message to "Missing Entity Datasource".
-            </remarks>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.OpenDataSource">
-            <summary>Opens the data source.</summary>
-            <returns>True if the data source is successfully opened, false otherwise.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UnitofWork_bk`1.Validateall">
-            <summary>Validates all necessary conditions before performing an operation.</summary>
-            <returns>True if all conditions are valid, otherwise false.</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Examples.UnitofWorkExamples">
             <summary>
@@ -8883,11 +8501,63 @@
             <param name="editor">DME Editor instance</param>
             <returns>Task representing the async operation</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkCollectionHelper`1">
+            <summary>
+            Helper class for collection management in UnitofWork.
+            Provides filtering, paging, sorting, and synchronization of collections.
+            </summary>
+            <typeparam name="T">Entity type</typeparam>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkCollectionHelper`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Initializes a new instance of UnitofWorkCollectionHelper
+            </summary>
+            <param name="editor">DME Editor instance</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkCollectionHelper`1.SynchronizeCollections(TheTechIdea.Beep.Editor.ObservableBindingList{`0},TheTechIdea.Beep.Editor.ObservableBindingList{`0})">
+            <summary>
+            Synchronizes target collection to match source collection
+            </summary>
+            <param name="source">Source collection</param>
+            <param name="target">Target collection to synchronize</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkCollectionHelper`1.FilterCollection(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Filters collection based on AppFilter criteria
+            </summary>
+            <param name="collection">Collection to filter</param>
+            <param name="filters">Filter criteria</param>
+            <returns>Filtered collection</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkCollectionHelper`1.ApplyPaging(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.Int32,System.Int32)">
+            <summary>
+            Applies paging to a collection
+            </summary>
+            <param name="collection">Collection to page</param>
+            <param name="pageIndex">Zero-based page index</param>
+            <param name="pageSize">Number of items per page</param>
+            <returns>Paged collection</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkCollectionHelper`1.SortCollection(TheTechIdea.Beep.Editor.ObservableBindingList{`0},System.String,System.Boolean)">
+            <summary>
+            Sorts collection by a field name
+            </summary>
+            <param name="collection">Collection to sort</param>
+            <param name="sortField">Property name to sort by</param>
+            <param name="ascending">True for ascending, false for descending</param>
+            <returns>Sorted collection</returns>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1">
             <summary>
             Helper class for data operations in UnitofWork
             </summary>
             <typeparam name="T">Entity type</typeparam>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1._propertyCache">
+            <summary>
+            Static cache for PropertyInfo arrays, keyed by Type. 
+            Avoids repeated reflection calls across all UnitofWork instances.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
@@ -8931,6 +8601,13 @@
             <param name="current">Current entity</param>
             <returns>Dictionary of changed fields</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.GetCachedProperties(System.Type)">
+            <summary>
+            Gets cached PropertyInfo array for a type, avoiding repeated reflection
+            </summary>
+            <param name="type">The type to get properties for</param>
+            <returns>Array of PropertyInfo</returns>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.IsComplexType(System.Type)">
             <summary>
             Checks if a type is a complex type that needs deep cloning
@@ -8940,12 +8617,20 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.CloneComplexValue(System.Object)">
             <summary>
-            Clones a complex value
+            Clones a complex value (entry point - creates visited set)
             </summary>
             <param name="value">Value to clone</param>
             <returns>Cloned value</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.CloneEnumerable(System.Collections.IEnumerable,System.Type)">
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.CloneComplexValue(System.Object,System.Collections.Generic.HashSet{System.Object})">
+            <summary>
+            Clones a complex value with circular reference protection
+            </summary>
+            <param name="value">Value to clone</param>
+            <param name="visited">Set of already-visited objects to prevent infinite recursion</param>
+            <returns>Cloned value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkDataHelper`1.CloneEnumerable(System.Collections.IEnumerable,System.Type,System.Collections.Generic.HashSet{System.Object})">
             <summary>
             Clones an enumerable collection
             </summary>
@@ -8968,6 +8653,12 @@
             <param name="value1">First value</param>
             <param name="value2">Second value</param>
             <returns>True if values are equal</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.ReferenceEqualityComparer">
+            <summary>
+            Compares objects by reference identity (not by value equality)
+            Used for circular reference detection in cloning
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.TypeExtensions">
             <summary>
@@ -9136,6 +8827,155 @@
             Gets the current user context
             </summary>
             <returns>Current user identifier</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1">
+            <summary>
+            Helper class for centralized event management in UnitofWork.
+            Standardizes event creation, property change handling, and event dispatch.
+            </summary>
+            <typeparam name="T">Entity type</typeparam>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
+            <summary>
+            Initializes a new instance of UnitofWorkEventHelper
+            </summary>
+            <param name="editor">DME Editor instance</param>
+            <param name="entityName">Name of the entity type</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1.CreateEventParams(`0,TheTechIdea.Beep.Editor.EventAction)">
+            <summary>
+            Creates standardized event parameters for UnitofWork operations
+            </summary>
+            <param name="entity">Entity involved in the event</param>
+            <param name="action">The event action type</param>
+            <returns>Populated UnitofWorkParams</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1.CreatePropertyChangeParams(`0,System.String,System.Object)">
+            <summary>
+            Creates event parameters with property change details
+            </summary>
+            <param name="entity">Entity that changed</param>
+            <param name="propertyName">Name of changed property</param>
+            <param name="newValue">New value of the property</param>
+            <returns>Populated UnitofWorkParams</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1.HandlePropertyChanged(`0,System.String,System.Object,System.Object)">
+            <summary>
+            Handles property changed events by creating a change record
+            </summary>
+            <param name="entity">Entity that changed</param>
+            <param name="propertyName">Name of changed property</param>
+            <param name="oldValue">Old value</param>
+            <param name="newValue">New value</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1.RaiseEntityEvent(`0,TheTechIdea.Beep.Editor.EventAction,System.Boolean)">
+            <summary>
+            Raises appropriate events for entity operations using the provided event handlers
+            </summary>
+            <param name="entity">Entity involved</param>
+            <param name="action">Action being performed</param>
+            <param name="isPreEvent">True for pre-events, false for post-events</param>
+            <returns>True if operation should continue (not cancelled)</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkEventHelper`1.RaiseEvent(System.EventHandler{TheTechIdea.Beep.Editor.UnitofWorkParams},System.Object,`0,TheTechIdea.Beep.Editor.EventAction)">
+            <summary>
+            Raises an event with cancellation support
+            </summary>
+            <param name="eventHandler">The event handler to invoke</param>
+            <param name="sender">Event sender</param>
+            <param name="entity">Entity involved</param>
+            <param name="action">Event action type</param>
+            <returns>True if operation should continue (not cancelled)</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1">
+            <summary>
+            Helper class for centralized state management in UnitofWork.
+            Replaces scattered _entityStates dictionary manipulation across CRUD and Extensions.
+            </summary>
+            <typeparam name="T">Entity type</typeparam>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.Dictionary{System.Int32,TheTechIdea.Beep.Editor.EntityState})">
+            <summary>
+            Initializes a new instance of UnitofWorkStateHelper
+            </summary>
+            <param name="editor">DME Editor instance</param>
+            <param name="entityStates">Reference to the entity states dictionary from UnitofWork</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.GetEntityState(`0)">
+            <summary>
+            Gets the current state of an entity by its index
+            </summary>
+            <param name="entity">Entity to check (not used directly - state is index-based)</param>
+            <returns>Entity state, or Unchanged if not tracked</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.GetEntityStateByIndex(System.Int32)">
+            <summary>
+            Gets entity state by index
+            </summary>
+            <param name="index">Index in the Units collection</param>
+            <returns>Entity state</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.SetEntityState(`0,TheTechIdea.Beep.Editor.EntityState)">
+            <summary>
+            Sets the state of an entity by its index
+            </summary>
+            <param name="entity">Entity (not used directly)</param>
+            <param name="state">New state</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.SetEntityStateByIndex(System.Int32,TheTechIdea.Beep.Editor.EntityState)">
+            <summary>
+            Sets entity state by index
+            </summary>
+            <param name="index">Index in the Units collection</param>
+            <param name="state">New state</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.MarkForDeletion(`0)">
+            <summary>
+            Marks entity at index for deletion
+            </summary>
+            <param name="entity">Entity to mark</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.MarkAsModified(`0)">
+            <summary>
+            Marks entity at index as modified
+            </summary>
+            <param name="entity">Entity to mark</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.MarkAsAdded(`0)">
+            <summary>
+            Marks entity at index as added
+            </summary>
+            <param name="entity">Entity to mark</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.ResetState(`0)">
+            <summary>
+            Resets entity state to unchanged by index
+            </summary>
+            <param name="entity">Entity to reset</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.ResetStateByIndex(System.Int32)">
+            <summary>
+            Resets state for a specific index
+            </summary>
+            <param name="index">Index in the Units collection</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.ClearAllStates">
+            <summary>
+            Clears all tracked entity states
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.GetIndicesByState(TheTechIdea.Beep.Editor.EntityState)">
+            <summary>
+            Gets all indices with a specific state
+            </summary>
+            <param name="state">State to filter by</param>
+            <returns>Collection of indices</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.HasPendingChanges">
+            <summary>
+            Checks if any entity has pending changes
+            </summary>
+            <returns>True if dirty</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkValidationHelper`1">
             <summary>
@@ -9761,6 +9601,29 @@
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CurrentItem">
             <summary>Gets the current item</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.SoftDeleteFieldName">
+            <summary>
+            Gets or sets the field name used for soft deletes (e.g., "IsDeleted" or "DeletedAt").
+            When set, Delete() will set this field instead of removing the record.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IncludeDeleted">
+            <summary>
+            When true, Get() queries will include soft-deleted records.
+            Default is false (soft-deleted records are filtered out).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ConcurrencyMode">
+            <summary>
+            Gets or sets the concurrency mode for update/delete operations.
+            None = no checking, LastWriteWins = overwrite, ThrowOnConflict = throw if stale.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ConcurrencyFieldName">
+            <summary>
+            Gets or sets the field name used for optimistic concurrency (e.g., "RowVersion" or "LastModified").
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.FilteredUnits">
             <summary>Gets or sets the filtered units.</summary>
             <value>The filtered units.</value>
@@ -9849,6 +9712,15 @@
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RegisterEntityType">
             <summary>
             Registers the entity type in the type cache
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.EnsureUnitsInitialized">
+            <summary>
+            Ensures the _units collection is initialized.
+            Called at the end of every constructor to guarantee Units is never null,
+            even if OpenDataSource() failed or Validateall() returned false.
+            This allows Add()/New() to work on a freshly constructed UnitofWork
+            without requiring Get() to be called first.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.init">
@@ -9987,6 +9859,38 @@
             Commits individual changes to the data source with progress reporting
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.AddRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Adds a range of entities to the collection
+            </summary>
+            <param name="entities">Entities to add</param>
+            <returns>Result of the operation</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.UpdateRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Updates a range of entities
+            </summary>
+            <param name="entities">Entities to update</param>
+            <returns>Result of the operation</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.DeleteRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Deletes a range of entities
+            </summary>
+            <param name="entities">Entities to delete</param>
+            <returns>Result of the operation</returns>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._changeLog">
+            <summary>
+            Change log for tracking modifications
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetChangeLog">
+            <summary>
+            Gets the change log containing all tracked changes
+            </summary>
+            <returns>List of change records</returns>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.UpdateLog">
             <summary>
             Update log for tracking changes (placeholder - would need full implementation)
@@ -10084,7 +9988,7 @@
             <param name="entity">The entity to find</param>
             <returns>Index of the entity, or -1 if not found</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetItemFroCurrentList(System.Int32)">
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetItemFromCurrentList(System.Int32)">
             <summary>
             Gets an entity from the current list by index
             </summary>
@@ -10145,6 +10049,11 @@
             Handles property changes on individual entities
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RecordChange(`0,System.String,System.Object,System.Object,TheTechIdea.Beep.Editor.EntityState)">
+            <summary>
+            Records a change to the audit trail
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Units_CollectionChanged(System.Object,System.Collections.Specialized.NotifyCollectionChangedEventArgs)">
             <summary>
             Handles collection change events
@@ -10194,7 +10103,7 @@
             <param name="id">The string ID of the entity to delete</param>
             <returns>Error information</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetTrackingITem(`0)">
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetTrackingItem(`0)">
             <summary>
             Gets the tracking item for an entity - Fixed return type to match interface
             </summary>
@@ -10367,11 +10276,6 @@
             </summary>
             <returns>True if the requirements are validated, false otherwise</returns>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOW.EntityUpdateInsertLog">
-            <summary>
-            Represents a log entry for entity updates/inserts
-            </summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory">
             <summary>
             Simplified factory for creating UnitOfWork instances when types are determined at runtime.
@@ -10380,6 +10284,9 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.Configuration">
             <summary>Configuration options for the factory</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.Configuration.MaxCacheSize">
+            <summary>Maximum number of entries in each cache before eviction</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.CreateUnitOfWork(System.Type,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String)">
             <summary>
@@ -10423,6 +10330,11 @@
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.CreateUnitOfWorkFromInstance(System.Object,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
             <summary>
             Creates UnitOfWork from an entity instance (automatically detects type)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.TrimCacheIfNeeded">
+            <summary>
+            Evicts oldest entries if cache exceeds max size
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.ClearCaches">
@@ -20326,6 +20238,25 @@
             <param name="targetNamespace">Target namespace for generated types</param>
             <returns>Dictionary mapping type names to compiled Types</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertEntityTypeToEntityStructure(System.Type,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String,System.String)">
+            <summary>
+            Converts an Entity/POCO type to EntityStructure using FromType extension
+            then enriches fields with data annotation attributes ([Key], [Required], 
+            [MaxLength], [DatabaseGenerated], [Column], [Table], [NotMapped]).
+            Supports both Entity-derived types and plain POCOs.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.IsNavigationProperty(System.Type)">
+            <summary>
+            Checks if a property type is a navigation property (collection or complex type)
+            that should be excluded from entity fields.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyConventionBasedKeyDetection(TheTechIdea.Beep.DataBase.EntityStructure,System.Type)">
+            <summary>
+            Applies convention-based key detection: looks for "Id" or "{TypeName}Id" properties.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ClearPocoToEntityCache">
             <summary>
             Clears the runtime type cache
@@ -20333,17 +20264,20 @@
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertToEntityStructure``1(TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
             <summary>
-            Converts a POCO type to EntityStructure using generic type with KeyDetectionStrategy
+            Converts a POCO type to EntityStructure using generic type with KeyDetectionStrategy.
+            Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertToEntityStructure(System.Type,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
             <summary>
-            Converts a runtime POCO type to EntityStructure with KeyDetectionStrategy
+            Converts a runtime POCO/Entity type to EntityStructure with KeyDetectionStrategy.
+            Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertToEntityStructure(System.Object,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
             <summary>
-            Converts a POCO object instance to EntityStructure with KeyDetectionStrategy
+            Converts a POCO/Entity object instance to EntityStructure with KeyDetectionStrategy.
+            Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GetCircularReferences``1">

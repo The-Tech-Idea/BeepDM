@@ -177,6 +177,31 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>Gets the current item</summary>
         public T CurrentItem => Units.Current;
 
+        // Soft delete support
+        /// <summary>
+        /// Gets or sets the field name used for soft deletes (e.g., "IsDeleted" or "DeletedAt").
+        /// When set, Delete() will set this field instead of removing the record.
+        /// </summary>
+        public string SoftDeleteFieldName { get; set; }
+
+        /// <summary>
+        /// When true, Get() queries will include soft-deleted records.
+        /// Default is false (soft-deleted records are filtered out).
+        /// </summary>
+        public bool IncludeDeleted { get; set; } = false;
+
+        // Concurrency support
+        /// <summary>
+        /// Gets or sets the concurrency mode for update/delete operations.
+        /// None = no checking, LastWriteWins = overwrite, ThrowOnConflict = throw if stale.
+        /// </summary>
+        public ConcurrencyMode ConcurrencyMode { get; set; } = ConcurrencyMode.None;
+
+        /// <summary>
+        /// Gets or sets the field name used for optimistic concurrency (e.g., "RowVersion" or "LastModified").
+        /// </summary>
+        public string ConcurrencyFieldName { get; set; }
+
         #endregion
 
         #region Collection Properties
@@ -272,6 +297,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                 init();
             }
             
+            // Ensure Units collection is always available for Add()/New() operations
+            EnsureUnitsInitialized();
             RegisterEntityType();
             _suppressNotification = false;
         }
@@ -299,6 +326,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                 init();
             }
             
+            // Ensure Units collection is always available for Add()/New() operations
+            EnsureUnitsInitialized();
             RegisterEntityType();
             _suppressNotification = false;
         }
@@ -350,6 +379,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                 init();
             }
             
+            // Ensure Units collection is always available for Add()/New() operations
+            EnsureUnitsInitialized();
             InitializePrimaryKey();
             RegisterEntityType();
             _suppressNotification = false;
@@ -380,6 +411,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                 init();
             }
             
+            // Ensure Units collection is always available for Add()/New() operations
+            EnsureUnitsInitialized();
             InitializePrimaryKey();
             RegisterEntityType();
             _suppressNotification = false;
@@ -433,11 +466,9 @@ namespace TheTechIdea.Beep.Editor.UOW
                 _dataHelper = new UnitofWorkDataHelper<T>(DMEEditor);
                 _validationHelper = new UnitofWorkValidationHelper<T>(DMEEditor, EntityStructure, PrimaryKey);
                 _defaultsHelper = new UnitofWorkDefaultsHelper<T>(DMEEditor, DatasourceName, EntityName);
-                
-                // Initialize other helpers as they are created
-                // _stateHelper = new UnitofWorkStateHelper<T>(DMEEditor);
-                // _eventHelper = new UnitofWorkEventHelper<T>(DMEEditor);
-                // _collectionHelper = new UnitofWorkCollectionHelper<T>(DMEEditor);
+                _stateHelper = new UnitofWorkStateHelper<T>(DMEEditor, _entityStates);
+                _eventHelper = new UnitofWorkEventHelper<T>(DMEEditor, EntityName);
+                _collectionHelper = new UnitofWorkCollectionHelper<T>(DMEEditor);
             }
             catch (Exception ex)
             {
@@ -476,6 +507,21 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
             {
                 DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
+            }
+        }
+
+        /// <summary>
+        /// Ensures the _units collection is initialized.
+        /// Called at the end of every constructor to guarantee Units is never null,
+        /// even if OpenDataSource() failed or Validateall() returned false.
+        /// This allows Add()/New() to work on a freshly constructed UnitofWork
+        /// without requiring Get() to be called first.
+        /// </summary>
+        private void EnsureUnitsInitialized()
+        {
+            if (_units == null)
+            {
+                _units = new ObservableBindingList<T>();
             }
         }
 

@@ -23,12 +23,15 @@ namespace TheTechIdea.Beep.Editor.Migration
     /// Key Design Principles:
     /// 1. Entity Creation: Uses IDataSource.CreateEntityAs() for datasource-agnostic entity creation.
     ///    Each datasource implementation handles .NET type mapping to its native type system internally.
-    /// 2. Type Mapping: Uses DataTypesHelper to map .NET types (Fieldtype) to datasource-specific types (FieldType).
-    ///    This ensures CreateEntityAs receives properly typed EntityStructure for any datasource type.
+    ///    The MigrationManager does NOT do any type mapping — it passes EntityStructure with .NET types
+    ///    (e.g., "System.String", "System.Int32") and the datasource converts them.
+    /// 2. Type Discovery: Uses ConvertToEntityStructure  to convert POCO/Entity classes to EntityStructure.
+    ///    This produces .NET type names which are universal across all datasources.
     /// 3. Schema Modifications: Column operations (AddColumn, AlterColumn, DropColumn) use IDataSourceHelper
     ///    for SQL generation when direct IDataSource methods are not available. These operations are
     ///    primarily for RDBMS datasources that support DDL operations.
-    /// 4. Validation: Uses IDataSourceHelper.ValidateEntity() before creation to catch issues early.
+    /// 4. Assembly Discovery: Scans registered assemblies, entry assembly references, AppDomain,
+    ///    and DMEEditor's assembly handler to find Entity types across projects.
     /// 
     /// This approach ensures compatibility with all 200+ datasource types (RDBMS, NoSQL, File-based, Cloud, etc.)
     /// by leveraging each datasource's own CreateEntityAs implementation rather than generating SQL directly.
@@ -36,6 +39,8 @@ namespace TheTechIdea.Beep.Editor.Migration
     public partial class MigrationManager : IMigrationManager
     {
         private readonly IDMEEditor _editor;
+        private readonly HashSet<Assembly> _registeredAssemblies = new HashSet<Assembly>();
+        private readonly object _assemblyLock = new object();
 
         public IDMEEditor DMEEditor => _editor;
         public IDataSource MigrateDataSource { get; set; }
@@ -45,6 +50,53 @@ namespace TheTechIdea.Beep.Editor.Migration
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
             MigrateDataSource = dataSource;
         }
+
+        #region Assembly Registration
+
+        /// <summary>
+        /// Register an additional assembly for entity type discovery.
+        /// Use this when entity classes live in separate projects/DLLs that may not be
+        /// automatically found by AppDomain scanning (e.g., lazily-loaded assemblies).
+        /// </summary>
+        public void RegisterAssembly(Assembly assembly)
+        {
+            if (assembly == null) return;
+            lock (_assemblyLock)
+            {
+                if (_registeredAssemblies.Add(assembly))
+                {
+                    _editor?.AddLogMessage("Beep",
+                        $"MigrationManager: Registered assembly '{assembly.GetName().Name}' for entity discovery",
+                        DateTime.Now, 0, null, Errors.Ok);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Register multiple assemblies for entity type discovery.
+        /// </summary>
+        public void RegisterAssemblies(IEnumerable<Assembly> assemblies)
+        {
+            if (assemblies == null) return;
+            foreach (var assembly in assemblies)
+            {
+                RegisterAssembly(assembly);
+            }
+        }
+
+        /// <summary>
+        /// Gets all currently registered assemblies (manual + auto-discovered).
+        /// Useful for diagnostics when entity types are not being found.
+        /// </summary>
+        public IReadOnlyList<Assembly> GetRegisteredAssemblies()
+        {
+            lock (_assemblyLock)
+            {
+                return _registeredAssemblies.ToList().AsReadOnly();
+            }
+        }
+
+        #endregion
 
         public IErrorsInfo EnsureEntity(EntityStructure entity, bool createIfMissing = true, bool addMissingColumns = true)
         {
@@ -57,8 +109,9 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            // Ensure entity structure has proper type mappings for target datasource
-            EnsureEntityStructureTypes(entity);
+            // NOTE: Do NOT pre-map types here. The datasource's CreateEntityAs handles all
+            // type conversion from .NET types (Fieldtype like "System.String") to its own
+            // native type system internally. Pre-mapping corrupts the EntityStructure.
 
             if (!MigrateDataSource.CheckEntityExist(entity.EntityName))
             {
@@ -130,7 +183,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (_editor?.classCreator == null)
                 return CreateErrorsInfo(Errors.Failed, "Class creator is not available");
 
-            var entity = _editor.classCreator.ConvertPocoToEntity(pocoType, detectRelationships);
+            var entity = _editor.classCreator.ConvertToEntityStructure(pocoType);
             if (entity == null)
                 return CreateErrorsInfo(Errors.Failed, $"Failed to convert POCO '{pocoType.Name}' to EntityStructure");
 
@@ -157,8 +210,8 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            // Ensure entity structure has proper type mappings for target datasource
-            EnsureEntityStructureTypes(entity);
+            // NOTE: Do NOT pre-map types here. The datasource's CreateEntityAs handles all
+            // type conversion internally. Passing .NET types (Fieldtype) is correct.
 
             // Validate entity structure before creation (if helper supports validation)
             var helper = _editor?.GetDataSourceHelper(MigrateDataSource.DatasourceType);
@@ -636,160 +689,62 @@ namespace TheTechIdea.Beep.Editor.Migration
             return ',';
         }
 
-        /// <summary>
-        /// Ensures EntityStructure fields have proper type mappings for the target datasource using DataTypesHelper.
-        /// This is critical for datasource-agnostic entity creation via CreateEntityAs.
-        /// Maps .NET types (Fieldtype) to datasource-specific types (FieldType) for the target datasource.
-        /// Each datasource's CreateEntityAs implementation uses these mappings to create entities in its native format.
-        /// </summary>
-        private void EnsureEntityStructureTypes(EntityStructure entity)
-        {
-            if (entity?.Fields == null || _editor?.typesHelper == null || MigrateDataSource == null)
-                return;
-
-            try
-            {
-                var dataSourceName = MigrateDataSource.DatasourceName ?? MigrateDataSource.DatasourceType.ToString();
-
-                foreach (var field in entity.Fields)
-                {
-                    // Priority 1: If Fieldtype (.NET type) is set, map it to datasource-specific FieldType
-                    // This is the preferred approach as .NET types are universal
-                    if (!string.IsNullOrWhiteSpace(field.Fieldtype))
-                    {
-                        // Use DataTypesHelper to map .NET type to datasource-specific type
-                        // GetDataType uses the field's Fieldtype property to determine the mapping
-                        var datasourceType = _editor.typesHelper.GetDataType(dataSourceName, field);
-                        
-                        if (!string.IsNullOrWhiteSpace(datasourceType))
-                        {
-                            field.Fieldtype = datasourceType;
-                        }
-                        else if (string.IsNullOrWhiteSpace(field.Fieldtype))
-                        {
-                            // Fallback: infer datasource type from .NET type name
-                            field.Fieldtype = InferDataSourceTypeFromNetType(field.Fieldtype);
-                        }
-                    }
-                    // Priority 2: If FieldType (datasource-specific) is set but Fieldtype is not, map back to .NET type
-                    else if (!string.IsNullOrWhiteSpace(field.Fieldtype) && 
-                             !field.Fieldtype.Contains("System.") && 
-                             !field.Fieldtype.Contains("Microsoft."))
-                    {
-                        // FieldType is datasource-specific, map it back to .NET type using IDataSourceHelper
-                        var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-                        if (helper != null)
-                        {
-                            try
-                            {
-                                var clrType = helper.MapDatasourceTypeToClrType(field.Fieldtype);
-                                if (clrType != null)
-                                {
-                                    field.Fieldtype = clrType.FullName ?? clrType.Name;
-                                }
-                            }
-                            catch
-                            {
-                                // If mapping fails, infer .NET type from datasource type name
-                                field.Fieldtype = InferNetTypeFromDataSourceType(field.Fieldtype);
-                            }
-                        }
-                        else
-                        {
-                            // No helper available, infer .NET type
-                            field.Fieldtype = InferNetTypeFromDataSourceType(field.Fieldtype);
-                        }
-                    }
-                    // Priority 3: If neither is set, set defaults
-                    else if (string.IsNullOrWhiteSpace(field.Fieldtype) && string.IsNullOrWhiteSpace(field.Fieldtype))
-                    {
-                        field.Fieldtype = "System.String";
-                        field.Fieldtype = "VARCHAR"; // Common default, will be mapped by datasource
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _editor?.AddLogMessage("Beep", 
-                    $"Warning: Could not ensure entity structure types for '{entity?.EntityName}': {ex.Message}", 
-                    DateTime.Now, 0, null, Errors.Warning);
-            }
-        }
-
-        /// <summary>
-        /// Infers .NET type from datasource-specific type name (fallback method).
-        /// </summary>
-        private static string InferNetTypeFromDataSourceType(string datasourceType)
-        {
-            if (string.IsNullOrWhiteSpace(datasourceType))
-                return "System.String";
-
-            var typeLower = datasourceType.ToLowerInvariant();
-            
-            if (typeLower.Contains("int") || typeLower.Contains("integer"))
-                return "System.Int32";
-            if (typeLower.Contains("bigint") || typeLower.Contains("long"))
-                return "System.Int64";
-            if (typeLower.Contains("decimal") || typeLower.Contains("numeric") || typeLower.Contains("money"))
-                return "System.Decimal";
-            if (typeLower.Contains("float") || typeLower.Contains("real"))
-                return "System.Double";
-            if (typeLower.Contains("bool") || typeLower.Contains("bit"))
-                return "System.Boolean";
-            if (typeLower.Contains("date") || typeLower.Contains("time"))
-                return "System.DateTime";
-            if (typeLower.Contains("guid") || typeLower.Contains("uniqueidentifier"))
-                return "System.Guid";
-            if (typeLower.Contains("binary") || typeLower.Contains("varbinary") || typeLower.Contains("blob"))
-                return "System.Byte[]";
-
-            return "System.String"; // Default fallback
-        }
-
-        /// <summary>
-        /// Infers datasource-specific type from .NET type name (fallback method).
-        /// </summary>
-        private static string InferDataSourceTypeFromNetType(string netType)
-        {
-            if (string.IsNullOrWhiteSpace(netType))
-                return "VARCHAR";
-
-            var typeLower = netType.ToLowerInvariant();
-            
-            if (typeLower.Contains("int32") || typeLower == "int")
-                return "INT";
-            if (typeLower.Contains("int64") || typeLower == "long")
-                return "BIGINT";
-            if (typeLower.Contains("decimal"))
-                return "DECIMAL";
-            if (typeLower.Contains("double") || typeLower.Contains("float"))
-                return "FLOAT";
-            if (typeLower.Contains("bool") || typeLower == "boolean")
-                return "BIT";
-            if (typeLower.Contains("datetime"))
-                return "DATETIME";
-            if (typeLower.Contains("guid"))
-                return "UNIQUEIDENTIFIER";
-            if (typeLower.Contains("byte[]") || typeLower.Contains("bytearray"))
-                return "VARBINARY";
-
-            return "VARCHAR"; // Default fallback
-        }
+        // NOTE: EnsureEntityStructureTypes, InferDataSourceTypeFromNetType, and
+        // InferNetTypeFromDataSourceType have been intentionally removed.
+        //
+        // The MigrationManager must NOT do type mapping or SQL generation for entity creation.
+        // Each IDataSource.CreateEntityAs() implementation handles .NET type → native type
+        // mapping internally. The EntityStructure should contain .NET types as produced by
+        // ConvertToEntityStructure  (e.g., "System.String", "System.Int32", "System.DateTime").
+        // The datasource converts these to its own native types (TEXT/INTEGER for SQLite,
+        // VARCHAR/INT for SQL Server, etc.).
 
         #region Entity Framework-like Migration Discovery and Application
 
         /// <summary>
         /// Discovers all types that inherit from Entity in the specified namespace(s).
-        /// Similar to EF Core's DbContext discovery pattern.
+        /// Searches in the given assembly, registered assemblies, entry assembly and its references,
+        /// AppDomain assemblies, and DMEEditor's assembly handler.
         /// </summary>
         public List<Type> DiscoverEntityTypes(string namespaceName = null, Assembly assembly = null, bool includeSubNamespaces = true)
         {
             var entityTypes = new List<Type>();
-            var assemblies = assembly != null 
-                ? new[] { assembly } 
-                : GetSearchableAssemblies();
+            IEnumerable<Assembly> assemblies;
 
-            foreach (var asm in assemblies)
+            if (assembly != null)
+            {
+                // When a specific assembly is provided, also scan its referenced assemblies
+                // to catch entity types in projects it depends on
+                var asmSet = new List<Assembly> { assembly };
+                try
+                {
+                    foreach (var refName in assembly.GetReferencedAssemblies())
+                    {
+                        try
+                        {
+                            var refAsm = Assembly.Load(refName);
+                            if (refAsm != null && !refAsm.IsDynamic)
+                                asmSet.Add(refAsm);
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+                assemblies = asmSet;
+            }
+            else
+            {
+                assemblies = GetSearchableAssemblies();
+            }
+
+            var asmList = assemblies.ToList();
+            _editor?.AddLogMessage("Beep",
+                $"MigrationManager.DiscoverEntityTypes: Scanning {asmList.Count} assembly(ies)" +
+                (string.IsNullOrWhiteSpace(namespaceName) ? "" : $" in namespace '{namespaceName}'"),
+                DateTime.Now, 0, null, Errors.Ok);
+
+            int scannedCount = 0;
+            foreach (var asm in asmList)
             {
                 try
                 {
@@ -797,28 +752,52 @@ namespace TheTechIdea.Beep.Editor.Migration
                         .Where(t => IsEntityType(t, namespaceName, includeSubNamespaces))
                         .ToList();
 
+                    if (types.Count > 0)
+                    {
+                        _editor?.AddLogMessage("Beep",
+                            $"  Found {types.Count} Entity type(s) in '{asm.GetName().Name}': {string.Join(", ", types.Select(t => t.Name))}",
+                            DateTime.Now, 0, null, Errors.Ok);
+                    }
+
                     entityTypes.AddRange(types);
+                    scannedCount++;
                 }
                 catch (ReflectionTypeLoadException ex)
                 {
                     // Handle partially loaded assemblies
-                    var loadedTypes = ex.Types.Where(t => t != null && IsEntityType(t, namespaceName, includeSubNamespaces));
+                    var loadedTypes = ex.Types
+                        .Where(t => t != null && IsEntityType(t, namespaceName, includeSubNamespaces))
+                        .ToList();
                     entityTypes.AddRange(loadedTypes);
+                    scannedCount++;
+
+                    if (loadedTypes.Count > 0)
+                    {
+                        _editor?.AddLogMessage("Beep",
+                            $"  Found {loadedTypes.Count} Entity type(s) in partially-loaded '{asm.GetName().Name}'",
+                            DateTime.Now, 0, null, Errors.Warning);
+                    }
                 }
                 catch (Exception ex)
                 {
                     _editor?.AddLogMessage("Beep", 
-                        $"Warning: Could not scan assembly '{asm.FullName}' for Entity types: {ex.Message}", 
+                        $"  Warning: Could not scan assembly '{asm.GetName().Name}': {ex.Message}", 
                         DateTime.Now, 0, null, Errors.Warning);
                 }
             }
 
-            return entityTypes.Distinct().ToList();
+            var result = entityTypes.Distinct().ToList();
+
+            _editor?.AddLogMessage("Beep",
+                $"MigrationManager.DiscoverEntityTypes: Scanned {scannedCount}/{asmList.Count} assemblies, found {result.Count} distinct Entity type(s)",
+                DateTime.Now, 0, null, result.Count > 0 ? Errors.Ok : Errors.Warning);
+
+            return result;
         }
 
         /// <summary>
-        /// Discovers all types that inherit from Entity in all loaded assemblies.
-        /// Scans all assemblies in AppDomain and DMEEditor's assembly handler.
+        /// Discovers all types that inherit from Entity in all searchable assemblies.
+        /// Scans registered assemblies, AppDomain, entry assembly references, and DMEEditor's assembly handler.
         /// </summary>
         public List<Type> DiscoverAllEntityTypes(bool includeSubNamespaces = true)
         {
@@ -859,7 +838,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         progress?.Report(new PassedArgs { Messege = $"Processing Entity type: {entityType.Name}" });
 
                         // Convert Entity type to EntityStructure
-                        var entityStructure = _editor?.classCreator?.ConvertPocoToEntity(entityType, detectRelationships);
+                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
                         if (entityStructure == null)
                         {
                             errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
@@ -944,7 +923,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         progress?.Report(new PassedArgs { Messege = $"Migrating Entity type: {entityType.Name}" });
 
                         // Convert Entity type to EntityStructure
-                        var entityStructure = _editor?.classCreator?.ConvertPocoToEntity(entityType, detectRelationships);
+                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
                         if (entityStructure == null)
                         {
                             errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
@@ -1026,7 +1005,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     try
                     {
                         // Convert Entity type to EntityStructure
-                        var entityStructure = _editor?.classCreator?.ConvertPocoToEntity(entityType, detectRelationships);
+                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
                         if (entityStructure == null)
                         {
                             summary.Errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
@@ -1135,25 +1114,313 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         /// <summary>
-        /// Gets all searchable assemblies from current AppDomain and DMEEditor's assembly handler.
+        /// Gets all searchable assemblies from multiple sources:
+        /// 1. Manually registered assemblies (RegisterAssembly / RegisterAssemblies)
+        /// 2. Entry assembly and all its referenced assemblies (covers projects referenced by the exe)
+        /// 3. All loaded assemblies from AppDomain.CurrentDomain
+        /// 4. DMEEditor's assembly handler (plugin assemblies)
+        /// This ensures entity classes from other projects loaded in the exe are always found.
         /// </summary>
         private IEnumerable<Assembly> GetSearchableAssemblies()
         {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var assemblies = new List<Assembly>();
-            
-            // Add loaded assemblies from AppDomain
-            assemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location)));
 
-            // Add assemblies from DMEEditor's assembly handler if available
-            if (_editor?.assemblyHandler?.Assemblies != null)
+            void TryAdd(Assembly asm)
             {
-                assemblies.AddRange(_editor.assemblyHandler.Assemblies
-                    .Select(a => a.DllLib)
-                    .Where(a => a != null));
+                if (asm == null || asm.IsDynamic) return;
+                var name = asm.FullName;
+                if (name != null && seen.Add(name))
+                {
+                    assemblies.Add(asm);
+                }
             }
 
-            return assemblies.Distinct();
+            // 1. Manually registered assemblies — highest priority
+            lock (_assemblyLock)
+            {
+                foreach (var asm in _registeredAssemblies)
+                    TryAdd(asm);
+            }
+
+            // 2. Entry assembly + all its statically-referenced assemblies
+            //    This is the key fix: assemblies from other projects compiled into the exe
+            //    may not yet be loaded into the AppDomain (they load on first use).
+            //    Walking the entry assembly's references forces them to load.
+            try
+            {
+                var entryAsm = Assembly.GetEntryAssembly();
+                if (entryAsm != null)
+                {
+                    TryAdd(entryAsm);
+                    foreach (var referencedName in entryAsm.GetReferencedAssemblies())
+                    {
+                        try
+                        {
+                            var refAsm = Assembly.Load(referencedName);
+                            TryAdd(refAsm);
+                        }
+                        catch
+                        {
+                            // Some references may not be loadable (e.g., platform-specific)
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Assembly.GetEntryAssembly() can return null in some hosting scenarios
+            }
+
+            // 3. Calling assembly and its references (in case MigrationManager is called
+            //    from a library that itself references entity assemblies)
+            try
+            {
+                var callingAsm = Assembly.GetCallingAssembly();
+                if (callingAsm != null)
+                {
+                    TryAdd(callingAsm);
+                    foreach (var referencedName in callingAsm.GetReferencedAssemblies())
+                    {
+                        try
+                        {
+                            var refAsm = Assembly.Load(referencedName);
+                            TryAdd(refAsm);
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            // 4. All currently loaded assemblies from AppDomain
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!asm.IsDynamic && !string.IsNullOrEmpty(asm.Location))
+                    TryAdd(asm);
+            }
+
+            // 5. DMEEditor's assembly handler (plugins loaded at runtime)
+            if (_editor?.assemblyHandler?.Assemblies != null)
+            {
+                foreach (var asmInfo in _editor.assemblyHandler.Assemblies)
+                {
+                    TryAdd(asmInfo.DllLib);
+                }
+            }
+
+            return assemblies;
+        }
+
+        #endregion
+
+        #region Explicit-Type Migration (bypasses discovery)
+
+        /// <summary>
+        /// Ensures database is created for the given entity types.
+        /// Use this when you know exactly which types to create — bypasses assembly discovery entirely.
+        /// This is the most reliable approach for cross-project scenarios where discovery might miss assemblies.
+        /// </summary>
+        /// <example>
+        /// migrationManager.EnsureDatabaseCreatedForTypes(
+        ///     new[] { typeof(Customer), typeof(Product), typeof(Invoice) },
+        ///     progress: progressReporter);
+        /// </example>
+        public IErrorsInfo EnsureDatabaseCreatedForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, IProgress<PassedArgs> progress = null)
+        {
+            if (MigrateDataSource == null)
+                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
+
+            if (entityTypes == null)
+                return CreateErrorsInfo(Errors.Failed, "Entity types collection cannot be null");
+
+            var typeList = entityTypes.ToList();
+            if (typeList.Count == 0)
+                return CreateErrorsInfo(Errors.Warning, "No entity types provided");
+
+            try
+            {
+                progress?.Report(new PassedArgs { Messege = $"EnsureDatabaseCreatedForTypes: Processing {typeList.Count} explicit type(s)" });
+
+                _editor?.AddLogMessage("Beep",
+                    $"MigrationManager.EnsureDatabaseCreatedForTypes: {typeList.Count} type(s): {string.Join(", ", typeList.Select(t => t.Name))}",
+                    DateTime.Now, 0, null, Errors.Ok);
+
+                var errors = new List<string>();
+                int created = 0;
+                int skipped = 0;
+
+                foreach (var entityType in typeList)
+                {
+                    try
+                    {
+                        progress?.Report(new PassedArgs { Messege = $"Processing Entity type: {entityType.Name}" });
+
+                        // Convert Entity type to EntityStructure
+                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
+                        if (entityStructure == null)
+                        {
+                            var errMsg = $"Failed to convert {entityType.Name} to EntityStructure (classCreator={(_editor?.classCreator != null ? "available" : "NULL")})";
+                            errors.Add(errMsg);
+                            progress?.Report(new PassedArgs { Messege = errMsg });
+                            continue;
+                        }
+
+                        // Use table name from type name or Table attribute if present
+                        var tableAttr = entityType.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
+                        if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+                        {
+                            entityStructure.EntityName = tableAttr.Name;
+                        }
+
+                        progress?.Report(new PassedArgs { Messege = $"Creating entity '{entityStructure.EntityName}' with {entityStructure.Fields?.Count ?? 0} field(s)" });
+
+                        // Ensure entity exists (create if missing)
+                        var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: false);
+                        if (result.Flag == Errors.Ok)
+                        {
+                            created++;
+                            progress?.Report(new PassedArgs { Messege = $"Successfully created entity '{entityStructure.EntityName}'" });
+                        }
+                        else if (result.Flag == Errors.Warning && result.Message.Contains("already exists"))
+                        {
+                            skipped++;
+                            progress?.Report(new PassedArgs { Messege = $"Entity '{entityStructure.EntityName}' already exists — skipped" });
+                        }
+                        else
+                        {
+                            var errMsg = $"{entityType.Name}: {result.Message}";
+                            errors.Add(errMsg);
+                            progress?.Report(new PassedArgs { Messege = $"Error for '{entityStructure.EntityName}': {result.Message}" });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var errMsg = $"{entityType.Name}: {ex.Message}";
+                        errors.Add(errMsg);
+                        progress?.Report(new PassedArgs { Messege = $"Exception for '{entityType.Name}': {ex.Message}" });
+                    }
+                }
+
+                var summary = $"Created {created} entity(ies), skipped {skipped} existing";
+                if (errors.Count > 0)
+                {
+                    summary += $", {errors.Count} error(s)";
+                    return CreateErrorsInfo(Errors.Failed, $"{summary}. Errors: {string.Join("; ", errors)}");
+                }
+
+                progress?.Report(new PassedArgs { Messege = summary });
+                return CreateErrorsInfo(Errors.Ok, summary);
+            }
+            catch (Exception ex)
+            {
+                return CreateErrorsInfo(Errors.Failed, $"Exception during EnsureDatabaseCreatedForTypes: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Applies migrations for the given entity types.
+        /// Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
+        /// </summary>
+        public IErrorsInfo ApplyMigrationsForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null)
+        {
+            if (MigrateDataSource == null)
+                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
+
+            if (entityTypes == null)
+                return CreateErrorsInfo(Errors.Failed, "Entity types collection cannot be null");
+
+            var typeList = entityTypes.ToList();
+            if (typeList.Count == 0)
+                return CreateErrorsInfo(Errors.Warning, "No entity types provided");
+
+            try
+            {
+                progress?.Report(new PassedArgs { Messege = $"ApplyMigrationsForTypes: Migrating {typeList.Count} explicit type(s)" });
+
+                _editor?.AddLogMessage("Beep",
+                    $"MigrationManager.ApplyMigrationsForTypes: {typeList.Count} type(s): {string.Join(", ", typeList.Select(t => t.Name))}",
+                    DateTime.Now, 0, null, Errors.Ok);
+
+                var errors = new List<string>();
+                int created = 0;
+                int updated = 0;
+                int skipped = 0;
+
+                foreach (var entityType in typeList)
+                {
+                    try
+                    {
+                        progress?.Report(new PassedArgs { Messege = $"Migrating Entity type: {entityType.Name}" });
+
+                        // Convert Entity type to EntityStructure
+                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
+                        if (entityStructure == null)
+                        {
+                            var errMsg = $"Failed to convert {entityType.Name} to EntityStructure";
+                            errors.Add(errMsg);
+                            progress?.Report(new PassedArgs { Messege = errMsg });
+                            continue;
+                        }
+
+                        // Use table name from type name or Table attribute if present
+                        var tableAttr = entityType.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
+                        if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+                        {
+                            entityStructure.EntityName = tableAttr.Name;
+                        }
+
+                        // Ensure entity exists and add missing columns
+                        var existed = MigrateDataSource.CheckEntityExist(entityStructure.EntityName);
+                        var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: addMissingColumns);
+
+                        if (result.Flag == Errors.Ok)
+                        {
+                            if (!existed)
+                            {
+                                created++;
+                                progress?.Report(new PassedArgs { Messege = $"Created entity '{entityStructure.EntityName}'" });
+                            }
+                            else if (result.Message.Contains("Added") || result.Message.Contains("column"))
+                            {
+                                updated++;
+                                progress?.Report(new PassedArgs { Messege = $"Updated entity '{entityStructure.EntityName}'" });
+                            }
+                            else
+                            {
+                                skipped++;
+                                progress?.Report(new PassedArgs { Messege = $"Entity '{entityStructure.EntityName}' up to date — skipped" });
+                            }
+                        }
+                        else
+                        {
+                            var errMsg = $"{entityType.Name}: {result.Message}";
+                            errors.Add(errMsg);
+                            progress?.Report(new PassedArgs { Messege = $"Error for '{entityStructure.EntityName}': {result.Message}" });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var errMsg = $"{entityType.Name}: {ex.Message}";
+                        errors.Add(errMsg);
+                        progress?.Report(new PassedArgs { Messege = $"Exception for '{entityType.Name}': {ex.Message}" });
+                    }
+                }
+
+                var summary = $"Created {created} entity(ies), updated {updated} entity(ies), skipped {skipped} unchanged";
+                if (errors.Count > 0)
+                {
+                    summary += $", {errors.Count} error(s)";
+                    return CreateErrorsInfo(Errors.Failed, $"{summary}. Errors: {string.Join("; ", errors)}");
+                }
+
+                progress?.Report(new PassedArgs { Messege = summary });
+                return CreateErrorsInfo(Errors.Ok, summary);
+            }
+            catch (Exception ex)
+            {
+                return CreateErrorsInfo(Errors.Failed, $"Exception during ApplyMigrationsForTypes: {ex.Message}", ex);
+            }
         }
 
         #endregion
