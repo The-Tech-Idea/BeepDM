@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,13 +42,13 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>??? Mapping Manager</h1>
+                    <h1>Mapping Manager</h1>
                     <p class="page-subtitle">Advanced entity mapping and data transformation utilities for seamless data integration</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>?? Table of Contents</h3>
+                    <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#entity-mapping">Entity Mapping Creation</a></li>
@@ -63,7 +63,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>?? Overview</h2>
+                    <h2>Overview</h2>
                     <p>
                         The <code>MappingManager</code> is a static utility class that provides comprehensive functionality 
                         for creating, managing, and executing entity mappings between different data sources. It enables 
@@ -72,28 +72,28 @@
                     </p>
                     
                     <div class="success">
-                        <strong>?? Core Capabilities</strong>
+                        <strong>Core Capabilities</strong>
                         <p>MappingManager handles complex entity relationships, automatic field mapping, type conversions, and persistent mapping configurations for robust data integration workflows.</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>??? Entity Mapping</h3>
+                            <h3>Entity Mapping</h3>
                             <p>Create and manage mappings between source and destination entities</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Field Transformation</h3>
+                            <h3>Field Transformation</h3>
                             <p>Advanced field-level mapping with type conversion and validation</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Object Mapping</h3>
+                            <h3>Object Mapping</h3>
                             <p>Direct object-to-object transformation with configurable rules</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Persistence</h3>
+                            <h3>Persistence</h3>
                             <p>Save and load mapping configurations for reusability</p>
                         </div>
                     </div>
@@ -101,11 +101,11 @@
 
                 <!-- Entity Mapping -->
                 <section id="entity-mapping" class="section">
-                    <h2>??? Entity Mapping Creation</h2>
+                    <h2>Entity Mapping Creation</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Entity Map Creation Methods</strong>
                         </div>
                         <div class="api-content">
@@ -127,7 +127,7 @@
                     </div>
 
                     <div class="tip">
-                        <strong>?? Mapping Creation Strategy</strong>
+                        <strong>Mapping Creation Strategy</strong>
                         <ul>
                             <li>Use entity structure overload when you have pre-loaded destination metadata</li>
                             <li>Use string-based overloads for dynamic mapping creation</li>
@@ -169,11 +169,11 @@ if (mappingResult2.Item1.Flag != Errors.Ok)
 
                 <!-- Field Mapping -->
                 <section id="field-mapping" class="section">
-                    <h2>?? Field Mapping Operations</h2>
+                    <h2>Field Mapping Operations</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Field Mapping Methods</strong>
                         </div>
                         <div class="api-content">
@@ -190,7 +190,7 @@ if (mappingResult2.Item1.Flag != Errors.Ok)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Field Mapping Considerations</strong>
+                        <strong>Field Mapping Considerations</strong>
                         <ul>
                             <li>Field mapping uses case-insensitive name matching by default</li>
                             <li>Unmapped source fields are ignored during transformation</li>
@@ -228,7 +228,7 @@ if (mappedEntity != null)
         }
         
         // Handle type conversions
-        if (fieldMapping.FromFieldtype == "varchar" && fieldMapping.ToFieldtype == "nvarchar")
+        if (fieldMapping.FromFieldType == "varchar" && fieldMapping.ToFieldType == "nvarchar")
         {
             // Unicode conversion may be needed
         }
@@ -239,8 +239,8 @@ if (mappedEntity != null)
     {
         FromFieldName = "FirstName,LastName", // Composite source
         ToFieldName = "DisplayName",
-        FromFieldtype = "varchar",
-        ToFieldtype = "nvarchar"
+        FromFieldType = "varchar",
+        ToFieldType = "nvarchar"
         // Custom transformation logic would be handled in transformation functions
     });
     
@@ -253,11 +253,11 @@ if (mappedEntity != null)
 
                 <!-- Object Transformation -->
                 <section id="object-transformation" class="section">
-                    <h2>?? Object Transformation</h2>
+                    <h2>Object Transformation</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Object Mapping Methods</strong>
                         </div>
                         <div class="api-content">
@@ -274,7 +274,7 @@ if (mappedEntity != null)
                     </div>
 
                     <div class="success">
-                        <strong>?? Transformation Features</strong>
+                        <strong>Transformation Features</strong>
                         <ul>
                             <li><strong>Automatic Type Conversion:</strong> Handles compatible type conversions automatically</li>
                             <li><strong>Property Reflection:</strong> Uses case-insensitive property matching</li>
@@ -364,10 +364,10 @@ Console.WriteLine($"Successfully transformed {transformedCustomers.Count} out of
 
                 <!-- Mapping Persistence -->
                 <section id="mapping-persistence" class="section">
-                    <h2>?? Mapping Persistence</h2>
+                    <h2>Mapping Persistence</h2>
                     
                     <div class="tip">
-                        <strong>?? Persistence Benefits</strong>
+                        <strong>Persistence Benefits</strong>
                         <ul>
                             <li><strong>Reusability:</strong> Save complex mappings for repeated use</li>
                             <li><strong>Version Control:</strong> Track mapping changes over time</li>
@@ -378,7 +378,7 @@ Console.WriteLine($"Successfully transformed {transformedCustomers.Count} out of
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Persistence Operations</strong>
                         </div>
                         <div class="api-content">
@@ -387,7 +387,7 @@ Console.WriteLine($"Successfully transformed {transformedCustomers.Count} out of
                                 <li><strong>Automatic Saving:</strong> All <code>CreateEntityMap</code> methods automatically save mappings</li>
                                 <li><strong>Loading:</strong> Use <code>dmeEditor.ConfigEditor.LoadMappingValues()</code> to retrieve saved mappings</li>
                                 <li><strong>Manual Saving:</strong> Use <code>dmeEditor.ConfigEditor.SaveMappingValues()</code> for custom mappings</li>
-                                <li><strong>Storage Format:</strong> Mappings are stored in JSON format for easy editing and version control</li>
+                                <li><strong>Storage Format:</strong> Mappings are stored as <code>{entityName}_Mapping.json</code> under <code>Config.MappingPath/{datasource}</code></li>
                             </ul>
                         </div>
                     </div>
@@ -409,8 +409,8 @@ if (mappedEntity != null)
     {
         FromFieldName = "ProductCode",
         ToFieldName = "SKU",
-        FromFieldtype = "varchar",
-        ToFieldtype = "nvarchar"
+        FromFieldType = "varchar",
+        ToFieldType = "nvarchar"
     });
     
     // Manually save the updated mapping
@@ -440,22 +440,29 @@ if (savedMapping != null)
     }
 }
 
-// List all available mappings
-var allMappings = dmeEditor.ConfigEditor.GetAllMappings(); // Hypothetical method
-foreach (var mapping in allMappings)
+// List all available mappings for a specific destination data source
+var dataSourceName = "CatalogDB";
+var mappingFolder = Path.Combine(dmeEditor.ConfigEditor.Config.MappingPath, dataSourceName);
+
+if (Directory.Exists(mappingFolder))
 {
-    Console.WriteLine($"Available mapping: {mapping.Key} -> {mapping.Value.MappingName}");
+    foreach (var file in Directory.GetFiles(mappingFolder, "*_Mapping.json"))
+    {
+        var entityName = Path.GetFileName(file).Replace("_Mapping.json", "");
+        var mapping = dmeEditor.ConfigEditor.LoadMappingValues(entityName, dataSourceName);
+        Console.WriteLine($"Available mapping: {entityName} -> {mapping?.MappingName}");
+    }
 }</code></pre>
                     </div>
                 </section>
 
                 <!-- Type Conversion -->
                 <section id="type-conversion" class="section">
-                    <h2>?? Type Conversion & Validation</h2>
+                    <h2>Type Conversion & Validation</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Type Conversion Features</strong>
                         </div>
                         <div class="api-content">
@@ -476,7 +483,7 @@ foreach (var mapping in allMappings)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Type Conversion Limitations</strong>
+                        <strong>Type Conversion Limitations</strong>
                         <ul>
                             <li>Complex object conversions are not automatically supported</li>
                             <li>Custom types may require explicit conversion logic</li>
@@ -546,8 +553,8 @@ public class CustomMappingManager
                 }
                 
                 // Handle date format conversions
-                if (fieldMapping.FromFieldtype.Contains("date") && 
-                    fieldMapping.ToFieldtype.Contains("string"))
+                if (fieldMapping.FromFieldType.Contains("date") && 
+                    fieldMapping.ToFieldType.Contains("string"))
                 {
                     var dateValue = GetPropertyValue(sourceObject, fieldMapping.FromFieldName);
                     if (dateValue is DateTime dt)
@@ -591,7 +598,7 @@ var customMappedObject = CustomMappingManager.MapObjectWithCustomConversions(
 
                 <!-- Examples -->
                 <section id="examples" class="section">
-                    <h2>?? Usage Examples</h2>
+                    <h2>Usage Examples</h2>
                     
                     <div class="code-example">
                         <h3>Complete Data Migration Workflow</h3>
@@ -707,10 +714,10 @@ private void CustomizeFieldMappings(EntityDataMap_DTL mapping)
 
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
-                    <h2>? Best Practices</h2>
+                    <h2>Best Practices</h2>
                     
                     <div class="tip">
-                        <strong>?? Mapping Design</strong>
+                        <strong>Mapping Design</strong>
                         <ul>
                             <li>Create reusable mappings for common entity transformations</li>
                             <li>Use descriptive mapping names for easy identification</li>
@@ -720,7 +727,7 @@ private void CustomizeFieldMappings(EntityDataMap_DTL mapping)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Error Handling</strong>
+                        <strong>Error Handling</strong>
                         <ul>
                             <li>Always check the error status after creating mappings</li>
                             <li>Implement fallback logic for failed transformations</li>
@@ -730,7 +737,7 @@ private void CustomizeFieldMappings(EntityDataMap_DTL mapping)
                     </div>
 
                     <div class="success">
-                        <strong>?? Performance Optimization</strong>
+                        <strong>Performance Optimization</strong>
                         <ul>
                             <li>Cache frequently used mappings to avoid recreation</li>
                             <li>Use batch transformations for large datasets</li>
@@ -775,3 +782,5 @@ private void CustomizeFieldMappings(EntityDataMap_DTL mapping)
     </script>
 </body>
 </html>
+
+

@@ -1,11 +1,11 @@
----
+﻿---
 name: beepdm
 description: Provides expert guidance for Beep Data Management Engine (BeepDM) development, including IDataSource implementations, IDataSourceHelper usage, data source creation, schema operations, and integration patterns. Use when working with BeepDM, creating new data sources, implementing IDataSourceHelper methods, or integrating with the BeepDM framework.
 ---
 
 # BeepDM Development Guide
 
-Expert guidance for developing with the Beep Data Management Engine (BeepDM), a modular framework for managing 287+ data source types.
+Expert guidance for developing with the Beep Data Management Engine (BeepDM), a modular framework with broad datasource support through IDataSource plugins.
 
 ## Core Architecture
 
@@ -576,7 +576,7 @@ var datasourceType = helper.MapClrTypeToDatasourceType(clrType, 255);
 1. **Entity Discovery**: Automatically discovers all classes that inherit from `Entity` or implement `IEntity`
 2. **Database Creation**: Similar to EF Core's `Database.EnsureCreated()`
 3. **Migration Application**: Similar to EF Core's `Database.Migrate()`, compares Entity classes with database and applies changes
-4. **Datasource-Agnostic**: Uses `IDataSource.CreateEntityAs()` for entity creation, compatible with all 287+ datasource types
+4. **Datasource-Agnostic**: Uses `IDataSource.CreateEntityAs()` for entity creation, compatible with any IDataSource implementation
 
 ### Core Methods
 
@@ -981,7 +981,7 @@ DefaultsManager integrates seamlessly with:
 
 ## Integration Points
 
-- **BeepDataSources**: External repository implementing IDataSource for 287+ datasource types
+- **BeepDataSources**: External repositories can provide additional IDataSource implementations
 - **BeepContainers**: Dependency injection setup (Autofac supported)
 - **AssemblyHandler**: Plugin discovery system for loading datasources from DLLs
 - **IDataSource**: Core interface for all datasource operations (see IDataSource Interface section above)
@@ -993,7 +993,7 @@ DefaultsManager integrates seamlessly with:
 - **MigrationManager**: Entity Framework-like schema migration system
 - **DefaultsManager**: Default value management for entity columns across all datasources
 - **ConnectionHelper**: Connection management and driver configuration (see **@connection** skill)
-- **BeepSyncManager**: Data synchronization between datasources (see **@beepsync** skill)
+- **DataSyncManager**: Data synchronization between datasources (see **@beepsync** skill)
 - **DataImportManager**: Enhanced data import with transformation (see **@importing** skill)
 - **MappingManager**: Entity mapping operations (see **@mapping** skill)
 
@@ -1056,7 +1056,7 @@ await uow.CommitAsync();
 **See @unitofwork skill** for complete API reference, transaction patterns, and service layer examples.
 
 ### @beepsync - Data Synchronization
-**Purpose**: Synchronize data between different datasources using BeepSyncManager.
+**Purpose**: Synchronize data between different datasources using DataSyncManager.
 
 **Key Features**:
 - **Full Sync**: Complete data synchronization
@@ -1073,7 +1073,7 @@ await uow.CommitAsync();
 
 **Quick Example**:
 ```csharp
-var syncManager = new BeepSyncManager(editor);
+var syncManager = new DataSyncManager(editor);
 var schema = new DataSyncSchema { SourceDataSource = "SourceDB", TargetDataSource = "TargetDB", ... };
 var result = await syncManager.SyncDataAsync(schema, SyncType.Full);
 ```
@@ -1209,8 +1209,19 @@ For detailed guidance on specific topics, refer to these specialized skills:
 ### Integration Skills
 - **@connection** - Connection management, driver linking, connection string processing, validation, and security
 - **@unitofwork** - UnitOfWork pattern, CRUD operations, change tracking, transaction management, DefaultsManager integration
-- **@beepsync** - Data synchronization between datasources using BeepSyncManager
+- **@beepsync** - Data synchronization between datasources using DataSyncManager
 - **@etl** - Extract, Transform, Load operations using ETLEditor for database migration and data copying
 - **@forms** - Oracle Forms-compatible form management using FormsManager (UnitofWorksManager)
 - **@importing** - Data import operations using DataImportManager with transformation and batch processing
 - **@mapping** - Entity mapping operations using MappingManager for field mapping and object transformation
+
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/README.md
+- DataManagementEngineStandard/FOLDER_REFERENCE.md
+- DataManagementEngineStandard/ConfigUtil/README.md
+- DataManagementEngineStandard/Editor/README.md
+- DataManagementEngineStandard/Docs/index.html
+

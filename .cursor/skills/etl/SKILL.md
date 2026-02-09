@@ -1,4 +1,4 @@
----
+﻿---
 name: etl
 description: Expert guidance for Extract, Transform, Load (ETL) operations using ETLEditor. Use when migrating databases, copying data between datasources, creating entity structures, or implementing data transformation pipelines.
 ---
@@ -491,3 +491,11 @@ catch (OperationCanceledException)
 - `ETLScriptBuilder.cs` - Script building
 - `ETLScriptManager.cs` - Script management
 - `ETLValidator.cs` - ETL validation
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/ETL/README.md
+- DataManagementEngineStandard/Docs/etl-workflow-engine.html
+- DataManagementEngineStandard/Docs/etleditor.html
+

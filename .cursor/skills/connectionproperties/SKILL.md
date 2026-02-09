@@ -1,4 +1,4 @@
----
+﻿---
 name: connectionproperties
 description: Comprehensive guide for ConnectionProperties class in BeepDM. Use when working with connection configuration, filtering connections by type (local, remote, in-memory, etc.), or managing datasource connections.
 ---
@@ -382,3 +382,11 @@ var cloudConnections = editor.ConfigEditor.DataConnections
 
 - **ConnectionProperties**: `DataManagementModelsStandard/ConfigUtil/ConnectionProperties.cs`
 - **IConnectionProperties**: `DataManagementModelsStandard/ConfigUtil/IConnectionProperties.cs`
+
+
+## Repo Documentation Anchors
+
+- DataManagementModelsStandard/ConfigUtil/ConnectionProperties.cs
+- DataManagementEngineStandard/ConfigUtil/README.md
+- DataManagementEngineStandard/Docs/registerbeep.html
+

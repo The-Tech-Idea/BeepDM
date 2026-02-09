@@ -1,4 +1,4 @@
----
+﻿---
 name: idatasource
 description: Comprehensive guide for implementing IDataSource interface in BeepDM. Use when creating new datasource implementations, understanding IDataSource patterns, or working with datasource-agnostic code.
 ---
@@ -9,7 +9,7 @@ Expert guidance for implementing the `IDataSource` interface, the core abstracti
 
 ## Overview
 
-`IDataSource` is the primary interface that all datasource implementations must implement. It provides a unified API for CRUD operations, schema management, transactions, and query execution across 287+ datasource types.
+`IDataSource` is the primary interface that all datasource implementations must implement. It provides a unified API for CRUD operations, schema management, transactions, and query execution across all IDataSource implementations (built-in and plugin-provided).
 
 **Location**: `DataManagementModelsStandard/IDataSource.cs`
 
@@ -545,3 +545,12 @@ if (helper.Capabilities.SupportsTransactions)
 - **RDBSource Example**: `BeepDataSources/DataSourcesPlugins/RDBMSDataSource/PartialClasses/RDBSource/`
 - **SQLiteDataSource Example**: `BeepDataSources/DataSourcesPluginsCore/SqliteDatasourceCore/SQLiteDataSource.cs`
 - **InMemoryRDBSource Example**: `BeepDataSources/DataSourcesPlugins/RDBMSDataSource/InMemoryRDBSource.cs`
+
+
+
+## Repo Documentation Anchors
+
+- DataManagementModelsStandard/IDataSource.cs
+- DataManagementEngineStandard/Helpers/UniversalDataSourceHelpers/Core/README.md
+- DataManagementEngineStandard/Docs/creating-custom-datasources.html
+

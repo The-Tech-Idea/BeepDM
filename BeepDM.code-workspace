@@ -5,9 +5,6 @@
 		},
 		{
 			"path": "../Beep.Shell"
-		},
-		{
-			"path": "../BeepDataSources/DataSourcesPluginsCore"
 		}
 	],
 	"settings": {}

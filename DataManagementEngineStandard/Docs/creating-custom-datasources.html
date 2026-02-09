@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,17 +42,17 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>?? Creating Custom Data Sources</h1>
+                    <h1>Creating Custom Data Sources</h1>
                     <p class="page-subtitle">Learn how to extend the Beep Data Management Engine by implementing the IDataSource interface to create custom data source connectors</p>
                 </div>
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>?? Overview</h2>
+                    <h2>Overview</h2>
                     <p>The Beep Data Management Engine supports extensibility through the <code>IDataSource</code> interface, allowing developers to create custom data source connectors for any type of data store or service. This guide covers the complete process of implementing a custom data source.</p>
                     
                     <div class="info">
-                        <strong>?? Key Benefits</strong>
+                        <strong>Key Benefits</strong>
                         <ul>
                             <li>Support for any data source type (databases, APIs, files, cloud services)</li>
                             <li>Seamless integration with existing Beep infrastructure</li>
@@ -63,22 +63,22 @@
                     </div>
 
                     <div class="warning">
-                        <strong>?? Important Note</strong>
+                        <strong>Important Note</strong>
                         <p>When creating a new data source that doesn't exist in the Beep engine's built-in configurations, you <strong>must</strong> create a corresponding <code>ConnectionDriversConfig</code> to register your data source. This is covered in the next section and is essential for proper integration.</p>
                     </div>
                 </section>
 
                 <!-- Creating ConnectionDriversConfig - MOVED TO TOP -->
                 <section id="connection-drivers-config" class="section">
-                    <h2>?? Creating Your ConnectionDriversConfig</h2>
+                    <h2>Creating Your ConnectionDriversConfig</h2>
                     
                     <div class="info">
-                        <strong>?? Essential First Step</strong>
+                        <strong>Essential First Step</strong>
                         <p>Before implementing your <code>IDataSource</code>, you must understand and create a <code>ConnectionDriversConfig</code>. This configuration tells the Beep Data Management Engine how to identify, load, and instantiate your custom data source. Without this, your data source cannot be discovered or used by the engine.</p>
                     </div>
 
                     <div class="subsection">
-                        <h3>?? Understanding ConnectionDriversConfig</h3>
+                        <h3>Understanding ConnectionDriversConfig</h3>
                         <p>The <code>ConnectionDriversConfig</code> class serves as the bridge between your custom data source implementation and the Beep engine. When a user requests a data source that doesn't exist in <code>ConnectionHelper.GetAllConnectionConfigs()</code>, the engine requires this configuration to:</p>
                         
                         <ul>
@@ -118,7 +118,7 @@
                     </div>
 
                     <div class="subsection">
-                        <h3>?? Creating Configuration Examples</h3>
+                        <h3>Creating Configuration Examples</h3>
                         
                         <div class="code-example">
                             <h4>Example 1: Custom REST API Data Source Config</h4>
@@ -225,7 +225,7 @@
                     </div>
 
                     <div class="subsection">
-                        <h3>?? Registration Methods</h3>
+                        <h3>Registration Methods</h3>
                         <p>There are several ways to register your <code>ConnectionDriversConfig</code> with the Beep engine:</p>
                         
                         <div class="code-example">
@@ -330,11 +330,11 @@ public static class BeepServiceExtensions
                     </div>
 
                     <div class="subsection">
-                        <h3>?? How Beep Resolves Your Data Source</h3>
+                        <h3>How Beep Resolves Your Data Source</h3>
                         <p>Understanding how Beep finds and instantiates your data source helps ensure proper registration:</p>
                         
                         <div class="info">
-                            <strong>?? Resolution Process</strong>
+                            <strong>Resolution Process</strong>
                             <ol>
                                 <li><strong>Connection Request:</strong> User requests data source by name</li>
                                 <li><strong>Find Connection Properties:</strong> Beep looks up connection in <code>ConfigEditor.DataConnections</code></li>
@@ -393,7 +393,7 @@ public IDataSource CreateNewDataSourceConnection(ConnectionProperties cn, string
 
                 <!-- Understanding IDataSource -->
                 <section id="understanding-idatasource" class="section">
-                    <h2>?? Understanding the IDataSource Interface</h2>
+                    <h2>Understanding the IDataSource Interface</h2>
                     
                     <p>The <code>IDataSource</code> interface is located in the <code>DataManagementModels</code> project and defines the contract that all data sources must implement.</p>
 
@@ -462,7 +462,7 @@ IErrorsInfo EndTransaction(PassedArgs args);</code></pre>
 
                 <!-- Implementation Steps -->
                 <section id="implementation-steps" class="section">
-                    <h2>??? Implementation Steps</h2>
+                    <h2>Implementation Steps</h2>
 
                     <div class="step">
                         <h3>Step 1: Create the Data Source Class</h3>
@@ -915,3 +915,4 @@ Alice Brown|28|alice.brown@company.com|Engineering</code></pre>
     </script>
 </body>
 </html>
+

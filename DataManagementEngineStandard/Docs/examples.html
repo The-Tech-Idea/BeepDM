@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34,19 +34,19 @@
                 <!-- Breadcrumb -->
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <span>Code Examples</span>
                 </nav>
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>💻 Code Examples</h1>
+                    <h1>ðŸ’» Code Examples</h1>
                     <p class="page-subtitle">Practical examples and real-world scenarios for using the Beep Data Management Engine</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>📚 Table of Contents</h3>
+                    <h3>ðŸ“š Table of Contents</h3>
                     <ul>
                         <li><a href="#customer-management">Customer Management System</a></li>
                         <li><a href="#ecommerce-system">Multi-DataSource E-Commerce</a></li>
@@ -58,7 +58,7 @@
 
                 <!-- Customer Management -->
                 <section id="customer-management" class="section">
-                    <h2>🛒 Basic Customer Management System</h2>
+                    <h2>ðŸ›’ Basic Customer Management System</h2>
                     <p>This example shows how to create a complete customer management system using UnitOfWork.</p>
                     
                     <div class="code-example">
@@ -186,7 +186,7 @@ public class CustomerManager
                     </div>
 
                     <div class="tip">
-                        <strong>💡 Key Features</strong>
+                        <strong>ðŸ’¡ Key Features</strong>
                         <ul>
                             <li>Event-driven validation using PreInsert and PreCommit events</li>
                             <li>Property change logging with PostEdit event</li>
@@ -198,7 +198,7 @@ public class CustomerManager
 
                 <!-- E-Commerce System -->
                 <section id="ecommerce-system" class="section">
-                    <h2>🛍️ Multi-DataSource E-Commerce System</h2>
+                    <h2>ðŸ›ï¸ Multi-DataSource E-Commerce System</h2>
                     <p>This example demonstrates managing an e-commerce system with customers in SQL Server and orders in MongoDB.</p>
                     
                     <div class="code-example">
@@ -343,7 +343,7 @@ public class CustomerManager
     
     private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs args)
     {
-        Console.WriteLine($"Child data changed: {args.ParentEntityName} → {args.ChildEntityName}");
+        Console.WriteLine($"Child data changed: {args.ParentEntityName} â†’ {args.ChildEntityName}");
         
         // Update UI or perform other actions
         if (args.ChildEntityName == "Order")
@@ -378,7 +378,7 @@ public class CustomerOrderView
                     </div>
 
                     <div class="success">
-                        <strong>✅ Advanced Features</strong>
+                        <strong>âœ… Advanced Features</strong>
                         <ul>
                             <li>Cross-database relationships between SQL Server and MongoDB</li>
                             <li>Automatic relationship management with cascade operations</li>
@@ -390,7 +390,7 @@ public class CustomerOrderView
 
                 <!-- Data Synchronization -->
                 <section id="data-synchronization" class="section">
-                    <h2>🔄 Data Synchronization Between Systems</h2>
+                    <h2>ðŸ”„ Data Synchronization Between Systems</h2>
                     <p>This example shows how to synchronize data between different systems with conflict resolution.</p>
                     
                     <div class="code-example">
@@ -596,7 +596,7 @@ public enum ConflictResolution
                     </div>
 
                     <div class="note">
-                        <strong>🔍 Conflict Resolution Strategies</strong>
+                        <strong>ðŸ” Conflict Resolution Strategies</strong>
                         <ul>
                             <li><strong>UseSource:</strong> Source system data takes precedence</li>
                             <li><strong>UseTarget:</strong> Target system data is preserved</li>
@@ -608,7 +608,7 @@ public enum ConflictResolution
 
                 <!-- Batch Processing -->
                 <section id="batch-processing" class="section">
-                    <h2>⚡ Batch Processing with Progress Reporting</h2>
+                    <h2>âš¡ Batch Processing with Progress Reporting</h2>
                     <p>This example demonstrates processing large datasets with progress reporting and error handling.</p>
                     
                     <div class="code-example">
@@ -775,7 +775,7 @@ public enum BatchStatus
                     </div>
 
                     <div class="warning">
-                        <strong>⚠️ Batch Processing Best Practices</strong>
+                        <strong>âš ï¸ Batch Processing Best Practices</strong>
                         <ul>
                             <li>Process data in manageable chunks to avoid memory issues</li>
                             <li>Provide progress reporting for long-running operations</li>
@@ -788,7 +788,7 @@ public enum BatchStatus
 
                 <!-- Complete Application -->
                 <section id="complete-application" class="section">
-                    <h2>🏗️ Complete Application Example</h2>
+                    <h2>ðŸ—ï¸ Complete Application Example</h2>
                     <p>This example shows how to put it all together in a complete application.</p>
                     
                     <div class="code-example">
@@ -927,7 +927,7 @@ public enum BatchStatus
                     </div>
 
                     <div class="success">
-                        <strong>✅ Application Architecture Benefits</strong>
+                        <strong>âœ… Application Architecture Benefits</strong>
                         <ul>
                             <li>Modular design with separate managers for different concerns</li>
                             <li>Proper dependency injection and resource management</li>
@@ -938,7 +938,7 @@ public enum BatchStatus
                     </div>
 
                     <div class="tip">
-                        <strong>💡 Customization Tips</strong>
+                        <strong>ðŸ’¡ Customization Tips</strong>
                         <ul>
                             <li>Adapt entity classes (Customer, Order, Product) to match your data models</li>
                             <li>Configure your data sources in the DMEEditor initialization</li>
@@ -984,3 +984,4 @@ public enum BatchStatus
     </script>
 </body>
 </html>
+

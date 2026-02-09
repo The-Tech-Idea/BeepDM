@@ -1,4 +1,4 @@
----
+﻿---
 name: mapping
 description: Expert guidance for entity mapping operations using MappingManager. Use when mapping fields between source and destination entities, transforming data during migration, or creating entity mappings for ETL/import operations.
 ---
@@ -411,3 +411,11 @@ var destObjects = sourceObjects.Select(source =>
 - `MappingManager.cs` - Main mapping manager
 - `Helpers/MappingDefaultsHelper.cs` - DefaultsManager integration
 - `Models/EntityDataMap.cs` - Mapping data structures
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/Mapping/README.md
+- DataManagementEngineStandard/Editor/Mapping/Core/README.md
+- DataManagementEngineStandard/Docs/mappingmanager.html
+

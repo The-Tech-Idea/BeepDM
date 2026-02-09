@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34,19 +34,19 @@
                 <!-- Breadcrumb -->
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <span>Registration & Setup</span>
                 </nav>
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>🚀 Registration & Setup</h1>
+                    <h1>ðŸš€ Registration & Setup</h1>
                     <p class="page-subtitle">Initialize and configure the Beep Data Management Engine for your application</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>📚 Table of Contents</h3>
+                    <h3>ðŸ“š Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#initial-setup">Initial Setup & Registration</a></li>
@@ -61,7 +61,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>🏗️ Overview & Core Pattern</h2>
+                    <h2>Overview</h2>
                     <p>
                         The <code>RegisterBeep</code> class sets up the Beep Data Management Engine for direct data operations. 
                         Once configured, you work with <code>DMEEditor</code> to manage data sources, create connections, 
@@ -69,28 +69,28 @@
                     </p>
                     
                     <div class="success">
-                        <strong>🎯 Purpose</strong>
+                        <strong>ðŸŽ¯ Purpose</strong>
                         <p>RegisterBeep provides the foundation for data management - after setup, you use <code>dmeEditor</code> directly for all data operations.</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>1️⃣ Bootstrap</h3>
+                            <h3>1ï¸âƒ£ Bootstrap</h3>
                             <p>Register services with Autofac and get <code>IDMEEditor</code></p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>2️⃣ Initialize</h3>
+                            <h3>2ï¸âƒ£ Initialize</h3>
                             <p>Add default configurations for drivers, mappings, and queries</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>3️⃣ Connect</h3>
+                            <h3>3ï¸âƒ£ Connect</h3>
                             <p>Create connection configurations for your data sources</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>4️⃣ Operate</h3>
+                            <h3>4ï¸âƒ£ Operate</h3>
                             <p>Perform CRUD operations and data management tasks</p>
                         </div>
                     </div>
@@ -98,10 +98,10 @@
 
                 <!-- Initial Setup -->
                 <section id="initial-setup" class="section">
-                    <h2>⚙️ Initial Setup & Registration</h2>
+                    <h2>âš™ï¸ Initial Setup & Registration</h2>
 
                     <div class="warning">
-                        <strong>⚠️ CRITICAL SEQUENCE</strong>
+                        <strong>âš ï¸ CRITICAL SEQUENCE</strong>
                         <p>The initialization must follow this exact order:</p>
                         <ol>
                             <li><strong>Initialize DMEEditor</strong> with Autofac dependency injection</li>
@@ -138,7 +138,7 @@ static void Main()
     var container = builder.Build();
     var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
     
-    Console.WriteLine("✅ BeepDM core services initialized successfully");
+    Console.WriteLine("âœ… BeepDM core services initialized successfully");
     
     // STEP 2: CRITICAL - Initialize connection drivers FIRST
     InitializeConnectionDrivers(dmeEditor);
@@ -161,12 +161,12 @@ public static void InitializeConnectionDrivers(IDMEEditor dmeEditor)
 {
     try
     {
-        Console.WriteLine("🔧 Initializing connection drivers from ConnectionHelper...");
+        Console.WriteLine("ðŸ”§ Initializing connection drivers from ConnectionHelper...");
         
         // Get all 39 predefined connection configurations from ConnectionHelper
         var allConnectionConfigs = ConnectionHelper.GetAllConnectionConfigs();
         
-        Console.WriteLine($"📦 Loading {allConnectionConfigs.Count} connection driver configurations:");
+        Console.WriteLine($"ðŸ“¦ Loading {allConnectionConfigs.Count} connection driver configurations:");
         
         // Add each configuration to the DMEEditor
         foreach (var config in allConnectionConfigs)
@@ -181,30 +181,30 @@ public static void InitializeConnectionDrivers(IDMEEditor dmeEditor)
         // Save configurations to persistent storage
         dmeEditor.ConfigEditor.SaveConnectionDriversConfigValues();
         
-        Console.WriteLine($"✅ Successfully loaded {allConnectionConfigs.Count} driver configurations");
+        Console.WriteLine($"âœ… Successfully loaded {allConnectionConfigs.Count} driver configurations");
         
         // Show what was loaded by category
         var driversByCategory = allConnectionConfigs.GroupBy(c => c.DatasourceCategory);
         foreach (var categoryGroup in driversByCategory)
         {
-            Console.WriteLine($"   📁 {categoryGroup.Key}: {categoryGroup.Count()} drivers");
+            Console.WriteLine($"   ðŸ“ {categoryGroup.Key}: {categoryGroup.Count()} drivers");
         }
         
-        Console.WriteLine("📊 Available driver categories:");
-        Console.WriteLine("   🏢 RDBMS: Enterprise databases (SQL Server, Oracle, PostgreSQL, MySQL, etc.)");
-        Console.WriteLine("   📄 FILE: File formats (CSV, Excel, JSON, Text)");
-        Console.WriteLine("   🗄️ NoSQL: Document & NoSQL databases (MongoDB, CouchDB, etc.)");
-        Console.WriteLine("   🧠 VectorDB: AI/ML vector databases (ChromaDB, Pinecone, Qdrant, etc.)");
-        Console.WriteLine("   🌐 WebAPI: REST and web service connections");
-        Console.WriteLine("   ☁️ Cloud: Cloud and streaming services");
+        Console.WriteLine("ðŸ“Š Available driver categories:");
+        Console.WriteLine("   ðŸ¢ RDBMS: Enterprise databases (SQL Server, Oracle, PostgreSQL, MySQL, etc.)");
+        Console.WriteLine("   ðŸ“„ FILE: File formats (CSV, Excel, JSON, Text)");
+        Console.WriteLine("   ðŸ—„ï¸ NoSQL: Document & NoSQL databases (MongoDB, CouchDB, etc.)");
+        Console.WriteLine("   ðŸ§  VectorDB: AI/ML vector databases (ChromaDB, Pinecone, Qdrant, etc.)");
+        Console.WriteLine("   ðŸŒ WebAPI: REST and web service connections");
+        Console.WriteLine("   â˜ï¸ Cloud: Cloud and streaming services");
         
         // Verify critical drivers are available
         VerifyEssentialDrivers(dmeEditor);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ CRITICAL ERROR: Failed to initialize connection drivers: {ex.Message}");
-        Console.WriteLine("💡 Cannot proceed without connection drivers. Application will not function properly.");
+        Console.WriteLine($"âŒ CRITICAL ERROR: Failed to initialize connection drivers: {ex.Message}");
+        Console.WriteLine("ðŸ’¡ Cannot proceed without connection drivers. Application will not function properly.");
         throw;
     }
 }
@@ -222,7 +222,7 @@ private static void VerifyEssentialDrivers(IDMEEditor dmeEditor)
         DataSourceType.Xls         // Excel files
     };
     
-    Console.WriteLine("🔍 Verifying essential drivers...");
+    Console.WriteLine("ðŸ” Verifying essential drivers...");
     
     foreach (var driverType in essentialDrivers)
     {
@@ -231,11 +231,11 @@ private static void VerifyEssentialDrivers(IDMEEditor dmeEditor)
         
         if (driver != null)
         {
-            Console.WriteLine($"   ✅ {driverType}: {driver.PackageName} v{driver.version}");
+            Console.WriteLine($"   âœ… {driverType}: {driver.PackageName} v{driver.version}");
         }
         else
         {
-            Console.WriteLine($"   ❌ {driverType}: NOT FOUND");
+            Console.WriteLine($"   âŒ {driverType}: NOT FOUND");
         }
     }
 }</code></pre>
@@ -294,12 +294,12 @@ public static void LoadSpecificDrivers(IDMEEditor dmeEditor)
     }
     
     dmeEditor.ConfigEditor.SaveConnectionDriversConfigValues();
-    Console.WriteLine($"✅ Loaded {driversToLoad.Count} specific drivers");
+    Console.WriteLine($"âœ… Loaded {driversToLoad.Count} specific drivers");
 }</code></pre>
                     </div>
 
                     <div class="success">
-                        <strong>✅ ConnectionHelper Benefits</strong>
+                        <strong>âœ… ConnectionHelper Benefits</strong>
                         <ul>
                             <li><strong>39 Pre-configured Drivers:</strong> Complete coverage of all supported data sources</li>
                             <li><strong>Production Ready:</strong> All configurations tested and optimized</li>
@@ -416,21 +416,21 @@ public partial class App : Application
                     </div>
 
                     <div class="error">
-                        <strong>❌ Common Mistake - Wrong Order</strong>
+                        <strong>âŒ Common Mistake - Wrong Order</strong>
                         <p>This is the WRONG way - trying to create connections before loading drivers:</p>
                         <pre><code class="language-csharp">// BAD - This will fail with "Driver not found" errors
 var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
 
 // Trying to create connection BEFORE loading drivers
 var connection = new ConnectionProperties { /* ... */ };
-dmeEditor.ConfigEditor.AddDataConnection(connection); // ❌ FAILS!
+dmeEditor.ConfigEditor.AddDataConnection(connection); // âŒ FAILS!
 
 // Loading drivers AFTER trying to use them
-var configs = ConnectionHelper.GetAllConnectionConfigs(); // ❌ TOO LATE!</code></pre>
+var configs = ConnectionHelper.GetAllConnectionConfigs(); // âŒ TOO LATE!</code></pre>
                     </div>
 
                     <div class="success">
-                        <strong>✅ Correct Order</strong>
+                        <strong>âœ… Correct Order</strong>
                         <pre><code class="language-csharp">// GOOD - Proper sequence
 var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
 
@@ -443,13 +443,13 @@ foreach (var config in configs)
 
 // NOW you can create connections
 var connection = new ConnectionProperties { /* ... */ };
-dmeEditor.ConfigEditor.AddDataConnection(connection); // ✅ WORKS!</code></pre>
+dmeEditor.ConfigEditor.AddDataConnection(connection); // âœ… WORKS!</code></pre>
                     </div>
                 </section>
 
                 <!-- ConfigEditor Deep Dive -->
                 <section id="config-editor-setup" class="section">
-                    <h2>⚙️ ConfigEditor & Its Specialized Managers</h2>
+                    <h2>âš™ï¸ ConfigEditor & Its Specialized Managers</h2>
                     <p>
                         <strong>Step 3:</strong> After loading the connection drivers in Step 2, the <code>ConfigEditor</code> can be properly configured 
                         to manage all configuration aspects of the Beep Data Management Engine. It uses specialized manager classes 
@@ -457,43 +457,43 @@ dmeEditor.ConfigEditor.AddDataConnection(connection); // ✅ WORKS!</code></pre>
                     </p>
 
                     <div class="note">
-                        <strong>📝 Prerequisites</strong>
+                        <strong>ðŸ“ Prerequisites</strong>
                         <p>Before configuring ConfigEditor, ensure you have:</p>
                         <ul>
-                            <li>✅ Initialized DMEEditor with Autofac (Step 1)</li>
-                            <li>✅ Loaded connection drivers from ConnectionHelper (Step 2)</li>
-                            <li>🎯 Ready to configure ConfigEditor specialized managers (Step 3)</li>
+                            <li>âœ… Initialized DMEEditor with Autofac (Step 1)</li>
+                            <li>âœ… Loaded connection drivers from ConnectionHelper (Step 2)</li>
+                            <li>ðŸŽ¯ Ready to configure ConfigEditor specialized managers (Step 3)</li>
                         </ul>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>📁 ConfigPathManager</h3>
+                            <h3>ðŸ“ ConfigPathManager</h3>
                             <p>Manages configuration file paths and directory structure</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🔗 DataConnectionManager</h3>
+                            <h3>ðŸ”— DataConnectionManager</h3>
                             <p>Handles data source connection lifecycle and configuration</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>📝 QueryManager</h3>
+                            <h3>ðŸ“ QueryManager</h3>
                             <p>Manages saved queries and SQL repositories</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🗺️ EntityMappingManager</h3>
+                            <h3>ðŸ—ºï¸ EntityMappingManager</h3>
                             <p>Handles entity structure and field mapping configurations</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🧩 ComponentConfigManager</h3>
+                            <h3>ðŸ§© ComponentConfigManager</h3>
                             <p>Manages component, driver, and plugin configurations</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🏭 ContainerManager</h3>
+                            <h3>ðŸ­ ContainerManager</h3>
                             <p>Dependency injection container management and service registration</p>
                         </div>
                     </div>
@@ -508,7 +508,7 @@ public static void ConfigureConfigEditor(IDMEEditor dmeEditor)
 {
     try
     {
-        Console.WriteLine("⚙️ Configuring ConfigEditor with specialized managers...");
+        Console.WriteLine("âš™ï¸ Configuring ConfigEditor with specialized managers...");
         
         var configEditor = dmeEditor.ConfigEditor;
         
@@ -518,7 +518,7 @@ public static void ConfigureConfigEditor(IDMEEditor dmeEditor)
             throw new InvalidOperationException("No connection drivers found. Did you run InitializeConnectionDrivers() first?");
         }
         
-        Console.WriteLine($"✅ Found {configEditor.DataDriversClasses.Count} connection drivers loaded");
+        Console.WriteLine($"âœ… Found {configEditor.DataDriversClasses.Count} connection drivers loaded");
         
         // Set configuration type and ensure proper paths
         configEditor.ConfigType = BeepConfigType.DataConnections;
@@ -535,7 +535,7 @@ public static void ConfigureConfigEditor(IDMEEditor dmeEditor)
         
         // Ensure configuration directory exists
         Directory.CreateDirectory(configEditor.ConfigPath);
-        Console.WriteLine($"📁 Config directory: {configEditor.ConfigPath}");
+        Console.WriteLine($"ðŸ“ Config directory: {configEditor.ConfigPath}");
         
         // Initialize configuration collections if they're null
         InitializeConfigCollections(configEditor);
@@ -546,12 +546,12 @@ public static void ConfigureConfigEditor(IDMEEditor dmeEditor)
         // Add default queries and mappings
         AddDefaultConfigurations(configEditor);
         
-        Console.WriteLine("✅ ConfigEditor configuration completed");
+        Console.WriteLine("âœ… ConfigEditor configuration completed");
         ShowConfigSummary(configEditor);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Failed to configure ConfigEditor: {ex.Message}");
+        Console.WriteLine($"âŒ Failed to configure ConfigEditor: {ex.Message}");
         throw;
     }
 }
@@ -569,7 +569,7 @@ private static void InitializeConfigCollections(IConfigEditor configEditor)
     configEditor.QueryList ??= new List&lt;QuerySqlRepo&gt;();
     configEditor.WorkFlowStepsConfig ??= new List&lt;WorkFlowStepsConfig&gt;();
     
-    Console.WriteLine("📋 Configuration collections initialized");
+    Console.WriteLine("ðŸ“‹ Configuration collections initialized");
 }
 
 /// &lt;summary&gt;
@@ -589,7 +589,7 @@ private static void AddDefaultConfigurations(IConfigEditor configEditor)
         AddBasicEntityMappings(configEditor);
     }
     
-    Console.WriteLine("🔧 Default configurations added");
+    Console.WriteLine("ðŸ”§ Default configurations added");
 }
 
 /// &lt;summary&gt;
@@ -597,18 +597,18 @@ private static void AddDefaultConfigurations(IConfigEditor configEditor)
 /// &lt;/summary&gt;
 private static void ShowConfigSummary(IConfigEditor configEditor)
 {
-    Console.WriteLine("📊 Configuration Summary:");
-    Console.WriteLine($"   🔗 Data Connections: {configEditor.DataConnections.Count}");
-    Console.WriteLine($"   🧩 Driver Classes: {configEditor.DataDriversClasses.Count}");
-    Console.WriteLine($"   🗺️ Entity Maps: {configEditor.EntityMaps.Count}");
-    Console.WriteLine($"   📝 Queries: {configEditor.QueryList.Count}");
-    Console.WriteLine($"   📊 Data Type Maps: {configEditor.DataTypesMap.Count}");
-    Console.WriteLine($"   ⚙️ Workflow Steps: {configEditor.WorkFlowStepsConfig.Count}");
+    Console.WriteLine("ðŸ“Š Configuration Summary:");
+    Console.WriteLine($"   ðŸ”— Data Connections: {configEditor.DataConnections.Count}");
+    Console.WriteLine($"   ðŸ§© Driver Classes: {configEditor.DataDriversClasses.Count}");
+    Console.WriteLine($"   ðŸ—ºï¸ Entity Maps: {configEditor.EntityMaps.Count}");
+    Console.WriteLine($"   ðŸ“ Queries: {configEditor.QueryList.Count}");
+    Console.WriteLine($"   ðŸ“Š Data Type Maps: {configEditor.DataTypesMap.Count}");
+    Console.WriteLine($"   âš™ï¸ Workflow Steps: {configEditor.WorkFlowStepsConfig.Count}");
 }</code></pre>
                     </div>
 
                     <div class="success">
-                        <strong>✅ ConfigEditor Benefits</strong>
+                        <strong>âœ… ConfigEditor Benefits</strong>
                         <ul>
                             <li><strong>Specialized Managers:</strong> Each configuration aspect has a dedicated manager</li>
                             <li><strong>Persistent Storage:</strong> All configurations are saved to disk automatically</li>
@@ -620,21 +620,21 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
                     </div>
 
                     <div class="note">
-                        <strong>📝 Configuration Persistence</strong>
+                        <strong>ðŸ“ Configuration Persistence</strong>
                         <p>The ConfigEditor automatically saves configurations to JSON files in the application data folder:</p>
                         <ul>
                             <li><strong>DataConnections.json:</strong> All data source connections</li>
-                            <li><strong>ConnectionDriversConfig.json:</strong> Driver configurations</li>
-                            <li><strong>EntityMaps.json:</strong> Entity mapping definitions</li>
+                            <li><strong>ConnectionConfig.json:</strong> Driver configurations</li>
+                            <li><strong>Mapping/{datasource}/{entity}_Mapping.json:</strong> Entity mapping definitions</li>
                             <li><strong>QueryList.json:</strong> Saved SQL queries</li>
-                            <li><strong>WorkFlowStepsConfig.json:</strong> Workflow configurations</li>
+                            <li><strong>WorkFlow/DataWorkFlow.json:</strong> Workflow configurations</li>
                         </ul>
                     </div>
                 </section>
 
                 <!-- Connection Management -->
                 <section id="connection-management" class="section">
-                    <h2>🔗 Connection Management</h2>
+                    <h2>ðŸ”— Connection Management</h2>
 
                     <p>Based on real implementation patterns from the sample application:</p>
 
@@ -650,7 +650,7 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
         
         if (config == null)
         {
-            Console.WriteLine("❌ SQLite driver not found");
+            Console.WriteLine("âŒ SQLite driver not found");
             return false;
         }
         
@@ -676,17 +676,17 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
             
             if (sqliteDataSource.ConnectionStatus == ConnectionState.Open)
             {
-                Console.WriteLine("✅ SQLite connection established");
+                Console.WriteLine("âœ… SQLite connection established");
                 return true;
             }
         }
         
-        Console.WriteLine("❌ Failed to connect to SQLite database");
+        Console.WriteLine("âŒ Failed to connect to SQLite database");
         return false;
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ SQLite connection error: {ex.Message}");
+        Console.WriteLine($"âŒ SQLite connection error: {ex.Message}");
         return false;
     }
 }</code></pre>
@@ -703,7 +703,7 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
         
         if (config == null)
         {
-            Console.WriteLine("❌ Excel driver not found");
+            Console.WriteLine("âŒ Excel driver not found");
             return false;
         }
         
@@ -728,17 +728,17 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
             
             if (xlsDataSource.ConnectionStatus == ConnectionState.Open)
             {
-                Console.WriteLine("✅ Excel file connection established");
+                Console.WriteLine("âœ… Excel file connection established");
                 return true;
             }
         }
         
-        Console.WriteLine("❌ Failed to connect to Excel file");
+        Console.WriteLine("âŒ Failed to connect to Excel file");
         return false;
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Excel connection error: {ex.Message}");
+        Console.WriteLine($"âŒ Excel connection error: {ex.Message}");
         return false;
     }
 }</code></pre>
@@ -755,7 +755,7 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
         
         if (config == null)
         {
-            Console.WriteLine("❌ CSV driver not found");
+            Console.WriteLine("âŒ CSV driver not found");
             return false;
         }
         
@@ -780,17 +780,17 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
             
             if (csvDataSource.ConnectionStatus == ConnectionState.Open)
             {
-                Console.WriteLine("✅ CSV file connection established");
+                Console.WriteLine("âœ… CSV file connection established");
                 return true;
             }
         }
         
-        Console.WriteLine("❌ Failed to connect to CSV file");
+        Console.WriteLine("âŒ Failed to connect to CSV file");
         return false;
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ CSV connection error: {ex.Message}");
+        Console.WriteLine($"âŒ CSV connection error: {ex.Message}");
         return false;
     }
 }</code></pre>
@@ -809,7 +809,7 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
         
         if (config == null)
         {
-            Console.WriteLine($"❌ Driver for {dataSourceType} not found");
+            Console.WriteLine($"âŒ Driver for {dataSourceType} not found");
             return false;
         }
         
@@ -848,17 +848,17 @@ private static void ShowConfigSummary(IConfigEditor configEditor)
             
             if (dataSource.ConnectionStatus == ConnectionState.Open)
             {
-                Console.WriteLine($"✅ {dataSourceType} connection '{connectionName}' established");
+                Console.WriteLine($"âœ… {dataSourceType} connection '{connectionName}' established");
                 return true;
             }
         }
         
-        Console.WriteLine($"❌ Failed to connect to {dataSourceType} '{connectionName}'");
+        Console.WriteLine($"âŒ Failed to connect to {dataSourceType} '{connectionName}'");
         return false;
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Connection error for {connectionName}: {ex.Message}");
+        Console.WriteLine($"âŒ Connection error for {connectionName}: {ex.Message}");
         return false;
     }
 }
@@ -891,7 +891,7 @@ private static bool IsFileBasedDataSource(DataSourceType dataSourceType)
 
                 <!-- Data Operations -->
                 <section id="data-operations" class="section">
-                    <h2>💾 Data Operations</h2>
+                    <h2>ðŸ’¾ Data Operations</h2>
 
                     <div class="code-example">
                         <h3>Basic Data Access Pattern</h3>
@@ -905,7 +905,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
         
         if (dataSource == null)
         {
-            Console.WriteLine($"❌ Data source '{connectionName}' not found");
+            Console.WriteLine($"âŒ Data source '{connectionName}' not found");
             return;
         }
         
@@ -914,19 +914,19 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
         
         if (dataSource.ConnectionStatus != ConnectionState.Open)
         {
-            Console.WriteLine($"❌ Failed to open connection to '{connectionName}'");
+            Console.WriteLine($"âŒ Failed to open connection to '{connectionName}'");
             return;
         }
         
-        Console.WriteLine($"✅ Connected to '{connectionName}'");
+        Console.WriteLine($"âœ… Connected to '{connectionName}'");
         
         // Get list of entities (tables/sheets/collections)
         var entities = dataSource.GetEntitesList();
-        Console.WriteLine($"📋 Found {entities.Count} entities:");
+        Console.WriteLine($"ðŸ“‹ Found {entities.Count} entities:");
         
         foreach (var entity in entities)
         {
-            Console.WriteLine($"   • {entity}");
+            Console.WriteLine($"   â€¢ {entity}");
         }
         
         // Work with first entity if available
@@ -936,7 +936,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
             
             // Get entity structure (schema information)
             var structure = dataSource.GetEntityStructure(firstEntity, true);
-            Console.WriteLine($"📊 Entity '{firstEntity}' has {structure.Fields?.Count ?? 0} fields");
+            Console.WriteLine($"ðŸ“Š Entity '{firstEntity}' has {structure.Fields?.Count ?? 0} fields");
             
             // Get data from entity
             var data = dataSource.GetEntity(firstEntity, null);
@@ -944,7 +944,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
             if (data != null)
             {
                 var dataList = data as IList ?? new List&lt;object&gt; { data };
-                Console.WriteLine($"📈 Retrieved {dataList.Count} records from '{firstEntity}'");
+                Console.WriteLine($"ðŸ“ˆ Retrieved {dataList.Count} records from '{firstEntity}'");
                 
                 // Process the data
                 ProcessEntityData(firstEntity, data, structure);
@@ -953,7 +953,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Error working with data source: {ex.Message}");
+        Console.WriteLine($"âŒ Error working with data source: {ex.Message}");
         dmeEditor.AddLogMessage("Beep", 
             $"Data operation error: {ex.Message}", 
             DateTime.Now, -1, null, Errors.Failed);
@@ -982,7 +982,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
         
         foreach (var kvp in dataSources)
         {
-            Console.WriteLine($"\n🔍 Processing {kvp.Value} ({kvp.Key})...");
+            Console.WriteLine($"\nðŸ” Processing {kvp.Value} ({kvp.Key})...");
             
             var dataSource = dmeEditor.GetDataSource(kvp.Key);
             if (dataSource != null)
@@ -1004,7 +1004,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
                 }
                 else
                 {
-                    Console.WriteLine($"   ❌ Could not connect to {kvp.Value}");
+                    Console.WriteLine($"   âŒ Could not connect to {kvp.Value}");
                 }
                 
                 dataSource.Closeconnection();
@@ -1013,7 +1013,7 @@ public static void WorkWithDataSource(IDMEEditor dmeEditor, string connectionNam
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Error processing multiple data sources: {ex.Message}");
+        Console.WriteLine($"âŒ Error processing multiple data sources: {ex.Message}");
     }
 }</code></pre>
                     </div>
@@ -1055,7 +1055,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
             throw new InvalidOperationException($"Cannot open destination connection to '{destName}'");
         }
         
-        Console.WriteLine($"🔄 Moving entity '{entityName}' from {sourceName} to {destName}");
+        Console.WriteLine($"ðŸ”„ Moving entity '{entityName}' from {sourceName} to {destName}");
         
         // Get entity structure from source
         var srcEntityStructure = sourceDataSource.GetEntityStructure(entityName, true);
@@ -1068,14 +1068,14 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
         var sourceData = sourceDataSource.GetEntity(entityName, null);
         if (sourceData == null)
         {
-            Console.WriteLine($"⚠️ No data found in source entity '{entityName}'");
+            Console.WriteLine($"âš ï¸ No data found in source entity '{entityName}'");
             return dmeEditor.ErrorObject;
         }
         
         // Create entity in destination if it doesn't exist
         if (!destDataSource.CheckEntityExist(entityName))
         {
-            Console.WriteLine($"📋 Creating entity '{entityName}' in destination");
+            Console.WriteLine($"ðŸ“‹ Creating entity '{entityName}' in destination");
             var createResult = destDataSource.CreateEntityAs(srcEntityStructure);
             
             if (createResult.Flag != Errors.Ok)
@@ -1090,11 +1090,11 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
         if (updateResult.Flag == Errors.Ok)
         {
             var dataList = sourceData as IList ?? new List&lt;object&gt; { sourceData };
-            Console.WriteLine($"✅ Successfully moved {dataList.Count} records");
+            Console.WriteLine($"âœ… Successfully moved {dataList.Count} records");
         }
         else
         {
-            Console.WriteLine($"❌ Failed to move data: {updateResult.Message}");
+            Console.WriteLine($"âŒ Failed to move data: {updateResult.Message}");
         }
         
         return updateResult;
@@ -1102,7 +1102,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
     catch (Exception ex)
     {
         var errorMsg = $"Error moving entity '{entityName}': {ex.Message}";
-        Console.WriteLine($"❌ {errorMsg}");
+        Console.WriteLine($"âŒ {errorMsg}");
         
         dmeEditor.AddLogMessage("Beep", errorMsg, 
             DateTime.Now, -1, ex.StackTrace, Errors.Failed);
@@ -1121,7 +1121,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
 
                 <!-- UI Integration -->
                 <section id="ui-integration" class="section">
-                    <h2>🖥️ UI Integration Examples</h2>
+                    <h2>ðŸ–¥ï¸ UI Integration Examples</h2>
 
                     <div class="code-example">
                         <h3>Windows Forms with BeepGrid</h3>
@@ -1153,7 +1153,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
             dmeEditor.ErrorObject           // Error handling
         );
         
-        Console.WriteLine("🎛️ BeepGrid configured with DME services");
+        Console.WriteLine("ðŸŽ›ï¸ BeepGrid configured with DME services");
     }
     
     private void LoadDataSources()
@@ -1170,7 +1170,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
                 dataSourcesComboBox.Items.Add(connection.ConnectionName);
             }
             
-            Console.WriteLine($"📋 Loaded {dataSources.Count} data sources");
+            Console.WriteLine($"ðŸ“‹ Loaded {dataSources.Count} data sources");
         }
         catch (Exception ex)
         {
@@ -1197,7 +1197,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
                 if (currentDataSource.ConnectionStatus == ConnectionState.Open)
                 {
                     LoadEntities();
-                    Console.WriteLine($"✅ Connected to {selectedDataSource}");
+                    Console.WriteLine($"âœ… Connected to {selectedDataSource}");
                 }
                 else
                 {
@@ -1229,7 +1229,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
                     entitiesComboBox.Items.Add(entity);
                 }
                 
-                Console.WriteLine($"📊 Loaded {entities.Count} entities");
+                Console.WriteLine($"ðŸ“Š Loaded {entities.Count} entities");
             }
         }
         catch (Exception ex)
@@ -1258,7 +1258,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
             var dataList = data as IList ?? new List&lt;object&gt; { data };
             statusLabel.Text = $"Loaded {dataList.Count} records from {entityName}";
             
-            Console.WriteLine($"📈 Loaded {dataList.Count} records into grid");
+            Console.WriteLine($"ðŸ“ˆ Loaded {dataList.Count} records into grid");
         }
         catch (Exception ex)
         {
@@ -1273,11 +1273,11 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
         {
             // Clean up data source connection
             currentDataSource?.Closeconnection();
-            Console.WriteLine("🔌 Data source connection closed");
+            Console.WriteLine("ðŸ”Œ Data source connection closed");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"⚠️ Error closing connection: {ex.Message}");
+            Console.WriteLine($"âš ï¸ Error closing connection: {ex.Message}");
         }
         
         base.OnFormClosed(e);
@@ -1286,7 +1286,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
                     </div>
 
                     <div class="tip">
-                        <strong>💡 UI Integration Tips</strong>
+                        <strong>ðŸ’¡ UI Integration Tips</strong>
                         <ul>
                             <li>Always configure Beep controls with the service instances</li>
                             <li>Handle connection errors gracefully with user-friendly messages</li>
@@ -1298,7 +1298,7 @@ public static IErrorsInfo MoveEntity(IDMEEditor dmeEditor, string sourceName, st
 
                 <!-- Real Examples -->
                 <section id="real-examples" class="section">
-                    <h2>🌟 Real-World Examples</h2>
+                    <h2>Usage Examples</h2>
 
                     <div class="code-example">
                         <h3>Shared Functions Class (Production Pattern)</h3>
@@ -1328,7 +1328,7 @@ public static class BeepSharedFunctions
     {
         try
         {
-            Console.WriteLine("🔗 Creating standard data connections...");
+            Console.WriteLine("ðŸ”— Creating standard data connections...");
             
             var results = new Dictionary&lt;string, bool&gt;
             {
@@ -1339,16 +1339,16 @@ public static class BeepSharedFunctions
             
             foreach (var result in results)
             {
-                var status = result.Value ? "✅" : "❌";
+                var status = result.Value ? "âœ…" : "âŒ";
                 Console.WriteLine($"   {status} {result.Key}: {(result.Value ? "Connected" : "Failed")}");
             }
             
             var successCount = results.Values.Count(r => r);
-            Console.WriteLine($"📊 {successCount}/{results.Count} connections established");
+            Console.WriteLine($"ðŸ“Š {successCount}/{results.Count} connections established");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error creating connections: {ex.Message}");
+            Console.WriteLine($"âŒ Error creating connections: {ex.Message}");
         }
     }
     
@@ -1393,7 +1393,7 @@ public static class BeepSharedFunctions
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error getting data source status: {ex.Message}");
+            Console.WriteLine($"âŒ Error getting data source status: {ex.Message}");
         }
         
         return dataSourceInfoList;
@@ -1419,11 +1419,11 @@ public static class BeepSharedFunctions
                 }
             }
             
-            Console.WriteLine($"🔌 Closed {closedCount} data source connections");
+            Console.WriteLine($"ðŸ”Œ Closed {closedCount} data source connections");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error closing connections: {ex.Message}");
+            Console.WriteLine($"âŒ Error closing connections: {ex.Message}");
         }
     }
     
@@ -1438,7 +1438,7 @@ public static class BeepSharedFunctions
         {
             var connections = dmeEditor.ConfigEditor.DataConnections;
             
-            Console.WriteLine("🧪 Testing all data source connections...");
+            Console.WriteLine("ðŸ§ª Testing all data source connections...");
             
             foreach (var connection in connections)
             {
@@ -1468,11 +1468,11 @@ public static class BeepSharedFunctions
             }
             
             var successCount = results.Values.Count(r => r);
-            Console.WriteLine($"📊 Connection test results: {successCount}/{results.Count} successful");
+            Console.WriteLine($"ðŸ“Š Connection test results: {successCount}/{results.Count} successful");
         }
         catch ( Exception ex)
         {
-            Console.WriteLine($"❌ Error testing connections: {ex.Message}");
+            Console.WriteLine($"âŒ Error testing connections: {ex.Message}");
         }
         
         return results;
@@ -1501,11 +1501,11 @@ public class DataSourceInfo
 
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
-                    <h2>🏆 Best Practices</h2>
+                    <h2>Best Practices</h2>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>🔍 Connection Verification</h3>
+                            <h3>ðŸ” Connection Verification</h3>
                             <p>Always check connection status before operations</p>
                             <div class="code-example">
                                 <pre><code class="language-csharp">var dataSource = dmeEditor.GetDataSource("MyDatabase");
@@ -1517,7 +1517,7 @@ if (dataSource?.ConnectionStatus == ConnectionState.Open)
                         </div>
                         
                         <div class="feature-card">
-                            <h3>⚠️ Error Handling</h3>
+                            <h3>âš ï¸ Error Handling</h3>
                             <p>Implement comprehensive error handling and logging</p>
                             <div class="code-example">
                                 <pre><code class="language-csharp">try
@@ -1533,7 +1533,7 @@ catch (Exception ex)
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🧹 Resource Cleanup</h3>
+                            <h3>ðŸ§¹ Resource Cleanup</h3>
                             <p>Always close connections to free resources</p>
                             <div class="code-example">
                                 <pre><code class="language-csharp">protected override void OnFormClosed(FormClosedEventArgs e)
@@ -1545,7 +1545,7 @@ catch (Exception ex)
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🎯 DMEEditor Usage</h3>
+                            <h3>ðŸŽ¯ DMEEditor Usage</h3>
                             <p>Use DMEEditor as the main interface for all operations</p>
                             <div class="code-example">
                                 <pre><code class="language-csharp">// Access through dmeEditor directly
@@ -1555,7 +1555,7 @@ var dataSource = dmeEditor.GetDataSource(connectionName);</code></pre>
                     </div>
 
                     <div class="warning">
-                        <strong>⚠️ Common Pitfalls</strong>
+                        <strong>âš ï¸ Common Pitfalls</strong>
                         <ul>
                             <li><strong>Missing Driver Check:</strong> Always verify drivers exist before creating connections</li>
                             <li><strong>Connection Leaks:</strong> Not closing connections can exhaust resources</li>
@@ -1565,7 +1565,7 @@ var dataSource = dmeEditor.GetDataSource(connectionName);</code></pre>
                     </div>
 
                     <div class="success">
-                        <strong>✅ Success Checklist</strong>
+                        <strong>âœ… Success Checklist</strong>
                         <ul>
                             <li>Beep services are properly registered in DI container</li>
                             <li>ConfigEditor is initialized with appropriate configuration type</li>
@@ -1618,12 +1618,12 @@ public class DataApplicationManager
                 throw new InvalidOperationException("Failed to initialize DMEEditor");
             }
             
-            Console.WriteLine("✅ DMEEditor initialized successfully");
+            Console.WriteLine("âœ… DMEEditor initialized successfully");
             return dmeEditor;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to initialize DMEEditor: {ex.Message}");
+            Console.WriteLine($"âŒ Failed to initialize DMEEditor: {ex.Message}");
             throw;
         }
     }
@@ -1632,7 +1632,7 @@ public class DataApplicationManager
     {
         try
         {
-            Console.WriteLine("🔧 Initializing connection drivers from ConnectionHelper...");
+            Console.WriteLine("ðŸ”§ Initializing connection drivers from ConnectionHelper...");
             
             // Get all 39 predefined connection configurations
             var allConfigs = ConnectionHelper.GetAllConnectionConfigs();
@@ -1649,33 +1649,33 @@ public class DataApplicationManager
             // Save configurations to persistent storage
             _dmeEditor.ConfigEditor.SaveConnectionDriversConfigValues();
             
-            Console.WriteLine($"✅ Loaded {allConfigs.Count} connection driver configurations");
+            Console.WriteLine($"âœ… Loaded {allConfigs.Count} connection driver configurations");
             
             // Verify critical drivers are available
             var driverTypes = allConfigs.GroupBy(c => c.DatasourceCategory)
                 .Select(g => $"{g.Key}: {g.Count()} drivers")
                 .ToArray();
             
-            Console.WriteLine("📊 Available driver categories:");
-            Console.WriteLine("   🏢 RDBMS: Enterprise databases (SQL Server, Oracle, PostgreSQL, MySQL, etc.)");
-            Console.WriteLine("   📄 FILE: File formats (CSV, Excel, JSON, Text)");
-            Console.WriteLine("   🗄️ NoSQL: Document & NoSQL databases (MongoDB, CouchDB, etc.)");
-            Console.WriteLine("   🧠 VectorDB: AI/ML vector databases (ChromaDB, Pinecone, Qdrant, etc.)");
-            Console.WriteLine("   🌐 WebAPI: REST and web service connections");
-            Console.WriteLine("   ☁️ Cloud: Cloud and streaming services");
+            Console.WriteLine("ðŸ“Š Available driver categories:");
+            Console.WriteLine("   ðŸ¢ RDBMS: Enterprise databases (SQL Server, Oracle, PostgreSQL, MySQL, etc.)");
+            Console.WriteLine("   ðŸ“„ FILE: File formats (CSV, Excel, JSON, Text)");
+            Console.WriteLine("   ðŸ—„ï¸ NoSQL: Document & NoSQL databases (MongoDB, CouchDB, etc.)");
+            Console.WriteLine("   ðŸ§  VectorDB: AI/ML vector databases (ChromaDB, Pinecone, Qdrant, etc.)");
+            Console.WriteLine("   ðŸŒ WebAPI: REST and web service connections");
+            Console.WriteLine("   â˜ï¸ Cloud: Cloud and streaming services");
             
             // Verify critical drivers are available
             VerifyEssentialDrivers(dmeEditor);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to create standard connections: {ex.Message}");
+            Console.WriteLine($"âŒ Failed to create standard connections: {ex.Message}");
         }
     }
     
     private void CreateConnections()
     {
-        Console.WriteLine("🔗 Creating application connections...");
+        Console.WriteLine("ðŸ”— Creating application connections...");
         
         // Now that drivers are loaded, we can create connections
         CreateSqlServerConnection();
@@ -1687,7 +1687,7 @@ public class DataApplicationManager
         var testResults = TestAllConnections();
         var successfulConnections = testResults.Where(r => r.Value).Select(r => r.Key);
         
-        Console.WriteLine($"🎯 Successfully connected to: {string.Join(", ", successfulConnections)}");
+        Console.WriteLine($"ðŸŽ¯ Successfully connected to: {string.Join(", ", successfulConnections)}");
     }
     
     private void CreateSqlServerConnection()
@@ -1700,7 +1700,7 @@ public class DataApplicationManager
             
             if (sqlServerConfig == null)
             {
-                Console.WriteLine("❌ SQL Server driver not found. Ensure ConnectionHelper.GetAllConnectionConfigs() was called.");
+                Console.WriteLine("âŒ SQL Server driver not found. Ensure ConnectionHelper.GetAllConnectionConfigs() was called.");
                 return;
             }
             
@@ -1722,11 +1722,11 @@ public class DataApplicationManager
                 sqlServerConfig, connectionProps, _dmeEditor);
             
             _dmeEditor.ConfigEditor.AddDataConnection(connectionProps);
-            Console.WriteLine("✅ SQL Server connection configured");
+            Console.WriteLine("âœ… SQL Server connection configured");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to create SQL Server connection: {ex.Message}");
+            Console.WriteLine($"âŒ Failed to create SQL Server connection: {ex.Message}");
         }
     }
     
@@ -1740,7 +1740,7 @@ public class DataApplicationManager
             
             if (sqliteConfig == null)
             {
-                Console.WriteLine("❌ SQLite driver not found");
+                Console.WriteLine("âŒ SQLite driver not found");
                 return;
             }
             
@@ -1755,11 +1755,11 @@ public class DataApplicationManager
             };
             
             _dmeEditor.ConfigEditor.AddDataConnection(connectionProps);
-            Console.WriteLine("✅ SQLite connection configured");
+            Console.WriteLine("âœ… SQLite connection configured");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to create SQLite connection: {ex.Message}");
+            Console.WriteLine($"âŒ Failed to create SQLite connection: {ex.Message}");
         }
     }
     
@@ -1773,7 +1773,7 @@ public class DataApplicationManager
             
             if (csvConfig == null)
             {
-                Console.WriteLine("❌ CSV driver not found");
+                Console.WriteLine("âŒ CSV driver not found");
                 return;
             }
             
@@ -1789,11 +1789,11 @@ public class DataApplicationManager
             };
             
             _dmeEditor.ConfigEditor.AddDataConnection(connectionProps);
-            Console.WriteLine("✅ CSV connection configured");
+            Console.WriteLine("âœ… CSV connection configured");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to create CSV connection: {ex.Message}");
+            Console.WriteLine($"âŒ Failed to create CSV connection: {ex.Message}");
         }
     }
     
@@ -1807,7 +1807,7 @@ public class DataApplicationManager
             
             if (excelConfig == null)
             {
-                Console.WriteLine("❌ Excel driver not found");
+                Console.WriteLine("âŒ Excel driver not found");
                 return;
             }
             
@@ -1823,11 +1823,11 @@ public class DataApplicationManager
             };
             
             _dmeEditor.ConfigEditor.AddDataConnection(connectionProps);
-            Console.WriteLine("✅ Excel connection configured");
+            Console.WriteLine("âœ… Excel connection configured");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to create Excel connection: {ex.Message}");
+            Console.WriteLine($"âŒ Failed to create Excel connection: {ex.Message}");
         }
     }
     
@@ -1839,7 +1839,7 @@ public class DataApplicationManager
         {
             var connections = _dmeEditor.ConfigEditor.DataConnections;
             
-            Console.WriteLine("🧪 Testing all data source connections...");
+            Console.WriteLine("ðŸ§ª Testing all data source connections...");
             
             foreach (var connection in connections)
             {
@@ -1869,11 +1869,11 @@ public class DataApplicationManager
             }
             
             var successCount = results.Values.Count(r => r);
-            Console.WriteLine($"📊 Connection test results: {successCount}/{results.Count} successful");
+            Console.WriteLine($"ðŸ“Š Connection test results: {successCount}/{results.Count} successful");
         }
         catch ( Exception ex)
         {
-            Console.WriteLine($"❌ Error testing connections: {ex.Message}");
+            Console.WriteLine($"âŒ Error testing connections: {ex.Message}");
         }
         
         return results;
@@ -1897,7 +1897,7 @@ public class DataApplicationManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error getting data source '{connectionName}': {ex.Message}");
+            Console.WriteLine($"âŒ Error getting data source '{connectionName}': {ex.Message}");
             return null;
         }
     }
@@ -1914,11 +1914,11 @@ public class DataApplicationManager
             
             _dmeEditor?.Dispose();
             
-            Console.WriteLine("🧹 All resources cleaned up successfully");
+            Console.WriteLine("ðŸ§¹ All resources cleaned up successfully");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"⚠️ Error during cleanup: {ex.Message}");
+            Console.WriteLine($"âš ï¸ Error during cleanup: {ex.Message}");
         }
     }
 }</code></pre>
@@ -1960,3 +1960,6 @@ public class DataApplicationManager
     </script>
 </body>
 </html>
+
+
+

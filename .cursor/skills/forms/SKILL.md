@@ -1,4 +1,4 @@
----
+﻿---
 name: forms
 description: Expert guidance for Oracle Forms-compatible form management using FormsManager (UnitofWorksManager). Use when implementing master-detail forms, managing form blocks, handling mode transitions, or simulating Oracle Forms behavior in .NET applications.
 ---
@@ -11,7 +11,7 @@ Expert guidance for Oracle Forms-compatible form management using FormsManager (
 
 **FormsManager** (formerly UnitofWorksManager) provides Oracle Forms-compatible data management:
 - **Master-Detail Relationships**: Automatic coordination between parent and child blocks
-- **Mode Transitions**: Query ↔ CRUD mode transitions with validation
+- **Mode Transitions**: Query â†” CRUD mode transitions with validation
 - **Form Operations**: COMMIT_FORM, CLEAR_FORM, EXECUTE_QUERY, etc.
 - **Navigation**: FIRST_RECORD, LAST_RECORD, NEXT_RECORD, PREVIOUS_RECORD
 - **Unsaved Changes Handling**: Intelligent handling of dirty state across blocks
@@ -23,23 +23,23 @@ Expert guidance for Oracle Forms-compatible form management using FormsManager (
 
 ```
 FormsManager (Main Coordinator)
-├── Partial Classes
-│   ├── FormsManager.cs - Core coordination & block management
-│   ├── FormsManager.EnhancedOperations.cs - Type-safe CRUD operations
-│   ├── FormsManager.FormOperations.cs - Form-level operations
-│   ├── FormsManager.Navigation.cs - Record navigation
-│   └── FormsManager.ModeTransitions.cs - Mode transition validation
-├── Helper Managers
-│   ├── RelationshipManager - Master-detail relationships
-│   ├── DirtyStateManager - Unsaved changes handling
-│   ├── EventManager - Event coordination & triggers
-│   ├── FormsSimulationHelper - Oracle Forms simulation
-│   ├── PerformanceManager - Caching & optimization
-│   └── ConfigurationManager - Configuration management
-└── Models
-    ├── DataBlockInfo - Block metadata
-    ├── DataBlockRelationship - Relationship definitions
-    └── UnitofWorksManagerConfiguration - Configuration settings
+â”œâ”€â”€ Partial Classes
+â”‚   â”œâ”€â”€ FormsManager.cs - Core coordination & block management
+â”‚   â”œâ”€â”€ FormsManager.EnhancedOperations.cs - Type-safe CRUD operations
+â”‚   â”œâ”€â”€ FormsManager.FormOperations.cs - Form-level operations
+â”‚   â”œâ”€â”€ FormsManager.Navigation.cs - Record navigation
+â”‚   â””â”€â”€ FormsManager.ModeTransitions.cs - Mode transition validation
+â”œâ”€â”€ Helper Managers
+â”‚   â”œâ”€â”€ RelationshipManager - Master-detail relationships
+â”‚   â”œâ”€â”€ DirtyStateManager - Unsaved changes handling
+â”‚   â”œâ”€â”€ EventManager - Event coordination & triggers
+â”‚   â”œâ”€â”€ FormsSimulationHelper - Oracle Forms simulation
+â”‚   â”œâ”€â”€ PerformanceManager - Caching & optimization
+â”‚   â””â”€â”€ ConfigurationManager - Configuration management
+â””â”€â”€ Models
+    â”œâ”€â”€ DataBlockInfo - Block metadata
+    â”œâ”€â”€ DataBlockRelationship - Relationship definitions
+    â””â”€â”€ UnitofWorksManagerConfiguration - Configuration settings
 ```
 
 ## Initialization
@@ -472,3 +472,11 @@ await formsManager.CommitFormAsync(); // Commit all blocks
 - `Helpers/RelationshipManager.cs` - Relationship management
 - `Helpers/DirtyStateManager.cs` - Dirty state handling
 - `Helpers/EventManager.cs` - Event coordination
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/Forms/Interfaces/README.md
+- DataManagementEngineStandard/Editor/Forms/Helpers/README.md
+- DataManagementEngineStandard/Editor/Forms/Configuration/README.md
+

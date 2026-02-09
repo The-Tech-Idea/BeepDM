@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34,23 +34,23 @@
                 <!-- Breadcrumb -->
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <a href="unitofwork.html">UnitOfWork Pattern</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <span>Deep Dive</span>
                 </nav>
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>🔬 UnitOfWork Deep Dive</h1>
+                    <h1>ðŸ”¬ UnitOfWork Deep Dive</h1>
                     <p class="page-subtitle">Comprehensive guide to change tracking, entity management, and advanced patterns</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>📚 Table of Contents</h3>
+                    <h3>ðŸ“š Table of Contents</h3>
                     <ul>
-                        <li><a href="#overview">Overview & Architecture</a></li>
+                        <li><a href="#overview">Overview</a></li>
                         <li><a href="#change-tracking">Change Tracking System</a></li>
                         <li><a href="#entity-states">Entity State Management</a></li>
                         <li><a href="#lifecycle-events">Lifecycle Events</a></li>
@@ -69,7 +69,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>🏗️ Overview & Architecture</h2>
+                    <h2>Overview</h2>
                     <p>
                         The UnitOfWork pattern in Beep provides sophisticated change tracking, entity state management, and transaction coordination 
                         for data operations. It acts as an in-memory representation of your data with automatic dirty tracking, undo/redo capabilities, 
@@ -77,7 +77,7 @@
                     </p>
                     
                     <div class="success">
-                        <strong>🎯 Key Benefits</strong>
+                        <strong>ðŸŽ¯ Key Benefits</strong>
                         <ul>
                             <li><strong>Automatic Change Tracking:</strong> Monitors all entity modifications automatically</li>
                             <li><strong>Batch Operations:</strong> Accumulate changes and commit as a single transaction</li>
@@ -90,22 +90,22 @@
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>🔧 Generic Type Safety</h3>
+                            <h3>ðŸ”§ Generic Type Safety</h3>
                             <p>Strongly typed operations with compile-time safety using <code>UnitofWork&lt;T&gt;</code> where T : Entity</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>💾 Multiple Operation Modes</h3>
+                            <h3>ðŸ’¾ Multiple Operation Modes</h3>
                             <p>Database-connected mode for live data or List mode for in-memory operations</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🔗 Relationship Management</h3>
+                            <h3>ðŸ”— Relationship Management</h3>
                             <p>Handle parent-child relationships, foreign keys, and referential integrity</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>📊 Progress Tracking</h3>
+                            <h3>ðŸ“Š Progress Tracking</h3>
                             <p>Built-in progress reporting for long-running operations with cancellation support</p>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
 
                 <!-- Change Tracking -->
                 <section id="change-tracking" class="section">
-                    <h2>🔍 Change Tracking System</h2>
+                    <h2>ðŸ” Change Tracking System</h2>
                     
                     <p>The UnitOfWork automatically tracks all changes to entities in the collection using a sophisticated change detection mechanism:</p>
 
@@ -154,14 +154,14 @@ if (result.Flag == Errors.Ok)
                     </div>
 
                     <div class="tip">
-                        <strong>💡 Change Detection Mechanism</strong>
+                        <strong>ðŸ’¡ Change Detection Mechanism</strong>
                         <p>The UnitOfWork uses <code>ObservableBindingList&lt;T&gt;</code> and property change notifications to automatically detect when entities are modified. This happens transparently without requiring explicit tracking calls.</p>
                     </div>
                 </section>
 
                 <!-- Entity States -->
                 <section id="entity-states" class="section">
-                    <h2>📋 Entity State Management</h2>
+                    <h2>ðŸ“‹ Entity State Management</h2>
                     
                     <p>The UnitOfWork tracks entities in different states based on their lifecycle:</p>
 
@@ -231,13 +231,13 @@ foreach (var entity in deletedEntities)
 
                 <!-- Lifecycle Events -->
                 <section id="lifecycle-events" class="section">
-                    <h2>⚡ Lifecycle Events</h2>
+                    <h2>âš¡ Lifecycle Events</h2>
                     
                     <p>UnitOfWork provides comprehensive event hooks for business logic implementation:</p>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>🔄 Pre-Operation Events</h3>
+                            <h3>ðŸ”„ Pre-Operation Events</h3>
                             <p>Cancellable events fired before operations</p>
                             <ul>
                                 <li>PreCreate</li>
@@ -249,7 +249,7 @@ foreach (var entity in deletedEntities)
                         </div>
                         
                         <div class="feature-card">
-                            <h3>✅ Post-Operation Events</h3>
+                            <h3>âœ… Post-Operation Events</h3>
                             <p>Notification events fired after operations</p>
                             <ul>
                                 <li>PostCreate</li>
@@ -387,7 +387,7 @@ customerUoW.PostEdit += (sender, args) =>
                     </div>
 
                     <div class="warning">
-                        <strong>⚠️ Event Best Practices</strong>
+                        <strong>âš ï¸ Event Best Practices</strong>
                         <ul>
                             <li>Use Pre-events for validation and business rules</li>
                             <li>Use Post-events for logging, notifications, and side effects</li>
@@ -400,7 +400,7 @@ customerUoW.PostEdit += (sender, args) =>
 
                 <!-- Constructor Patterns -->
                 <section id="constructors" class="section">
-                    <h2>🔧 Constructor Patterns</h2>
+                    <h2>ðŸ”§ Constructor Patterns</h2>
 
                     <div class="code-example">
                         <h3>1. Database-Connected Constructor</h3>
@@ -465,7 +465,7 @@ await customerUoW.Get();</code></pre>
                     </div>
 
                     <div class="tip">
-                        <strong>💡 Constructor Selection Guide</strong>
+                        <strong>ðŸ’¡ Constructor Selection Guide</strong>
                         <ul>
                             <li><strong>Database-Connected:</strong> Use for normal CRUD operations with database persistence</li>
                             <li><strong>In-Memory List:</strong> Use for temporary data manipulation, previews, or offline scenarios</li>
@@ -476,7 +476,7 @@ await customerUoW.Get();</code></pre>
 
                 <!-- Advanced CRUD -->
                 <section id="advanced-crud" class="section">
-                    <h2>🚀 Advanced CRUD Operations</h2>
+                    <h2>ðŸš€ Advanced CRUD Operations</h2>
 
                     <div class="code-example">
                         <h3>Bulk Operations with Batch Processing</h3>
@@ -592,7 +592,7 @@ catch (Exception ex)
 
                 <!-- Filtering & Paging -->
                 <section id="filtering-paging" class="section">
-                    <h2>🔍 Advanced Filtering & Paging</h2>
+                    <h2>ðŸ” Advanced Filtering & Paging</h2>
 
                     <div class="code-example">
                         <h3>Complex Filtering Scenarios</h3>
@@ -768,3 +768,4 @@ public PaginationInfo GetPaginationInfo()
     </script>
 </body>
 </html>
+

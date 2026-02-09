@@ -1,4 +1,4 @@
----
+﻿---
 name: beepsync
 description: Expert guidance for data synchronization between datasources using DataSyncManager. Use when synchronizing data between different datasources, managing sync schemas, or implementing bidirectional data sync operations.
 ---
@@ -17,11 +17,11 @@ Expert guidance for synchronizing data between different datasources using DataS
 
 ```
 DataSyncManager (Main Coordinator)
-├── IDataSourceHelper - DataSource operations
-├── IFieldMappingHelper - Field mapping and transformation
-├── ISyncValidationHelper - Schema and operation validation
-├── ISyncProgressHelper - Progress reporting and logging
-└── ISchemaPersistenceHelper - Schema persistence operations
+â”œâ”€â”€ IDataSourceHelper - DataSource operations
+â”œâ”€â”€ IFieldMappingHelper - Field mapping and transformation
+â”œâ”€â”€ ISyncValidationHelper - Schema and operation validation
+â”œâ”€â”€ ISyncProgressHelper - Progress reporting and logging
+â””â”€â”€ ISchemaPersistenceHelper - Schema persistence operations
 ```
 
 ### Key Components
@@ -357,12 +357,12 @@ catch (Exception ex)
 ```csharp
 public class ScheduledSyncService
 {
-    private readonly BeepSyncManager _syncManager;
+    private readonly DataSyncManager _syncManager;
     private Timer _syncTimer;
 
     public ScheduledSyncService(IDMEEditor editor)
     {
-        _syncManager = new BeepSyncManager(editor);
+        _syncManager = new DataSyncManager(editor);
     }
 
     public void StartScheduledSync(string schemaId, TimeSpan interval)
@@ -386,7 +386,7 @@ public class ScheduledSyncService
 
 ```csharp
 public async Task SyncMultipleEntitiesAsync(
-    BeepSyncManager syncManager,
+    DataSyncManager syncManager,
     List<DataSyncSchema> schemas,
     CancellationToken cancellationToken,
     IProgress<PassedArgs> progress)
@@ -501,10 +501,18 @@ await syncManager.SaveSchemaAsync(schema);
 
 ## Key Files
 
-- `BeepSyncManager.cs` - Main sync manager
-- `Interfaces/ISyncHelpers.cs` - Helper interfaces
-- `Helpers/DataSourceHelper.cs` - DataSource operations
-- `Helpers/FieldMappingHelper.cs` - Field mapping
-- `Helpers/SyncValidationHelper.cs` - Validation
-- `Helpers/SyncProgressHelper.cs` - Progress and logging
-- `Helpers/SchemaPersistenceHelper.cs` - Schema persistence
+- `Editor/BeepSync/BeepSyncManager.cs` - Main sync manager (`DataSyncManager` class)
+- `Editor/BeepSync/Interfaces/ISyncHelpers.cs` - Helper interfaces
+- `Editor/BeepSync/Helpers/FieldMappingHelper.cs` - Field mapping
+- `Editor/BeepSync/Helpers/SyncValidationHelper.cs` - Validation
+- `Editor/BeepSync/Helpers/SyncProgressHelper.cs` - Progress and logging
+- `Editor/BeepSync/Helpers/SchemaPersistenceHelper.cs` - Schema persistence
+
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/BeepSync/Interfaces/README.md
+- DataManagementEngineStandard/Editor/BeepSync/Helpers/README.md
+- DataManagementEngineStandard/Docs/datasyncmanager.html
+

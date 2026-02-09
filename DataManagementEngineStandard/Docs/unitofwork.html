@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -36,7 +36,7 @@
                 <!-- Breadcrumb -->
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <span>UnitOfWork Pattern</span>
                 </nav>
 
@@ -49,7 +49,7 @@
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>📚 Table of Contents</h3>
+                    <h3>ðŸ“š Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#constructors">Constructors</a></li>
@@ -76,7 +76,7 @@
                     </p>
 
                     <div class="success">
-                        <strong>🎯 Key Features</strong>
+                        <strong>ðŸŽ¯ Key Features</strong>
                         <ul>
                             <li>Generic implementation for any Entity type</li>
                             <li>Automatic change tracking and state management</li>
@@ -266,7 +266,7 @@ var listUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, true, tempCustomers, "Cu
                     </div>
 
                     <div class="code-example">
-                        <h3>Practical Examples</h3>
+                        <h3>Usage Examples</h3>
                         <pre><code class="language-csharp">// Get all customers
 var allCustomers = await customerUoW.Get();
 
@@ -408,22 +408,22 @@ catch (Exception ex)
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>➕ Added</h3>
+                            <h3>âž• Added</h3>
                             <p>New entities not yet persisted to the data source</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>✏️ Modified</h3>
+                            <h3>âœï¸ Modified</h3>
                             <p>Existing entities with property changes</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>🗑️ Deleted</h3>
+                            <h3>ðŸ—‘ï¸ Deleted</h3>
                             <p>Entities marked for removal from data source</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>➖ Unchanged</h3>
+                            <h3>âž– Unchanged</h3>
                             <p>Entities with no modifications since last commit</p>
                         </div>
                     </div>
@@ -507,57 +507,57 @@ Console.WriteLine($"Total records: {customerUoW.Units.Count}");</code></pre>
                             <tr>
                                 <td>PreCreate</td>
                                 <td>Before creating new entity</td>
-                                <td>✅ Yes</td>
+                                <td>âœ… Yes</td>
                             </tr>
                             <tr>
                                 <td>PostCreate</td>
                                 <td>After creating new entity</td>
-                                <td>✅ Yes</td>
+                                <td>âœ… Yes</td>
                             </tr>
                             <tr>
                                 <td>PreInsert</td>
                                 <td>Before inserting to data source</td>
-                                <td>✅ Yes</td>
+                                <td>âœ… Yes</td>
                             </tr>
                             <tr>
                                 <td>PostInsert</td>
                                 <td>After inserting to data source</td>
-                                <td>❌ No</td>
+                                <td>âŒ No</td>
                             </tr>
                             <tr>
                                 <td>PreUpdate</td>
                                 <td>Before updating in data source</td>
-                                <td>✅ Yes</td>
+                                <td>âœ… Yes</td>
                             </tr>
                             <tr>
                                 <td>PostUpdate</td>
                                 <td>After updating in data source</td>
-                                <td>❌ No</td>
+                                <td>âŒ No</td>
                             </tr>
                             <tr>
                                 <td>PreDelete</td>
                                 <td>Before deleting from data source</td>
-                                <td>✅ Yes</td>
+                                <td>âœ… Yes</td>
                             </tr>
                             <tr>
                                 <td>PostDelete</td>
                                 <td>After deleting from data source</td>
-                                <td>❌ No</td>
+                                <td>âŒ No</td>
                             </tr>
                             <tr>
                                 <td>PreCommit</td>
                                 <td>Before committing changes</td>
-                                <td>✅ Yes</td>
+                                <td>âœ… Yes</td>
                             </tr>
                             <tr>
                                 <td>PostCommit</td>
                                 <td>After committing changes</td>
-                                <td>❌ No</td>
+                                <td>âŒ No</td>
                             </tr>
                             <tr>
                                 <td>PostEdit</td>
                                 <td>After property changes</td>
-                                <td>❌ No</td>
+                                <td>âŒ No</td>
                             </tr>
                         </tbody>
                     </table>
@@ -637,7 +637,7 @@ Console.WriteLine($"Customer {customerToDelete.Name} restored");</code></pre>
                     </div>
 
                     <div class="tip">
-                        <strong>💡 Tip:</strong>
+                        <strong>ðŸ’¡ Tip:</strong>
                         <p>Undo functionality is limited to the current session. Once you commit changes to the database, use the
                             Rollback method to revert uncommitted changes.</p>
                     </div>
@@ -680,7 +680,7 @@ if (success)
                     </div>
 
                     <div class="note">
-                        <strong>📝 Log Format:</strong>
+                        <strong>ðŸ“ Log Format:</strong>
                         <p>The log is saved as JSON and includes timestamps, entity information, property changes, and operation
                             types. This is useful for auditing and debugging purposes.</p>
                     </div>
@@ -692,38 +692,38 @@ if (success)
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>🔒 Resource Management</h3>
+                            <h3>ðŸ”’ Resource Management</h3>
                             <p>Always use <code>using</code> statements since UnitOfWork implements IDisposable</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>📡 Event Handling</h3>
+                            <h3>ðŸ“¡ Event Handling</h3>
                             <p>Use lifecycle events for validation and business logic implementation</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>💾 Change Detection</h3>
+                            <h3>ðŸ’¾ Change Detection</h3>
                             <p>Always check <code>IsDirty</code> before closing forms or navigating away</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>⚡ Async Operations</h3>
+                            <h3>âš¡ Async Operations</h3>
                             <p>Use async methods for all database operations to prevent UI blocking</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>📊 Audit Trails</h3>
+                            <h3>ðŸ“Š Audit Trails</h3>
                             <p>Enable logging for audit trails and debugging purposes</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>✅ Validation</h3>
+                            <h3>âœ… Validation</h3>
                             <p>Use PreCommit event for final validation before persisting changes</p>
                         </div>
                     </div>
 
                     <div class="warning">
-                        <strong>⚠️ Important Notes:</strong>
+                        <strong>âš ï¸ Important Notes:</strong>
                         <ul>
                             <li>When using identity columns (<code>IsIdentity = true</code>), the primary key value will be
                                 automatically updated after successful insert operations</li>
@@ -770,3 +770,4 @@ if (success)
 </body>
 
 </html>
+

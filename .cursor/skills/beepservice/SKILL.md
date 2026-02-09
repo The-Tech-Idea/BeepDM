@@ -1,4 +1,4 @@
----
+﻿---
 name: beepservice
 description: Guide for initializing IDMEEditor and creating BeepService patterns for WinForms applications. Use when setting up BeepDM in a WinForms application, initializing IDMEEditor, configuring database connections, or creating service initialization patterns.
 ---
@@ -463,3 +463,11 @@ catch (Exception ex)
 - `connection` - Connection management
 - `connectionproperties` - Connection properties configuration
 - `unitofwork` - Data access patterns
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/README.md
+- DataManagementEngineStandard/ConfigUtil/README.md
+- DataManagementEngineStandard/Docs/registerbeep.html
+

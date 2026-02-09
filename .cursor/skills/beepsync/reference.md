@@ -1,10 +1,10 @@
-# BeepSync Quick Reference
+﻿# BeepSync Quick Reference
 
 ## Basic Usage
 
 ```csharp
 // Initialize
-var syncManager = new BeepSyncManager(dmeEditor);
+var syncManager = new DataSyncManager(dmeEditor);
 
 // Create schema
 var schema = new DataSyncSchema
@@ -54,3 +54,4 @@ syncManager.RemoveSyncSchema(schemaId);
 var schemas = await syncManager.LoadSchemasAsync();
 await syncManager.SaveSchemasAsync();
 ```
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,13 +42,13 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>?? Defaults Manager</h1>
+                    <h1>Defaults Manager</h1>
                     <p class="page-subtitle">Centralized default value management with rule-based processing and dynamic value resolution</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>?? Table of Contents</h3>
+                    <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#default-types">Default Value Types</a></li>
@@ -63,7 +63,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>?? Overview</h2>
+                    <h2>Overview</h2>
                     <p>
                         The <code>DefaultsManager</code> is a static utility class that provides centralized management 
                         of default values for data source fields. It supports both static default values and dynamic 
@@ -72,28 +72,28 @@
                     </p>
                     
                     <div class="success">
-                        <strong>?? Key Capabilities</strong>
+                        <strong>Key Capabilities</strong>
                         <p>DefaultsManager enables consistent data population with configurable default values, rule-based dynamic generation, and centralized management across all data sources.</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>?? Static Defaults</h3>
+                            <h3>Static Defaults</h3>
                             <p>Configure static default values for consistent data population</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Rule-Based Values</h3>
+                            <h3>Rule-Based Values</h3>
                             <p>Dynamic value generation using business rules and expressions</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>??? Data Source Specific</h3>
+                            <h3>Data Source Specific</h3>
                             <p>Configure defaults per data source for targeted application</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Persistent Configuration</h3>
+                            <h3>Persistent Configuration</h3>
                             <p>Save and manage default configurations across application sessions</p>
                         </div>
                     </div>
@@ -101,11 +101,11 @@
 
                 <!-- Default Types -->
                 <section id="default-types" class="section">
-                    <h2>?? Default Value Types</h2>
+                    <h2>Default Value Types</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>DefaultValue Structure</strong>
                         </div>
                         <div class="api-content">
@@ -125,7 +125,7 @@
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Default Value Types</strong>
                         </div>
                         <div class="api-content">
@@ -144,7 +144,7 @@
                     </div>
 
                     <div class="tip">
-                        <strong>?? Configuration Strategy</strong>
+                        <strong>Configuration Strategy</strong>
                         <ul>
                             <li>Use static defaults for unchanging values like status codes</li>
                             <li>Use rule-based defaults for dynamic values like timestamps</li>
@@ -156,11 +156,11 @@
 
                 <!-- Retrieval Methods -->
                 <section id="retrieval-methods" class="section">
-                    <h2>?? Default Retrieval Methods</h2>
+                    <h2>Default Retrieval Methods</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Core Retrieval Methods</strong>
                         </div>
                         <div class="api-content">
@@ -177,7 +177,7 @@
                     </div>
 
                     <div class="warning">
-                        <strong>?? Important Considerations</strong>
+                        <strong>Important Considerations</strong>
                         <ul>
                             <li>Default retrieval requires a valid data source configuration</li>
                             <li>Missing data sources will return null and log appropriate errors</li>
@@ -255,11 +255,11 @@ else
 
                 <!-- Value Resolution -->
                 <section id="value-resolution" class="section">
-                    <h2>?? Value Resolution</h2>
+                    <h2>Value Resolution</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Value Resolution Methods</strong>
                         </div>
                         <div class="api-content">
@@ -276,7 +276,7 @@ else
                     </div>
 
                     <div class="success">
-                        <strong>?? Resolution Features</strong>
+                        <strong>Resolution Features</strong>
                         <ul>
                             <li><strong>Rule Execution:</strong> Dynamic rule processing with parameter passing</li>
                             <li><strong>Static Values:</strong> Direct return of configured static values</li>
@@ -369,11 +369,11 @@ if (currentOrder != null)
 
                 <!-- Persistence -->
                 <section id="persistence" class="section">
-                    <h2>?? Defaults Persistence</h2>
+                    <h2>Defaults Persistence</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Persistence Management</strong>
                         </div>
                         <div class="api-content">
@@ -388,7 +388,7 @@ if (currentOrder != null)
                     </div>
 
                     <div class="tip">
-                        <strong>?? Configuration Management</strong>
+                        <strong>Configuration Management</strong>
                         <ul>
                             <li>Defaults are associated with specific data source connections</li>
                             <li>Configuration changes are automatically saved to persistent storage</li>
@@ -523,16 +523,16 @@ private static void TestDefaultResolution(IDMEEditor dmeEditor, string dataSourc
 
                 <!-- Rule Integration -->
                 <section id="rule-integration" class="section">
-                    <h2>?? Rule Engine Integration</h2>
+                    <h2>Rule Engine Integration</h2>
                     
                     <div class="warning">
-                        <strong>?? Rule Engine Status</strong>
+                        <strong>Rule Engine Status</strong>
                         <p>The rule engine integration is currently under development. Rule-based defaults will use static values as fallbacks until rule processing is fully implemented.</p>
                     </div>
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Planned Rule Features</strong>
                         </div>
                         <div class="api-content">
@@ -613,7 +613,7 @@ foreach (var ruleDefault in futureRuleDefaults)
 
                 <!-- Examples -->
                 <section id="examples" class="section">
-                    <h2>?? Usage Examples</h2>
+                    <h2>Usage Examples</h2>
                     
                     <div class="code-example">
                         <h3>Complete Defaults Management Workflow</h3>
@@ -882,10 +882,10 @@ foreach (var ruleDefault in futureRuleDefaults)
 
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
-                    <h2>? Best Practices</h2>
+                    <h2>Best Practices</h2>
                     
                     <div class="tip">
-                        <strong>?? Configuration Strategy</strong>
+                        <strong>Configuration Strategy</strong>
                         <ul>
                             <li>Group related defaults by data source for better organization</li>
                             <li>Use consistent naming conventions for field names across systems</li>
@@ -895,7 +895,7 @@ foreach (var ruleDefault in futureRuleDefaults)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Error Handling</strong>
+                        <strong>Error Handling</strong>
                         <ul>
                             <li>Always check for null returns from GetDefaults methods</li>
                             <li>Implement fallback values for critical fields when rules fail</li>
@@ -905,7 +905,7 @@ foreach (var ruleDefault in futureRuleDefaults)
                     </div>
 
                     <div class="success">
-                        <strong>?? Performance Optimization</strong>
+                        <strong>Performance Optimization</strong>
                         <ul>
                             <li>Cache frequently used defaults to avoid repeated lookups</li>
                             <li>Use static defaults over rules when values don't change</li>
@@ -950,3 +950,4 @@ foreach (var ruleDefault in futureRuleDefaults)
     </script>
 </body>
 </html>
+

@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Folder Guides - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <aside class="sidebar" id="sidebar">
+        </aside>
+
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>></span>
+                    <span>Technical Folder Guides</span>
+                </nav>
+
+                <div class="page-header">
+                    <h1>Technical Folder Guides</h1>
+                    <p class="page-subtitle">Index of hand-written module docs for DataManagementEngineStandard internals.</p>
+                </div>
+
+                <section class="section">
+                    <h2>Purpose</h2>
+                    <p>
+                        This page maps the updated folder-level technical documentation created for
+                        <code>DataManagementEngineStandard</code>. Use it when you need implementation-level
+                        behavior and extension guidance beyond API summaries.
+                    </p>
+                    <div class="note">
+                        <strong>Refresh Scope</strong>
+                        <p>These guides were revised to replace generated README scaffolds with module-specific technical content.</p>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2>Core Module Guides</h2>
+                    <ul>
+                        <li><a href="../README.md">DataManagementEngineStandard/README.md</a></li>
+                        <li><a href="../FOLDER_REFERENCE.md">DataManagementEngineStandard/FOLDER_REFERENCE.md</a></li>
+                        <li><a href="../ConfigUtil/README.md">ConfigUtil/README.md</a></li>
+                        <li><a href="../ConfigUtil/Managers/README.md">ConfigUtil/Managers/README.md</a></li>
+                        <li><a href="../Editor/README.md">Editor/README.md</a></li>
+                        <li><a href="../Helpers/README.md">Helpers/README.md</a></li>
+                        <li><a href="../WebAPI/README.md">WebAPI/README.md</a></li>
+                        <li><a href="../WebAPI/Helpers/README.md">WebAPI/Helpers/README.md</a></li>
+                    </ul>
+                </section>
+
+                <section class="section">
+                    <h2>Editor Deep-Dive Guides</h2>
+                    <ul>
+                        <li><a href="../Editor/Defaults/README.md">Editor/Defaults/README.md</a></li>
+                        <li><a href="../Editor/Defaults/Interfaces/README.md">Editor/Defaults/Interfaces/README.md</a></li>
+                        <li><a href="../Editor/Defaults/Resolvers/README.md">Editor/Defaults/Resolvers/README.md</a></li>
+                        <li><a href="../Editor/Defaults/Helpers/README.md">Editor/Defaults/Helpers/README.md</a></li>
+                        <li><a href="../Editor/Importing/README.md">Editor/Importing/README.md</a></li>
+                        <li><a href="../Editor/Importing/Interfaces/README.md">Editor/Importing/Interfaces/README.md</a></li>
+                        <li><a href="../Editor/Importing/Helpers/README.md">Editor/Importing/Helpers/README.md</a></li>
+                        <li><a href="../Editor/UOW/README.md">Editor/UOW/README.md</a></li>
+                        <li><a href="../Editor/UOW/Interfaces/README.md">Editor/UOW/Interfaces/README.md</a></li>
+                        <li><a href="../Editor/UOW/Helpers/README.md">Editor/UOW/Helpers/README.md</a></li>
+                        <li><a href="../Editor/Mapping/README.md">Editor/Mapping/README.md</a></li>
+                        <li><a href="../Editor/Mapping/Core/README.md">Editor/Mapping/Core/README.md</a></li>
+                        <li><a href="../Editor/Mapping/Configuration/README.md">Editor/Mapping/Configuration/README.md</a></li>
+                        <li><a href="../Editor/Mapping/Helpers/README.md">Editor/Mapping/Helpers/README.md</a></li>
+                        <li><a href="../Editor/Forms/Interfaces/README.md">Editor/Forms/Interfaces/README.md</a></li>
+                        <li><a href="../Editor/Forms/Helpers/README.md">Editor/Forms/Helpers/README.md</a></li>
+                        <li><a href="../Editor/Forms/Configuration/README.md">Editor/Forms/Configuration/README.md</a></li>
+                        <li><a href="../Editor/Forms/Models/README.md">Editor/Forms/Models/README.md</a></li>
+                        <li><a href="../Editor/BeepSync/Interfaces/README.md">Editor/BeepSync/Interfaces/README.md</a></li>
+                        <li><a href="../Editor/BeepSync/Helpers/README.md">Editor/BeepSync/Helpers/README.md</a></li>
+                    </ul>
+                </section>
+
+                <section class="section">
+                    <h2>Helper and Provider Guides</h2>
+                    <ul>
+                        <li><a href="../Helpers/RDBMSHelpers/README.md">Helpers/RDBMSHelpers/README.md</a></li>
+                        <li><a href="../Helpers/DataTypesHelpers/DatabaseTypeMappingRepositories/README.md">Helpers/DataTypesHelpers/DatabaseTypeMappingRepositories/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/Core/README.md">Helpers/UniversalDataSourceHelpers/Core/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/RdbmsHelpers/README.md">Helpers/UniversalDataSourceHelpers/RdbmsHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/MongoDBHelpers/README.md">Helpers/UniversalDataSourceHelpers/MongoDBHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/RestApiHelpers/README.md">Helpers/UniversalDataSourceHelpers/RestApiHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/VectorHelpers/README.md">Helpers/UniversalDataSourceHelpers/VectorHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/GraphHelpers/README.md">Helpers/UniversalDataSourceHelpers/GraphHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/SearchHelpers/README.md">Helpers/UniversalDataSourceHelpers/SearchHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/StreamingHelpers/README.md">Helpers/UniversalDataSourceHelpers/StreamingHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/TimeSeriesHelpers/README.md">Helpers/UniversalDataSourceHelpers/TimeSeriesHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/RedisHelpers/README.md">Helpers/UniversalDataSourceHelpers/RedisHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/CassandraHelpers/README.md">Helpers/UniversalDataSourceHelpers/CassandraHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/FileHelpers/README.md">Helpers/UniversalDataSourceHelpers/FileHelpers/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/Analysis/README.md">Helpers/UniversalDataSourceHelpers/Analysis/README.md</a></li>
+                        <li><a href="../Helpers/UniversalDataSourceHelpers/Mapping/README.md">Helpers/UniversalDataSourceHelpers/Mapping/README.md</a></li>
+                    </ul>
+                </section>
+
+                <section class="section">
+                    <h2>Caching and JSON Guides</h2>
+                    <ul>
+                        <li><a href="../Caching/DataSources/README.md">Caching/DataSources/README.md</a></li>
+                        <li><a href="../Caching/Providers/README.md">Caching/Providers/README.md</a></li>
+                        <li><a href="../Caching/Examples/README.md">Caching/Examples/README.md</a></li>
+                        <li><a href="../Json/README.md">Json/README.md</a></li>
+                        <li><a href="../Json/Helpers/README.md">Json/Helpers/README.md</a></li>
+                        <li><a href="../Tools/README.md">Tools/README.md</a></li>
+                        <li><a href="../Tools/Helpers/README.md">Tools/Helpers/README.md</a></li>
+                    </ul>
+                </section>
+
+                <div class="nav-links">
+                    <a href="advanced-tools-utilities.html"><i class="bi bi-arrow-left"></i> Advanced Tools & Utilities</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        console.log('Technical Folder Guides documentation page loaded');
+    </script>
+</body>
+</html>
+
+

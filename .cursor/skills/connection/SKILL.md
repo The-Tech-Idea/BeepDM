@@ -1,4 +1,4 @@
----
+﻿---
 name: connection
 description: Expert guidance for managing datasource connections in BeepDM, including connection properties, driver linking, connection string processing, validation, and security. Use when working with ConnectionProperties, ConnectionHelper, driver configurations, or connection string management.
 ---
@@ -284,13 +284,13 @@ if (driver != null)
 ## Best Practices
 
 ### 1. Always Use Dynamic Driver Resolution
-**❌ Wrong**: Hardcoding driver names/versions
+**âŒ Wrong**: Hardcoding driver names/versions
 ```csharp
 props.DriverName = "Microsoft.Data.SqlClient";
 props.DriverVersion = "5.1.0";
 ```
 
-**✅ Correct**: Use `GetBestMatchingDriver`
+**âœ… Correct**: Use `GetBestMatchingDriver`
 ```csharp
 var driver = ConnectionHelper.GetBestMatchingDriver(props, editor.ConfigEditor);
 if (driver != null)
@@ -461,3 +461,11 @@ public static IErrorsInfo ValidateAndCreateConnection(
 - `ConnectionStringProcessingHelper.cs` - String processing
 - `ConnectionStringValidationHelper.cs` - Validation logic
 - `ConnectionStringSecurityHelper.cs` - Security utilities
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Connections/README.md
+- DataManagementEngineStandard/ConfigUtil/README.md
+- DataManagementEngineStandard/Docs/configeditor.html
+

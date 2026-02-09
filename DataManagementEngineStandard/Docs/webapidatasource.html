@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34,15 +34,15 @@
                 <!-- Breadcrumb -->
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <a href="data-management-examples.html">Data Management</a>
-                    <span>→</span>
+                    <span>â†’</span>
                     <span>WebAPIDataSource</span>
                 </nav>
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>🌐 WebAPIDataSource</h1>
+                    <h1>ðŸŒ WebAPIDataSource</h1>
                     <p class="page-subtitle">Complete REST API integration with authentication, caching, and circuit breaker patterns</p>
                 </div>
 
@@ -62,7 +62,7 @@
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>📚 Table of Contents</h3>
+                    <h3>ðŸ“š Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#architecture">Architecture</a></li>
@@ -87,32 +87,32 @@
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>🔄 Database-like Operations</h3>
+                            <h3>ðŸ”„ Database-like Operations</h3>
                             <p>Use familiar CRUD operations (Create, Read, Update, Delete) with any REST API</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>🔐 Multiple Authentication</h3>
+                            <h3>ðŸ” Multiple Authentication</h3>
                             <p>OAuth2, Bearer tokens, API keys, Basic authentication, and custom providers</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>⚡ Circuit Breaker Pattern</h3>
+                            <h3>âš¡ Circuit Breaker Pattern</h3>
                             <p>Automatic failure recovery and resilience for production environments</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>💾 Intelligent Caching</h3>
+                            <h3>ðŸ’¾ Intelligent Caching</h3>
                             <p>Response caching with TTL and invalidation for improved performance</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>🚦 Rate Limiting</h3>
+                            <h3>ðŸš¦ Rate Limiting</h3>
                             <p>Built-in throttling and request queuing to respect API limits</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>🔍 Schema Inference</h3>
+                            <h3>ðŸ” Schema Inference</h3>
                             <p>Automatic API schema discovery from JSON responses</p>
                         </div>
                     </div>
@@ -784,7 +784,7 @@ public class CustomAuthHelper : WebAPIAuthenticationHelper
                     <h2>Best Practices</h2>
 
                     <div class="warning">
-                        <h3>⚠️ Security Considerations</h3>
+                        <h3>âš ï¸ Security Considerations</h3>
                         <ul>
                             <li>Never store API keys or secrets in plain text configuration files</li>
                             <li>Use environment variables or secure credential stores</li>
@@ -794,7 +794,7 @@ public class CustomAuthHelper : WebAPIAuthenticationHelper
                     </div>
 
                     <div class="success">
-                        <h3>✅ Performance Optimization</h3>
+                        <h3>âœ… Performance Optimization</h3>
                         <ul>
                             <li>Enable caching for frequently accessed data</li>
                             <li>Use pagination for large datasets</li>
@@ -876,11 +876,11 @@ public static class WebAPITroubleshooter
         // Validate configuration
         if (connection.ValidateConfiguration())
         {
-            Console.WriteLine("✓ Configuration validation passed");
+            Console.WriteLine("âœ“ Configuration validation passed");
         }
         else
         {
-            Console.WriteLine($"✗ Configuration errors: {connection.GetValidationErrors()}");
+            Console.WriteLine($"âœ— Configuration errors: {connection.GetValidationErrors()}");
         }
         
         // Check authentication setup
@@ -900,27 +900,27 @@ public static class WebAPITroubleshooter
         switch (connection.AuthType)
         {
             case AuthTypeEnum.None:
-                Console.WriteLine("✓ No authentication required");
+                Console.WriteLine("âœ“ No authentication required");
                 break;
                 
             case AuthTypeEnum.ApiKey:
-                Console.WriteLine($"API Key: {(!string.IsNullOrEmpty(connection.ApiKey) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"API Key: {(!string.IsNullOrEmpty(connection.ApiKey) ? "Set" : "âœ— Not Set")}");
                 Console.WriteLine($"API Key Header: {connection.ApiKeyHeader}");
                 break;
                 
             case AuthTypeEnum.Basic:
-                Console.WriteLine($"Username: {(!string.IsNullOrEmpty(connection.UserID) ? "Set" : "✗ Not Set")}");
-                Console.WriteLine($"Password: {(!string.IsNullOrEmpty(connection.Password) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"Username: {(!string.IsNullOrEmpty(connection.UserID) ? "Set" : "âœ— Not Set")}");
+                Console.WriteLine($"Password: {(!string.IsNullOrEmpty(connection.Password) ? "Set" : "âœ— Not Set")}");
                 break;
                 
             case AuthTypeEnum.Bearer:
-                Console.WriteLine($"Bearer Token: {(!string.IsNullOrEmpty(connection.ApiKey) ? "Set" : "✗ Not Set")}");
+                Console.WriteLine($"Bearer Token: {(!string.IsNullOrEmpty(connection.ApiKey) ? "Set" : "âœ— Not Set")}");
                 break;
                 
             case AuthTypeEnum.OAuth2:
-                Console.WriteLine($"Client ID: {(!string.IsNullOrEmpty(connection.ClientId) ? "Set" : "✗ Not Set")}");
-                Console.WriteLine($"Client Secret: {(!string.IsNullOrEmpty(connection.ClientSecret) ? "Set" : "✗ Not Set")}");
-                Console.WriteLine($"Token URL: {connection.TokenUrl ?? "✗ Not Set"}");
+                Console.WriteLine($"Client ID: {(!string.IsNullOrEmpty(connection.ClientId) ? "Set" : "âœ— Not Set")}");
+                Console.WriteLine($"Client Secret: {(!string.IsNullOrEmpty(connection.ClientSecret) ? "Set" : "âœ— Not Set")}");
+                Console.WriteLine($"Token URL: {connection.TokenUrl ?? "âœ— Not Set"}");
                 Console.WriteLine($"Grant Type: {connection.GrantType}");
                 Console.WriteLine($"Scope: {connection.Scope ?? "Not Set"}");
                 break;
@@ -1122,3 +1122,5 @@ webApiDS.DeleteEntity("Users", userToDelete);
 </body>
 </html></content>
 <parameter name="filePath">C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Docs\webapidatasource.html
+
+

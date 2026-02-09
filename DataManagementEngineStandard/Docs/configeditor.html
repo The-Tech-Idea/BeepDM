@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,13 +42,13 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>?? ConfigEditor</h1>
+                    <h1>ConfigEditor</h1>
                     <p class="page-subtitle">Centralized configuration management system for all Beep Data Management Engine components</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>?? Table of Contents</h3>
+                    <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#architecture">Specialized Manager Architecture</a></li>
@@ -65,7 +65,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>??? Overview</h2>
+                    <h2>Overview</h2>
                     <p>
                         The <code>ConfigEditor</code> class is the centralized configuration management system for the 
                         Beep Data Management Engine. It provides a unified interface for managing data connections, 
@@ -75,28 +75,28 @@
                     </p>
                     
                     <div class="success">
-                        <strong>?? Core Purpose</strong>
+                        <strong>Core Purpose</strong>
                         <p>ConfigEditor serves as the single source of truth for all configuration data, ensuring consistency and providing a structured approach to configuration management across the entire engine.</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>?? Connection Management</h3>
+                            <h3>Connection Management</h3>
                             <p>Comprehensive data source connection configuration and management</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Component Configuration</h3>
+                            <h3>Component Configuration</h3>
                             <p>Driver configurations, assembly definitions, and plugin management</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>??? Entity & Mapping</h3>
+                            <h3>Entity & Mapping</h3>
                             <p>Entity structure definitions and field mapping configurations</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Query Repository</h3>
+                            <h3>Query Repository</h3>
                             <p>Saved queries, SQL repositories, and database-specific query management</p>
                         </div>
                     </div>
@@ -104,7 +104,7 @@
 
                 <!-- Architecture -->
                 <section id="architecture" class="section">
-                    <h2>??? Specialized Manager Architecture</h2>
+                    <h2>Specialized Manager Architecture</h2>
                     <p>ConfigEditor uses a modular architecture with specialized managers that handle specific aspects of configuration:</p>
                     
                     <div class="api-section">
@@ -143,6 +143,11 @@
                                         <td>Component and driver configurations</td>
                                         <td>Driver configs, assembly definitions, workflows</td>
                                     </tr>
+                                    <tr>
+                                        <td>MigrationHistoryManager</td>
+                                        <td>Migration history tracking</td>
+                                        <td>Load/save migration history, append migration records</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -158,6 +163,7 @@
     private readonly QueryManager _queryManager;
     private readonly EntityMappingManager _entityManager;
     private readonly ComponentConfigManager _componentManager;
+    private readonly MigrationHistoryManager _migrationHistoryManager;
 
     // Core properties
     public BeepConfigType ConfigType { get; set; }
@@ -175,7 +181,7 @@
 
                 <!-- Initialization -->
                 <section id="initialization" class="section">
-                    <h2>?? Initialization & Setup</h2>
+                    <h2>Initialization & Setup</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
@@ -236,7 +242,7 @@ var dataConfigEditor = new ConfigEditor(
                     </div>
 
                     <div class="tip">
-                        <strong>?? Initialization Features</strong>
+                        <strong>Initialization Features</strong>
                         <ul>
                             <li><strong>Automatic Directory Creation:</strong> Creates all necessary folders based on configuration type</li>
                             <li><strong>Platform-Aware Paths:</strong> Uses appropriate system directories if no path specified</li>
@@ -248,7 +254,7 @@ var dataConfigEditor = new ConfigEditor(
 
                 <!-- Data Connections -->
                 <section id="data-connections" class="section">
-                    <h2>?? Data Connection Management</h2>
+                    <h2>Data Connection Management</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
@@ -349,7 +355,7 @@ if (configEditor.RemoveDataConnection("ProductionDB"))
 
                 <!-- Component Configuration -->
                 <section id="component-configuration" class="section">
-                    <h2>?? Component Configuration</h2>
+                    <h2>Component Configuration</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
@@ -455,7 +461,7 @@ configEditor.WorkFlowActions.Add(workflowAction);</code></pre>
 
                 <!-- Entity Mapping -->
                 <section id="entity-mapping" class="section">
-                    <h2>??? Entity & Mapping Management</h2>
+                    <h2>Entity & Mapping Management</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
@@ -603,7 +609,7 @@ Console.WriteLine($"? Loaded mapping with {loadedMapping.FieldMapping.Count} fie
 
                 <!-- Query Management -->
                 <section id="query-management" class="section">
-                    <h2>?? Query Management</h2>
+                    <h2>Query Management</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
@@ -715,7 +721,7 @@ Console.WriteLine($"Custom SQL: {customSql}");</code></pre>
 
                 <!-- Configuration Persistence -->
                 <section id="configuration-persistence" class="section">
-                    <h2>?? Configuration Persistence</h2>
+                    <h2>Configuration Persistence</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
@@ -751,11 +757,12 @@ Console.WriteLine($"Custom SQL: {customSql}");</code></pre>
                         <ul>
                             <li><strong>Config.json:</strong> Main application configuration</li>
                             <li><strong>DataConnections.json:</strong> All data source connections</li>
-                            <li><strong>ConnectionDriversConfig.json:</strong> Driver configurations</li>
-                            <li><strong>QuerySqlRepo.json:</strong> Saved query repository</li>
+                            <li><strong>ConnectionConfig.json:</strong> Driver configurations</li>
+                            <li><strong>QueryList.json:</strong> Saved query repository</li>
                             <li><strong>CategoryFolders.json:</strong> Folder organization</li>
-                            <li><strong>WorkFlows.json:</strong> Workflow definitions</li>
-                            <li><strong>Reports.json:</strong> Report configurations</li>
+                            <li><strong>WorkFlow/DataWorkFlow.json:</strong> Workflow definitions</li>
+                            <li><strong>Reportslist.json:</strong> Report list configuration</li>
+                            <li><strong>reportsDefinition.json:</strong> Report template definitions</li>
                         </ul>
                     </div>
 
@@ -791,14 +798,14 @@ public static class ConfigurationManager
             // Backup driver configurations
             configEditor.SaveConnectionDriversConfigValues();
             File.Copy(
-                Path.Combine(configEditor.ConfigPath, "ConnectionDriversConfig.json"),
+                Path.Combine(configEditor.ConfigPath, "ConnectionConfig.json"),
                 Path.Combine(backupPath, $"Drivers_{DateTime.Now:yyyyMMdd_HHmmss}.json")
             );
 
             // Backup query repository
             configEditor.SaveQueryFile();
             File.Copy(
-                Path.Combine(configEditor.ConfigPath, "QuerySqlRepo.json"),
+                Path.Combine(configEditor.ConfigPath, "QueryList.json"),
                 Path.Combine(backupPath, $"Queries_{DateTime.Now:yyyyMMdd_HHmmss}.json")
             );
 
@@ -820,11 +827,21 @@ public static class ConfigurationManager
             foreach (var file in configFiles)
             {
                 var fileName = Path.GetFileName(file);
-                var targetFile = fileName.Split('_')[0] + ".json";
-                var targetPath = Path.Combine(configEditor.ConfigPath, targetFile);
-                
+                string targetPath = null;
+                if (fileName.StartsWith("Config_", StringComparison.OrdinalIgnoreCase))
+                    targetPath = Path.Combine(configEditor.ConfigPath, "Config.json");
+                else if (fileName.StartsWith("DataConnections_", StringComparison.OrdinalIgnoreCase))
+                    targetPath = Path.Combine(configEditor.ConfigPath, "DataConnections.json");
+                else if (fileName.StartsWith("Drivers_", StringComparison.OrdinalIgnoreCase))
+                    targetPath = Path.Combine(configEditor.ConfigPath, "ConnectionConfig.json");
+                else if (fileName.StartsWith("Queries_", StringComparison.OrdinalIgnoreCase))
+                    targetPath = Path.Combine(configEditor.ConfigPath, "QueryList.json");
+
+                if (targetPath == null)
+                    continue;
+
                 File.Copy(file, targetPath, overwrite: true);
-                Console.WriteLine($"? Restored: {targetFile}");
+                Console.WriteLine($"? Restored: {Path.GetFileName(targetPath)}");
             }
 
             // Reload configurations
@@ -846,7 +863,7 @@ public static class ConfigurationManager
 
                 <!-- Examples -->
                 <section id="examples" class="section">
-                    <h2>?? Usage Examples</h2>
+                    <h2>Usage Examples</h2>
                     
                     <div class="code-example">
                         <h3>Complete Configuration Workflow</h3>
@@ -1030,10 +1047,10 @@ public static class DataApplicationConfigManager
 
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
-                    <h2>?? Best Practices</h2>
+                    <h2>Best Practices</h2>
                     
                     <div class="tip">
-                        <strong>?? Configuration Management</strong>
+                        <strong>Configuration Management</strong>
                         <ul>
                             <li><strong>Use GUIDs for Connections:</strong> Always assign unique GUIDs to connections for safe updates</li>
                             <li><strong>Environment-Specific Configs:</strong> Use different container folders for dev/test/production</li>
@@ -1043,7 +1060,7 @@ public static class DataApplicationConfigManager
                     </div>
 
                     <div class="warning">
-                        <strong>?? Security Considerations</strong>
+                        <strong>Security Considerations</strong>
                         <ul>
                             <li><strong>Secure Connection Strings:</strong> Use Windows Authentication or secure credential storage</li>
                             <li><strong>File Permissions:</strong> Restrict access to configuration directories</li>
@@ -1063,7 +1080,7 @@ public static class DataApplicationConfigManager
                     </div>
 
                     <div class="note">
-                        <strong>?? Maintenance Guidelines</strong>
+                        <strong>Maintenance Guidelines</strong>
                         <ul>
                             <li><strong>Regular Cleanup:</strong> Remove unused connections and obsolete configurations</li>
                             <li><strong>Schema Evolution:</strong> Plan for configuration schema changes and migrations</li>
@@ -1108,3 +1125,5 @@ public static class DataApplicationConfigManager
     </script>
 </body>
 </html>
+
+

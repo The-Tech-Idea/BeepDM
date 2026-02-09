@@ -1,53 +1,48 @@
-# Editor Layer
+# Editor
 
-The Editor layer provides high-level orchestration and management services for data operations within the BeepDM framework. It acts as a coordination layer between data sources, managing complex workflows like ETL operations, data synchronization, mapping, and unit of work patterns.
+High-level orchestration layer for data operations in BeepDM.
 
-## Core Components
+## What This Layer Owns
+- Datasource lifecycle orchestration (`DMEEditor`).
+- ETL, importing, mapping, defaults, and synchronization workflows.
+- Unit-of-work abstractions for stateful CRUD and commit/rollback behavior.
 
-### Data Management
-- **DMEEditor**: Central orchestrator for all data management operations
-- **DataImportManager**: Handles data import workflows and validation
-- **DataSyncManager**: Manages data synchronization between sources
-- **MappingManager**: Handles field mapping and data transformation definitions
+## Main Modules
+- `DM/`
+  - `DMEEditor` core orchestration, datasource resolution, logging/events.
 
-### Unit of Work Pattern
-- **UnitofWork**: Basic unit of work implementation for transaction-like operations
-- **UnitOfWorkFactory**: Factory for creating unit of work instances
-- **UnitofWorksManager**: Manages multiple unit of work instances
-- **UnitOfWorkWrapper**: Provides additional abstraction over unit of work
-- **MultiDataSourceUnitOfWork**: Coordinates operations across multiple data sources
+- `Defaults/`
+  - Default value resolution engine with pluggable resolvers and validation.
 
-### ETL and Processing
-- **ETLEditor**: ETL pipeline configuration and execution management
-- **BatchExtensions**: Utility extensions for batch processing operations
-- **EntityDataMoveValidator**: Validates data movement operations
-- **DefaultsManager**: Manages default values and field population
+- `ETL/`
+  - Script generation, structure copy, and ETL operation flow.
 
-## Key Features
+- `Importing/`
+  - `DataImportManager` with helper-based pipeline (validation, transform, batch, progress).
 
-### Transaction Management
-- Unit of work pattern implementation
-- Multi-data source transaction coordination
-- Rollback and commit capabilities
+- `Mapping/`
+  - Entity/field mapping creation and object-to-object transformation tools.
 
-### Data Processing
-- ETL pipeline management
-- Batch processing utilities
-- Data validation and transformation
-- Field mapping and defaults
+- `UOW/`
+  - `UnitofWork<T>` and wrappers for change tracking and commit workflows.
 
-### Synchronization
-- Change tracking
-- Conflict resolution
-- Multi-directional sync
+- `BeepSync/`
+  - Synchronization-specific manager and helper interfaces.
 
-## Architecture
+- `Migration/`
+  - Migration-focused editor abstractions.
 
-The Editor layer follows a manager pattern where each major concern (import, sync, mapping, etc.) has a dedicated manager class. These managers coordinate with the underlying data sources through the IDataSource interface while providing higher-level abstractions for complex operations.
+## Typical Workflow
+1. Resolve source/destination datasources via `DMEEditor`.
+2. Load structures and mappings (`ConfigEditor` + `MappingManager`).
+3. Run import/ETL/sync with progress and validation.
+4. Persist metadata/history via `ConfigUtil` managers.
 
-## Usage Patterns
+## Error and Logging Pattern
+- Use `IErrorsInfo` for operation status.
+- Use `DMEEditor.AddLogMessage(...)` for structured runtime logs.
+- Prefer continuing with explicit warnings when non-critical sub-operations fail.
 
-1. **Simple Operations**: Use DMEEditor directly for basic CRUD operations
-2. **Complex Workflows**: Use specialized managers (DataImportManager, ETLEditor)
-3. **Transactional Work**: Wrap operations in UnitofWork instances
-4. **Batch Processing**: Use BatchExtensions for efficient bulk operations
+## Extension Guidance
+- Add new operations as focused managers/helpers rather than expanding `DMEEditor` monolithically.
+- Keep backward-compatible overloads when introducing enhanced configuration APIs.

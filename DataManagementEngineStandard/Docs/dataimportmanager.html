@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,13 +42,13 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>?? Data Import Manager</h1>
+                    <h1>Data Import Manager</h1>
                     <p class="page-subtitle">Advanced data import orchestration with mapping, validation, and batch processing capabilities</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>?? Table of Contents</h3>
+                    <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#core-properties">Core Properties</a></li>
@@ -64,7 +64,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>?? Overview</h2>
+                    <h2>Overview</h2>
                     <p>
                         The <code>DataImportManager</code> class provides sophisticated data import capabilities with 
                         advanced features including data mapping, transformation, validation, batch processing, and 
@@ -73,13 +73,13 @@
                     </p>
                     
                     <div class="success">
-                        <strong>?? Key Features</strong>
+                        <strong>Key Features</strong>
                         <p>DataImportManager combines high-performance batch processing with flexible data transformation and comprehensive error handling for enterprise-level data import operations.</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>?? Smart Mapping</h3>
+                            <h3>Smart Mapping</h3>
                             <p>Advanced field mapping and data transformation capabilities</p>
                         </div>
                         
@@ -89,12 +89,12 @@
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Async Operations</h3>
+                            <h3>Async Operations</h3>
                             <p>Full async/await support with pause/resume and cancellation capabilities</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Progress Monitoring</h3>
+                            <h3>Progress Monitoring</h3>
                             <p>Real-time progress reporting and detailed operation logging</p>
                         </div>
                     </div>
@@ -102,11 +102,11 @@
 
                 <!-- Core Properties -->
                 <section id="core-properties" class="section">
-                    <h2>??? Core Properties</h2>
+                    <h2>Core Properties</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Entity Configuration</strong>
                         </div>
                         <div class="api-content">
@@ -130,7 +130,7 @@
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Import Configuration</strong>
                         </div>
                         <div class="api-content">
@@ -150,7 +150,7 @@
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Core Components</strong>
                         </div>
                         <div class="api-content">
@@ -160,6 +160,10 @@
                                 </thead>
                                 <tbody>
                                     <tr><td>DMEEditor</td><td>IDMEEditor</td><td>Reference to the main data management editor</td></tr>
+                                    <tr><td>ValidationHelper</td><td>IDataImportValidationHelper</td><td>Validation helper for configuration, mapping, and datasource checks</td></tr>
+                                    <tr><td>TransformationHelper</td><td>IDataImportTransformationHelper</td><td>Transformation helper for field filtering, mapping, defaults, and custom transforms</td></tr>
+                                    <tr><td>BatchHelper</td><td>IDataImportBatchHelper</td><td>Batch helper for split/processing and optimal batch-size calculation</td></tr>
+                                    <tr><td>ProgressHelper</td><td>IDataImportProgressHelper</td><td>Progress and logging helper used across import execution</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -168,11 +172,11 @@
 
                 <!-- Configuration -->
                 <section id="configuration" class="section">
-                    <h2>?? Import Configuration</h2>
+                    <h2>Import Configuration</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Entity Structure Loading</strong>
                         </div>
                         <div class="api-content">
@@ -183,9 +187,33 @@
                         </div>
                     </div>
 
+                    <div class="api-section">
+                        <div class="api-header" onclick="toggleSection(this)">
+                            <span class="toggle-icon">▶</span>
+                            <strong>Enhanced Configuration API</strong>
+                        </div>
+                        <div class="api-content">
+                            <div class="method-signature">
+                                <code><span class="return-type">DataImportConfiguration</span> CreateImportConfiguration(<span class="parameter-type">string</span> sourceEntityName, <span class="parameter-type">string</span> sourceDataSourceName, <span class="parameter-type">string</span> destEntityName, <span class="parameter-type">string</span> destDataSourceName)</code>
+                            </div>
+                            <p>Creates a configuration object and attempts to preload destination defaults via <code>DefaultsManager</code>.</p>
+
+                            <div class="method-signature">
+                                <code><span class="return-type">IErrorsInfo</span> SetImportConfiguration(DataImportConfiguration config)</code>
+                            </div>
+                            <p>Validates and applies a prepared import configuration.</p>
+
+                            <div class="method-signature">
+                                <code><span class="return-type">DataImportConfiguration</span> GetImportConfiguration()</code>
+                            </div>
+                            <p>Returns the active configuration currently held by the manager.</p>
+                        </div>
+                    </div>
+
                     <div class="tip">
-                        <strong>?? Configuration Best Practices</strong>
+                        <strong>Configuration Best Practices</strong>
                         <ul>
+                            <li>Prefer <code>CreateImportConfiguration</code> for new imports so defaults are loaded consistently</li>
                             <li>Always load destination entity structure before starting imports</li>
                             <li>Verify data source connections are open and accessible</li>
                             <li>Configure appropriate filters to limit source data scope</li>
@@ -198,33 +226,33 @@
                         <pre><code class="language-csharp">// Initialize Data Import Manager
 var importManager = new DataImportManager(dmeEditor);
 
-// Configure source and destination
-importManager.SourceEntityName = "SourceCustomers";
-importManager.SourceDataSourceName = "ExternalSystem";
-importManager.DestEntityName = "Customers";
-importManager.DestDataSourceName = "MainDatabase";
-
-// Load destination entity structure
-var result = importManager.LoadDestEntityStructure("Customers", "MainDatabase");
-
-if (result.Flag == Errors.Ok)
-{
-    Console.WriteLine("Destination entity structure loaded successfully");
-}
+// Create an enhanced configuration (loads defaults from DefaultsManager)
+var config = importManager.CreateImportConfiguration(
+    "SourceCustomers",
+    "ExternalSystem",
+    "Customers",
+    "MainDatabase");
 
 // Configure filters (optional)
-importManager.SourceFilters.Add(new AppFilter 
-{ 
-   FieldName = "CreatedDate", 
-    Operator = ">=", 
-    FilterValue = DateTime.Today.AddDays(-30).ToString() 
+config.SourceFilters.Add(new AppFilter
+{
+    FieldName = "CreatedDate",
+    Operator = ">=",
+    FilterValue = DateTime.Today.AddDays(-30).ToString()
 });
 
 // Configure field selection (optional)
-importManager.SelectedFields = new List&lt;string&gt; 
-{ 
-    "CustomerName", "Email", "Phone", "Address" 
-};</code></pre>
+config.SelectedFields = new List&lt;string&gt;
+{
+    "CustomerName", "Email", "Phone", "Address"
+};
+
+// Apply configuration to manager
+var result = importManager.SetImportConfiguration(config);
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("Import configuration is ready");
+}</code></pre>
                     </div>
                 </section>
 
@@ -234,7 +262,7 @@ importManager.SelectedFields = new List&lt;string&gt;
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Main Import Method</strong>
                         </div>
                         <div class="api-content">
@@ -242,11 +270,16 @@ importManager.SelectedFields = new List&lt;string&gt;
                                 <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> RunImportAsync(IProgress&lt;IPassedArgs&gt; progress, CancellationToken token, Func&lt;object, object&gt; transformation = null, <span class="parameter-type">int</span> batchSize = 50)</code>
                             </div>
                             <p>Executes the complete import operation with advanced features including progress reporting, cancellation support, optional data transformation, and configurable batch processing.</p>
+
+                            <div class="method-signature">
+                                <code><span class="return-type">Task&lt;IErrorsInfo&gt;</span> RunImportAsync(DataImportConfiguration config, IProgress&lt;IPassedArgs&gt; progress, CancellationToken token)</code>
+                            </div>
+                            <p>Runs an import using a fully prepared configuration object (enhanced API path).</p>
                         </div>
                     </div>
 
                     <div class="success">
-                        <strong>?? Advanced Features</strong>
+                        <strong>Advanced Features</strong>
                         <ul>
                             <li><strong>Entity Validation:</strong> Automatic validation of entity mappings before import</li>
                             <li><strong>Destination Creation:</strong> Automatic destination entity creation if it doesn't exist</li>
@@ -314,11 +347,11 @@ catch (OperationCanceledException)
 
                 <!-- Data Transformation -->
                 <section id="data-transformation" class="section">
-                    <h2>?? Data Transformation</h2>
+                    <h2>Data Transformation</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Field Filtering and Mapping</strong>
                         </div>
                         <div class="api-content">
@@ -333,7 +366,7 @@ catch (OperationCanceledException)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Transformation Order</strong>
+                        <strong>Transformation Order</strong>
                         <p>Transformations are applied in the following order:</p>
                         <ol>
                             <li>Field filtering (SelectedFields)</li>
@@ -423,10 +456,10 @@ static bool IsValidEmail(string email)
 
                 <!-- Batch Processing -->
                 <section id="batch-processing" class="section">
-                    <h2>?? Batch Processing</h2>
+                    <h2>Batch Processing</h2>
                     
                     <div class="tip">
-                        <strong>?? Batch Processing Benefits</strong>
+                        <strong>Batch Processing Benefits</strong>
                         <ul>
                             <li><strong>Memory Management:</strong> Process large datasets without overwhelming memory</li>
                             <li><strong>Performance Optimization:</strong> Reduce database round trips</li>
@@ -437,7 +470,7 @@ static bool IsValidEmail(string email)
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Batch Configuration Guidelines</strong>
                         </div>
                         <div class="api-content">
@@ -487,11 +520,11 @@ var result = await importManager.RunImportAsync(
 
                 <!-- Progress Control -->
                 <section id="progress-control" class="section">
-                    <h2>?? Progress Control & Monitoring</h2>
+                    <h2>Progress Control & Monitoring</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Import Logging</strong>
                         </div>
                         <div class="api-content">
@@ -503,7 +536,7 @@ var result = await importManager.RunImportAsync(
                     </div>
 
                     <div class="success">
-                        <strong>?? Monitoring Features</strong>
+                        <strong>Monitoring Features</strong>
                         <ul>
                             <li><strong>Real-time Progress:</strong> Live updates on import progress</li>
                             <li><strong>Detailed Logging:</strong> Comprehensive operation logs with timestamps</li>
@@ -566,7 +599,7 @@ foreach (var log in importManager.ImportLogData.TakeLast(10))
 
                 <!-- Examples -->
                 <section id="examples" class="section">
-                    <h2>?? Usage Examples</h2>
+                    <h2>Usage Examples</h2>
                     
                     <div class="code-example">
                         <h3>Complete Import Workflow</h3>
@@ -688,10 +721,10 @@ private void LogImportErrors(List&lt;Importlogdata&gt; logs)
 
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
-                    <h2>? Best Practices</h2>
+                    <h2>Best Practices</h2>
                     
                     <div class="tip">
-                        <strong>?? Performance Optimization</strong>
+                        <strong>Performance Optimization</strong>
                         <ul>
                             <li>Choose appropriate batch sizes based on data volume and memory constraints</li>
                             <li>Use filters to limit source data and reduce processing overhead</li>
@@ -701,7 +734,7 @@ private void LogImportErrors(List&lt;Importlogdata&gt; logs)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Error Handling</strong>
+                        <strong>Error Handling</strong>
                         <ul>
                             <li>Always validate entity structures before starting imports</li>
                             <li>Implement proper cancellation token handling</li>
@@ -711,7 +744,7 @@ private void LogImportErrors(List&lt;Importlogdata&gt; logs)
                     </div>
 
                     <div class="success">
-                        <strong>?? Operational Excellence</strong>
+                        <strong>Operational Excellence</strong>
                         <ul>
                             <li>Configure comprehensive progress reporting for user feedback</li>
                             <li>Use incremental imports with filters for large datasets</li>
@@ -756,3 +789,5 @@ private void LogImportErrors(List&lt;Importlogdata&gt; logs)
     </script>
 </body>
 </html>
+
+

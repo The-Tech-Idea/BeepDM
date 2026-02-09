@@ -1,4 +1,4 @@
----
+﻿---
 name: unitofwork
 description: Expert guidance for using UnitOfWork pattern in BeepDM for CRUD operations, change tracking, transaction management, and default value integration. Use when working with UnitofWork<T>, entity operations, or implementing service layers with BeepDM.
 ---
@@ -513,25 +513,25 @@ public class CustomerService
 ## Best Practices
 
 ### 1. Always Use `using` Statement
-**✅ Correct**: Automatic disposal
+**âœ… Correct**: Automatic disposal
 ```csharp
 using var uow = new UnitofWork<Customer>(editor, "MyDatabase", "Customers", "Id");
 ```
 
-**❌ Wrong**: Manual disposal required
+**âŒ Wrong**: Manual disposal required
 ```csharp
 var uow = new UnitofWork<Customer>(editor, "MyDatabase", "Customers", "Id");
 // Must call uow.Dispose() manually
 ```
 
 ### 2. Commit After Operations
-**✅ Correct**: Commit changes
+**âœ… Correct**: Commit changes
 ```csharp
 uow.Add(customer);
 var result = await uow.Commit();
 ```
 
-**❌ Wrong**: Changes not persisted
+**âŒ Wrong**: Changes not persisted
 ```csharp
 uow.Add(customer);
 // Changes are tracked but not persisted until Commit()
@@ -548,13 +548,13 @@ if (result.Flag != Errors.Ok)
 ```
 
 ### 4. Use Async Methods
-**✅ Preferred**: Async operations
+**âœ… Preferred**: Async operations
 ```csharp
 var customers = await uow.Get();
 var result = await uow.Commit();
 ```
 
-**⚠️ Acceptable**: Synchronous wrappers (for backward compatibility)
+**âš ï¸ Acceptable**: Synchronous wrappers (for backward compatibility)
 ```csharp
 var customers = uow.Get().GetAwaiter().GetResult();
 ```
@@ -666,3 +666,11 @@ public async Task<IErrorsInfo> UpdateCustomerStatusAsync(int id, string newStatu
 - `UnitofWork.Core.Utilities.cs` - Utility methods
 - `UnitOfWorkFactory.cs` - Factory for dynamic type creation
 - `Examples/UnitofWorkExamples.cs` - Usage examples
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/UOW/README.md
+- DataManagementEngineStandard/Editor/UOW/Helpers/README.md
+- DataManagementEngineStandard/Docs/unitofwork.html
+

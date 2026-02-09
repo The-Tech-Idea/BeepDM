@@ -1,4 +1,4 @@
----
+﻿---
 name: inmemorydb
 description: Guide for implementing IInMemoryDB interface for in-memory database operations in BeepDM. Use when creating in-memory datasource implementations, understanding in-memory patterns, or working with temporary databases.
 ---
@@ -631,3 +631,11 @@ protected virtual void Dispose(bool disposing)
 ## Example Implementation
 
 See `InMemoryRDBSource.cs` in `BeepDataSources/DataSourcesPlugins/RDBMSDataSource/` for a complete implementation example.
+
+
+## Repo Documentation Anchors
+
+- DataManagementModelsStandard/DataBase/IInMemoryDB.cs
+- DataManagementEngineStandard/InMemory/README.md
+- DataManagementEngineStandard/Editor/ETL/README.md
+

@@ -1,4 +1,4 @@
----
+﻿---
 name: importing
 description: Expert guidance for data import operations using DataImportManager. Use when importing data from external sources, transforming data during import, batch processing large datasets, or implementing data migration workflows.
 ---
@@ -23,11 +23,11 @@ Expert guidance for data import operations using DataImportManager, a helper-bas
 
 ```
 DataImportManager (Main Class)
-├── IDataImportValidationHelper - Validation operations
-├── IDataImportTransformationHelper - Data transformation
-├── IDataImportBatchHelper - Batch processing
-├── IDataImportProgressHelper - Progress & logging
-└── Integration with DefaultsManager
+â”œâ”€â”€ IDataImportValidationHelper - Validation operations
+â”œâ”€â”€ IDataImportTransformationHelper - Data transformation
+â”œâ”€â”€ IDataImportBatchHelper - Batch processing
+â”œâ”€â”€ IDataImportProgressHelper - Progress & logging
+â””â”€â”€ Integration with DefaultsManager
 ```
 
 ## Basic Usage
@@ -489,3 +489,11 @@ if (result.Flag != Errors.Ok)
 - `Helpers/DataImportTransformationHelper.cs` - Transformation
 - `Helpers/DataImportBatchHelper.cs` - Batch processing
 - `Helpers/DataImportProgressHelper.cs` - Progress monitoring
+
+
+## Repo Documentation Anchors
+
+- DataManagementEngineStandard/Editor/Importing/README.md
+- DataManagementEngineStandard/Editor/Importing/Helpers/README.md
+- DataManagementEngineStandard/Docs/dataimportmanager.html
+

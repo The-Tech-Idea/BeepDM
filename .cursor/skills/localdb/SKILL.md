@@ -1,4 +1,4 @@
----
+﻿---
 name: localdb
 description: Guide for implementing ILocalDB interface for local file-based database operations in BeepDM. Use when creating local database implementations, understanding file-based database patterns, or working with SQLite-like databases.
 ---
@@ -577,3 +577,11 @@ if (CopyDB(databaseName, newDirectory))
 ## Example Implementation
 
 See `SQLiteDataSource.cs` in `BeepDataSources/DataSourcesPluginsCore/SqliteDatasourceCore/` for a complete implementation example.
+
+
+## Repo Documentation Anchors
+
+- DataManagementModelsStandard/DataBase/ILocalDB.cs
+- DataManagementEngineStandard/DataBase/README.md
+- DataManagementEngineStandard/Docs/creating-custom-datasources.html
+

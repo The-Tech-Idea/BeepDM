@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,13 +42,13 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>??? DMEEditor</h1>
+                    <h1>DMEEditor</h1>
                     <p class="page-subtitle">The core Data Management Enterprise Editor that orchestrates all data operations</p>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>?? Table of Contents</h3>
+                    <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#core-properties">Core Properties</a></li>
@@ -63,7 +63,7 @@
 
                 <!-- Overview -->
                 <section id="overview" class="section">
-                    <h2>?? Overview</h2>
+                    <h2>Overview</h2>
                     <p>
                         The <code>DMEEditor</code> class is the central orchestrator of the Beep Data Management Engine. 
                         It serves as the main entry point for all data operations, providing a unified interface to 
@@ -72,28 +72,28 @@
                     </p>
                     
                     <div class="success">
-                        <strong>?? Core Purpose</strong>
+                        <strong>Core Purpose</strong>
                         <p>DMEEditor encapsulates all functionality of data management into a single, powerful interface that can handle enterprise-level scenarios with ease.</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>?? Data Source Management</h3>
+                            <h3>Data Source Management</h3>
                             <p>Create, manage, and coordinate multiple data sources simultaneously</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? ETL Operations</h3>
+                            <h3>ETL Operations</h3>
                             <p>Extract, Transform, and Load data between different systems</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Logging & Monitoring</h3>
+                            <h3>Logging & Monitoring</h3>
                             <p>Comprehensive logging and error tracking across all operations</p>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>?? Configuration</h3>
+                            <h3>Configuration</h3>
                             <p>Centralized configuration management for all components</p>
                         </div>
                     </div>
@@ -101,11 +101,11 @@
 
                 <!-- Core Properties -->
                 <section id="core-properties" class="section">
-                    <h2>??? Core Properties</h2>
+                    <h2>Core Properties</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Essential Components</strong>
                         </div>
                         <div class="api-content">
@@ -129,7 +129,7 @@
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Container & Multi-Tenancy</strong>
                         </div>
                         <div class="api-content">
@@ -149,11 +149,11 @@
 
                 <!-- Data Source Management -->
                 <section id="data-source-management" class="section">
-                    <h2>??? Data Source Management</h2>
+                    <h2>Data Source Management</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Core Data Source Methods</strong>
                         </div>
                         <div class="api-content">
@@ -181,7 +181,7 @@
 
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Data Source Creation</strong>
                         </div>
                         <div class="api-content">
@@ -229,11 +229,11 @@ if (dmeEditor.CheckDataSourceExist("CustomerDatabase"))
 
                 <!-- Logging and Error Handling -->
                 <section id="logging-and-errors" class="section">
-                    <h2>?? Logging and Error Handling</h2>
+                    <h2>Logging and Error Handling</h2>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Logging Methods</strong>
                         </div>
                         <div class="api-content">
@@ -255,7 +255,7 @@ if (dmeEditor.CheckDataSourceExist("CustomerDatabase"))
                     </div>
 
                     <div class="warning">
-                        <strong>?? Error Handling Best Practice</strong>
+                        <strong>Error Handling Best Practice</strong>
                         <p>Always check the <code>ErrorObject.Flag</code> property after operations to ensure proper error handling and logging.</p>
                     </div>
 
@@ -282,13 +282,13 @@ catch (Exception ex)
 
                 <!-- ETL Operations -->
                 <section id="etl-operations" class="section">
-                    <h2>?? ETL Operations</h2>
+                    <h2>ETL Operations</h2>
                     
                     <p>DMEEditor provides direct access to ETL operations through its <code>ETL</code> property:</p>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>ETL Access Methods</strong>
                         </div>
                         <div class="api-content">
@@ -327,13 +327,13 @@ var result = await dmeEditor.ETL.RunCreateScript(progress, cancellationToken);</
 
                 <!-- Configuration -->
                 <section id="configuration" class="section">
-                    <h2>?? Configuration Management</h2>
+                    <h2>Configuration Management</h2>
                     
                     <p>DMEEditor provides centralized configuration management through the <code>ConfigEditor</code> property:</p>
                     
                     <div class="api-section">
                         <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">�</span>
+                            <span class="toggle-icon">▶</span>
                             <strong>Configuration Properties</strong>
                         </div>
                         <div class="api-content">
@@ -354,7 +354,7 @@ var result = await dmeEditor.ETL.RunCreateScript(progress, cancellationToken);</
 
                 <!-- Examples -->
                 <section id="examples" class="section">
-                    <h2>?? Usage Examples</h2>
+                    <h2>Usage Examples</h2>
                     
                     <div class="code-example">
                         <h3>Complete DMEEditor Workflow</h3>
@@ -433,10 +433,10 @@ if (dmeEditor.ErrorObject.Flag == Errors.Ok)
 
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
-                    <h2>? Best Practices</h2>
+                    <h2>Best Practices</h2>
                     
                     <div class="tip">
-                        <strong>?? Resource Management</strong>
+                        <strong>Resource Management</strong>
                         <ul>
                             <li>Always dispose of DMEEditor instances when done</li>
                             <li>Close data source connections explicitly</li>
@@ -446,7 +446,7 @@ if (dmeEditor.ErrorObject.Flag == Errors.Ok)
                     </div>
 
                     <div class="warning">
-                        <strong>?? Error Handling</strong>
+                        <strong>Error Handling</strong>
                         <ul>
                             <li>Check <code>ErrorObject.Flag</code> after every operation</li>
                             <li>Use comprehensive logging for debugging</li>
@@ -456,7 +456,7 @@ if (dmeEditor.ErrorObject.Flag == Errors.Ok)
                     </div>
 
                     <div class="success">
-                        <strong>?? Performance Optimization</strong>
+                        <strong>Performance Optimization</strong>
                         <ul>
                             <li>Reuse DMEEditor instances when possible</li>
                             <li>Keep data source connections open for batch operations</li>
@@ -501,3 +501,4 @@ if (dmeEditor.ErrorObject.Flag == Errors.Ok)
     </script>
 </body>
 </html>
+

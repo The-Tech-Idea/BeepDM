@@ -104,6 +104,10 @@ class NavigationManager {
                 activeId: 'nav-custom-datasources', 
                 openSection: 'nav-advanced-topics' 
             },
+            'technical-folder-guides': {
+                activeId: 'nav-folder-guides',
+                openSection: 'nav-advanced-topics'
+            },
             'api-reference': { 
                 activeId: 'nav-api-reference', 
                 openSection: 'nav-advanced-topics' 
@@ -150,6 +154,7 @@ class NavigationManager {
                     <a href="#"><i class="bi bi-database"></i> Data Management</a>
                     <ul class="submenu">
                         <li><a href="data-management-examples.html" id="nav-data-examples">Data Sources</a></li>
+                        <li><a href="webapidatasource.html" id="nav-webapi">WebAPIDataSource</a></li>
                         <li><a href="examples.html" id="nav-examples">Code Examples</a></li>
                         <li><a href="best-practices.html" id="nav-best-practices">Best Practices</a></li>
                     </ul>
@@ -172,6 +177,7 @@ class NavigationManager {
                         <li><a href="etl-workflow-engine.html" id="nav-etl-workflow">ETL & Workflow Engine</a></li>
                         <li><a href="advanced-tools-utilities.html" id="nav-advanced-tools">Advanced Tools & Utilities</a></li>
                         <li><a href="creating-custom-datasources.html" id="nav-custom-datasources">Creating Custom Data Sources</a></li>
+                        <li><a href="technical-folder-guides.html" id="nav-folder-guides">Technical Folder Guides</a></li>
                         <li><a href="api-reference.html" id="nav-api-reference">API Reference</a></li>
                     </ul>
                 </li>

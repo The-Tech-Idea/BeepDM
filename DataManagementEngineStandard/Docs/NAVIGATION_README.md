@@ -52,6 +52,7 @@ The system automatically maps pages to navigation items:
 | `defaultsmanager.html` | Defaults Manager | Editor Classes |
 | `data-management-examples.html` | Data Sources | Getting Started |
 | `etl-workflow-engine.html` | ETL & Workflow Engine | Advanced Topics |
+| `technical-folder-guides.html` | Technical Folder Guides | Advanced Topics |
 | ... | ... | ... |
 
 ## ? Benefits
@@ -103,6 +104,7 @@ The following files have been updated to use the shared navigation system:
 - ? `configeditor.html`
 - ? `etl-workflow-engine.html`
 - ? `advanced-tools-utilities.html`
+- ? `technical-folder-guides.html`
 - ? `api-reference.html`
 
 ### ?? **Navigation Structure Cleaned Up**
@@ -112,7 +114,7 @@ The following files have been updated to use the shared navigation system:
 - ? Navigation structure matches actual file structure
 
 ### ?? **Current Status: 100% COMPLETE**
-All **18 documentation HTML files** now use the shared navigation system!
+All **19 documentation HTML files** now use the shared navigation system!
 
 ## ?? Features
 
