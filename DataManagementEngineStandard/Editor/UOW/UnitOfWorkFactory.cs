@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Reflection;
 using System.Linq;
 using TheTechIdea.Beep.DataBase;
@@ -57,8 +56,10 @@ namespace TheTechIdea.Beep.Editor.UOW
 
             try
             {
-                var uowInstance = CreateUnitOfWorkInternal(entityType, dmeEditor, datasourceName, entityName, primaryKey);
-                return new UnitOfWorkWrapper(uowInstance);
+                var uowInstance = string.IsNullOrWhiteSpace(primaryKey)
+                    ? CreateUnitOfWorkInternal(entityType, dmeEditor, datasourceName, entityName)
+                    : CreateUnitOfWorkInternal(entityType, dmeEditor, datasourceName, entityName, primaryKey);
+                return CreateWrapper(uowInstance);
             }
             catch (Exception ex)
             {
@@ -84,7 +85,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                     ? CreateUnitOfWorkInternal(entityType, dmeEditor, datasourceName, entityName, entityStructure, primaryKey)
                     : CreateUnitOfWorkInternal(entityType, dmeEditor, datasourceName, entityName, entityStructure);
                 
-                return new UnitOfWorkWrapper(uowInstance);
+                return CreateWrapper(uowInstance);
             }
             catch (Exception ex)
             {
@@ -93,9 +94,66 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
         }
 
+        /// <summary>
+        /// Wraps an existing UnitOfWork instance with a strongly-typed wrapper.
+        /// </summary>
+        public static IUnitOfWorkWrapper CreateWrapper(object unitOfWork)
+        {
+            if (unitOfWork == null)
+                throw new ArgumentNullException(nameof(unitOfWork));
+
+            if (unitOfWork is IUnitOfWorkWrapper wrapped)
+                return wrapped;
+
+            return new UnitOfWorkWrapper(unitOfWork);
+        }
+
+        /// <summary>
+        /// Attempts to create a UnitOfWork wrapper without throwing.
+        /// </summary>
+        public static bool TryCreateUnitOfWork(
+            Type entityType,
+            IDMEEditor dmeEditor,
+            string datasourceName,
+            string entityName,
+            out IUnitOfWorkWrapper wrapper,
+            out string errorMessage,
+            string primaryKey = null)
+        {
+            wrapper = null;
+            errorMessage = string.Empty;
+            try
+            {
+                wrapper = CreateUnitOfWork(entityType, dmeEditor, datasourceName, entityName, primaryKey);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
         #endregion
 
         #region Type Resolution from String (Legacy Support)
+
+        /// <summary>
+        /// Creates a wrapped UnitOfWork from an entity type name.
+        /// </summary>
+        public static IUnitOfWorkWrapper CreateUnitOfWorkWrapper(
+            string entityTypeName,
+            IDMEEditor dmeEditor,
+            string datasourceName,
+            string entityName,
+            string primaryKey = null)
+        {
+            if (string.IsNullOrWhiteSpace(entityTypeName))
+                throw new ArgumentException("Entity type name cannot be null or empty", nameof(entityTypeName));
+
+            var entityType = ResolveType(entityTypeName);
+            return CreateUnitOfWork(entityType, dmeEditor, datasourceName, entityName, primaryKey);
+        }
 
         /// <summary>
         /// Creates a UnitOfWork from a string type name (legacy support)
@@ -109,14 +167,33 @@ namespace TheTechIdea.Beep.Editor.UOW
         public static object CreateUnitOfWork(string entityTypeName, IDMEEditor dmeEditor, 
             string datasourceName, string entityName)
         {
-            if (string.IsNullOrWhiteSpace(entityTypeName))
-                throw new ArgumentException("Entity type name cannot be null or empty", nameof(entityTypeName));
+            return CreateUnitOfWorkWrapper(entityTypeName, dmeEditor, datasourceName, entityName);
+        }
 
-            var entityType = ResolveType(entityTypeName);
-            var wrapper = CreateUnitOfWork(entityType, dmeEditor, datasourceName, entityName);
-            
-            // Return the wrapped instance directly for legacy compatibility
-            return ((UnitOfWorkWrapper)wrapper);
+        /// <summary>
+        /// Attempts to create a UnitOfWork wrapper from a type name without throwing.
+        /// </summary>
+        public static bool TryCreateUnitOfWork(
+            string entityTypeName,
+            IDMEEditor dmeEditor,
+            string datasourceName,
+            string entityName,
+            out IUnitOfWorkWrapper wrapper,
+            out string errorMessage,
+            string primaryKey = null)
+        {
+            wrapper = null;
+            errorMessage = string.Empty;
+            try
+            {
+                wrapper = CreateUnitOfWorkWrapper(entityTypeName, dmeEditor, datasourceName, entityName, primaryKey);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
         }
 
         /// <summary>
@@ -187,41 +264,72 @@ namespace TheTechIdea.Beep.Editor.UOW
         private static object CreateUnitOfWorkInternal(Type entityType, IDMEEditor dmeEditor, 
             string datasourceName, string entityName, params object[] additionalArgs)
         {
-            var cacheKey = $"ctor_{entityType.FullName}_{additionalArgs.Length}";
-            
+            var constructorArgs = new object[] { dmeEditor, datasourceName, entityName }
+                .Concat(additionalArgs ?? Array.Empty<object>()).ToArray();
+
+            var cacheKey = BuildConstructorCacheKey(entityType, constructorArgs);
+             
             if (!Configuration.EnableCaching || !_constructorCache.TryGetValue(cacheKey, out var constructor))
             {
                 var uowGenericType = typeof(UnitofWork<>).MakeGenericType(entityType);
-                var parameterTypes = GetParameterTypes(additionalArgs);
-                constructor = uowGenericType.GetConstructor(parameterTypes);
+                constructor = FindCompatibleConstructor(uowGenericType, constructorArgs);
 
                 if (constructor == null)
                 {
+                    var signature = string.Join(", ", constructorArgs.Select(a => a?.GetType().Name ?? "null"));
                     throw new InvalidOperationException(
-                        $"Could not find suitable constructor for UnitOfWork<{entityType.Name}> with {parameterTypes.Length} parameters");
+                        $"Could not find suitable constructor for UnitOfWork<{entityType.Name}> with args [{signature}]");
                 }
 
                 if (Configuration.EnableCaching)
                 {
+                    TrimCacheIfNeeded();
                     _constructorCache.TryAdd(cacheKey, constructor);
                 }
             }
 
-            var constructorArgs = new object[] { dmeEditor, datasourceName, entityName }
-                .Concat(additionalArgs ?? new object[0]).ToArray();
-
             return constructor.Invoke(constructorArgs);
         }
 
-        private static Type[] GetParameterTypes(object[] additionalArgs)
+        private static string BuildConstructorCacheKey(Type entityType, object[] constructorArgs)
         {
-            var baseTypes = new[] { typeof(IDMEEditor), typeof(string), typeof(string) };
-            
-            if (additionalArgs == null || additionalArgs.Length == 0)
-                return baseTypes;
+            var argSignature = string.Join("|", constructorArgs.Select(a => a?.GetType().FullName ?? "null"));
+            return $"ctor_{entityType.FullName}_{argSignature}";
+        }
 
-            var additionalTypes = additionalArgs.Select(arg => arg?.GetType() ?? typeof(object)).ToArray();
-            return baseTypes.Concat(additionalTypes).ToArray();
+        private static ConstructorInfo FindCompatibleConstructor(Type uowGenericType, object[] constructorArgs)
+        {
+            foreach (var ctor in uowGenericType.GetConstructors())
+            {
+                var parameters = ctor.GetParameters();
+                if (parameters.Length != constructorArgs.Length)
+                    continue;
+
+                bool isMatch = true;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (!IsArgumentCompatible(parameters[i].ParameterType, constructorArgs[i]))
+                    {
+                        isMatch = false;
+                        break;
+                    }
+                }
+
+                if (isMatch)
+                    return ctor;
+            }
+
+            return null;
+        }
+
+        private static bool IsArgumentCompatible(Type parameterType, object argumentValue)
+        {
+            if (argumentValue == null)
+            {
+                return !parameterType.IsValueType || Nullable.GetUnderlyingType(parameterType) != null;
+            }
+
+            return parameterType.IsInstanceOfType(argumentValue);
         }
 
         private static Type ResolveType(string typeName)

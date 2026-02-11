@@ -10305,6 +10305,21 @@
             Creates a UnitOfWork instance with EntityStructure when the type is determined at runtime
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.CreateWrapper(System.Object)">
+            <summary>
+            Wraps an existing UnitOfWork instance with a strongly-typed wrapper.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.TryCreateUnitOfWork(System.Type,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper@,System.String@,System.String)">
+            <summary>
+            Attempts to create a UnitOfWork wrapper without throwing.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.CreateUnitOfWorkWrapper(System.String,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String)">
+            <summary>
+            Creates a wrapped UnitOfWork from an entity type name.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.CreateUnitOfWork(System.String,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String)">
             <summary>
             Creates a UnitOfWork from a string type name (legacy support)
@@ -10315,6 +10330,11 @@
             <param name="datasourceName">The name of the data source</param>
             <param name="entityName">The name of the entity</param>
             <returns>UnitOfWork instance</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.TryCreateUnitOfWork(System.String,TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper@,System.String@,System.String)">
+            <summary>
+            Attempts to create a UnitOfWork wrapper from a type name without throwing.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.GetUnitOfWork(System.String,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
@@ -10418,10 +10438,25 @@
             and Oracle Forms-like operations
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.ForEachRecordAsync``1(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Func{System.Object,System.Threading.Tasks.Task{System.Boolean}})">
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.ForEachRecordAsync(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Func{System.Object,System.Threading.Tasks.Task{System.Boolean}})">
             <summary>
             Executes a function for each record in the unit of work
             Oracle Forms equivalent of processing all records in a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.ForEachRecordAsync``1(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Func{System.Object,System.Threading.Tasks.Task{System.Boolean}})">
+            <summary>
+            Backward-compatible generic overload.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.CreateNewRecord(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper)">
+            <summary>
+            Creates a new record using UOW semantics and returns the created current record.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.TryCreateNewRecord(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Object@)">
+            <summary>
+            Attempts to create a new record using UOW semantics.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.FindRecord(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Func{System.Object,System.Boolean})">
@@ -10449,6 +10484,11 @@
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.BatchInsertAsync(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Collections.Generic.IEnumerable{System.Object},System.IProgress{TheTechIdea.Beep.Editor.UOW.BatchProgress})">
             <summary>
             Batch insert multiple records with progress reporting
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.BatchInsertAsync(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper,System.Collections.Generic.IEnumerable{System.Object},System.IProgress{TheTechIdea.Beep.Editor.UOW.BatchProgress},System.Threading.CancellationToken,System.Boolean)">
+            <summary>
+            Batch insert multiple records with progress reporting and cancellation support.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkWrapperExtensions.HasRecords(TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper)">

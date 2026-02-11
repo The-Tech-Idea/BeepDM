@@ -296,6 +296,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         public int FindDocIdx(dynamic doc) => ExecuteSafely(() => _unitOfWork.FindDocIdx(doc), -1);
 
         // Legacy sync CRUD operations (for backward compatibility)
+        public void New()
+        {
+            ValidateNotDisposed();
+            ExecuteSafely(() => _unitOfWork.New());
+        }
+
         public void Create(dynamic entity)
         {
             ValidateNotDisposed();

@@ -60,6 +60,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         int FindDocIdx(dynamic doc);
 
         // Legacy CRUD operations (sync)
+        void New();
         void Create(dynamic entity);
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete(dynamic doc);

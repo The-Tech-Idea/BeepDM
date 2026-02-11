@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Report;
@@ -18,12 +20,29 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// Executes a function for each record in the unit of work
         /// Oracle Forms equivalent of processing all records in a block
         /// </summary>
+        public static Task<int> ForEachRecordAsync(this IUnitOfWorkWrapper wrapper,
+            Func<dynamic, Task<bool>> processor)
+        {
+            if (wrapper == null) throw new ArgumentNullException(nameof(wrapper));
+            if (processor == null) throw new ArgumentNullException(nameof(processor));
+
+            return ForEachRecordInternalAsync(wrapper, processor);
+        }
+
+        /// <summary>
+        /// Backward-compatible generic overload.
+        /// </summary>
         public static async Task<int> ForEachRecordAsync<T>(this IUnitOfWorkWrapper wrapper, 
             Func<dynamic, Task<bool>> processor)
         {
             if (wrapper == null) throw new ArgumentNullException(nameof(wrapper));
             if (processor == null) throw new ArgumentNullException(nameof(processor));
 
+            return await ForEachRecordInternalAsync(wrapper, processor);
+        }
+
+        private static async Task<int> ForEachRecordInternalAsync(IUnitOfWorkWrapper wrapper, Func<dynamic, Task<bool>> processor)
+        {
             int processedCount = 0;
             int originalIndex = wrapper.CurrentIndex;
 
@@ -58,6 +77,38 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
 
             return processedCount;
+        }
+
+        /// <summary>
+        /// Creates a new record using UOW semantics and returns the created current record.
+        /// </summary>
+        public static dynamic CreateNewRecord(this IUnitOfWorkWrapper wrapper)
+        {
+            if (wrapper == null) throw new ArgumentNullException(nameof(wrapper));
+
+            wrapper.New();
+            return wrapper.CurrentItem;
+        }
+
+        /// <summary>
+        /// Attempts to create a new record using UOW semantics.
+        /// </summary>
+        public static bool TryCreateNewRecord(this IUnitOfWorkWrapper wrapper, out dynamic record)
+        {
+            record = null;
+            if (wrapper == null)
+                return false;
+
+            try
+            {
+                wrapper.New();
+                record = wrapper.CurrentItem;
+                return record != null;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -183,8 +234,20 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>
         /// Batch insert multiple records with progress reporting
         /// </summary>
-        public static async Task<BatchOperationResult> BatchInsertAsync(this IUnitOfWorkWrapper wrapper, 
+        public static Task<BatchOperationResult> BatchInsertAsync(this IUnitOfWorkWrapper wrapper,
             IEnumerable<dynamic> records, IProgress<BatchProgress> progress = null)
+        {
+            return BatchInsertAsync(wrapper, records, progress, CancellationToken.None, stopOnFirstFailure: false);
+        }
+
+        /// <summary>
+        /// Batch insert multiple records with progress reporting and cancellation support.
+        /// </summary>
+        public static async Task<BatchOperationResult> BatchInsertAsync(this IUnitOfWorkWrapper wrapper,
+            IEnumerable<dynamic> records,
+            IProgress<BatchProgress> progress,
+            CancellationToken cancellationToken,
+            bool stopOnFirstFailure = false)
         {
             if (wrapper == null) throw new ArgumentNullException(nameof(wrapper));
             if (records == null) throw new ArgumentNullException(nameof(records));
@@ -192,9 +255,13 @@ namespace TheTechIdea.Beep.Editor.UOW
             var result = new BatchOperationResult();
             var recordList = records.ToList();
             result.TotalRecords = recordList.Count;
+            var stopwatch = Stopwatch.StartNew();
 
             for (int i = 0; i < recordList.Count; i++)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 try
                 {
                     var insertResult = await wrapper.InsertAsync(recordList[i]);
@@ -206,12 +273,16 @@ namespace TheTechIdea.Beep.Editor.UOW
                     {
                         result.FailedRecords++;
                         result.Errors.Add($"Record {i + 1}: {insertResult.Message}");
+                        if (stopOnFirstFailure)
+                            break;
                     }
                 }
                 catch (Exception ex)
                 {
                     result.FailedRecords++;
                     result.Errors.Add($"Record {i + 1}: {ex.Message}");
+                    if (stopOnFirstFailure)
+                        break;
                 }
 
                 // Report progress
@@ -224,7 +295,9 @@ namespace TheTechIdea.Beep.Editor.UOW
                 });
             }
 
+            stopwatch.Stop();
             result.ProcessedRecords = result.SuccessfulRecords + result.FailedRecords;
+            result.Duration = stopwatch.Elapsed;
             return result;
         }
 
