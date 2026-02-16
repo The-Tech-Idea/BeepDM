@@ -476,24 +476,8 @@ namespace TheTechIdea.Beep.Editor.UOW
             var index = DocExistByKey(entity);
             if (index >= 0)
             {
+                // OBL handles state tracking automatically when item is replaced
                 _units[index] = entity;
-                if (_entityStates.Count > 0)
-                {
-                    if (_entityStates.ContainsKey(index))
-                    {
-                        if (_entityStates[index] != EntityState.Added)
-                        {
-                            _entityStates[index] = EntityState.Modified;
-                        }
-                        errorsInfo.Message = "Update Done";
-                        errorsInfo.Flag = Errors.Ok;
-                        return errorsInfo;
-                    }
-                }
-                else
-                {
-                    _entityStates.Add(index, EntityState.Modified);
-                }
 
                 ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostUpdate };
                 PostUpdate?.Invoke(entity, ps);
@@ -556,23 +540,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
                 Units[index] = entity;
                 
-                if (_entityStates.Count > 0)
-                {
-                    if (_entityStates.ContainsKey(index))
-                    {
-                        if (_entityStates[index] != EntityState.Added)
-                        {
-                            _entityStates[index] = EntityState.Modified;
-                        }
-                        errorsInfo.Message = "Update Done";
-                        errorsInfo.Flag = Errors.Ok;
-                        return errorsInfo;
-                    }
-                }
-                else
-                {
-                    _entityStates.Add(index, EntityState.Modified);
-                }
+                // OBL handles state tracking automatically when item is replaced
                 
                 ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PostUpdate };
                 PostUpdate?.Invoke(entity, ps);

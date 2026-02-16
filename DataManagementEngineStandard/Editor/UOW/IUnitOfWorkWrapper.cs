@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -94,5 +95,70 @@ namespace TheTechIdea.Beep.Editor.UOW
         dynamic CurrentItem { get; }
         int CurrentIndex { get; }
         int Count { get; }
+
+        // Validation (Phase 3)
+        bool IsAutoValidateEnabled { get; set; }
+        bool BlockCommitOnValidationError { get; set; }
+        ValidationResult ValidateItem(dynamic item);
+        ValidationResult ValidateAll();
+        List<ValidationError> GetErrors(dynamic item);
+        List<dynamic> GetInvalidItems();
+
+        // Undo/Redo (Phase 4)
+        bool IsUndoEnabled { get; set; }
+        int MaxUndoDepth { get; set; }
+        bool CanUndo { get; }
+        bool CanRedo { get; }
+        bool Undo();
+        bool Redo();
+        void ClearUndoHistory();
+
+        // Virtual/Lazy Loading (Phase 5)
+        bool IsVirtualMode { get; }
+        int PageCacheSize { get; set; }
+        int VirtualTotalPages { get; }
+        void EnableVirtualMode(int totalCount);
+        void DisableVirtualMode();
+        Task GoToPageAsync(int pageNumber);
+        Task PrefetchAdjacentPagesAsync();
+        void InvalidatePageCache();
+
+        // Master-Detail (Phase 6)
+        void UnregisterAllDetails();
+        IReadOnlyList<object> DetailLists { get; }
+
+        // Computed Columns (Phase 7)
+        void RegisterComputed(string name, Func<dynamic, object> computation);
+        void UnregisterComputed(string name);
+        object GetComputed(dynamic item, string name);
+        Dictionary<string, object> GetAllComputed(dynamic item);
+        IReadOnlyCollection<string> ComputedColumnNames { get; }
+
+        // Bookmarks (Phase 8)
+        void SetBookmark(string name);
+        bool GoToBookmark(string name);
+        void RemoveBookmark(string name);
+        void ClearBookmarks();
+
+        // Thread Safety, Freeze, Batch Update (Phase 9)
+        bool IsThreadSafe { get; set; }
+        bool IsFrozen { get; }
+        void Freeze();
+        void Unfreeze();
+        IDisposable BeginBatchUpdate();
+
+        // Aggregates (Phase 10)
+        decimal Sum(string propertyName);
+        decimal Average(string propertyName);
+        object Min(string propertyName);
+        object Max(string propertyName);
+        int CountWhere(Func<dynamic, bool> predicate);
+        List<object> DistinctValues(string propertyName);
+
+        // Navigation Enhancements (Phase 11)
+        bool IsAtBOF { get; }
+        bool IsAtEOF { get; }
+        bool IsEmpty { get; }
+        bool MoveToItem(dynamic item);
     }
 }

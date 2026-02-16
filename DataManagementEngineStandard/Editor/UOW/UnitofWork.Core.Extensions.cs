@@ -57,37 +57,14 @@ namespace TheTechIdea.Beep.Editor.UOW
                     }
 
                     var index = Units.IndexOf(entity);
-                    
-                    // Determine whether entity was newly added (not yet persisted)
-                    bool wasAdded = index >= 0 && _entityStates.ContainsKey(index) && _entityStates[index] == EntityState.Added;
 
-                    // Remove from collection - this shifts all indices above 'index' down by 1
+                    // Remove from collection — OBL handles tracking automatically:
+                    // - Sets entity state to Deleted
+                    // - Adds to DeletedList
+                    // - Re-keys internal tracking indices
                     if (index >= 0)
                     {
                         Units.RemoveAt(index);
-                    }
-                    
-                    // Re-key entity states to account for index shift after removal
-                    var newStates = new Dictionary<int, EntityState>();
-                    foreach (var kvp in _entityStates)
-                    {
-                        if (kvp.Key < index)
-                        {
-                            newStates[kvp.Key] = kvp.Value;
-                        }
-                        else if (kvp.Key > index)
-                        {
-                            // Shift down by 1
-                            newStates[kvp.Key - 1] = kvp.Value;
-                        }
-                        // kvp.Key == index is intentionally dropped (the deleted item)
-                    }
-                    _entityStates = newStates;
-
-                    // Track as deleted only if it was previously persisted
-                    if (!wasAdded)
-                    {
-                        DeletedUnits.Add(entity);
                     }
 
                     // Raise post-delete event
@@ -318,8 +295,17 @@ namespace TheTechIdea.Beep.Editor.UOW
 
                     try
                     {
-                        await CommitChangesToDataSource(progress, token);
+                        var oblCommitResult = await CommitChangesToDataSource(progress, token);
                         
+                        if (!oblCommitResult.AllSucceeded)
+                        {
+                            // Some items failed — rollback transaction
+                            DataSource.EndTransaction(new PassedArgs());
+                            result.Flag = Errors.Failed;
+                            result.Message = $"Commit partially failed: {oblCommitResult.FailedCount} of {oblCommitResult.TotalCount} items failed";
+                            return result;
+                        }
+
                         // Commit transaction
                         var commitResult = DataSource.Commit(new PassedArgs());
                         if (commitResult.Flag != Errors.Ok)
@@ -337,8 +323,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                     }
                 }
                 
-                // Clear change tracking
-                _entityStates.Clear();
+                // OBL's CommitAllAsync already called AcceptChanges per-item for succeeded items.
+                // Clear auxiliary key tracking dictionaries.
                 DeletedUnits.Clear();
                 InsertedKeys.Clear();
                 UpdatedKeys.Clear();
@@ -402,20 +388,18 @@ namespace TheTechIdea.Beep.Editor.UOW
                     }
                 }
 
-                // Restore from backup if available
-                if (Tempunits != null)
+                // Delegate to OBL's RejectChanges which restores original values,
+                // re-adds deleted items, removes added items, and resets states
+                if (Units != null)
                 {
-                    UndoLastChange();
+                    Units.RejectChanges();
                 }
-                else
-                {
-                    // Clear all changes
-                    _entityStates.Clear();
-                    DeletedUnits.Clear();
-                    InsertedKeys.Clear();
-                    UpdatedKeys.Clear();
-                    DeletedKeys.Clear();
-                }
+
+                // Clear auxiliary tracking
+                DeletedUnits.Clear();
+                InsertedKeys.Clear();
+                UpdatedKeys.Clear();
+                DeletedKeys.Clear();
 
                 result.Message = "Changes rolled back successfully";
                 OnPropertyChanged(nameof(IsDirty));
@@ -435,68 +419,49 @@ namespace TheTechIdea.Beep.Editor.UOW
         }
 
         /// <summary>
-        /// Commits individual changes to the data source with progress reporting
+        /// Commits individual changes to the data source using OBL's CommitAllAsync.
+        /// OBL handles ordering, BeforeSave/AfterSave events, validation blocking, and per-item tracking cleanup.
         /// </summary>
-        private async Task CommitChangesToDataSource(IProgress<PassedArgs> progress, CancellationToken token)
+        private async Task<CommitResult> CommitChangesToDataSource(IProgress<PassedArgs> progress, CancellationToken token)
         {
-            var totalChanges = GetAddedEntities().Count() + GetModifiedEntities().Count() + GetDeletedEntities().Count();
-            var processedChanges = 0;
-
-            // Process added entities
-            foreach (var index in GetAddedEntities())
-            {
-                token.ThrowIfCancellationRequested();
-                
-                if (index < Units.Count)
+            var commitResult = await Units.CommitAllAsync(
+                insertAsync: async (item) =>
                 {
-                    var entity = Units[index];
-                    await InsertAsync(entity);
-                    
-                    processedChanges++;
-                    progress?.Report(new PassedArgs 
-                    { 
-                        ParameterInt1 = processedChanges,
-                        ParameterInt2 = totalChanges,
-                        ParameterString1 = $"Inserted entity {processedChanges} of {totalChanges}"
-                    });
-                }
-            }
-
-            // Process modified entities
-            foreach (var index in GetModifiedEntities())
-            {
-                token.ThrowIfCancellationRequested();
-                
-                if (index < Units.Count)
+                    token.ThrowIfCancellationRequested();
+                    _defaultsHelper?.ApplyInsertDefaults(item);
+                    return InsertDoc(item);
+                },
+                updateAsync: async (item) =>
                 {
-                    var entity = Units[index];
-                    await UpdateAsync(entity);
-                    
-                    processedChanges++;
-                    progress?.Report(new PassedArgs 
-                    { 
-                        ParameterInt1 = processedChanges,
-                        ParameterInt2 = totalChanges,
-                        ParameterString1 = $"Updated entity {processedChanges} of {totalChanges}"
-                    });
-                }
-            }
+                    token.ThrowIfCancellationRequested();
+                    _defaultsHelper?.ApplyUpdateDefaults(item);
+                    return UpdateDoc(item);
+                },
+                deleteAsync: async (item) =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    string cname = typeof(T).Name;
+                    if (!IsInListMode && DataSource != null)
+                    {
+                        return DataSource.DeleteEntity(cname, item);
+                    }
+                    return new ErrorsInfo { Flag = Errors.Ok, Message = "Deleted from collection" };
+                },
+                CommitOrder
+            );
 
-            // Process deleted entities
-            foreach (var entity in GetDeletedEntities())
+            // Report progress
+            if (progress != null)
             {
-                token.ThrowIfCancellationRequested();
-                
-                await DeleteAsync(entity);
-                
-                processedChanges++;
-                progress?.Report(new PassedArgs 
-                { 
-                    ParameterInt1 = processedChanges,
-                    ParameterInt2 = totalChanges,
-                    ParameterString1 = $"Deleted entity {processedChanges} of {totalChanges}"
+                progress.Report(new PassedArgs
+                {
+                    ParameterInt1 = commitResult.SuccessCount,
+                    ParameterInt2 = commitResult.TotalCount,
+                    ParameterString1 = $"Committed {commitResult.SuccessCount} of {commitResult.TotalCount} entities ({commitResult.FailedCount} failed)"
                 });
             }
+
+            return commitResult;
         }
 
         #endregion

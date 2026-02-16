@@ -45,15 +45,10 @@ namespace TheTechIdea.Beep.Editor.UOW
                 _filteredunits?.Clear();
                 DeletedUnits?.Clear();
 
-                // Clear tracking dictionaries
-                _entityStates?.Clear();
-                _deletedentities?.Clear();
+                // Clear key tracking dictionaries
                 InsertedKeys?.Clear();
                 UpdatedKeys?.Clear();
                 DeletedKeys?.Clear();
-
-                // Reset backup collection
-                Tempunits?.Clear();
 
                 // Reset flags
                 IsFilterOn = false;
@@ -76,17 +71,8 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>True if there are uncommitted changes</returns>
         public bool GetIsDirty()
         {
-            if (_entityStates == null || _entityStates.Count == 0)
-            {
-                return false;
-            }
-
-            // Check if any entity has been added, modified, or deleted
-            return _entityStates.Values.Any(state =>
-                state == EntityState.Added ||
-                state == EntityState.Modified ||
-                state == EntityState.Deleted) ||
-                DeletedUnits?.Count > 0 ||
+            // Delegate to OBL's unified tracking
+            return (Units?.HasChanges ?? false) ||
                 InsertedKeys?.Count > 0 ||
                 UpdatedKeys?.Count > 0 ||
                 DeletedKeys?.Count > 0;
@@ -205,39 +191,21 @@ namespace TheTechIdea.Beep.Editor.UOW
         }
 
         /// <summary>
-        /// Undoes the last change made to the collection
+        /// Undoes the last change made to the collection.
+        /// Delegates to OBL's RejectChanges() which restores all items to their original values.
         /// </summary>
+        [Obsolete("Use Undo() instead for granular undo/redo support")]
         public void UndoLastChange()
         {
             try
             {
-                if (Tempunits != null && Tempunits.Count > 0)
+                if (Units != null)
                 {
-                    // Restore from backup
-                    var restoredItems = new List<T>();
-                    foreach (var item in Tempunits)
-                    {
-                        if (_dataHelper != null)
-                        {
-                            var clonedItem = _dataHelper.CloneEntity(item);
-                            if (clonedItem != null)
-                            {
-                                restoredItems.Add(clonedItem);
-                            }
-                        }
-                    }
+                    Units.RejectChanges();
+                    DeletedUnits?.Clear();
 
-                    if (restoredItems.Count > 0)
-                    {
-                        SetUnits(new ObservableBindingList<T>(restoredItems));
-
-                        // Clear change tracking
-                        _entityStates?.Clear();
-                        DeletedUnits?.Clear();
-
-                        OnPropertyChanged(nameof(Units));
-                        OnPropertyChanged(nameof(IsDirty));
-                    }
+                    OnPropertyChanged(nameof(Units));
+                    OnPropertyChanged(nameof(IsDirty));
                 }
             }
             catch (Exception ex)
@@ -253,39 +221,48 @@ namespace TheTechIdea.Beep.Editor.UOW
         #region Change Tracking Methods
 
         /// <summary>
-        /// Gets the indices of entities that have been added
+        /// Gets the indices of entities that have been added (tracked by OBL).
         /// </summary>
         /// <returns>Enumerable of indices</returns>
         public IEnumerable<int> GetAddedEntities()
         {
-            if (_entityStates == null)
-                return Enumerable.Empty<int>();
+            if (Units == null) return Enumerable.Empty<int>();
 
-            return _entityStates.Where(kvp => kvp.Value == EntityState.Added).Select(kvp => kvp.Key);
+            var result = new List<int>();
+            for (int i = 0; i < Units.Count; i++)
+            {
+                var tr = Units.GetTrackingItem(Units[i]);
+                if (tr != null && tr.EntityState == EntityState.Added)
+                    result.Add(i);
+            }
+            return result;
         }
 
         /// <summary>
-        /// Gets the indices of entities that have been modified
+        /// Gets the indices of entities that have been modified (tracked by OBL).
         /// </summary>
         /// <returns>Enumerable of indices</returns>
         public IEnumerable<int> GetModifiedEntities()
         {
-            if (_entityStates == null)
-                return Enumerable.Empty<int>();
+            if (Units == null) return Enumerable.Empty<int>();
 
-            return _entityStates.Where(kvp => kvp.Value == EntityState.Modified).Select(kvp => kvp.Key);
+            var result = new List<int>();
+            for (int i = 0; i < Units.Count; i++)
+            {
+                var tr = Units.GetTrackingItem(Units[i]);
+                if (tr != null && tr.EntityState == EntityState.Modified)
+                    result.Add(i);
+            }
+            return result;
         }
 
         /// <summary>
-        /// Gets the entities that have been deleted
+        /// Gets the entities that have been deleted (from OBL's DeletedItems).
         /// </summary>
         /// <returns>Enumerable of deleted entities</returns>
         public IEnumerable<T> GetDeletedEntities()
         {
-            if (DeletedUnits == null)
-                return Enumerable.Empty<T>();
-
-            return DeletedUnits;
+            return Units?.DeletedItems ?? (IEnumerable<T>)Enumerable.Empty<T>();
         }
 
         #endregion
@@ -358,7 +335,8 @@ namespace TheTechIdea.Beep.Editor.UOW
         #region Event Handlers and Data Loading
 
         /// <summary>
-        /// Handles property changes on individual entities
+        /// Handles property changes on individual entities.
+        /// OBL already tracks state changes internally; this handler fires audit trail and events.
         /// </summary>
         protected void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
@@ -372,19 +350,6 @@ namespace TheTechIdea.Beep.Editor.UOW
                     var index = Units.IndexOf(item);
                     if (index >= 0)
                     {
-                        // Mark as modified if not already added
-                        if (_entityStates.ContainsKey(index))
-                        {
-                            if (_entityStates[index] != EntityState.Added)
-                            {
-                                _entityStates[index] = EntityState.Modified;
-                            }
-                        }
-                        else
-                        {
-                            _entityStates[index] = EntityState.Modified;
-                        }
-
                         // Record change for audit trail
                         var newValue = GetPropertyValue(item, e.PropertyName);
                         RecordChange(item, e.PropertyName, null, newValue, EntityState.Modified);
@@ -436,7 +401,9 @@ namespace TheTechIdea.Beep.Editor.UOW
         }
 
         /// <summary>
-        /// Handles collection change events
+        /// Handles collection change events.
+        /// OBL already tracks add/remove/reset state changes internally.
+        /// This handler wires/unwires PropertyChanged on items and notifies IsDirty.
         /// </summary>
         protected void Units_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
@@ -451,8 +418,6 @@ namespace TheTechIdea.Beep.Editor.UOW
                         {
                             foreach (T item in e.NewItems)
                             {
-                                var index = Units.IndexOf(item);
-                                _entityStates[index] = EntityState.Added;
                                 item.PropertyChanged += ItemPropertyChangedHandler;
                             }
                         }
@@ -464,18 +429,12 @@ namespace TheTechIdea.Beep.Editor.UOW
                             foreach (T item in e.OldItems)
                             {
                                 item.PropertyChanged -= ItemPropertyChangedHandler;
-                                DeletedUnits.Add(item);
-                                var existingIndex = _entityStates.FirstOrDefault(kvp => Units.ElementAtOrDefault(kvp.Key) == item).Key;
-                                if (_entityStates.ContainsKey(existingIndex))
-                                {
-                                    _entityStates.Remove(existingIndex);
-                                }
                             }
                         }
                         break;
 
                     case NotifyCollectionChangedAction.Reset:
-                        _entityStates.Clear();
+                        // Nothing to do — OBL handles tracking reset
                         break;
                 }
 

@@ -49,20 +49,11 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>Indicates whether the filter is currently turned on.</summary>
         protected bool IsFilterOn = false;
 
-        /// <summary>A private observable binding list of type T for backup/rollback purposes.</summary>
-        protected ObservableBindingList<T> Tempunits;
-
         /// <summary>The collection of units.</summary>
         protected ObservableBindingList<T> _units;
 
         /// <summary>The filtered units collection.</summary>
         protected ObservableBindingList<T> _filteredunits;
-
-        /// <summary>Entity states tracking</summary>
-        protected Dictionary<int, EntityState> _entityStates = new Dictionary<int, EntityState>();
-        
-        /// <summary>Deleted entities tracking</summary>
-        protected Dictionary<T, EntityState> _deletedentities = new Dictionary<T, EntityState>();
 
         /// <summary>Primary key property info</summary>
         protected PropertyInfo PKProperty = null;
@@ -201,6 +192,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// Gets or sets the field name used for optimistic concurrency (e.g., "RowVersion" or "LastModified").
         /// </summary>
         public string ConcurrencyFieldName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the order in which entity states are committed during Commit().
+        /// Default: DeletesFirst (safest for FK constraints).
+        /// </summary>
+        public CommitOrder CommitOrder { get; set; } = CommitOrder.DeletesFirst;
 
         #endregion
 
@@ -466,7 +463,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 _dataHelper = new UnitofWorkDataHelper<T>(DMEEditor);
                 _validationHelper = new UnitofWorkValidationHelper<T>(DMEEditor, EntityStructure, PrimaryKey);
                 _defaultsHelper = new UnitofWorkDefaultsHelper<T>(DMEEditor, DatasourceName, EntityName);
-                _stateHelper = new UnitofWorkStateHelper<T>(DMEEditor, _entityStates);
+                _stateHelper = new UnitofWorkStateHelper<T>(DMEEditor, () => Units);
                 _eventHelper = new UnitofWorkEventHelper<T>(DMEEditor, EntityName);
                 _collectionHelper = new UnitofWorkCollectionHelper<T>(DMEEditor);
             }
@@ -587,19 +584,26 @@ namespace TheTechIdea.Beep.Editor.UOW
                 _units = value;
                 AttachHandlers(_units);
 
-                // Create a deep copy using the data helper
-                if (_dataHelper != null && value != null)
+                // OBL now manages its own original-value snapshots for rollback via RejectChanges()
+                // No need for Tempunits deep-clone anymore
+
+                // Wire UOW's EntityStructure-based validation as OBL's CustomValidator
+                if (_units != null && _validationHelper != null)
                 {
-                    var clonedItems = new List<T>();
-                    foreach (var item in value)
+                    _units.CustomValidator = (item) =>
                     {
-                        var clonedItem = _dataHelper.CloneEntity(item);
-                        if (clonedItem != null)
+                        var result = new ValidationResult();
+                        var validationResult = _validationHelper.ValidateEntity(item);
+                        if (validationResult.Flag == Errors.Failed)
                         {
-                            clonedItems.Add(clonedItem);
+                            result.Errors.Add(new ValidationError(
+                                null,
+                                validationResult.Message,
+                                ValidationSeverity.Error
+                            ));
                         }
-                    }
-                    Tempunits = new ObservableBindingList<T>(clonedItems);
+                        return result;
+                    };
                 }
             }
         }

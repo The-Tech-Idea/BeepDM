@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -44,9 +45,18 @@ namespace TheTechIdea.Beep.Editor
         string FilterExpression { get; set; }
 
         // Commit / Rollback
+        CommitOrder CommitOrder { get; set; }
         Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token);
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
+
+        // Validation
+        bool IsAutoValidateEnabled { get; set; }
+        bool BlockCommitOnValidationError { get; set; }
+        ValidationResult ValidateItem(T item);
+        ValidationResult ValidateAll();
+        List<ValidationError> GetErrors(T item);
+        List<T> GetInvalidItems();
      
         // Read operations
         T Read(Func<T, bool> predicate);
@@ -93,7 +103,73 @@ namespace TheTechIdea.Beep.Editor
         void MoveLast();
         void MoveTo(int index);
 
+        // Undo/Redo (Phase 4)
+        bool IsUndoEnabled { get; set; }
+        int MaxUndoDepth { get; set; }
+        bool CanUndo { get; }
+        bool CanRedo { get; }
+        bool Undo();
+        bool Redo();
+        void ClearUndoHistory();
+
+        // Computed Columns (Phase 7)
+        void RegisterComputed(string name, Func<T, object> computation);
+        void UnregisterComputed(string name);
+        object GetComputed(T item, string name);
+        Dictionary<string, object> GetAllComputed(T item);
+        IReadOnlyCollection<string> ComputedColumnNames { get; }
+
+        // Bookmarks (Phase 8)
+        void SetBookmark(string name);
+        bool GoToBookmark(string name);
+        void RemoveBookmark(string name);
+        void ClearBookmarks();
+
+        // Thread Safety, Freeze, Batch Update (Phase 9)
+        bool IsThreadSafe { get; set; }
+        bool IsFrozen { get; }
+        void Freeze();
+        void Unfreeze();
+        IDisposable BeginBatchUpdate();
+
+        // Aggregates (Phase 10)
+        decimal Sum(string propertyName);
+        decimal SumWhere(string propertyName, Func<T, bool> predicate);
+        decimal Average(string propertyName);
+        decimal AverageWhere(string propertyName, Func<T, bool> predicate);
+        object Min(string propertyName);
+        object Max(string propertyName);
+        int CountWhere(Func<T, bool> predicate);
+        Dictionary<object, List<T>> GroupBy(string propertyName);
+        List<object> DistinctValues(string propertyName);
+
+        // Navigation Enhancements (Phase 11)
+        bool IsAtBOF { get; }
+        bool IsAtEOF { get; }
+        bool IsEmpty { get; }
+        bool MoveToItem(T item);
+
+        // Virtual/Lazy Loading (Phase 5)
+        bool IsVirtualMode { get; }
+        int PageCacheSize { get; set; }
+        int VirtualTotalPages { get; }
+        void EnableVirtualMode(int totalCount);
+        void DisableVirtualMode();
+        Task GoToPageAsync(int pageNumber);
+        Task PrefetchAdjacentPagesAsync();
+        void InvalidatePageCache();
+
+        // Master-Detail (Phase 6)
+        void RegisterDetail<TChild>(ObservableBindingList<TChild> childList,
+            string foreignKeyProperty, string masterKeyProperty)
+            where TChild : class, INotifyPropertyChanged, new();
+        void UnregisterDetail<TChild>(ObservableBindingList<TChild> childList)
+            where TChild : class, INotifyPropertyChanged, new();
+        void UnregisterAllDetails();
+        IReadOnlyList<object> DetailLists { get; }
+
         // Utility / Tracking
+        [Obsolete("Use Undo() instead")]
         void UndoLastChange();
         int DocExist(T doc);
         int DocExistByKey(T doc);

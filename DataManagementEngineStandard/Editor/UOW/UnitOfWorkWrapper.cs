@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -8,6 +9,7 @@ using System.Dynamic;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
@@ -543,6 +545,138 @@ namespace TheTechIdea.Beep.Editor.UOW
             // Log error - in real implementation, use proper logging framework
             System.Diagnostics.Debug.WriteLine($"UnitOfWorkWrapper Error: {message}");
         }
+
+        #endregion
+
+        #region OBL Integration (Phases 3-11)
+
+        // Validation (Phase 3)
+        public bool IsAutoValidateEnabled
+        {
+            get => GetPropertySafely(() => _unitOfWork.IsAutoValidateEnabled, false);
+            set => SetPropertySafely(() => _unitOfWork.IsAutoValidateEnabled = value);
+        }
+
+        public bool BlockCommitOnValidationError
+        {
+            get => GetPropertySafely(() => _unitOfWork.BlockCommitOnValidationError, true);
+            set => SetPropertySafely(() => _unitOfWork.BlockCommitOnValidationError = value);
+        }
+
+        public ValidationResult ValidateItem(dynamic item) =>
+            ExecuteSafely(() => _unitOfWork.ValidateItem(item), new ValidationResult());
+
+        public ValidationResult ValidateAll() =>
+            ExecuteSafely(() => _unitOfWork.ValidateAll(), new ValidationResult());
+
+        public List<ValidationError> GetErrors(dynamic item) =>
+            ExecuteSafely(() => _unitOfWork.GetErrors(item), new List<ValidationError>());
+
+        public List<dynamic> GetInvalidItems() =>
+            ExecuteSafely(() => _unitOfWork.GetInvalidItems(), new List<dynamic>());
+
+        // Undo/Redo (Phase 4)
+        public bool IsUndoEnabled
+        {
+            get => GetPropertySafely(() => _unitOfWork.IsUndoEnabled, false);
+            set => SetPropertySafely(() => _unitOfWork.IsUndoEnabled = value);
+        }
+
+        public int MaxUndoDepth
+        {
+            get => GetPropertySafely(() => _unitOfWork.MaxUndoDepth, 100);
+            set => SetPropertySafely(() => _unitOfWork.MaxUndoDepth = value);
+        }
+
+        public bool CanUndo => GetPropertySafely(() => _unitOfWork.CanUndo, false);
+        public bool CanRedo => GetPropertySafely(() => _unitOfWork.CanRedo, false);
+        public bool Undo() => ExecuteSafely(() => _unitOfWork.Undo(), false);
+        public bool Redo() => ExecuteSafely(() => _unitOfWork.Redo(), false);
+        public void ClearUndoHistory() => ExecuteSafely(() => _unitOfWork.ClearUndoHistory());
+
+        // Virtual/Lazy Loading (Phase 5)
+        public bool IsVirtualMode => GetPropertySafely(() => _unitOfWork.IsVirtualMode, false);
+
+        public int PageCacheSize
+        {
+            get => GetPropertySafely(() => _unitOfWork.PageCacheSize, 3);
+            set => SetPropertySafely(() => _unitOfWork.PageCacheSize = value);
+        }
+
+        public int VirtualTotalPages => GetPropertySafely(() => _unitOfWork.VirtualTotalPages, 0);
+
+        public void EnableVirtualMode(int totalCount) =>
+            ExecuteSafely(() => _unitOfWork.EnableVirtualMode(totalCount));
+
+        public void DisableVirtualMode() =>
+            ExecuteSafely(() => _unitOfWork.DisableVirtualMode());
+
+        public async Task GoToPageAsync(int pageNumber) =>
+            await ExecuteSafelyAsync(
+                async () => { await _unitOfWork.GoToPageAsync(pageNumber); return true; }, false);
+
+        public async Task PrefetchAdjacentPagesAsync() =>
+            await ExecuteSafelyAsync(
+                async () => { await _unitOfWork.PrefetchAdjacentPagesAsync(); return true; }, false);
+
+        public void InvalidatePageCache() =>
+            ExecuteSafely(() => _unitOfWork.InvalidatePageCache());
+
+        // Master-Detail (Phase 6)
+        public void UnregisterAllDetails() =>
+            ExecuteSafely(() => _unitOfWork.UnregisterAllDetails());
+
+        public IReadOnlyList<object> DetailLists =>
+            GetPropertySafely(() => _unitOfWork.DetailLists, (IReadOnlyList<object>)Array.Empty<object>());
+
+        // Computed Columns (Phase 7)
+        public void RegisterComputed(string name, Func<dynamic, object> computation) =>
+            ExecuteSafely(() => _unitOfWork.RegisterComputed(name, computation));
+
+        public void UnregisterComputed(string name) =>
+            ExecuteSafely(() => _unitOfWork.UnregisterComputed(name));
+
+        public object GetComputed(dynamic item, string name) =>
+            ExecuteSafely(() => _unitOfWork.GetComputed(item, name), (object)null);
+
+        public Dictionary<string, object> GetAllComputed(dynamic item) =>
+            ExecuteSafely(() => _unitOfWork.GetAllComputed(item), new Dictionary<string, object>());
+
+        public IReadOnlyCollection<string> ComputedColumnNames =>
+            GetPropertySafely(() => _unitOfWork.ComputedColumnNames, (IReadOnlyCollection<string>)Array.Empty<string>());
+
+        // Bookmarks (Phase 8)
+        public void SetBookmark(string name) => ExecuteSafely(() => _unitOfWork.SetBookmark(name));
+        public bool GoToBookmark(string name) => ExecuteSafely(() => _unitOfWork.GoToBookmark(name), false);
+        public void RemoveBookmark(string name) => ExecuteSafely(() => _unitOfWork.RemoveBookmark(name));
+        public void ClearBookmarks() => ExecuteSafely(() => _unitOfWork.ClearBookmarks());
+
+        // Thread Safety, Freeze, Batch Update (Phase 9)
+        public bool IsThreadSafe
+        {
+            get => GetPropertySafely(() => _unitOfWork.IsThreadSafe, false);
+            set => SetPropertySafely(() => _unitOfWork.IsThreadSafe = value);
+        }
+
+        public bool IsFrozen => GetPropertySafely(() => _unitOfWork.IsFrozen, false);
+        public void Freeze() => ExecuteSafely(() => _unitOfWork.Freeze());
+        public void Unfreeze() => ExecuteSafely(() => _unitOfWork.Unfreeze());
+        public IDisposable BeginBatchUpdate() => ExecuteSafely(() => _unitOfWork.BeginBatchUpdate(), (IDisposable)null);
+
+        // Aggregates (Phase 10)
+        public decimal Sum(string propertyName) => ExecuteSafely(() => _unitOfWork.Sum(propertyName), 0m);
+        public decimal Average(string propertyName) => ExecuteSafely(() => _unitOfWork.Average(propertyName), 0m);
+        public object Min(string propertyName) => ExecuteSafely(() => _unitOfWork.Min(propertyName), (object)null);
+        public object Max(string propertyName) => ExecuteSafely(() => _unitOfWork.Max(propertyName), (object)null);
+        public int CountWhere(Func<dynamic, bool> predicate) => ExecuteSafely(() => _unitOfWork.CountWhere(predicate), 0);
+        public List<object> DistinctValues(string propertyName) =>
+            ExecuteSafely(() => _unitOfWork.DistinctValues(propertyName), new List<object>());
+
+        // Navigation Enhancements (Phase 11)
+        public bool IsAtBOF => GetPropertySafely(() => _unitOfWork.IsAtBOF, true);
+        public bool IsAtEOF => GetPropertySafely(() => _unitOfWork.IsAtEOF, true);
+        public bool IsEmpty => GetPropertySafely(() => _unitOfWork.IsEmpty, true);
+        public bool MoveToItem(dynamic item) => ExecuteSafely(() => _unitOfWork.MoveToItem(item), false);
 
         #endregion
 

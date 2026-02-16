@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Utilities;
 
 
 namespace TheTechIdea.Beep.Editor
@@ -116,6 +118,82 @@ namespace TheTechIdea.Beep.Editor
         event EventHandler<UnitofWorkParams> PostDelete;
         event EventHandler<UnitofWorkParams> PostCommit;
         event EventHandler<UnitofWorkParams> PreCommit;
+
+        // Validation (Phase 3)
+        bool IsAutoValidateEnabled { get; set; }
+        bool BlockCommitOnValidationError { get; set; }
+        ValidationResult ValidateItem(Entity item);
+        ValidationResult ValidateAll();
+        List<ValidationError> GetErrors(Entity item);
+        List<Entity> GetInvalidItems();
+
+        // Undo/Redo (Phase 4)
+        bool IsUndoEnabled { get; set; }
+        int MaxUndoDepth { get; set; }
+        bool CanUndo { get; }
+        bool CanRedo { get; }
+        bool Undo();
+        bool Redo();
+        void ClearUndoHistory();
+
+        // Virtual/Lazy Loading (Phase 5)
+        bool IsVirtualMode { get; }
+        int PageCacheSize { get; set; }
+        int VirtualTotalPages { get; }
+        void EnableVirtualMode(int totalCount);
+        void DisableVirtualMode();
+        Task GoToPageAsync(int pageNumber);
+        Task PrefetchAdjacentPagesAsync();
+        void InvalidatePageCache();
+
+        // Master-Detail (Phase 6)
+        void RegisterDetail<TChild>(ObservableBindingList<TChild> childList,
+            string foreignKeyProperty, string masterKeyProperty)
+            where TChild : class, INotifyPropertyChanged, new();
+        void UnregisterDetail<TChild>(ObservableBindingList<TChild> childList)
+            where TChild : class, INotifyPropertyChanged, new();
+        void UnregisterAllDetails();
+        IReadOnlyList<object> DetailLists { get; }
+
+        // Computed Columns (Phase 7)
+        void RegisterComputed(string name, Func<Entity, object> computation);
+        void UnregisterComputed(string name);
+        object GetComputed(Entity item, string name);
+        Dictionary<string, object> GetAllComputed(Entity item);
+        IReadOnlyCollection<string> ComputedColumnNames { get; }
+
+        // Bookmarks (Phase 8)
+        void SetBookmark(string name);
+        bool GoToBookmark(string name);
+        void RemoveBookmark(string name);
+        void ClearBookmarks();
+
+        // Thread Safety, Freeze, Batch Update (Phase 9)
+        bool IsThreadSafe { get; set; }
+        bool IsFrozen { get; }
+        void Freeze();
+        void Unfreeze();
+        IDisposable BeginBatchUpdate();
+
+        // Aggregates (Phase 10)
+        decimal Sum(string propertyName);
+        decimal SumWhere(string propertyName, Func<Entity, bool> predicate);
+        decimal Average(string propertyName);
+        decimal AverageWhere(string propertyName, Func<Entity, bool> predicate);
+        object Min(string propertyName);
+        object Max(string propertyName);
+        int CountWhere(Func<Entity, bool> predicate);
+        Dictionary<object, List<Entity>> GroupBy(string propertyName);
+        List<object> DistinctValues(string propertyName);
+
+        // Navigation Enhancements (Phase 11)
+        bool IsAtBOF { get; }
+        bool IsAtEOF { get; }
+        bool IsEmpty { get; }
+        bool MoveToItem(Entity item);
+
+        // Commit Order
+        CommitOrder CommitOrder { get; set; }
     }
 
   

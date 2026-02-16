@@ -13,6 +13,12 @@ namespace TheTechIdea.Beep.Editor
         public int RecordId { get; set; }
         public string RecordGuidKey { get; set; }
         public string GuidKey { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Unique identifier for this log entry, used as dictionary key to avoid DateTime collision (BUG 12).
+        /// </summary>
+        public Guid LogId { get; set; } = Guid.NewGuid();
+
         public Dictionary<string, object> UpdatedFields { get; set; }
         public DateTime LogDateandTime { get; set; }
         public string LogUser { get; set; }
