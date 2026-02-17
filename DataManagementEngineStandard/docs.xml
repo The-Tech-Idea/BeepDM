@@ -6353,68 +6353,6 @@
             <param name="blockName">The name of the block that triggered the event</param>
             <param name="dirtyBlocks">The list of all dirty blocks</param>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult">
-            <summary>
-            Result of field validation operations
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.IsValid">
-            <summary>Gets or sets whether the validation passed</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.FieldName">
-            <summary>Gets or sets the name of the field being validated</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.ErrorMessage">
-            <summary>Gets or sets the primary error message</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.BlockName">
-            <summary>Gets or sets the name of the block containing the field</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.ValidationMessages">
-            <summary>Gets or sets a collection of validation error messages</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.Severity">
-            <summary>Gets or sets the severity level of the validation result</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.Context">
-            <summary>Gets or sets additional context information</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.ValidationTimestamp">
-            <summary>Gets or sets the timestamp when validation was performed</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.ValidatedValue">
-            <summary>Gets or sets the value that was validated</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.AddError(System.String)">
-            <summary>Adds a validation error message</summary>
-            <param name="message">The error message to add</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.AddWarning(System.String)">
-            <summary>Adds a validation warning message</summary>
-            <param name="message">The warning message to add</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationResult.AddContext(System.String,System.Object)">
-            <summary>Adds contextual information</summary>
-            <param name="key">The context key</param>
-            <param name="value">The context value</param>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationSeverity">
-            <summary>
-            Validation severity levels
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationSeverity.Info">
-            <summary>Informational message</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationSeverity.Warning">
-            <summary>Warning message</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationSeverity.Error">
-            <summary>Error message</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationSeverity.Critical">
-            <summary>Critical error message</summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTriggerEventArgs">
             <summary>
             Event arguments for validation triggers in Oracle Forms simulation
@@ -8890,90 +8828,73 @@
         <member name="T:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1">
             <summary>
             Helper class for centralized state management in UnitofWork.
-            Replaces scattered _entityStates dictionary manipulation across CRUD and Extensions.
+            Delegates to ObservableBindingList's built-in tracking system instead of a separate _entityStates dictionary.
             </summary>
             <typeparam name="T">Entity type</typeparam>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Generic.Dictionary{System.Int32,TheTechIdea.Beep.Editor.EntityState})">
+        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Func{TheTechIdea.Beep.Editor.ObservableBindingList{`0}})">
             <summary>
             Initializes a new instance of UnitofWorkStateHelper
             </summary>
             <param name="editor">DME Editor instance</param>
-            <param name="entityStates">Reference to the entity states dictionary from UnitofWork</param>
+            <param name="unitsProvider">Lazy provider for the Units collection (ObservableBindingList)</param>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.Units">
+            <summary>Gets the current Units collection from the provider.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.GetEntityState(`0)">
             <summary>
-            Gets the current state of an entity by its index
+            Gets the current state of an entity by querying OBL's tracking system.
             </summary>
-            <param name="entity">Entity to check (not used directly - state is index-based)</param>
+            <param name="entity">Entity to check</param>
             <returns>Entity state, or Unchanged if not tracked</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.GetEntityStateByIndex(System.Int32)">
-            <summary>
-            Gets entity state by index
-            </summary>
-            <param name="index">Index in the Units collection</param>
-            <returns>Entity state</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.SetEntityState(`0,TheTechIdea.Beep.Editor.EntityState)">
             <summary>
-            Sets the state of an entity by its index
+            Sets the state of an entity via OBL's tracking system.
             </summary>
-            <param name="entity">Entity (not used directly)</param>
-            <param name="state">New state</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.SetEntityStateByIndex(System.Int32,TheTechIdea.Beep.Editor.EntityState)">
-            <summary>
-            Sets entity state by index
-            </summary>
-            <param name="index">Index in the Units collection</param>
+            <param name="entity">Entity to set state for</param>
             <param name="state">New state</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.MarkForDeletion(`0)">
             <summary>
-            Marks entity at index for deletion
+            Marks entity for deletion via OBL's tracking system.
             </summary>
-            <param name="entity">Entity to mark</param>
+            <param name="entity">Entity to mark for deletion</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.MarkAsModified(`0)">
             <summary>
-            Marks entity at index as modified
+            Marks entity as modified via OBL's tracking system.
             </summary>
-            <param name="entity">Entity to mark</param>
+            <param name="entity">Entity to mark as modified</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.MarkAsAdded(`0)">
             <summary>
-            Marks entity at index as added
+            Marks entity as added via OBL's tracking system.
             </summary>
-            <param name="entity">Entity to mark</param>
+            <param name="entity">Entity to mark as added</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.ResetState(`0)">
             <summary>
-            Resets entity state to unchanged by index
+            Resets entity state to unchanged via OBL's tracking system.
             </summary>
             <param name="entity">Entity to reset</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.ResetStateByIndex(System.Int32)">
-            <summary>
-            Resets state for a specific index
-            </summary>
-            <param name="index">Index in the Units collection</param>
-        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.ClearAllStates">
             <summary>
-            Clears all tracked entity states
+            Clears all tracked entity states via OBL's AcceptChanges.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.GetIndicesByState(TheTechIdea.Beep.Editor.EntityState)">
             <summary>
-            Gets all indices with a specific state
+            Gets all indices with a specific state by querying OBL's tracking.
             </summary>
             <param name="state">State to filter by</param>
             <returns>Collection of indices</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkStateHelper`1.HasPendingChanges">
             <summary>
-            Checks if any entity has pending changes
+            Checks if any entity has pending changes via OBL's HasChanges.
             </summary>
             <returns>True if dirty</returns>
         </member>
@@ -9464,6 +9385,13 @@
             Handles Create, Read, Update, Delete operations with enhanced default value support
             </summary>
             <typeparam name="T">The type of entity</typeparam>
+            <summary>
+            OBL Integration partial class for UnitofWork.
+            Contains all passthrough methods/properties that delegate to ObservableBindingList's
+            enhanced capabilities (Validation, Undo/Redo, Computed, Bookmarks, ThreadSafety,
+            Freeze, BatchUpdate, Aggregates, Navigation enhancements, Master-Detail).
+            </summary>
+            <typeparam name="T">The type of entity.</typeparam>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._suppressNotification">
             <summary>Indicates whether notifications should be suppressed.</summary>
@@ -9486,20 +9414,11 @@
         <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsFilterOn">
             <summary>Indicates whether the filter is currently turned on.</summary>
         </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Tempunits">
-            <summary>A private observable binding list of type T for backup/rollback purposes.</summary>
-        </member>
         <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._units">
             <summary>The collection of units.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._filteredunits">
             <summary>The filtered units collection.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._entityStates">
-            <summary>Entity states tracking</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._deletedentities">
-            <summary>Deleted entities tracking</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.PKProperty">
             <summary>Primary key property info</summary>
@@ -9622,6 +9541,12 @@
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ConcurrencyFieldName">
             <summary>
             Gets or sets the field name used for optimistic concurrency (e.g., "RowVersion" or "LastModified").
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CommitOrder">
+            <summary>
+            Gets or sets the order in which entity states are committed during Commit().
+            Default: DeletesFirst (safest for FK constraints).
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.FilteredUnits">
@@ -9856,7 +9781,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CommitChangesToDataSource(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>
-            Commits individual changes to the data source with progress reporting
+            Commits individual changes to the data source using OBL's CommitAllAsync.
+            OBL handles ordering, BeforeSave/AfterSave events, validation blocking, and per-item tracking cleanup.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.AddRange(System.Collections.Generic.IEnumerable{`0})">
@@ -9997,24 +9923,25 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.UndoLastChange">
             <summary>
-            Undoes the last change made to the collection
+            Undoes the last change made to the collection.
+            Delegates to OBL's RejectChanges() which restores all items to their original values.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetAddedEntities">
             <summary>
-            Gets the indices of entities that have been added
+            Gets the indices of entities that have been added (tracked by OBL).
             </summary>
             <returns>Enumerable of indices</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetModifiedEntities">
             <summary>
-            Gets the indices of entities that have been modified
+            Gets the indices of entities that have been modified (tracked by OBL).
             </summary>
             <returns>Enumerable of indices</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetDeletedEntities">
             <summary>
-            Gets the entities that have been deleted
+            Gets the entities that have been deleted (from OBL's DeletedItems).
             </summary>
             <returns>Enumerable of deleted entities</returns>
         </member>
@@ -10046,7 +9973,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ItemPropertyChangedHandler(System.Object,System.ComponentModel.PropertyChangedEventArgs)">
             <summary>
-            Handles property changes on individual entities
+            Handles property changes on individual entities.
+            OBL already tracks state changes internally; this handler fires audit trail and events.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RecordChange(`0,System.String,System.Object,System.Object,TheTechIdea.Beep.Editor.EntityState)">
@@ -10056,7 +9984,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Units_CollectionChanged(System.Object,System.Collections.Specialized.NotifyCollectionChangedEventArgs)">
             <summary>
-            Handles collection change events
+            Handles collection change events.
+            OBL already tracks add/remove/reset state changes internally.
+            This handler wires/unwires PropertyChanged on items and notifies IsDirty.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetDataInUnits(System.Collections.Generic.IEnumerable{System.Object})">
@@ -10275,6 +10205,288 @@
             Checks if the requirements for a valid operation are validated
             </summary>
             <returns>True if the requirements are validated, false otherwise</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsAutoValidateEnabled">
+            <summary>
+            Gets or sets whether auto-validation is enabled.
+            When true, each property change triggers validation of the changed item.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.BlockCommitOnValidationError">
+            <summary>
+            Gets or sets whether commit is blocked when validation errors exist.
+            When true, CommitAllAsync will skip items that have Error-severity validation failures.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ValidateItem(`0)">
+            <summary>
+            Validates a single item using OBL's validation framework
+            (Data Annotations + EntityStructure-based CustomValidator).
+            </summary>
+            <param name="item">The item to validate</param>
+            <returns>Validation result with errors/warnings</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ValidateAll">
+            <summary>
+            Validates all items in the collection.
+            </summary>
+            <returns>Aggregate validation result</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetErrors(`0)">
+            <summary>
+            Gets validation errors for a specific item.
+            </summary>
+            <param name="item">The item to check</param>
+            <returns>List of validation errors</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetInvalidItems">
+            <summary>
+            Gets all items that currently have validation errors.
+            </summary>
+            <returns>List of invalid items</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsUndoEnabled">
+            <summary>
+            Gets or sets whether undo/redo is enabled.
+            When enabled, property changes and add/remove operations are recorded.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.MaxUndoDepth">
+            <summary>
+            Gets or sets the maximum number of undo actions to retain.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CanUndo">
+            <summary>
+            Gets whether there are actions that can be undone.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CanRedo">
+            <summary>
+            Gets whether there are actions that can be redone.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Undo">
+            <summary>
+            Undoes the last recorded action (property change, add, or remove).
+            </summary>
+            <returns>True if the undo was successful</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Redo">
+            <summary>
+            Redoes the last undone action.
+            </summary>
+            <returns>True if the redo was successful</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ClearUndoHistory">
+            <summary>
+            Clears all undo/redo history.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RegisterComputed(System.String,System.Func{`0,System.Object})">
+            <summary>
+            Registers a computed column that is evaluated on demand per item.
+            </summary>
+            <param name="name">Unique name for the computed column</param>
+            <param name="computation">Function that computes the value from an item</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.UnregisterComputed(System.String)">
+            <summary>
+            Unregisters a computed column.
+            </summary>
+            <param name="name">Name of the computed column to remove</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetComputed(`0,System.String)">
+            <summary>
+            Gets the computed value for an item and column name.
+            </summary>
+            <param name="item">The item</param>
+            <param name="name">The computed column name</param>
+            <returns>The computed value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GetAllComputed(`0)">
+            <summary>
+            Gets all computed values for an item.
+            </summary>
+            <param name="item">The item</param>
+            <returns>Dictionary of computed column name → value</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ComputedColumnNames">
+            <summary>
+            Gets the registered computed column names.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.SetBookmark(System.String)">
+            <summary>
+            Sets a named bookmark at the current position.
+            </summary>
+            <param name="name">Bookmark name</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GoToBookmark(System.String)">
+            <summary>
+            Navigates to a named bookmark position.
+            </summary>
+            <param name="name">Bookmark name</param>
+            <returns>True if the bookmark was found and navigation succeeded</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RemoveBookmark(System.String)">
+            <summary>
+            Removes a named bookmark.
+            </summary>
+            <param name="name">Bookmark name</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ClearBookmarks">
+            <summary>
+            Clears all bookmarks.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsThreadSafe">
+            <summary>
+            Gets or sets whether thread-safe (reader-writer lock) operations are enabled.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsFrozen">
+            <summary>
+            Gets whether the collection is currently frozen (read-only).
+            When frozen, add/remove/set operations throw InvalidOperationException.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Freeze">
+            <summary>
+            Freezes the collection, making it read-only.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Unfreeze">
+            <summary>
+            Unfreezes the collection, allowing mutations again.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.BeginBatchUpdate">
+            <summary>
+            Begins a batch update scope that suppresses change notifications
+            until the returned IDisposable is disposed. Supports nesting.
+            </summary>
+            <returns>An IDisposable that ends the batch when disposed</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Sum(System.String)">
+            <summary>Computes the sum of a numeric property across all items.</summary>
+            <param name="propertyName">Property name</param>
+            <returns>Sum value</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.SumWhere(System.String,System.Func{`0,System.Boolean})">
+            <summary>Computes the sum of a numeric property for items matching a predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Average(System.String)">
+            <summary>Computes the average of a numeric property across all items.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.AverageWhere(System.String,System.Func{`0,System.Boolean})">
+            <summary>Computes the average of a numeric property for items matching a predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Min(System.String)">
+            <summary>Gets the minimum value of a property across all items.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Max(System.String)">
+            <summary>Gets the maximum value of a property across all items.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CountWhere(System.Func{`0,System.Boolean})">
+            <summary>Counts items matching a predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GroupBy(System.String)">
+            <summary>Groups items by a property value.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.DistinctValues(System.String)">
+            <summary>Gets distinct values of a property.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsAtBOF">
+            <summary>
+            Gets whether the current position is at the beginning of the collection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsAtEOF">
+            <summary>
+            Gets whether the current position is at the end of the collection.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsEmpty">
+            <summary>
+            Gets whether the collection is empty.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.MoveToItem(`0)">
+            <summary>
+            Moves the current position to the specified item.
+            </summary>
+            <param name="item">The item to navigate to</param>
+            <returns>True if the item was found and navigation succeeded</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsVirtualMode">
+            <summary>
+            Gets whether the collection is in virtual/lazy loading mode.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.PageCacheSize">
+            <summary>
+            Gets or sets the number of pages to keep in cache.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.VirtualTotalPages">
+            <summary>
+            Gets the total number of virtual pages.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.EnableVirtualMode(System.Int32)">
+            <summary>
+            Enables virtual mode by setting the total item count and configuring
+            OBL's data provider to fetch from this UOW's DataSource.
+            </summary>
+            <param name="totalCount">Total number of items available</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.DisableVirtualMode">
+            <summary>
+            Disables virtual mode and clears the data provider.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.GoToPageAsync(System.Int32)">
+            <summary>
+            Navigates to a specific page in virtual mode.
+            </summary>
+            <param name="pageNumber">1-based page number</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.PrefetchAdjacentPagesAsync">
+            <summary>
+            Pre-fetches pages adjacent to the current page for smoother navigation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.InvalidatePageCache">
+            <summary>
+            Invalidates all cached pages, forcing a re-fetch on next access.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RegisterDetail``1(TheTechIdea.Beep.Editor.ObservableBindingList{``0},System.String,System.String)">
+            <summary>
+            Registers a child list for automatic master-detail synchronization.
+            When the master's current position changes, the child list is auto-filtered
+            to show only items matching the master's current key value.
+            </summary>
+            <typeparam name="TChild">Child entity type</typeparam>
+            <param name="childList">The child ObservableBindingList</param>
+            <param name="foreignKeyProperty">Property name on TChild that references the master's key</param>
+            <param name="masterKeyProperty">Property name on T that is the master key</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.UnregisterDetail``1(TheTechIdea.Beep.Editor.ObservableBindingList{``0})">
+            <summary>
+            Unregisters a child list from master-detail synchronization.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.UnregisterAllDetails">
+            <summary>
+            Unregisters all child lists from master-detail synchronization.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.DetailLists">
+            <summary>
+            Gets the registered detail lists (read-only).
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory">
             <summary>

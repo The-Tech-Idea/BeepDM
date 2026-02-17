@@ -1427,6 +1427,86 @@
             Executes an action with event suppression and performance monitoring
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.CommitOrder">
+            <summary>
+            Controls the order in which entity states are committed.
+            Default: DeletesFirst to avoid FK constraint violations.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.CommitOrder.DeletesFirst">
+            <summary>Deletes → Updates → Inserts (safest for FK constraints).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.CommitOrder.InsertsFirst">
+            <summary>Inserts → Updates → Deletes.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.CommitOrder.AsTracked">
+            <summary>Process in the order items appear in tracking.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.CommitItemResult">
+            <summary>
+            Result of committing a single item within a batch commit.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitItemResult.Item">
+            <summary>The item that was committed (or attempted).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitItemResult.EntityState">
+            <summary>The entity state at the time of commit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitItemResult.Success">
+            <summary>True if the individual commit succeeded.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitItemResult.Errors">
+            <summary>Error information if the commit failed.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.CommitResult">
+            <summary>
+            Aggregate result returned by CommitAllAsync.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.Results">
+            <summary>Per-item commit results.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.AllSucceeded">
+            <summary>True if ALL items committed successfully.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.SuccessCount">
+            <summary>Number of successfully committed items.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.FailedCount">
+            <summary>Number of failed items.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.TotalCount">
+            <summary>Total items processed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.FailedResults">
+            <summary>Returns only the failed results.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.EntityState">
+            <summary>
+            Represents the state of an entity within an ObservableBindingList's change tracker.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EntityState.Added">
+            <summary>The entity has been added but not yet persisted.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EntityState.Modified">
+            <summary>One or more properties have been modified since the last accept.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EntityState.Deleted">
+            <summary>The entity has been marked for deletion.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EntityState.Unchanged">
+            <summary>The entity has no pending changes.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EntityState.Detached">
+            <summary>The entity has been removed from tracking without being persisted.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.EntityUpdateInsertLog.LogId">
+            <summary>
+            Unique identifier for this log entry, used as dictionary key to avoid DateTime collision (BUG 12).
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.IDataSourceHelper">
             <summary>
             Defines the contract for all datasource-specific helper implementations.
@@ -1804,6 +1884,199 @@
             Represents a single change record for audit trail purposes
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Sum(System.String)">
+            <summary>
+            Sums a numeric property across all items in the current view.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SumWhere(System.String,System.Func{`0,System.Boolean})">
+            <summary>
+            Sums a numeric property across items matching a predicate.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Average(System.String)">
+            <summary>
+            Averages a numeric property across all items in the current view.
+            Returns 0 if no items.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AverageWhere(System.String,System.Func{`0,System.Boolean})">
+            <summary>
+            Averages a numeric property across items matching a predicate.
+            Returns 0 if no matching items.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Min(System.String)">
+            <summary>
+            Gets the minimum value of a property across all items in the current view.
+            Returns null if no items.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Max(System.String)">
+            <summary>
+            Gets the maximum value of a property across all items in the current view.
+            Returns null if no items.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.CountWhere(System.Func{`0,System.Boolean})">
+            <summary>
+            Counts items matching a predicate in the current view.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GroupBy(System.String)">
+            <summary>
+            Groups items by a property value.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GroupByWhere(System.String,System.Func{`0,System.Boolean})">
+            <summary>
+            Groups items by a property, but only items matching a predicate.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.DistinctValues(System.String)">
+            <summary>
+            Returns distinct values for a property in the current view.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetPropertyOrThrow(System.String)">
+            <summary>
+            Gets a PropertyInfo for the given property name, throwing if not found.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ConvertToDecimal(System.Object)">
+            <summary>
+            Safely converts a value to decimal for aggregation.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._bookmarks">
+            <summary>
+            Named bookmarks mapping name → index position.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.Bookmarks">
+            <summary>
+            Gets all saved bookmarks as a read-only dictionary.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SetBookmark(System.String)">
+            <summary>
+            Saves the current cursor position under the given name.
+            Overwrites an existing bookmark with the same name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SetBookmark(System.String,System.Int32)">
+            <summary>
+            Saves a specific index position under the given name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GoToBookmark(System.String)">
+            <summary>
+            Navigates to a previously saved bookmark.
+            Returns false if the bookmark doesn't exist or the saved position is no longer valid.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveBookmark(System.String)">
+            <summary>
+            Removes a specific bookmark.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearBookmarks">
+            <summary>
+            Removes all bookmarks.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.InvalidateBookmarks">
+            <summary>
+            Invalidates all bookmarks (called after filter/sort/page changes).
+            Marks all saved positions as potentially stale by removing those
+            that are now out of range.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._computedColumns">
+            <summary>
+            Registered computed column definitions.
+            Key: computed column name, Value: computation function.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._computedCache">
+            <summary>
+            Cached computed values per item.
+            Outer key: item reference, Inner key: computed column name.
+            Invalidated per-item on property change.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RegisterComputed(System.String,System.Func{`0,System.Object})">
+            <summary>
+            Registers a computed column that auto-recalculates on property change.
+            </summary>
+            <param name="name">Logical name of the computed column (e.g. "FullName").</param>
+            <param name="computation">Function that computes the value from an item.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.UnregisterComputed(System.String)">
+            <summary>
+            Removes a registered computed column.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.ComputedColumnNames">
+            <summary>
+            Gets all registered computed column names.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetComputed(`0,System.String)">
+            <summary>
+            Gets the computed value for a specific column on a specific item.
+            Uses cache if available; otherwise computes and caches.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetAllComputed(`0)">
+            <summary>
+            Gets all computed values for a specific item.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.InvalidateComputedCache(`0)">
+            <summary>
+            Clears the computed cache for a specific item.
+            Called internally on property change to trigger recalculation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearComputedCache">
+            <summary>
+            Clears all computed caches.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearItems">
+            <summary>
+            Override ClearItems to unhook PropertyChanged handlers before clearing,
+            and reset all tracking state.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Dispose">
+            <summary>
+            Disposes the ObservableBindingList, unhooking all event handlers.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AddNewCore">
+            <summary>Creates and adds a new default instance of T to the list.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AddNew(`0)">
+            <summary>Adds an existing item to the list.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AddNew">
+            <summary>Adds a new default item to the list (hides base BindingList.AddNew).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AddRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>Adds a range of items with a single notification event.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Removes a range of items with a single notification event.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveAll(System.Func{`0,System.Boolean})">
+            <summary>
+            Removes all items matching the predicate with a single notification event.
+            </summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._propertyInfoCache">
             <summary>
             Static cache for PropertyInfo lookups to avoid repeated reflection calls.
@@ -1826,6 +2099,200 @@
             Backward-compatible list view of all tracking records.
             Prefer internal dictionary lookups for performance.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.CurrentUser">
+            <summary>
+            Configurable identity of the current user, used for Tracking.ModifiedBy.
+            Defaults to Environment.UserName.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._insertionOrderList">
+            <summary>
+            Snapshot of items in their original insertion order.
+            Used by RemoveSortCore to restore pre-sort order.
+            Kept in sync by InsertItem, RemoveItem, AddRange, RemoveRange.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._activeFilterPredicate">
+            <summary>
+            The predicate-based filter that is currently active (from ApplyFilter(Func&lt;T,bool&gt;)).
+            Null when no predicate filter is active.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._activeSortProperty">
+            <summary>
+            The PropertyDescriptor used by the active sort. Null when no sort is active.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._activeSortDirection">
+            <summary>
+            The direction of the active sort.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._isPagingActive">
+            <summary>
+            True when pagination is active (SetPageSize has been called).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._filteredCount">
+            <summary>
+            Count of items after filtering but before pagination.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._currentWorkingSet">
+            <summary>
+            The filtered+sorted working set used as the source for pagination.
+            Null when no filter or sort has been applied.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsFiltered">
+            <summary>True when a filter predicate or filter string is active.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsPaged">
+            <summary>True when pagination is active.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.TotalCount">
+            <summary>Total count of items in the master list (before any filtering).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.FilteredCount">
+            <summary>Count of items after filtering (before pagination). If no filter, equals TotalCount.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.FilterApplied">
+            <summary>Raised after a filter has been applied.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.FilterRemoved">
+            <summary>Raised after a filter has been removed.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.SortApplied">
+            <summary>Raised after a sort has been applied.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.SortRemoved">
+            <summary>Raised after a sort has been removed.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.BatchOperationStarted">
+            <summary>Raised when a batch operation (AddRange, RemoveRange) starts.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.BatchOperationCompleted">
+            <summary>Raised when a batch operation (AddRange, RemoveRange) completes.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.BeforeSave">
+            <summary>
+            Raised BEFORE CommitItemAsync persists an item. Set Cancel = true to abort the commit.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.AfterSave">
+            <summary>
+            Raised AFTER CommitItemAsync has successfully persisted an item.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.CurrentIndex">
+            <summary>
+            Gets or sets the current position. Setting calls MoveTo(value).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.Current">
+            <summary>
+            Gets the item at the current position. Read-only — change via CurrentIndex or Move methods.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MoveToItem(`0)">
+            <summary>
+            Navigates to the position of the specified item.
+            Returns true if the item was found and position changed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsAtBOF">
+            <summary>True when cursor is at the first item or the list is empty.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsAtEOF">
+            <summary>True when cursor is at the last item or the list is empty.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsEmpty">
+            <summary>True when the list contains no items.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsPositionValid">
+            <summary>True when _currentIndex points to a valid item.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.CurrentChanging">
+            <summary>
+            Fires BEFORE the current position changes. Set Cancel = true to prevent navigation.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.CurrentChanged">
+            <summary>
+            Fires AFTER the current position has changed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RaiseCurrentChanging(System.Int32)">
+            <summary>
+            Raises CurrentChanging. Returns true if the navigation was NOT cancelled.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.OnCurrentChanged">
+            <summary>
+            Fires CurrentChanged and PropertyChanged("Current").
+            Also syncs master-detail relationships.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MoveNext">
+            <summary>Moves to the next item. Returns false if already at EOF.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MovePrevious">
+            <summary>Moves to the previous item. Returns false if already at BOF.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MoveFirst">
+            <summary>Moves to the first item. Returns false if list is empty.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MoveLast">
+            <summary>Moves to the last item. Returns false if list is empty.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MoveTo(System.Int32)">
+            <summary>Moves to the specified index. Returns false if index is out of range or cancelled.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SetPosition(System.Int32)">
+            <summary>
+            Sets position without raising CurrentChanging (internal/programmatic use).
+            Still fires CurrentChanged.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ToDataTable(System.String)">
+            <summary>
+            Exports the current items to a DataTable. Mirror of the DataTable import constructor.
+            </summary>
+            <param name="tableName">Optional name for the DataTable. Defaults to the type name.</param>
+            <returns>A DataTable containing all items and their property values.</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SupportsFiltering">
+            <summary>Indicates that filtering is supported.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplyActiveSortIfNeeded(System.Collections.Generic.List{`0})">
+            <summary>
+            After filtering from originalList, re-applies the active sort if one is set.
+            Called by all ApplyFilter methods before ResetItems.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ReapplyActiveTransformations">
+            <summary>
+            Re-derives the view from originalList by calling existing filter/sort/page methods
+            in sequence based on which state fields are set. Called by InsertItem, RemoveItem,
+            AddRange, RemoveRange after data mutations to keep the view consistent.
+            Does NOT replace existing methods — just calls them.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplyFilter(System.Func{`0,System.Boolean})">
+            <summary>Applies or removes a filter using a predicate function.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplyFilter(System.String,System.Object,System.String)">
+            <summary>Applies a filter by comparing a property value using the specified operator.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.Filter">
+            <summary>Gets or sets the string-based filter expression (IBindingListView).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveFilter">
+            <summary>Removes any active filter and restores the full list.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ResetBindings">
+            <summary>Resets bindings by firing a ListChanged Reset event.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.WhereContains(System.String,System.String,System.Boolean)">
             <summary>
@@ -1858,6 +2325,104 @@
         <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchCompletedEventArgs`1">
             <summary>
             Event arguments for search completion
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchCompletedEventArgs`1.Results">
+            <summary>Gets the list of search results.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchCompletedEventArgs`1.Count">
+            <summary>Gets the number of results found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchCompletedEventArgs`1.#ctor(System.Collections.Generic.List{`1})">
+            <summary>Initializes a new SearchCompletedEventArgs with the given results.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.FindIndex(System.Predicate{`0})">
+            <summary>Finds the index of the first item matching the predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Search(System.Func{`0,System.Boolean})">
+            <summary>Searches the original list and returns all items matching the predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Find(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>Finds the first item matching the expression predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Find(System.String,System.Object)">
+            <summary>Finds the first item where the named property equals the given value.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.OnListChanged(System.ComponentModel.ListChangedEventArgs)">
+            <summary>Handles list change notifications. Suppressed during position changes.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveItem(System.Int32)">
+            <summary>Removes an item at the specified index, tracks deletion, and fires events.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.InsertItem(System.Int32,`0)">
+            <summary>Inserts an item at the specified index, creates tracking, and fires events.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SetItem(System.Int32,`0)">
+            <summary>Replaces an item at the specified index, tracks changes, and fires events.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.CollectionChanged">
+            <summary>Occurs when the collection changes (INotifyCollectionChanged implementation).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.OnCollectionChanged(System.Collections.Specialized.NotifyCollectionChangedEventArgs)">
+            <summary>Raises the CollectionChanged event.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration">
+            <summary>
+            Internal record that describes a registered detail relationship.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.ChildList">
+            <summary>The child list (stored as object because TChild varies).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.ForeignKeyProperty">
+            <summary>PropertyInfo on the child type for the foreign key (e.g. "ParentId").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.MasterKeyProperty">
+            <summary>PropertyInfo on T for the master key (e.g. "Id").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.ApplyFilterAction">
+            <summary>Action that applies the filter on the child list given the master key value.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.RemoveFilterAction">
+            <summary>Action that removes the filter on the child list.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._detailRegistrations">
+            <summary>
+            All registered detail relationships.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailLists">
+            <summary>
+            Public read-only list of registered child list references.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RegisterDetail``1(TheTechIdea.Beep.Editor.ObservableBindingList{``0},System.String,System.String)">
+            <summary>
+            Registers a child list as a detail of this (master) list.
+            When the current item on this list changes, the child list is automatically
+            filtered to show only items whose foreignKeyProp matches the master's masterKeyProp.
+            </summary>
+            <typeparam name="TChild">The entity type of the child list.</typeparam>
+            <param name="childList">The child ObservableBindingList to auto-filter.</param>
+            <param name="foreignKeyProp">Property name on TChild that holds the FK value (e.g. "ParentId").</param>
+            <param name="masterKeyProp">Property name on T that holds the master key value (e.g. "Id").</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.UnregisterDetail``1(TheTechIdea.Beep.Editor.ObservableBindingList{``0})">
+            <summary>
+            Unregisters a child list from the master-detail relationship.
+            Removes any active filter that was applied by the relationship.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.UnregisterAllDetails">
+            <summary>
+            Unregisters all detail lists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SyncDetailLists">
+            <summary>
+            Called internally when the current position changes.
+            Iterates all registered detail lists and re-applies their FK filter
+            based on the new master key value.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchByProperties(System.Collections.Generic.Dictionary{System.String,System.Object},System.String)">
@@ -1904,33 +2469,805 @@
             <param name="predicate">Search predicate function</param>
             <returns>Number of items found</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearItems">
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SupportsSortingCore">
+            <summary>Indicates that sorting is supported.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsSortedCore">
+            <summary>Gets whether the list is currently sorted.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SortPropertyCore">
+            <summary>Gets the property used for the current sort.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SortDirectionCore">
+            <summary>Gets the direction of the current sort.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SortDescriptions">
+            <summary>Gets the collection of sort descriptions for multi-column sorting.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SupportsAdvancedSorting">
+            <summary>Indicates that advanced (multi-column) sorting is supported.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplySort(System.String,System.ComponentModel.ListSortDirection)">
+            <summary>Sorts the list by the named property in the specified direction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplySortCore(System.ComponentModel.PropertyDescriptor,System.ComponentModel.ListSortDirection)">
+            <summary>Applies a sort using a PropertyDescriptor (IBindingList implementation).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveSort">
+            <summary>Removes the current sort and restores insertion order.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveSortCore">
+            <summary>Core implementation: removes the sort and restores original insertion order.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplySort(System.ComponentModel.ListSortDescriptionCollection)">
+            <summary>Applies a multi-column sort using ListSortDescriptionCollection.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SortDirection">
+            <summary>Gets or sets the current sort direction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Sort(System.String)">
+            <summary>Sorts the list by the named property using the current SortDirection.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._rwLock">
             <summary>
-            Override ClearItems to unhook PropertyChanged handlers before clearing,
-            and reset all tracking state.
+            Reader-writer lock for thread-safe operations.
+            Created lazily when thread safety is enabled.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Dispose">
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._isThreadSafe">
             <summary>
-            Disposes the ObservableBindingList, unhooking all event handlers.
+            When true, all public reads and mutations are wrapped in reader/writer locks.
+            Default: false (zero overhead).
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ToDataTable(System.String)">
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsThreadSafe">
             <summary>
-            Exports the current items to a DataTable. Mirror of the DataTable import constructor.
-            </summary>
-            <param name="tableName">Optional name for the DataTable. Defaults to the type name.</param>
-            <returns>A DataTable containing all items and their property values.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveRange(System.Collections.Generic.IEnumerable{`0})">
-            <summary>
-            Removes a range of items with a single notification event.
+            Gets or sets whether thread-safe mode is enabled.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveAll(System.Func{`0,System.Boolean})">
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.EnterReadLock">
             <summary>
-            Removes all items matching the predicate with a single notification event.
+            Enters a read lock if thread safety is enabled.
+            Returns an IDisposable that releases the lock.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.EnterWriteLock">
+            <summary>
+            Enters a write lock if thread safety is enabled.
+            Returns an IDisposable that releases the lock.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ReadLocked``1(System.Func{``0})">
+            <summary>
+            Executes an action under a read lock (if thread safety is enabled).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.WriteLocked(System.Action)">
+            <summary>
+            Executes an action under a write lock (if thread safety is enabled).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._isFrozen">
+            <summary>
+            When true, all mutations throw InvalidOperationException.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsFrozen">
+            <summary>
+            Gets whether the list is currently frozen (read-only).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Freeze">
+            <summary>
+            Freezes the list, preventing all mutations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Unfreeze">
+            <summary>
+            Unfreezes the list, allowing mutations again.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ThrowIfFrozen">
+            <summary>
+            Throws if the list is frozen. Call at the start of mutation operations.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._batchUpdateDepth">
+            <summary>
+            Saved state for nested batch updates.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.BeginBatchUpdate">
+            <summary>
+            Begins a batch update. Suppresses all notifications until the returned
+            IDisposable is disposed. Supports nesting — only the outermost batch
+            fires a Reset notification.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.EndBatchUpdate">
+            <summary>
+            Ends a batch update. Only the outermost batch fires a reset.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.BatchUpdateScope">
+            <summary>
+            Disposable scope for batch updates.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.NullDisposable">
+            <summary>
+            No-op disposable returned when thread safety is disabled.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.LockReleaser">
+            <summary>
+            Releases a reader or writer lock on dispose.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.HasChanges">
+            <summary>True if any tracked entity has a state other than Unchanged.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DirtyItems">
+            <summary>All items with Modified or Added state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DirtyCount">
+            <summary>Count of items with Modified or Added state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.AddedCount">
+            <summary>Count of items with Added state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.ModifiedCount">
+            <summary>Count of items with Modified state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DeletedCount">
+            <summary>Count of items with Deleted state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.AddedItems">
+            <summary>Read-only list of items with Added state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DeletedItems">
+            <summary>Read-only list of items that have been deleted (in DeletedList).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetOriginalIndex(`0)">
+            <summary>Gets the original index of the specified item in the master list.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetItem">
+            <summary>Gets the item at the current cursor position.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetItemFromOriginalList(System.Int32)">
+            <summary>Gets an item from the original (unfiltered) list by index.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetItemFromCurrentList(System.Int32)">
+            <summary>Gets an item from the current (visible) list by index.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetItemFroCurrentList(System.Int32)">
+            <summary>Obsolete. Use GetItemFromCurrentList instead.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetTrackingItem(`0)">
+            <summary>Gets the tracking record associated with the specified item.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MarkAsCommitted(`0)">
+            <summary>Marks an item as committed (saved), resets its tracking state to Unchanged.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ResetAfterCommit">
+            <summary>Resets all tracking state after a bulk commit. Removes deleted items and clears logs.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.CommitItemAsync(`0,System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}})">
+            <summary>Commits a single item asynchronously using the provided insert/update/delete delegates.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.CommitAllAsync(System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}})">
+            <summary>
+            Commits all pending changes in the default order (Deletes → Updates → Inserts).
+            Fires BeforeSave/AfterSave per item, calls AcceptChanges for succeeded items,
+            and rebuilds tracking indexes once at the end.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.CommitAllAsync(System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},TheTechIdea.Beep.Editor.CommitOrder)">
+            <summary>
+            Commits all pending changes in the specified order.
+            Returns a CommitResult with per-item success/failure details.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetPendingChanges">
+            <summary>Returns all pending (unsaved) changes grouped by Added, Modified, and Deleted.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SnapshotValues(`0)">
+            <summary>
+            Creates a snapshot of all property values for the given item.
+            Uses the static PropertyInfo cache for performance.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetOriginalValue(`0,System.String)">
+            <summary>
+            Returns the original (pre-modification) value of a single property.
+            Returns null if no snapshot exists or the property was not captured.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetOriginalItem(`0)">
+            <summary>
+            Reconstructs a new T instance populated with the original (pre-modification) values.
+            Returns null if no snapshot exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsDirty(`0)">
+            <summary>
+            Returns true if the item's tracking state is anything other than Unchanged.
+            Returns false if the item is not tracked.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetChanges(`0)">
+            <summary>
+            Returns a per-property diff between the original snapshot and the current values.
+            Only includes properties that have actually changed.
+            Returns an empty dictionary if no snapshot exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AcceptChanges">
+            <summary>
+            Marks ALL tracked items as Unchanged, clears original-value snapshots,
+            modified-property lists, DeletedList, UpdateLog, and ChangedValues.
+            Call after a successful bulk save/commit.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AcceptChanges(`0)">
+            <summary>
+            Marks a single item as Unchanged and clears its original-value snapshot.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RejectChanges">
+            <summary>
+            Reverts ALL pending changes: restores Modified items from snapshots,
+            removes Added items, restores Deleted items. Resets all states to Unchanged.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RejectChanges(`0)">
+            <summary>
+            Reverts a single item's changes. Restores Modified items from snapshot,
+            removes Added items, restores Deleted items.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._undoRedoManager">
+            <summary>
+            The undo/redo manager instance. Created lazily when undo is enabled.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._isUndoEnabled">
+            <summary>
+            When true, property changes and CRUD operations are recorded for undo/redo.
+            Default: false (zero overhead when off).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsUndoEnabled">
+            <summary>
+            Gets or sets whether undo/redo tracking is enabled.
+            Enabling creates the UndoRedoManager; disabling does NOT clear history.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.MaxUndoDepth">
+            <summary>
+            Gets or sets the maximum undo depth. Default: 50.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.CanUndo">
+            <summary>True if there are actions to undo.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.CanRedo">
+            <summary>True if there are actions to redo.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RecordPropertyChangeForUndo(`0,System.String,System.Object,System.Object)">
+            <summary>
+            Records a property-change action for undo.
+            Called from Item_PropertyChanged when undo is enabled.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RecordInsertForUndo(`0,System.Int32)">
+            <summary>
+            Records an insertion for undo.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RecordRemoveForUndo(`0,System.Int32)">
+            <summary>
+            Records a removal for undo.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._isUndoing">
+            <summary>
+            Flag to prevent re-recording during undo/redo execution.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Undo">
+            <summary>
+            Undoes the most recent action.
+            Returns true if an action was undone.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Redo">
+            <summary>
+            Redoes the most recently undone action.
+            Returns true if an action was redone.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearUndoHistory">
+            <summary>
+            Clears all undo/redo history.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplyUndoAction(TheTechIdea.Beep.Editor.UndoAction{`0},System.Boolean)">
+            <summary>
+            Applies an undo or redo action.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._annotationCache">
+            <summary>
+            Static cache of validation attributes per property for type T.
+            Key: PropertyName, Value: list of ValidationAttribute instances.
+            Built once per generic type instantiation.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._validationCache">
+            <summary>
+            Cached validation results, keyed by item reference.
+            Invalidated on property change for the affected item.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsAutoValidateEnabled">
+            <summary>
+            When true, each property change triggers validation of the changed item.
+            Default: false (opt-in).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.BlockCommitOnValidationError">
+            <summary>
+            When true, CommitItemAsync blocks items that have Error-severity validation failures.
+            Default: true.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.CustomValidator">
+            <summary>
+            Optional custom validator. Called after Data Annotations.
+            Return a ValidationResult with any additional errors.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.ObservableBindingList`1.ValidationFailed">
+            <summary>
+            Raised when validation fails for an item (auto-validate or explicit call).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Validate(`0)">
+            <summary>
+            Validates a single item using Data Annotations and the CustomValidator.
+            Caches the result and raises ValidationFailed if errors exist.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ValidateProperty(`0,System.String)">
+            <summary>
+            Validates a single property on an item.
+            Updates the cached result for the item (merges with existing non-property errors).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ValidateAll">
+            <summary>
+            Validates every item in the current list.
+            Returns a merged ValidationResult.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsAllValid">
+            <summary>
+            True when all items in the current list pass validation (no Error-severity issues).
+            Forces a full validation if the cache is empty.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetErrors(`0)">
+            <summary>
+            Gets all validation errors for a specific item.
+            Returns cached result or runs validation if not cached.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetErrors(`0,System.String)">
+            <summary>
+            Gets validation errors for a specific property on a specific item.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetInvalidItems">
+            <summary>
+            Returns all items that currently have validation errors.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearValidationCache">
+            <summary>
+            Clears the validation cache for all items.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearValidationCache(`0)">
+            <summary>
+            Clears the validation cache for a specific item.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RunAnnotationValidation(`0,TheTechIdea.Beep.Editor.ValidationResult,System.String)">
+            <summary>
+            Runs Data Annotation validation attributes against an item.
+            If propertyFilter is non-null, only validates that property.
+            Appends errors to the provided result.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AutoValidateProperty(`0,System.String)">
+            <summary>
+            Called from Item_PropertyChanged when auto-validation is enabled.
+            Validates only the changed property for efficiency.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._dataProvider">
+            <summary>
+            The async data provider callback: (pageIndex, pageSize) → page items.
+            Null when not in virtual mode.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._virtualTotalCount">
+            <summary>
+            Total item count available server-side (used for TotalPages in virtual mode).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._pageCacheSize">
+            <summary>
+            Number of pages to cache in memory (current + neighbors). Default: 3.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._pageCache">
+            <summary>
+            LRU page cache. Key: zero-based page index, Value: page items.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._pageCacheOrder">
+            <summary>
+            Ordered list of cached page indices for LRU eviction.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.IsVirtualMode">
+            <summary>
+            True when a data provider is set (virtual/lazy loading mode).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.PageCacheSize">
+            <summary>
+            Gets or sets the number of pages to keep cached. Default: 3.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SetDataProvider(System.Func{System.Int32,System.Int32,System.Threading.Tasks.Task{System.Collections.Generic.List{`0}}})">
+            <summary>
+            Sets the async data provider for virtual/lazy loading.
+            When set, GoToPage will call the provider instead of reading from originalList.
+            </summary>
+            <param name="provider">Async function: (pageIndex, pageSize) → List&lt;T&gt;.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ClearDataProvider">
+            <summary>
+            Clears the data provider, returning to normal (non-virtual) mode.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SetTotalItemCount(System.Int32)">
+            <summary>
+            Sets the total number of items available server-side.
+            Used to calculate TotalPages in virtual mode.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.VirtualTotalPages">
+            <summary>
+            Gets the total pages in virtual mode (uses _virtualTotalCount instead of originalList.Count).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GoToPageAsync(System.Int32)">
+            <summary>
+            Navigates to a page in virtual mode, loading data from the provider.
+            Falls back to normal GoToPage if not in virtual mode.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.PrefetchAdjacentPagesAsync">
+            <summary>
+            Pre-fetches adjacent pages into the cache for smooth navigation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.InvalidatePageCache">
+            <summary>
+            Invalidates the page cache, forcing reload on next navigation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.TrimPageCache">
+            <summary>
+            Evicts oldest pages from cache when it exceeds PageCacheSize.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.CurrentChangingEventArgs">
+            <summary>
+            Fired BEFORE the current position changes. Set Cancel = true to prevent navigation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CurrentChangingEventArgs.OldIndex">
+            <summary>Index before the move.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CurrentChangingEventArgs.NewIndex">
+            <summary>Proposed new index.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CurrentChangingEventArgs.OldItem">
+            <summary>Item at OldIndex (may be null if list is empty).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CurrentChangingEventArgs.NewItem">
+            <summary>Item at NewIndex (may be null if list is empty).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CurrentChangingEventArgs.Cancel">
+            <summary>Set to true to cancel the navigation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BatchOperationEventArgs">
+            <summary>
+            Raised around AddRange / RemoveRange batch operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BatchOperationEventArgs.OperationType">
+            <summary>Type of batch operation: "AddRange", "RemoveRange", "RemoveAll".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BatchOperationEventArgs.ItemCount">
+            <summary>Number of items in the batch.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.CommitEventArgs`1">
+            <summary>
+            Raised around commit/save operations with cancel support.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitEventArgs`1.Item">
+            <summary>The item being committed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitEventArgs`1.EntityState">
+            <summary>The entity state at time of commit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitEventArgs`1.Cancel">
+            <summary>Set to true to cancel the commit for this item.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ObservableChanges`1">
+            <summary>
+            Represents a snapshot of all pending changes (added, modified, deleted) in an ObservableBindingList.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableChanges`1.HasChanges">
+            <summary>True if there are any pending changes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ObservableChanges`1.TotalCount">
+            <summary>Total count of all pending changes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Tracking">
+            <summary>
+            Tracks the state and change history of a single entity in an ObservableBindingList.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Tracking.OriginalValues">
+            <summary>
+            Snapshot of all property values at the time of first modification.
+            Populated once when EntityState transitions from Unchanged to Modified.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Tracking.ModifiedProperties">
+            <summary>
+            List of property names that have been modified since the last accept.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Tracking.ModifiedAt">
+            <summary>
+            UTC timestamp of the most recent modification.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Tracking.ModifiedBy">
+            <summary>
+            Identity of the user who last modified this entity.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Tracking.Version">
+            <summary>
+            Incremented on each property change. Useful for optimistic concurrency.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Tracking.IsDirty">
+            <summary>
+            True when EntityState is anything other than Unchanged.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UndoActionType">
+            <summary>
+            Describes the type of undoable action.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UndoActionType.PropertyChange">
+            <summary>A property value was changed.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UndoActionType.Insert">
+            <summary>An item was inserted.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UndoActionType.Remove">
+            <summary>An item was removed.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UndoAction`1">
+            <summary>
+            Represents a single undoable/redoable action.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.ActionType">
+            <summary>The type of action.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.Item">
+            <summary>The affected item.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.PropertyName">
+            <summary>The property name (for PropertyChange actions).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.OldValue">
+            <summary>The old value before the change.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.NewValue">
+            <summary>The new value after the change.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.Index">
+            <summary>The index position of the action.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoAction`1.Timestamp">
+            <summary>When the action occurred.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UndoRedoManager`1">
+            <summary>
+            Manages undo/redo stacks with configurable depth.
+            Opt-in: zero overhead when not enabled.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoRedoManager`1.MaxUndoDepth">
+            <summary>
+            Maximum number of undo actions retained. Default: 50.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoRedoManager`1.CanUndo">
+            <summary>True if there are actions to undo.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoRedoManager`1.CanRedo">
+            <summary>True if there are actions to redo.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoRedoManager`1.UndoCount">
+            <summary>Number of actions in the undo stack.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UndoRedoManager`1.RedoCount">
+            <summary>Number of actions in the redo stack.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UndoRedoManager`1.RecordAction(TheTechIdea.Beep.Editor.UndoAction{`0})">
+            <summary>
+            Records an action on the undo stack.
+            Clears the redo stack (new action invalidates redo history).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UndoRedoManager`1.Undo">
+            <summary>
+            Pops and returns the most recent undo action.
+            Pushes it onto the redo stack.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UndoRedoManager`1.Redo">
+            <summary>
+            Pops and returns the most recent redo action.
+            Pushes it back onto the undo stack.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UndoRedoManager`1.Clear">
+            <summary>Clears both undo and redo stacks.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UndoRedoManager`1.TrimStack(System.Collections.Generic.Stack{TheTechIdea.Beep.Editor.UndoAction{`0}},System.Int32)">
+            <summary>
+            Trims a stack to the specified max size by rebuilding it.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ValidationSeverity">
+            <summary>
+            Severity level for a validation error.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ValidationSeverity.Error">
+            <summary>Blocks commit — item cannot be saved.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ValidationSeverity.Warning">
+            <summary>Advisory — item can still be saved.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ValidationSeverity.Info">
+            <summary>Informational only.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ValidationSeverity.Critical">
+            <summary>Critical error message.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ValidationError">
+            <summary>
+            Represents a single validation error on a property.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationError.PropertyName">
+            <summary>Name of the property that failed validation (null for object-level errors).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationError.ErrorMessage">
+            <summary>Human-readable error message.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationError.Severity">
+            <summary>Severity of the error.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ValidationResult">
+            <summary>
+            Aggregate validation result for a single item or field.
+            Supports both aggregate error collection and single-field validation scenarios.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.Errors">
+            <summary>All validation errors (including warnings and info).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.IsValid">
+            <summary>
+            Gets or sets whether the validation passed.
+            When set explicitly, uses the set value; otherwise computes from Errors.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.FieldName">
+            <summary>Gets or sets the name of the field being validated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.ErrorMessage">
+            <summary>Gets or sets the primary error message.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.BlockName">
+            <summary>Gets or sets the name of the block containing the field.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.ValidationMessages">
+            <summary>Gets or sets a collection of validation error messages.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.Severity">
+            <summary>Gets or sets the severity level of the validation result.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.Context">
+            <summary>Gets or sets additional context information.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.ValidationTimestamp">
+            <summary>Gets or sets the timestamp when validation was performed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.ValidatedValue">
+            <summary>Gets or sets the value that was validated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.HasNoIssues">
+            <summary>True when there are no entries at all.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.ErrorCount">
+            <summary>Number of Error-severity entries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationResult.WarningCount">
+            <summary>Number of Warning-severity entries.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ValidationResult.Merge(TheTechIdea.Beep.Editor.ValidationResult)">
+            <summary>Merges another ValidationResult into this one.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ValidationResult.GetPropertyErrors(System.String)">
+            <summary>Gets errors for a specific property.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ValidationResult.AddError(System.String)">
+            <summary>Adds a validation error message.</summary>
+            <param name="message">The error message to add.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ValidationResult.AddWarning(System.String)">
+            <summary>Adds a validation warning message.</summary>
+            <param name="message">The warning message to add.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ValidationResult.AddContext(System.String,System.Object)">
+            <summary>Adds contextual information.</summary>
+            <param name="key">The context key.</param>
+            <param name="value">The context value.</param>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ValidationEventArgs`1">
+            <summary>
+            EventArgs raised when validation fails for an item.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationEventArgs`1.Item">
+            <summary>The item that failed validation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationEventArgs`1.Result">
+            <summary>The validation result with all errors.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ValidationEventArgs`1.TriggerProperty">
+            <summary>The property that triggered validation (null for full-item validation).</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Enums.DynamicEnumEntry">
             <summary>
