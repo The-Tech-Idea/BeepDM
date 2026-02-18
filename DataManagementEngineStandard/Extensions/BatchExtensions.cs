@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TheTechIdea.Beep.Exensions
+namespace TheTechIdea.Beep.Extensions
 {
     public static class BatchExtensions
     {

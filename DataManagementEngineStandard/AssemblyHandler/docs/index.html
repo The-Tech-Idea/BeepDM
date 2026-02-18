@@ -1,0 +1,310 @@
+<!--
+    Assembly Helpers Documentation - Main Index
+    Professional-grade documentation for the Assembly Helpers library.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="active"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="drivers/connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="drivers/data-sources.html">Data Sources</a></li>
+                            <li><a href="drivers/ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="guides/getting-started.html"><i class="bi bi-rocket"></i> Getting Started</a></li>
+                    <li><a href="api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Assembly Helpers Documentation</h1>
+                    <p class="page-subtitle">Dynamic assembly loading, scanning, and management for .NET 8 and 9 applications</p>
+                </div>
+
+                <!-- Overview Section -->
+                <section class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        <strong>TheTechIdea.Beep.Tools.AssemblyHandler</strong> is a comprehensive library for dynamic 
+                        assembly loading, extension scanning, and driver management in .NET applications. 
+                        Built for .NET 8 and 9, it provides sophisticated capabilities for plugin architectures, 
+                        extensible applications, and modular system designs.
+                    </p>
+                    <p>
+                        This library handles complex scenarios including assembly resolution, type caching, 
+                        parallel processing for large assemblies, and sophisticated driver discovery mechanisms.
+                    </p>
+                </section>
+
+                <!-- Key Features -->
+                <section class="section">
+                    <h2>Key Features</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-gear-fill"></i>
+                            </div>
+                            <h3>Dynamic Assembly Loading</h3>
+                            <p>Load assemblies from file paths, scan directories, and handle assembly resolution with sophisticated caching mechanisms.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <h3>Extension Scanning</h3>
+                            <p>Automatically discover and instantiate extensions, addins, and plugins with parallel processing support.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-database-fill"></i>
+                            </div>
+                            <h3>Driver Management</h3>
+                            <p>Comprehensive ADO.NET and custom driver discovery, configuration, and management capabilities.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-lightning-fill"></i>
+                            </div>
+                            <h3>Performance Optimized</h3>
+                            <p>Type caching, assembly caching, and parallel processing for optimal performance in large applications.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <h3>Error Handling</h3>
+                            <p>Robust error handling with detailed logging and graceful degradation for problematic assemblies.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-puzzle"></i>
+                            </div>
+                            <h3>Hierarchical Organization</h3>
+                            <p>Organize loaded types and addins into hierarchical structures for easy navigation and management.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Start -->
+                <section class="section">
+                    <h2>Quick Start</h2>
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Initialize AssemblyHandler
+var configEditor = new ConfigEditor();
+var errorObject = new ErrorsInfo();
+var logger = new DMLogger();
+var utilFunction = new Util();
+
+var assemblyHandler = new AssemblyHandler(
+    configEditor, 
+    errorObject, 
+    logger, 
+    utilFunction
+);
+
+// Load all assemblies with progress reporting
+var progress = new Progress&lt;PassedArgs&gt;(args => {
+    Console.WriteLine($"Progress: {args.Messege}");
+});
+
+var result = assemblyHandler.LoadAllAssembly(progress, CancellationToken.None);
+
+// Create instance from type name
+var instance = assemblyHandler.CreateInstanceFromString(
+    "MyNamespace.MyClass", 
+    constructorArg1, 
+    constructorArg2
+);
+
+// Get loaded data source classes
+var dataSources = assemblyHandler.DataSourcesClasses;
+foreach (var ds in dataSources)
+{
+    Console.WriteLine($"Found data source: {ds.className}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Architecture -->
+                <section class="section">
+                    <h2>Architecture</h2>
+                    <p>The Assembly Helpers library is built around several core components:</p>
+                    
+                    <div class="architecture-diagram">
+                        <h3>Core Components</h3>
+                        <ul>
+                            <li><strong>AssemblyHandler</strong> - Main orchestrator for assembly operations</li>
+                            <li><strong>Type Cache</strong> - High-performance type resolution and caching</li>
+                            <li><strong>Assembly Cache</strong> - Thread-safe assembly loading and caching</li>
+                            <li><strong>Extension Scanners</strong> - Pluggable scanning mechanisms</li>
+                            <li><strong>Driver Discovery</strong> - ADO.NET and custom driver identification</li>
+                            <li><strong>Hierarchical Organization</strong> - Tree-based addin and extension organization</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Usage Patterns -->
+                <section class="section">
+                    <h2>Common Usage Patterns</h2>
+                    
+                    <div class="usage-pattern">
+                        <h3>Plugin Architecture</h3>
+                        <p>Use AssemblyHandler to create extensible applications with plugin support:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Scan for plugins implementing IPlugin interface
+assemblyHandler.GetBuiltinClasses();
+var plugins = assemblyHandler.ConfigEditor.Addins
+    .Where(a => a.componentType == "IPlugin");</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="usage-pattern">
+                        <h3>Data Source Discovery</h3>
+                        <p>Automatically discover and configure data source drivers:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Load and scan data source assemblies
+assemblyHandler.LoadAssembly(@"C:\DataSources", FolderFileTypes.DataSources);
+
+// Get available data sources
+var availableDataSources = assemblyHandler.DataSourcesClasses
+    .Where(ds => ds.IsDataSource);</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="usage-pattern">
+                        <h3>Extension Management</h3>
+                        <p>Manage loader extensions and scanning mechanisms:</p>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Load extension scanners
+assemblyHandler.GetExtensionScanners(progress, cancellationToken);
+
+// Get available loader extensions
+var extensions = assemblyHandler.LoaderExtensionClasses;</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Performance Considerations -->
+                <section class="section">
+                    <h2>Performance Considerations</h2>
+                    <div class="performance-tips">
+                        <div class="tip-card">
+                            <h3><i class="bi bi-lightning"></i> Type Caching</h3>
+                            <p>The library automatically caches resolved types to avoid repeated reflection operations. Cache is case-insensitive for improved lookup performance.</p>
+                        </div>
+                        <div class="tip-card">
+                            <h3><i class="bi bi-cpu"></i> Parallel Processing</h3>
+                            <p>Large assemblies (>100 types) are processed in parallel to improve scanning performance. Configure thresholds based on your application needs.</p>
+                        </div>
+                        <div class="tip-card">
+                            <h3><i class="bi bi-memory"></i> Assembly Caching</h3>
+                            <p>Loaded assemblies are cached using thread-safe collections to prevent duplicate loading and improve performance.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Next Steps -->
+                <section class="section">
+                    <h2>Next Steps</h2>
+                    <div class="next-steps">
+                        <a href="classes/assembly-handler.html" class="step-card">
+                            <div class="step-icon">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            <h3>Explore AssemblyHandler</h3>
+                            <p>Deep dive into the main AssemblyHandler class and its comprehensive API</p>
+                        </a>
+                        <a href="guides/getting-started.html" class="step-card">
+                            <div class="step-icon">
+                                <i class="bi bi-play-circle"></i>
+                            </div>
+                            <h3>Getting Started Guide</h3>
+                            <p>Step-by-step tutorial for implementing assembly loading in your application</p>
+                        </a>
+                        <a href="drivers/connection-drivers.html" class="step-card">
+                            <div class="step-icon">
+                                <i class="bi bi-database"></i>
+                            </div>
+                            <h3>Driver Management</h3>
+                            <p>Learn how to manage database drivers and data source configurations</p>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="scripts/docs.js"></script>
+</body>
+</html>

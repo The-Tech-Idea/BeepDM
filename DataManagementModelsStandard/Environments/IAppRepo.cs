@@ -5,15 +5,15 @@ using TheTechIdea.Beep.Services;
 
 namespace TheTechIdea.Beep.Environments
 {
-    public interface IBeepContainer
+    public interface IBeepAppRepo
     {
         
         IBeepService BeepService { get; set; }
         string AdminUserID { get; set; }
-        string ContainerFolderPath { get; set; }
-        int ContainerID { get; set; }
-        string ContainerName { get; set; }
-        string ContainerUrlPath { get; set; }
+        string BeepAppRepoFolderPath { get; set; }
+        int BeepAppRepoID { get; set; }
+        string BeepAppRepoName { get; set; }
+        string BeepAppRepoUrlPath { get; set; }
         List<string> Groups { get; set; }
         List<string> Products { get; set; }
         string GuidID { get; set; }
@@ -42,8 +42,8 @@ namespace TheTechIdea.Beep.Environments
           string OwnerEmail { get; set; }
           string OwnerGuidID { get; set; }
           int OwnerID { get; set; }
-        bool IsContainerActive { get; set; }
-        bool IsContainerLoaded { get; set; }
-        bool IsContainerCreated { get; set; }
+        bool IsBeepAppRepoActive { get; set; }
+        bool IsBeepAppRepoLoaded { get; set; }
+        bool IsBeepAppRepoCreated { get; set; }
     }
 }

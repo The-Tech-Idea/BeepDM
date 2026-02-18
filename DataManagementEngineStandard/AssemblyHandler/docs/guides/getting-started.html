@@ -1,0 +1,774 @@
+<!--
+    Getting Started Guide - Assembly Helpers Documentation
+    Professional guide for getting started with the Assembly Helpers library.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="../drivers/connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="../drivers/data-sources.html">Data Sources</a></li>
+                            <li><a href="../drivers/ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="getting-started.html" class="active"><i class="bi bi-rocket"></i> Getting Started</a></li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Getting Started</h1>
+                    <p class="page-subtitle">Quick start guide for implementing assembly loading and extension management</p>
+                </div>
+
+                <!-- Prerequisites -->
+                <section class="section">
+                    <h2>Prerequisites</h2>
+                    <p>Before getting started with the Assembly Helpers library, ensure you have:</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-dot-net"></i>
+                            </div>
+                            <h3>.NET Framework</h3>
+                            <p>.NET 8 or .NET 9 target framework in your project</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-tools"></i>
+                            </div>
+                            <h3>Development Environment</h3>
+                            <p>Visual Studio 2022 or VS Code with C# extensions</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <h3>Permissions</h3>
+                            <p>File system access for assembly loading and scanning</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Installation -->
+                <section class="section">
+                    <h2>Installation</h2>
+                    
+                    <h3>NuGet Package</h3>
+                    <p>Install the Assembly Helpers package via NuGet Package Manager:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">Package Manager</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code>Install-Package TheTechIdea.Beep.Assembly.Helpers</code></pre>
+                    </div>
+
+                    <p>Or via .NET CLI:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">.NET CLI</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code>dotnet add package TheTechIdea.Beep.Assembly.Helpers</code></pre>
+                    </div>
+
+                    <h3>Project References</h3>
+                    <p>Add the following using statements to your code files:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">using TheTechIdea.Beep.Tools;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.ConfigUtil;</code></pre>
+                    </div>
+                </section>
+
+                <!-- Quick Start -->
+                <section class="section">
+                    <h2>Quick Start</h2>
+                    
+                    <h3>Basic Setup</h3>
+                    <p>Create and initialize an AssemblyHandler instance with the required dependencies:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Initialize dependencies
+var configEditor = new ConfigEditor();
+var errorObject = new ErrorsInfo();
+var logger = new DMLogger();
+var utilFunction = new Util();
+
+// Create AssemblyHandler
+var assemblyHandler = new AssemblyHandler(
+    configEditor, 
+    errorObject, 
+    logger, 
+    utilFunction
+);
+
+// Configure namespaces to ignore (optional)
+assemblyHandler.NamespacestoIgnore.Add("System");
+assemblyHandler.NamespacestoIgnore.Add("Microsoft");
+
+Console.WriteLine("AssemblyHandler initialized successfully!");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Loading Assemblies -->
+                <section class="section">
+                    <h2>Loading Assemblies</h2>
+                    
+                    <h3>Load Single Directory</h3>
+                    <p>Load all assemblies from a specific directory:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Load assemblies from a directory
+string pluginPath = @"C:\MyApp\Plugins";
+var result = assemblyHandler.LoadAssembly(pluginPath, FolderFileTypes.Addin);
+
+if (assemblyHandler.ErrorObject.Flag == Errors.Ok)
+{
+    Console.WriteLine($"Successfully loaded assemblies from {pluginPath}");
+    Console.WriteLine($"Total assemblies loaded: {assemblyHandler.Assemblies.Count}");
+}
+else
+{
+    Console.WriteLine($"Error loading assemblies: {assemblyHandler.ErrorObject.Message}");
+}</code></pre>
+                    </div>
+
+                    <h3>Load All Configured Assemblies</h3>
+                    <p>Load assemblies from all configured folders with progress reporting:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Setup progress reporting
+var progress = new Progress&lt;PassedArgs&gt;(args => {
+    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {args.Messege}");
+});
+
+// Setup cancellation token
+var cancellationTokenSource = new CancellationTokenSource();
+
+// Load all assemblies
+var result = assemblyHandler.LoadAllAssembly(progress, cancellationTokenSource.Token);
+
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("All assemblies loaded successfully!");
+    
+    // Display summary
+    Console.WriteLine($"Built-in assemblies: {assemblyHandler.Assemblies.Count(a => a.FileTypes == FolderFileTypes.Builtin)}");
+    Console.WriteLine($"Plugin assemblies: {assemblyHandler.Assemblies.Count(a => a.FileTypes == FolderFileTypes.Addin)}");
+    Console.WriteLine($"Data source assemblies: {assemblyHandler.Assemblies.Count(a => a.FileTypes == FolderFileTypes.DataSources)}");
+}
+else
+{
+    Console.WriteLine($"Error loading assemblies: {result.Message}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Creating Instances -->
+                <section class="section">
+                    <h2>Creating Instances</h2>
+                    
+                    <h3>Create Instance by Type Name</h3>
+                    <p>Dynamically create instances of loaded types:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Create instance without parameters
+var instance = assemblyHandler.CreateInstanceFromString("MyNamespace.MyDataSource");
+
+if (instance != null)
+{
+    Console.WriteLine($"Created instance of type: {instance.GetType().Name}");
+    
+    // Use the instance
+    if (instance is IDataSource dataSource)
+    {
+        // Configure and use the data source
+        Console.WriteLine($"Data source category: {dataSource.Category}");
+    }
+}
+
+// Create instance with constructor parameters
+var configuredInstance = assemblyHandler.CreateInstanceFromString(
+    "MyNamespace.MyConfigurableService",
+    "connectionString",
+    true,
+    1000
+);
+
+if (configuredInstance != null)
+{
+    Console.WriteLine("Successfully created configured instance");
+}</code></pre>
+                    </div>
+
+                    <h3>Create Instance from Specific Assembly</h3>
+                    <p>Create instances from a specific DLL:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Create instance from specific DLL
+var instance = assemblyHandler.CreateInstanceFromString(
+    "MyPlugin.dll",
+    "MyNamespace.MyPluginClass",
+    configParameter1,
+    configParameter2
+);
+
+if (instance != null)
+{
+    Console.WriteLine($"Created instance from specific DLL: {instance.GetType().Name}");
+}
+else
+{
+    Console.WriteLine("Failed to create instance - check type name and assembly");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Working with Data Sources -->
+                <section class="section">
+                    <h2>Working with Data Sources</h2>
+                    
+                    <h3>Discover Data Sources</h3>
+                    <p>Find and work with discovered data source implementations:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Get all discovered data sources
+var dataSources = assemblyHandler.DataSourcesClasses;
+
+Console.WriteLine($"Found {dataSources.Count} data source implementations:");
+
+foreach (var ds in dataSources)
+{
+    Console.WriteLine($"- {ds.className} ({ds.componentType})");
+    
+    if (ds.classProperties != null)
+    {
+        Console.WriteLine($"  Category: {ds.classProperties.Category}");
+        Console.WriteLine($"  Description: {ds.classProperties.Description}");
+        
+        if (!string.IsNullOrEmpty(ds.classProperties.FileType))
+        {
+            Console.WriteLine($"  Supported files: {ds.classProperties.FileType}");
+        }
+    }
+}
+
+// Filter by category
+var fileSources = dataSources.Where(ds => 
+    ds.classProperties?.Category == DatasourceCategory.FILE).ToList();
+
+Console.WriteLine($"\nFile-based data sources: {fileSources.Count}");
+
+// Create file extension list
+var supportedExtensions = assemblyHandler.CreateFileExtensionString();
+Console.WriteLine($"Supported file extensions: {string.Join(", ", supportedExtensions)}");</code></pre>
+                    </div>
+
+                    <h3>Work with Drivers</h3>
+                    <p>Discover and manage database drivers:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Get available drivers from configuration
+var drivers = assemblyHandler.ConfigEditor.DataDriversClasses;
+
+Console.WriteLine($"Available drivers: {drivers.Count}");
+
+foreach (var driver in drivers)
+{
+    Console.WriteLine($"- {driver.DriverClass} (v{driver.version})");
+    Console.WriteLine($"  Package: {driver.PackageName}");
+    Console.WriteLine($"  DLL: {driver.dllname}");
+    
+    if (driver.ADOType)
+    {
+        Console.WriteLine("  Type: ADO.NET Driver");
+        if (!string.IsNullOrEmpty(driver.DbConnectionType))
+            Console.WriteLine($"  Connection Type: {driver.DbConnectionType}");
+    }
+    else
+    {
+        Console.WriteLine("  Type: Custom Driver");
+    }
+    
+    Console.WriteLine();
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Error Handling -->
+                <section class="section">
+                    <h2>Error Handling</h2>
+                    
+                    <h3>Check Operation Results</h3>
+                    <p>Properly handle errors and check operation results:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">try
+{
+    // Attempt to load assemblies
+    var result = assemblyHandler.LoadAssembly(@"C:\Plugins", FolderFileTypes.Addin);
+    
+    // Check the result
+    if (assemblyHandler.ErrorObject.Flag == Errors.Ok)
+    {
+        Console.WriteLine("Assembly loading successful");
+        
+        // Log success details
+        assemblyHandler.Logger.WriteLog("Assembly loading completed successfully");
+    }
+    else
+    {
+        Console.WriteLine($"Assembly loading failed: {assemblyHandler.ErrorObject.Message}");
+        
+        // Log error details
+        assemblyHandler.Logger.WriteLog($"Assembly loading error: {assemblyHandler.ErrorObject.Message}");
+        
+        // Handle specific error cases
+        switch (assemblyHandler.ErrorObject.Flag)
+        {
+            case Errors.Failed:
+                Console.WriteLine("General failure occurred");
+                break;
+            case Errors.Warning:
+                Console.WriteLine("Operation completed with warnings");
+                break;
+        }
+    }
+}
+catch (DirectoryNotFoundException ex)
+{
+    Console.WriteLine($"Directory not found: {ex.Message}");
+}
+catch (UnauthorizedAccessException ex)
+{
+    Console.WriteLine($"Access denied: {ex.Message}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Unexpected error: {ex.Message}");
+    assemblyHandler.Logger.WriteLog($"Unexpected error: {ex}");
+}</code></pre>
+                    </div>
+
+                    <h3>Validation and Safety</h3>
+                    <p>Validate inputs and ensure safe operations:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Validate directory before loading
+string pluginDirectory = @"C:\MyApp\Plugins";
+
+if (!Directory.Exists(pluginDirectory))
+{
+    Console.WriteLine($"Plugin directory does not exist: {pluginDirectory}");
+    return;
+}
+
+// Check permissions
+try
+{
+    var testFiles = Directory.GetFiles(pluginDirectory, "*.dll");
+    Console.WriteLine($"Found {testFiles.Length} DLL files to process");
+}
+catch (UnauthorizedAccessException)
+{
+    Console.WriteLine("Insufficient permissions to access plugin directory");
+    return;
+}
+
+// Safe type resolution
+string typeName = "MyNamespace.MyClass";
+var type = assemblyHandler.GetType(typeName);
+
+if (type == null)
+{
+    Console.WriteLine($"Type '{typeName}' not found in loaded assemblies");
+    
+    // List available types for debugging
+    var availableTypes = assemblyHandler.Assemblies
+        .SelectMany(a => a.DllLib.GetTypes())
+        .Where(t => t.Namespace?.Contains("MyNamespace") == true)
+        .Select(t => t.FullName)
+        .ToList();
+        
+    Console.WriteLine($"Available types in MyNamespace: {string.Join(", ", availableTypes)}");
+}
+else
+{
+    Console.WriteLine($"Type found: {type.FullName}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices</h2>
+                    
+                    <div class="best-practices">
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Use Progress Reporting</h3>
+                            <p>Always implement progress reporting for long-running assembly loading operations to provide user feedback.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Configure Namespace Filtering</h3>
+                            <p>Set up NamespacestoIgnore to exclude system assemblies and improve scanning performance.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Handle Cancellation</h3>
+                            <p>Use CancellationToken for operations that might need to be cancelled by the user or system.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Validate Directory Paths</h3>
+                            <p>Always validate that directories exist and are accessible before attempting to load assemblies.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Check Error States</h3>
+                            <p>Always check ErrorObject.Flag after operations to handle failures gracefully.</p>
+                        </div>
+                        
+                        <div class="practice-item">
+                            <h3><i class="bi bi-check-circle-fill"></i> Dispose Properly</h3>
+                            <p>AssemblyHandler implements IDisposable - ensure proper cleanup in using statements or try/finally blocks.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Complete Example -->
+                <section class="section">
+                    <h2>Complete Example</h2>
+                    <p>Here's a complete example that demonstrates the main features:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using TheTechIdea.Beep.Tools;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Utilities;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        Console.WriteLine("Assembly Helpers Demo Application");
+        Console.WriteLine("=================================");
+        
+        // Initialize dependencies
+        using var assemblyHandler = CreateAssemblyHandler();
+        
+        // Setup progress reporting
+        var progress = new Progress&lt;PassedArgs&gt;(args => {
+            Console.WriteLine($"[Progress] {args.Messege}");
+        });
+        
+        // Setup cancellation
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (s, e) => {
+            e.Cancel = true;
+            cts.Cancel();
+            Console.WriteLine("\nCancellation requested...");
+        };
+        
+        try
+        {
+            // Load all assemblies
+            Console.WriteLine("\nLoading assemblies...");
+            var result = assemblyHandler.LoadAllAssembly(progress, cts.Token);
+            
+            if (result.Flag == Errors.Ok)
+            {
+                Console.WriteLine("\n? Assembly loading completed successfully!");
+                
+                // Display summary
+                DisplaySummary(assemblyHandler);
+                
+                // Demonstrate instance creation
+                DemonstrateInstanceCreation(assemblyHandler);
+                
+                // Show available data sources
+                ShowDataSources(assemblyHandler);
+            }
+            else
+            {
+                Console.WriteLine($"\n? Assembly loading failed: {result.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("\nOperation was cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\nUnexpected error: {ex.Message}");
+        }
+        
+        Console.WriteLine("\nPress any key to exit...");
+        Console.ReadKey();
+    }
+    
+    static AssemblyHandler CreateAssemblyHandler()
+    {
+        var configEditor = new ConfigEditor();
+        var errorObject = new ErrorsInfo();
+        var logger = new DMLogger();
+        var utilFunction = new Util();
+        
+        var handler = new AssemblyHandler(configEditor, errorObject, logger, utilFunction);
+        
+        // Configure to ignore system namespaces
+        handler.NamespacestoIgnore.AddRange(new[] {
+            "System", "Microsoft", "Windows", "Mono"
+        });
+        
+        return handler;
+    }
+    
+    static void DisplaySummary(AssemblyHandler handler)
+    {
+        Console.WriteLine("\nAssembly Summary:");
+        Console.WriteLine($"  Total assemblies: {handler.Assemblies.Count}");
+        Console.WriteLine($"  Built-in: {handler.Assemblies.Count(a => a.FileTypes == FolderFileTypes.Builtin)}");
+        Console.WriteLine($"  Data sources: {handler.Assemblies.Count(a => a.FileTypes == FolderFileTypes.DataSources)}");
+        Console.WriteLine($"  Addins: {handler.Assemblies.Count(a => a.FileTypes == FolderFileTypes.Addin)}");
+        Console.WriteLine($"  Extensions: {handler.LoaderExtensionClasses.Count}");
+    }
+    
+    static void DemonstrateInstanceCreation(AssemblyHandler handler)
+    {
+        Console.WriteLine("\nDemonstrating instance creation...");
+        
+        // Try to create a common interface instance
+        var dataSources = handler.DataSourcesClasses.Take(3);
+        
+        foreach (var ds in dataSources)
+        {
+            try
+            {
+                var instance = handler.CreateInstanceFromString(ds.PackageName);
+                if (instance != null)
+                {
+                    Console.WriteLine($"? Created: {ds.className}");
+                }
+                else
+                {
+                    Console.WriteLine($"? Failed: {ds.className}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"? Error creating {ds.className}: {ex.Message}");
+            }
+        }
+    }
+    
+    static void ShowDataSources(AssemblyHandler handler)
+    {
+        Console.WriteLine("\nAvailable Data Sources:");
+        
+        var dataSources = handler.DataSourcesClasses
+            .Where(ds => ds.classProperties != null)
+            .GroupBy(ds => ds.classProperties.Category)
+            .ToList();
+            
+        foreach (var group in dataSources)
+        {
+            Console.WriteLine($"\n  {group.Key}:");
+            foreach (var ds in group.Take(5))
+            {
+                Console.WriteLine($"    - {ds.className}");
+            }
+        }
+        
+        // Show supported file extensions
+        var extensions = handler.CreateFileExtensionString();
+        if (extensions.Any())
+        {
+            Console.WriteLine($"\nSupported file extensions: {string.Join(", ", extensions.Take(10))}");
+        }
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Next Steps -->
+                <section class="section">
+                    <h2>Next Steps</h2>
+                    <div class="next-steps">
+                        <a href="assembly-loading.html" class="step-card">
+                            <div class="step-icon">
+                                <i class="bi bi-box-arrow-in-down"></i>
+                            </div>
+                            <h3>Assembly Loading</h3>
+                            <p>Learn advanced assembly loading techniques and patterns</p>
+                        </a>
+                        <a href="extension-scanning.html" class="step-card">
+                            <div class="step-icon">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <h3>Extension Scanning</h3>
+                            <p>Master extension discovery and plugin architecture patterns</p>
+                        </a>
+                        <a href="../classes/assembly-handler.html" class="step-card">
+                            <div class="step-icon">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            <h3>AssemblyHandler API</h3>
+                            <p>Explore the complete AssemblyHandler API reference</p>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

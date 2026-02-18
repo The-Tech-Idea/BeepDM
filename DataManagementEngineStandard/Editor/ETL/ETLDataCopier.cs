@@ -11,7 +11,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults;
 using TheTechIdea.Beep.Editor.Mapping.Helpers;
-using TheTechIdea.Beep.Exensions;
+using TheTechIdea.Beep.Extensions;
 using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Editor.ETL

@@ -1,0 +1,429 @@
+<!--
+    API Reference
+    Professional-grade API reference for the Assembly Helpers library.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="../drivers/connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="../drivers/data-sources.html">Data Sources</a></li>
+                            <li><a href="../drivers/ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-book"></i> Guides</a>
+                        <ul class="submenu">
+                            <li><a href="../guides/getting-started.html">Getting Started</a></li>
+                            <li><a href="../guides/assembly-loading.html">Assembly Loading</a></li>
+                            <li><a href="../guides/extension-scanning.html">Extension Scanning</a></li>
+                            <li><a href="../guides/driver-management.html">Driver Management</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="reference.html" class="active"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>API Reference</h1>
+                    <p class="page-subtitle">Complete API reference for all Assembly Helpers components</p>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        This comprehensive API reference covers all public interfaces, classes, methods, and properties 
+                        available in the Assembly Helpers library. The API is organized by namespace and component type 
+                        for easy navigation and reference.
+                    </p>
+                </section>
+
+                <!-- API Sections -->
+                <section class="section">
+                    <h2>API Sections</h2>
+                    
+                    <div class="api-section-list">
+                        <div class="api-section-card">
+                            <div class="api-section-header">
+                                <h3><i class="bi bi-gear-fill"></i> Core Components</h3>
+                            </div>
+                            <div class="api-section-content">
+                                <p>Main classes and interfaces for assembly management</p>
+                                <ul class="api-list">
+                                    <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                                    <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                                    <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                                    <li><strong>IAssemblyHandler</strong> - Interface for assembly handling operations</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="api-section-card">
+                            <div class="api-section-header">
+                                <h3><i class="bi bi-plug-fill"></i> Extension Interfaces</h3>
+                            </div>
+                            <div class="api-section-content">
+                                <p>Interfaces for implementing extensible functionality</p>
+                                <ul class="api-list">
+                                    <li><strong>ILoaderExtention</strong> - Interface for custom loading extensions</li>
+                                    <li><strong>IDM_Addin</strong> - Base interface for addon components</li>
+                                    <li><strong>IAddinExtension</strong> - Interface for extension addins</li>
+                                    <li><strong>IFunctionExtension</strong> - Interface for function extensions</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="api-section-card">
+                            <div class="api-section-header">
+                                <h3><i class="bi bi-database-fill"></i> Driver Configuration</h3>
+                            </div>
+                            <div class="api-section-content">
+                                <p>Classes for database driver and connection management</p>
+                                <ul class="api-list">
+                                    <li><strong>ConnectionDriversConfig</strong> - Driver configuration class with properties for ADO.NET types, connection strings, and metadata</li>
+                                    <li><strong>ConnectionDriversTypes</strong> - Type definitions for driver components</li>
+                                    <li><strong>IDataSource</strong> - Core interface for data source implementations</li>
+                                    <li><strong>AssemblyClassDefinition</strong> - Metadata container for discovered classes</li>
+                                </ul>
+                                <p><strong>Key Methods:</strong></p>
+                                <ul class="api-list">
+                                    <li><strong>GetADOTypeDrivers(Assembly)</strong> - Automatically discovers ADO.NET driver types</li>
+                                    <li><strong>ScanAssemblyForDataSources(Assembly)</strong> - Scans for IDataSource implementations</li>
+                                    <li><strong>AddEngineDefaultDrivers()</strong> - Adds built-in engine drivers</li>
+                                    <li><strong>AddDriver(ConnectionDriversConfig)</strong> - Registers a new driver configuration</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="api-section-card">
+                            <div class="api-section-header">
+                                <h3><i class="bi bi-gear-wide-connected"></i> Configuration</h3>
+                            </div>
+                            <div class="api-section-content">
+                                <p>Configuration management classes and interfaces</p>
+                                <ul class="api-list">
+                                    <li><strong>IConfigEditor</strong> - Interface for configuration editing</li>
+                                    <li><strong>ParentChildObject</strong> - Hierarchical object representation</li>
+                                    <li><strong>MethodsClass</strong> - Method metadata container</li>
+                                    <li><strong>ClassProperties</strong> - Class property metadata</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="api-section-card">
+                            <div class="api-section-header">
+                                <h3><i class="bi bi-exclamation-triangle-fill"></i> Error Handling</h3>
+                            </div>
+                            <div class="api-section-content">
+                                <p>Error handling and logging interfaces</p>
+                                <ul class="api-list">
+                                    <li><strong>IErrorsInfo</strong> - Error information interface</li>
+                                    <li><strong>ErrorsInfo</strong> - Error information implementation</li>
+                                    <li><strong>IDMLogger</strong> - Logging interface</li>
+                                    <li><strong>PassedArgs</strong> - Event argument passing</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="api-section-card">
+                            <div class="api-section-header">
+                                <h3><i class="bi bi-collection-fill"></i> Enumerations</h3>
+                            </div>
+                            <div class="api-section-content">
+                                <p>Enumerations used throughout the library</p>
+                                <ul class="api-list">
+                                    <li><strong>FolderFileTypes</strong> - Assembly classification types</li>
+                                    <li><strong>DatasourceCategory</strong> - Data source categories</li>
+                                    <li><strong>DataSourceType</strong> - Specific data source types</li>
+                                    <li><strong>Errors</strong> - Error status enumeration</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Key Interfaces -->
+                <section class="section">
+                    <h2>Key Interfaces</h2>
+                    
+                    <div class="interface-list">
+                        <div class="interface-item">
+                            <h3>IAssemblyHandler</h3>
+                            <p>Main interface for assembly handling operations including loading, scanning, and type resolution.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">public interface IAssemblyHandler : IDisposable
+{
+    IErrorsInfo LoadAllAssembly(IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
+    string LoadAssembly(string path, FolderFileTypes fileTypes);
+    object CreateInstanceFromString(string typeName, params object[] args);
+    Type GetType(string strFullyQualifiedName);
+    // ... additional methods
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="interface-item">
+                            <h3>ILoaderExtention</h3>
+                            <p>Interface for implementing custom assembly loading and scanning extensions.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">public interface ILoaderExtention
+{
+    IErrorsInfo LoadAllAssembly();
+    IErrorsInfo Scan(assemblies_rep assembly);
+    IErrorsInfo Scan(Assembly assembly);
+    IErrorsInfo Scan();
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="interface-item">
+                            <h3>IConfigEditor</h3>
+                            <p>Interface for configuration management and editing operations.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">public interface IConfigEditor
+{
+    List&lt;ConnectionDriversConfig&gt; DataDriversClasses { get; set; }
+    List&lt;AssemblyClassDefinition&gt; LoaderExtensionClasses { get; set; }
+    ConfigandSettings Config { get; set; }
+    // ... additional properties and methods
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Important Enumerations -->
+                <section class="section">
+                    <h2>Important Enumerations</h2>
+                    
+                    <div class="enum-list">
+                        <div class="enum-item">
+                            <h3>FolderFileTypes</h3>
+                            <p>Classification of assembly types for organization and filtering.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">public enum FolderFileTypes
+{
+    Builtin,
+    DataSources, 
+    Addin,
+    ConnectionDriver,
+    ProjectClass,
+    LoaderExtensions
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="enum-item">
+                            <h3>DatasourceCategory</h3>
+                            <p>High-level categorization of data sources.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">public enum DatasourceCategory
+{
+    RDBMS,
+    NOSQL,
+    FILE,
+    INMEMORY,
+    LOCALDB,
+    WEBAPI,
+    MESSAGING
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="enum-item">
+                            <h3>Errors</h3>
+                            <p>Standard error status enumeration used throughout the library.</p>
+                            <div class="code-example">
+                                <pre><code class="language-csharp">public enum Errors
+{
+    Ok,
+    Failed,
+    Warning
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Usage Examples -->
+                <section class="section">
+                    <h2>Common Usage Patterns</h2>
+                    
+                    <div class="usage-example">
+                        <h3>Basic Assembly Loading</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Initialize AssemblyHandler
+var assemblyHandler = new AssemblyHandler(configEditor, errorObject, logger, util);
+
+// Load all assemblies with progress reporting
+var progress = new Progress&lt;PassedArgs&gt;(args => Console.WriteLine(args.Messege));
+var result = assemblyHandler.LoadAllAssembly(progress, CancellationToken.None);
+
+// Check result
+if (result.Flag == Errors.Ok)
+{
+    Console.WriteLine("Assemblies loaded successfully");
+    
+    // Get discovered data sources
+    var dataSources = assemblyHandler.DataSourcesClasses;
+    foreach (var ds in dataSources)
+    {
+        Console.WriteLine($"Found: {ds.className}");
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="usage-example">
+                        <h3>Creating Type Instances</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Create instance from type name
+var instance = assemblyHandler.CreateInstanceFromString(
+    "MyNamespace.MyClass",
+    constructorArg1,
+    constructorArg2
+);
+
+// Get type information
+var type = assemblyHandler.GetType("MyNamespace.MyClass");
+if (type != null)
+{
+    var attributes = type.GetCustomAttributes();
+    // Process attributes...
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="usage-example">
+                        <h3>Driver Management</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Get available drivers
+var drivers = configEditor.DataDriversClasses;
+
+// Filter by category
+var rdbmsDrivers = drivers
+    .Where(d => d.DatasourceCategory == DatasourceCategory.RDBMS)
+    .ToList();
+
+// Create driver configuration
+var newDriver = new ConnectionDriversConfig
+{
+    DriverClass = "MyDataSource",
+    PackageName = "MyNamespace.MyDataSource",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    ADOType = false
+};
+
+configEditor.DataDriversClasses.Add(newDriver);</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Version Information -->
+                <section class="section">
+                    <h2>Version Information</h2>
+                    <div class="version-info">
+                        <h3>Current Version: 1.0.0</h3>
+                        <p>
+                            <strong>Target Frameworks:</strong> .NET 8, .NET 9<br>
+                            <strong>Dependencies:</strong> System.Reflection, System.IO, System.Collections.Concurrent<br>
+                            <strong>Assembly:</strong> Assembly_helpers.dll, DataManagementModels.dll
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="../classes/assembly-handler.html" class="related-link">
+                            <i class="bi bi-gear"></i>
+                            <span>AssemblyHandler Class</span>
+                        </a>
+                        <a href="../guides/getting-started.html" class="related-link">
+                            <i class="bi bi-play-circle"></i>
+                            <span>Getting Started Guide</span>
+                        </a>
+                        <a href="../extensions/loader-extensions.html" class="related-link">
+                            <i class="bi bi-plug"></i>
+                            <span>Loader Extensions</span>
+                        </a>
+                        <a href="../drivers/connection-drivers.html" class="related-link">
+                            <i class="bi bi-database"></i>
+                            <span>Connection Drivers</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

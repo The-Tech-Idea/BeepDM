@@ -1,0 +1,707 @@
+<!--
+    ADO.NET Drivers Documentation
+    Professional-grade documentation for ADO.NET driver integration.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADO.NET Drivers - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu open">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="connection-drivers.html">Connection Drivers</a></li>
+                            <li><a href="data-sources.html">Data Sources</a></li>
+                            <li><a href="ado-drivers.html" class="active">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../guides/getting-started.html"><i class="bi bi-rocket"></i> Getting Started</a></li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>ADO.NET Drivers</h1>
+                    <p class="page-subtitle">Automatic discovery and configuration of ADO.NET database providers</p>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <div class="admonition note">
+                        <p class="admonition-title">Note</p>
+                        <p>ADO.NET drivers provide connectivity to relational databases through the standard .NET data access framework. The AssemblyHandler automatically discovers and configures ADO.NET providers.</p>
+                    </div>
+
+                    <h2>ADO.NET Driver Architecture</h2>
+                    
+                    <p>ADO.NET drivers in Beep follow the standard .NET data provider model with these core components:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">// Core ADO.NET interfaces that drivers must implement
+public interface IDbConnection : IDisposable
+public interface IDbCommand : IDisposable  
+public interface IDataReader : IDisposable, IDataRecord
+public interface IDbDataAdapter
+public interface IDbTransaction : IDisposable
+
+// Base classes for providers
+public abstract class DbConnection : IDbConnection
+public abstract class DbCommand : IDbCommand
+public abstract class DbDataReader : IDataReader
+public abstract class DbDataAdapter : IDbDataAdapter
+public abstract class DbTransaction : IDbTransaction</code></pre>
+                    </div>
+                </section>
+
+                <!-- Automatic Discovery -->
+                <section class="section">
+                    <h2>Automatic ADO.NET Discovery</h2>
+                    
+                    <div class="subsection">
+                        <h3>Discovery Process</h3>
+                        <p>The <code>GetADOTypeDrivers</code> method automatically scans assemblies for ADO.NET implementations:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">private bool GetADOTypeDrivers(Assembly asm)
+{
+    try
+    {
+        // Create thread-safe collection for driver configurations
+        var driversConfigDict = new ConcurrentDictionary<string, ConnectionDriversConfig>();
+
+        // Extract assembly information
+        string[] assemblyNameParts = asm.FullName.Split(',');
+        string driverVersion = assemblyNameParts.Length > 1 
+            ? assemblyNameParts[1].Substring(assemblyNameParts[1].IndexOf("=") + 1) 
+            : "1.0";
+        string packageName = assemblyNameParts[0];
+
+        // Identify relevant ADO.NET types
+        var relevantTypes = GetADONetTypes(asm);
+
+        // Process types (parallel for large assemblies)
+        if (relevantTypes.Count > 50)
+        {
+            Parallel.ForEach(relevantTypes, type =>
+            {
+                ProcessDriverType(type.GetTypeInfo(), packageName, driverVersion, 
+                                type.Module.Name, driversConfigDict);
+            });
+        }
+        else
+        {
+            foreach (var type in relevantTypes)
+            {
+                ProcessDriverType(type.GetTypeInfo(), packageName, driverVersion, 
+                                type.Module.Name, driversConfigDict);
+            }
+        }
+
+        // Add discovered drivers to main collection
+        foreach (var driver in driversConfigDict.Values)
+        {
+            DataDriversConfig.Add(driver);
+        }
+
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Logger?.WriteLog($"Failed to get ADO drivers from {asm.GetName()}", ex);
+        return false;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Type Processing</h3>
+                        <p>Each discovered ADO.NET type is processed to build the driver configuration:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">private void ProcessDriverType(TypeInfo typeInfo, string packageName, string version, 
+                                     string moduleName, ConcurrentDictionary<string, ConnectionDriversConfig> driversConfigDict)
+{
+    // Get or create driver configuration
+    var driverConfig = driversConfigDict.GetOrAdd(packageName, key => new ConnectionDriversConfig
+    {
+        PackageName = key,
+        DriverClass = key,
+        version = version,
+        dllname = moduleName,
+        ADOType = true
+    });
+
+    // Map specific ADO.NET types to configuration properties
+    if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)))
+    {
+        driverConfig.AdapterType = typeInfo.FullName;
+    }
+    else if (typeInfo.BaseType?.ToString().Contains("DbCommandBuilder") == true)
+    {
+        driverConfig.CommandBuilderType = typeInfo.FullName;
+    }
+    else if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbConnection)) || 
+             typeof(DbConnection).IsAssignableFrom(typeInfo))
+    {
+        driverConfig.DbConnectionType = typeInfo.FullName;
+    }
+    else if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbTransaction)) || 
+             typeof(DbTransaction).IsAssignableFrom(typeInfo))
+    {
+        driverConfig.DbTransactionType = typeInfo.FullName;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Common ADO.NET Drivers -->
+                <section class="section">
+                    <h2>Common ADO.NET Driver Configurations</h2>
+                    
+                    <div class="subsection">
+                        <h3>SQL Server (.NET Framework)</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var sqlServerDriver = new ConnectionDriversConfig
+{
+    PackageName = "System.Data.SqlClient",
+    DriverClass = "System.Data.SqlClient",
+    version = "4.8.0",
+    dllname = "System.Data.SqlClient.dll",
+    
+    ADOType = true,
+    DbConnectionType = "System.Data.SqlClient.SqlConnection",
+    AdapterType = "System.Data.SqlClient.SqlDataAdapter", 
+    CommandBuilderType = "System.Data.SqlClient.SqlCommandBuilder",
+    DbTransactionType = "System.Data.SqlClient.SqlTransaction",
+    
+    ConnectionString = "Server={server};Database={database};Integrated Security=true;",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.SqlServer,
+    iconname = "sqlserver.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>SQL Server (.NET Core/5+)</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var sqlServerCoreDriver = new ConnectionDriversConfig
+{
+    PackageName = "Microsoft.Data.SqlClient",
+    DriverClass = "Microsoft.Data.SqlClient",
+    version = "5.1.0",
+    dllname = "Microsoft.Data.SqlClient.dll",
+    
+    ADOType = true,
+    DbConnectionType = "Microsoft.Data.SqlClient.SqlConnection",
+    AdapterType = "Microsoft.Data.SqlClient.SqlDataAdapter",
+    CommandBuilderType = "Microsoft.Data.SqlClient.SqlCommandBuilder", 
+    DbTransactionType = "Microsoft.Data.SqlClient.SqlTransaction",
+    
+    ConnectionString = "Server={server};Database={database};Integrated Security=true;TrustServerCertificate=true;",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.SqlServer,
+    iconname = "sqlserver.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>MySQL</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var mysqlDriver = new ConnectionDriversConfig
+{
+    PackageName = "MySql.Data.MySqlClient",
+    DriverClass = "MySql.Data.MySqlClient",
+    version = "8.0.33",
+    dllname = "MySql.Data.dll",
+    
+    ADOType = true,
+    DbConnectionType = "MySql.Data.MySqlClient.MySqlConnection",
+    AdapterType = "MySql.Data.MySqlClient.MySqlDataAdapter",
+    CommandBuilderType = "MySql.Data.MySqlClient.MySqlCommandBuilder",
+    DbTransactionType = "MySql.Data.MySqlClient.MySqlTransaction",
+    
+    ConnectionString = "Server={server};Database={database};Uid={userid};Pwd={password};",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.Mysql,
+    iconname = "mysql.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>PostgreSQL</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var postgresDriver = new ConnectionDriversConfig
+{
+    PackageName = "Npgsql",
+    DriverClass = "Npgsql",
+    version = "7.0.0",
+    dllname = "Npgsql.dll",
+    
+    ADOType = true,
+    DbConnectionType = "Npgsql.NpgsqlConnection",
+    AdapterType = "Npgsql.NpgsqlDataAdapter",
+    CommandBuilderType = "Npgsql.NpgsqlCommandBuilder",
+    DbTransactionType = "Npgsql.NpgsqlTransaction",
+    
+    ConnectionString = "Host={host};Database={database};Username={userid};Password={password};",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.Postgre,
+    iconname = "postgresql.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Oracle</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var oracleDriver = new ConnectionDriversConfig
+{
+    PackageName = "Oracle.ManagedDataAccess.Client",
+    DriverClass = "Oracle.ManagedDataAccess.Client",
+    version = "21.9.0",
+    dllname = "Oracle.ManagedDataAccess.dll",
+    
+    ADOType = true,
+    DbConnectionType = "Oracle.ManagedDataAccess.Client.OracleConnection",
+    AdapterType = "Oracle.ManagedDataAccess.Client.OracleDataAdapter",
+    CommandBuilderType = "Oracle.ManagedDataAccess.Client.OracleCommandBuilder",
+    DbTransactionType = "Oracle.ManagedDataAccess.Client.OracleTransaction",
+    
+    ConnectionString = "Data Source={server}:{port}/{servicename};User Id={userid};Password={password};",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.Oracle,
+    iconname = "oracle.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>SQLite</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">var sqliteDriver = new ConnectionDriversConfig
+{
+    PackageName = "Microsoft.Data.Sqlite",
+    DriverClass = "Microsoft.Data.Sqlite",
+    version = "7.0.0",
+    dllname = "Microsoft.Data.Sqlite.dll",
+    
+    ADOType = true,
+    DbConnectionType = "Microsoft.Data.Sqlite.SqliteConnection",
+    AdapterType = "Microsoft.Data.Sqlite.SqliteDataAdapter",  // May need custom implementation
+    CommandBuilderType = "Microsoft.Data.Sqlite.SqliteCommandBuilder", // May need custom implementation
+    DbTransactionType = "Microsoft.Data.Sqlite.SqliteTransaction",
+    
+    ConnectionString = "Data Source={file};",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.Sqlite,
+    CreateLocal = true,
+    iconname = "sqlite.png"
+};</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Special Handling -->
+                <section class="section">
+                    <h2>Special ADO.NET Cases</h2>
+                    
+                    <div class="subsection">
+                        <h3>System.Data.SqlClient Hardcoded Support</h3>
+                        <p>For the legacy SQL Server provider, special hardcoded configuration is provided:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Special handling in GetADOTypeDrivers method
+if (packageName == "System.Data.SqlClient" && !driversConfigDict.ContainsKey(packageName))
+{
+    var sqlDriver = new ConnectionDriversConfig
+    {
+        version = driverVersion,
+        AdapterType = packageName + ".SqlDataAdapter",
+        DbConnectionType = packageName + ".SqlConnection", 
+        CommandBuilderType = packageName + ".SqlCommandBuilder",
+        DbTransactionType = packageName + ".SqlTransaction",
+        PackageName = packageName,
+        DriverClass = packageName,
+        dllname = asm.ManifestModule.Name,
+        ADOType = true
+    };
+
+    DataDriversConfig.Add(sqlDriver);
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Driver Validation</h3>
+                        <p>ADO.NET drivers require specific validation to ensure proper implementation:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">public bool ValidateADODriver(ConnectionDriversConfig driver)
+{
+    if (!driver.ADOType)
+        return true; // Not an ADO driver
+        
+    try
+    {
+        var assembly = Assembly.LoadFrom(driver.dllname);
+        
+        // Validate connection type
+        if (!string.IsNullOrEmpty(driver.DbConnectionType))
+        {
+            var connectionType = assembly.GetType(driver.DbConnectionType);
+            if (connectionType == null)
+            {
+                Logger?.WriteLog($"Connection type not found: {driver.DbConnectionType}");
+                return false;
+            }
+            
+            if (!typeof(IDbConnection).IsAssignableFrom(connectionType))
+            {
+                Logger?.WriteLog($"Type does not implement IDbConnection: {driver.DbConnectionType}");
+                return false;
+            }
+        }
+        
+        // Validate adapter type
+        if (!string.IsNullOrEmpty(driver.AdapterType))
+        {
+            var adapterType = assembly.GetType(driver.AdapterType);
+            if (adapterType == null)
+            {
+                Logger?.WriteLog($"Adapter type not found: {driver.AdapterType}");
+                return false;
+            }
+            
+            if (!typeof(IDbDataAdapter).IsAssignableFrom(adapterType))
+            {
+                Logger?.WriteLog($"Type does not implement IDbDataAdapter: {driver.AdapterType}");
+                return false;
+            }
+        }
+        
+        // Validate command builder type
+        if (!string.IsNullOrEmpty(driver.CommandBuilderType))
+        {
+            var builderType = assembly.GetType(driver.CommandBuilderType);
+            if (builderType == null)
+            {
+                Logger?.WriteLog($"Command builder type not found: {driver.CommandBuilderType}");
+                return false;
+            }
+        }
+        
+        // Validate transaction type
+        if (!string.IsNullOrEmpty(driver.DbTransactionType))
+        {
+            var transactionType = assembly.GetType(driver.DbTransactionType);
+            if (transactionType == null)
+            {
+                Logger?.WriteLog($"Transaction type not found: {driver.DbTransactionType}");
+                return false;
+            }
+            
+            if (!typeof(IDbTransaction).IsAssignableFrom(transactionType))
+            {
+                Logger?.WriteLog($"Type does not implement IDbTransaction: {driver.DbTransactionType}");
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Logger?.WriteLog($"Error validating ADO driver {driver.DriverClass}: {ex.Message}");
+        return false;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Connection String Templates -->
+                <section class="section">
+                    <h2>Connection String Templates</h2>
+                    
+                    <p>ADO.NET drivers use parameterized connection string templates for flexibility:</p>
+                    
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Common connection string patterns
+public static class ConnectionStringTemplates
+{
+    // SQL Server patterns
+    public const string SqlServerIntegrated = "Server={server};Database={database};Integrated Security=true;";
+    public const string SqlServerCredentials = "Server={server};Database={database};User Id={userid};Password={password};";
+    public const string SqlServerTrustedCertificate = "Server={server};Database={database};Integrated Security=true;TrustServerCertificate=true;";
+    
+    // MySQL patterns  
+    public const string MySQL = "Server={server};Database={database};Uid={userid};Pwd={password};";
+    public const string MySQLPort = "Server={server};Port={port};Database={database};Uid={userid};Pwd={password};";
+    
+    // PostgreSQL patterns
+    public const string PostgreSQL = "Host={host};Database={database};Username={userid};Password={password};";
+    public const string PostgreSQLPort = "Host={host};Port={port};Database={database};Username={userid};Password={password};";
+    
+    // Oracle patterns
+    public const string Oracle = "Data Source={server}:{port}/{servicename};User Id={userid};Password={password};";
+    public const string OracleTNS = "Data Source={tnsname};User Id={userid};Password={password};";
+    
+    // SQLite patterns
+    public const string SQLite = "Data Source={file};";
+    public const string SQLitePassword = "Data Source={file};Password={password};";
+    
+    // Access patterns
+    public const string Access = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source={file};";
+    public const string AccessPassword = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source={file};Jet OLEDB:Database Password={password};";
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Performance Considerations -->
+                <section class="section">
+                    <h2>Performance Optimizations</h2>
+                    
+                    <div class="subsection">
+                        <h3>Parallel Processing</h3>
+                        <p>For assemblies with many types, parallel processing improves discovery performance:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Use parallel processing for large assemblies
+if (relevantTypes.Count > 50)
+{
+    // Process types in parallel
+    Parallel.ForEach(relevantTypes, type =>
+    {
+        if (type.BaseType == null) return;
+        
+        TypeInfo typeInfo = type.GetTypeInfo();
+        ProcessDriverType(typeInfo, packageName, driverVersion, 
+                         type.Module.Name, driversConfigDict);
+    });
+}
+else
+{
+    // Sequential processing for smaller assemblies
+    foreach (var type in relevantTypes)
+    {
+        if (type.BaseType == null) continue;
+        
+        TypeInfo typeInfo = type.GetTypeInfo();
+        ProcessDriverType(typeInfo, packageName, driverVersion, 
+                         type.Module.Name, driversConfigDict);
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Caching Strategies</h3>
+                        <p>Use concurrent dictionaries for thread-safe driver configuration building:</p>
+                        
+                        <div class="code-example">
+                            <pre><code class="language-csharp">// Thread-safe driver configuration collection
+var driversConfigDict = new ConcurrentDictionary<string, ConnectionDriversConfig>();
+
+// Get or add pattern for thread safety
+var driverConfig = driversConfigDict.GetOrAdd(packageName, key => new ConnectionDriversConfig
+{
+    PackageName = key,
+    DriverClass = key,
+    version = version,
+    dllname = moduleName,
+    ADOType = true
+});</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Troubleshooting -->
+                <section class="section">
+                    <h2>Troubleshooting ADO.NET Discovery</h2>
+                    
+                    <div class="admonition warning">
+                        <p class="admonition-title">Common Issues</p>
+                        <ul>
+                            <li><strong>Missing Types:</strong> Assembly doesn't export required ADO.NET interfaces</li>
+                            <li><strong>Version Conflicts:</strong> Multiple versions of same provider loaded</li>
+                            <li><strong>Reflection Errors:</strong> Security restrictions preventing type access</li>
+                            <li><strong>Incomplete Drivers:</strong> Provider missing required components (adapter, command builder)</li>
+                        </ul>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Diagnostic Methods</h3>
+                        <div class="code-example">
+                            <pre><code class="language-csharp">public void DiagnoseADODriverIssues(Assembly assembly)
+{
+    try
+    {
+        Logger?.WriteLog($"Diagnosing assembly: {assembly.FullName}");
+        
+        // Check if assembly exports types
+        var exportedTypes = assembly.GetExportedTypes();
+        Logger?.WriteLog($"Exported types count: {exportedTypes.Length}");
+        
+        // Check for ADO.NET interfaces
+        var adoTypes = exportedTypes.Where(t => 
+            typeof(IDbConnection).IsAssignableFrom(t) ||
+            typeof(IDbDataAdapter).IsAssignableFrom(t) ||
+            typeof(IDbCommand).IsAssignableFrom(t)).ToList();
+            
+        Logger?.WriteLog($"ADO.NET types found: {adoTypes.Count}");
+        
+        foreach (var type in adoTypes)
+        {
+            Logger?.WriteLog($"  - {type.FullName}");
+            
+            // Check constructors
+            var constructors = type.GetConstructors();
+            Logger?.WriteLog($"    Constructors: {constructors.Length}");
+            
+            // Check if instantiable
+            try
+            {
+                var instance = Activator.CreateInstance(type);
+                Logger?.WriteLog($"    Can instantiate: Yes");
+            }
+            catch (Exception ex)
+            {
+                Logger?.WriteLog($"    Can instantiate: No - {ex.Message}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Logger?.WriteLog($"Diagnostic failed: {ex.Message}");
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices</h2>
+                    
+                    <div class="admonition tip">
+                        <p class="admonition-title">ADO.NET Driver Best Practices</p>
+                        <ul>
+                            <li><strong>Provider Factory Pattern:</strong> Use DbProviderFactory when possible for better abstraction</li>
+                            <li><strong>Connection String Security:</strong> Never hardcode credentials in connection strings</li>
+                            <li><strong>Resource Management:</strong> Ensure proper disposal of connections, commands, and readers</li>
+                            <li><strong>Parameterized Queries:</strong> Always use parameterized queries to prevent SQL injection</li>
+                            <li><strong>Connection Pooling:</strong> Configure appropriate connection pooling settings</li>
+                            <li><strong>Error Handling:</strong> Implement database-specific error handling</li>
+                            <li><strong>Version Compatibility:</strong> Test with multiple versions of database providers</li>
+                            <li><strong>Performance Monitoring:</strong> Monitor connection and query performance</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="connection-drivers.html" class="related-link">
+                            <i class="bi bi-database"></i>
+                            <span>Connection Drivers</span>
+                        </a>
+                        <a href="data-sources.html" class="related-link">
+                            <i class="bi bi-server"></i>
+                            <span>Data Sources</span>
+                        </a>
+                        <a href="../classes/assembly-handler.html" class="related-link">
+                            <i class="bi bi-gear"></i>
+                            <span>AssemblyHandler</span>
+                        </a>
+                        <a href="../guides/driver-management.html" class="related-link">
+                            <i class="bi bi-book"></i>
+                            <span>Driver Management Guide</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

@@ -19,14 +19,12 @@ namespace TheTechIdea.Beep.Services
         private static IServiceCollection Services;
 
         public static string BeepDataPath { get; private set; }
-        public static string ContainerDataPath { get; private set; }
+        public static string AppRepoDataPath { get; private set; }
         private static bool mappingcreated = false;
         private static bool connectioncreated = false;
         private static bool datasourcecreated = false;
 
-        #region "Container Methods"
-
-        #endregion
+        
 
         public static IServiceCollection CreateBeepMapping(this IDMEEditor editor)
         {
@@ -82,7 +80,7 @@ namespace TheTechIdea.Beep.Services
         /// </summary>
         /// <param name="containername">Name of the container folder to create.</param>
         /// <returns>Path to the created container folder or empty string if creation fails.</returns>
-        public static string CreateContainerfolder(string containername = "")
+        public static string CreateAppRepofolder(string AppReponame = "")
         {
             try
             {
@@ -97,10 +95,10 @@ namespace TheTechIdea.Beep.Services
                     return string.Empty;
                 }
 
-                if (!string.IsNullOrEmpty(containername))
+                if (!string.IsNullOrEmpty(AppReponame))
                 {
                     // Sanitize folder name for cross-platform compatibility
-                    string safeName = SanitizeFolderName(containername);
+                    string safeName = SanitizeFolderName(AppReponame);
                     string containerPath = Path.Combine(BeepDataPath, safeName);
 
                     if (!Directory.Exists(containerPath))
@@ -108,11 +106,11 @@ namespace TheTechIdea.Beep.Services
                         Directory.CreateDirectory(containerPath);
                     }
 
-                    ContainerDataPath = containerPath;
-                    return ContainerDataPath;
+                    AppRepoDataPath = containerPath;
+                    return AppRepoDataPath;
                 }
 
-                return ContainerDataPath ?? string.Empty;
+                return AppRepoDataPath ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -125,28 +123,28 @@ namespace TheTechIdea.Beep.Services
         /// <summary>
         /// Creates an application folder within a container folder.
         /// </summary>
-        /// <param name="containername">Name of the container that will hold the app folder.</param>
+        /// <param name="AppReponame">Name of the container that will hold the app folder.</param>
         /// <param name="appfolder">Name of the application folder to create.</param>
         /// <returns>Path to the created application folder or empty string if creation fails.</returns>
-        public static string CreateAppfolder(string containername, string appfolder)
+        public static string CreateAppfolder(string AppReponame, string appfolder)
         {
             try
             {
-                if (string.IsNullOrEmpty(containername) || string.IsNullOrEmpty(appfolder))
+                if (string.IsNullOrEmpty(AppReponame) || string.IsNullOrEmpty(appfolder))
                 {
                     return string.Empty;
                 }
 
                 // Create container first
-                string containerPath = CreateContainerfolder(containername);
-                if (string.IsNullOrEmpty(containerPath))
+                string AppRepoPath = CreateAppRepofolder(AppReponame);
+                if (string.IsNullOrEmpty(AppRepoPath))
                 {
                     return string.Empty;
                 }
 
                 // Sanitize folder name
                 string safeName = SanitizeFolderName(appfolder);
-                string appFolderPath = Path.Combine(containerPath, safeName);
+                string appFolderPath = Path.Combine(AppRepoPath, safeName);
 
                 if (!Directory.Exists(appFolderPath))
                 {

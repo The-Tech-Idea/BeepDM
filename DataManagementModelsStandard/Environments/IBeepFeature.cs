@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Environments
         string Version { get; set; }
 
      
-        IBeepContainer Container { get; set; }
+        IBeepAppRepo Container { get; set; }
         IErrorsInfo Configure();
         IErrorsInfo Run();
     }

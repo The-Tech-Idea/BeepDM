@@ -1,0 +1,627 @@
+<!--
+    Connection Drivers Documentation
+    Professional-grade documentation for ConnectionDriversConfig and driver management.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Drivers - Assembly Helpers Documentation</title>
+    <link rel="stylesheet" href="../sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/beep-logo.svg" alt="Beep Assembly Helpers Logo">
+                <div class="logo-text">
+                    <h2>Assembly Helpers</h2>
+                    <span class="version">v1.0.0</span>
+                </div>
+            </div>
+            
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." onkeyup="searchDocs(this.value)">
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="../index.html"><i class="bi bi-house"></i> Home</a></li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-gear"></i> Core Classes</a>
+                        <ul class="submenu">
+                            <li><a href="../classes/assembly-handler.html">AssemblyHandler</a></li>
+                            <li><a href="../classes/assembly-class-definition.html">AssemblyClassDefinition</a></li>
+                            <li><a href="../classes/assemblies-rep.html">assemblies_rep</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#"><i class="bi bi-plug"></i> Extensions</a>
+                        <ul class="submenu">
+                            <li><a href="../extensions/loader-extensions.html">Loader Extensions</a></li>
+                            <li><a href="../extensions/scanning-extensions.html">Scanning Extensions</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu open">
+                        <a href="#"><i class="bi bi-database"></i> Drivers</a>
+                        <ul class="submenu">
+                            <li><a href="connection-drivers.html" class="active">Connection Drivers</a></li>
+                            <li><a href="data-sources.html">Data Sources</a></li>
+                            <li><a href="ado-drivers.html">ADO.NET Drivers</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../guides/getting-started.html"><i class="bi bi-rocket"></i> Getting Started</a></li>
+                    <li><a href="../api/reference.html"><i class="bi bi-code-square"></i> API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-wrapper">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Connection Drivers</h1>
+                    <p class="page-subtitle">Discovery, configuration, and management of database connection drivers</p>
+                </div>
+
+                <!-- Overview -->
+                <section class="section">
+                    <div class="admonition note">
+                        <p class="admonition-title">Note</p>
+                        <p>Connection drivers are the foundation of data connectivity in Beep. They define how the system connects to various data sources including databases, files, APIs, and cloud services.</p>
+                    </div>
+
+                    <h2>Driver Configuration Model</h2>
+                    <p>The <code>ConnectionDriversConfig</code> class defines the configuration for each driver type:</p>
+                    
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">C#</span>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <pre><code class="language-csharp">public class ConnectionDriversConfig : Entity
+{
+    public string GuidID { get; set; }
+    public string PackageName { get; set; }        // Full namespace of the driver class
+    public string DriverClass { get; set; }        // Class name implementing IDataSource
+    public string version { get; set; }            // Driver version
+    public string dllname { get; set; }            // Assembly file name
+    
+    // ADO.NET specific properties
+    public string AdapterType { get; set; }        // IDbDataAdapter implementation
+    public string CommandBuilderType { get; set; } // DbCommandBuilder implementation
+    public string DbConnectionType { get; set; }   // IDbConnection implementation
+    public string DbTransactionType { get; set; }  // IDbTransaction implementation
+    
+    // Connection and configuration
+    public string ConnectionString { get; set; }   // Template connection string
+    public string parameter1 { get; set; }         // Custom parameter 1
+    public string parameter2 { get; set; }         // Custom parameter 2
+    public string parameter3 { get; set; }         // Custom parameter 3
+    
+    // Driver characteristics
+    public bool ADOType { get; set; }              // Uses ADO.NET pattern
+    public bool CreateLocal { get; set; }          // Can create local databases
+    public bool InMemory { get; set; }             // In-memory database
+    public string extensionstoHandle { get; set; } // File extensions (for file sources)
+    public string iconname { get; set; }           // UI icon file
+    public string classHandler { get; set; }       // Handler class name
+    
+    // Categorization
+    public DatasourceCategory DatasourceCategory { get; set; }
+    public DataSourceType DatasourceType { get; set; }
+    public bool Favourite { get; set; }
+    public bool IsMissing { get; set; }            // Driver availability status
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Driver Types -->
+                <section class="section">
+                    <h2>Driver Types and Categories</h2>
+                    
+                    <div class="subsection">
+                        <h3>ADO.NET Drivers</h3>
+                        <p>For traditional relational databases using the ADO.NET pattern:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// SQL Server Driver Example
+var sqlServerDriver = new ConnectionDriversConfig
+{
+    PackageName = "System.Data.SqlClient.SqlConnection",
+    DriverClass = "SqlServerDataSource",
+    version = "4.8.0",
+    dllname = "System.Data.SqlClient.dll",
+    
+    // ADO.NET types
+    ADOType = true,
+    DbConnectionType = "System.Data.SqlClient.SqlConnection",
+    AdapterType = "System.Data.SqlClient.SqlDataAdapter",
+    CommandBuilderType = "System.Data.SqlClient.SqlCommandBuilder",
+    DbTransactionType = "System.Data.SqlClient.SqlTransaction",
+    
+    // Connection template
+    ConnectionString = "Server={server};Database={database};Integrated Security=true;",
+    
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.SqlServer,
+    iconname = "sqlserver.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>File-Based Drivers</h3>
+                        <p>For file-based data sources like CSV, JSON, Excel:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// CSV File Driver Example
+var csvDriver = new ConnectionDriversConfig
+{
+    PackageName = "TheTechIdea.Beep.FileDataSource.CsvDataSource",
+    DriverClass = "CsvDataSource",
+    classHandler = "CsvDataSource",
+    version = "1.0.0",
+    dllname = "FileDataSources.dll",
+    
+    ADOType = false,
+    extensionstoHandle = "csv,txt,tsv",
+    ConnectionString = "{File}", // File path placeholder
+    
+    DatasourceCategory = DatasourceCategory.FILE,
+    DatasourceType = DataSourceType.CSV,
+    iconname = "csv.png",
+    CreateLocal = false,
+    InMemory = false
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>In-Memory Drivers</h3>
+                        <p>For in-memory databases and data processing:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// DuckDB In-Memory Driver Example
+var duckDBDriver = new ConnectionDriversConfig
+{
+    PackageName = "DuckDBDataSourceCore.DuckDBDataSource",
+    DriverClass = "DuckDBDataSource",
+    classHandler = "DuckDBDataSource",
+    version = "1.0.0",
+    dllname = "DuckDBDataSourceCore.dll",
+    
+    ADOType = false,
+    InMemory = true,
+    CreateLocal = true,
+    ConnectionString = ":memory:", // In-memory connection
+    
+    DatasourceCategory = DatasourceCategory.INMEMORY,
+    DatasourceType = DataSourceType.InMemory,
+    iconname = "duckdb.png"
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>NoSQL and API Drivers</h3>
+                        <p>For NoSQL databases and web APIs:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// REST API Driver Example
+var restApiDriver = new ConnectionDriversConfig
+{
+    PackageName = "TheTechIdea.Beep.WebAPI.RestApiDataSource",
+    DriverClass = "RestApiDataSource", 
+    classHandler = "RestApiDataSource",
+    version = "1.0.0",
+    dllname = "WebApiDataSources.dll",
+    
+    ADOType = false,
+    ConnectionString = "BaseUrl={baseurl};ApiKey={apikey};Format=json",
+    
+    DatasourceCategory = DatasourceCategory.WEBAPI,
+    DatasourceType = DataSourceType.WebAPI,
+    iconname = "api.png",
+    parameter1 = "Authentication", // Custom parameters for API config
+    parameter2 = "RateLimit",
+    parameter3 = "Timeout"
+};</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Driver Discovery -->
+                <section class="section">
+                    <h2>Automatic Driver Discovery</h2>
+                    
+                    <p>The AssemblyHandler automatically discovers drivers through several mechanisms:</p>
+
+                    <div class="subsection">
+                        <h3>ADO.NET Driver Discovery</h3>
+                        <p>The <code>GetADOTypeDrivers</code> method scans assemblies for ADO.NET patterns:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">private bool GetADOTypeDrivers(Assembly asm)
+{
+    // Get all relevant ADO.NET types
+    var relevantTypes = asm.GetTypes()
+        .Where(type =>
+            typeof(IDbDataAdapter).IsAssignableFrom(type) ||
+            typeof(IDbConnection).IsAssignableFrom(type) ||
+            (type.BaseType?.ToString().Contains("DbCommandBuilder") == true) ||
+            typeof(IDbTransaction).IsAssignableFrom(type) ||
+            type.IsSubclassOf(typeof(DbConnection)) ||
+            type.IsSubclassOf(typeof(DbCommand)) ||
+            type.IsSubclassOf(typeof(DbDataReader)) ||
+            type.IsSubclassOf(typeof(DbParameter)) ||
+            type.IsSubclassOf(typeof(DbTransaction)))
+        .ToList();
+
+    // Process each type and build driver configuration
+    foreach (var type in relevantTypes)
+    {
+        ProcessDriverType(type.GetTypeInfo(), packageName, version, moduleName, driversConfigDict);
+    }
+    
+    return true;
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>DataSource Class Discovery</h3>
+                        <p>The <code>ScanAssemblyForDataSources</code> method finds IDataSource implementations:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">private bool ScanAssemblyForDataSources(Assembly asm)
+{
+    foreach (var type in asm.GetTypes())
+    {
+        TypeInfo typeInfo = type.GetTypeInfo();
+        
+        // Look for IDataSource implementations
+        if (typeInfo.ImplementedInterfaces.Contains(typeof(IDataSource)))
+        {
+            AssemblyClassDefinition xcls = GetAssemblyClassDefinition(typeInfo, "IDataSource");
+            DataSourcesClasses.Add(xcls);
+            ConfigEditor.DataSourcesClasses.Add(xcls);
+        }
+    }
+    
+    return true;
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Default Engine Drivers</h3>
+                        <p>The <code>AddEngineDefaultDrivers</code> method adds built-in drivers:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public bool AddEngineDefaultDrivers()
+{
+    // Add DataView reader for in-memory data manipulation
+    var dataViewDriver = new ConnectionDriversConfig
+    {
+        AdapterType = "DEFAULT",
+        dllname = "DataManagmentEngine",
+        PackageName = "DataViewReader",
+        DriverClass = "DataViewReader",
+        version = "1"
+    };
+    DataDriversConfig.Add(dataViewDriver);
+    
+    // Add file-based drivers based on discovered data source classes
+    var fileClasses = DataSourcesClasses
+        .Where(o => o.classProperties?.Category == DatasourceCategory.FILE)
+        .ToList();
+        
+    foreach (var item in fileClasses)
+    {
+        foreach (string extension in item.classProperties.FileType.Split(','))
+        {
+            var fileDriver = new ConnectionDriversConfig
+            {
+                PackageName = item.className,
+                DriverClass = item.className,
+                classHandler = item.className,
+                extensionstoHandle = item.classProperties.FileType,
+                DatasourceCategory = DatasourceCategory.FILE,
+                iconname = $"{extension}.ico",
+                version = "1"
+            };
+            DataDriversConfig.Add(fileDriver);
+        }
+    }
+    
+    return true;
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Driver Management -->
+                <section class="section">
+                    <h2>Driver Management Operations</h2>
+
+                    <div class="subsection">
+                        <h3>Adding Drivers</h3>
+                        <p>Use the <code>AddDriver</code> method to register new drivers:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public int AddDriver(ConnectionDriversConfig driver)
+{
+    if (driver == null || string.IsNullOrEmpty(driver.PackageName))
+        return -1;
+
+    // Check for existing driver with same package and version
+    int idx = DataDriversClasses.FindIndex(c => 
+        c.PackageName.Equals(driver.PackageName, StringComparison.InvariantCultureIgnoreCase) && 
+        c.version == driver.version);
+    
+    if (idx >= 0)
+        return idx; // Already exists
+        
+    // Check for existing driver with same package (different version)
+    idx = DataDriversClasses.FindIndex(c => 
+        c.PackageName.Equals(driver.PackageName, StringComparison.InvariantCultureIgnoreCase));
+    
+    if (idx > -1)
+    {
+        // Update existing driver version
+        DataDriversClasses[idx].version = driver.version;
+        return idx;
+    }
+    
+    // Add new driver
+    DataDriversClasses.Add(driver);
+    return DataDriversClasses.Count - 1;
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Driver Validation</h3>
+                        <p>Validate driver availability and configuration:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">public void ValidateDrivers()
+{
+    foreach (var driver in DataDriversClasses)
+    {
+        try
+        {
+            // Check if DLL exists
+            if (File.Exists(driver.dllname))
+            {
+                var assembly = Assembly.LoadFrom(driver.dllname);
+                var type = assembly.GetType(driver.PackageName);
+                driver.IsMissing = (type == null);
+            }
+            else
+            {
+                driver.IsMissing = true;
+            }
+            
+            // Validate ADO.NET types if ADO driver
+            if (driver.ADOType)
+            {
+                ValidateADOTypes(driver, assembly);
+            }
+        }
+        catch (Exception ex)
+        {
+            driver.IsMissing = true;
+            Logger?.WriteLog($"Driver validation failed for {driver.DriverClass}: {ex.Message}");
+        }
+    }
+}
+
+private void ValidateADOTypes(ConnectionDriversConfig driver, Assembly assembly)
+{
+    // Validate connection type
+    if (!string.IsNullOrEmpty(driver.DbConnectionType))
+    {
+        var connectionType = assembly.GetType(driver.DbConnectionType);
+        if (connectionType == null || !typeof(IDbConnection).IsAssignableFrom(connectionType))
+        {
+            throw new InvalidOperationException($"Invalid connection type: {driver.DbConnectionType}");
+        }
+    }
+    
+    // Validate adapter type
+    if (!string.IsNullOrEmpty(driver.AdapterType))
+    {
+        var adapterType = assembly.GetType(driver.AdapterType);
+        if (adapterType == null || !typeof(IDbDataAdapter).IsAssignableFrom(adapterType))
+        {
+            throw new InvalidOperationException($"Invalid adapter type: {driver.AdapterType}");
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Driver Querying</h3>
+                        <p>Query drivers by various criteria:</p>
+                        
+                        <div class="code-example">
+                            <div class="code-header">
+                                <span class="language">C#</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <pre><code class="language-csharp">// Get drivers by category
+public List<ConnectionDriversConfig> GetDriversByCategory(DatasourceCategory category)
+{
+    return DataDriversClasses
+        .Where(d => d.DatasourceCategory == category)
+        .OrderBy(d => d.DriverClass)
+        .ToList();
+}
+
+// Get drivers by file extension
+public List<ConnectionDriversConfig> GetDriversByExtension(string extension)
+{
+    return DataDriversClasses
+        .Where(d => !string.IsNullOrEmpty(d.extensionstoHandle) && 
+                   d.extensionstoHandle.Split(',').Contains(extension, StringComparer.OrdinalIgnoreCase))
+        .ToList();
+}
+
+// Get in-memory drivers
+public List<ConnectionDriversConfig> GetInMemoryDrivers()
+{
+    return DataDriversClasses
+        .Where(d => d.InMemory == true)
+        .ToList();
+}
+
+// Get ADO.NET drivers
+public List<ConnectionDriversConfig> GetADODrivers()
+{
+    return DataDriversClasses
+        .Where(d => d.ADOType == true)
+        .ToList();
+}
+
+// Get available (non-missing) drivers
+public List<ConnectionDriversConfig> GetAvailableDrivers()
+{
+    return DataDriversClasses
+        .Where(d => !d.IsMissing)
+        .ToList();
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Best Practices -->
+                <section class="section">
+                    <h2>Best Practices</h2>
+                    
+                    <div class="admonition tip">
+                        <p class="admonition-title">Driver Development Best Practices</p>
+                        <ul>
+                            <li><strong>Unique Package Names:</strong> Use fully qualified namespace for PackageName to avoid conflicts</li>
+                            <li><strong>Version Management:</strong> Use semantic versioning (Major.Minor.Patch.Build)</li>
+                            <li><strong>Connection String Templates:</strong> Use parameter placeholders like {server}, {database}</li>
+                            <li><strong>Icon Consistency:</strong> Use standard icon sizes and formats (PNG recommended)</li>
+                            <li><strong>Error Handling:</strong> Implement robust error handling in driver validation</li>
+                            <li><strong>Category Classification:</strong> Properly categorize drivers for better organization</li>
+                            <li><strong>Extension Mapping:</strong> For file drivers, specify all supported extensions</li>
+                            <li><strong>ADO.NET Compliance:</strong> For ADO drivers, implement all required interfaces</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Related Topics -->
+                <section class="section">
+                    <h2>Related Topics</h2>
+                    <div class="related-links">
+                        <a href="data-sources.html" class="related-link">
+                            <i class="bi bi-database"></i>
+                            <span>Data Sources</span>
+                        </a>
+                        <a href="ado-drivers.html" class="related-link">
+                            <i class="bi bi-plug"></i>
+                            <span>ADO.NET Drivers</span>
+                        </a>
+                        <a href="../classes/assembly-handler.html" class="related-link">
+                            <i class="bi bi-gear"></i>
+                            <span>AssemblyHandler</span>
+                        </a>
+                        <a href="../guides/driver-management.html" class="related-link">
+                            <i class="bi bi-book"></i>
+                            <span>Driver Management Guide</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="../scripts/docs.js"></script>
+</body>
+</html>

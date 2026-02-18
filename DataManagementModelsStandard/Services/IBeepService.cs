@@ -27,7 +27,18 @@ namespace TheTechIdea.Beep.Services
         void LoadServicesScoped();
         void LoadServicesSingleton();
         IUtil util { get; set; }
-        string  Containername { get; }
+
+        /// <summary>
+        /// Gets the application repository/container name. This is the preferred property name.
+        /// </summary>
+        string AppRepoName { get; }
+
+        /// <summary>
+        /// Gets the container name (legacy property, use AppRepoName instead).
+        /// </summary>
+        [Obsolete("Use AppRepoName instead. This property will be removed in a future version.", false)]
+        string Containername { get; }
+
         BeepConfigType ConfigureationType { get; }
         string BeepDirectory { get; }
         void Configure(string directorypath, string containername, BeepConfigType configType,bool AddasSingleton=false);

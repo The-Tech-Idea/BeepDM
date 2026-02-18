@@ -4649,6 +4649,16 @@
             Parses the rule by reading its RuleText and extracting metadata from the rule’s attribute.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Services.IBeepService.AppRepoName">
+            <summary>
+            Gets the application repository/container name. This is the preferred property name.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.IBeepService.Containername">
+            <summary>
+            Gets the container name (legacy property, use AppRepoName instead).
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateRecordClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
             <summary>
             Generates a class with C# record type for immutable data models

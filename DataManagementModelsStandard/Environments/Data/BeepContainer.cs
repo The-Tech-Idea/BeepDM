@@ -6,70 +6,70 @@ using TheTechIdea.Beep.Services;
 
 namespace TheTechIdea.Beep.Environments
 {
-    public class BeepContainer:IBeepContainer
+    public class BeepAppRepo : IBeepAppRepo
 
     {
-        public BeepContainer()
+        public BeepAppRepo()
         {
 
         }
-        public BeepContainer(string containername)
+        public BeepAppRepo(string containername)
         {
             GuidID = new Guid().ToString();
 
-            ContainerName = containername;
+            BeepAppRepoName = containername;
         }
-        public BeepContainer(string containername, IBeepService beepService)
+        public BeepAppRepo(string containername, IBeepService beepService)
         {
             GuidID = new Guid().ToString();
-            ContainerName = containername;
+            BeepAppRepoName = containername;
             BeepService = beepService;
         }
-        public BeepContainer(string containername, IBeepService beepService, string guidID)
+        public BeepAppRepo(string containername, IBeepService beepService, string guidID)
         {
             GuidID = guidID;
-            ContainerName = containername;
+            BeepAppRepoName = containername;
             BeepService = beepService;
         }
-        public BeepContainer(string containername, IBeepService beepService, string guidID, string owner)
+        public BeepAppRepo(string containername, IBeepService beepService, string guidID, string owner)
         {
             GuidID = guidID;
-            ContainerName = containername;
+            BeepAppRepoName = containername;
             BeepService = beepService;
             Owner = owner;
         }
-        public BeepContainer(string containername, IBeepService beepService, string guidID, string owner, string owneremail)
+        public BeepAppRepo(string containername, IBeepService beepService, string guidID, string owner, string owneremail)
         {
             GuidID = guidID;
-            ContainerName = containername;
+            BeepAppRepoName = containername;
             BeepService = beepService;
             Owner = owner;
             OwnerEmail = owneremail;
         }
-        public BeepContainer(string containername, IBeepService beepService, string guidID, string owner, string owneremail, string ownerGuidID)
+        public BeepAppRepo(string containername, IBeepService beepService, string guidID, string owner, string owneremail, string ownerGuidID)
         {
             GuidID = guidID;
-            ContainerName = containername;
+            BeepAppRepoName = containername;
             BeepService = beepService;
             Owner = owner;
             OwnerEmail = owneremail;
             OwnerGuidID = ownerGuidID;
         }
-        public BeepContainer(string containername, IBeepService beepService, string guidID, string owner, string owneremail, string ownerGuidID, int ownerID)
+        public BeepAppRepo(string containername, IBeepService beepService, string guidID, string owner, string owneremail, string ownerGuidID, int ownerID)
         {
             GuidID = guidID;
-            ContainerName = containername;
+            BeepAppRepoName = containername;
             BeepService = beepService;
             Owner = owner;
             OwnerEmail = owneremail;
             OwnerGuidID = ownerGuidID;
             OwnerID = ownerID;
         }
-        public bool IsContainerActive { get; set; } = false;
-        public bool IsContainerLoaded { get; set; } = false;
-        public bool IsContainerCreated { get; set; } = false;
+        public bool IsBeepAppRepoActive { get; set; } = false;
+        public bool IsBeepAppRepoLoaded { get; set; } = false;
+        public bool IsBeepAppRepoCreated { get; set; } = false;
         public bool IsPrimary { get; set; } = false;    
-        public string ContainerName { get; set; }
+        public string BeepAppRepoName { get; set; }
         public IBeepService BeepService { get; set; }
         public string GuidID { get; set; }
         public List<string> Users { get; set; } = new List<string>();
@@ -97,9 +97,9 @@ namespace TheTechIdea.Beep.Environments
         public int OwnerID { get; set; }
 
         
-        public int ContainerID { get; set; }
-        public string ContainerFolderPath { get; set; }
-        public string ContainerUrlPath { get; set; }
+        public int BeepAppRepoID { get; set; }
+        public string BeepAppRepoFolderPath { get; set; }
+        public string BeepAppRepoUrlPath { get; set; }
         public string SecretKey { get; set; }
         public string TokenKey { get; set; }
         public bool IsAdmin { get; set; }=false;
