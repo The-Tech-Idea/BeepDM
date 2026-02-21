@@ -113,7 +113,28 @@ namespace TheTechIdea.Beep.Editor.Migration
             // type conversion from .NET types (Fieldtype like "System.String") to its own
             // native type system internally. Pre-mapping corrupts the EntityStructure.
 
-            if (!MigrateDataSource.CheckEntityExist(entity.EntityName))
+            bool entityExists;
+            try
+            {
+                entityExists = MigrateDataSource.CheckEntityExist(entity.EntityName);
+                
+                // Check if there was an error during the existence check itself
+                // (as opposed to just "entity doesn't exist")
+                if (MigrateDataSource.ErrorObject != null && MigrateDataSource.ErrorObject.Flag == Errors.Failed)
+                {
+                    var checkError = CreateErrorsInfo(
+                        Errors.Failed,
+                        $"Error checking if entity '{entity.EntityName}' exists: {MigrateDataSource.ErrorObject.Message}",
+                        MigrateDataSource.ErrorObject.Ex);
+                    return checkError;
+                }
+            }
+            catch (Exception checkEx)
+            {
+                return CreateErrorsInfo(Errors.Failed, $"Exception checking entity existence '{entity.EntityName}': {checkEx.Message}", checkEx);
+            }
+
+            if (!entityExists)
             {
                 if (!createIfMissing)
                     return CreateErrorsInfo(Errors.Failed, $"Entity '{entity.EntityName}' does not exist");
