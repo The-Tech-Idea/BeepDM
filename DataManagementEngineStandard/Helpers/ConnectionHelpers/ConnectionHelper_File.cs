@@ -520,7 +520,7 @@ namespace TheTechIdea.Beep.Helpers
                 InMemory = false,
                 extensionstoHandle = "graphml",
                 Favourite = false,
-                DatasourceCategory = DatasourceCategory.GraphFile,
+                DatasourceCategory = DatasourceCategory.FILE,
                 DatasourceType = DataSourceType.GraphML,
                 IsMissing = false,
                 NuggetVersion = "1.0.0.0",

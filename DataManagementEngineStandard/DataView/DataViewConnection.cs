@@ -90,32 +90,40 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The connection state after opening the connection.</returns>
         private ConnectionState OpenConn()
         {
-        //    ReplaceValueFromConnectionString();
-            if (Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName) != null)
+            if (InMemory)
             {
-                if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
-                {
-                    string str = $"Found File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
+                ConnectionStatus = ConnectionState.Open;
+                return ConnectionStatus;
+            }
 
-                    //  DMEEditor.AddLogMessage("Success", str, DateTime.Now, -1, "", Errors.Ok);
+            try
+            {
+                if (string.IsNullOrEmpty(ConnectionProp.FilePath) || string.IsNullOrEmpty(ConnectionProp.FileName))
+                {
+                    // Treat as logical view if no file is specified
                     ConnectionStatus = ConnectionState.Open;
+                    return ConnectionStatus;
+                }
+
+                string fullPath = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+                if (File.Exists(fullPath))
+                {
+                    ConnectionStatus = ConnectionState.Open;
+                    DMEEditor.AddLogMessage("Success", $"File Found {ConnectionProp.FileName}", DateTime.Now, -1, "", Errors.Ok);
                 }
                 else
                 {
-                    string str = $"Error in finding File  ,{Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)}";
-
+                    string str = $"Error in finding File, {fullPath}";
                     DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
                     ConnectionStatus = ConnectionState.Broken;
-                    //ErrorObject.Ex = e;
                 }
             }
-            else
+            catch (Exception ex)
             {
-                string str = $"Error No Path Exist  ,{ConnectionProp.FilePath}";
-                DMEEditor.AddLogMessage("Fail", str, DateTime.Now, -1, "", Errors.Failed);
-                ConnectionStatus = ConnectionState.Closed;
+                DMEEditor.AddLogMessage("Fail", $"Error opening connection: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                ConnectionStatus = ConnectionState.Broken;
             }
-            DMEEditor.AddLogMessage("Success", $"File Found {ConnectionProp.FileName}", DateTime.Now, -1, "", Errors.Ok);
+
             return ConnectionStatus;
         }
 
@@ -146,14 +154,29 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The current state of the connection after closing.</returns>
         public virtual ConnectionState CloseConn()
         {
-            if (File.Exists(Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName)))
+            if (InMemory || string.IsNullOrEmpty(ConnectionProp.FilePath) || string.IsNullOrEmpty(ConnectionProp.FileName))
             {
-                DMEEditor.AddLogMessage("Success", $"Closed Connection for File {ConnectionProp.FileName}", DateTime.Now, 0, ConnectionProp.FileName, Errors.Ok);
                 ConnectionStatus = ConnectionState.Closed;
+                return ConnectionStatus;
             }
-            else
+
+            try
             {
-                DMEEditor.AddLogMessage("Success", $"Could not find File {ConnectionProp.FileName} to close", DateTime.Now, 0, ConnectionProp.FileName, Errors.Failed);
+                string fullPath = Path.Combine(ConnectionProp.FilePath, ConnectionProp.FileName);
+                if (File.Exists(fullPath))
+                {
+                    DMEEditor.AddLogMessage("Success", $"Closed Connection for File {ConnectionProp.FileName}", DateTime.Now, 0, ConnectionProp.FileName, Errors.Ok);
+                    ConnectionStatus = ConnectionState.Closed;
+                }
+                else
+                {
+                    DMEEditor.AddLogMessage("Fail", $"Could not find File {ConnectionProp.FileName} to close", DateTime.Now, 0, ConnectionProp.FileName, Errors.Failed);
+                    ConnectionStatus = ConnectionState.Broken;
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error closing connection: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 ConnectionStatus = ConnectionState.Broken;
             }
             return ConnectionStatus;

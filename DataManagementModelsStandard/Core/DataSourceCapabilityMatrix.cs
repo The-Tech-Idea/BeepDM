@@ -3772,7 +3772,7 @@ namespace TheTechIdea.Beep.Core
                         Notes = "Vector database; similarity search"
                     }
                 },
-                { DatasourceCategory.GraphDB, new DataSourceCapabilities
+                { DatasourceCategory.NOSQL, new DataSourceCapabilities
                     {
                         SupportsGraphTraversal = true,
                         SupportsIndexes = true,
@@ -3780,7 +3780,7 @@ namespace TheTechIdea.Beep.Core
                         Notes = "Graph database; relationship queries"
                     }
                 },
-                { DatasourceCategory.TimeSeriesDB, new DataSourceCapabilities
+                { DatasourceCategory.NOSQL, new DataSourceCapabilities
                     {
                         SupportsTimeSeriesQueries = true,
                         SupportsDownsampling = true,
@@ -3790,7 +3790,7 @@ namespace TheTechIdea.Beep.Core
                         Notes = "Time series database"
                     }
                 },
-                { DatasourceCategory.SearchEngine, new DataSourceCapabilities
+                { DatasourceCategory.NOSQL, new DataSourceCapabilities
                     {
                         SupportsFullTextSearch = true,
                         SupportsFacetedSearch = true,
@@ -3800,7 +3800,7 @@ namespace TheTechIdea.Beep.Core
                         Notes = "Search engine; text indexing and queries"
                     }
                 },
-                { DatasourceCategory.MessageQueue, new DataSourceCapabilities
+                { DatasourceCategory.QUEUE, new DataSourceCapabilities
                     {
                         SupportsPublishSubscribe = true,
                         SupportsMessageOrdering = true,
@@ -3809,15 +3809,7 @@ namespace TheTechIdea.Beep.Core
                         Notes = "Message queue; reliable messaging"
                     }
                 },
-                { DatasourceCategory.BigData, new DataSourceCapabilities
-                    {
-                        SupportsBulkOperations = true,
-                        SupportsPartitioning = true,
-                        SupportsAggregations = true,
-                        SupportsAsyncOperations = true,
-                        Notes = "Big data platform; large-scale processing"
-                    }
-                },
+               
                 { DatasourceCategory.INMEMORY, new DataSourceCapabilities
                     {
                         SupportsTTL = true,

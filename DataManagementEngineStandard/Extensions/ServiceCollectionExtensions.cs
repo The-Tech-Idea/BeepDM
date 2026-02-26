@@ -27,8 +27,7 @@ namespace TheTechIdea.Beep.Logger.Extensions
             // Register as Microsoft.Extensions.Logging.ILogger
             services.AddSingleton<ILogger>(provider => provider.GetRequiredService<DMLogger>());
             
-            // Register as Serilog.ILogger
-            services.AddSingleton<Serilog.ILogger>(provider => provider.GetRequiredService<DMLogger>());
+
 
             return services;
         }
@@ -54,8 +53,7 @@ namespace TheTechIdea.Beep.Logger.Extensions
             // Register as Microsoft.Extensions.Logging.ILogger
             services.AddSingleton<ILogger>(provider => provider.GetRequiredService<DMLogger>());
             
-            // Register as Serilog.ILogger
-            services.AddSingleton<Serilog.ILogger>(provider => provider.GetRequiredService<DMLogger>());
+
 
             return services;
         }

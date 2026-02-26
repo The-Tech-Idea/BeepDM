@@ -1,0 +1,12 @@
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataView\DataViewDataSource.cs(599,48): error CS1061: 'List<IDataSource>' does not contain a definition for 'Values' and no accessible extension method 'Values' accepting a first argument of type 'List<IDataSource>' could be found (are you missing a using directive or an assembly reference?) [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net9.0]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataView\DataViewDataSource.cs(606,210): error CS0117: 'DataSourceType' does not contain a definition for 'InMemory' [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net9.0]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataView\DataViewDataSource.cs(599,48): error CS1061: 'List<IDataSource>' does not contain a definition for 'Values' and no accessible extension method 'Values' accepting a first argument of type 'List<IDataSource>' could be found (are you missing a using directive or an assembly reference?) [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net10.0]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataView\DataViewDataSource.cs(606,210): error CS0117: 'DataSourceType' does not contain a definition for 'InMemory' [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net10.0]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataView\DataViewDataSource.cs(599,48): error CS1061: 'List<IDataSource>' does not contain a definition for 'Values' and no accessible extension method 'Values' accepting a first argument of type 'List<IDataSource>' could be found (are you missing a using directive or an assembly reference?) [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net8.0]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataView\DataViewDataSource.cs(606,210): error CS0117: 'DataSourceType' does not contain a definition for 'InMemory' [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net8.0]
+
+Build FAILED.
+    602 Warning(s)
+    6 Error(s)
+
+Time Elapsed 00:00:16.97

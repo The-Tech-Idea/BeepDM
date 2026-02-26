@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using Microsoft.Extensions.Logging;
-using Serilog;
-using Serilog.Events;
+using Newtonsoft.Json;
 
 namespace TheTechIdea.Beep.Logger
 {
@@ -14,10 +15,11 @@ namespace TheTechIdea.Beep.Logger
         Paused,
         Stopped
     }
+
     /// <summary>
     /// Provides logging functionalities for the application.
     /// </summary>
-    public class DMLogger : IDMLogger, IDisposable, Serilog.ILogger, Microsoft.Extensions.Logging.ILogger
+    public class DMLogger : IDMLogger, IDisposable, Microsoft.Extensions.Logging.ILogger
     {
         /// <summary>
         /// Occurs when a log event is triggered.
@@ -29,9 +31,9 @@ namespace TheTechIdea.Beep.Logger
         /// </summary>
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private Serilog.ILogger logger;
+        private Microsoft.Extensions.Logging.ILogger _logger;
+        private ILoggerFactory _loggerFactory;
         private readonly object lockObject = new object();
-        private bool logstatus = true;
         private bool disposedValue;
         private readonly List<Func<string, bool>> logFilters = new List<Func<string, bool>>();
         private LogState logstate = LogState.Active;
@@ -42,13 +44,21 @@ namespace TheTechIdea.Beep.Logger
         /// </summary>
         public DMLogger()
         {
-            logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Console()
-                .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
-                .CreateLogger();
+            InitializeLoggerFactory(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddProvider(new SimpleConsoleLoggerProvider());
+                builder.AddProvider(new RollingFileLoggerProvider("log.txt", 7));
+            });
 
             WriteLog("Logger Initialized");
+        }
+
+        private void InitializeLoggerFactory(Action<ILoggingBuilder> configure)
+        {
+            _loggerFactory?.Dispose();
+            _loggerFactory = LoggerFactory.Create(configure);
+            _logger = _loggerFactory.CreateLogger<DMLogger>();
         }
 
         /// <summary>
@@ -56,47 +66,51 @@ namespace TheTechIdea.Beep.Logger
         /// </summary>
         public void WriteLog(string info)
         {
-            LogMessage(() => logger.Information(info), info);
+            LogMessage(() => _logger.LogInformation(info), info);
         }
 
         public void LogError(string error)
         {
-            LogMessage(() => logger.Error(error), error);
+            LogMessage(() => _logger.LogError(error), error);
         }
 
         public void LogWarning(string warning)
         {
-            LogMessage(() => logger.Warning(warning), warning);
+            LogMessage(() => _logger.LogWarning(warning), warning);
         }
 
         public void LogInfo(string info)
         {
-            LogMessage(() => logger.Information(info), info);
+            LogMessage(() => _logger.LogInformation(info), info);
         }
 
         public void LogCritical(string error)
         {
-            LogMessage(() => logger.Fatal(error), error);
+            LogMessage(() => _logger.LogCritical(error), error);
         }
 
         public void LogDebug(string message)
         {
-            LogMessage(() => logger.Debug(message), message);
+            LogMessage(() => _logger.LogDebug(message), message);
         }
 
         public void LogTrace(string message)
         {
-            LogMessage(() => logger.Verbose(message), message);
+            LogMessage(() => _logger.LogTrace(message), message);
         }
 
         public void LogWithContext(string message, object context)
         {
-            LogMessage(() => logger.ForContext("Context", context, destructureObjects: true).Information(message), message);
+            string contextStr = context != null ? JsonConvert.SerializeObject(context) : "null";
+            string fullMessage = $"{message} - Context: {contextStr}";
+            LogMessage(() => _logger.LogInformation(fullMessage), fullMessage);
         }
 
         public void LogStructured(string message, object properties)
         {
-            LogMessage(() => logger.Information("{@Message} {@Properties}", message, properties), message);
+            string propertiesStr = properties != null ? JsonConvert.SerializeObject(properties) : "null";
+            string fullMessage = $"{message} - Properties: {propertiesStr}";
+            LogMessage(() => _logger.LogInformation(fullMessage), fullMessage);
         }
 
 
@@ -120,18 +134,26 @@ namespace TheTechIdea.Beep.Logger
 
         public void Flush()
         {
-            Serilog.Log.CloseAndFlush();
+            // Flush is not natively supported in the same way by Microsoft.Extensions.Logging,
+            // but disposing the factory ensures buffers are flushed.
+            _loggerFactory?.Dispose();
+            // Reinitialize to keep logger functional if used after flush
+            InitializeLoggerFactory(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddProvider(new SimpleConsoleLoggerProvider());
+                builder.AddProvider(new RollingFileLoggerProvider("log.txt", 7));
+            });
         }
 
         public void ConfigureLogger(Action<object> configure)
         {
-
             lock (lockObject)
             {
-                Action<LoggerConfiguration> x = (Action<LoggerConfiguration>)configure;
-                var config = new LoggerConfiguration();
-                x?.Invoke(config);
-                logger = config.CreateLogger();
+                if (configure is Action<ILoggingBuilder> builderAction)
+                {
+                    InitializeLoggerFactory(builderAction);
+                }
             }
         }
 
@@ -139,8 +161,6 @@ namespace TheTechIdea.Beep.Logger
         {
             logFilters.Add(filter);
         }
-
-      
 
         private void LogMessage(Action logAction, string message)
         {
@@ -154,6 +174,16 @@ namespace TheTechIdea.Beep.Logger
                 if (logstate == LogState.Stopped)
                 {
                     return; // Ignore logs when stopped
+                }
+
+                // Apply log filters if any
+                if (logFilters.Count > 0)
+                {
+                    foreach (var filter in logFilters)
+                    {
+                        if (!filter(message))
+                            return; // Message filtered out
+                    }
                 }
 
                 if (logstate == LogState.Paused)
@@ -186,10 +216,10 @@ namespace TheTechIdea.Beep.Logger
             {
                 if (disposing)
                 {
-                    (logger as IDisposable)?.Dispose();
+                    _loggerFactory?.Dispose();
                 }
 
-                logger = null;
+                _logger = null;
                 disposedValue = true;
             }
         }
@@ -204,8 +234,7 @@ namespace TheTechIdea.Beep.Logger
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            // Return a scope that tracks the state
-            return new LoggerScope(state);
+            return _logger?.BeginScope(state);
         }
 
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel)
@@ -213,9 +242,7 @@ namespace TheTechIdea.Beep.Logger
             if (logstate == LogState.Stopped)
                 return false;
 
-            // Map Microsoft.Extensions.Logging.LogLevel to Serilog LogEventLevel
-            var serilogLevel = MapToSerilogLevel(logLevel);
-            return logger?.IsEnabled(serilogLevel) ?? false;
+            return _logger?.IsEnabled(logLevel) ?? false;
         }
 
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
@@ -227,153 +254,135 @@ namespace TheTechIdea.Beep.Logger
             if (string.IsNullOrEmpty(message) && exception == null)
                 return;
 
-            // Apply log filters if any
+            // Handled via inner _logger to keep things dry, but also check filters locally
             if (logFilters.Count > 0)
             {
                 foreach (var filter in logFilters)
                 {
                     if (!filter(message))
-                        return; // Message filtered out
+                        return;
                 }
             }
 
-            // Map to appropriate internal logging method
-            switch (logLevel)
-            {
-                case Microsoft.Extensions.Logging.LogLevel.Trace:
-                    LogTrace(message);
-                    if (exception != null)
-                        LogTrace($"Exception: {exception}");
-                    break;
-                case Microsoft.Extensions.Logging.LogLevel.Debug:
-                    LogDebug(message);
-                    if (exception != null)
-                        LogDebug($"Exception: {exception}");
-                    break;
-                case Microsoft.Extensions.Logging.LogLevel.Information:
-                    LogInfo(message);
-                    if (exception != null)
-                        LogInfo($"Exception: {exception}");
-                    break;
-                case Microsoft.Extensions.Logging.LogLevel.Warning:
-                    LogWarning(message);
-                    if (exception != null)
-                        LogWarning($"Exception: {exception}");
-                    break;
-                case Microsoft.Extensions.Logging.LogLevel.Error:
-                    if (exception != null)
-                        LogError($"{message} - Exception: {exception}");
-                    else
-                        LogError(message);
-                    break;
-                case Microsoft.Extensions.Logging.LogLevel.Critical:
-                    if (exception != null)
-                        LogCritical($"{message} - Exception: {exception}");
-                    else
-                        LogCritical(message);
-                    break;
-                case Microsoft.Extensions.Logging.LogLevel.None:
-                    // Do nothing
-                    break;
-            }
-        }
-
-        private LogEventLevel MapToSerilogLevel(Microsoft.Extensions.Logging.LogLevel logLevel)
-        {
-            return logLevel switch
-            {
-                Microsoft.Extensions.Logging.LogLevel.Trace => LogEventLevel.Verbose,
-                Microsoft.Extensions.Logging.LogLevel.Debug => LogEventLevel.Debug,
-                Microsoft.Extensions.Logging.LogLevel.Information => LogEventLevel.Information,
-                Microsoft.Extensions.Logging.LogLevel.Warning => LogEventLevel.Warning,
-                Microsoft.Extensions.Logging.LogLevel.Error => LogEventLevel.Error,
-                Microsoft.Extensions.Logging.LogLevel.Critical => LogEventLevel.Fatal,
-                Microsoft.Extensions.Logging.LogLevel.None => LogEventLevel.Information,
-                _ => LogEventLevel.Information
-            };
+            _logger?.Log(logLevel, eventId, state, exception, formatter);
+            Onevent?.Invoke(this, message); // Forward standard logger calls to the event
         }
 
         #endregion
 
-        #region Serilog.ILogger Implementation
+        #region Custom Providers
 
-        public void Write(LogEvent logEvent)
+        internal class SimpleConsoleLoggerProvider : ILoggerProvider
         {
-            if (logEvent == null)
-                return;
+            public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => new SimpleConsoleLogger();
+            public void Dispose() { }
 
-            // Apply log filters if any
-            var message = logEvent.RenderMessage();
-            if (logFilters.Count > 0)
+            private class SimpleConsoleLogger : Microsoft.Extensions.Logging.ILogger
             {
-                foreach (var filter in logFilters)
+                public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+                public bool IsEnabled(LogLevel logLevel) => true;
+                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
                 {
-                    if (!filter(message))
-                        return; // Message filtered out
+                    if (!IsEnabled(logLevel)) return;
+                    var msg = formatter(state, exception);
+                    if (string.IsNullOrEmpty(msg) && exception == null) return;
+                    
+                    var color = Console.ForegroundColor;
+                    switch (logLevel)
+                    {
+                        case LogLevel.Critical:
+                        case LogLevel.Error: Console.ForegroundColor = ConsoleColor.Red; break;
+                        case LogLevel.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
+                        case LogLevel.Information: Console.ForegroundColor = ConsoleColor.White; break;
+                        case LogLevel.Debug:
+                        case LogLevel.Trace: Console.ForegroundColor = ConsoleColor.Gray; break;
+                    }
+                    
+                    Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{logLevel.ToString().Substring(0, 3).ToUpper()}] {msg}");
+                    if (exception != null) Console.WriteLine(exception.ToString());
+                    
+                    Console.ForegroundColor = color;
+                }
+            }
+        }
+
+        internal class RollingFileLoggerProvider : ILoggerProvider
+        {
+            private readonly string _baseFileName;
+            private readonly int _retainedFileCountLimit;
+            private readonly object _lock = new object();
+
+            public RollingFileLoggerProvider(string baseFileName, int retainedFileCountLimit = 7)
+            {
+                _baseFileName = baseFileName;
+                _retainedFileCountLimit = retainedFileCountLimit;
+            }
+
+            public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => new RollingFileLogger(this);
+            public void Dispose() { }
+
+            internal void WriteLog(string message)
+            {
+                lock (_lock)
+                {
+                    try
+                    {
+                        string currentDate = DateTime.Now.ToString("yyyyMMdd");
+                        string ext = Path.GetExtension(_baseFileName);
+                        string name = Path.GetFileNameWithoutExtension(_baseFileName);
+                        string dir = Path.GetDirectoryName(_baseFileName);
+                        if (string.IsNullOrEmpty(dir)) dir = AppDomain.CurrentDomain.BaseDirectory;
+                        
+                        string currentFile = Path.Combine(dir, $"{name}{currentDate}{ext}");
+                        
+                        File.AppendAllText(currentFile, message + Environment.NewLine);
+                        
+                        CleanupOldFiles(dir, name, ext);
+                    }
+                    catch { } // Ignore file write errors
                 }
             }
 
-            switch (logEvent.Level)
+            private void CleanupOldFiles(string directory, string fileNameWithoutExt, string ext)
             {
-                case LogEventLevel.Verbose:
-                    LogTrace(message);
-                    break;
-                case LogEventLevel.Debug:
-                    LogDebug(message);
-                    break;
-                case LogEventLevel.Information:
-                    LogInfo(message);
-                    break;
-                case LogEventLevel.Warning:
-                    LogWarning(message);
-                    break;
-                case LogEventLevel.Error:
-                    LogError(message);
-                    break;
-                case LogEventLevel.Fatal:
-                    LogCritical(message);
-                    break;
-                default:
-                    LogInfo(message);
-                    break;
+                try
+                {
+                    var files = Directory.GetFiles(directory, $"{fileNameWithoutExt}*{ext}")
+                                         .Select(f => new FileInfo(f))
+                                         .OrderByDescending(f => f.CreationTime)
+                                         .ToList();
+
+                    if (files.Count > _retainedFileCountLimit)
+                    {
+                        for (int i = _retainedFileCountLimit; i < files.Count; i++)
+                        {
+                            files[i].Delete();
+                        }
+                    }
+                }
+                catch { }
             }
-        }
 
-        public bool IsEnabled(LogEventLevel level)
-        {
-            // Check if logging is active and the level is enabled
-            if (logstate == LogState.Stopped)
-                return false;
-
-            // Delegate to the underlying Serilog logger for level checking
-            return logger?.IsEnabled(level) ?? false;
+            private class RollingFileLogger : Microsoft.Extensions.Logging.ILogger
+            {
+                private readonly RollingFileLoggerProvider _provider;
+                public RollingFileLogger(RollingFileLoggerProvider provider) { _provider = provider; }
+                public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+                public bool IsEnabled(LogLevel logLevel) => true;
+                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+                {
+                    if (!IsEnabled(logLevel)) return;
+                    var msg = formatter(state, exception);
+                    if (string.IsNullOrEmpty(msg) && exception == null) return;
+                    
+                    var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{logLevel.ToString().Substring(0, 3).ToUpper()}] {msg}";
+                    if (exception != null) logEntry += Environment.NewLine + exception.ToString();
+                    
+                    _provider.WriteLog(logEntry);
+                }
+            }
         }
 
         #endregion
-
-        // ...rest of existing methods remain the same...
-    }
-
-    /// <summary>
-    /// A simple implementation of a logging scope for Microsoft.Extensions.Logging
-    /// </summary>
-    internal class LoggerScope : IDisposable
-    {
-        private readonly object _state;
-        private bool _disposed = false;
-
-        public LoggerScope(object state)
-        {
-            _state = state;
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                // Clean up scope if needed
-                _disposed = true;
-            }
-        }
     }
 }

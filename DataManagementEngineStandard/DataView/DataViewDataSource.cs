@@ -586,14 +586,97 @@ namespace TheTechIdea.Beep.DataView
             }
 
         }
+        private IDataSource _tempDb = null;
+
+        /// <summary>
+        /// Prepares a temporary InMemory or Local DB, materializes all DataView entities into it, and syncs their data.
+        /// </summary>
+        private IDataSource PrepareMergedQueryDB()
+        {
+            if (_tempDb != null) return _tempDb;
+            
+            IDataSource targetDB = null;
+            var dsList = DMEEditor.DataSources.Where(p => p is IInMemoryDB || p is ILocalDB).ToList();
+            if (dsList.Any())
+            {
+                targetDB = dsList.First();
+            }
+            if (targetDB == null)
+            {
+               var connInfo = DMEEditor.ConfigEditor.DataConnections.FirstOrDefault(x => x.DatabaseType == DataSourceType.DuckDB || x.DatabaseType == DataSourceType.SqlLite || x.Category == DatasourceCategory.INMEMORY);
+               if (connInfo != null)
+               {
+                   targetDB = DMEEditor.GetDataSource(connInfo.ConnectionName);
+               }
+            }
+
+            if (targetDB == null)
+            {
+                DMEEditor.AddLogMessage("Fail", "No InMemory or LocalDB available to evaluate merged DataView queries.", DateTime.Now, -1, "", Errors.Failed);
+                return null;
+            }
+
+            if (targetDB is IInMemoryDB memDB)
+            {
+                memDB.OpenDatabaseInMemory("TempDataView_" + Guid.NewGuid().ToString("N"));
+            }
+
+            foreach(var ent in DataView.Entities)
+            {
+                if (ent.ParentId == 0 && string.Equals(ent.EntityName, DataView.ViewName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                EntityStructure newEnt = (EntityStructure)ent.Clone();
+                if (targetDB.CheckEntityExist(newEnt.EntityName))
+                {
+                    if (targetDB is ILocalDB localDB)
+                    {
+                         localDB.DropEntity(newEnt.EntityName);
+                    }
+                }
+
+                targetDB.CreateEntityAs(newEnt);
+
+                IDataSource sourceDB = DMEEditor.GetDataSource(ent.DataSourceID);
+                if (sourceDB != null)
+                {
+                    sourceDB.Openconnection();
+                    try
+                    {
+                        var data = sourceDB.GetEntity(ent.DatasourceEntityName, new List<AppFilter>());
+                        if (data != null)
+                        {
+                            targetDB.UpdateEntities(newEnt.EntityName, data, DMEEditor.progress);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                         DMEEditor.AddLogMessage("Fail", $"Failed syncing {ent.EntityName} to temp DB: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                    }
+                }
+            }
+            _tempDb = targetDB;
+            return _tempDb;
+        }
+
         /// <summary>Executes the given SQL statement.</summary>
         /// <param name="sql">The SQL statement to execute.</param>
         /// <returns>An object containing information about any errors that occurred during execution.</returns>
         public IErrorsInfo ExecuteSql(string sql)
         {
-            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name} Not Implemented", DateTime.Now, 0, null, Errors.Ok);
+            try
+            {
+                var db = PrepareMergedQueryDB();
+                if (db != null)
+                {
+                    return db.ExecuteSql(sql);
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error in ExecuteSql: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+            }
             return DMEEditor.ErrorObject;
-
         }
         /// <summary>Creates an entity using the provided entity structure.</summary>
         /// <param name="entity">The structure of the entity to be created.</param>
@@ -674,9 +757,21 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The result of the query execution.</returns>
         public IEnumerable<object> RunQuery(string qrystr)
         {
-            DMEEditor.AddLogMessage("Beep", $"DataView DataSource {DatasourceName}  Method  {System.Reflection.MethodBase.GetCurrentMethod().Name} Not Implemented", DateTime.Now, 0, null, Errors.Ok);
+            try
+            {
+                var db = PrepareMergedQueryDB();
+                if (db != null)
+                {
+                    object result = db.RunQuery(qrystr);
+                    if (result is IEnumerable<object> enumResult) return enumResult;
+                    return new BindingList<object> { result };
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"Error in RunQuery: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+            }
             return new BindingList<object>();
-
         }
         /// <summary>Updates entities in the system.</summary>
         /// <param name="EntityName">The name of the entity to update.</param>
@@ -1212,9 +1307,9 @@ namespace TheTechIdea.Beep.DataView
                 return maintab.Id;
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                DMEEditor.AddLogMessage("Fail", $"Could not add entity to view: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
 
                 return -1;
             }
@@ -1353,8 +1448,9 @@ namespace TheTechIdea.Beep.DataView
 
                 return maintab.Id;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                DMEEditor.AddLogMessage("Fail", $"Could not add entity to view: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 return -1;
             }
         }
@@ -1545,7 +1641,25 @@ namespace TheTechIdea.Beep.DataView
             {
                 foreach (EntityField item in e.Fields)
                 {
-                    DataColumn co = new DataColumn(item.FieldName, Type.GetType(item.Fieldtype));
+                    Type fieldType = Type.GetType(item.Fieldtype, false, true);
+                    if (fieldType == null)
+                    {
+                        switch (item.Fieldtype.ToLowerInvariant())
+                        {
+                            case "string": fieldType = typeof(string); break;
+                            case "int":
+                            case "int32": fieldType = typeof(int); break;
+                            case "long":
+                            case "int64": fieldType = typeof(long); break;
+                            case "decimal": fieldType = typeof(decimal); break;
+                            case "double": fieldType = typeof(double); break;
+                            case "bool":
+                            case "boolean": fieldType = typeof(bool); break;
+                            case "datetime": fieldType = typeof(DateTime); break;
+                            default: fieldType = typeof(string); break;
+                        }
+                    }
+                    DataColumn co = new DataColumn(item.FieldName, fieldType);
                     co.AllowDBNull = item.AllowDBNull;
                     co.AutoIncrement = item.IsAutoIncrement;
                     co.Unique = item.IsUnique;
@@ -1714,7 +1828,14 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The index of the entity.</returns>
         public int GetEntityIdx(string entityName)
         {
-            throw new NotImplementedException();
+            try
+            {
+                return EntityListIndex(entityName);
+            }
+            catch
+            {
+                return -1;
+            }
         }
 
         #endregion

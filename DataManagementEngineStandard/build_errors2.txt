@@ -1,0 +1,12 @@
+c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Extensions\ServiceCollectionExtensions.cs(31,35): error CS0246: The type or namespace name 'Serilog' could not be found (are you missing a using directive or an assembly reference?) [c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net8.0]
+c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Extensions\ServiceCollectionExtensions.cs(58,35): error CS0246: The type or namespace name 'Serilog' could not be found (are you missing a using directive or an assembly reference?) [c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net8.0]
+c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Extensions\ServiceCollectionExtensions.cs(31,35): error CS0246: The type or namespace name 'Serilog' could not be found (are you missing a using directive or an assembly reference?) [c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net10.0]
+c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Extensions\ServiceCollectionExtensions.cs(58,35): error CS0246: The type or namespace name 'Serilog' could not be found (are you missing a using directive or an assembly reference?) [c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net10.0]
+c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Extensions\ServiceCollectionExtensions.cs(31,35): error CS0246: The type or namespace name 'Serilog' could not be found (are you missing a using directive or an assembly reference?) [c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net9.0]
+c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\Extensions\ServiceCollectionExtensions.cs(58,35): error CS0246: The type or namespace name 'Serilog' could not be found (are you missing a using directive or an assembly reference?) [c:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\DataManagementEngine.csproj::TargetFramework=net9.0]
+
+Build FAILED.
+    602 Warning(s)
+    6 Error(s)
+
+Time Elapsed 00:00:17.27

@@ -6681,6 +6681,11 @@
             <param name="SchemaName">The name of the schema.</param>
             <returns>A list of RelationShipKeys representing the foreign keys of the entity.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.PrepareMergedQueryDB">
+            <summary>
+            Prepares a temporary InMemory or Local DB, materializes all DataView entities into it, and syncs their data.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.ExecuteSql(System.String)">
             <summary>Executes the given SQL statement.</summary>
             <param name="sql">The SQL statement to execute.</param>
@@ -14908,11 +14913,6 @@
         <member name="M:TheTechIdea.Beep.Logger.DMLogger.WriteLog(System.String)">
             <summary>
             Writes a general log message.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Logger.LoggerScope">
-            <summary>
-            A simple implementation of a logging scope for Microsoft.Extensions.Logging
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Logger.Providers.DMLoggerProvider">

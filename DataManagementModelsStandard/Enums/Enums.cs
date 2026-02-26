@@ -197,28 +197,12 @@ namespace TheTechIdea.Beep.Utilities
         QUEUE,
         NONE,
         INMEMORY,
-        GraphDB,
-        TimeSeriesDB,
-        MessageQueue,
-        BigData,
-        DocumentDB,
-        KeyValueDB,
-        ColumnarDB,
-        MLModel,
-        SearchEngine,
-        StreamProcessing,
-        GraphFile,
-        Geospatial,
-        IoT,
         Workflow,
-        AnalyticsPlatform,
+      
+        MLModel,
+      
+        IoT,
         VectorDB,
-        DataLake,
-        DataWarehouse,
-        DataMart,
-        DataPipeline,
-        DataMesh,
-        DataFabric,
         Connector, // Added new category for connectors
         Blockchain // Added for distributed ledger technologies
     }
