@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.DataView
     /// <summary>
     /// Represents a data source for a data view.
     /// </summary>
-    public class DataViewDataSource :  IDataSource, IDMDataView
+    public partial class DataViewDataSource : IDataSource, IDataViewOperations, IDisposable
     {
         /// <summary>
         /// Event that is raised when a specific event is passed.
@@ -191,6 +191,49 @@ namespace TheTechIdea.Beep.DataView
         int EntityIndex { get; set; } = 0;
         IDataSource ds;
 
+        // ── Federation Cache Control ────────────────────────────────────────
+        /// <summary>Whether caching is enabled at all. Set to false for always-live "DirectQuery" mode.</summary>
+        public bool CacheEnabled { get; set; } = true;
+
+        // ── IDMDataView Federation Members ─────────────────────────────────
+        /// <summary>Optional human-readable description for UI display.</summary>
+        public string Description { get; set; }
+
+        /// <summary>The registered connection name of the local/in-memory engine used to evaluate federated queries.</summary>
+        public string LocalEngineConnectionName
+        {
+            get => DataView?.LocalEngineConnectionName;
+            set { if (DataView != null) DataView.LocalEngineConnectionName = value; }
+        }
+
+        /// <summary>Cross-source virtual join definitions.</summary>
+        public List<FederatedJoinDefinition> JoinDefinitions
+        {
+            get => DataView?.JoinDefinitions ?? new List<FederatedJoinDefinition>();
+            set { if (DataView != null) DataView.JoinDefinitions = value; }
+        }
+
+        /// <summary>Determines whether data is cached (Cached) or always fetched live (DirectQuery).</summary>
+        public FederationExecutionMode ExecutionMode
+        {
+            get => DataView?.ExecutionMode ?? FederationExecutionMode.Cached;
+            set { if (DataView != null) DataView.ExecutionMode = value; }
+        }
+
+        /// <summary>Duration in seconds the materialized temp DB is valid.</summary>
+        public int CacheTTLSeconds
+        {
+            get => DataView?.CacheTTLSeconds ?? 300;
+            set { if (DataView != null) DataView.CacheTTLSeconds = value; }
+        }
+
+        /// <summary>Timestamp of the last successful cache refresh.</summary>
+        public DateTime CacheLastRefresh
+        {
+            get => DataView?.CacheLastRefresh ?? DateTime.MinValue;
+            set { if (DataView != null) DataView.CacheLastRefresh = value; }
+        }
+
         /// <summary>
         /// Initializes a new instance of the DataViewDataSource class.
         /// </summary>
@@ -211,7 +254,8 @@ namespace TheTechIdea.Beep.DataView
             {
                 Logger = logger,
                 ErrorObject = ErrorObject,
-                DMEEditor = DMEEditor
+                DMEEditor = DMEEditor,
+                IsLogical = true  // DataView is always a logical/virtual source — no physical file needed for connection
             };
             string filepath;
             if (Path.GetDirectoryName(datasourcename) == null)
@@ -351,71 +395,77 @@ namespace TheTechIdea.Beep.DataView
         {
             return Task.Run(() => GetScalar(query));
         }
-        /// <summary>Gets the scalar value from a given query.</summary>
-        /// <param name="query">The query to retrieve the scalar value.</param>
-        /// <returns>The scalar value obtained from the query.</returns>
+        /// <summary>
+        /// Gets a scalar numeric value from a query.
+        /// Routes through the federated temp DB (same as RunQuery/ExecuteSql)
+        /// so cross-source aggregations like COUNT, SUM, AVG work correctly.
+        /// </summary>
         public virtual double GetScalar(string query)
         {
             ErrorObject.Flag = Errors.Ok;
-
             try
             {
-                // Assuming you have a database connection and command objects.
-
-                //using (var command = GetDataCommand())
-                //{
-                //    command.CommandText = query;
-                //    var result = command.ExecuteScalar();
-
-                //    // Check if the result is not null and can be converted to a double.
-                //    if (result != null && double.TryParse(result.ToString(), out double value))
-                //    {
-                //        return value;
-                //    }
-                //}
-
-
-                // If the query executed successfully but didn't return a valid double, you can handle it here.
-                // You might want to log an error or throw an exception as needed.
+                RefreshCacheIfExpired();
+                var db = PrepareMergedQueryDB();
+                if (db != null)
+                {
+                    return db.GetScalar(query);
+                }
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Fail", $"Error in executing scalar query ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error in GetScalar ({ex.Message})", DateTime.Now, 0, "", Errors.Failed);
             }
-
-            // Return a default value or throw an exception if the query failed.
-            return 0.0; // You can change this default value as needed.
+            return 0.0;
         }
-        /// <summary>Retrieves an entity based on the specified entity name and filter.</summary>
-        /// <param name="EntityName">The name of the entity to retrieve.</param>
-        /// <param name="filter">A list of filters to apply to the entity.</param>
-        /// <returns>The retrieved entity.</returns>
+        /// <summary>
+        /// Retrieves an entity by name and filter.
+        /// For federated (cross-source) entities — where the entity is not natively readable from a
+        /// single source — routes the read through the materialized local/in-memory database.
+        /// For single-source entities, delegates directly to the source datasource.
+        /// </summary>
         public IEnumerable<object> GetEntity(string EntityName, List<AppFilter> filter)
         {
             IEnumerable<object> retval = null;
-            IDataSource ds = GetDataSourceObject(EntityName);
-            if (ds != null)
+            EntityStructure ent = GetEntityStructure(EntityName);
+            if (ent == null) return null;
+
+            // P8 Fix: Check if this entity comes from multiple sources (federated path)
+            // A federated/cross-source entity is one where the view has entities from different DataSourceIDs
+            bool isCrossSource = DataView.Entities
+                .Where(e => e.ParentId == 0)
+                .Select(e => e.DataSourceID)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count() > 1;
+
+            if (isCrossSource && ent.Viewtype == ViewType.Table)
             {
-                if (ds.ConnectionStatus == ConnectionState.Open)
+                // Route through the local federated engine
+                RefreshCacheIfExpired();
+                var db = PrepareMergedQueryDB();
+                if (db != null)
                 {
-                    EntityStructure ent = GetEntityStructure(EntityName);
-                    if (ent != null)
+                    return db.GetEntity(EntityName, filter);
+                }
+            }
+
+            // Single-source fallback
+            IDataSource srcDs = GetDataSourceObject(EntityName);
+            if (srcDs != null)
+            {
+                if (srcDs.ConnectionStatus == ConnectionState.Open)
+                {
+                    switch (ent.Viewtype)
                     {
-                        switch (ent.Viewtype)
-                        {
-                            case ViewType.File:
-                            case ViewType.Url:
-                            case ViewType.Table:
-                            case ViewType.Query:
-                                retval = GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
-                                break;
-                            case ViewType.Code:
-                                retval = null;
-                                break;
-                            default:
-                                retval = null;
-                                break;
-                        }
+                        case ViewType.File:
+                        case ViewType.Url:
+                        case ViewType.Table:
+                        case ViewType.Query:
+                            retval = GetDataSourceObject(EntityName).GetEntity(EntityName, filter);
+                            break;
+                        default:
+                            retval = null;
+                            break;
                     }
                 }
             }
@@ -589,25 +639,65 @@ namespace TheTechIdea.Beep.DataView
         private IDataSource _tempDb = null;
 
         /// <summary>
+        /// Forces a full cache invalidation. The next call to RunQuery or ExecuteSql will
+        /// re-materialize all entities from their source databases.
+        /// </summary>
+        public void InvalidateCache()
+        {
+            _tempDb = null;
+            CacheLastRefresh = DateTime.MinValue;
+            DMEEditor.AddLogMessage("Info", "DataView federation cache invalidated.", DateTime.Now, 0, "", Errors.Ok);
+        }
+
+        /// <summary>
+        /// Checks whether the cache TTL has expired and invalidates the temp DB if so.
+        /// This forces the next call to PrepareMergedQueryDB() to re-sync from source databases.
+        /// </summary>
+        private void RefreshCacheIfExpired()
+        {
+            bool isDirectQuery = !CacheEnabled || ExecutionMode == FederationExecutionMode.DirectQuery;
+            if (isDirectQuery)
+            {
+                _tempDb = null;
+                return;
+            }
+
+            if (_tempDb != null && (DateTime.Now - CacheLastRefresh).TotalSeconds > CacheTTLSeconds)
+            {
+                DMEEditor.AddLogMessage("Info", $"DataView cache expired (TTL={CacheTTLSeconds}s). Re-materializing entities.", DateTime.Now, 0, "", Errors.Ok);
+                _tempDb = null;
+            }
+        }
+
+        /// <summary>
         /// Prepares a temporary InMemory or Local DB, materializes all DataView entities into it, and syncs their data.
         /// </summary>
         private IDataSource PrepareMergedQueryDB()
         {
             if (_tempDb != null) return _tempDb;
-            
+
             IDataSource targetDB = null;
-            var dsList = DMEEditor.DataSources.Where(p => p is IInMemoryDB || p is ILocalDB).ToList();
-            if (dsList.Any())
+
+            // 1. Use explicitly pinned engine if set on the view
+            if (!string.IsNullOrWhiteSpace(LocalEngineConnectionName))
             {
-                targetDB = dsList.First();
+                targetDB = DMEEditor.GetDataSource(LocalEngineConnectionName);
             }
+
+            // 2. Auto-discovery: prefer DuckDB, then SQLite, then any available local/in-memory engine
             if (targetDB == null)
             {
-               var connInfo = DMEEditor.ConfigEditor.DataConnections.FirstOrDefault(x => x.DatabaseType == DataSourceType.DuckDB || x.DatabaseType == DataSourceType.SqlLite || x.Category == DatasourceCategory.INMEMORY);
-               if (connInfo != null)
-               {
-                   targetDB = DMEEditor.GetDataSource(connInfo.ConnectionName);
-               }
+                var availableConns = DMEEditor.ConfigEditor.DataConnections
+                    .Where(p => p.Category == DatasourceCategory.INMEMORY || p.IsLocal).ToList();
+
+                if (availableConns.Any())
+                {
+                    var preferredConn = availableConns.FirstOrDefault(x => x.DatabaseType == DataSourceType.DuckDB)
+                                     ?? availableConns.FirstOrDefault(x => x.DatabaseType == DataSourceType.SqlLite)
+                                     ?? availableConns.First();
+
+                    targetDB = DMEEditor.GetDataSource(preferredConn.ConnectionName);
+                }
             }
 
             if (targetDB == null)
@@ -621,12 +711,58 @@ namespace TheTechIdea.Beep.DataView
                 memDB.OpenDatabaseInMemory("TempDataView_" + Guid.NewGuid().ToString("N"));
             }
 
+            bool isDuckDbTarget = targetDB.DatasourceType == DataSourceType.DuckDB;
+
             foreach(var ent in DataView.Entities)
             {
                 if (ent.ParentId == 0 && string.Equals(ent.EntityName, DataView.ViewName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                IDataSource sourceDB = DMEEditor.GetDataSource(ent.DataSourceID);
+                if (sourceDB == null) continue;
+
                 EntityStructure newEnt = (EntityStructure)ent.Clone();
+
+                // Advanced Federation: DuckDB Native Pushdown
+                if (isDuckDbTarget && 
+                   (sourceDB.DatasourceType == DataSourceType.SqlLite || 
+                    sourceDB.DatasourceType == DataSourceType.Postgre || 
+                    sourceDB.DatasourceType == DataSourceType.Mysql))
+                {
+                    try
+                    {
+                        string attachmentName = $"{sourceDB.DatasourceName}_db".Replace(" ", "_").Replace(".", "_");
+                        // Generate Native ATTACH for DuckDB
+                        string attachSql = "";
+                        if (sourceDB.DatasourceType == DataSourceType.SqlLite)
+                        {
+                            attachSql = $"ATTACH '{sourceDB.Dataconnection.ConnectionProp.ConnectionString}' AS {attachmentName} (TYPE SQLITE);";
+                        }
+                        else if (sourceDB.DatasourceType == DataSourceType.Postgre)
+                        {
+                            attachSql = $"ATTACH '{sourceDB.Dataconnection.ConnectionProp.ConnectionString}' AS {attachmentName} (TYPE POSTGRES);";
+                        }
+                        else if (sourceDB.DatasourceType == DataSourceType.Mysql)
+                        {
+                             attachSql = $"ATTACH '{sourceDB.Dataconnection.ConnectionProp.ConnectionString}' AS {attachmentName} (TYPE MYSQL);";
+                        }
+
+                        if (!string.IsNullOrEmpty(attachSql))
+                        {
+                            targetDB.ExecuteSql(attachSql);
+                            // Map the logical view entity to the attached physical table
+                            string createViewSql = $"CREATE OR REPLACE VIEW {newEnt.EntityName} AS SELECT * FROM {attachmentName}.{ent.DatasourceEntityName};";
+                            targetDB.ExecuteSql(createViewSql);
+                            continue; // Bypasses the C# memory transfer completely!
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        DMEEditor.AddLogMessage("Warning", $"Native DuckDB attach failed for {ent.EntityName}, falling back to memory transfer: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                    }
+                }
+
+                // Fallback: Materialized Copy
                 if (targetDB.CheckEntityExist(newEnt.EntityName))
                 {
                     if (targetDB is ILocalDB localDB)
@@ -637,25 +773,24 @@ namespace TheTechIdea.Beep.DataView
 
                 targetDB.CreateEntityAs(newEnt);
 
-                IDataSource sourceDB = DMEEditor.GetDataSource(ent.DataSourceID);
-                if (sourceDB != null)
+                sourceDB.Openconnection();
+                try
                 {
-                    sourceDB.Openconnection();
-                    try
+                    // Basic Predicate Pushdown (if AppFilters were extracted from a Query AST, they'd be passed here)
+                    var data = sourceDB.GetEntity(ent.DatasourceEntityName, new List<AppFilter>());
+                    if (data != null)
                     {
-                        var data = sourceDB.GetEntity(ent.DatasourceEntityName, new List<AppFilter>());
-                        if (data != null)
-                        {
-                            targetDB.UpdateEntities(newEnt.EntityName, data, DMEEditor.progress);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                         DMEEditor.AddLogMessage("Fail", $"Failed syncing {ent.EntityName} to temp DB: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                        targetDB.UpdateEntities(newEnt.EntityName, data, DMEEditor.progress);
                     }
                 }
+                catch (Exception ex)
+                {
+                     DMEEditor.AddLogMessage("Fail", $"Failed syncing {ent.EntityName} to temp DB: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                }
             }
+            
             _tempDb = targetDB;
+            CacheLastRefresh = DateTime.Now;
             return _tempDb;
         }
 
@@ -666,6 +801,7 @@ namespace TheTechIdea.Beep.DataView
         {
             try
             {
+                RefreshCacheIfExpired();
                 var db = PrepareMergedQueryDB();
                 if (db != null)
                 {
@@ -759,6 +895,7 @@ namespace TheTechIdea.Beep.DataView
         {
             try
             {
+                RefreshCacheIfExpired();
                 var db = PrepareMergedQueryDB();
                 if (db != null)
                 {
@@ -821,21 +958,16 @@ namespace TheTechIdea.Beep.DataView
             }
         }
         /// <summary>Runs an ETL script.</summary>
-        /// <param name="dDLScripts">The ETL script to run.</param>
-        /// <returns>An object containing information about any errors that occurred during script execution.</returns>
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
-            if (ds.ConnectionStatus == ConnectionState.Open)
+            // Fixed: was reading ds.ConnectionStatus before getting ds (null ref), and ignoring the new ds.
+            ds = DMEEditor.GetDataSource(DatasourceName);
+            if (ds?.ConnectionStatus == ConnectionState.Open)
             {
-                ds = DMEEditor.GetDataSource(DatasourceName);
                 return ds.RunScript(dDLScripts);
             }
-            else
-            {
-                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
-                return null;
-            }
-
+            DMEEditor.AddLogMessage("Error", $"Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
+            return DMEEditor.ErrorObject;
         }
         /// <summary>Creates entities based on the provided list of entity structures.</summary>
         /// <param name="entities">A list of entity structures.</param>
@@ -886,53 +1018,44 @@ namespace TheTechIdea.Beep.DataView
             }
         }
         /// <summary>Retrieves an entity asynchronously.</summary>
-        /// <param name="EntityName">The name of the entity to retrieve.</param>
-        /// <param name="Filter">A list of filters to apply to the entity.</param>
-        /// <returns>A task representing the asynchronous operation. The result is the retrieved entity.</returns>
         public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
         {
-            return (Task<IEnumerable<object>>)GetEntity(EntityName, Filter);
+            // Fixed: previously used an invalid cast. Task.FromResult wraps the sync result properly.
+            return Task.FromResult(GetEntity(EntityName, Filter));
         }
         #region "DataView Methods"
 
         #region "View Generating Methods"
         /// <summary>Removes an entity with the specified ID.</summary>
-        /// <param name="EntityID">The ID of the entity to remove.</param>
-        /// <returns>An object containing information about any errors that occurred during the removal process.</returns>
         public IErrorsInfo RemoveEntity(int EntityID)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-
                 foreach (EntityStructure item in DataView.Entities.Where(x => x.ParentId == EntityID).ToList())
                 {
                     RemoveEntity(item.Id);
                 }
-                DataView.Entities.Remove(DataView.Entities[EntityListIndex(EntityID)]);
-                EntitiesNames.Remove(DataView.Entities[EntityListIndex(EntityID)].EntityName);
+                // Fixed: cache the entity BEFORE removing to avoid use-after-remove IndexOutOfRange
+                int idx = EntityListIndex(EntityID);
+                if (idx >= 0)
+                {
+                    var entity = DataView.Entities[idx];
+                    EntitiesNames.Remove(entity.EntityName);
+                    DataView.Entities.Remove(entity);
+                }
             }
             catch (Exception ex)
             {
-
-
                 DMEEditor.AddLogMessage("Fail", ex.Message, DateTime.Now, -1, "", Errors.Failed);
-
             }
-
-
             return DMEEditor.ErrorObject;
         }
         /// <summary>Removes child entities associated with a parent entity.</summary>
-        /// <param name="EntityID">The ID of the parent entity.</param>
-        /// <returns>An object containing information about any errors that occurred during the removal process.</returns>
         public IErrorsInfo RemoveChildEntities(int EntityID)
         {
-
             try
             {
-
-                // CurrentEntity = CurrentView.Entity[EntityListIndex(ViewID, EntityID)];
                 var ls = DataView.Entities.Where(x => x.ParentId == EntityID);
                 foreach (EntityStructure item in ls.ToList())
                 {
@@ -940,82 +1063,49 @@ namespace TheTechIdea.Beep.DataView
                     {
                         RemoveChildEntities(item.Id);
                     }
-                    DataView.Entities.Remove(DataView.Entities[EntityListIndex(item.Id)]);
-                    EntitiesNames.Remove(DataView.Entities[EntityListIndex(item.Id)].EntityName);
+                    // Fixed: cache entity before remove to avoid use-after-remove IndexOutOfRange
+                    int idx = EntityListIndex(item.Id);
+                    if (idx >= 0)
+                    {
+                        var entity = DataView.Entities[idx];
+                        EntitiesNames.Remove(entity.EntityName);
+                        DataView.Entities.Remove(entity);
+                    }
                 }
-
-
                 DMEEditor.AddLogMessage("Success", "Removed Child entities", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                string mes = "Could not Remove Child entities";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
+                DMEEditor.AddLogMessage(ex.Message, "Could not Remove Child entities", DateTime.Now, -1, "", Errors.Failed);
+            }
             return DMEEditor.ErrorObject;
         }
 
-        /// <summary>
-        /// Generates a view from a table using the specified parameters.
-        /// </summary>
-        /// <param name="viewname">The name of the view to be generated.</param>
-        /// <param name="SourceConnection">The data source connection object.</param>
-        /// <param name="tablename">The name of the table to generate the view from.</param>
-        /// <param name="SchemaName">The name of the schema containing the table.</param>
-        /// <param name="Filterparamters">The filter parameters to be applied to the view.</param>
-        /// <returns>The number of rows affected by the view generation process.</returns>
+        /// <summary>Generates a view from a table using the specified parameters.</summary>
         public int GenerateViewFromTable(string viewname, IDataSource SourceConnection, string tablename, string SchemaName, string Filterparamters)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             int retval = 0;
             try
             {
-
+                // M2 Fix: actually apply viewname to the DataView (was silently ignored before)
+                DataView.ViewName = viewname;
                 DataView.EntityDataSourceID = SourceConnection.DatasourceName;
-
                 DataView.VID = Guid.NewGuid().ToString();
                 retval = GenerateDataView(SourceConnection, tablename, SchemaName, Filterparamters);
-
-
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Faile", $"Error in Loading View from file ({ex.Message}) ", DateTime.Now, 0, FileName, Errors.Failed);
-
+                DMEEditor.AddLogMessage("Fail", $"Error in GenerateViewFromTable ({ex.Message})", DateTime.Now, 0, FileName, Errors.Failed);
             }
             return retval;
-
         }
-        /// <summary>
-        /// Generates a data view based on the provided data source, table name, schema name, and filter parameters.
-        /// </summary>
-        /// <param name="conn">The data source to generate the data view from.</param>
-        /// <param name="tablename">The name of the table to generate the data view for.</param>
-        /// <param name="SchemaName">The name of the schema to generate the data view for.</param>
-        /// <param name="Filterparamters">The filter parameters to apply to the data view.</param>
-        /// <returns>An integer representing the result of the data view generation.</returns>
+        /// <summary>Generates a DataView entity tree from a root table's FK child relations.</summary>
         public int GenerateDataView(IDataSource conn, string tablename, string SchemaName, string Filterparamters)
         {
-            //int maxcnt;
-
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
-            //if (DataView.Entities.Count == 0)
-            //{
 
-
-            //    EntityStructure viewheader = new EntityStructure() { Id = NextHearId(), EntityName = DataView.ViewName };
-            //    viewheader.DataSourceID = conn.DatasourceName;
-            //    viewheader.EntityName = DataView.ViewName.ToUpper();
-            //    viewheader.ParentId = 0;
-            //    viewheader.ViewID = DataView.ViewID;
-
-            //    DataView.Entities.Add(viewheader);
-            //}
-
-
-            //  maxcnt = DataView.Entities.Max(m => m.Id);
             EntityStructure maintab = new EntityStructure() { Id = NextHearId(), EntityName = tablename };
             maintab.DataSourceID = conn.DatasourceName;
             maintab.EntityName = tablename.ToUpper();
@@ -1025,197 +1115,153 @@ namespace TheTechIdea.Beep.DataView
 
             DataView.Entities.Add(maintab);
             EntitiesNames.Add(maintab.EntityName);
-            if (ds != null && ds.Count > 0)
+
+            // M6 Fix: collapsed redundant double-null checks
+            if (ds?.Count > 0)
             {
-
-                // var tb = ds.Tables[0];
-                //-------------------------------
-                // Create Parent Record First
-                //-------------------------------
-                if (ds.Count > 0)
+                foreach (ChildRelation r in ds)
                 {
-                    foreach (ChildRelation r in ds)
+                    SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
+                    // M7 Fix: auto-populate JoinDefinitions from discovered FK relations
+                    DataView.JoinDefinitions.Add(new FederatedJoinDefinition
                     {
-                        EntityStructure a;
-                        a = SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
-
-
-
-                    }
-
+                        LeftEntityName  = tablename.ToUpper(),
+                        LeftColumn      = r.parent_column,
+                        RightEntityName = r.child_table.ToUpper(),
+                        RightColumn     = r.child_column,
+                        JoinType        = FederatedJoinType.LeftOuter,
+                        Description     = $"Auto-discovered FK: {tablename}.{r.parent_column} → {r.child_table}.{r.child_column}"
+                    });
                 }
-
             }
 
             return maintab.Id;
-
         }
-        /// <summary>Generates a data view based on the specified view name and connection name.</summary>
-        /// <param name="ViewName">The name of the view.</param>
-        /// <param name="ConnectionName">The name of the connection.</param>
-        /// <returns>The generated data view.</returns>
+        /// <summary>Creates a new empty IDMDataView for the given ViewName and connection name.</summary>
         public IDMDataView GenerateView(string ViewName, string ConnectionName)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             IDMDataView retval = null;
-
             try
             {
                 retval = new DMDataView();
                 retval.ViewID = 0;
-                retval.EntityDataSourceID = ViewName;
+                // M3 Fix: EntityDataSourceID must be the datasource connection name, not the view name
+                retval.EntityDataSourceID = ConnectionName;
                 retval.ViewName = ViewName;
-                retval.DataViewDataSourceID = ViewName;
+                retval.DataViewDataSourceID = ConnectionName;
+                retval.LocalEngineConnectionName = null; // auto-discover at query time
                 retval.Viewtype = ViewType.Table;
                 retval.VID = Guid.NewGuid().ToString();
-                //EntityStructure viewheader = new EntityStructure() { Id = 1, EntityName = ViewName };
-
-                //viewheader.EntityName = ViewName;
-                //viewheader.ViewID = retval.ViewID;
-                //viewheader.ParentId = 0;
-                //retval.Entities.Add(viewheader);
-
             }
             catch (Exception ex)
             {
-
-
-                DMEEditor.AddLogMessage("Fail", $"Error in creating View ({ex.Message}) ", DateTime.Now, 0, ViewName, Errors.Failed);
-
+                DMEEditor.AddLogMessage("Fail", $"Error in creating View ({ex.Message})", DateTime.Now, 0, ViewName, Errors.Failed);
             }
             return retval;
         }
-        /// <summary>
-        /// Generates a data view for a child node based on the provided parameters.
-        /// </summary>
-        /// <param name="conn">The data source connection.</param>
-        /// <param name="pid">The parent ID.</param>
-        /// <param name="tablename">The name of the table.</param>
-        /// <param name="SchemaName">The name of the schema.</param>
-        /// <param name="Filterparamters">The filter parameters.</param>
-        /// <returns>An object representing the generated data view.</returns>
+        /// <summary>Generates entity nodes for child tables of a given parent within an existing DataView.</summary>
         public IErrorsInfo GenerateDataViewForChildNode(IDataSource conn, int pid, string tablename, string SchemaName, string Filterparamters)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
-
             {
-
-                EntityStructure pd = DataView.Entities.Where(c => c.Id == pid).FirstOrDefault();
-                if (pd.Viewtype == ViewType.Table)
+                EntityStructure pd = DataView.Entities.FirstOrDefault(c => c.Id == pid);
+                if (pd?.Viewtype == ViewType.Table)
                 {
                     List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, conn.Dataconnection.ConnectionProp.SchemaName, Filterparamters);
-                    if (ds != null)
+                    // M6 Fix: collapsed from double-null check
+                    if (ds?.Count > 0)
                     {
-
-                        if (ds != null && ds.Count > 0)
+                        foreach (ChildRelation r in ds)
                         {
-
-                            // var tb = ds.Tables[0];
-                            //-------------------------------
-                            // Create Parent Record First
-                            //-------------------------------
-                            if (ds.Count > 0)
+                            SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, pd.Id, conn.DatasourceName);
+                            // M7 Fix: auto-populate JoinDefinitions
+                            DataView.JoinDefinitions.Add(new FederatedJoinDefinition
                             {
-                                foreach (ChildRelation r in ds)
-                                {
-                                    EntityStructure a;
-                                    a = SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, pd.Id, conn.DatasourceName);
-
-                                }
-                            }
+                                LeftEntityName  = tablename.ToUpper(),
+                                LeftColumn      = r.parent_column,
+                                RightEntityName = r.child_table.ToUpper(),
+                                RightColumn     = r.child_column,
+                                JoinType        = FederatedJoinType.LeftOuter,
+                                Description     = $"Auto-discovered FK: {tablename}.{r.parent_column} → {r.child_table}.{r.child_column}"
+                            });
                         }
                     }
                     DMEEditor.AddLogMessage("Success", $"Getting Child from DataSource", DateTime.Now, 0, null, Errors.Ok);
                 }
-
-
-
             }
             catch (Exception ex)
             {
-                string errmsg = "Error Getting Child from DataSource";
-                DMEEditor.AddLogMessage("Fail", $"{errmsg}:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Error Getting Child from DataSource:{ex.Message}", DateTime.Now, 0, null, Errors.Failed);
             }
-
-
             return DMEEditor.ErrorObject;
         }
-        /// <summary>Adds an entity as a child to a specified parent table.</summary>
-        /// <param name="conn">The data source connection.</param>
-        /// <param name="tablename">The name of the table to add the entity to.</param>
-        /// <param name="SchemaName">The schema name of the table.</param>
-        /// <param name="Filterparamters">The filter parameters to apply.</param>
-        /// <param name="viewindex">The index of the view.</param>
-        /// <param name="ParentTableIndex">The index of the parent table.</param>
-        /// <returns>The index of the added entity.</returns>
+        /// <summary>Adds a table as a child entity under a specified parent within the DataView.</summary>
         public int AddEntityAsChild(IDataSource conn, string tablename, string SchemaName, string Filterparamters, int viewindex, int ParentTableIndex)
         {
-
             DMEEditor.ErrorObject.Flag = Errors.Ok;
 
             List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
 
-
             EntityStructure maintab = new EntityStructure() { Id = NextHearId(), EntityName = tablename };
             EntityStructure Parenttab = Entities[EntityListIndex(ParentTableIndex)];
             maintab.DataSourceID = conn.DatasourceName;
-            maintab.EntityName = tablename;
+            maintab.EntityName = tablename.ToUpper();
             maintab.ViewID = DataView.ViewID;
             maintab.ParentId = ParentTableIndex;
             maintab.DatasourceEntityName = tablename;
-            //if (CheckEntityExist(maintab.DatasourceEntityName))
-            //{
-            //    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count();
-            //    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
-            //}
-            maintab.Caption = $"{maintab.DatasourceEntityName}_{Parenttab.EntityName}s";
+
+            // M4 Fix: restore the collision guard that was commented out
+            if (CheckEntityExist(maintab.DatasourceEntityName))
+            {
+                var existing = DataView.Entities
+                    .Where(p => p.DatasourceEntityName.Equals(maintab.DatasourceEntityName, StringComparison.OrdinalIgnoreCase) && p.ParentId == 0)
+                    .ToList();
+                int diffDB = existing.Count(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.OrdinalIgnoreCase));
+                int sameDB = existing.Count(p =>  p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.OrdinalIgnoreCase));
+                int suffix = diffDB > 0 ? diffDB : sameDB;
+                if (suffix > 0)
+                    maintab.Caption = $"{maintab.DatasourceEntityName}_{maintab.DataSourceID}_{suffix}";
+                else
+                    maintab.Caption = $"{maintab.DatasourceEntityName}_{Parenttab.EntityName}s";
+            }
+            else
+            {
+                maintab.Caption = $"{maintab.DatasourceEntityName}_{Parenttab.EntityName}s";
+            }
+
             DataView.Entities.Add(maintab);
             EntitiesNames.Add(maintab.EntityName);
 
-            if (ds != null && ds.Count > 0)
+            // M6 Fix: collapsed double-null check
+            if (ds?.Count > 0)
             {
-
-                //var tb = ds.Tables[0];
-                //-------------------------------
-                // Create Parent Record First
-                //-------------------------------
-                if (ds.Count > 0)
+                foreach (ChildRelation r in ds)
                 {
-                    foreach (ChildRelation r in ds)
+                    SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
+                    // M7 Fix: auto-populate JoinDefinitions
+                    DataView.JoinDefinitions.Add(new FederatedJoinDefinition
                     {
-                        EntityStructure a;
-                        a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
-
-                    }
-                    /// <summary>Adds an entity to a data view.</summary>
-                    /// <param name="conn">The data source connection.</param>
-                    /// <param name="tablename">The name of the table.</param>
-                    /// <param name="SchemaName">The name of the schema.</param>
-                    /// <param name="Filterparamters">The filter parameters.</param>
-                    /// <returns>The number of entities added to the data view.</returns>
-
+                        LeftEntityName  = maintab.EntityName,
+                        LeftColumn      = r.parent_column,
+                        RightEntityName = r.child_table.ToUpper(),
+                        RightColumn     = r.child_column,
+                        JoinType        = FederatedJoinType.LeftOuter,
+                        Description     = $"Auto-discovered FK: {tablename}.{r.parent_column} → {r.child_table}.{r.child_column}"
+                    });
                 }
-
             }
 
             return maintab.Id;
-
         }
-        /// <summary>Adds an entity to a data view.</summary>
-        /// <param name="conn">The data source connection.</param>
-        /// <param name="tablename">The name of the table.</param>
-        /// <param name="SchemaName">The name of the schema.</param>
-        /// <param name="Filterparamters">The filter parameters.</param>
-        /// <returns>The number of entities added to the data view.</returns>
+        /// <summary>Adds a single table (and its FK child relations) from a data source into the DataView.</summary>
         public int AddEntitytoDataView(IDataSource conn, string tablename, string SchemaName, string Filterparamters)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-
             EntityStructure maintab;
             try
             {
-
                 List<ChildRelation> ds = (List<ChildRelation>)conn.GetChildTablesList(tablename, SchemaName, Filterparamters);
                 maintab = new EntityStructure() { Id = NextHearId(), EntityName = tablename };
                 maintab.DataSourceID = conn.DatasourceName;
@@ -1224,226 +1270,111 @@ namespace TheTechIdea.Beep.DataView
                 maintab.ParentId = 0;
                 maintab.DatabaseType = conn.DatasourceType;
                 maintab.DatasourceEntityName = tablename;
+
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
-                    int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count();
-                    maintab.EntityName = maintab.DatasourceEntityName + "_" + cnt + 1;
+                    int cnt = EntitiesNames.Count(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase));
+                    maintab.EntityName = maintab.DatasourceEntityName + "_" + (cnt + 1);
                 }
-                switch (maintab.DatabaseType)
-                {
-                    case DataSourceType.Oracle:
 
-                    case DataSourceType.SqlServer:
-
-                    case DataSourceType.Mysql:
-
-                    case DataSourceType.SqlCompact:
-                    case DataSourceType.Postgre:
-
-                    case DataSourceType.Firebase:
-
-                    case DataSourceType.FireBird:
-
-                    case DataSourceType.Couchbase:
-
-                    case DataSourceType.RavenDB:
-
-                    case DataSourceType.MongoDB:
-
-                    case DataSourceType.CouchDB:
-
-                    case DataSourceType.VistaDB:
-
-                    case DataSourceType.DB2:
-
-                    case DataSourceType.SqlLite:
-                        maintab.Viewtype = ViewType.Table;
-                        break;
-                    case DataSourceType.Text:
-
-                    case DataSourceType.CSV:
-
-                    case DataSourceType.Xls:
-                    case DataSourceType.Json:
-
-                    case DataSourceType.XML:
-                        maintab.Viewtype = ViewType.File;
-                        break;
-                    
-
-                    case DataSourceType.OPC:
-                        maintab.Viewtype = ViewType.Url;
-                        break;
-                    default:
-
-                        maintab.Viewtype = ViewType.Table;
-                        break;
-
-                }
+                // M5 Fix: replace brittle 30-case switch with the shared helper
+                maintab.Viewtype = ResolveViewType(maintab.DatabaseType);
 
                 DataView.Entities.Add(maintab);
                 EntitiesNames.Add(maintab.EntityName);
-                if (ds != null && ds.Count > 0)
+
+                // M6 Fix: collapsed double-null check
+                if (ds?.Count > 0)
                 {
-                    // var tb = ds.Tables[0];
-                    //-------------------------------
-                    // Create Parent Record First
-                    //-------------------------------
-                    if (ds.Count > 0)
+                    foreach (ChildRelation r in ds)
                     {
-                        foreach (ChildRelation r in ds)
+                        SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
+                        // M7 Fix: auto-populate JoinDefinitions from FK relations
+                        DataView.JoinDefinitions.Add(new FederatedJoinDefinition
                         {
-                            EntityStructure a;
-                            a = SetupEntityInView(DataView, DataView.Entities, r.child_table, tablename, r.child_column, r.parent_column, maintab.Id, conn.DatasourceName);
-
-
-
-                        }
-
+                            LeftEntityName  = maintab.EntityName,
+                            LeftColumn      = r.parent_column,
+                            RightEntityName = r.child_table.ToUpper(),
+                            RightColumn     = r.child_column,
+                            JoinType        = FederatedJoinType.LeftOuter,
+                            Description     = $"Auto-discovered FK: {tablename}.{r.parent_column} → {r.child_table}.{r.child_column}"
+                        });
                     }
-
                 }
 
                 return maintab.Id;
-
             }
             catch (Exception ex)
             {
                 DMEEditor.AddLogMessage("Fail", $"Could not add entity to view: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
-
                 return -1;
             }
-
-
-
-
         }
-        /// <summary>Adds an entity to the data view.</summary>
-        /// <param name="maintab">The entity structure to add.</param>
-        /// <returns>The index of the added entity in the data view.</returns>
+        /// <summary>
+        /// Adds a pre-built EntityStructure into the DataView, resolving naming conflicts and assigning ViewType.
+        /// Also auto-populates JoinDefinitions from any discovered FK child relations (for RDBMS sources).
+        /// </summary>
         public int AddEntitytoDataView(EntityStructure maintab)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-            string tablename = maintab.DatasourceEntityName;
-            int k = 0;
-            int y = 0;
             try
             {
                 maintab.Id = NextHearId();
                 maintab.ViewID = 0;
-                if (maintab.ParentId == -1)
-                {
-                    maintab.ParentId = 0;
-                }
+                if (maintab.ParentId == -1) maintab.ParentId = 0;
 
-                //--- check entity already exist , if it does change Entity Name
+                // Collision guard: differentiate same-table from different sources
                 if (CheckEntityExist(maintab.DatasourceEntityName))
                 {
                     if (maintab.ParentId == 0)
                     {
-                        int cnt = EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)).Count() + 1;
-                        if (cnt > 0)
-                        {
-                            List<EntityStructure> ls = new List<EntityStructure>();
-                            foreach (string item in EntitiesNames.Where(p => p.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                ls.Add(GetEntityStructure(item, false));
-                            }
-                            List<EntityStructure> lsSameDB = new List<EntityStructure>();
-                            lsSameDB.AddRange(ls.Where(p => p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId == 0).AsEnumerable());
-                            List<EntityStructure> lsDiffDB = new List<EntityStructure>();
-                            lsDiffDB.AddRange(ls.Where(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase) && p.ParentId == 0).AsEnumerable());
-                            k = lsDiffDB.Count();
-                            y = lsSameDB.Count();
-                            if (k > 0)
-                            {
-                                maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + k;
-                            }
-                            if (y > 0)
-                            {
-                                maintab.Caption = maintab.DatasourceEntityName + $"_{maintab.DataSourceID}_" + y;
-                            }
-                            //foreach (var item in lsDiffDB)
-                            //{
-                            //    if (k == 0)
-                            //    {
-
-                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
-                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-
-                            //    }
-                            //    else
-                            //    {
-                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + k.ToString();
-                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            //    }
-
-                            //    k++;
-                            //}
-                            //y = 0;
-                            //foreach (var item in lsSameDB)
-                            //{
-                            //    if (y == 0)
-                            //    {
-
-                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}";
-                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            //    }
-                            //    else
-                            //    {
-                            //        item.Caption = item.DatasourceEntityName + $"_{item.DataSourceID}" + y.ToString();
-                            //        Entities[EntityListIndex(item.DatasourceEntityName)] = item;
-                            //    }
-                            //    y++;
-
-                            //}
-
-                        }
-
-
+                        var ls = DataView.Entities
+                            .Where(p => p.DatasourceEntityName.Equals(maintab.DatasourceEntityName, StringComparison.InvariantCultureIgnoreCase) && p.ParentId == 0)
+                            .ToList();
+                        int diffDB = ls.Count(p => !p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase));
+                        int sameDB = ls.Count(p =>  p.DataSourceID.Equals(maintab.DataSourceID, StringComparison.InvariantCultureIgnoreCase));
+                        if (diffDB > 0)
+                            maintab.Caption = $"{maintab.DatasourceEntityName}_{maintab.DataSourceID}_{diffDB}";
+                        if (sameDB > 0)
+                            maintab.Caption = $"{maintab.DatasourceEntityName}_{maintab.DataSourceID}_{sameDB}";
                     }
                     else
                     {
                         IEntityStructure parententity = Entities[EntityListIndex(maintab.ParentId)];
                         if (parententity != null)
-                        {
-                            maintab.Caption = parententity.DatasourceEntityName + $"_{maintab.EntityName}s";
-                        }
+                            maintab.Caption = $"{parententity.DatasourceEntityName}_{maintab.EntityName}s";
                     }
-
-
-
                 }
+
                 maintab.OriginalEntityName = maintab.DatasourceEntityName;
+                // M5 Fix: use shared helper instead of duplicating the ViewType switch
+                if (maintab.Viewtype == ViewType.Table)
+                    maintab.Viewtype = ResolveViewType(maintab.DatabaseType);
+
                 DataView.Entities.Add(maintab);
                 EntitiesNames.Add(maintab.EntityName);
+
                 IDataSource entityds = DMEEditor.GetDataSource(maintab.DataSourceID);
                 if (entityds != null && entityds.Category == DatasourceCategory.RDBMS)
                 {
                     List<ChildRelation> ds = (List<ChildRelation>)entityds.GetChildTablesList(maintab.DatasourceEntityName, entityds.Dataconnection.ConnectionProp.SchemaName, null);
-                    if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                    if (DMEEditor.ErrorObject.Flag == Errors.Ok && ds?.Count > 0)
                     {
-                        if (ds != null && ds.Count > 0)
+                        foreach (ChildRelation r in ds)
                         {
-                            // var tb = ds.Tables[0];
-                            //-------------------------------
-                            // Create Parent Record First
-                            //-------------------------------
-                            if (ds.Count > 0)
+                            SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, entityds.DatasourceName);
+                            // M7 Fix: auto-populate JoinDefinitions
+                            DataView.JoinDefinitions.Add(new FederatedJoinDefinition
                             {
-                                foreach (ChildRelation r in ds)
-                                {
-                                    EntityStructure a;
-                                    a = SetupEntityInView(DataView, DataView.Entities, r.child_table, maintab.DatasourceEntityName, r.child_column, r.parent_column, maintab.Id, entityds.DatasourceName);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            DMEEditor.ErrorObject.Flag = Errors.Ok;
+                                LeftEntityName  = maintab.EntityName,
+                                LeftColumn      = r.parent_column,
+                                RightEntityName = r.child_table.ToUpper(),
+                                RightColumn     = r.child_column,
+                                JoinType        = FederatedJoinType.LeftOuter,
+                                Description     = $"Auto-discovered FK: {maintab.DatasourceEntityName}.{r.parent_column} → {r.child_table}.{r.child_column}"
+                            });
                         }
                     }
-
                 }
 
                 return maintab.Id;
@@ -1456,6 +1387,27 @@ namespace TheTechIdea.Beep.DataView
         }
         #endregion  "View Generating Methods"
         #region "Misc and Util Methods"
+
+        /// <summary>
+        /// M5: Shared helper — maps a DataSourceType to the correct ViewType.
+        /// Replaces duplicated 30-case switches in AddEntitytoDataView methods.
+        /// </summary>
+        private static ViewType ResolveViewType(DataSourceType dbType) => dbType switch
+        {
+            DataSourceType.SqlServer or DataSourceType.Oracle   or DataSourceType.Mysql  or
+            DataSourceType.Postgre   or DataSourceType.SqlLite  or DataSourceType.DB2    or
+            DataSourceType.FireBird  or DataSourceType.VistaDB  or DataSourceType.SqlCompact or
+            DataSourceType.Firebase  or DataSourceType.Couchbase or DataSourceType.RavenDB  or
+            DataSourceType.MongoDB   or DataSourceType.CouchDB  or DataSourceType.DuckDB => ViewType.Table,
+
+            DataSourceType.Text or DataSourceType.CSV or DataSourceType.Xls or
+            DataSourceType.Json or DataSourceType.XML or DataSourceType.Parquet     => ViewType.File,
+
+            DataSourceType.OPC or DataSourceType.WebApi or DataSourceType.GraphQL   => ViewType.Url,
+
+            _ => ViewType.Table
+        };
+
         /// <summary>Returns the icon associated with a specific view type.</summary>
         /// <param name="v">The view type.</param>
         /// <returns>The icon associated with the view type.</returns>
@@ -1794,33 +1746,39 @@ namespace TheTechIdea.Beep.DataView
 
         }
 
-        /// <summary>Loads a view and returns information about any errors that occurred.</summary>
-        /// <returns>An object containing information about any errors that occurred during the view loading process.</returns>
+        /// <summary>Loads and applies the persisted DataView definition from its backing file.</summary>
         public IErrorsInfo LoadView()
         {
             try
             {
-
-                if (Dataconnection.ConnectionStatus == ConnectionState.Open)
+                // M8 Fix: logical/in-memory federated views have no backing file — just initialise an empty DMDataView
+                if (Dataconnection is DataViewConnection dvc && dvc.IsLogical)
                 {
-                    DataView = ReadDataViewFile(DataViewFile);
-
-                    if (DataView.VID == null)
+                    if (DataView == null)
                     {
-                        DataView.VID = Guid.NewGuid().ToString();
+                        DataView = new DMDataView
+                        {
+                            ViewName = DatasourceName,
+                            VID      = Guid.NewGuid().ToString(),
+                            ExecutionMode  = FederationExecutionMode.Cached,
+                            CacheTTLSeconds = 300
+                        };
                     }
-
+                }
+                else if (Dataconnection.ConnectionStatus == ConnectionState.Open)
+                {
+                    DataView = (DMDataView)ReadDataViewFile(DataViewFile);
+                    if (DataView.VID == null)
+                        DataView.VID = Guid.NewGuid().ToString();
                 }
 
                 DMEEditor.AddLogMessage("Success", "Loaded File", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-                string mes = "Could not Load File";
-                DMEEditor.AddLogMessage(ex.Message, mes, DateTime.Now, -1, mes, Errors.Failed);
-            };
+                DMEEditor.AddLogMessage(ex.Message, "Could not Load File", DateTime.Now, -1, "Could not Load File", Errors.Failed);
+            }
             return DMEEditor.ErrorObject;
-
         }
 
         /// <summary>Returns the index of the specified entity.</summary>
@@ -1839,6 +1797,181 @@ namespace TheTechIdea.Beep.DataView
         }
 
         #endregion
+
+        #region "Relation Builder"
+        /// <summary>
+        /// Manually defines a cross-source join between two entities in the DataView.
+        /// Automatically invalidates the federation cache so the next query uses the new join.
+        /// </summary>
+        public string AddJoin(
+            string leftEntityName,  string leftColumn,  string leftDataSourceID,
+            string rightEntityName, string rightColumn, string rightDataSourceID,
+            FederatedJoinType joinType        = FederatedJoinType.Inner,
+            string description                = null,
+            string additionalCondition        = null)
+        {
+            var join = new FederatedJoinDefinition
+            {
+                GuidID              = Guid.NewGuid().ToString(),
+                LeftEntityName      = leftEntityName?.ToUpperInvariant(),
+                LeftColumn          = leftColumn,
+                LeftDataSourceID    = leftDataSourceID,
+                RightEntityName     = rightEntityName?.ToUpperInvariant(),
+                RightColumn         = rightColumn,
+                RightDataSourceID   = rightDataSourceID,
+                JoinType            = joinType,
+                IsManuallyDefined   = true,
+                AdditionalCondition = additionalCondition,
+                Description         = description ?? $"{leftEntityName}.{leftColumn} → {rightEntityName}.{rightColumn}"
+            };
+            DataView.JoinDefinitions.Add(join);
+            InvalidateCache(); // new join invalidates any cached temp DB
+            DMEEditor.AddLogMessage("Info", $"Relation Builder: join added — {join.Description}", DateTime.Now, 0, "", Errors.Ok);
+            return join.GuidID;
+        }
+
+        /// <summary>Removes a join definition by its GuidID. Returns true if found and removed.</summary>
+        public bool RemoveJoin(string joinGuidID)
+        {
+            var join = DataView.JoinDefinitions.FirstOrDefault(j => j.GuidID == joinGuidID);
+            if (join == null) return false;
+            DataView.JoinDefinitions.Remove(join);
+            InvalidateCache();
+            DMEEditor.AddLogMessage("Info", $"Relation Builder: join removed — {join.Description}", DateTime.Now, 0, "", Errors.Ok);
+            return true;
+        }
+
+        /// <summary>Updates an existing join definition in-place. Returns false if not found.</summary>
+        public bool UpdateJoin(
+            string joinGuidID,
+            string leftEntityName,  string leftColumn,
+            string rightEntityName, string rightColumn,
+            FederatedJoinType joinType,
+            string description        = null,
+            string additionalCondition = null)
+        {
+            var join = DataView.JoinDefinitions.FirstOrDefault(j => j.GuidID == joinGuidID);
+            if (join == null) return false;
+
+            join.LeftEntityName      = leftEntityName?.ToUpperInvariant();
+            join.LeftColumn          = leftColumn;
+            join.RightEntityName     = rightEntityName?.ToUpperInvariant();
+            join.RightColumn         = rightColumn;
+            join.JoinType            = joinType;
+            join.AdditionalCondition = additionalCondition;
+            join.Description         = description ?? $"{leftEntityName}.{leftColumn} → {rightEntityName}.{rightColumn}";
+            InvalidateCache();
+            return true;
+        }
+
+        /// <summary>Retrieves a single join definition by GuidID. Returns null if not found.</summary>
+        public FederatedJoinDefinition GetJoin(string joinGuidID)
+            => DataView.JoinDefinitions.FirstOrDefault(j => j.GuidID == joinGuidID);
+
+        /// <summary>Returns all join definitions that involve the named entity (left or right side).</summary>
+        public List<FederatedJoinDefinition> GetJoinsFor(string entityName)
+        {
+            if (string.IsNullOrWhiteSpace(entityName)) return new List<FederatedJoinDefinition>();
+            string upper = entityName.ToUpperInvariant();
+            return DataView.JoinDefinitions
+                .Where(j => j.LeftEntityName.Equals(upper,  StringComparison.OrdinalIgnoreCase)
+                         || j.RightEntityName.Equals(upper, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Validates all join definitions. Checks entity names exist in DataView.Entities
+        /// and column names exist in entity Fields.
+        /// Returns a list of validation error messages (empty = all valid).
+        /// </summary>
+        public List<string> ValidateJoins()
+        {
+            var errors = new List<string>();
+            foreach (var join in DataView.JoinDefinitions)
+            {
+                var leftEnt  = DataView.Entities.FirstOrDefault(e => e.EntityName.Equals(join.LeftEntityName,  StringComparison.OrdinalIgnoreCase));
+                var rightEnt = DataView.Entities.FirstOrDefault(e => e.EntityName.Equals(join.RightEntityName, StringComparison.OrdinalIgnoreCase));
+
+                if (leftEnt  == null)
+                    errors.Add($"[{join.GuidID}] Left entity '{join.LeftEntityName}' not found in DataView.");
+                if (rightEnt == null)
+                    errors.Add($"[{join.GuidID}] Right entity '{join.RightEntityName}' not found in DataView.");
+
+                if (leftEnt?.Fields?.Count > 0 &&
+                    leftEnt.Fields.All(f => !f.FieldName.Equals(join.LeftColumn, StringComparison.OrdinalIgnoreCase)))
+                    errors.Add($"[{join.GuidID}] Column '{join.LeftColumn}' not found on entity '{join.LeftEntityName}'.");
+
+                if (rightEnt?.Fields?.Count > 0 &&
+                    rightEnt.Fields.All(f => !f.FieldName.Equals(join.RightColumn, StringComparison.OrdinalIgnoreCase)))
+                    errors.Add($"[{join.GuidID}] Column '{join.RightColumn}' not found on entity '{join.RightEntityName}'.");
+            }
+            return errors;
+        }
+
+        /// <summary>
+        /// Returns all fields on the named entity that are typed as typical FK/PK candidates
+        /// (integer, string, guid) — suitable for a column-picker UI in the Relation Builder.
+        /// </summary>
+        public List<EntityField> GetJoinableColumns(string entityName)
+        {
+            var ent = DataView.Entities.FirstOrDefault(e => e.EntityName.Equals(entityName, StringComparison.OrdinalIgnoreCase));
+            if (ent?.Fields == null) return new List<EntityField>();
+
+            // Types that are sensible FK/PK join candidates
+            var joinableTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "System.Int32", "System.Int64", "System.Int16",
+                "Int32", "Int64", "Int16", "int", "long", "short",
+                "System.String", "String", "string",
+                "System.Guid",  "Guid",
+                "System.UInt32","UInt32"
+            };
+
+            return ent.Fields
+                .Where(f => f.IsKey || joinableTypes.Contains(f.Fieldtype ?? ""))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Builds the SQL JOIN clause for a FederatedJoinDefinition.
+        /// Used when constructing federated queries against the temp DB.
+        /// </summary>
+        public string BuildJoinSQL(FederatedJoinDefinition join)
+        {
+            if (join == null) return string.Empty;
+
+            string keyword = join.JoinType switch
+            {
+                FederatedJoinType.Inner      => "INNER JOIN",
+                FederatedJoinType.LeftOuter  => "LEFT JOIN",
+                FederatedJoinType.RightOuter => "RIGHT JOIN",
+                FederatedJoinType.FullOuter  => "FULL OUTER JOIN",
+                FederatedJoinType.Cross      => "CROSS JOIN",
+                _                            => "JOIN"
+            };
+
+            string sql = $"{keyword} {join.RightEntityName} ON {join.LeftEntityName}.{join.LeftColumn} = {join.RightEntityName}.{join.RightColumn}";
+            if (!string.IsNullOrWhiteSpace(join.AdditionalCondition))
+                sql += $" AND ({join.AdditionalCondition})";
+
+            return sql;
+        }
+
+        /// <summary>Removes all manually-defined joins. Leaves auto-discovered FK joins intact.</summary>
+        public void ClearManualJoins()
+        {
+            DataView.JoinDefinitions.RemoveAll(j => j.IsManuallyDefined);
+            InvalidateCache();
+        }
+
+        /// <summary>Removes all join definitions — both manual and auto-discovered.</summary>
+        public void ClearAllJoins()
+        {
+            DataView.JoinDefinitions.Clear();
+            InvalidateCache();
+        }
+        #endregion "Relation Builder"
+
         #endregion
         #region "dispose"
         private bool disposedValue;
@@ -1848,11 +1981,13 @@ namespace TheTechIdea.Beep.DataView
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
+                    // Close the federated temp DB connection on disposal
+                    if (_tempDb != null)
+                    {
+                        try { _tempDb.Closeconnection(); } catch { }
+                        _tempDb = null;
+                    }
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
                 disposedValue = true;
             }
         }

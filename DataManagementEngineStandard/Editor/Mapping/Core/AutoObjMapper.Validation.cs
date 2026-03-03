@@ -15,7 +15,13 @@ namespace TheTechIdea.Beep.Editor.Mapping
         public MappingValidationResult ValidateMapping<TSource, TDest>()
         {
             var typeMap = _config.GetTypeMap(typeof(TSource), typeof(TDest));
-            return MappingValidationHelper.ValidateConfiguration<TSource, TDest>(typeMap, _options);
+            var helperResult = MappingValidationHelper.ValidateConfiguration<TSource, TDest>(typeMap, _options);
+
+            // Convert from Helpers.MappingValidationResult to Mapping.MappingValidationResult
+            var result = new MappingValidationResult();
+            foreach (var e in helperResult.Errors)   result.Errors.Add(e);
+            foreach (var w in helperResult.Warnings) result.Warnings.Add(w);
+            return result;
         }
 
         /// <summary>

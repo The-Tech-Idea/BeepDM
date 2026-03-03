@@ -10,6 +10,11 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.ETL;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.Addin;
+// Phase 6-11 type references
+using TheTechIdea.Beep.Editor.Importing.Quality;
+using TheTechIdea.Beep.Editor.Importing.ErrorStore;
+using TheTechIdea.Beep.Editor.Importing.History;
+using TheTechIdea.Beep.Editor.Importing.Staging;
 
 namespace TheTechIdea.Beep.Editor.Importing.Interfaces
 {
@@ -18,25 +23,79 @@ namespace TheTechIdea.Beep.Editor.Importing.Interfaces
     /// </summary>
     public interface IDataImportManager : IDisposable
     {
-        /// <summary>
-        /// Gets the data validation helper instance
-        /// </summary>
+        /// <summary>Gets the data validation helper instance</summary>
         IDataImportValidationHelper ValidationHelper { get; }
 
-        /// <summary>
-        /// Gets the data transformation helper instance
-        /// </summary>
+        /// <summary>Gets the data transformation helper instance</summary>
         IDataImportTransformationHelper TransformationHelper { get; }
 
-        /// <summary>
-        /// Gets the batch processing helper instance
-        /// </summary>
+        /// <summary>Gets the batch processing helper instance</summary>
         IDataImportBatchHelper BatchHelper { get; }
 
-        /// <summary>
-        /// Gets the progress monitoring helper instance
-        /// </summary>
+        /// <summary>Gets the progress monitoring helper instance</summary>
         IDataImportProgressHelper ProgressHelper { get; }
+
+        // --- Phase 2: lifecycle control ---
+
+        /// <summary>Pauses a running import at the next batch boundary.</summary>
+        void PauseImport();
+
+        /// <summary>Resumes a paused import.</summary>
+        void ResumeImport();
+
+        /// <summary>Requests cancellation of a running or paused import.</summary>
+        void CancelImport();
+
+        /// <summary>Returns a detached snapshot of the current import status. Thread-safe.</summary>
+        ImportStatus GetImportStatus();
+
+        // --- Phase 2: context-based entry points ---
+
+        /// <summary>Runs an import defined by a typed ImportContext.</summary>
+        Task<IErrorsInfo> RunImportAsync(
+            ImportContext context,
+            IProgress<IPassedArgs> progress,
+            CancellationToken token);
+
+        /// <summary>
+        /// Builds a DataImportConfiguration from an ImportContext.
+        /// Useful for callers that need the concrete config object.
+        /// </summary>
+        DataImportConfiguration BuildConfigurationFromContext(ImportContext context);
+
+        /// <summary>Creates a new import configuration from the four core identifiers.</summary>
+        DataImportConfiguration CreateImportConfiguration(
+            string sourceEntityName,
+            string sourceDataSourceName,
+            string destEntityName,
+            string destDataSourceName);
+
+        /// <summary>Tests whether the supplied configuration is executable (connectivity, entity presence, etc.).</summary>
+        Task<IErrorsInfo> TestImportConfigurationAsync(DataImportConfiguration config);
+
+        /// <summary>Runs an import defined by an explicit DataImportConfiguration.</summary>
+        Task<IErrorsInfo> RunImportAsync(
+            DataImportConfiguration config,
+            IProgress<IPassedArgs>? progress,
+            CancellationToken token);
+
+        // --- Phase 3: preflight and sync-draft (implemented in DataImportManager.Migration.cs) ---
+
+        /// <summary>Validates schema compatibility before running a migration.</summary>
+        Task<IErrorsInfo> RunMigrationPreflightAsync(
+            DataImportConfiguration config,
+            Action<string>? log = null);
+
+        /// <summary>Builds a sync-draft schema without executing the import.</summary>
+        Task<DataSyncSchema> BuildSyncDraftAsync(DataImportConfiguration config);
+
+        // --- Phase 9: dead-letter replay ---
+
+        /// <summary>Re-runs records previously quarantined in the error store.</summary>
+        Task<IErrorsInfo> ReplayFailedRecordsAsync(
+            string contextKey,
+            IProgress<IPassedArgs>? progress,
+            CancellationToken token);
     }
 
     /// <summary>
@@ -206,6 +265,123 @@ namespace TheTechIdea.Beep.Editor.Importing.Interfaces
         void ClearLog();
     }
 
+    // -------------------------------------------------------------------------
+    // Phase 1 — Shared context model
+    // -------------------------------------------------------------------------
+
+    /// <summary>Defines how a failed batch should be handled.</summary>
+    public enum BatchErrorStrategy { Abort, Skip, Retry }
+
+    /// <summary>Lifecycle state of an import run.</summary>
+    public enum ImportState { Idle, Running, Paused, Completed, Faulted, Cancelled }
+
+    // ── Phase 6 — Incremental sync ─────────────────────────────────────────
+    /// <summary>How the import run handles already-seen records at the destination.</summary>
+    public enum SyncMode { FullRefresh, Incremental, Upsert }
+
+    // ── Phase 8 — Schema drift ─────────────────────────────────────────
+    /// <summary>What to do when the source schema changed since the last run.</summary>
+    public enum SchemaDriftPolicy { Ignore, AbortOnDrift, AutoAddColumns, AutoDropColumns }
+
+    /// <summary>Source / destination selection, independent of execution options.</summary>
+    public class ImportSelectionContext
+    {
+        public string SourceDataSourceName      { get; set; } = string.Empty;
+        public string SourceEntityName          { get; set; } = string.Empty;
+        public string DestinationDataSourceName { get; set; } = string.Empty;
+        public string DestinationEntityName     { get; set; } = string.Empty;
+        public bool   CreateDestinationIfNotExists { get; set; } = true;
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(SourceDataSourceName)      &&
+            !string.IsNullOrWhiteSpace(SourceEntityName)          &&
+            !string.IsNullOrWhiteSpace(DestinationDataSourceName) &&
+            !string.IsNullOrWhiteSpace(DestinationEntityName);
+    }
+
+    /// <summary>Execution knobs — what the import run should do.</summary>
+    public class ImportExecutionOptions
+    {
+        public bool RunMigrationPreflight  { get; set; }
+        public bool AddMissingColumns      { get; set; } = true;
+        public bool CreateSyncProfileDraft { get; set; }
+        public bool RunImportOnFinish      { get; set; } = true;
+        public int  BatchSize              { get; set; } = 100;
+        public BatchErrorStrategy OnBatchError { get; set; } = BatchErrorStrategy.Skip;
+        public int  MaxRetries             { get; set; } = 3;
+    }
+
+    /// <summary>
+    /// Typed, serialisable context that replaces the string-key parameter dictionary.
+    /// Both core (DataImportManager) and UI (ImportExportOrchestrator) use this.
+    /// </summary>
+    public class ImportContext
+    {
+        public string                RunId     { get; set; } = Guid.NewGuid().ToString("N");
+        public ImportSelectionContext Selection { get; set; } = new();
+        public EntityDataMap?         Mapping  { get; set; }
+        public ImportExecutionOptions Options  { get; set; } = new();
+
+        /// <summary>Builds an ImportContext from a legacy DataImportConfiguration.</summary>
+        public static ImportContext From(DataImportConfiguration config) => new()
+        {
+            Selection = new ImportSelectionContext
+            {
+                SourceDataSourceName      = config.SourceDataSourceName,
+                SourceEntityName          = config.SourceEntityName,
+                DestinationDataSourceName = config.DestDataSourceName,
+                DestinationEntityName     = config.DestEntityName,
+                CreateDestinationIfNotExists = config.CreateDestinationIfNotExists
+            },
+            Mapping = config.Mapping,
+            Options = new ImportExecutionOptions
+            {
+                BatchSize          = config.BatchSize,
+                AddMissingColumns  = config.AddMissingColumns,
+                OnBatchError       = config.OnBatchError,
+                MaxRetries         = config.MaxRetries,
+                RunMigrationPreflight  = config.RunMigrationPreflight,
+                CreateSyncProfileDraft = config.CreateSyncProfileDraft
+            }
+        };
+    }
+
+    /// <summary>Live snapshot of an import run — safe to read from any thread.</summary>
+    public class ImportStatus
+    {
+        public ImportState State             { get; set; } = ImportState.Idle;
+        public int  RecordsProcessed         { get; set; }
+        public int  TotalRecords             { get; set; }
+        public double PercentComplete        { get; set; }
+        public string LastMessage            { get; set; } = string.Empty;
+        public DateTime? StartedAt           { get; set; }
+        public DateTime? FinishedAt          { get; set; }
+        public int  RecordsBlocked           { get; set; }
+        public int  RecordsQuarantined       { get; set; }
+        public int  RecordsWarned            { get; set; }
+        public ImportPerformanceMetrics? Metrics { get; set; }
+
+        // ── Convenience state flags (can be set directly or derived from State) ──
+
+        /// <summary>True when the import is actively running.</summary>
+        public bool IsRunning   { get; set; }
+
+        /// <summary>True when the import has been paused.</summary>
+        public bool IsPaused    { get; set; }
+
+        /// <summary>True when the import finished (success or failure).</summary>
+        public bool IsCompleted { get; set; }
+
+        /// <summary>True when the import was cancelled by the user.</summary>
+        public bool IsCancelled { get; set; }
+
+        /// <summary>True when error-level log entries were recorded.</summary>
+        public bool HasErrors   { get; set; }
+
+        /// <summary>Returns a detached copy — callers cannot mutate the live state.</summary>
+        public ImportStatus Snapshot() => (ImportStatus)MemberwiseClone();
+    }
+
     /// <summary>
     /// Configuration class for data import operations
     /// </summary>
@@ -227,6 +403,34 @@ namespace TheTechIdea.Beep.Editor.Importing.Interfaces
         public int BatchSize { get; set; } = 50;
         public bool CreateDestinationIfNotExists { get; set; } = true;
         public bool ApplyDefaults { get; set; } = true;
+
+        // --- Phase 1 additions ---
+        public bool RunMigrationPreflight   { get; set; }
+        public bool AddMissingColumns       { get; set; } = true;
+        public bool CreateSyncProfileDraft  { get; set; }
+        public BatchErrorStrategy OnBatchError { get; set; } = BatchErrorStrategy.Skip;
+        public int  MaxRetries              { get; set; } = 3;
+
+        // --- Phase 6: incremental sync ---
+        public SyncMode  SyncMode             { get; set; } = SyncMode.FullRefresh;
+        public string    WatermarkColumn      { get; set; } = string.Empty;
+        public object?   LastWatermarkValue   { get; set; }
+        public List<string> UpsertKeyColumns  { get; set; } = new();
+
+        // --- Phase 7: data quality ---
+        public List<IDataQualityRule> QualityRules { get; set; } = new();
+
+        // --- Phase 8: schema drift ---
+        public SchemaDriftPolicy DriftPolicy { get; set; } = SchemaDriftPolicy.AutoAddColumns;
+
+        // --- Phase 9: error output ---
+        public IImportErrorStore? ErrorStore { get; set; }
+
+        // --- Phase 10: run history ---
+        public IImportRunHistoryStore? RunHistoryStore { get; set; }
+
+        // --- Phase 11: staging ---
+        public StagingOptions? Staging { get; set; }
     }
 
     /// <summary>

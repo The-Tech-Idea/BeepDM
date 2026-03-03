@@ -452,16 +452,4 @@ namespace TheTechIdea.Beep.Editor.Importing
         #endregion
     }
 
-    /// <summary>
-    /// Import status information
-    /// </summary>
-    public class ImportStatus
-    {
-        public bool IsRunning { get; set; }
-        public bool IsPaused { get; set; }
-        public bool IsCancelled { get; set; }
-        public bool IsCompleted { get; set; }
-        public bool HasErrors { get; set; }
-        public DateTime LastUpdated { get; set; } = DateTime.Now;
-    }
 }

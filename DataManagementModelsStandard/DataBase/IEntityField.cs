@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.DataBase
@@ -30,6 +30,10 @@ namespace TheTechIdea.Beep.DataBase
         string Caption { get; set; }
         bool IsIdentity { get; set; }   
         string Description { get; set; }
+        bool IsRequired { get; set; }
+        int ValueMin { get; set; }
+        int ValueMax { get; set; }
+        bool IsIndexed { get; set; }
         // New fields
         int OrdinalPosition { get; set; }
         bool IsReadOnly { get; set; }
@@ -42,6 +46,10 @@ namespace TheTechIdea.Beep.DataBase
         int MaxLength { get; set; }
         bool IsFixedLength { get; set; }
         bool IsHidden { get; set; }
+        string ColumnName { get; set; }
+        string ColumnTypeName { get; set; }
+        string DatabaseGeneratedOptionName { get; set; }
+        bool IsNotMapped { get; set; }
 
     }
 }

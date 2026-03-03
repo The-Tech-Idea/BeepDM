@@ -1100,10 +1100,408 @@
             </summary>
             <returns>Dictionary mapping datasource type to capability summary</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IDataViewOperations">
+             <summary>
+             Defines the runtime operations of a federated DataView engine — i.e. HOW the DataView WORKS.
+             Separate from <see cref="T:TheTechIdea.Beep.DataBase.IDMDataView"/> which is the pure data model (WHAT it IS).
+            
+             Implementation: DataViewDataSource : IDataSource, IDataViewOperations
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDataViewOperations.DataView">
+            <summary>The DataView definition this engine is currently managing.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.NextHearId">
+            <summary>Returns the next available header ID for a new entity entry.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.EntityListIndex(System.Int32)">
+            <summary>Returns the list position of an entity by its integer ID. Returns -1 if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.EntityListIndex(System.String)">
+            <summary>Returns the list position of an entity by its name. Returns -1 if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.RemoveEntity(System.Int32)">
+            <summary>Removes the entity with the given ID and all its logical children from the view.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.RemoveChildEntities(System.Int32)">
+            <summary>Removes all child entities belonging to the given parent entity ID.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.MoveEntity(System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Moves an entity to a new parent in the view tree.
+            If updateJoins=true, auto-discovered FK joins to the old parent are removed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetAutoJoinsToParent(System.Int32)">
+            <summary>
+            Returns auto-discovered (non-manual) FK joins that link the entity to its current parent.
+            Used to identify which joins to remove or rewire after a move.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.RenameEntity(System.Int32,System.String)">
+            <summary>Renames an entity in the view (caption + name), updating all join references.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.DuplicateEntity(System.Int32,System.String,System.Int32)">
+            <summary>Deep-clones an entity (fields, relations, metadata) into the view under an optional new parent.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ReorderEntities(System.Collections.Generic.List{System.Int32})">
+            <summary>Persists a display ordering for entities (for tree rendering).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetEntityStructure(System.String)">
+            <summary>Retrieves a full EntityStructure by name. Returns null if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GenerateViewFromTable(System.String,TheTechIdea.Beep.IDataSource,System.String,System.String,System.String)">
+            <summary>Generates the DataView structure from a single table and its child relations.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GenerateDataView(TheTechIdea.Beep.IDataSource,System.String,System.String,System.String)">
+            <summary>Adds all FK child relations of a root table to the DataView entity list. Returns root entity ID.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GenerateView(System.String,System.String)">
+            <summary>Creates a new empty IDMDataView object for the given ViewName and connection name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GenerateDataViewForChildNode(TheTechIdea.Beep.IDataSource,System.Int32,System.String,System.String,System.String)">
+            <summary>Generates entity nodes for child tables of a given parent within an existing DataView.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.AddEntitytoDataView(TheTechIdea.Beep.IDataSource,System.String,System.String,System.String)">
+            <summary>Adds a single table (and FK child relations) from a data source. Returns root entity ID.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.AddEntitytoDataView(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>Adds a pre-built EntityStructure into the DataView. Returns entity ID.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.AddEntityAsChild(TheTechIdea.Beep.IDataSource,System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>Adds a table as a child entity under a specified parent within the DataView.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetEntityFields(System.String)">
+            <summary>Returns all fields for the named entity in the view.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.AddFieldToEntity(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>Adds a computed/virtual field to a view entity definition (does not modify source).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.RemoveFieldFromEntity(System.String,System.String)">
+            <summary>Removes (hides) a field from the view entity definition.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.RefreshEntitySchema(System.String)">
+            <summary>
+            Re-fetches the entity's field schema from its source datasource.
+            Returns a list of detected change descriptions (added/removed/modified fields).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.InvalidateCache">
+            <summary>Forces a full cache invalidation. The next query re-materializes all entities from sources.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetCacheStatus">
+            <summary>Returns a snapshot of the current cache state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.MaterializeAsync(System.Threading.CancellationToken)">
+            <summary>Async materialisation of all entities into the temp DB. Respects cancellation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetExecutionPlan">
+            <summary>Returns the SQL JOIN chain that will be executed for the current view (for debugging).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.WriteDataViewFile(System.String)">
+            <summary>Serializes the DataView definition to a JSON file in the default DataView folder.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.WriteDataViewFile(System.String,System.String)">
+            <summary>Serializes the DataView definition to a JSON file at an explicit path.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ReadDataViewFile(System.String)">
+            <summary>Deserializes a DataView definition from the JSON file at the given path.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.LoadView">
+            <summary>Loads and applies the persisted DataView definition from its backing file.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.AddJoin(System.String,System.String,System.String,System.String,System.String,System.String,TheTechIdea.Beep.DataView.FederatedJoinType,System.String,System.String)">
+            <summary>Manually defines a cross-source join. Returns the GuidID of the new FederatedJoinDefinition.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.RemoveJoin(System.String)">
+            <summary>Removes a join by GuidID. Returns true if found and removed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.UpdateJoin(System.String,System.String,System.String,System.String,System.String,TheTechIdea.Beep.DataView.FederatedJoinType,System.String,System.String)">
+            <summary>Updates an existing join in-place. Returns false if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetJoin(System.String)">
+            <summary>Retrieves a single join by GuidID. Returns null if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetJoinsFor(System.String)">
+            <summary>Returns all joins involving the named entity (left or right side).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ValidateJoins">
+            <summary>Validates all joins: checks entity and column existence. Returns error messages.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetJoinableColumns(System.String)">
+            <summary>Returns FK/PK-typed fields for a named entity (for a column-picker UI).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.BuildJoinSQL(TheTechIdea.Beep.DataView.FederatedJoinDefinition)">
+            <summary>Builds the SQL JOIN clause for a FederatedJoinDefinition.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ClearManualJoins">
+            <summary>Removes all manually-defined joins (IsManuallyDefined=true). Leaves auto-discovered ones.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ClearAllJoins">
+            <summary>Removes all join definitions — manual and auto-discovered.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.AutoDetectJoins">
+            <summary>Re-runs FK discovery across all entities; adds newly discovered joins only.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.FindJoinPath(System.String,System.String)">
+            <summary>
+            Finds the shortest join path between two entities through existing JoinDefinitions.
+            Returns ordered entity names (e.g. ["ORDERS","ORDER_ITEMS","PRODUCTS"]), or null if unreachable.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetJoinGraph">
+            <summary>Returns the full join graph as an adjacency list: {EntityName → [connected entity names]}.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ValidateView">
+            <summary>Comprehensive view check: entities in sources + joins valid + datasources reachable.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ValidateEntities">
+            <summary>Checks all view entities still exist in their source datasources.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetBrokenEntities">
+            <summary>Returns entity names whose source datasource is unavailable.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetUnconnectedEntities">
+            <summary>Returns entities not connected to any join (isolated in the join graph).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.DetectSchemaChanges(System.String)">
+            <summary>Diffs the named entity's current fields vs its live source schema. Returns change descriptions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetEntityPreview(System.String,System.Int32)">
+            <summary>Fetches up to maxRows rows from a single entity using its source datasource directly.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetViewPreview(System.Int32)">
+            <summary>Fetches up to maxRows rows from the full joined view (materializes cache if needed).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.SetEntityFilter(System.String,System.String)">
+            <summary>Stores a WHERE-clause filter on an entity applied during cache materialization.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetEntityFilter(System.String)">
+            <summary>Returns the current filter expression for a named entity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ClearEntityFilter(System.String)">
+            <summary>Removes the filter for a named entity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.ClearAllFilters">
+            <summary>Clears all entity filters across the entire view.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.CloneView(System.String)">
+            <summary>Deep copies the entire DataView (entities, joins, filters) under a new name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.MergeView(TheTechIdea.Beep.DataBase.IDMDataView)">
+            <summary>Absorbs entities and joins from another view into this one (union, no duplicates).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetAllDataSourceIDs">
+            <summary>Returns distinct DataSourceIDs referenced by all entities in the view.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetViewSummary">
+            <summary>Returns a lightweight summary of the view's current state.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IDMDataView">
+            <summary>
+            Pure data model interface for a federated DataView definition.
+            This interface describes WHAT the DataView IS — its identity, constituent entities,
+            cross-source join definitions, and federation execution policy.
+            
+            Implemented by: <see cref="T:TheTechIdea.Beep.DataView.DMDataView"/> (POCO/serialisable model).
+            
+            For the runtime DataView ENGINE (generating views, running queries, persisting),
+            see <see cref="T:TheTechIdea.Beep.DataBase.IDataViewOperations"/>, implemented by DataViewDataSource.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.ViewName">
+            <summary>Display name of this DataView.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.Viewtype">
+            <summary>The primary ViewType that governs how this view behaves.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.Description">
+            <summary>Optional human-readable description for UI display.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.EntityDataSourceID">
+            <summary>The primary single datasource ID (for single-source views).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.LocalEngineConnectionName">
+            <summary>The connection name of the local/in-memory engine used to evaluate federated queries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.DataViewDataSourceID">
+            <summary>The connection name of the DataView's own datasource (file-based view metadata).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.CompositeLayerDataSourceID">
+            <summary>Legacy: composite layer reference.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.Entities">
+            <summary>The constituent entities (from one or more sources) that form this view.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.JoinDefinitions">
+            <summary>
+            Defines how entities in this view are joined across data source boundaries.
+            These are virtual join conditions — not physical FK constraints.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.ExecutionMode">
+            <summary>Determines whether data is cached (Cached) or always fetched live (DirectQuery).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.CacheTTLSeconds">
+            <summary>Duration in seconds the local materialized cache is valid. Ignored in DirectQuery mode.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.CacheLastRefresh">
+            <summary>Timestamp of the last successful cache refresh. Used to evaluate TTL expiry.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataView.DMDataView">
             <summary>
-            Represents a view for displaying and interacting with DataView  data.
+            Pure data model for a federated DataView definition.
+            This class IS the data — it is serialised to/from JSON by the DataViewDataSource engine.
+            It does NOT contain any engine logic (generating views, writing files, running queries).
+            
+            For the engine behaviour, see DataViewDataSource which implements IDataViewOperations.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.Description">
+            <summary>Optional human-readable description for UI display.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.LocalEngineConnectionName">
+            <summary>
+            The registered connection name of the local/in-memory engine (DuckDB, SQLite, etc.)
+            used to evaluate federated queries. Null = auto-discover at runtime.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.JoinDefinitions">
+            <summary>
+            Cross-source virtual join definitions. These are logical join conditions, not physical FKs.
+            Populated automatically from FK discovery, or manually via the Relation Builder API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.ExecutionMode">
+            <summary>Default to Cached for performance. Set to DirectQuery for always-live data.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.CacheTTLSeconds">
+            <summary>Duration in seconds the materialized cache is valid. Default: 5 minutes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.CacheLastRefresh">
+            <summary>Timestamp of last successful cache refresh.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.FederatedJoinType">
+            <summary>Defines the type of JOIN to apply between two federated entities.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.FederatedJoinDefinition">
+            <summary>
+            Describes a virtual join relationship between two entities in a federated DataView.
+            Unlike EntityStructure.Relations (physical FK within one source),
+            this describes cross-source logical join conditions that may be auto-discovered
+            from FK metadata or manually defined via the Relation Builder API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.GuidID">
+            <summary>Unique identifier for this join definition.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftEntityName">
+            <summary>The logical name of the left entity as it appears in the DataView.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftColumn">
+            <summary>The column of the left entity to join on.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftDataSourceID">
+            <summary>The datasource connection name that owns the left entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightEntityName">
+            <summary>The logical name of the right entity as it appears in the DataView.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightColumn">
+            <summary>The column of the right entity to join on.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightDataSourceID">
+            <summary>The datasource connection name that owns the right entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.JoinType">
+            <summary>The type of SQL JOIN to apply.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.IsManuallyDefined">
+            <summary>
+            True if this join was defined manually via the Relation Builder API.
+            False if auto-discovered from FK metadata (GetChildTablesList).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.AdditionalCondition">
+            <summary>
+            Optional additional filter condition appended to the JOIN ON clause.
+            E.g. "ORDERS.YEAR = 2024" → ON L.col = R.col AND (ORDERS.YEAR = 2024)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.Description">
+            <summary>Optional description/label for UI display.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.FederationExecutionMode">
+            <summary>
+            Defines how a federated DataView resolves its data at query time.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataView.FederationExecutionMode.Cached">
+            <summary>
+            Data is materialized into a local/in-memory engine and cached for CacheTTLSeconds.
+            Best for read-heavy analytical workloads.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataView.FederationExecutionMode.DirectQuery">
+            <summary>
+            Data is always fetched live from source databases on every query.
+            Best for real-time or low-volume data where staleness is unacceptable.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.RestrictionValue">
+            <summary>
+            Represents a filter restriction for DataView queries.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.RestrictionValue.Fieldname">
+            <summary>
+            The name of the field to filter on.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:TheTechIdea.Beep.DataView.RestrictionValue.Operator" -->
+        <member name="P:TheTechIdea.Beep.DataView.RestrictionValue.value">
+            <summary>
+            The value to compare against.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.ViewSummary">
+            <summary>
+            Lightweight snapshot of a DataView's current health and structure.
+            Returned by <see cref="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetViewSummary"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.EntityCount">
+            <summary>Total number of entities in the view.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.JoinCount">
+            <summary>Total join definitions (manual + auto-discovered).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.ManualJoinCount">
+            <summary>Joins that were created manually via the Relation Builder.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.DataSourceCount">
+            <summary>Number of distinct DataSource IDs referenced by entities.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.IsValid">
+            <summary>True if ValidateView() returned no errors.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.Warnings">
+            <summary>Validation warnings or errors (empty when IsValid=true).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.UnconnectedEntities">
+            <summary>Entities not connected to any join (potential orphans).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.BrokenEntities">
+            <summary>Entities whose datasource is currently unavailable.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.CacheLastRefresh">
+            <summary>Last time the local cache was successfully materialised.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.CacheTTLSeconds">
+            <summary>Configured cache TTL in seconds.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.IsCacheExpired">
+            <summary>Whether the cache has expired and needs re-materialisation.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BindingListExtensions">
             <summary>
@@ -5253,6 +5651,16 @@
             <param name="assembly">Optional specific assembly to search</param>
             <param name="namespaceString">Target namespace for generated entity classes</param>
             <returns>Path to generated file</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ConvertEFClassesFileToEntity(System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Converts EF classes defined in a C# source file to framework Entity classes.
+            </summary>
+            <param name="efClassesFilePath">Input C# file containing EF classes</param>
+            <param name="outputPath">Output file path or output directory</param>
+            <param name="namespaceString">Target namespace for generated entity classes</param>
+            <param name="generateSingleFile">True to emit one combined file; false to emit one file per class</param>
+            <returns>Generated file path for single-file mode, or output directory for per-class mode</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ScanNamespaceForPocos(System.String,System.Reflection.Assembly)">
             <summary>

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
@@ -108,9 +110,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
         {
             // Ensure proper using statements for Entity base class
             var defaultUsingHeader = @"using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.DataBase;";
 
@@ -138,6 +139,7 @@ using TheTechIdea.Beep.DataBase;";
             var fieldTemplate = @"
 private :Fieldtype? :BACKINGFIELD;
 
+:ANNOTATIONS
 public :Fieldtype? :FieldName
 {
     get => :BACKINGFIELD;
@@ -285,6 +287,17 @@ public :Fieldtype? :FieldName
             sb.AppendLine($"    /// <summary>");
             sb.AppendLine($"    /// Represents the {cls} entity");
             sb.AppendLine($"    /// </summary>");
+            if (entity.HasDataAnnotations)
+            {
+                if (!string.IsNullOrWhiteSpace(entity.SchemaOrOwnerOrDatabase))
+                {
+                    sb.AppendLine($"    [Table(\"{entity.EntityName}\", Schema = \"{entity.SchemaOrOwnerOrDatabase}\")]");
+                }
+                else
+                {
+                    sb.AppendLine($"    [Table(\"{entity.EntityName}\")]");
+                }
+            }
             sb.AppendLine($"    public class {cls}{inherit}");
             sb.AppendLine("    {");
             
@@ -302,6 +315,7 @@ public :Fieldtype? :FieldName
                 var fieldCode = template
                     .Replace(":Fieldtype", field.Fieldtype)
                     .Replace(":FieldName", safePropertyName)
+                    .Replace(":ANNOTATIONS", BuildAnnotationBlock(field))
                     .Replace(":BACKINGFIELD", backingFieldName);
 
                 sb.AppendLine($"        {fieldCode}");
@@ -343,6 +357,7 @@ public :Fieldtype? :FieldName
             return @"
 private :Fieldtype? :BACKINGFIELD;
 
+:ANNOTATIONS
 public :Fieldtype? :FieldName
 {
     get => :BACKINGFIELD;
@@ -355,6 +370,34 @@ public :Fieldtype? :FieldName
         }
     }
 }";
+        }
+
+        private static string BuildAnnotationBlock(EntityField field)
+        {
+            var sb = new StringBuilder();
+            if (field.IsKey) sb.AppendLine("[Key]");
+            if (field.IsRequired || !field.AllowDBNull) sb.AppendLine("[Required]");
+            if (!string.IsNullOrWhiteSpace(field.ColumnName) || !string.IsNullOrWhiteSpace(field.ColumnTypeName))
+            {
+                if (!string.IsNullOrWhiteSpace(field.ColumnName) && !string.IsNullOrWhiteSpace(field.ColumnTypeName))
+                    sb.AppendLine($"[Column(\"{field.ColumnName}\", TypeName = \"{field.ColumnTypeName}\")]");
+                else if (!string.IsNullOrWhiteSpace(field.ColumnName))
+                    sb.AppendLine($"[Column(\"{field.ColumnName}\")]");
+                else
+                    sb.AppendLine($"[Column(TypeName = \"{field.ColumnTypeName}\")]");
+            }
+            if (field.ValueMin > 0 && field.MaxLength > 0)
+                sb.AppendLine($"[StringLength({field.MaxLength}, MinimumLength = {field.ValueMin})]");
+            else if (field.MaxLength > 0)
+                sb.AppendLine($"[MaxLength({field.MaxLength})]");
+            else if (field.Size1 > 0)
+                sb.AppendLine($"[StringLength({field.Size1})]");
+            if (!string.IsNullOrWhiteSpace(field.DatabaseGeneratedOptionName))
+                sb.AppendLine($"[DatabaseGenerated(DatabaseGeneratedOption.{field.DatabaseGeneratedOptionName})]");
+            else if (field.IsAutoIncrement)
+                sb.AppendLine("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            if (field.IsNotMapped) sb.AppendLine("[NotMapped]");
+            return sb.ToString().TrimEnd();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 
@@ -30,6 +30,7 @@ namespace TheTechIdea.Beep.DataBase
         string KeyToken { get; set; }
         string Category { get; set; }
         string SchemaOrOwnerOrDatabase { get; set; }
+        bool HasDataAnnotations { get; set; }
         bool Show { get; set; }
         string StatusDescription { get; set; }
         string Description { get; set; }

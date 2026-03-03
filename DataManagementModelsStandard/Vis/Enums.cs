@@ -30,9 +30,12 @@ namespace TheTechIdea.Beep.Vis
             View = 1 << 13,
             Schema = 1 << 14,
             DataBase = 1 << 15,
-            Table = 1 << 16,
-            Class = 1 << 17,
-            All = Genre | Root | DataPoint | Category | Entity | SubEntity | Function | Report | Global | Form | Block | Item | Trigger | View | Schema | DataBase | Table | Class
+            Table      = 1 << 16,
+            Class      = 1 << 17,
+            Field      = 1 << 18,    // column / field leaf node
+            Relations  = 1 << 19,    // join-group sub-tree node (DataViewJoinsNode)
+            JoinLeaf   = 1 << 20,    // single join definition leaf
+            All = Genre | Root | DataPoint | Category | Entity | SubEntity | Function | Report | Global | Form | Block | Item | Trigger | View | Schema | DataBase | Table | Class | Field | Relations | JoinLeaf
 
 
     }

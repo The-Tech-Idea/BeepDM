@@ -181,15 +181,18 @@ namespace TheTechIdea.Beep.Tools.Helpers
             if (pocoType == null)
                 throw new ArgumentNullException(nameof(pocoType));
 
+            var tableAttr = pocoType.GetCustomAttribute<TableAttribute>();
             var entity = new EntityStructure
             {
-                EntityName = pocoType.Name,
-                DatasourceEntityName = pocoType.Name,
+                EntityName = tableAttr?.Name ?? pocoType.Name,
+                DatasourceEntityName = tableAttr?.Name ?? pocoType.Name,
                 OriginalEntityName = pocoType.Name,
                 Caption = GenerateFriendlyName(pocoType.Name),
                 Fields = new List<EntityField>(),
                 Relations = new List<RelationShipKeys>(),
-                PrimaryKeys = new List<EntityField>()
+                PrimaryKeys = new List<EntityField>(),
+                SchemaOrOwnerOrDatabase = tableAttr?.Schema ?? string.Empty,
+                HasDataAnnotations = tableAttr != null
             };
 
             var properties = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -206,6 +209,13 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
                 var field = CreateEntityField(prop, fieldIndex);
                 entity.Fields.Add(field);
+                if (field.IsKey || field.IsRequired || field.IsNotMapped ||
+                    field.IsAutoIncrement || field.MaxLength > 0 ||
+                    !string.IsNullOrWhiteSpace(field.ColumnName) ||
+                    !string.IsNullOrWhiteSpace(field.ColumnTypeName))
+                {
+                    entity.HasDataAnnotations = true;
+                }
 
                 // Check if primary key
                 if (IsPrimaryKeyProperty(prop))
@@ -241,16 +251,30 @@ namespace TheTechIdea.Beep.Tools.Helpers
         /// </summary>
         private EntityField CreateEntityField(PropertyInfo prop, int index)
         {
+            var columnAttr = prop.GetCustomAttribute<ColumnAttribute>();
+            var dbGeneratedAttr = prop.GetCustomAttribute<DatabaseGeneratedAttribute>();
+            var maxLengthAttr = prop.GetCustomAttribute<MaxLengthAttribute>();
+            var stringLengthAttr = prop.GetCustomAttribute<StringLengthAttribute>();
+            var requiredAttr = prop.GetCustomAttribute<RequiredAttribute>();
+            var notMappedAttr = prop.GetCustomAttribute<NotMappedAttribute>();
+
             var field = new EntityField
             {
                FieldName = prop.Name,
                 Fieldtype = MapClrTypeToDbType(prop.PropertyType),
                 Size1 = int.TryParse(GetFieldSize(prop), out int size) ? size : 0,
                 AllowDBNull = IsNullable(prop),
-                IsAutoIncrement = HasAutoIncrementAttribute(prop),
+                IsAutoIncrement = dbGeneratedAttr?.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,
                 IsKey = IsPrimaryKeyProperty(prop),
                 IsUnique = HasUniqueAttribute(prop),
-                FieldIndex = index
+                FieldIndex = index,
+                ColumnName = columnAttr?.Name ?? string.Empty,
+                ColumnTypeName = columnAttr?.TypeName ?? string.Empty,
+                DatabaseGeneratedOptionName = dbGeneratedAttr?.DatabaseGeneratedOption.ToString() ?? string.Empty,
+                IsNotMapped = notMappedAttr != null,
+                IsRequired = requiredAttr != null,
+                MaxLength = maxLengthAttr?.Length ?? stringLengthAttr?.MaximumLength ?? 0,
+                ValueMin = stringLengthAttr?.MinimumLength ?? 0
             };
 
             return field;
@@ -436,11 +460,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
             // Using statements
             sb.AppendLine("using System;");
-            sb.AppendLine("using System.Collections.Generic;");
-            sb.AppendLine("using System.ComponentModel;");
             sb.AppendLine("using System.ComponentModel.DataAnnotations;");
             sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
-            sb.AppendLine("using TheTechIdea.Beep.DataBase;");
+            sb.AppendLine("using TheTechIdea.Beep.Editor;");
             sb.AppendLine();
 
             sb.AppendLine($"namespace {namespaceString}");
@@ -451,18 +473,19 @@ namespace TheTechIdea.Beep.Tools.Helpers
             sb.AppendLine($"    /// Entity class for {entity.EntityName}");
             sb.AppendLine($"    /// Auto-generated from POCO class");
             sb.AppendLine($"    /// </summary>");
-            sb.AppendLine($"    [Table(\"{entity.EntityName}\")]");
-            sb.AppendLine($"    public class {entity.EntityName}Entity : Entity, INotifyPropertyChanged");
+            if (entity.HasDataAnnotations)
+            {
+                if (!string.IsNullOrWhiteSpace(entity.SchemaOrOwnerOrDatabase))
+                {
+                    sb.AppendLine($"    [Table(\"{entity.EntityName}\", Schema = \"{entity.SchemaOrOwnerOrDatabase}\")]");
+                }
+                else
+                {
+                    sb.AppendLine($"    [Table(\"{entity.EntityName}\")]");
+                }
+            }
+            sb.AppendLine($"    public class {entity.EntityName}Entity : Entity");
             sb.AppendLine("    {");
-
-            // INotifyPropertyChanged implementation
-            sb.AppendLine("        public event PropertyChangedEventHandler PropertyChanged;");
-            sb.AppendLine();
-            sb.AppendLine("        protected virtual void OnPropertyChanged(string propertyName)");
-            sb.AppendLine("        {");
-            sb.AppendLine("            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));");
-            sb.AppendLine("        }");
-            sb.AppendLine();
 
             // Generate properties
             foreach (var field in entity.Fields)
@@ -475,41 +498,22 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 sb.AppendLine();
 
                 // Property attributes
-                if (field.IsKey)
-                    sb.AppendLine("        [Key]");
-                if (field.IsAutoIncrement)
-                    sb.AppendLine("        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
-                if (!field.AllowDBNull && clrType == "string")
-                    sb.AppendLine("        [Required]");
-                if (field.Size1 > 0 && clrType == "string")
-                    sb.AppendLine($"        [StringLength({field.Size1})]");
+                foreach (var annotation in BuildFieldAnnotations(field, clrType))
+                {
+                    sb.AppendLine($"        {annotation}");
+                }
 
                 // Property
                 sb.AppendLine($"        public {clrType} {field.FieldName}");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            get => {backingField};");
-                sb.AppendLine("            set");
-                sb.AppendLine("            {");
-                sb.AppendLine($"                if ({backingField} != value)");
-                sb.AppendLine("                {");
-                sb.AppendLine($"                    {backingField} = value;");
-                sb.AppendLine($"                    OnPropertyChanged(nameof({field.FieldName}));");
-                sb.AppendLine("                }");
-                sb.AppendLine("            }");
+                sb.AppendLine($"            set => SetProperty(ref {backingField}, value);");
                 sb.AppendLine("        }");
                 sb.AppendLine();
             }
 
-            // Generate navigation properties for relationships
-            foreach (var relation in entity.Relations)
-            {
-                sb.AppendLine($"        /// <summary>");
-                sb.AppendLine($"        /// Navigation property to {relation.RelatedEntityID}");
-                sb.AppendLine($"        /// </summary>");
-                sb.AppendLine($"        [ForeignKey(\"{relation.EntityColumnID}\")]");
-                sb.AppendLine($"        public virtual {relation.RelatedEntityID}Entity {relation.RelatedEntityID} {{ get; set; }}");
-                sb.AppendLine();
-            }
+            // Keep generated entities scalar-only for safe CRUD and Dapper mapping.
+            // Relationship metadata remains available via entity.Relations, but no nav properties are emitted.
 
             sb.AppendLine("    }");
             sb.AppendLine("}");
@@ -612,11 +616,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
             // Generate all code first
             var allCode = new StringBuilder();
             allCode.AppendLine("using System;");
-            allCode.AppendLine("using System.Collections.Generic;");
-            allCode.AppendLine("using System.ComponentModel;");
             allCode.AppendLine("using System.ComponentModel.DataAnnotations;");
             allCode.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
-            allCode.AppendLine("using TheTechIdea.Beep.DataBase;");
+            allCode.AppendLine("using TheTechIdea.Beep.Editor;");
             allCode.AppendLine();
             allCode.AppendLine($"namespace {targetNamespace}");
             allCode.AppendLine("{");
@@ -659,14 +661,19 @@ namespace TheTechIdea.Beep.Tools.Helpers
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"    [Table(\"{entity.EntityName}\")]");
-            sb.AppendLine($"    public class {entity.EntityName}Entity : Entity, INotifyPropertyChanged");
+            if (entity.HasDataAnnotations)
+            {
+                if (!string.IsNullOrWhiteSpace(entity.SchemaOrOwnerOrDatabase))
+                {
+                    sb.AppendLine($"    [Table(\"{entity.EntityName}\", Schema = \"{entity.SchemaOrOwnerOrDatabase}\")]");
+                }
+                else
+                {
+                    sb.AppendLine($"    [Table(\"{entity.EntityName}\")]");
+                }
+            }
+            sb.AppendLine($"    public class {entity.EntityName}Entity : Entity");
             sb.AppendLine("    {");
-
-            // INotifyPropertyChanged implementation
-            sb.AppendLine("        public event PropertyChangedEventHandler PropertyChanged;");
-            sb.AppendLine("        protected virtual void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));");
-            sb.AppendLine();
 
             foreach (var field in entity.Fields)
             {
@@ -674,13 +681,15 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 var clrType = GetClrTypeName(field.Fieldtype, field.AllowDBNull);
 
                 sb.AppendLine($"        private {clrType} {backingField};");
-                if (field.IsKey) sb.AppendLine("        [Key]");
-                if (field.IsAutoIncrement) sb.AppendLine("        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+                foreach (var annotation in BuildFieldAnnotations(field, clrType))
+                {
+                    sb.AppendLine($"        {annotation}");
+                }
                 
                 sb.AppendLine($"        public {clrType} {field.FieldName}");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            get => {backingField};");
-                sb.AppendLine($"            set {{ if ({backingField} != value) {{ {backingField} = value; OnPropertyChanged(nameof({field.FieldName})); }} }}");
+                sb.AppendLine($"            set => SetProperty(ref {backingField}, value);");
                 sb.AppendLine("        }");
                 sb.AppendLine();
             }
@@ -708,6 +717,57 @@ namespace TheTechIdea.Beep.Tools.Helpers
             }
         }
 
+        private IEnumerable<string> BuildFieldAnnotations(EntityField field, string clrType)
+        {
+            if (field.IsKey)
+            {
+                yield return "[Key]";
+            }
+            if (field.IsRequired || (!field.AllowDBNull && clrType == "string"))
+            {
+                yield return "[Required]";
+            }
+            if (!string.IsNullOrWhiteSpace(field.ColumnName) || !string.IsNullOrWhiteSpace(field.ColumnTypeName))
+            {
+                if (!string.IsNullOrWhiteSpace(field.ColumnName) && !string.IsNullOrWhiteSpace(field.ColumnTypeName))
+                {
+                    yield return $"[Column(\"{field.ColumnName}\", TypeName = \"{field.ColumnTypeName}\")]";
+                }
+                else if (!string.IsNullOrWhiteSpace(field.ColumnName))
+                {
+                    yield return $"[Column(\"{field.ColumnName}\")]";
+                }
+                else
+                {
+                    yield return $"[Column(TypeName = \"{field.ColumnTypeName}\")]";
+                }
+            }
+            if (field.ValueMin > 0 && field.MaxLength > 0)
+            {
+                yield return $"[StringLength({field.MaxLength}, MinimumLength = {field.ValueMin})]";
+            }
+            else if (field.MaxLength > 0)
+            {
+                yield return $"[MaxLength({field.MaxLength})]";
+            }
+            else if (field.Size1 > 0 && clrType == "string")
+            {
+                yield return $"[StringLength({field.Size1})]";
+            }
+            if (!string.IsNullOrWhiteSpace(field.DatabaseGeneratedOptionName))
+            {
+                yield return $"[DatabaseGenerated(DatabaseGeneratedOption.{field.DatabaseGeneratedOptionName})]";
+            }
+            else if (field.IsAutoIncrement)
+            {
+                yield return "[DatabaseGenerated(DatabaseGeneratedOption.Identity)]";
+            }
+            if (field.IsNotMapped)
+            {
+                yield return "[NotMapped]";
+            }
+        }
+
         #endregion
 
         #region DataSource Integration
@@ -732,11 +792,9 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
             var allCode = new StringBuilder();
             allCode.AppendLine("using System;");
-            allCode.AppendLine("using System.Collections.Generic;");
-            allCode.AppendLine("using System.ComponentModel;");
             allCode.AppendLine("using System.ComponentModel.DataAnnotations;");
             allCode.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
-            allCode.AppendLine("using TheTechIdea.Beep.DataBase;");
+            allCode.AppendLine("using TheTechIdea.Beep.Editor;");
             allCode.AppendLine();
             allCode.AppendLine($"namespace {targetNamespace}");
             allCode.AppendLine("{");

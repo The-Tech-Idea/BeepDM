@@ -19,6 +19,12 @@ namespace TheTechIdea.Beep.DataView
         /// Gets or sets a value indicating whether the connection is in memory.
         /// </summary>
         public bool InMemory { get; set; } = false;
+
+        /// <summary>
+        /// When true, this is a purely logical/federated view with no backing file.
+        /// OpenConn() immediately returns Open without checking the filesystem.
+        /// </summary>
+        public bool IsLogical { get; set; } = false;
         /// <summary>Gets or sets the connection properties.</summary>
         /// <value>The connection properties.</value>
         public IConnectionProperties ConnectionProp { get; set; }
@@ -90,7 +96,8 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>The connection state after opening the connection.</returns>
         private ConnectionState OpenConn()
         {
-            if (InMemory)
+            // Logical federated views have no physical file — always open
+            if (IsLogical || InMemory)
             {
                 ConnectionStatus = ConnectionState.Open;
                 return ConnectionStatus;

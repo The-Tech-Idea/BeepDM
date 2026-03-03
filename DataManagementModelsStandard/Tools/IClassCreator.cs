@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -356,6 +356,17 @@ namespace TheTechIdea.Beep.Tools
         /// <returns>Path to generated file</returns>
         string ConvertNamespaceEFCoreClassesToEntityFile(string namespaceName, string outputPath, 
             Assembly assembly = null, string namespaceString = "TheTechIdea.ProjectClasses");
+
+        /// <summary>
+        /// Converts EF classes defined in a C# source file to framework Entity classes.
+        /// </summary>
+        /// <param name="efClassesFilePath">Input C# file containing EF classes</param>
+        /// <param name="outputPath">Output file path or output directory</param>
+        /// <param name="namespaceString">Target namespace for generated entity classes</param>
+        /// <param name="generateSingleFile">True to emit one combined file; false to emit one file per class</param>
+        /// <returns>Generated file path for single-file mode, or output directory for per-class mode</returns>
+        string ConvertEFClassesFileToEntity(string efClassesFilePath, string outputPath,
+            string namespaceString = "TheTechIdea.ProjectClasses", bool generateSingleFile = true);
 
         #endregion
 

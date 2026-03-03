@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Utilities;
@@ -142,6 +142,13 @@ private int _id;
     {
         get { return _schemaorownerordatabase; }
         set { SetProperty(ref _schemaorownerordatabase, value); }
+    }
+
+    private bool _hasDataAnnotations;
+    public bool HasDataAnnotations
+    {
+        get { return _hasDataAnnotations; }
+        set { SetProperty(ref _hasDataAnnotations, value); }
     }
 
     private EntityType _entityType= EntityType.Entity;
@@ -514,6 +521,10 @@ private int _id;
         public int MaxLength { get; set; }
         public bool IsFixedLength { get; set; }
         public bool IsHidden { get; set; }
+        public string ColumnName { get; set; }
+        public string ColumnTypeName { get; set; }
+        public string DatabaseGeneratedOptionName { get; set; }
+        public bool IsNotMapped { get; set; }
         public EntityField()
         {
             Fieldtype = "Text";
@@ -526,6 +537,10 @@ private int _id;
             IsKey = false;
             Checked = false;
             IsDisplayField = false;
+            ColumnName = string.Empty;
+            ColumnTypeName = string.Empty;
+            DatabaseGeneratedOptionName = string.Empty;
+            IsNotMapped = false;
 
         }
         public EntityField Clone()

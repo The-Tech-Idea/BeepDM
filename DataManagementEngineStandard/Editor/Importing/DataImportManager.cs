@@ -14,6 +14,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor.ETL;
 
 namespace TheTechIdea.Beep.Editor.Importing
 {
@@ -40,6 +41,10 @@ namespace TheTechIdea.Beep.Editor.Importing
         private ManualResetEventSlim _pauseEvent = new ManualResetEventSlim(true);
         private CancellationTokenSource _internalCancellationTokenSource;
         private Task _importTask;
+
+        // Phase 2 — live status (write only from import thread; read via GetImportStatus snapshot)
+        private readonly ImportStatus _status = new ImportStatus();
+        private readonly object _statusLock = new object();
 
         protected bool _disposed = false;
         protected static readonly object _lockObject = new object();
@@ -283,6 +288,71 @@ namespace TheTechIdea.Beep.Editor.Importing
 
         #endregion
 
+        // PauseImport / ResumeImport / CancelImport / GetImportStatus are
+        // implemented in DataImportManager.Core.cs.
+
+        /// <summary>Thread-safe in-place status update used throughout the import pipeline.</summary>
+        private void UpdateStatus(Action<ImportStatus> update)
+        {
+            lock (_statusLock) { update(_status); }
+        }
+
+        #region Phase 2 — Context-Based Entry Point
+
+        /// <summary>
+        /// Runs an import defined by a typed ImportContext.
+        /// Translates to DataImportConfiguration then delegates to the existing pipeline.
+        /// </summary>
+        public async Task<IErrorsInfo> RunImportAsync(
+            ImportContext context,
+            IProgress<IPassedArgs> progress,
+            CancellationToken token)
+        {
+            if (context == null)
+                return CreateErrorsInfo(Errors.Failed, "ImportContext cannot be null.");
+            if (!context.Selection.IsValid)
+                return CreateErrorsInfo(Errors.Failed, "ImportContext.Selection is incomplete.");
+
+            var config = BuildConfigurationFromContext(context);
+            return await RunImportAsync(config, progress, token);
+        }
+
+        /// <summary>
+        /// Builds a DataImportConfiguration from a typed ImportContext.
+        /// </summary>
+        public DataImportConfiguration BuildConfigurationFromContext(ImportContext context)
+        {
+            var config = new DataImportConfiguration
+            {
+                SourceDataSourceName      = context.Selection.SourceDataSourceName,
+                SourceEntityName          = context.Selection.SourceEntityName,
+                DestDataSourceName        = context.Selection.DestinationDataSourceName,
+                DestEntityName            = context.Selection.DestinationEntityName,
+                CreateDestinationIfNotExists = context.Selection.CreateDestinationIfNotExists,
+                Mapping                   = context.Mapping,
+                BatchSize                 = context.Options.BatchSize,
+                AddMissingColumns         = context.Options.AddMissingColumns,
+                OnBatchError              = context.Options.OnBatchError,
+                MaxRetries                = context.Options.MaxRetries,
+                RunMigrationPreflight     = context.Options.RunMigrationPreflight,
+                CreateSyncProfileDraft    = context.Options.CreateSyncProfileDraft
+            };
+
+            // Load destination defaults
+            try
+            {
+                config.DefaultValues = DefaultsManager.GetDefaults(_editor, config.DestDataSourceName);
+            }
+            catch (Exception ex)
+            {
+                _progressHelper?.LogError("Error loading destination defaults", ex);
+            }
+
+            return config;
+        }
+
+        #endregion
+
         #region Core Public API - Enhanced
 
         /// <summary>
@@ -425,6 +495,8 @@ namespace TheTechIdea.Beep.Editor.Importing
             if (config == null)
                 return CreateErrorsInfo(Errors.Failed, "Import configuration is required");
 
+            UpdateStatus(s => { s.State = ImportState.Running; s.StartedAt = DateTime.UtcNow; s.RecordsProcessed = 0; });
+
             try
             {
                 _progressHelper.LogImport("Starting data import operation", 0);
@@ -432,7 +504,10 @@ namespace TheTechIdea.Beep.Editor.Importing
                 // Validate configuration
                 var configValidation = _validationHelper.ValidateImportConfiguration(config);
                 if (configValidation.Flag == Errors.Failed)
+                {
+                    UpdateStatus(s => { s.State = ImportState.Faulted; s.LastMessage = configValidation.Message; s.FinishedAt = DateTime.UtcNow; });
                     return configValidation;
+                }
 
                 // Initialize data sources if not already set
                 await InitializeDataSources(config);
@@ -442,7 +517,10 @@ namespace TheTechIdea.Beep.Editor.Importing
                 {
                     var mappingValidation = _validationHelper.ValidateEntityMapping(config.Mapping);
                     if (mappingValidation.Flag == Errors.Failed)
+                    {
+                        UpdateStatus(s => { s.State = ImportState.Faulted; s.LastMessage = mappingValidation.Message; s.FinishedAt = DateTime.UtcNow; });
                         return mappingValidation;
+                    }
                 }
 
                 // Ensure destination entity exists
@@ -454,17 +532,17 @@ namespace TheTechIdea.Beep.Editor.Importing
                 {
                     var message = "No source data found to import";
                     _progressHelper.LogImport(message, 0);
+                    UpdateStatus(s => { s.State = ImportState.Completed; s.LastMessage = message; s.FinishedAt = DateTime.UtcNow; });
                     return CreateErrorsInfo(Errors.Ok, message);
                 }
 
-                // Calculate optimal batch size if not specified
                 var sourceList = sourceData.ToList();
-                var optimalBatchSize = config.BatchSize > 0 ? config.BatchSize : 
-                    _batchHelper.CalculateOptimalBatchSize(sourceList.Count, 1024); // Estimate 1KB per record
+                var optimalBatchSize = config.BatchSize > 0 ? config.BatchSize :
+                    _batchHelper.CalculateOptimalBatchSize(sourceList.Count, 1024);
 
+                UpdateStatus(s => { s.TotalRecords = sourceList.Count; s.LastMessage = $"Processing {sourceList.Count} records in batches of {optimalBatchSize}"; });
                 _progressHelper.LogImport($"Processing {sourceList.Count} records in batches of {optimalBatchSize}", 0);
 
-                // Process data in batches
                 var totalProcessed = 0;
                 var batches = _batchHelper.SplitIntoBatches(sourceList, optimalBatchSize);
                 var batchNumber = 0;
@@ -475,36 +553,64 @@ namespace TheTechIdea.Beep.Editor.Importing
                     _pauseEvent.Wait(token);
                     token.ThrowIfCancellationRequested();
 
+                    UpdateStatus(s => s.LastMessage = $"Processing batch {batchNumber}...");
                     _progressHelper.LogImport($"Processing batch {batchNumber}...", totalProcessed);
 
-                    var batchResult = await _batchHelper.ProcessBatchAsync(batch, config, progress, token);
-                    
-                    totalProcessed += batch.Count();
+                    IErrorsInfo batchResult = null;
+                    var attempts = 0;
+                    var maxAttempts = config.OnBatchError == BatchErrorStrategy.Retry
+                        ? Math.Max(1, config.MaxRetries)
+                        : 1;
 
-                    if (batchResult.Flag == Errors.Failed)
+                    while (attempts < maxAttempts)
                     {
-                        _progressHelper.LogError($"Batch {batchNumber} failed", new Exception(batchResult.Message));
-                        // Continue with next batch or stop based on configuration
+                        attempts++;
+                        batchResult = await _batchHelper.ProcessBatchAsync(batch, config, progress, token);
+                        if (batchResult.Flag == Errors.Ok || config.OnBatchError != BatchErrorStrategy.Retry)
+                            break;
+                        var delay = TimeSpan.FromMilliseconds(200 * attempts); // exponential back-off
+                        await Task.Delay(delay, token);
                     }
 
-                    // Report overall progress
-                    _progressHelper.ReportProgress(progress, 
-                        $"Completed batch {batchNumber}. Total processed: {totalProcessed}", 
+                    totalProcessed += batch.Count();
+                    UpdateStatus(s => { s.RecordsProcessed = totalProcessed; s.PercentComplete = sourceList.Count > 0 ? 100.0 * totalProcessed / sourceList.Count : 100; });
+
+                    if (batchResult?.Flag == Errors.Failed)
+                    {
+                        _progressHelper.LogError($"Batch {batchNumber} failed", new Exception(batchResult.Message));
+
+                        if (config.OnBatchError == BatchErrorStrategy.Abort)
+                        {
+                            var abortMsg = $"Import aborted at batch {batchNumber}: {batchResult.Message}";
+                            UpdateStatus(s => { s.State = ImportState.Faulted; s.LastMessage = abortMsg; s.FinishedAt = DateTime.UtcNow; });
+                            return CreateErrorsInfo(Errors.Failed, abortMsg);
+                        }
+                        // Skip or Retry (exhausted) — log and continue
+                    }
+
+                    _progressHelper.ReportProgress(progress,
+                        $"Completed batch {batchNumber}. Total processed: {totalProcessed}",
                         totalProcessed, sourceList.Count);
                 }
 
-                _progressHelper.LogImport($"Import completed successfully. Total records processed: {totalProcessed}", totalProcessed);
-                return CreateErrorsInfo(Errors.Ok, $"Import completed successfully. {totalProcessed} records processed.");
+                var completedMsg = $"Import completed successfully. {totalProcessed} records processed.";
+                _progressHelper.LogImport(completedMsg, totalProcessed);
+                UpdateStatus(s => { s.State = ImportState.Completed; s.LastMessage = completedMsg; s.FinishedAt = DateTime.UtcNow; });
+                return CreateErrorsInfo(Errors.Ok, completedMsg);
             }
             catch (OperationCanceledException)
             {
-                _progressHelper.LogImport("Import operation was cancelled", 0);
-                return CreateErrorsInfo(Errors.Ok, "Import operation was cancelled by user");
+                const string cancelMsg = "Import operation was cancelled by user.";
+                _progressHelper.LogImport(cancelMsg, 0);
+                UpdateStatus(s => { s.State = ImportState.Cancelled; s.LastMessage = cancelMsg; s.FinishedAt = DateTime.UtcNow; });
+                return CreateErrorsInfo(Errors.Ok, cancelMsg);
             }
             catch (Exception ex)
             {
+                var failMsg = $"Import operation failed: {ex.Message}";
                 _progressHelper.LogError("Import operation failed", ex);
-                return CreateErrorsInfo(Errors.Failed, $"Import operation failed: {ex.Message}");
+                UpdateStatus(s => { s.State = ImportState.Faulted; s.LastMessage = failMsg; s.FinishedAt = DateTime.UtcNow; });
+                return CreateErrorsInfo(Errors.Failed, failMsg);
             }
         }
 

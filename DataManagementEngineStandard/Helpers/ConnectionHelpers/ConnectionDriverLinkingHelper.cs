@@ -76,7 +76,12 @@ namespace TheTechIdea.Beep.Helpers.ConnectionHelpers
             return configEditor.DataDriversClasses
                 .FirstOrDefault(c => c.PackageName.Equals(cn.DriverName, StringComparison.InvariantCultureIgnoreCase));
         }
-
+        //  this method t find drivber islocal installed
+        private static ConnectionDriversConfig FindDriverByIsLocal(IConnectionProperties cn, IConfigEditor configEditor)
+        {
+            return configEditor.DataDriversClasses
+                .FirstOrDefault(c => c.CreateLocal);
+        }
         /// <summary>
         /// Finds a driver configuration by data source type.
         /// </summary>
