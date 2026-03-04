@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TheTechIdea.Beep.Editor.Importing.History;
 
 namespace TheTechIdea.Beep.Editor.BeepSync
 {
@@ -98,6 +99,25 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         /// Additional metadata about the sync operation
         /// </summary>
         public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
+
+        /// <summary>
+        /// Creates a SyncMetrics instance from a completed ImportRunRecord.
+        /// </summary>
+        public static SyncMetrics FromImportRunRecord(ImportRunRecord record)
+        {
+            if (record == null) throw new ArgumentNullException(nameof(record));
+            return new SyncMetrics
+            {
+                SchemaID          = record.ContextKey,
+                SyncDate          = record.StartedAt,
+                TotalRecords      = (int)record.RecordsRead,
+                SuccessfulRecords = (int)record.RecordsWritten,
+                FailedRecords     = (int)record.RecordsBlocked,
+                Duration          = record.FinishedAt.HasValue
+                                        ? record.FinishedAt.Value - record.StartedAt
+                                        : TimeSpan.Zero
+            };
+        }
 
         public override string ToString()
         {

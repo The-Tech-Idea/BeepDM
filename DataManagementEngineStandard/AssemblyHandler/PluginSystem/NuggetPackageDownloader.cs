@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -15,6 +16,7 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Logger;
 
 namespace TheTechIdea.Beep.Tools.PluginSystem
@@ -384,6 +386,181 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 return null;
             }
         }
+
+        #region NuGet Search & Version Methods
+
+        /// <summary>
+        /// Searches for NuGet packages by keyword.
+        /// </summary>
+        public async Task<List<NuGetSearchResult>> SearchPackagesAsync(
+            string searchTerm,
+            int skip = 0,
+            int take = 20,
+            bool includePrerelease = false,
+            IEnumerable<string> sources = null,
+            CancellationToken token = default)
+        {
+            var results = new List<NuGetSearchResult>();
+            if (string.IsNullOrWhiteSpace(searchTerm)) return results;
+
+            var sourceList = (sources ?? new[] { "https://api.nuget.org/v3/index.json" }).ToList();
+
+            foreach (var sourceUrl in sourceList)
+            {
+                try
+                {
+                    var repository = Repository.Factory.GetCoreV3(sourceUrl);
+                    var resource = await repository.GetResourceAsync<PackageSearchResource>(token);
+                    if (resource == null) continue;
+
+                    var searchFilter = new SearchFilter(includePrerelease);
+                    var packages = await resource.SearchAsync(searchTerm, searchFilter, skip, take, _nugetLogger, token);
+
+                    foreach (var package in packages)
+                    {
+                        if (results.Any(r => r.PackageId.Equals(package.Identity.Id, StringComparison.OrdinalIgnoreCase)))
+                            continue;
+
+                        results.Add(new NuGetSearchResult
+                        {
+                            PackageId = package.Identity.Id,
+                            Version = package.Identity.Version?.ToNormalizedString(),
+                            Description = package.Description,
+                            Authors = package.Authors,
+                            TotalDownloads = package.DownloadCount ?? 0,
+                            IconUrl = package.IconUrl?.ToString(),
+                            ProjectUrl = package.ProjectUrl?.ToString(),
+                            Tags = package.Tags?.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries)?.ToList() ?? new List<string>()
+                        });
+                    }
+
+                    // If we got results from this source, no need to try others
+                    if (results.Count > 0) break;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWithContext($"SearchPackagesAsync: Error searching {sourceUrl}: {ex.Message}", ex);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Gets all available versions for a specific package.
+        /// </summary>
+        public async Task<List<NuGetVersion>> GetPackageVersionsAsync(
+            string packageId,
+            bool includePrerelease = false,
+            IEnumerable<string> sources = null,
+            CancellationToken token = default)
+        {
+            if (string.IsNullOrWhiteSpace(packageId)) return new List<NuGetVersion>();
+
+            var sourceList = (sources ?? new[] { "https://api.nuget.org/v3/index.json" }).ToList();
+
+            foreach (var sourceUrl in sourceList)
+            {
+                try
+                {
+                    var repository = Repository.Factory.GetCoreV3(sourceUrl);
+                    var resource = await repository.GetResourceAsync<FindPackageByIdResource>(token);
+
+                    var versions = await resource.GetAllVersionsAsync(packageId, _cacheContext, _nugetLogger, token);
+                    if (versions == null) continue;
+
+                    var versionList = versions
+                        .Where(v => includePrerelease || !v.IsPrerelease)
+                        .OrderByDescending(v => v)
+                        .ToList();
+
+                    if (versionList.Count > 0) return versionList;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWithContext($"GetPackageVersionsAsync: Error querying {sourceUrl}: {ex.Message}", ex);
+                }
+            }
+
+            return new List<NuGetVersion>();
+        }
+
+        /// <summary>
+        /// Heuristic check whether a string looks like a NuGet package name
+        /// (e.g. "Dapper", "Microsoft.Data.SqlClient") vs a plain search term.
+        /// </summary>
+        public static bool IsPackageName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return false;
+            // Package names: alphanumeric + dots/hyphens/underscores, no spaces, must contain a dot or start uppercase
+            return Regex.IsMatch(input.Trim(), @"^[A-Za-z][A-Za-z0-9._\-]*(\.[A-Za-z][A-Za-z0-9._\-]*)+$")
+                || (input.Trim().IndexOf(' ') < 0 && char.IsUpper(input.Trim()[0]) && input.Trim().Length >= 3);
+        }
+
+        /// <summary>
+        /// Downloads a package with all its dependencies, reporting progress.
+        /// </summary>
+        public async Task<Dictionary<string, string>> DownloadPackageWithDependenciesAsync(
+            string packageName,
+            string version,
+            IEnumerable<string> sources,
+            IProgress<PassedArgs> progress,
+            CancellationToken token,
+            HashSet<string> processedPackages = null)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            processedPackages ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var sourceList = (sources ?? new[] { "https://api.nuget.org/v3/index.json" }).ToList();
+
+            try
+            {
+                progress?.Report(new PassedArgs { Messege = $"Downloading {packageName} {version ?? "latest"}..." });
+
+                var packagePath = await DownloadPackageAsync(packageName, version, sourceList);
+                if (string.IsNullOrEmpty(packagePath))
+                {
+                    _logger?.LogWithContext($"Failed to download main package: {packageName}", null);
+                    return result;
+                }
+
+                processedPackages.Add(packageName.ToLowerInvariant());
+
+                var compatiblePath = FindCompatibleFrameworkFolder(packagePath);
+                result[packageName] = !string.IsNullOrEmpty(compatiblePath) ? compatiblePath : packagePath;
+
+                var dependencies = GetPackageDependencies(packagePath);
+                _logger?.LogWithContext($"Found {dependencies.Count} dependencies for {packageName}", null);
+
+                int depIndex = 0;
+                foreach (var (depName, depVersion) in dependencies)
+                {
+                    if (token.IsCancellationRequested) break;
+                    if (processedPackages.Contains(depName.ToLowerInvariant())) continue;
+                    if (IsSystemPackage(depName)) continue;
+                    if (IsPackageLoadedInMemory(depName)) continue;
+
+                    depIndex++;
+                    progress?.Report(new PassedArgs { Messege = $"Downloading dependency {depIndex}/{dependencies.Count}: {depName}..." });
+
+                    var depResults = await DownloadPackageWithDependenciesAsync(depName, depVersion, sourceList, progress, token, processedPackages);
+                    foreach (var kvp in depResults)
+                    {
+                        if (!result.ContainsKey(kvp.Key))
+                            result[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                progress?.Report(new PassedArgs { Messege = $"Completed download of {packageName} ({result.Count} packages)" });
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"Error downloading {packageName} with dependencies: {ex.Message}", ex);
+                return result;
+            }
+        }
+
+        #endregion
 
         #region Private Helper Methods
 

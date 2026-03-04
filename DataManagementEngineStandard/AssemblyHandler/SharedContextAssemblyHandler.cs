@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
@@ -42,6 +43,19 @@ namespace TheTechIdea.Beep.Tools
         private readonly List<Assembly> _loadedAssemblies = new();
         
         private bool _disposed = false;
+
+        // NuGet & tracking infrastructure
+        private NuggetPackageDownloader _packageDownloader;
+        private List<NuGetSourceConfig> _nugetSources;
+        private string _nugetSourcesFilePath;
+        private List<DriverPackageMapping> _driverPackageMappings;
+        private string _driverMappingsFilePath;
+        private AssemblyLoadStatistics _loadStatistics = new AssemblyLoadStatistics();
+        private readonly object _sourcesLock = new object();
+        private readonly object _driverMappingsLock = new object();
+        private const string DefaultNuGetSource = "https://api.nuget.org/v3/index.json";
+        private const string NuGetSourcesFileName = "nuget_sources.json";
+        private const string DriverMappingsFileName = "driver_packages.json";
         #endregion
 
         #region Properties - IAssemblyHandler Implementation
@@ -134,6 +148,9 @@ namespace TheTechIdea.Beep.Tools
             // Initialize retained assistant and scanning service
             _driverAssistant = new DriverDiscoveryAssistant(_sharedContextManager, ConfigEditor, Logger);
             _scanningService = new ScanningService(_sharedContextManager, ConfigEditor, Logger);
+
+            // Initialize singleton NuGet package downloader
+            _packageDownloader = new NuggetPackageDownloader(Logger);
 
             // Setup assembly resolver to integrate SharedContextManager with AppDomain resolution
             // This ensures that when any code requests an assembly, we check the shared context first
@@ -1482,6 +1499,293 @@ namespace TheTechIdea.Beep.Tools
         // Removed local logic; delegate fully to SharedContextManager fallback
         private object CreateInstanceFromAssembly(string dll, string typeName, params object[] args) =>
             _sharedContextManager.CreateInstanceFromAssembly(dll, typeName, args);
+        #endregion
+
+        #region NuGet Search & Download (IAssemblyHandler)
+
+        /// <summary>
+        /// Searches NuGet for packages matching a keyword.
+        /// </summary>
+        public async Task<List<NuGetSearchResult>> SearchNuGetPackagesAsync(
+            string searchTerm,
+            int skip = 0,
+            int take = 20,
+            bool includePrerelease = false,
+            CancellationToken token = default)
+        {
+            try
+            {
+                var sources = GetActiveSourceUrls();
+                return await _packageDownloader.SearchPackagesAsync(searchTerm, skip, take, includePrerelease, sources, token);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"SearchNuGetPackagesAsync: Error - {ex.Message}", ex);
+                return new List<NuGetSearchResult>();
+            }
+        }
+
+        /// <summary>
+        /// Gets all available versions for a NuGet package.
+        /// </summary>
+        public async Task<List<string>> GetNuGetPackageVersionsAsync(
+            string packageId,
+            bool includePrerelease = false,
+            CancellationToken token = default)
+        {
+            try
+            {
+                var sources = GetActiveSourceUrls();
+                var versions = await _packageDownloader.GetPackageVersionsAsync(packageId, includePrerelease, sources, token);
+                return versions.Select(v => v.ToNormalizedString()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"GetNuGetPackageVersionsAsync: Error - {ex.Message}", ex);
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// Downloads and loads a NuGet package with all its dependencies.
+        /// </summary>
+        public async Task<List<Assembly>> LoadNuggetFromNuGetAsync(
+            string packageName,
+            string version = null,
+            IEnumerable<string> sources = null,
+            bool useSingleSharedContext = true,
+            string appInstallPath = null,
+            bool useProcessHost = false)
+        {
+            var loadedAssemblies = new List<Assembly>();
+            try
+            {
+                var sourceList = sources?.ToList() ?? GetActiveSourceUrls();
+                var results = await _packageDownloader.DownloadPackageWithDependenciesAsync(packageName, version, sourceList);
+
+                foreach (var kvp in results)
+                {
+                    var path = kvp.Value;
+                    var useIsolated = !useSingleSharedContext;
+                    var loaded = _nuggetManager.LoadNugget(path, useIsolated);
+                    if (loaded)
+                    {
+                        var nuggetName = Path.GetFileNameWithoutExtension(path.TrimEnd(Path.DirectorySeparatorChar));
+                        var nusAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
+                        foreach (var a in nusAssemblies)
+                        {
+                            if (!_loadedAssemblies.Contains(a)) _loadedAssemblies.Add(a);
+                            if (!loadedAssemblies.Contains(a)) loadedAssemblies.Add(a);
+                        }
+
+                        try
+                        {
+                            var installPath = appInstallPath ?? Path.Combine(ConfigEditor.ExePath, "Plugins");
+                            _packageDownloader.InstallPackageToAppDirectory(path, installPath, packageName, version);
+                            if (useProcessHost)
+                            {
+                                var exe = Directory.GetFiles(installPath, "*.exe", SearchOption.AllDirectories).FirstOrDefault();
+                                if (!string.IsNullOrWhiteSpace(exe))
+                                {
+                                    try
+                                    {
+                                        var psi = new System.Diagnostics.ProcessStartInfo { FileName = exe, UseShellExecute = false, CreateNoWindow = true };
+                                        System.Diagnostics.Process.Start(psi);
+                                        Logger?.LogWithContext($"Started process-hosted plugin {packageName} @ {exe}", null);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger?.LogWithContext($"Failed to start process-hosted plugin: {ex.Message}", ex);
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+
+                        _loadStatistics.NuGetPackagesLoaded++;
+                    }
+                    else
+                    {
+                        _loadStatistics.NuGetPackagesFailed++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"LoadNuggetFromNuGetAsync: Error - {ex.Message}", ex);
+                _loadStatistics.NuGetPackagesFailed++;
+            }
+
+            return loadedAssemblies;
+        }
+
+        #endregion
+
+        #region NuGet Source Management (IAssemblyHandler)
+
+        /// <summary>
+        /// Gets all configured NuGet sources.
+        /// </summary>
+        public List<NuGetSourceConfig> GetNuGetSources()
+        {
+            EnsureNuGetSourcesLoaded();
+            lock (_sourcesLock) { return _nugetSources.ToList(); }
+        }
+
+        /// <summary>
+        /// Adds a new NuGet source.
+        /// </summary>
+        public void AddNuGetSource(string name, string url, bool isEnabled = true)
+        {
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
+            if (string.IsNullOrWhiteSpace(url)) throw new ArgumentNullException(nameof(url));
+
+            EnsureNuGetSourcesLoaded();
+            lock (_sourcesLock)
+            {
+                var existing = _nugetSources.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                if (existing != null) { existing.Url = url; existing.IsEnabled = isEnabled; }
+                else { _nugetSources.Add(new NuGetSourceConfig { Name = name, Url = url, IsEnabled = isEnabled, DateAdded = DateTime.UtcNow }); }
+            }
+            SaveNuGetSourcesInternal();
+        }
+
+        /// <summary>
+        /// Removes a NuGet source by name.
+        /// </summary>
+        public void RemoveNuGetSource(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            EnsureNuGetSourcesLoaded();
+            lock (_sourcesLock) { _nugetSources.RemoveAll(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); }
+            SaveNuGetSourcesInternal();
+        }
+
+        /// <summary>
+        /// Gets the list of active (enabled) source URLs.
+        /// </summary>
+        public List<string> GetActiveSourceUrls()
+        {
+            EnsureNuGetSourcesLoaded();
+            lock (_sourcesLock) { return _nugetSources.Where(s => s.IsEnabled).Select(s => s.Url).ToList(); }
+        }
+
+        private void EnsureNuGetSourcesLoaded()
+        {
+            if (_nugetSources != null) return;
+            try
+            {
+                var configPath = ConfigEditor?.ExePath ?? AppContext.BaseDirectory;
+                _nugetSourcesFilePath = Path.Combine(configPath, NuGetSourcesFileName);
+                if (File.Exists(_nugetSourcesFilePath))
+                    _nugetSources = JsonConvert.DeserializeObject<List<NuGetSourceConfig>>(File.ReadAllText(_nugetSourcesFilePath)) ?? new List<NuGetSourceConfig>();
+                else
+                    _nugetSources = new List<NuGetSourceConfig>();
+            }
+            catch { _nugetSources = new List<NuGetSourceConfig>(); }
+
+            if (!_nugetSources.Any(s => s.Url.Equals(DefaultNuGetSource, StringComparison.OrdinalIgnoreCase)))
+                _nugetSources.Insert(0, new NuGetSourceConfig { Name = "nuget.org", Url = DefaultNuGetSource, IsEnabled = true, DateAdded = DateTime.UtcNow });
+        }
+
+        private void SaveNuGetSourcesInternal()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_nugetSourcesFilePath))
+                    _nugetSourcesFilePath = Path.Combine(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, NuGetSourcesFileName);
+                lock (_sourcesLock) { File.WriteAllText(_nugetSourcesFilePath, JsonConvert.SerializeObject(_nugetSources, Formatting.Indented)); }
+            }
+            catch (Exception ex) { Logger?.LogWithContext($"SaveNuGetSources: Error - {ex.Message}", ex); }
+        }
+
+        #endregion
+
+        #region Driver Package Tracking (IAssemblyHandler)
+
+        /// <summary>
+        /// Tracks a driver to its NuGet package source.
+        /// </summary>
+        public void TrackDriverPackage(string packageId, string version, string driverClassName, DataSourceType dsType)
+        {
+            if (string.IsNullOrWhiteSpace(packageId) || string.IsNullOrWhiteSpace(driverClassName)) return;
+            EnsureDriverMappingsLoaded();
+            lock (_driverMappingsLock)
+            {
+                var existing = _driverPackageMappings.FirstOrDefault(m => m.DriverClassName.Equals(driverClassName, StringComparison.OrdinalIgnoreCase));
+                if (existing != null) { existing.PackageId = packageId; existing.Version = version; existing.DataSourceType = dsType; }
+                else { _driverPackageMappings.Add(new DriverPackageMapping { PackageId = packageId, Version = version, DriverClassName = driverClassName, DataSourceType = dsType, InstalledDate = DateTime.UtcNow }); }
+            }
+            SaveDriverMappingsInternal();
+        }
+
+        /// <summary>
+        /// Gets all driver-to-package mappings.
+        /// </summary>
+        public List<DriverPackageMapping> GetAllDriverPackageMappings()
+        {
+            EnsureDriverMappingsLoaded();
+            lock (_driverMappingsLock) { return _driverPackageMappings.ToList(); }
+        }
+
+        /// <summary>
+        /// Checks whether a driver was installed from a NuGet package.
+        /// </summary>
+        public bool IsDriverFromNuGet(string driverClassName)
+        {
+            if (string.IsNullOrWhiteSpace(driverClassName)) return false;
+            EnsureDriverMappingsLoaded();
+            lock (_driverMappingsLock) { return _driverPackageMappings.Any(m => m.DriverClassName.Equals(driverClassName, StringComparison.OrdinalIgnoreCase)); }
+        }
+
+        private void EnsureDriverMappingsLoaded()
+        {
+            if (_driverPackageMappings != null) return;
+            try
+            {
+                var configPath = ConfigEditor?.ExePath ?? AppContext.BaseDirectory;
+                _driverMappingsFilePath = Path.Combine(configPath, DriverMappingsFileName);
+                if (File.Exists(_driverMappingsFilePath))
+                    _driverPackageMappings = JsonConvert.DeserializeObject<List<DriverPackageMapping>>(File.ReadAllText(_driverMappingsFilePath)) ?? new List<DriverPackageMapping>();
+                else
+                    _driverPackageMappings = new List<DriverPackageMapping>();
+            }
+            catch { _driverPackageMappings = new List<DriverPackageMapping>(); }
+        }
+
+        private void SaveDriverMappingsInternal()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_driverMappingsFilePath))
+                    _driverMappingsFilePath = Path.Combine(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, DriverMappingsFileName);
+                lock (_driverMappingsLock) { File.WriteAllText(_driverMappingsFilePath, JsonConvert.SerializeObject(_driverPackageMappings, Formatting.Indented)); }
+            }
+            catch (Exception ex) { Logger?.LogWithContext($"SaveDriverMappings: Error - {ex.Message}", ex); }
+        }
+
+        #endregion
+
+        #region Statistics (IAssemblyHandler)
+
+        /// <summary>
+        /// Gets assembly loading statistics.
+        /// </summary>
+        public AssemblyLoadStatistics GetLoadStatistics()
+        {
+            _loadStatistics.TotalAssembliesLoaded = _loadedAssemblies.Count;
+            _loadStatistics.DataSourcesFound = DataSourcesClasses.Count;
+
+            if (_assemblies != null)
+            {
+                _loadStatistics.AssembliesByFolderType = _assemblies
+                    .GroupBy(a => a.FileTypes.ToString())
+                    .ToDictionary(g => g.Key, g => g.Count());
+            }
+
+            return _loadStatistics;
+        }
+
         #endregion
     }
 }

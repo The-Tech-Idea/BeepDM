@@ -50,22 +50,13 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Interfaces
     public interface IFieldMappingHelper
     {
         /// <summary>
-        /// Map fields from source to destination object
-        /// </summary>
-        void MapFields(object source, object destination, IEnumerable<FieldSyncData> mappedFields);
-        
-        /// <summary>
-        /// Create destination entity instance
-        /// </summary>
-        object CreateDestinationEntity(string dataSourceName, string entityName);
-        
-        /// <summary>
-        /// Auto-map fields based on name matching
+        /// Auto-map fields based on name matching between source and destination entity structures.
+        /// Use to build schema.MappedFields before a sync run.
         /// </summary>
         List<FieldSyncData> AutoMapFields(string sourceDataSource, string sourceEntity, string destDataSource, string destEntity);
-        
+
         /// <summary>
-        /// Validate field mappings
+        /// Validate field mappings for missing or duplicate field names.
         /// </summary>
         IErrorsInfo ValidateFieldMappings(IEnumerable<FieldSyncData> mappedFields);
     }

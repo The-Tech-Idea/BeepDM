@@ -53,5 +53,76 @@ namespace TheTechIdea.Beep.Tools
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
         List<Assembly> LoadAssembliesFromFolder(string folderPath, FolderFileTypes folderFileType, bool scanForDataSources = true);
         void AddTypeToCache(string fullName, Type type);
+
+        #region NuGet Search & Download
+
+        /// <summary>
+        /// Searches NuGet for packages matching a keyword.
+        /// </summary>
+        Task<List<NuGetSearchResult>> SearchNuGetPackagesAsync(string searchTerm, int skip = 0, int take = 20, bool includePrerelease = false, CancellationToken token = default);
+
+        /// <summary>
+        /// Gets all available versions for a NuGet package.
+        /// </summary>
+        Task<List<string>> GetNuGetPackageVersionsAsync(string packageId, bool includePrerelease = false, CancellationToken token = default);
+
+        /// <summary>
+        /// Downloads and loads a NuGet package with all its dependencies.
+        /// </summary>
+        Task<List<Assembly>> LoadNuggetFromNuGetAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false);
+
+        #endregion
+
+        #region NuGet Source Management
+
+        /// <summary>
+        /// Gets all configured NuGet package sources.
+        /// </summary>
+        List<NuGetSourceConfig> GetNuGetSources();
+
+        /// <summary>
+        /// Adds a NuGet package source.
+        /// </summary>
+        void AddNuGetSource(string name, string url, bool isEnabled = true);
+
+        /// <summary>
+        /// Removes a NuGet package source by name.
+        /// </summary>
+        void RemoveNuGetSource(string name);
+
+        /// <summary>
+        /// Gets the list of active (enabled) source URLs.
+        /// </summary>
+        List<string> GetActiveSourceUrls();
+
+        #endregion
+
+        #region Driver Package Tracking
+
+        /// <summary>
+        /// Tracks the association between a driver class and its NuGet package.
+        /// </summary>
+        void TrackDriverPackage(string packageId, string version, string driverClassName, DataSourceType dsType);
+
+        /// <summary>
+        /// Gets all driver-to-package mappings.
+        /// </summary>
+        List<DriverPackageMapping> GetAllDriverPackageMappings();
+
+        /// <summary>
+        /// Checks whether a driver was installed from a NuGet package.
+        /// </summary>
+        bool IsDriverFromNuGet(string driverClassName);
+
+        #endregion
+
+        #region Statistics
+
+        /// <summary>
+        /// Gets assembly loading statistics.
+        /// </summary>
+        AssemblyLoadStatistics GetLoadStatistics();
+
+        #endregion
     }
 }

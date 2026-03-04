@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep.Editor;
@@ -108,6 +108,48 @@ namespace TheTechIdea.Beep.Editor
         {
             get { return _syncfrequency; }
             set { SetProperty(ref _syncfrequency, value); }
+        }
+
+        private int _batchsize;
+        public int BatchSize
+        {
+            get { return _batchsize; }
+            set { SetProperty(ref _batchsize, value); }
+        }
+
+        private bool _runpreflight;
+        public bool RunPreflight
+        {
+            get { return _runpreflight; }
+            set { SetProperty(ref _runpreflight, value); }
+        }
+
+        private string _conflictresolutionstrategy = "SourceWins";
+        public string ConflictResolutionStrategy
+        {
+            get { return _conflictresolutionstrategy; }
+            set { SetProperty(ref _conflictresolutionstrategy, value); }
+        }
+
+        private bool _createdestinationifnotexists;
+        public bool CreateDestinationIfNotExists
+        {
+            get { return _createdestinationifnotexists; }
+            set { SetProperty(ref _createdestinationifnotexists, value); }
+        }
+
+        private bool _addmissingcolumns;
+        public bool AddMissingColumns
+        {
+            get { return _addmissingcolumns; }
+            set { SetProperty(ref _addmissingcolumns, value); }
+        }
+
+        private string _driftpolicy = "Ignore";
+        public string DriftPolicy
+        {
+            get { return _driftpolicy; }
+            set { SetProperty(ref _driftpolicy, value); }
         }
 
         private string _syncstatus;

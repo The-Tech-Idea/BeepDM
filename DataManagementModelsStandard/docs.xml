@@ -5398,6 +5398,81 @@
             Gets the container name (legacy property, use AppRepoName instead).
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.NuGetSearchResult">
+            <summary>
+            Represents a NuGet package search result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.NuGetSourceConfig">
+            <summary>
+            Configuration for a NuGet package source
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.DriverPackageMapping">
+            <summary>
+            Maps a driver class to the NuGet package that provides it
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.AssemblyLoadStatistics">
+            <summary>
+            Statistics about assembly loading operations
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.SearchNuGetPackagesAsync(System.String,System.Int32,System.Int32,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Searches NuGet for packages matching a keyword.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetNuGetPackageVersionsAsync(System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Gets all available versions for a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.LoadNuggetFromNuGetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
+            <summary>
+            Downloads and loads a NuGet package with all its dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetNuGetSources">
+            <summary>
+            Gets all configured NuGet package sources.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.AddNuGetSource(System.String,System.String,System.Boolean)">
+            <summary>
+            Adds a NuGet package source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.RemoveNuGetSource(System.String)">
+            <summary>
+            Removes a NuGet package source by name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetActiveSourceUrls">
+            <summary>
+            Gets the list of active (enabled) source URLs.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.TrackDriverPackage(System.String,System.String,System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Tracks the association between a driver class and its NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetAllDriverPackageMappings">
+            <summary>
+            Gets all driver-to-package mappings.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.IsDriverFromNuGet(System.String)">
+            <summary>
+            Checks whether a driver was installed from a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetLoadStatistics">
+            <summary>
+            Gets assembly loading statistics.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateRecordClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
             <summary>
             Generates a class with C# record type for immutable data models

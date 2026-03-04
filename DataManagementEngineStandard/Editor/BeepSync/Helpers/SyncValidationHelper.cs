@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
+using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
@@ -105,10 +107,19 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
             try
             {
-                if (!_editor.CheckDataSourceExist(dataSourceName))
+                var ds = _editor.GetDataSource(dataSourceName);
+                if (ds == null)
                 {
                     result.Flag = Errors.Failed;
                     result.Message = $"Data source '{dataSourceName}' does not exist";
+                    return result;
+                }
+
+                var state = DataSourceLifecycleHelper.OpenWithRetryAsync(ds, 3).GetAwaiter().GetResult();
+                if (state != ConnectionState.Open)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Data source '{dataSourceName}' could not be opened (state: {state})";
                 }
                 else
                 {

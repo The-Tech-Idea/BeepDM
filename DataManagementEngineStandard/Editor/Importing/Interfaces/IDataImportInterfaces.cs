@@ -403,6 +403,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Interfaces
         public int BatchSize { get; set; } = 50;
         public bool CreateDestinationIfNotExists { get; set; } = true;
         public bool ApplyDefaults { get; set; } = true;
+        public bool SkipBlanks   { get; set; } = false;
 
         // --- Phase 1 additions ---
         public bool RunMigrationPreflight   { get; set; }

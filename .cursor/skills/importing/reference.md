@@ -1,70 +1,99 @@
+````markdown
 # Data Import Quick Reference
 
-## Basic Import
+## Minimal Import
 
 ```csharp
-using var importManager = new DataImportManager(dmeEditor);
-
-// Configure
-importManager.SourceEntityName = "SourceCustomers";
-importManager.SourceDataSourceName = "ExternalCRM";
-importManager.DestEntityName = "Customers";
-importManager.DestDataSourceName = "MainDatabase";
-
-// Load structure
-importManager.LoadDestEntityStructure("Customers", "MainDatabase");
-
-// Execute
-await importManager.RunImportAsync(progress, cancellationToken, null, batchSize: 100);
-```
-
-## Enhanced Configuration
-
-```csharp
-var config = importManager.CreateImportConfiguration("Source", "SourceDB", "Dest", "DestDB");
-
-// Configure
-config.SourceFilters.Add(new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" });
-config.SelectedFields = new List<string> { "Name", "Email" };
+using var mgr = new DataImportManager(editor);
+var config = mgr.CreateImportConfiguration("SrcEntity","SrcDB","DstEntity","DstDB");
 config.BatchSize = 200;
-config.ApplyDefaults = true;
-
-// Custom transformation
-config.CustomTransformation = (record) => { /* transform */ return record; };
-
-// Execute
-await importManager.RunImportAsync(config, progress, cancellationToken);
+await mgr.RunImportAsync(config, progress, CancellationToken.None);
 ```
 
-## Field Mapping
+## Config Cheat-Sheet
+
+```
+SelectedFields            List<string>
+SourceFilters             List<AppFilter>
+CustomTransformation      Func<object,object>
+ApplyDefaults             bool
+BatchSize / MaxRetries
+CreateDestinationIfNotExists / AddMissingColumns
+DriftPolicy               SchemaDriftPolicy  (AutoAddColumns | Strict | Ignore)
+SyncMode                  SyncMode           (FullRefresh | Incremental | Upsert)
+WatermarkColumn           string
+UpsertKeyColumns          List<string>
+QualityRules              List<IDataQualityRule>
+ErrorStore                IImportErrorStore
+RunHistoryStore           IImportRunHistoryStore
+Staging                   StagingOptions
+```
+
+## Quality Rules
 
 ```csharp
-config.SelectedFields = new List<string> { "ProductCode", "ProductName" };
-config.FieldMappings = new Dictionary<string, string>
-{
-    { "ProdCode", "ProductCode" },
-    { "ProdName", "ProductName" }
-};
+config.QualityRules.Add(new NotNullRule("Email",   DataQualityAction.Block));
+config.QualityRules.Add(new UniqueRule("OrderId",  DataQualityAction.Quarantine));
+config.QualityRules.Add(new RangeRule("Age",0,150, DataQualityAction.Warn));
+config.QualityRules.Add(new RegexRule("Phone", @"^\d+$", DataQualityAction.Block));
+```
+
+## Incremental Sync
+
+```csharp
+config.SyncMode = SyncMode.Incremental;
+config.WatermarkColumn = "UpdatedAt";
+config.LastWatermarkValue = await store.LoadWatermarkAsync(key);
+```
+
+## Error Store & Replay
+
+```csharp
+config.ErrorStore = new JsonFileImportErrorStore();
+// Replay quarantined records later:
+await mgr.ReplayFailedRecordsAsync(contextKey, progress, token);
+```
+
+## Run History
+
+```csharp
+config.RunHistoryStore = new JsonFileImportRunHistoryStore();
+var runs = await config.RunHistoryStore.LoadAsync(key, token);
+```
+
+## Staging
+
+```csharp
+config.Staging = new StagingOptions { Enabled = true, StagingEntitySuffix = "_raw" };
 ```
 
 ## Validation
 
 ```csharp
-var result = importManager.ValidationHelper.ValidateConfiguration(config);
-var result = importManager.ValidationHelper.ValidateDataCompatibility(sourceStructure, destStructure);
+var r = mgr.ValidationHelper.ValidateImportConfiguration(config);
+if (r.Flag != Errors.Ok) return;
 ```
 
-## Progress & Metrics
+## Profiling
 
 ```csharp
-var metrics = importManager.ProgressHelper.GetPerformanceMetrics();
-var errors = importManager.ProgressHelper.GetErrors();
+var profile = await DataProfiler.ProfileAsync(editor, "DB", "Entity", sampleSize: 500);
 ```
 
-## Cancellation & Pause
+## Lifecycle
 
 ```csharp
-importManager.PauseImport();
-importManager.ResumeImport();
-// Cancellation via CancellationToken
+mgr.PauseImport();   mgr.ResumeImport();   mgr.CancelImport();
+var status = mgr.GetImportStatus();
 ```
+
+## Key Locations
+
+```
+DataManagementEngineStandard/Editor/Importing/DataImportManager.*        — orchestrator (4 partials)
+Interfaces/IDataImportInterfaces.cs             — all interfaces + DataImportConfiguration
+Quality/BuiltInRules.cs                         — NotNull/Unique/Range/Regex
+ErrorStore/ | History/ | Staging/ | Sync/       — phase 9-11 stores
+Profiling/DataProfiler.cs
+```
+````

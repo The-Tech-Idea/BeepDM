@@ -10,18 +10,39 @@
             Core partial class containing fields, properties, and constructor.
             </summary>
             <summary>
+            AssemblyHandler partial class - Driver Package Tracking
+            Tracks which NuGet packages provide which drivers.
+            </summary>
+            <summary>
             AssemblyHandler partial class - Helper Methods and Utilities
             </summary>
             <summary>
             AssemblyHandler partial class - Assembly Loading Methods
             </summary>
             <summary>
+            AssemblyHandler partial class - NuGet Search, Download, and Package Operations
+            Implements the new IAssemblyHandler NuGet members.
+            </summary>
+            <summary>
+            AssemblyHandler partial class - NuGet Source Management
+            Manages custom NuGet package sources with persistence.
+            </summary>
+            <summary>
             AssemblyHandler partial class - Assembly Scanning Methods
+            </summary>
+            <summary>
+            AssemblyHandler partial class - Load Statistics
+            Tracks assembly loading performance and outcomes.
             </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Tools.AssemblyHandler._nuggetManager">
             <summary>
             NuGet package manager for loading/unloading nuggets
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.AssemblyHandler._packageDownloader">
+            <summary>
+            Singleton NuGet package downloader — reused across all NuGet operations
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.LoaderExtensionClasses">
@@ -124,6 +145,31 @@
             Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.TrackDriverPackage(System.String,System.String,System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Tracks a driver to its NuGet package source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.UntrackDriverPackage(System.String)">
+            <summary>
+            Removes tracking for a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetDriverPackageMapping(System.String)">
+            <summary>
+            Gets the package mapping for a specific driver class.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetAllDriverPackageMappings">
+            <summary>
+            Gets all driver-to-package mappings.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.IsDriverFromNuGet(System.String)">
+            <summary>
+            Checks whether a driver class was installed from a NuGet package.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CreateInstanceFromString(System.String,System.Object[])">
             <summary>
             Creates an instance of a class from its type name
@@ -171,12 +217,19 @@
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetDrivers(System.Reflection.Assembly)">
             <summary>
-            Gets drivers from an assembly
+            Discovers ADO.NET drivers from an assembly by scanning for IDbConnection, IDbDataAdapter,
+            DbCommandBuilder, IDbTransaction and related types. Found drivers are also stored in
+            <see cref="F:TheTechIdea.Beep.Tools.AssemblyHandler.DataDriversConfig"/> for later use.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ProcessDriverType(System.Reflection.TypeInfo,System.String,System.String,System.String,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig})">
+            <summary>
+            Processes a single type and populates the appropriate driver configuration fields.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.AddEngineDefaultDrivers">
             <summary>
-            Adds engine default drivers
+            Adds engine default drivers (DataViewReader + file-type drivers) to <see cref="F:TheTechIdea.Beep.Tools.AssemblyHandler.DataDriversConfig"/>.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.CheckDriverAlreadyExistinList">
@@ -249,11 +302,6 @@
             Unload a NuGet package by name
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadNuggetFromNuGetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
-            <summary>
-            Download a nugget from NuGet.org and load it into the engine
-            </summary>
-        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.UnloadAssembly(System.String)">
             <summary>
             Unload an assembly by name
@@ -262,6 +310,51 @@
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.String)">
             <summary>
             Send progress message
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.SearchNuGetPackagesAsync(System.String,System.Int32,System.Int32,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Searches NuGet for packages matching a keyword.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetNuGetPackageVersionsAsync(System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Gets all available versions for a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.LoadNuggetFromNuGetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
+            <summary>
+            Downloads and loads a NuGet package with all its dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetNuGetSources">
+            <summary>
+            Gets all configured NuGet sources.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.AddNuGetSource(System.String,System.String,System.Boolean)">
+            <summary>
+            Adds a new NuGet source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.RemoveNuGetSource(System.String)">
+            <summary>
+            Removes a NuGet source by name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.EnableNuGetSource(System.String)">
+            <summary>
+            Enables a NuGet source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.DisableNuGetSource(System.String)">
+            <summary>
+            Disables a NuGet source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetActiveSourceUrls">
+            <summary>
+            Gets the list of active (enabled) source URLs for NuGet operations.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanAssembly(System.Reflection.Assembly)">
@@ -307,6 +400,41 @@
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanExtensionsInAssemblies">
             <summary>
             Scan extensions in project and addin assemblies
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetLoadStatistics">
+            <summary>
+            Gets the current load statistics.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.StartLoadTiming">
+            <summary>
+            Starts timing an assembly load operation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.StopLoadTiming">
+            <summary>
+            Stops timing and records the elapsed time.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.RecordLoadFailure(System.String)">
+            <summary>
+            Records a failed assembly load attempt.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.RecordNuGetSuccess">
+            <summary>
+            Records a successful NuGet package load.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.RecordNuGetFailure">
+            <summary>
+            Records a failed NuGet package load.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ResetStatistics">
+            <summary>
+            Resets all statistics.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.NuggetManager">
@@ -759,6 +887,27 @@
         <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.InstallPackageToAppDirectory(System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
             Installs package files to the application directory.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.SearchPackagesAsync(System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Searches for NuGet packages by keyword.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.GetPackageVersionsAsync(System.String,System.Boolean,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Gets all available versions for a specific package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.IsPackageName(System.String)">
+            <summary>
+            Heuristic check whether a string looks like a NuGet package name
+            (e.g. "Dapper", "Microsoft.Data.SqlClient") vs a plain search term.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.NuggetPackageDownloader.DownloadPackageWithDependenciesAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Collections.Generic.HashSet{System.String})">
+            <summary>
+            Downloads a package with all its dependencies, reporting progress.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.NuggetPluginLoader">
@@ -1748,6 +1897,61 @@
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetCurrentTargetFramework">
             <summary>
             Gets the current target framework identifier (e.g., "net8.0", "net9.0")
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.SearchNuGetPackagesAsync(System.String,System.Int32,System.Int32,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Searches NuGet for packages matching a keyword.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetNuGetPackageVersionsAsync(System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Gets all available versions for a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoadNuggetFromNuGetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.String,System.Boolean)">
+            <summary>
+            Downloads and loads a NuGet package with all its dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetNuGetSources">
+            <summary>
+            Gets all configured NuGet sources.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.AddNuGetSource(System.String,System.String,System.Boolean)">
+            <summary>
+            Adds a new NuGet source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.RemoveNuGetSource(System.String)">
+            <summary>
+            Removes a NuGet source by name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetActiveSourceUrls">
+            <summary>
+            Gets the list of active (enabled) source URLs.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.TrackDriverPackage(System.String,System.String,System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Tracks a driver to its NuGet package source.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllDriverPackageMappings">
+            <summary>
+            Gets all driver-to-package mappings.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.IsDriverFromNuGet(System.String)">
+            <summary>
+            Checks whether a driver was installed from a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetLoadStatistics">
+            <summary>
+            Gets assembly loading statistics.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.ClassCreator">
@@ -7081,108 +7285,32 @@
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetViewSummary">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema,System.String)">
+        <member name="T:TheTechIdea.Beep.Editor.BeepSyncManager">
             <summary>
-            Retrieves records from the source data based on the schema's LastSyncDate and the specified filter operator.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-            <param name="filterOperator">The filter operator to use for comparing the LastSyncDate.</param>
-            <returns>A collection of records from the source data.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetNewRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Retrieves new records from the source data based on the schema's LastSyncDate.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-            <returns>A collection of new records from the source data.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetUpdatedRecordsFromSourceData(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Retrieves updated records from the source data based on the schema's LastSyncDate.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-            <returns>A collection of updated records from the source data.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.Progress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Synchronizes data based on the provided schema, cancellation token, and progress reporter.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-            <param name="token">Cancellation token to handle task cancellation.</param>
-            <param name="progress">Progress reporter to report synchronization progress.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Synchronizes data based on the provided schema.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Asynchronously synchronizes data based on the provided schema, cancellation token, and progress reporter.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-            <param name="token">Cancellation token to handle task cancellation.</param>
-            <param name="progress">Progress reporter to report synchronization progress.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.CreateDestinationEntity(TheTechIdea.Beep.Editor.DataSyncSchema,System.Object,System.Boolean)">
-            <summary>
-            Creates the destination entity by mapping fields from the source entity based on the schema.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-            <param name="sourceData">The source data entity.</param>
-            <param name="isNewRecord">Indicates whether the record is new or an update.</param>
-            <returns>The mapped destination entity.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.LogSyncRun(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Logs the synchronization run data.
-            </summary>
-            <param name="schema">The DataSyncSchema defining the synchronization process.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.GetDataSource(System.String)">
-            <summary>
-            Retrieves the IDataSource instance based on the name.
-            </summary>
-            <param name="dataSourceName">The name of the data source.</param>
-            <returns>The IDataSource instance.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllDataAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
-            <summary>
-            Asynchronously synchronizes all data based on the loaded schemas, cancellation token, and progress reporter.
-            </summary>
-            <param name="token">Cancellation token to handle task cancellation.</param>
-            <param name="progress">Progress reporter to report synchronization progress.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SyncAllData">
-            <summary>
-            Synchronizes all data based on the loaded schemas.
+            Modern sync orchestrator that delegates data transfer to DataImportManager.
+            Manages DataSyncSchema objects and translates them to DataImportConfiguration for execution.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.UpdateDataSourceUsingUpdateLog(System.Collections.Generic.Dictionary{System.DateTime,TheTechIdea.Beep.Editor.EntityUpdateInsertLog})">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)">
             <summary>
-            Synchronizes changes from the update log to the destination data source.
+            Synchronizes data for the given schema using DataImportManager.
             </summary>
-            <param name="sourceList">The source ObservableBindingList containing the changes.</param>
-            <param name="destinationDataSource">The destination IDataSource to apply the changes to.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.ValidateSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema)">
             <summary>
-            Validates the provided schema to ensure all required fields are populated.
+            Synchronous overload for backward compatibility.
             </summary>
-            <param name="schema">The DataSyncSchema to validate.</param>
-            <returns>An IErrorsInfo object containing validation results.</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.DataSyncManager.SendMessege(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.String)">
-            <summary>Sends a message and updates progress based on the result.</summary>
-            <param name="progress">An object that reports progress updates.</param>
-            <param name="token">A cancellation token that can be used to cancel the operation.</param>
-            <param name="refentity">An optional reference to an entity structure.</param>
-            <param name="sc">An optional ETL script detail.</param>
-            <param name="messege">An optional message to send.</param>
-            <remarks>
-            If the error flag is set to "Failed" in the DMEEditor.ErrorObject, a SyncErrorsandTracking object is created and the error count is incremented.
-            </remarks>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Synchronous overload with progress and cancellation.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper">
+            <summary>
+            Helper class for datasource operations used by sync validation/orchestration.
+            Delegates lifecycle and error handling to shared engine helpers.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper">
             <summary>
@@ -7195,24 +7323,6 @@
             Initializes a new instance of the FieldMappingHelper class
             </summary>
             <param name="editor">The DME editor instance</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.MapFields(System.Object,System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
-            <summary>
-            Map fields from source to destination object using field mappings
-            Based on the MapFields method from DataSyncManager
-            </summary>
-            <param name="source">Source object</param>
-            <param name="destination">Destination object</param>
-            <param name="mappedFields">Field mapping definitions</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.CreateDestinationEntity(System.String,System.String)">
-            <summary>
-            Create destination entity instance
-            Based on CreateDestinationEntity pattern from DataSyncManager
-            </summary>
-            <param name="dataSourceName">Name of the destination data source</param>
-            <param name="entityName">Name of the entity</param>
-            <returns>New entity instance</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.FieldMappingHelper.AutoMapFields(System.String,System.String,System.String,System.String)">
             <summary>
@@ -7349,6 +7459,25 @@
             <param name="schema">The sync schema that was cancelled</param>
             <param name="progress">Optional progress reporter</param>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator">
+            <summary>
+            Translates DataSyncSchema into DataImportConfiguration for execution by DataImportManager.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)">
+            <summary>
+            Converts a DataSyncSchema into a DataImportConfiguration that DataImportManager can execute.
+            </summary>
+            <param name="schema">The sync schema to translate</param>
+            <param name="errorStore">Optional error store for quarantined records</param>
+            <param name="historyStore">Optional run history store</param>
+            <returns>A DataImportConfiguration ready for RunImportAsync</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToReverseImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)">
+            <summary>
+            Creates a reverse DataImportConfiguration for bidirectional sync (destination → source).
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper">
             <summary>
             Helper class for sync validation operations
@@ -7436,24 +7565,15 @@
             Interface for field mapping operations
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.MapFields(System.Object,System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
-            <summary>
-            Map fields from source to destination object
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.CreateDestinationEntity(System.String,System.String)">
-            <summary>
-            Create destination entity instance
-            </summary>
-        </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.AutoMapFields(System.String,System.String,System.String,System.String)">
             <summary>
-            Auto-map fields based on name matching
+            Auto-map fields based on name matching between source and destination entity structures.
+            Use to build schema.MappedFields before a sync run.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.ValidateFieldMappings(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.FieldSyncData})">
             <summary>
-            Validate field mappings
+            Validate field mappings for missing or duplicate field names.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper">
@@ -7619,6 +7739,11 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.Metadata">
             <summary>
             Additional metadata about the sync operation
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FromImportRunRecord(TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord)">
+            <summary>
+            Creates a SyncMetrics instance from a completed ImportRunRecord.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Defaults.DefaultsManager">

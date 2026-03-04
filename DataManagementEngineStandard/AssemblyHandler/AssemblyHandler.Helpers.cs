@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -457,37 +461,213 @@ namespace TheTechIdea.Beep.Tools
         #region Driver Management
 
         /// <summary>
-        /// Gets drivers from an assembly
+        /// Discovers ADO.NET drivers from an assembly by scanning for IDbConnection, IDbDataAdapter,
+        /// DbCommandBuilder, IDbTransaction and related types. Found drivers are also stored in
+        /// <see cref="DataDriversConfig"/> for later use.
         /// </summary>
         public List<ConnectionDriversConfig> GetDrivers(Assembly asm)
         {
-            List<ConnectionDriversConfig> drivers = new List<ConnectionDriversConfig>();
+            var drivers = new List<ConnectionDriversConfig>();
+            if (asm == null) return drivers;
 
             try
             {
-                // For now, just return the DataDriversConfig list
-                // The actual driver discovery is handled by DriverDiscoveryAssistant in SharedContextAssemblyHandler
-                // or by specific scanning logic in the original implementation
-                Logger?.WriteLog($"GetDrivers: Scanning assembly {asm.GetName().Name} for drivers");
+                Logger?.WriteLog($"GetDrivers: Scanning assembly {asm.GetName().Name} for ADO.NET drivers");
+
+                var driversConfigDict = new ConcurrentDictionary<string, ConnectionDriversConfig>();
+                bool foundAny = false;
+
+                string[] asmNameParts = asm.FullName.Split(',');
+                string driverVersion = asmNameParts.Length > 1
+                    ? asmNameParts[1].Substring(asmNameParts[1].IndexOf("=") + 1).Trim()
+                    : "1.0";
+                string packageName = asmNameParts[0];
+
+                // Gather candidate types
+                List<Type> relevantTypes;
+                try
+                {
+                    relevantTypes = (asm.ExportedTypes?.ToList()) ??
+                        asm.GetTypes()
+                           .Where(t =>
+                                typeof(IDbDataAdapter).IsAssignableFrom(t) ||
+                                typeof(IDbConnection).IsAssignableFrom(t) ||
+                                (t.BaseType != null && t.BaseType.ToString().Contains("DbCommandBuilder")) ||
+                                typeof(IDbTransaction).IsAssignableFrom(t) ||
+                                t.IsSubclassOf(typeof(DbConnection)) ||
+                                t.IsSubclassOf(typeof(DbCommand)) ||
+                                t.IsSubclassOf(typeof(DbDataReader)) ||
+                                t.IsSubclassOf(typeof(DbParameter)) ||
+                                t.IsSubclassOf(typeof(DbTransaction)))
+                           .ToList();
+                }
+                catch
+                {
+                    return drivers;
+                }
+
+                // Special case: System.Data.SqlClient
+                if (relevantTypes == null || relevantTypes.Count == 0)
+                {
+                    if (packageName == "System.Data.SqlClient")
+                    {
+                        var sqlDriver = new ConnectionDriversConfig
+                        {
+                            version = driverVersion,
+                            AdapterType = packageName + ".SqlDataAdapter",
+                            DbConnectionType = packageName + ".SqlConnection",
+                            CommandBuilderType = packageName + ".SqlCommandBuilder",
+                            DbTransactionType = packageName + ".SqlTransaction",
+                            PackageName = packageName,
+                            DriverClass = packageName,
+                            dllname = asm.ManifestModule.Name,
+                            ADOType = true
+                        };
+                        drivers.Add(sqlDriver);
+                        DataDriversConfig.Add(sqlDriver);
+                        return drivers;
+                    }
+                    return drivers;
+                }
+
+                // Process types (parallel for large sets)
+                if (relevantTypes.Count > 50)
+                {
+                    Parallel.ForEach(relevantTypes, type =>
+                    {
+                        if (type.BaseType == null) return;
+                        if (ProcessDriverType(type.GetTypeInfo(), packageName, driverVersion, type.Module.Name, driversConfigDict))
+                            foundAny = true;
+                    });
+                }
+                else
+                {
+                    foreach (var type in relevantTypes)
+                    {
+                        if (type.BaseType == null) continue;
+                        if (ProcessDriverType(type.GetTypeInfo(), packageName, driverVersion, type.Module.Name, driversConfigDict))
+                            foundAny = true;
+                    }
+                }
+
+                if (foundAny)
+                {
+                    drivers.AddRange(driversConfigDict.Values);
+                    foreach (var d in driversConfigDict.Values)
+                    {
+                        if (!DataDriversConfig.Any(x => x.PackageName == d.PackageName))
+                            DataDriversConfig.Add(d);
+                    }
+                }
+
+                Logger?.WriteLog($"GetDrivers: Found {drivers.Count} driver(s) in {packageName}");
             }
             catch (Exception ex)
             {
-                Logger?.WriteLog($"GetDrivers: Error getting drivers from assembly: {ex.Message}");
+                Logger?.WriteLog($"GetDrivers: Error scanning assembly: {ex.Message}");
             }
 
             return drivers;
         }
 
         /// <summary>
-        /// Adds engine default drivers
+        /// Processes a single type and populates the appropriate driver configuration fields.
+        /// </summary>
+        private bool ProcessDriverType(TypeInfo typeInfo, string packageName, string version,
+            string moduleName, ConcurrentDictionary<string, ConnectionDriversConfig> dict)
+        {
+            bool found = false;
+
+            var cfg = dict.GetOrAdd(packageName, key => new ConnectionDriversConfig
+            {
+                PackageName = key,
+                DriverClass = key,
+                version = version,
+                dllname = moduleName,
+                ADOType = true
+            });
+
+            if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbDataAdapter)))
+            {
+                cfg.AdapterType = typeInfo.FullName;
+                found = true;
+            }
+            else if (typeInfo.BaseType != null && typeInfo.BaseType.ToString().Contains("DbCommandBuilder"))
+            {
+                cfg.CommandBuilderType = typeInfo.FullName;
+                found = true;
+            }
+            else if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbConnection)) || typeof(DbConnection).IsAssignableFrom(typeInfo))
+            {
+                cfg.DbConnectionType = typeInfo.FullName;
+                found = true;
+            }
+            else if (typeInfo.ImplementedInterfaces.Contains(typeof(IDbTransaction)) || typeof(DbTransaction).IsAssignableFrom(typeInfo))
+            {
+                cfg.DbTransactionType = typeInfo.FullName;
+                found = true;
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// Adds engine default drivers (DataViewReader + file-type drivers) to <see cref="DataDriversConfig"/>.
         /// </summary>
         public bool AddEngineDefaultDrivers()
         {
             try
             {
-                // Add default drivers if needed
-                // This can be extended to add specific default drivers
-                Logger?.WriteLog("AddEngineDefaultDrivers: Adding default drivers");
+                Logger?.WriteLog("AddEngineDefaultDrivers: Registering default drivers");
+
+                // Always add the DataViewReader driver
+                if (!DataDriversConfig.Any(d => d.PackageName == "DataViewReader"))
+                {
+                    DataDriversConfig.Add(new ConnectionDriversConfig
+                    {
+                        AdapterType = "DEFAULT",
+                        dllname = "DataManagementEngine",
+                        PackageName = "DataViewReader",
+                        DriverClass = "DataViewReader",
+                        version = "1"
+                    });
+                }
+
+                // Build file-type drivers from discovered data sources
+                var fileSources = DataSourcesClasses?
+                    .Where(o => o.classProperties != null)
+                    .Where(p => p.classProperties.Category == DatasourceCategory.FILE)
+                    .ToList();
+
+                if (fileSources != null)
+                {
+                    foreach (var item in fileSources)
+                    {
+                        List<string> extensions = item.classProperties.FileType?.Split(',').ToList();
+                        if (extensions == null) continue;
+
+                        foreach (string extension in extensions)
+                        {
+                            if (DataDriversConfig.Any(d => d.PackageName == item.className && d.extensionstoHandle == item.classProperties.FileType))
+                                continue;
+
+                            DataDriversConfig.Add(new ConnectionDriversConfig
+                            {
+                                AdapterType = "DEFAULT",
+                                dllname = "DataManagementEngine",
+                                PackageName = item.className,
+                                DriverClass = item.className,
+                                classHandler = item.className,
+                                iconname = extension.Trim() + ".ico",
+                                extensionstoHandle = item.classProperties.FileType,
+                                DatasourceCategory = DatasourceCategory.FILE,
+                                version = "1"
+                            });
+                        }
+                    }
+                }
+
+                Logger?.WriteLog($"AddEngineDefaultDrivers: Total drivers now {DataDriversConfig.Count}");
                 return true;
             }
             catch (Exception ex)
