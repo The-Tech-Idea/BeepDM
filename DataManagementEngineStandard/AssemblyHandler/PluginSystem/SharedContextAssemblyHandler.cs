@@ -34,8 +34,6 @@ namespace TheTechIdea.Beep.Tools
     private readonly DriverDiscoveryAssistant _driverAssistant;
     // New scanning abstraction
     private readonly IScanningService _scanningService;
-    // NuggetManager for nugget package handling
-    private readonly NuggetManager _nuggetManager;
         private readonly PluginRegistry _pluginRegistry;
         private readonly PluginInstaller _pluginInstaller;
         
@@ -142,9 +140,6 @@ namespace TheTechIdea.Beep.Tools
             _pluginInstaller = new PluginInstaller(_pluginRegistry, Logger);
             _sharedContextManager = new SharedContextManager(Logger, useSingleSharedContext: true, registry);
 
-            // Initialize NuggetManager for nugget package handling
-            _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);
-
             // Initialize retained assistant and scanning service
             _driverAssistant = new DriverDiscoveryAssistant(_sharedContextManager, ConfigEditor, Logger);
             _scanningService = new ScanningService(_sharedContextManager, ConfigEditor, Logger);
@@ -156,7 +151,7 @@ namespace TheTechIdea.Beep.Tools
             // This ensures that when any code requests an assembly, we check the shared context first
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
-            Logger?.LogWithContext("SharedContextAssemblyHandler initialized with integrated plugin system and NuggetManager", null);
+            Logger?.LogWithContext("SharedContextAssemblyHandler initialized with integrated plugin system and NuGet SDK downloader", null);
         }
         #endregion
 
@@ -169,7 +164,19 @@ namespace TheTechIdea.Beep.Tools
             Assembly loadedAssembly = null;
             try
             {
-                LoadAssembly( path, FolderFileTypes.SharedAssembly);
+                var loadedCountBefore = _loadedAssemblies.Count;
+                LoadAssembly(path, FolderFileTypes.SharedAssembly);
+                loadedAssembly = _loadedAssemblies
+                    .Skip(loadedCountBefore)
+                    .FirstOrDefault();
+
+                if (loadedAssembly == null && !string.IsNullOrWhiteSpace(path))
+                {
+                    var expectedName = Path.GetFileNameWithoutExtension(path);
+                    loadedAssembly = _loadedAssemblies.FirstOrDefault(a =>
+                        a?.GetName()?.Name != null &&
+                        a.GetName().Name.Equals(expectedName, StringComparison.OrdinalIgnoreCase));
+                }
 
             }
             catch (FileLoadException loadEx)
@@ -868,7 +875,9 @@ namespace TheTechIdea.Beep.Tools
                                   (c.FolderFilesType == FolderFileTypes.OtherDLL ||
                                    c.FolderFilesType == FolderFileTypes.ConnectionDriver ||
                                    c.FolderFilesType == FolderFileTypes.ProjectClass ||
-                                   c.FolderFilesType == FolderFileTypes.DataSources));
+                                   c.FolderFilesType == FolderFileTypes.DataSources ||
+                                   c.FolderFilesType == FolderFileTypes.SharedAssembly ||
+                                   c.FolderFilesType == FolderFileTypes.LoaderExtensions));
 
                     foreach (var folder in allFolders)
                     {
@@ -881,14 +890,24 @@ namespace TheTechIdea.Beep.Tools
                             var resolvedFolderPath = ResolveFrameworkSpecificPath(folder.FolderPath);
                             var di = new DirectoryInfo(resolvedFolderPath);
                             
-                            // Search in resolved path first (TopDirectoryOnly to avoid wrong framework versions)
+                            // Search in resolved path first
                             var module = di.GetFiles($"{simpleName}.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+
+                            // Package layouts often place dependencies under lib/runtimes; probe recursively if needed
+                            if (module == null)
+                            {
+                                module = di.GetFiles($"{simpleName}.dll", SearchOption.AllDirectories).FirstOrDefault();
+                            }
                             
                             // If not found and we're in a framework-specific path, try parent folder too
                             if (module == null && resolvedFolderPath != folder.FolderPath)
                             {
                                 di = new DirectoryInfo(folder.FolderPath);
                                 module = di.GetFiles($"{simpleName}.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                                if (module == null)
+                                {
+                                    module = di.GetFiles($"{simpleName}.dll", SearchOption.AllDirectories).FirstOrDefault();
+                                }
                             }
                             
                             if (module != null && _sharedContextManager != null)
@@ -1127,18 +1146,15 @@ namespace TheTechIdea.Beep.Tools
         try
         {
             ErrorObject.Flag = Errors.Ok;
-            
-            // Use NuggetManager to load the nugget with isolated context for hot-reload
-            var result = _nuggetManager.LoadNugget(path, useIsolatedContext: true);
 
-            if (result)
+            var nuggetId = $"DirectNugget_{Path.GetFileNameWithoutExtension(path)}_{DateTime.UtcNow.Ticks}";
+            var nuggetInfo = _sharedContextManager.LoadNuggetAsync(path, nuggetId).GetAwaiter().GetResult();
+            var result = nuggetInfo?.LoadedAssemblies != null && nuggetInfo.LoadedAssemblies.Count > 0;
+
+            if (result && nuggetInfo != null)
             {
-                // Get loaded assemblies from nugget
-                var nuggetName = Path.GetFileNameWithoutExtension(path);
-                var nuggetAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
-
                 // Add to tracking lists
-                foreach (var assembly in nuggetAssemblies)
+                foreach (var assembly in nuggetInfo.LoadedAssemblies)
                 {
                     if (!_loadedAssemblies.Contains(assembly))
                     {
@@ -1155,7 +1171,7 @@ namespace TheTechIdea.Beep.Tools
                     _scanningService?.ScanAssembly(assembly);
                 }
 
-                Logger?.LogWithContext($"Successfully loaded nugget: {nuggetName}", null);
+                Logger?.LogWithContext($"Successfully loaded nugget via shared context: {nuggetInfo.Id}", null);
             }
 
             return result;
@@ -1178,16 +1194,30 @@ namespace TheTechIdea.Beep.Tools
         try
         {
             ErrorObject.Flag = Errors.Ok;
-            
-            var result = _nuggetManager.UnloadNugget(nuggetname);
+
+            var nuggetInfo = _sharedContextManager.GetNugget(nuggetname)
+                ?? _sharedContextManager.GetLoadedNuggets()
+                    .FirstOrDefault(n =>
+                        string.Equals(n?.Id, nuggetname, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(n?.Name, nuggetname, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(Path.GetFileNameWithoutExtension(n?.SourcePath ?? string.Empty), nuggetname, StringComparison.OrdinalIgnoreCase));
+
+            if (nuggetInfo == null)
+            {
+                Logger?.LogWithContext($"Nugget not found: {nuggetname}", null);
+                return false;
+            }
+
+            var result = _sharedContextManager.UnloadNugget(nuggetInfo.Id);
 
             if (result)
             {
-                Logger?.LogWithContext($"Successfully unloaded nugget: {nuggetname}", null);
+                SyncLocalAssemblyTrackingFromSharedContext();
+                Logger?.LogWithContext($"Successfully unloaded nugget: {nuggetInfo.Id}", null);
             }
             else
             {
-                Logger?.LogWithContext($"Nugget not found: {nuggetname}", null);
+                Logger?.LogWithContext($"Failed to unload nugget: {nuggetInfo.Id}", null);
             }
 
             return result;
@@ -1217,23 +1247,28 @@ namespace TheTechIdea.Beep.Tools
 
             if (assembly != null)
             {
-                // Remove from tracking lists
+                var containingNugget = _sharedContextManager.GetLoadedNuggets()
+                    .FirstOrDefault(n => n?.LoadedAssemblies?.Any(a =>
+                        ReferenceEquals(a, assembly) ||
+                        (a?.GetName()?.Name != null && a.GetName().Name.Equals(assembly.GetName().Name, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(a?.Location) && !string.IsNullOrWhiteSpace(assembly.Location) && a.Location.Equals(assembly.Location, StringComparison.OrdinalIgnoreCase))) == true);
+
+                if (containingNugget != null)
+                {
+                    var unloaded = _sharedContextManager.UnloadNugget(containingNugget.Id);
+                    if (!unloaded)
+                    {
+                        Logger?.LogWithContext($"Failed to unload containing nugget: {containingNugget.Id}", null);
+                        return false;
+                    }
+                    SyncLocalAssemblyTrackingFromSharedContext();
+                    Logger?.LogWithContext($"Successfully unloaded assembly '{assemblyname}' via nugget '{containingNugget.Id}'", null);
+                    return true;
+                }
+
                 _loadedAssemblies.Remove(assembly);
-
-                var assemblyRep = _assemblies.FirstOrDefault(a => a.DllLib == assembly);
-                if (assemblyRep != null)
-                {
-                    _assemblies.Remove(assemblyRep);
-                }
-
-                // Check if this assembly belongs to a nugget and try to find the nugget
-                var nuggetName = _nuggetManager.FindNuggetByAssemblyPath(assembly.Location);
-                if (!string.IsNullOrEmpty(nuggetName))
-                {
-                    _nuggetManager.UnloadNugget(nuggetName);
-                }
-
-                Logger?.LogWithContext($"Successfully unloaded assembly: {assemblyname}", null);
+                _assemblies.RemoveAll(a => a?.DllLib == assembly);
+                Logger?.LogWithContext($"Assembly '{assemblyname}' removed from local tracking (no nugget owner found)", null);
                 return true;
             }
 
@@ -1248,6 +1283,13 @@ namespace TheTechIdea.Beep.Tools
             Logger?.LogWithContext($"Error unloading assembly: {assemblyname}", ex);
             return false;
         }
+    }
+
+    private void SyncLocalAssemblyTrackingFromSharedContext()
+    {
+        var sharedAssemblies = _sharedContextManager.GetSharedAssemblies();
+        _loadedAssemblies.RemoveAll(a => a == null || !sharedAssemblies.Contains(a));
+        _assemblies.RemoveAll(a => a?.DllLib == null || !sharedAssemblies.Contains(a.DllLib));
     }
 
     #endregion
@@ -1560,22 +1602,29 @@ namespace TheTechIdea.Beep.Tools
             var loadedAssemblies = new List<Assembly>();
             try
             {
+                if (_sharedContextManager.IsSingleSharedContextMode != useSingleSharedContext)
+                {
+                    await _sharedContextManager.SetSharedContextModeAsync(useSingleSharedContext);
+                }
+
                 var sourceList = sources?.ToList() ?? GetActiveSourceUrls();
                 var results = await _packageDownloader.DownloadPackageWithDependenciesAsync(packageName, version, sourceList);
 
                 foreach (var kvp in results)
                 {
                     var path = kvp.Value;
-                    var useIsolated = !useSingleSharedContext;
-                    var loaded = _nuggetManager.LoadNugget(path, useIsolated);
-                    if (loaded)
+                    var nuggetInfo = await _sharedContextManager.LoadNuggetAsync(path, $"NuGet_{kvp.Key}_{DateTime.UtcNow.Ticks}");
+                    if (nuggetInfo?.LoadedAssemblies != null && nuggetInfo.LoadedAssemblies.Count > 0)
                     {
-                        var nuggetName = Path.GetFileNameWithoutExtension(path.TrimEnd(Path.DirectorySeparatorChar));
-                        var nusAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
-                        foreach (var a in nusAssemblies)
+                        foreach (var a in nuggetInfo.LoadedAssemblies)
                         {
                             if (!_loadedAssemblies.Contains(a)) _loadedAssemblies.Add(a);
                             if (!loadedAssemblies.Contains(a)) loadedAssemblies.Add(a);
+
+                            if (!_assemblies.Any(x => x.DllLib == a))
+                            {
+                                _assemblies.Add(new assemblies_rep(a, path, a.Location, FolderFileTypes.Nugget));
+                            }
                         }
 
                         try
@@ -1606,6 +1655,7 @@ namespace TheTechIdea.Beep.Tools
                     }
                     else
                     {
+                        Logger?.LogWithContext($"LoadNuggetFromNuGetAsync: SharedContextManager failed to load package '{kvp.Key}' from '{path}'", null);
                         _loadStatistics.NuGetPackagesFailed++;
                     }
                 }

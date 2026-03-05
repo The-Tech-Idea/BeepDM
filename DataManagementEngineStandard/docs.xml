@@ -8604,6 +8604,12 @@
             Transforms data based on mapping and/or custom transformation logic.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ETL.ETLDataCopier.NormalizeSourceRows(System.Object)">
+            <summary>
+            Normalizes source payloads into an object sequence for transformation.
+            Handles DataTable, binding lists, generic/non-generic enumerables and single objects.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ETL.ETLDataCopier.ParallelInsertDataAsync(TheTechIdea.Beep.IDataSource,System.String,System.Collections.Generic.IEnumerable{System.Object},System.Int32,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Int32)">
             <summary>
             Inserts data into the destination in parallel batches.
@@ -8649,12 +8655,12 @@
             <value>The PassedArgs object.</value>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.ETL.ETLEditor.ScriptCount">
-            <summary>Gets or sets the count of scripts.</summary>
-            <value>The count of scripts.</value>
+            <summary>Gets or sets the total script steps for the current ETL run.</summary>
+            <value>Total number of script detail steps being executed.</value>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.ETL.ETLEditor.CurrentScriptRecord">
-            <summary>Gets or sets the current script record.</summary>
-            <value>The current script record.</value>
+            <summary>Gets or sets the current script/record index for progress reporting.</summary>
+            <value>Step index for step-level events and record index for legacy record loops.</value>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.ETL.ETLEditor.StopErrorCount">
             <summary>Gets or sets the stop error count.</summary>
@@ -8671,6 +8677,14 @@
         <member name="P:TheTechIdea.Beep.Editor.ETL.ETLEditor.Script">
             <summary>Gets or sets the ETL script for HDR processing.</summary>
             <value>The ETL script for HDR processing.</value>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ETL.ETLEditor.BeginRunTelemetry(System.String,System.Int32)">
+            <summary>
+            Progress semantics:
+            ScriptCount is the total number of script steps in the current run.
+            CurrentScriptRecord is the current step index for step-level updates, and
+            may be reused by legacy record loops for record-level updates.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ETL.ETLEditor.CreateScriptHeader(TheTechIdea.Beep.IDataSource,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>Creates the header of an ETL script.</summary>

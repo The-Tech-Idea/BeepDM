@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 
@@ -11,6 +11,8 @@ namespace TheTechIdea.Beep.Editor
         {
             Id = 1;
             GuidId = Guid.NewGuid().ToString();
+            ScriptFormatVersion = "2.0";
+            ScriptSchemaVersion = 2;
         }
       //  [JsonProperty("ScriptDTL")]
         public List<ETLScriptDet> ScriptDetails { get; set; } = new List<ETLScriptDet>();
@@ -36,6 +38,10 @@ namespace TheTechIdea.Beep.Editor
         public string GuidId { get; set; }
       //  [JsonProperty("id")]
         public int Id { get; set; }
+        public string ScriptFormatVersion { get; set; }
+        public int ScriptSchemaVersion { get; set; }
+        public string LastRunCorrelationId { get; set; }
+        public string LastRunSummary { get; set; }
 
 
     }

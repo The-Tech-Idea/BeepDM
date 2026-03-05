@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -73,6 +74,40 @@ namespace TheTechIdea.Beep.Editor.ETL
             }
 
             return _dmeEditor.ErrorObject;
+        }
+        public IErrorsInfo SaveScript(string dataSourceName, ETLScriptHDR script)
+        {
+            if (script == null)
+            {
+                _dmeEditor.ErrorObject.Flag = Errors.Failed;
+                _dmeEditor.ErrorObject.Message = "Cannot save null script.";
+                return _dmeEditor.ErrorObject;
+            }
+
+            if (string.IsNullOrWhiteSpace(script.ScriptSource))
+            {
+                script.ScriptSource = dataSourceName;
+            }
+
+            if (string.IsNullOrWhiteSpace(script.ScriptName))
+            {
+                script.ScriptName = string.IsNullOrWhiteSpace(dataSourceName) ? script.GuidId : dataSourceName;
+            }
+
+            return SaveScript(script);
+        }
+        public ETLScriptHDR LoadScriptByDataSource(string dataSourceName)
+        {
+            if (string.IsNullOrWhiteSpace(dataSourceName))
+            {
+                return null;
+            }
+
+            var scripts = LoadScripts();
+            return scripts.FirstOrDefault(s =>
+                string.Equals(s.ScriptSource, dataSourceName, StringComparison.InvariantCultureIgnoreCase) ||
+                string.Equals(s.ScriptDestination, dataSourceName, StringComparison.InvariantCultureIgnoreCase) ||
+                string.Equals(s.ScriptName, dataSourceName, StringComparison.InvariantCultureIgnoreCase));
         }
 
         public IErrorsInfo DeleteScript(string scriptId)
@@ -230,12 +265,33 @@ namespace TheTechIdea.Beep.Editor.ETL
             await InsertDataAsync(destDs, detail.DestinationEntityName, transformedData, progress, token);
         }
 
-        private async Task<IEnumerable<object>> FetchSourceDataAsync(IDataSource sourceDs, string srcEntity, CancellationToken token)
+        private IEnumerable<object> NormalizeSourceEnumerable(object sourceData)
         {
-            return await Task.Run(() => sourceDs.GetEntity(srcEntity, null), token) as IEnumerable<object>;
+            if (sourceData == null)
+            {
+                return null;
+            }
+
+            if (sourceData is IEnumerable<object> typed)
+            {
+                return typed;
+            }
+
+            if (sourceData is IEnumerable enumerable)
+            {
+                return enumerable.Cast<object>().ToList();
+            }
+
+            return new List<object> { sourceData };
+        }
+        private Task<IEnumerable<object>> FetchSourceDataAsync(IDataSource sourceDs, string srcEntity, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            var raw = sourceDs.GetEntity(srcEntity, null);
+            return Task.FromResult(NormalizeSourceEnumerable(raw));
         }
 
-        private async Task InsertDataAsync(
+        private Task InsertDataAsync(
             IDataSource destDs,
             string destEntity,
             IEnumerable<object> data,
@@ -249,18 +305,17 @@ namespace TheTechIdea.Beep.Editor.ETL
 
             foreach (var batch in batches)
             {
-                if (token.IsCancellationRequested)
-                    break;
+                token.ThrowIfCancellationRequested();
+                var batchList = batch as IList<object> ?? batch.ToList();
 
-                foreach (var record in batch)
+                foreach (var record in batchList)
                 {
-                    if (token.IsCancellationRequested)
-                        break;
+                    token.ThrowIfCancellationRequested();
 
                     destDs.InsertEntity(destEntity, record);
                 }
 
-                processedCount += batch.Count();
+                processedCount += batchList.Count;
 
                 progress?.Report(new PassedArgs
                 {
@@ -271,6 +326,7 @@ namespace TheTechIdea.Beep.Editor.ETL
             }
 
             _dmeEditor.AddLogMessage("ETLScriptManager", $"Successfully inserted {processedCount}/{totalCount} records into {destEntity}.", DateTime.Now, -1, null, Errors.Ok);
+            return Task.CompletedTask;
         }
 
         #endregion

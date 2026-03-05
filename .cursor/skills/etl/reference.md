@@ -1,62 +1,165 @@
 # ETL Quick Reference
 
-## Basic Workflow
+## ETLEditor Initialization
 
 ```csharp
 var etl = new ETLEditor(dmeEditor);
-
-// 1. Create script header
-etl.CreateScriptHeader(sourceDs, progress, cancellationToken);
-
-// 2. Filter/modify (optional)
-etl.Script.ScriptDetails = etl.Script.ScriptDetails.Where(...).ToList();
-
-// 3. Execute
-await etl.RunCreateScript(progress, cancellationToken, copydata: true, useEntityStructure: true);
+var progress = new Progress<PassedArgs>(p => Console.WriteLine(p.Messege));
+var token = CancellationToken.None;
 ```
 
-## Entity Creation
+## Full Migration (Create + Copy Data)
 
 ```csharp
-// Create entities from source
-etl.CreateScriptHeader(sourceDs, progress, cancellationToken);
-await etl.RunCreateScript(progress, cancellationToken, copydata: false);
+etl.CreateScriptHeader(sourceDs, progress, token);
 
-// Create specific entities
-var scripts = etl.GetCreateEntityScript(sourceDs, entityNames, progress, cancellationToken);
-```
-
-## Data Copying
-
-```csharp
-// Copy data
-await etl.RunCreateScript(progress, cancellationToken, copydata: true);
-
-// Copy specific entity
-await etl.RunCopyEntityScript(script, progress, cancellationToken);
-```
-
-## Import with Mapping
-
-```csharp
-// Create mapping
-var (error, entityMap) = MappingManager.CreateEntityMap(dmeEditor, "Source", "SourceDB", "Dest", "DestDB");
-var selected = entityMap.MappedEntities.First();
-
-// Create and run import script
-etl.CreateImportScript(entityMap, selected);
-await etl.RunImportScript(progress, cancellationToken);
-```
-
-## Error Handling
-
-```csharp
-etl.StopErrorCount = 10; // Stop after 10 errors
-
-// Check logs
-foreach (var log in etl.LoadDataLogs)
+// Point scripts to destination datasource
+foreach (var step in etl.Script.ScriptDetails)
 {
-    if (log.Flag == Errors.Failed)
-        Console.WriteLine($"Error: {log.Message}");
+    step.DestinationDataSourceName = destDs.DatasourceName;
 }
+
+// Optional: migrate only selected entities
+etl.Script.ScriptDetails = etl.Script.ScriptDetails
+    .Where(s => s.SourceEntityName == "Customers" || s.SourceEntityName == "Orders")
+    .ToList();
+
+var result = await etl.RunCreateScript(progress, token, copydata: true, useEntityStructure: true);
+if (result.Flag != Errors.Ok)
+{
+    Console.WriteLine(result.Message);
+}
+```
+
+## Structure-Only Migration
+
+```csharp
+var createOnlyScripts = etl.GetCreateEntityScript(
+    sourceDs,
+    new List<string> { "Customers", "Orders" },
+    progress,
+    token,
+    copydata: false);
+
+foreach (var s in createOnlyScripts)
+{
+    s.DestinationDataSourceName = destDs.DatasourceName;
+}
+
+etl.Script.ScriptDetails = createOnlyScripts;
+await etl.RunCreateScript(progress, token, copydata: false, useEntityStructure: true);
+```
+
+## Data-Only Copy into Existing Schema
+
+```csharp
+var entityStructures = new List<EntityStructure>
+{
+    sourceDs.GetEntityStructure("Customers", true),
+    sourceDs.GetEntityStructure("Orders", true)
+}.Where(e => e != null).ToList();
+
+var copyScripts = etl.GetCopyDataEntityScript(destDs, entityStructures, progress, token);
+etl.Script.ScriptDetails = copyScripts;
+
+await etl.RunCreateScript(progress, token, copydata: true, useEntityStructure: true);
+```
+
+## Direct Copy Methods (No Script Editing)
+
+```csharp
+// Copy one entity structure
+etl.CopyEntityStructure(sourceDs, destDs, "Customers", "Customers", progress, token, CreateMissingEntity: true);
+
+// Copy one entity data set
+etl.CopyEntityData(sourceDs, destDs, "Customers", "Customers", progress, token, CreateMissingEntity: true);
+
+// Copy all datasource entities
+etl.CopyDatasourceData(sourceDs, destDs, progress, token, CreateMissingEntity: true);
+```
+
+## Mapping Import with Preflight Validation
+
+```csharp
+// Optional caller-side validation (ETL runtime also performs preflight internally).
+var validator = new ETLValidator(dmeEditor);
+var mappingCheck = validator.ValidateEntityMapping(entityMap);
+if (mappingCheck.Flag != Errors.Ok) throw new InvalidOperationException(mappingCheck.Message);
+
+var selectedMapping = entityMap.MappedEntities.First();
+etl.CreateImportScript(entityMap, selectedMapping);
+var importResult = await etl.RunImportScript(progress, token, useEntityStructure: true);
+```
+
+## Entity Consistency Check Before Copy
+
+```csharp
+var validator = new ETLValidator(dmeEditor);
+var consistency = validator.ValidateEntityConsistency(sourceDs, destDs, "Customers", "Customers");
+if (consistency.Flag != Errors.Ok)
+{
+    foreach (var err in consistency.Errors)
+    {
+        Console.WriteLine(err.Message);
+    }
+}
+```
+
+## Runtime Controls and Logging
+
+```csharp
+etl.StopErrorCount = 10; // stop after 10 failures
+
+var result = await etl.RunCreateScript(progress, token, copydata: true, useEntityStructure: true);
+
+foreach (var line in etl.LoadDataLogs)
+{
+    Console.WriteLine(line.InputLine);
+}
+
+if (result.Flag != Errors.Ok)
+{
+    Console.WriteLine($"ETL failed: {result.Message}");
+}
+```
+
+## Save and Reload ETL Scripts
+
+```csharp
+// SaveETL validates and persists through ETLScriptManager canonical path.
+etl.SaveETL(destDs.DatasourceName);
+
+// LoadETL resolves manager path first, then legacy fallback path.
+etl.LoadETL(destDs.DatasourceName);
+
+// Rerun loaded script
+await etl.RunCreateScript(progress, token, copydata: true, useEntityStructure: true);
+```
+
+## Review ETL Evidence Artifacts
+
+```csharp
+var evidenceRoot = Path.Combine(dmeEditor.ConfigEditor.ExePath, "Scripts", "ETL_Evidence");
+var rolling = Path.Combine(evidenceRoot, "ETL_EVIDENCE_SUMMARY.md");
+var weekly = Path.Combine(evidenceRoot, "ETL_EVIDENCE_CURRENT_WEEK.md");
+var monthly = Path.Combine(evidenceRoot, "ETL_EVIDENCE_CURRENT_MONTH.md");
+```
+
+## ETLDataCopier for Async Batch Copy
+
+```csharp
+var copier = new ETLDataCopier(dmeEditor);
+
+var copyResult = await copier.CopyEntityDataAsync(
+    sourceDs,
+    destDs,
+    srcEntity: "Customers",
+    destEntity: "Customers",
+    progress: progress,
+    token: token,
+    map_DTL: null,
+    customTransformation: null,
+    batchSize: 500,
+    enableParallel: true,
+    maxRetries: 3);
 ```

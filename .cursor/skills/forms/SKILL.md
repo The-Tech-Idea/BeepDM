@@ -1,77 +1,62 @@
 ---
 name: forms
-description: Guidance for FormsManager usage to provide Oracle Forms style behavior, including master-detail blocks and form operations.
+description: Entry-point guidance for FormsManager orchestration in DataManagementEngineStandard/Editor/Forms. Use when implementing Oracle Forms style behavior, master-detail blocks, mode transitions, navigation, dirty-state handling, event triggers, and performance/configuration patterns.
 ---
 
-# Forms Management Guide
+# Forms Manager Guide
 
-Use this skill when implementing master-detail forms, handling mode transitions, and coordinating unit of work blocks.
+Use this skill as the top-level entry point for `FormsManager` orchestration.  
+For deeper workflows, read the specialized skills listed below.
 
-## Core Concepts
-- FormsManager coordinates blocks and navigation
-- Blocks are backed by UnitofWork<T>
-- Relationships drive detail filtering
+## What This Module Is
+- `FormsManager` is the coordinator for block registration, relationships, form lifecycle, navigation, mode transitions, and commit/rollback orchestration.
+- It delegates core behavior to helpers: `RelationshipManager`, `DirtyStateManager`, `EventManager`, `FormsSimulationHelper`, `PerformanceManager`, `ConfigurationManager`.
+- It is split into partial classes for maintainability: core registration, form operations, navigation, mode transitions, and enhanced operations.
 
-## Workflow
+## Use This Skill When
+- You need to wire a new master-detail form with `UnitOfWork` blocks.
+- You need safe transitions between Query and CRUD behavior.
+- You need cross-block commit/rollback with dirty-state management.
+- You are debugging trigger/event behavior or navigation side effects.
+- You are tuning cache/performance and form-level configuration defaults.
+
+## Fast Workflow
 1. Create `FormsManager(editor)`.
-2. Register master and detail blocks with `UnitofWork<T>`.
-3. Create relationships with master key and detail foreign key.
-4. Use form operations like `CommitFormAsync`, `ClearFormAsync`.
+2. Register all blocks with `RegisterBlock(...)` and valid `IEntityStructure`.
+3. Define parent-child links with `CreateMasterDetailRelation(...)`.
+4. Open form and run mode transitions (`EnterQueryModeAsync` -> `ExecuteQueryAndEnterCrudModeAsync`).
+5. Use navigation/data operations and always inspect returned `IErrorsInfo` or `bool`.
+6. Commit with `CommitFormAsync()` or rollback with `RollbackFormAsync()`.
 
-## Validation
-- Ensure entity structures exist for each block.
-- Check `IErrorsInfo.Flag` on operations.
-- Confirm relationships use correct key field names.
+## Specialized Skills
+- Mode transitions and CRUD/query flow: [forms-mode-transitions](../forms-mode-transitions/SKILL.md)
+- Form lifecycle and navigation: [forms-operations-navigation](../forms-operations-navigation/SKILL.md)
+- Enhanced CRUD and query operations: [forms-enhanced-data-operations](../forms-enhanced-data-operations/SKILL.md)
+- Helpers and trigger pipeline: [forms-helper-managers](../forms-helper-managers/SKILL.md)
+- Performance/cache/config tuning: [forms-performance-configuration](../forms-performance-configuration/SKILL.md)
 
-## Pitfalls
-- Registering blocks before datasource is open causes null structures.
-- Creating a new master record without handling dirty detail blocks can lose data.
-- Using wrong key field names breaks relationship filtering.
+## Key Files
+- `DataManagementEngineStandard/Editor/Forms/FormsManager.cs`
+- `DataManagementEngineStandard/Editor/Forms/FormsManager.FormOperations.cs`
+- `DataManagementEngineStandard/Editor/Forms/FormsManager.Navigation.cs`
+- `DataManagementEngineStandard/Editor/Forms/FormsManager.ModeTransitions.cs`
+- `DataManagementEngineStandard/Editor/Forms/FormsManager.EnhancedOperations.cs`
+- `DataManagementEngineStandard/Editor/Forms/Helpers/*.cs`
 
-## File Locations
-- DataManagementEngineStandard/Editor/Forms/FormsManager.cs
-- DataManagementEngineStandard/Editor/Forms/FormsManager.FormOperations.cs
-- DataManagementEngineStandard/Editor/Forms/FormsManager.Navigation.cs
-
-## Example
+## Baseline Example
 ```csharp
 var forms = new FormsManager(editor);
 
 using var customerUow = new UnitofWork<Customer>(editor, "MyDb", "Customers", "Id");
-var customerStruct = editor.GetDataSource("MyDb").GetEntityStructure("Customers", true);
-forms.RegisterBlock("CUSTOMERS", customerUow, customerStruct, "MyDb", isMasterBlock: true);
+var customerStructure = editor.GetDataSource("MyDb").GetEntityStructure("Customers", true);
+forms.RegisterBlock("CUSTOMERS", customerUow, customerStructure, "MyDb", isMasterBlock: true);
 
 using var orderUow = new UnitofWork<Order>(editor, "MyDb", "Orders", "Id");
-var orderStruct = editor.GetDataSource("MyDb").GetEntityStructure("Orders", true);
-forms.RegisterBlock("ORDERS", orderUow, orderStruct, "MyDb", isMasterBlock: false);
+var orderStructure = editor.GetDataSource("MyDb").GetEntityStructure("Orders", true);
+forms.RegisterBlock("ORDERS", orderUow, orderStructure, "MyDb", isMasterBlock: false);
 
-forms.CreateRelationship("CUSTOMERS", "ORDERS", "Id", "CustomerId");
-await forms.ExecuteQueryAndEnterCrudModeAsync("CUSTOMERS", new List<AppFilter>());
-```
-
-## Task-Specific Examples
-
-### Commit and Clear Form
-```csharp
-var commitResult = await forms.CommitFormAsync();
-if (commitResult.Flag == Errors.Ok)
-{
-	await forms.ClearFormAsync();
-}
-```
-
-### Handle Unsaved Changes Before Navigation
-```csharp
-if (forms.IsDirty)
-{
-	var result = await forms.HandleUnsavedChangesAsync(
-		"CUSTOMERS",
-		UnsavedChangesAction.Save);
-	if (result.Flag != Errors.Ok)
-	{
-		return;
-	}
-}
-
-await forms.NextRecordAsync("CUSTOMERS");
+forms.CreateMasterDetailRelation("CUSTOMERS", "ORDERS", "Id", "CustomerId");
+await forms.OpenFormAsync("CustomerOrderForm");
+await forms.EnterQueryModeAsync("CUSTOMERS");
+await forms.ExecuteQueryAndEnterCrudModeAsync("CUSTOMERS");
 ```

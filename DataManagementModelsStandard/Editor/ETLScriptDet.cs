@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep.DataBase;
@@ -49,6 +49,10 @@ namespace TheTechIdea.Beep.Editor
         public EntityDataMap_DTL Mapping { get; set; }
         public List<SyncErrorsandTracking> Tracking { get; set; } = new List<SyncErrorsandTracking>();
         public List<ETLScriptDet> CopyDataScripts { get; set; } = new List<ETLScriptDet>();
+        public string LastRunCorrelationId { get; set; }
+        public string LastEventType { get; set; }
+        public string LastEventMessage { get; set; }
+        public DateTime LastUpdatedUtc { get; set; }
     }
    
    

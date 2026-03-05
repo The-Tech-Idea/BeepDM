@@ -170,11 +170,42 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// </summary>
         protected override Assembly Load(AssemblyName assemblyName)
         {
+            if (assemblyName == null || IsSystemAssembly(assemblyName))
+            {
+                return null;
+            }
+
             // Use the dependency resolver to find the assembly from .deps.json
             string assemblyPath = _resolver?.ResolveAssemblyToPath(assemblyName);
             if (assemblyPath != null)
             {
-                return LoadFromAssemblyPath(assemblyPath);
+                try
+                {
+                    return LoadFromAssemblyPath(assemblyPath);
+                }
+                catch
+                {
+                    // Keep walking the resolution chain.
+                }
+            }
+
+            // Prefer already shared assemblies before probing file system
+            var sharedAssembly = _manager?.ResolveAssembly(assemblyName);
+            if (sharedAssembly != null)
+            {
+                return sharedAssembly;
+            }
+
+            var probedAssembly = TryLoadFromProbingPaths(assemblyName);
+            if (probedAssembly != null)
+            {
+                return probedAssembly;
+            }
+
+            var nugetAssembly = TryLoadFromNuGetCache(assemblyName);
+            if (nugetAssembly != null)
+            {
+                return nugetAssembly;
             }
 
             // Return null - allows the runtime to use the default load context
@@ -788,7 +819,8 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 if (_useSingleSharedContext)
                 {
                     // Create (once) a non-collectible global context to maximize sharing
-                    _globalSharedContext ??= new SharedContextLoadContext("GlobalSharedContext", "__GLOBAL__", this, isCollectible: false);
+                    var globalProbePath = ResolveGlobalContextProbePath(nuggetPath);
+                    _globalSharedContext ??= new SharedContextLoadContext("GlobalSharedContext", globalProbePath, this, isCollectible: false);
                     loadContext = _globalSharedContext;
                 }
                 else
@@ -2105,6 +2137,62 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 _logger?.LogWithContext("Error detecting target framework, defaulting to net8.0", ex);
                 return "net8.0"; // Safe default
             }
+        }
+
+        private string ResolveGlobalContextProbePath(string nuggetPath)
+        {
+            if (string.IsNullOrWhiteSpace(nuggetPath))
+            {
+                return AppContext.BaseDirectory;
+            }
+
+            if (File.Exists(nuggetPath) && nuggetPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                return nuggetPath;
+            }
+
+            if (!Directory.Exists(nuggetPath))
+            {
+                return AppContext.BaseDirectory;
+            }
+
+            string FindCandidateDll(string root, SearchOption option)
+            {
+                var dllFiles = Directory.GetFiles(root, "*.dll", option);
+                var depsMatch = dllFiles.FirstOrDefault(dll => File.Exists(Path.ChangeExtension(dll, ".deps.json")));
+                return depsMatch ?? dllFiles.FirstOrDefault();
+            }
+
+            try
+            {
+                var frameworkFolder = Path.Combine(nuggetPath, GetCurrentTargetFramework());
+                if (Directory.Exists(frameworkFolder))
+                {
+                    var frameworkCandidate = FindCandidateDll(frameworkFolder, SearchOption.TopDirectoryOnly);
+                    if (!string.IsNullOrWhiteSpace(frameworkCandidate))
+                    {
+                        return frameworkCandidate;
+                    }
+                }
+
+                var rootCandidate = FindCandidateDll(nuggetPath, SearchOption.TopDirectoryOnly);
+                if (!string.IsNullOrWhiteSpace(rootCandidate))
+                {
+                    return rootCandidate;
+                }
+
+                var nestedCandidate = FindCandidateDll(nuggetPath, SearchOption.AllDirectories);
+                if (!string.IsNullOrWhiteSpace(nestedCandidate))
+                {
+                    return nestedCandidate;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext($"ResolveGlobalContextProbePath failed for '{nuggetPath}'", ex);
+            }
+
+            return nuggetPath;
         }
 
     private Task RegisterAsPluginsAsync(NuggetInfo nuggetInfo)

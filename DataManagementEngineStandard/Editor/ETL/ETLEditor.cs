@@ -15,6 +15,9 @@ using TheTechIdea.Beep.Editor;
 using System.ComponentModel;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Rules;
+using TheTechIdea.Beep.Editor.Importing;
+using TheTechIdea.Beep.Editor.Importing.Interfaces;
+using TheTechIdea.Beep.Editor.Migration;
 
 namespace TheTechIdea.Beep.Editor.ETL
 {
@@ -46,11 +49,11 @@ namespace TheTechIdea.Beep.Editor.ETL
         /// <summary>Gets or sets the PassedArgs object.</summary>
         /// <value>The PassedArgs object.</value>
         public PassedArgs Passedargs { get; set; }
-        /// <summary>Gets or sets the count of scripts.</summary>
-        /// <value>The count of scripts.</value>
+        /// <summary>Gets or sets the total script steps for the current ETL run.</summary>
+        /// <value>Total number of script detail steps being executed.</value>
         public int ScriptCount { get; set; }
-        /// <summary>Gets or sets the current script record.</summary>
-        /// <value>The current script record.</value>
+        /// <summary>Gets or sets the current script/record index for progress reporting.</summary>
+        /// <value>Step index for step-level events and record index for legacy record loops.</value>
         public int CurrentScriptRecord { get; set; }
         /// <summary>Gets or sets the stop error count.</summary>
         /// <value>The stop error count.</value>
@@ -72,6 +75,413 @@ namespace TheTechIdea.Beep.Editor.ETL
         private int errorcount = 0;
         private List<DefaultValue> CurrrentDBDefaults = new List<DefaultValue>();
         private bool disposedValue;
+        private readonly bool _enableImportingPreflightBridge = true;
+        private readonly bool _useUnifiedCopyPipeline = true;
+        private readonly bool _enableLegacyCopyFallback = true;
+        private readonly bool _useImportingRunForImports = true;
+        private readonly bool _enableLegacyImportFallback = true;
+        private const int ImportBridgeDefaultBatchSize = 100;
+        private const int ImportBridgeMaxBatchSize = 5000;
+        private const int ImportBridgeDefaultMaxRetries = 3;
+        private const int ImportBridgeMaxRetries = 10;
+        private readonly bool _useMigrationSchemaBridge = true;
+        private readonly bool _enableLegacySchemaFallback = true;
+        private readonly bool _schemaCreateIfMissing = true;
+        private readonly bool _schemaAlterIfNeeded = true;
+        private readonly bool _schemaAllowDestructiveChanges = false;
+        private string _currentRunCorrelationId;
+        private DateTime _currentRunStartedAtUtc;
+        private int _runStepsTotal;
+        private int _runStepsSucceeded;
+        private int _runStepsFailed;
+        private int _runRecordsProcessed;
+        private bool _runCancelled;
+        private readonly bool _persistRunEvidence = true;
+        private readonly bool _updateEvidenceSummaryReport = true;
+        private readonly bool _verboseDiagnostics = false;
+        private readonly int _minProgressIntervalMs = 250;
+        private string _lastLoadLogLine;
+        private DateTime _lastLoadLogAtUtc;
+        private DateTime _lastProgressReportAtUtc;
+
+        private sealed class EtlCopyExecutionOptions
+        {
+            public int BatchSize { get; set; } = 100;
+            public bool EnableParallel { get; set; } = false;
+            public int MaxRetries { get; set; } = 3;
+            public Func<object, object> CustomTransformation { get; set; }
+        }
+        private sealed class EtlRunSummary
+        {
+            public string RunId { get; set; }
+            public string Operation { get; set; }
+            public DateTime StartedAtUtc { get; set; }
+            public DateTime EndedAtUtc { get; set; }
+            public int StepsTotal { get; set; }
+            public int StepsSucceeded { get; set; }
+            public int StepsFailed { get; set; }
+            public int RecordsProcessed { get; set; }
+            public bool Cancelled { get; set; }
+            public TimeSpan Elapsed => EndedAtUtc - StartedAtUtc;
+        }
+        /// <summary>
+        /// Progress semantics:
+        /// ScriptCount is the total number of script steps in the current run.
+        /// CurrentScriptRecord is the current step index for step-level updates, and
+        /// may be reused by legacy record loops for record-level updates.
+        /// </summary>
+        private void BeginRunTelemetry(string operation, int totalSteps)
+        {
+            _currentRunCorrelationId = Guid.NewGuid().ToString("N");
+            _currentRunStartedAtUtc = DateTime.UtcNow;
+            _runStepsTotal = Math.Max(0, totalSteps);
+            _runStepsSucceeded = 0;
+            _runStepsFailed = 0;
+            _runRecordsProcessed = 0;
+            _runCancelled = false;
+            if (Script != null)
+            {
+                Script.LastRunCorrelationId = _currentRunCorrelationId;
+            }
+            DMEEditor.AddLogMessage("ETL.Run", $"[{_currentRunCorrelationId}] {operation} started. steps={_runStepsTotal}", DateTime.Now, -1, "ETL", Errors.Ok);
+        }
+        private void CountStepOutcome(bool succeeded)
+        {
+            if (succeeded)
+            {
+                _runStepsSucceeded++;
+            }
+            else
+            {
+                _runStepsFailed++;
+            }
+        }
+        private void ReportEtlProgress(IProgress<PassedArgs> progress, string eventType, string message)
+        {
+            if (progress == null)
+            {
+                return;
+            }
+
+            var nowUtc = DateTime.UtcNow;
+            var isHighFrequencyEvent = string.Equals(eventType, "StepUpdate", StringComparison.InvariantCultureIgnoreCase) ||
+                                       string.Equals(eventType, "Heartbeat", StringComparison.InvariantCultureIgnoreCase);
+            if (!_verboseDiagnostics && isHighFrequencyEvent && (nowUtc - _lastProgressReportAtUtc).TotalMilliseconds < _minProgressIntervalMs)
+            {
+                return;
+            }
+
+            progress.Report(new PassedArgs
+            {
+                EventType = eventType,
+                ParameterInt1 = CurrentScriptRecord,
+                ParameterInt2 = ScriptCount,
+                Messege = string.IsNullOrWhiteSpace(_currentRunCorrelationId) ? message : $"[{_currentRunCorrelationId}] {message}"
+            });
+            _lastProgressReportAtUtc = nowUtc;
+        }
+        private void AddLoadLogLine(string line, string stepId = null)
+        {
+            var renderedLine = string.IsNullOrWhiteSpace(_currentRunCorrelationId) ? line : $"[{_currentRunCorrelationId}] {line}";
+            var nowUtc = DateTime.UtcNow;
+            var isCritical = renderedLine?.IndexOf("failed", StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                             renderedLine?.IndexOf("summary", StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                             renderedLine?.IndexOf("stopped", StringComparison.InvariantCultureIgnoreCase) >= 0;
+            if (!_verboseDiagnostics && !isCritical &&
+                string.Equals(_lastLoadLogLine, renderedLine, StringComparison.InvariantCulture) &&
+                (nowUtc - _lastLoadLogAtUtc).TotalMilliseconds < 1000)
+            {
+                return;
+            }
+
+            if (LoadDataLogs == null)
+            {
+                LoadDataLogs = new List<LoadDataLogResult>();
+            }
+            LoadDataLogs.Add(new LoadDataLogResult
+            {
+                RunID = _currentRunCorrelationId,
+                StepID = stepId,
+                Date = DateTime.Now,
+                InputLine = renderedLine
+            });
+            _lastLoadLogLine = renderedLine;
+            _lastLoadLogAtUtc = nowUtc;
+        }
+        private void EndRunTelemetry(string operation, bool cancelled)
+        {
+            _runCancelled = cancelled;
+            var summary = new EtlRunSummary
+            {
+                RunId = _currentRunCorrelationId,
+                Operation = operation,
+                StartedAtUtc = _currentRunStartedAtUtc,
+                EndedAtUtc = DateTime.UtcNow,
+                StepsTotal = _runStepsTotal,
+                StepsSucceeded = _runStepsSucceeded,
+                StepsFailed = _runStepsFailed,
+                RecordsProcessed = _runRecordsProcessed,
+                Cancelled = _runCancelled
+            };
+            var summaryLine = $"Summary operation={summary.Operation} steps(total={summary.StepsTotal},ok={summary.StepsSucceeded},failed={summary.StepsFailed}) records={summary.RecordsProcessed} cancelled={summary.Cancelled} elapsedMs={(int)summary.Elapsed.TotalMilliseconds}";
+            DMEEditor.AddLogMessage("ETL.Summary", $"[{summary.RunId}] {summaryLine}", DateTime.Now, -1, "ETL", summary.StepsFailed > 0 ? Errors.Warning : Errors.Ok);
+            AddLoadLogLine(summaryLine);
+            if (Script != null)
+            {
+                Script.LastRunDateTime = DateTime.Now;
+                Script.LastRunCorrelationId = summary.RunId;
+                Script.LastRunSummary = summaryLine;
+            }
+            PersistRunEvidence(summary, summaryLine);
+        }
+        private void PersistRunEvidence(EtlRunSummary summary, string summaryLine)
+        {
+            if (!_persistRunEvidence || summary == null || string.IsNullOrWhiteSpace(summary.RunId))
+            {
+                return;
+            }
+
+            try
+            {
+                var basePath = DMEEditor?.ConfigEditor?.ExePath;
+                if (string.IsNullOrWhiteSpace(basePath))
+                {
+                    return;
+                }
+
+                var evidenceDir = Path.Combine(basePath, "Scripts", "ETL_Evidence");
+                Directory.CreateDirectory(evidenceDir);
+                var evidenceFile = Path.Combine(evidenceDir, $"{summary.RunId}.md");
+                var sourceName = Script?.ScriptSource ?? "unknown";
+                var destinationName = Script?.ScriptDestination ?? "unknown";
+
+                var content =
+                    "# ETL Run Evidence" + Environment.NewLine +
+                    Environment.NewLine +
+                    $"- RunId: `{summary.RunId}`" + Environment.NewLine +
+                    $"- Operation: `{summary.Operation}`" + Environment.NewLine +
+                    $"- Source: `{sourceName}`" + Environment.NewLine +
+                    $"- Destination: `{destinationName}`" + Environment.NewLine +
+                    $"- StartedAtUtc: `{summary.StartedAtUtc:O}`" + Environment.NewLine +
+                    $"- EndedAtUtc: `{summary.EndedAtUtc:O}`" + Environment.NewLine +
+                    $"- StepsTotal: `{summary.StepsTotal}`" + Environment.NewLine +
+                    $"- StepsSucceeded: `{summary.StepsSucceeded}`" + Environment.NewLine +
+                    $"- StepsFailed: `{summary.StepsFailed}`" + Environment.NewLine +
+                    $"- RecordsProcessed: `{summary.RecordsProcessed}`" + Environment.NewLine +
+                    $"- Cancelled: `{summary.Cancelled}`" + Environment.NewLine +
+                    $"- Summary: `{summaryLine}`" + Environment.NewLine +
+                    Environment.NewLine +
+                    "## Log Snippet" + Environment.NewLine;
+
+                var lastLogLines = LoadDataLogs == null
+                    ? new List<LoadDataLogResult>()
+                    : LoadDataLogs.TakeLast(20).ToList();
+
+                if (lastLogLines.Count == 0)
+                {
+                    content += "- No log lines were captured." + Environment.NewLine;
+                }
+                else
+                {
+                    foreach (var line in lastLogLines)
+                    {
+                        content += $"- {line.InputLine}" + Environment.NewLine;
+                    }
+                }
+
+                File.WriteAllText(evidenceFile, content);
+                DMEEditor.AddLogMessage("ETL.Summary", $"[{summary.RunId}] Evidence persisted to '{evidenceFile}'.", DateTime.Now, -1, "ETL", Errors.Ok);
+                UpdateEvidenceSummaryReport(summary, evidenceFile);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ETL.Summary", $"[{summary.RunId}] Failed to persist run evidence: {ex.Message}", DateTime.Now, -1, "ETL", Errors.Warning);
+            }
+        }
+        private void UpdateEvidenceSummaryReport(EtlRunSummary summary, string evidenceFilePath)
+        {
+            if (!_updateEvidenceSummaryReport || summary == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var evidenceDir = Path.GetDirectoryName(evidenceFilePath);
+                if (string.IsNullOrWhiteSpace(evidenceDir))
+                {
+                    return;
+                }
+
+                var reportPath = Path.Combine(evidenceDir, "ETL_EVIDENCE_SUMMARY.md");
+                var sourceName = Script?.ScriptSource ?? "unknown";
+                var destinationName = Script?.ScriptDestination ?? "unknown";
+                var outcome = summary.StepsFailed > 0 ? "WARN" : "OK";
+                var relativeEvidencePath = Path.GetFileName(evidenceFilePath);
+                var row = $"| {DateTime.Now:yyyy-MM-dd HH:mm:ss} | `{summary.RunId}` | `{summary.Operation}` | `{sourceName}` | `{destinationName}` | {summary.StepsTotal} | {summary.StepsSucceeded} | {summary.StepsFailed} | {summary.RecordsProcessed} | {summary.Cancelled} | {outcome} | `{relativeEvidencePath}` |";
+
+                if (!File.Exists(reportPath))
+                {
+                    var header =
+                        "# ETL Evidence Summary" + Environment.NewLine +
+                        Environment.NewLine +
+                        "Rolling summary of ETL validation evidence runs." + Environment.NewLine +
+                        Environment.NewLine +
+                        "| Timestamp | RunId | Operation | Source | Destination | StepsTotal | StepsOk | StepsFailed | Records | Cancelled | Outcome | EvidenceFile |" + Environment.NewLine +
+                        "|---|---|---|---|---|---:|---:|---:|---:|---|---|---|" + Environment.NewLine;
+                    File.WriteAllText(reportPath, header + row + Environment.NewLine);
+                }
+                else
+                {
+                    File.AppendAllText(reportPath, row + Environment.NewLine);
+                }
+
+                GenerateCurrentWeekEvidenceReport(reportPath);
+                GenerateCurrentMonthEvidenceReport(reportPath);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ETL.Summary", $"[{summary.RunId}] Failed to update evidence summary report: {ex.Message}", DateTime.Now, -1, "ETL", Errors.Warning);
+            }
+        }
+        private void GenerateCurrentWeekEvidenceReport(string summaryReportPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(summaryReportPath) || !File.Exists(summaryReportPath))
+                {
+                    return;
+                }
+
+                var weekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+                var lines = File.ReadAllLines(summaryReportPath);
+                var weeklyRows = new List<string>();
+
+                foreach (var line in lines)
+                {
+                    if (!line.StartsWith("| ") || line.StartsWith("|---"))
+                    {
+                        continue;
+                    }
+
+                    var cols = line.Split('|');
+                    if (cols.Length < 3)
+                    {
+                        continue;
+                    }
+
+                    var timestampText = cols[1].Trim();
+                    if (DateTime.TryParse(timestampText, out var timestamp) && timestamp.Date >= weekStart)
+                    {
+                        weeklyRows.Add(line);
+                    }
+                }
+
+                var weeklyPath = Path.Combine(Path.GetDirectoryName(summaryReportPath) ?? string.Empty, "ETL_EVIDENCE_CURRENT_WEEK.md");
+                var weeklyHeader =
+                    "# ETL Evidence Current Week" + Environment.NewLine +
+                    Environment.NewLine +
+                    $"Week start: `{weekStart:yyyy-MM-dd}`" + Environment.NewLine +
+                    Environment.NewLine +
+                    "| Timestamp | RunId | Operation | Source | Destination | StepsTotal | StepsOk | StepsFailed | Records | Cancelled | Outcome | EvidenceFile |" + Environment.NewLine +
+                    "|---|---|---|---|---|---:|---:|---:|---:|---|---|---|" + Environment.NewLine;
+
+                File.WriteAllText(weeklyPath, weeklyHeader + string.Join(Environment.NewLine, weeklyRows) + Environment.NewLine);
+            }
+            catch
+            {
+                // Keep weekly report generation best-effort only.
+            }
+        }
+        private void GenerateCurrentMonthEvidenceReport(string summaryReportPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(summaryReportPath) || !File.Exists(summaryReportPath))
+                {
+                    return;
+                }
+
+                var monthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                var lines = File.ReadAllLines(summaryReportPath);
+                var monthlyRows = new List<string>();
+
+                foreach (var line in lines)
+                {
+                    if (!line.StartsWith("| ") || line.StartsWith("|---"))
+                    {
+                        continue;
+                    }
+
+                    var cols = line.Split('|');
+                    if (cols.Length < 3)
+                    {
+                        continue;
+                    }
+
+                    var timestampText = cols[1].Trim();
+                    if (DateTime.TryParse(timestampText, out var timestamp) && timestamp.Date >= monthStart)
+                    {
+                        monthlyRows.Add(line);
+                    }
+                }
+
+                var monthlyPath = Path.Combine(Path.GetDirectoryName(summaryReportPath) ?? string.Empty, "ETL_EVIDENCE_CURRENT_MONTH.md");
+                var monthlyHeader =
+                    "# ETL Evidence Current Month" + Environment.NewLine +
+                    Environment.NewLine +
+                    $"Month start: `{monthStart:yyyy-MM-dd}`" + Environment.NewLine +
+                    Environment.NewLine +
+                    "| Timestamp | RunId | Operation | Source | Destination | StepsTotal | StepsOk | StepsFailed | Records | Cancelled | Outcome | EvidenceFile |" + Environment.NewLine +
+                    "|---|---|---|---|---|---:|---:|---:|---:|---|---|---|" + Environment.NewLine;
+
+                File.WriteAllText(monthlyPath, monthlyHeader + string.Join(Environment.NewLine, monthlyRows) + Environment.NewLine);
+            }
+            catch
+            {
+                // Keep monthly report generation best-effort only.
+            }
+        }
+        private IList<object> NormalizeSourceRows(object sourceData, EntityStructure sourceEntity)
+        {
+            if (sourceData == null)
+            {
+                return new List<object>();
+            }
+
+            if (sourceData is DataTable table)
+            {
+                DMTypeBuilder.CreateNewObject(DMEEditor, null, sourceEntity.EntityName, sourceEntity.Fields);
+                return DMEEditor.Utilfunction.GetListByDataTable(table, DMTypeBuilder.MyType, sourceEntity);
+            }
+
+            if (sourceData is IBindingListView listView)
+            {
+                var rows = new List<object>();
+                foreach (var row in listView)
+                {
+                    rows.Add(row);
+                }
+                return rows;
+            }
+
+            if (sourceData is IEnumerable<object> typedEnumerable)
+            {
+                return typedEnumerable as IList<object> ?? typedEnumerable.ToList();
+            }
+
+            if (sourceData is System.Collections.IEnumerable nonGenericEnumerable)
+            {
+                var rows = new List<object>();
+                foreach (var row in nonGenericEnumerable)
+                {
+                    rows.Add(row);
+                }
+                return rows;
+            }
+
+            return new List<object> { sourceData };
+        }
         #endregion
         #region "Create Scripts"
         /// <summary>Creates the header of an ETL script.</summary>
@@ -401,40 +811,23 @@ namespace TheTechIdea.Beep.Editor.ETL
                     }
                     if (destds.CheckEntityExist(destentity))
                     {
-                        object srcTb;
-                        string entname;
-                        var src = Task.Run(() => { return sourceds.GetEntity(item.EntityName, null); });
-                        src.Wait();
-                        srcTb = src.Result;
-                        List<object> srcList = new List<object>();
-                        if (src.Result != null)
+                        var srcTb = sourceds.GetEntity(item.EntityName, null);
+                        var srcList = NormalizeSourceRows(srcTb, item);
+                        if (srcList.Count > 0)
                         {
-                            DMTypeBuilder.CreateNewObject(DMEEditor, null, item.EntityName, item.Fields);
-                            if (srcTb.GetType().FullName.Contains("DataTable"))
-                            {
-                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.MyType, item);
-                            }
-                            if (srcTb.GetType().FullName.Contains("List"))
-                            {
-                                srcList = (List<object>)srcTb;
-                            }
-
-                            if (srcTb.GetType().FullName.Contains("IEnumerable"))
-                            {
-                                srcList = (List<object>)srcTb;
-                            }
                             ScriptCount += srcList.Count();
+                            var lastProgressReport = 0;
                             foreach (var r in srcList)
                             {
                                 CurrentScriptRecord += 1;
                                 // DMEEditor.ErrorObject=destds.InsertEntity(item.EntityName, r);
                                 InsertEntity(destds, item, item.EntityName, null, r, progress, token);
                                 token.ThrowIfCancellationRequested();
-                                if (progress != null)
+                                if (progress != null && (CurrentScriptRecord - lastProgressReport >= 100 || CurrentScriptRecord == ScriptCount))
                                 {
                                     PassedArgs ps = new PassedArgs { ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
                                     progress.Report(ps);
-
+                                    lastProgressReport = CurrentScriptRecord;
                                 }
 
                             }
@@ -529,8 +922,15 @@ namespace TheTechIdea.Beep.Editor.ETL
                             if (sc.ScriptType == DDLScriptType.CopyData)
                             {
                                 SendMessege(progress, token, null, sc, $"Started Coping Data for Entity  {sc.DestinationEntityName}  in {sc.DestinationDataSourceName}");
-                                DMEEditor.ErrorObject = RunCopyEntityScript(sc, srcds, destds, sc.SourceDataSourceEntityName, sc.DestinationEntityName, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
-                                SendMessege(progress, token, null, sc, $"Error in Coping Data for Entity  {sc.DestinationEntityName}"); ;
+                                DMEEditor.ErrorObject = await ExecuteCopyStepAsync(sc, srcds, destds, progress, token);
+                                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                                {
+                                    SendMessege(progress, token, null, sc, $"Error in Coping Data for Entity  {sc.DestinationEntityName}");
+                                }
+                                else
+                                {
+                                    SendMessege(progress, token, null, sc, $"Finished Coping Data for Entity  {sc.DestinationEntityName}");
+                                }
                             }
                         }
                         else
@@ -545,6 +945,558 @@ namespace TheTechIdea.Beep.Editor.ETL
             }
             return DMEEditor.ErrorObject;
         }
+        private IErrorsInfo FailPreflight(string message, IProgress<PassedArgs> progress = null)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Failed;
+            DMEEditor.ErrorObject.Message = message;
+            DMEEditor.AddLogMessage("ETL.Preflight", message, DateTime.Now, -1, "ETL", Errors.Failed);
+            LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Preflight failed: {message}" });
+            progress?.Report(new PassedArgs { EventType = "PreflightFailed", Messege = message });
+            return DMEEditor.ErrorObject;
+        }
+        private IErrorsInfo PassPreflight(string message, IProgress<PassedArgs> progress = null)
+        {
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            DMEEditor.ErrorObject.Message = message;
+            DMEEditor.AddLogMessage("ETL.Preflight", message, DateTime.Now, -1, "ETL", Errors.Ok);
+            LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Preflight passed: {message}" });
+            progress?.Report(new PassedArgs { EventType = "PreflightPassed", Messege = message });
+            return DMEEditor.ErrorObject;
+        }
+        private string BuildValidationErrorsMessage(IErrorsInfo validationResult)
+        {
+            if (validationResult == null)
+            {
+                return "Unknown validation error.";
+            }
+            if (validationResult.Errors == null || validationResult.Errors.Count == 0)
+            {
+                return validationResult.Message;
+            }
+            var details = string.Join("; ", validationResult.Errors
+                .Where(e => !string.IsNullOrWhiteSpace(e.Message))
+                .Select(e => e.Message));
+            return string.IsNullOrWhiteSpace(details) ? validationResult.Message : details;
+        }
+        private async Task<IErrorsInfo> TryRunImportingPreflightAsync(ETLScriptDet step, IProgress<PassedArgs> progress, CancellationToken token)
+        {
+            if (!_enableImportingPreflightBridge || step == null)
+            {
+                return DMEEditor.ErrorObject;
+            }
+
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                using var importManager = new DataImportManager(DMEEditor);
+                var config = importManager.CreateImportConfiguration(
+                    step.SourceDataSourceEntityName ?? step.SourceEntityName,
+                    step.SourceDataSourceName,
+                    step.DestinationEntityName,
+                    step.DestinationDataSourceName);
+                config.SourceEntityName = step.SourceDataSourceEntityName ?? step.SourceEntityName;
+                config.DestEntityName = step.DestinationEntityName;
+                config.SourceDataSourceName = step.SourceDataSourceName;
+                config.DestDataSourceName = step.DestinationDataSourceName;
+                config.CreateDestinationIfNotExists = true;
+                config.AddMissingColumns = true;
+
+                var preflight = await importManager.RunMigrationPreflightAsync(
+                    config,
+                    msg =>
+                    {
+                        LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Importing preflight: {msg}" });
+                        progress?.Report(new PassedArgs { EventType = "PreflightInfo", Messege = msg });
+                    });
+
+                if (preflight?.Flag == Errors.Failed)
+                {
+                    return FailPreflight($"Importing preflight failed for entity '{step.DestinationEntityName}': {preflight.Message}", progress);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return FailPreflight("Preflight cancelled.", progress);
+            }
+            catch (Exception ex)
+            {
+                return FailPreflight($"Importing preflight exception: {ex.Message}", progress);
+            }
+
+            return DMEEditor.ErrorObject;
+        }
+        private async Task<IErrorsInfo> PreflightCreateScriptAsync(IProgress<PassedArgs> progress, CancellationToken token)
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                if (Script == null)
+                {
+                    return FailPreflight("Script is null.", progress);
+                }
+                if (Script.ScriptDetails == null || Script.ScriptDetails.Count == 0)
+                {
+                    return FailPreflight("Script details are missing.", progress);
+                }
+
+                var validator = new ETLValidator(DMEEditor);
+                var copySteps = Script.ScriptDetails
+                    .Where(s => s != null && s.ScriptType == DDLScriptType.CopyData && s.Active)
+                    .ToList();
+
+                foreach (var step in copySteps)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (string.IsNullOrWhiteSpace(step.SourceDataSourceName) || string.IsNullOrWhiteSpace(step.DestinationDataSourceName))
+                    {
+                        return FailPreflight("A CopyData step is missing source or destination datasource name.", progress);
+                    }
+                    if (string.IsNullOrWhiteSpace(step.SourceEntityName) && string.IsNullOrWhiteSpace(step.SourceDataSourceEntityName))
+                    {
+                        return FailPreflight($"CopyData step '{step.Id}' is missing source entity name.", progress);
+                    }
+                    if (string.IsNullOrWhiteSpace(step.DestinationEntityName))
+                    {
+                        return FailPreflight($"CopyData step '{step.Id}' is missing destination entity name.", progress);
+                    }
+
+                    var srcEntity = string.IsNullOrWhiteSpace(step.SourceDataSourceEntityName) ? step.SourceEntityName : step.SourceDataSourceEntityName;
+                    var srcds = DMEEditor.GetDataSource(step.SourceDataSourceName);
+                    var destds = DMEEditor.GetDataSource(step.DestinationDataSourceName);
+
+                    if (srcds == null || destds == null)
+                    {
+                        return FailPreflight($"Could not resolve source/destination datasource for step '{step.Id}'.", progress);
+                    }
+
+                    DMEEditor.OpenDataSource(step.SourceDataSourceName);
+                    DMEEditor.OpenDataSource(step.DestinationDataSourceName);
+                    var consistency = validator.ValidateEntityConsistency(srcds, destds, srcEntity, step.DestinationEntityName);
+                    if (consistency.Flag == Errors.Failed)
+                    {
+                        return FailPreflight(
+                            $"Entity consistency validation failed for '{srcEntity}' -> '{step.DestinationEntityName}': {BuildValidationErrorsMessage(consistency)}",
+                            progress);
+                    }
+                }
+
+                if (copySteps.Count > 0)
+                {
+                    var importingPreflight = await TryRunImportingPreflightAsync(copySteps.First(), progress, token);
+                    if (importingPreflight.Flag == Errors.Failed)
+                    {
+                        return importingPreflight;
+                    }
+                }
+
+                return PassPreflight("Create-script preflight completed successfully.", progress);
+            }
+            catch (OperationCanceledException)
+            {
+                return FailPreflight("Preflight cancelled.", progress);
+            }
+            catch (Exception ex)
+            {
+                return FailPreflight($"Create-script preflight exception: {ex.Message}", progress);
+            }
+        }
+        private async Task<IErrorsInfo> PreflightImportScriptAsync(IProgress<PassedArgs> progress, CancellationToken token)
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                if (Script?.ScriptDetails == null || Script.ScriptDetails.Count == 0)
+                {
+                    return FailPreflight("Import script details are missing.", progress);
+                }
+
+                var step = Script.ScriptDetails.FirstOrDefault(s => s != null && s.Active);
+                if (step == null)
+                {
+                    return FailPreflight("No active import step found.", progress);
+                }
+
+                if (step.Mapping == null)
+                {
+                    return FailPreflight("Import step mapping is missing.", progress);
+                }
+
+                var validator = new ETLValidator(DMEEditor);
+                var mappedEntityValidation = validator.ValidateMappedEntity(step.Mapping);
+                if (mappedEntityValidation.Flag == Errors.Failed)
+                {
+                    return FailPreflight($"Mapped entity validation failed: {BuildValidationErrorsMessage(mappedEntityValidation)}", progress);
+                }
+
+                var map = new EntityDataMap
+                {
+                    EntityName = step.DestinationEntityName,
+                    EntityDataSource = step.DestinationDataSourceName,
+                    EntityFields = step.Mapping.EntityFields ?? new List<EntityField>(),
+                    MappedEntities = new List<EntityDataMap_DTL> { step.Mapping }
+                };
+                var mapValidation = validator.ValidateEntityMapping(map);
+                if (mapValidation.Flag == Errors.Failed)
+                {
+                    return FailPreflight($"Mapping validation failed: {BuildValidationErrorsMessage(mapValidation)}", progress);
+                }
+
+                var srcEntity = string.IsNullOrWhiteSpace(step.SourceDataSourceEntityName) ? step.SourceEntityName : step.SourceDataSourceEntityName;
+                var srcds = DMEEditor.GetDataSource(step.SourceDataSourceName);
+                var destds = DMEEditor.GetDataSource(step.DestinationDataSourceName);
+                if (srcds == null || destds == null)
+                {
+                    return FailPreflight("Could not resolve source/destination datasource for import preflight.", progress);
+                }
+
+                DMEEditor.OpenDataSource(step.SourceDataSourceName);
+                DMEEditor.OpenDataSource(step.DestinationDataSourceName);
+                var consistency = validator.ValidateEntityConsistency(srcds, destds, srcEntity, step.DestinationEntityName);
+                if (consistency.Flag == Errors.Failed)
+                {
+                    return FailPreflight($"Import entity consistency validation failed: {BuildValidationErrorsMessage(consistency)}", progress);
+                }
+
+                var importingPreflight = await TryRunImportingPreflightAsync(step, progress, token);
+                if (importingPreflight.Flag == Errors.Failed)
+                {
+                    return importingPreflight;
+                }
+
+                return PassPreflight("Import-script preflight completed successfully.", progress);
+            }
+            catch (OperationCanceledException)
+            {
+                return FailPreflight("Import preflight cancelled.", progress);
+            }
+            catch (Exception ex)
+            {
+                return FailPreflight($"Import preflight exception: {ex.Message}", progress);
+            }
+        }
+        private async Task<IErrorsInfo> ExecuteCopyStepAsync(
+            ETLScriptDet step,
+            IDataSource sourceDs,
+            IDataSource destDs,
+            IProgress<PassedArgs> progress,
+            CancellationToken token,
+            EtlCopyExecutionOptions options = null)
+        {
+            options ??= new EtlCopyExecutionOptions();
+            if (!_useUnifiedCopyPipeline)
+            {
+                return RunCopyEntityScript(
+                    step,
+                    sourceDs,
+                    destDs,
+                    string.IsNullOrWhiteSpace(step.SourceDataSourceEntityName) ? step.SourceEntityName : step.SourceDataSourceEntityName,
+                    step.DestinationEntityName,
+                    progress,
+                    token,
+                    true,
+                    step.Mapping);
+            }
+
+            try
+            {
+                var srcEntity = string.IsNullOrWhiteSpace(step.SourceDataSourceEntityName) ? step.SourceEntityName : step.SourceDataSourceEntityName;
+                var copier = new ETLDataCopier(DMEEditor);
+                var copyResult = await copier.CopyEntityDataAsync(
+                    sourceDs,
+                    destDs,
+                    srcEntity,
+                    step.DestinationEntityName,
+                    progress,
+                    token,
+                    step.Mapping,
+                    options.CustomTransformation,
+                    options.BatchSize,
+                    options.EnableParallel,
+                    options.MaxRetries);
+
+                if (copyResult.Flag == Errors.Failed && _enableLegacyCopyFallback)
+                {
+                    DMEEditor.AddLogMessage("ETL.Copy", $"Unified pipeline failed; using legacy fallback for {step.DestinationEntityName}.", DateTime.Now, -1, "ETL", Errors.Warning);
+                    return RunCopyEntityScript(
+                        step,
+                        sourceDs,
+                        destDs,
+                        srcEntity,
+                        step.DestinationEntityName,
+                        progress,
+                        token,
+                        true,
+                        step.Mapping);
+                }
+
+                return copyResult;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("ETL.Copy", $"Unified copy execution exception for {step?.DestinationEntityName}: {ex.Message}", DateTime.Now, -1, "ETL", Errors.Failed);
+                if (_enableLegacyCopyFallback && step != null && sourceDs != null && destDs != null)
+                {
+                    var srcEntity = string.IsNullOrWhiteSpace(step.SourceDataSourceEntityName) ? step.SourceEntityName : step.SourceDataSourceEntityName;
+                    return RunCopyEntityScript(
+                        step,
+                        sourceDs,
+                        destDs,
+                        srcEntity,
+                        step.DestinationEntityName,
+                        progress,
+                        token,
+                        true,
+                        step.Mapping);
+                }
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = ex.Message;
+                return DMEEditor.ErrorObject;
+            }
+        }
+        private EntityDataMap BuildEntityMapFromScriptStep(ETLScriptDet step)
+        {
+            var mapping = new EntityDataMap
+            {
+                EntityName = step.DestinationEntityName,
+                EntityDataSource = step.DestinationDataSourceName,
+                EntityFields = step.Mapping?.EntityFields ?? new List<EntityField>(),
+                MappedEntities = new List<EntityDataMap_DTL>()
+            };
+
+            if (step.Mapping != null)
+            {
+                mapping.MappedEntities.Add(step.Mapping);
+            }
+
+            return mapping;
+        }
+        private DataImportConfiguration BuildImportConfigurationFromEtlScript(
+            ETLScriptHDR script,
+            ETLScriptDet detail,
+            IProgress<PassedArgs> progress,
+            CancellationToken token)
+        {
+            if (script == null)
+            {
+                throw new InvalidOperationException("ETL script header is not available.");
+            }
+            if (detail == null)
+            {
+                throw new InvalidOperationException("ETL script detail is not available.");
+            }
+
+            var sourceDs = DMEEditor.GetDataSource(detail.SourceDataSourceName);
+            var destDs = DMEEditor.GetDataSource(detail.DestinationDataSourceName);
+            if (sourceDs == null || destDs == null)
+            {
+                throw new InvalidOperationException($"Unable to resolve source/destination datasource for '{detail.DestinationEntityName}'.");
+            }
+
+            using var importManager = new DataImportManager(DMEEditor);
+            var srcEntity = string.IsNullOrWhiteSpace(detail.SourceDataSourceEntityName) ? detail.SourceEntityName : detail.SourceDataSourceEntityName;
+            var config = importManager.CreateImportConfiguration(
+                srcEntity,
+                detail.SourceDataSourceName,
+                detail.DestinationEntityName,
+                detail.DestinationDataSourceName);
+
+            config.SourceEntityName = srcEntity;
+            config.DestEntityName = detail.DestinationEntityName;
+            config.SourceDataSourceName = detail.SourceDataSourceName;
+            config.DestDataSourceName = detail.DestinationDataSourceName;
+            config.SourceData = sourceDs;
+            config.DestData = destDs;
+            config.CreateDestinationIfNotExists = true;
+            config.AddMissingColumns = true;
+            config.RunMigrationPreflight = _enableImportingPreflightBridge;
+            config.OnBatchError = BatchErrorStrategy.Retry;
+            config.BatchSize = Math.Min(ImportBridgeMaxBatchSize, Math.Max(1, ImportBridgeDefaultBatchSize));
+            config.MaxRetries = Math.Min(ImportBridgeMaxRetries, Math.Max(1, ImportBridgeDefaultMaxRetries));
+            config.Mapping = BuildEntityMapFromScriptStep(detail);
+            if (detail.FilterConditions != null && detail.FilterConditions.Count > 0)
+            {
+                config.SourceFilters = detail.FilterConditions;
+            }
+            if (detail.Mapping?.SelectedDestFields != null && detail.Mapping.SelectedDestFields.Count > 0)
+            {
+                config.SelectedFields = detail.Mapping.SelectedDestFields.Select(f => f.FieldName).ToList();
+            }
+
+            if (string.IsNullOrWhiteSpace(config.SourceDataSourceName) ||
+                string.IsNullOrWhiteSpace(config.DestDataSourceName) ||
+                string.IsNullOrWhiteSpace(config.SourceEntityName) ||
+                string.IsNullOrWhiteSpace(config.DestEntityName))
+            {
+                throw new InvalidOperationException("Import bridge configuration is missing required source/destination names.");
+            }
+            return config;
+        }
+        private IProgress<IPassedArgs>? CreateImportProgressAdapter(IProgress<PassedArgs> progress)
+        {
+            if (progress == null)
+            {
+                return null;
+            }
+
+            return new Progress<IPassedArgs>(p =>
+            {
+                if (p is PassedArgs pa)
+                {
+                    progress.Report(pa);
+                }
+                else
+                {
+                    progress.Report(new PassedArgs
+                    {
+                        EventType = p?.EventType,
+                        Messege = p?.Messege,
+                        ParameterInt1 = p?.ParameterInt1 ?? 0,
+                        ParameterInt2 = p?.ParameterInt2 ?? 0
+                    });
+                }
+            });
+        }
+        private async Task<IErrorsInfo> ExecuteImportViaImportingAsync(
+            ETLScriptDet step,
+            IDataSource sourceDs,
+            IDataSource destDs,
+            IProgress<PassedArgs> progress,
+            CancellationToken token)
+        {
+            try
+            {
+                var runId = string.IsNullOrWhiteSpace(_currentRunCorrelationId) ? Guid.NewGuid().ToString("N") : _currentRunCorrelationId;
+                using var importManager = new DataImportManager(DMEEditor);
+                var config = BuildImportConfigurationFromEtlScript(DMEEditor.ETL.Script, step, progress, token);
+                var importProgress = CreateImportProgressAdapter(progress);
+                DMEEditor.AddLogMessage(
+                    "ETL.ImportBridge",
+                    $"[{runId}] Importing manager started for '{step.DestinationEntityName}' ({config.SourceDataSourceName}.{config.SourceEntityName} -> {config.DestDataSourceName}.{config.DestEntityName}).",
+                    DateTime.Now,
+                    -1,
+                    "ETL",
+                    Errors.Ok);
+                var result = await importManager.RunImportAsync(config, importProgress, token);
+                var status = importManager.GetImportStatus();
+                _runRecordsProcessed += Math.Max(0, status.RecordsProcessed);
+                if (LoadDataLogs == null)
+                {
+                    LoadDataLogs = new List<LoadDataLogResult>();
+                }
+                AddLoadLogLine($"ImportBridge Status: processed={status.RecordsProcessed}, blocked={status.RecordsBlocked}, quarantined={status.RecordsQuarantined}, state={status.State}", step?.Id.ToString());
+                if (result.Flag == Errors.Failed)
+                {
+                    DMEEditor.AddLogMessage("ETL.ImportBridge", $"[{runId}] Importing manager failed for '{step.DestinationEntityName}': {result.Message}", DateTime.Now, -1, "ETL", Errors.Failed);
+                }
+                else
+                {
+                    DMEEditor.AddLogMessage("ETL.ImportBridge", $"[{runId}] Importing manager completed for '{step.DestinationEntityName}'.", DateTime.Now, -1, "ETL", Errors.Ok);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = ex.Message;
+                DMEEditor.AddLogMessage("ETL.ImportBridge", $"Importing manager exception for '{step?.DestinationEntityName}': {ex.Message}", DateTime.Now, -1, "ETL", Errors.Failed);
+                return DMEEditor.ErrorObject;
+            }
+        }
+        private Task<IErrorsInfo> EnsureDestinationEntityAsync(
+            IDataSource destinationDataSource,
+            EntityStructure desiredEntity,
+            ETLScriptDet scriptDetail,
+            bool createIfMissing,
+            bool alterIfNeeded)
+        {
+            if (destinationDataSource == null || desiredEntity == null || scriptDetail == null)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = "Schema ensure skipped because datasource, entity, or script detail is null.";
+                return Task.FromResult(DMEEditor.ErrorObject);
+            }
+
+            try
+            {
+                if (_useMigrationSchemaBridge)
+                {
+                    var migrationManager = new MigrationManager(DMEEditor, destinationDataSource);
+                    var ensureResult = migrationManager.EnsureEntity(desiredEntity, createIfMissing, alterIfNeeded);
+                    if (ensureResult.Flag == Errors.Ok)
+                    {
+                        scriptDetail.IsCreated = true;
+                        scriptDetail.IsModified = alterIfNeeded;
+                        scriptDetail.Failed = false;
+                        scriptDetail.ErrorMessage = string.Empty;
+                        DMEEditor.AddLogMessage("ETL.Schema", $"Migration ensure succeeded for '{desiredEntity.EntityName}'.", DateTime.Now, -1, "ETL", Errors.Ok);
+                        return Task.FromResult(ensureResult);
+                    }
+
+                    DMEEditor.AddLogMessage("ETL.Schema", $"Migration ensure failed for '{desiredEntity.EntityName}': {ensureResult.Message}", DateTime.Now, -1, "ETL", Errors.Failed);
+                    if (!_enableLegacySchemaFallback)
+                    {
+                        scriptDetail.Failed = true;
+                        scriptDetail.ErrorMessage = ensureResult.Message;
+                        return Task.FromResult(ensureResult);
+                    }
+                }
+
+                if (createIfMissing)
+                {
+                    var fallbackResult = destinationDataSource.CreateEntityAs(desiredEntity);
+                    if (fallbackResult)
+                    {
+                        scriptDetail.IsCreated = true;
+                        scriptDetail.IsModified = false;
+                        scriptDetail.Failed = false;
+                        scriptDetail.ErrorMessage = string.Empty;
+                        DMEEditor.ErrorObject.Flag = Errors.Ok;
+                        DMEEditor.ErrorObject.Message = $"Legacy schema fallback created '{desiredEntity.EntityName}'.";
+                        DMEEditor.AddLogMessage("ETL.Schema", $"Legacy schema fallback created '{desiredEntity.EntityName}'.", DateTime.Now, -1, "ETL", Errors.Warning);
+                        return Task.FromResult(DMEEditor.ErrorObject);
+                    }
+                }
+
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = $"Unable to ensure destination entity '{desiredEntity.EntityName}'.";
+                scriptDetail.Failed = true;
+                scriptDetail.ErrorMessage = DMEEditor.ErrorObject.Message;
+                return Task.FromResult(DMEEditor.ErrorObject);
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Message = ex.Message;
+                scriptDetail.Failed = true;
+                scriptDetail.ErrorMessage = ex.Message;
+                DMEEditor.AddLogMessage("ETL.Schema", $"EnsureDestinationEntity failed for '{desiredEntity?.EntityName}': {ex.Message}", DateTime.Now, -1, "ETL", Errors.Failed);
+                return Task.FromResult(DMEEditor.ErrorObject);
+            }
+        }
+        private Task<IErrorsInfo> ApplySchemaDeltaIfNeededAsync(
+            IDataSource destinationDataSource,
+            EntityStructure desiredEntity,
+            ETLScriptDet scriptDetail)
+        {
+            if (!_schemaAlterIfNeeded)
+            {
+                DMEEditor.ErrorObject.Flag = Errors.Ok;
+                DMEEditor.ErrorObject.Message = "Schema delta policy disabled.";
+                return Task.FromResult(DMEEditor.ErrorObject);
+            }
+
+            if (_schemaAllowDestructiveChanges)
+            {
+                DMEEditor.AddLogMessage("ETL.Schema", "Destructive schema changes are enabled by policy; no destructive actions are executed in this phase.", DateTime.Now, -1, "ETL", Errors.Warning);
+            }
+
+            return EnsureDestinationEntityAsync(
+                destinationDataSource,
+                desiredEntity,
+                scriptDetail,
+                createIfMissing: false,
+                alterIfNeeded: true);
+        }
         /// <summary>Runs a create script and updates data.</summary>
         /// <param name="progress">An object that reports the progress of the operation.</param>
         /// <param name="token">A cancellation token that can be used to cancel the operation.</param>
@@ -555,6 +1507,11 @@ namespace TheTechIdea.Beep.Editor.ETL
         public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = true, bool useEntityStructure = true)
         {
             #region "Update Data code "
+            var preflight = await PreflightCreateScriptAsync(progress, token);
+            if (preflight.Flag == Errors.Failed)
+            {
+                return preflight;
+            }
 
 
 
@@ -577,8 +1534,21 @@ namespace TheTechIdea.Beep.Editor.ETL
             stoprun = false;
             bool CreateSuccess;
             EntityStructure entitystr;
+            BeginRunTelemetry("RunCreateScript", DMEEditor.ETL.Script.ScriptDetails.Count);
+            var schemaEntitiesProcessed = 0;
+            var schemaEntitiesCreated = 0;
+            var schemaEntitiesAltered = 0;
+            var schemaEntitiesFailed = 0;
             foreach (ETLScriptDet sc in DMEEditor.ETL.Script.ScriptDetails.OrderBy(p => p.Id))
             {
+                if (token.IsCancellationRequested)
+                {
+                    _runCancelled = true;
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    DMEEditor.ErrorObject.Message = "RunCreateScript cancelled by token.";
+                    ReportEtlProgress(progress, "RunCancelled", DMEEditor.ErrorObject.Message);
+                    break;
+                }
                 CreateSuccess = true;
                 destds = DMEEditor.GetDataSource(sc.DestinationDataSourceName);
                 srcds = DMEEditor.GetDataSource(sc.SourceDataSourceName);
@@ -605,6 +1575,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                                 case DDLScriptType.CreateEntity:
                                     if (sc.ScriptType == DDLScriptType.CreateEntity)
                                     {
+                                        schemaEntitiesProcessed++;
                                         if (!useEntityStructure || sc.SourceEntity == null)
                                         {
                                             entitystr = (EntityStructure)srcds.GetEntityStructure(sc.SourceDataSourceEntityName, false).Clone();
@@ -622,13 +1593,23 @@ namespace TheTechIdea.Beep.Editor.ETL
                                         }
                                        
                                         SendMessege(progress, token, entitystr, sc, $"Creating Entity  {entitystr.EntityName} ");
-                                        bool retval = destds.CreateEntityAs(entitystr); // t.Result;
-                                        if (retval)
+                                        DMEEditor.ErrorObject = await EnsureDestinationEntityAsync(
+                                            destds,
+                                            entitystr,
+                                            sc,
+                                            createIfMissing: _schemaCreateIfMissing,
+                                            alterIfNeeded: _schemaAlterIfNeeded);
+                                        if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                                         {
-                                            SendMessege(progress, token, entitystr, sc, $"Successfully Created Entity  {entitystr.EntityName} ");
+                                            schemaEntitiesCreated++;
+                                            if (_schemaAlterIfNeeded)
+                                            {
+                                                schemaEntitiesAltered++;
+                                            }
+                                            SendMessege(progress, token, entitystr, sc, $"Schema ensured for Entity  {entitystr.EntityName} ");
                                             sc.Active = true;
                                             sc.IsCreated = true;
-                                            sc.Active = true;
+                                            LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Schema ensure succeeded for {entitystr.EntityName}" });
                                             if (sc.CopyDataScripts.Count > 0 && sc.CopyData && sc.IsCreated)
                                             {
                                                 SendMessege(progress, token, entitystr, sc, $"Started  Coping Data From {entitystr.EntityName} ");
@@ -639,11 +1620,16 @@ namespace TheTechIdea.Beep.Editor.ETL
                                         }
                                         else
                                         {
-                                            DMEEditor.ErrorObject.Flag = Errors.Failed;
-                                            DMEEditor.ErrorObject.Message = $"Failed in Creating Entity   {entitystr.EntityName} ";
-                                            SendMessege(progress, token, entitystr, sc, $"Failed in Creating Entity   {entitystr.EntityName} ");
+                                            schemaEntitiesFailed++;
+                                            if (string.IsNullOrWhiteSpace(DMEEditor.ErrorObject.Message))
+                                            {
+                                                DMEEditor.ErrorObject.Message = $"Failed in Creating Entity   {entitystr.EntityName} ";
+                                            }
+                                            SendMessege(progress, token, entitystr, sc, $"Failed in Ensuring Entity   {entitystr.EntityName} ");
                                             sc.Active = false;
                                             sc.Failed = true;
+                                            sc.ErrorMessage = DMEEditor.ErrorObject.Message;
+                                            LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Schema ensure failed for {entitystr.EntityName}: {DMEEditor.ErrorObject.Message}" });
                                             CreateSuccess= false;
                                         }
                                     }
@@ -651,6 +1637,45 @@ namespace TheTechIdea.Beep.Editor.ETL
                                 case DDLScriptType.AlterPrimaryKey:
                                     break;
                                 case DDLScriptType.AlterFor:
+                                    if (_schemaAllowDestructiveChanges)
+                                    {
+                                        DMEEditor.AddLogMessage("ETL.Schema", $"AlterFor for '{sc.DestinationEntityName}' skipped: destructive actions are not implemented in this phase.", DateTime.Now, -1, "ETL", Errors.Warning);
+                                    }
+                                    else
+                                    {
+                                        if (!useEntityStructure || sc.SourceEntity == null)
+                                        {
+                                            entitystr = (EntityStructure)srcds.GetEntityStructure(sc.SourceDataSourceEntityName, false).Clone();
+                                        }
+                                        else
+                                        {
+                                            entitystr = sc.SourceEntity;
+                                        }
+
+                                        if (sc.SourceDataSourceEntityName != sc.DestinationEntityName)
+                                        {
+                                            entitystr.EntityName = sc.DestinationEntityName;
+                                            entitystr.DatasourceEntityName = sc.DestinationEntityName;
+                                            entitystr.OriginalEntityName = sc.DestinationEntityName;
+                                        }
+
+                                        DMEEditor.ErrorObject = await ApplySchemaDeltaIfNeededAsync(destds, entitystr, sc);
+                                        if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                                        {
+                                            sc.IsModified = true;
+                                            sc.Failed = false;
+                                            sc.ErrorMessage = string.Empty;
+                                            schemaEntitiesAltered++;
+                                            LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Schema delta applied for {entitystr.EntityName}" });
+                                        }
+                                        else
+                                        {
+                                            sc.Failed = true;
+                                            sc.ErrorMessage = DMEEditor.ErrorObject.Message;
+                                            schemaEntitiesFailed++;
+                                            LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Schema delta failed for {entitystr.EntityName}: {DMEEditor.ErrorObject.Message}" });
+                                        }
+                                    }
                                     break;
                                 case DDLScriptType.AlterUni:
                                     break;
@@ -669,17 +1694,25 @@ namespace TheTechIdea.Beep.Editor.ETL
                                             break;
                                         }
                                         SendMessege(progress, token, null, sc, $"Started Coping Data for Entity  {sc.DestinationEntityName}  in {sc.DestinationDataSourceName}");
-
-                                        await Task.Run(() =>
+                                        DMEEditor.ErrorObject = await ExecuteCopyStepAsync(sc, srcds, destds, progress, token);
+                                        if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                                         {
-                                            DMEEditor.ErrorObject = RunCopyEntityScript(sc, srcds, destds, sc.SourceDataSourceEntityName, sc.DestinationEntityName, progress, token, true);  //t1.Result;//DMEEditor.ETL.CopyEntityData(srcds, destds, ScriptHeader.Scripts[i], true);
-
-                                        });
-                                        SendMessege(progress, token, null, sc, $"Finished in Coping Data for Entity  {sc.DestinationEntityName}"); ;
+                                            sc.Failed = true;
+                                            SendMessege(progress, token, null, sc, $"Failed in Coping Data for Entity  {sc.DestinationEntityName}");
+                                        }
+                                        else
+                                        {
+                                            sc.Failed = false;
+                                            SendMessege(progress, token, null, sc, $"Finished in Coping Data for Entity  {sc.DestinationEntityName}");
+                                        }
                                     }
                                     break;
                                 default:
                                     break;
+                            }
+                            if (!sc.Failed && DMEEditor.ErrorObject.Flag != Errors.Failed)
+                            {
+                                CountStepOutcome(true);
                             }
 
                         }
@@ -692,6 +1725,10 @@ namespace TheTechIdea.Beep.Editor.ETL
                     }
                 }
             }
+            var schemaSummary = $"ETL Schema Summary: processed={schemaEntitiesProcessed}, created={schemaEntitiesCreated}, altered={schemaEntitiesAltered}, failed={schemaEntitiesFailed}";
+            DMEEditor.AddLogMessage("ETL.Schema", schemaSummary, DateTime.Now, -1, "ETL", schemaEntitiesFailed > 0 ? Errors.Warning : Errors.Ok);
+            LoadDataLogs.Add(new LoadDataLogResult { InputLine = schemaSummary });
+            EndRunTelemetry("RunCreateScript", _runCancelled || token.IsCancellationRequested);
             // SaveETL(destds.DatasourceName);
             #endregion
             return DMEEditor.ErrorObject;
@@ -720,7 +1757,6 @@ namespace TheTechIdea.Beep.Editor.ETL
                         rDB.DisableFKConstraints(destEntitystructure);
                     }
                    
-                        object srcTb;
                         string querystring = null;
                         List<AppFilter> filters = null;
                         List<EntityField> SelectedFields = null;
@@ -746,51 +1782,15 @@ namespace TheTechIdea.Beep.Editor.ETL
                             SourceFields = srcentitystructure.Fields;
                         }
                         SendMessege(progress, token, null, sc, $"Getting Data for  {srcentity}"); ;
-                        var src = Task.Run(() => { return sourceds.GetEntity(querystring, filters); });
-                        src.GetAwaiter().GetResult();
+                        var srcTb = sourceds.GetEntity(querystring, filters);
                         SendMessege(progress, token, null, sc, $"Finish Getting Data for  {srcentity}"); ;
-
-                        srcTb = src.Result;
-
-                    IList<object> srcList = null;
-                        if (src.Result != null)
+                        var srcList = NormalizeSourceRows(srcTb, srcentitystructure);
+                        if (srcList.Count > 0)
                         {
-
-                 //           DMTypeBuilder.CreateNewObject(DMEEditor, null, srcentitystructure.EntityName, SourceFields);
-                            if (srcTb.GetType().FullName.Contains("DataTable"))
-                            {
-                                srcList = DMEEditor.Utilfunction.GetListByDataTable((DataTable)srcTb, DMTypeBuilder.MyType, srcentitystructure);
-                          
-                        }
-                        else
-                             if (srcTb.GetType().FullName.Contains("ObservableBindingList"))
-                            {
-                              IBindingListView t = (IBindingListView)srcTb;
-                            srcList = new List<object>();
-
-                            foreach (var item in t)
-                            {
-                                srcList.Add(item);
-                            }
-
-                        }
-                            else
-                            if (srcTb.GetType().FullName.Contains("List"))
-                            {
-                                srcList = (IList<object>)srcTb;
-                          
-                        }
-                        else
-                            if (srcTb.GetType().FullName.Contains("IEnumerable"))
-                            {
-                                srcList = (IList<object>)srcTb;
-                          
-                            }
-                           
                             SendMessege(progress, token, null, sc, $"Data fetched {ScriptCount} Record"); ;
                             int i=0;
-                        ScriptCount += srcList.Count();
-                        foreach (var r in srcList)
+                            ScriptCount += srcList.Count();
+                            foreach (var r in srcList)
                             {
                                 i++;
                                 DMEEditor.ErrorObject = InsertEntity(destds, destEntitystructure, destentity, map_DTL, r, progress, token); ;
@@ -834,14 +1834,38 @@ namespace TheTechIdea.Beep.Editor.ETL
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
+                var scriptManager = new ETLScriptManager(DMEEditor);
+                var loadedScript = scriptManager.LoadScriptByDataSource(DatasourceName);
+                if (loadedScript != null)
+                {
+                    if (string.IsNullOrWhiteSpace(loadedScript.ScriptFormatVersion))
+                    {
+                        loadedScript.ScriptFormatVersion = "1.0-legacy";
+                    }
+                    if (loadedScript.ScriptSchemaVersion <= 0)
+                    {
+                        loadedScript.ScriptSchemaVersion = 1;
+                    }
+                    Script = loadedScript;
+                    DMEEditor.AddLogMessage("ETL", $"Loaded canonical ETL script for {DatasourceName}.", DateTime.Now, 0, null, Errors.Ok);
+                    return DMEEditor.ErrorObject;
+                }
+
+                // Legacy compatibility path: preserve old datasource-folder convention.
                 string dbpath = DMEEditor.ConfigEditor.ExePath + "\\Scripts\\" + DatasourceName;
                 Directory.CreateDirectory(dbpath);
                 string filepath = Path.Combine(dbpath, "createscripts.json");
-                //string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
-
                 if (File.Exists(filepath))
                 {
-                    Script = DMEEditor.ConfigEditor.JsonLoader.DeserializeSingleObject<ETLScriptHDR>(filepath);
+                    var legacyScript = DMEEditor.ConfigEditor.JsonLoader.DeserializeSingleObject<ETLScriptHDR>(filepath);
+                    if (legacyScript != null)
+                    {
+                        legacyScript.ScriptSource = string.IsNullOrWhiteSpace(legacyScript.ScriptSource) ? DatasourceName : legacyScript.ScriptSource;
+                        legacyScript.ScriptFormatVersion = string.IsNullOrWhiteSpace(legacyScript.ScriptFormatVersion) ? "1.0-legacy" : legacyScript.ScriptFormatVersion;
+                        legacyScript.ScriptSchemaVersion = legacyScript.ScriptSchemaVersion <= 0 ? 1 : legacyScript.ScriptSchemaVersion;
+                        Script = legacyScript;
+                        DMEEditor.AddLogMessage("ETL", $"Loaded legacy ETL script for {DatasourceName}.", DateTime.Now, 0, null, Errors.Warning);
+                    }
                 }
             }
             catch (Exception ex)
@@ -863,14 +1887,24 @@ namespace TheTechIdea.Beep.Editor.ETL
             DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-                string dbpath = DMEEditor.ConfigEditor.ExePath + "\\Scripts\\" + DatasourceName;
-                Directory.CreateDirectory(dbpath);
-                string filepath = Path.Combine(dbpath, "createscripts.json");
-                string InMemoryStructuresfilepath = Path.Combine(dbpath, "InMemoryStructures.json");
-                DMEEditor.ConfigEditor.JsonLoader.Serialize(filepath, Script);
-                //DMEEditor.ConfigEditor.JsonLoader.Serialize(InMemoryStructuresfilepath, InMemoryStructures);
+                var scriptManager = new ETLScriptManager(DMEEditor);
+                Script.ScriptSource = string.IsNullOrWhiteSpace(Script.ScriptSource) ? DatasourceName : Script.ScriptSource;
+                Script.ScriptName = string.IsNullOrWhiteSpace(Script.ScriptName) ? DatasourceName : Script.ScriptName;
+                Script.ScriptFormatVersion = string.IsNullOrWhiteSpace(Script.ScriptFormatVersion) ? "2.0" : Script.ScriptFormatVersion;
+                Script.ScriptSchemaVersion = Script.ScriptSchemaVersion <= 0 ? 2 : Script.ScriptSchemaVersion;
 
+                DMEEditor.ErrorObject = scriptManager.ValidateScript(Script);
+                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                {
+                    DMEEditor.AddLogMessage("ETL", $"ETL script validation failed before save for {DatasourceName}: {DMEEditor.ErrorObject.Message}", DateTime.Now, 0, null, Errors.Failed);
+                    return DMEEditor.ErrorObject;
+                }
 
+                DMEEditor.ErrorObject = scriptManager.SaveScript(DatasourceName, Script);
+                if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                {
+                    DMEEditor.AddLogMessage("ETL", $"Saved canonical ETL script for {DatasourceName}.", DateTime.Now, 0, null, Errors.Ok);
+                }
             }
             catch (Exception ex)
             {
@@ -913,6 +1947,11 @@ namespace TheTechIdea.Beep.Editor.ETL
         /// <returns>An object containing information about any errors that occurred during the import script.</returns>
         public async Task<IErrorsInfo> RunImportScript(IProgress<PassedArgs> progress, CancellationToken token,bool useEntityStructure = true)
         {
+            var preflight = await PreflightImportScriptAsync(progress, token);
+            if (preflight.Flag == Errors.Failed)
+            {
+                return preflight;
+            }
             IDataSource destds = null;
             IDataSource srcds = null;
             ScriptCount = 1;
@@ -920,6 +1959,7 @@ namespace TheTechIdea.Beep.Editor.ETL
             errorcount = 0;
             stoprun = false;
             EntityStructure entitystr;
+            BeginRunTelemetry("RunImportScript", ScriptCount);
             CurrentScriptRecord += 1;
             LoadDataLogs = new List<LoadDataLogResult>();
             ETLScriptDet sc = DMEEditor.ETL.Script.ScriptDetails.First();
@@ -929,6 +1969,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 srcds = DMEEditor.GetDataSource(sc.SourceDataSourceName);
                 if (errorcount == StopErrorCount)
                 {
+                    EndRunTelemetry("RunImportScript", _runCancelled || token.IsCancellationRequested);
                     return DMEEditor.ErrorObject;
                 }
                 if (destds != null)
@@ -941,6 +1982,27 @@ namespace TheTechIdea.Beep.Editor.ETL
                         {
                             if (sc.ScriptType == DDLScriptType.CopyData)
                             {
+                                if (_useImportingRunForImports)
+                                {
+                                    DMEEditor.ErrorObject = await ExecuteImportViaImportingAsync(sc, srcds, destds, progress, token);
+                                    if (DMEEditor.ErrorObject.Flag == Errors.Ok || !_enableLegacyImportFallback)
+                                    {
+                                        if (DMEEditor.ErrorObject.Flag == Errors.Ok)
+                                        {
+                                            CountStepOutcome(true);
+                                            sc.Failed = false;
+                                            sc.ErrorMessage = string.Empty;
+                                            SendMessege(progress, token, null, sc, $"Import completed via Importing bridge for {sc.DestinationEntityName}");
+                                        }
+                                        else
+                                        {
+                                            CountStepOutcome(false);
+                                        }
+                                        EndRunTelemetry("RunImportScript", _runCancelled || token.IsCancellationRequested);
+                                        return DMEEditor.ErrorObject;
+                                    }
+                                    DMEEditor.AddLogMessage("ETL.ImportBridge", $"Falling back to legacy import path for '{sc.DestinationEntityName}'.", DateTime.Now, -1, "ETL", Errors.Warning);
+                                }
                                 CurrrentDBDefaults = DMEEditor.ConfigEditor.DataConnections[DMEEditor.ConfigEditor.DataConnections.FindIndex(i => i.ConnectionName == destds.DatasourceName)].DatasourceDefaults;
                                 if (!useEntityStructure || sc.SourceEntity == null)
                                 {
@@ -962,7 +2024,31 @@ namespace TheTechIdea.Beep.Editor.ETL
                                 {
                                     return DMEEditor.ErrorObject;
                                 }
-                                var src = await Task.Run(() => { return RunCopyEntityScript(sc, srcds, destds, sc.SourceEntityName, sc.DestinationEntityName, progress, token, false, sc.Mapping); });
+                                DMEEditor.ErrorObject = await ExecuteCopyStepAsync(
+                                    sc,
+                                    srcds,
+                                    destds,
+                                    progress,
+                                    token,
+                                    new EtlCopyExecutionOptions
+                                    {
+                                        BatchSize = 100,
+                                        EnableParallel = false,
+                                        MaxRetries = 3
+                                    });
+                                if (DMEEditor.ErrorObject.Flag == Errors.Failed)
+                                {
+                                    sc.Failed = true;
+                                    sc.ErrorMessage = DMEEditor.ErrorObject.Message;
+                                    SendMessege(progress, token, null, sc, $"Import copy failed for {sc.DestinationEntityName}");
+                                }
+                                else
+                                {
+                                    CountStepOutcome(true);
+                                    sc.Failed = false;
+                                    sc.ErrorMessage = string.Empty;
+                                    SendMessege(progress, token, null, sc, $"Import copy completed for {sc.DestinationEntityName}");
+                                }
                             }
                         }
                         else
@@ -975,6 +2061,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                     }
                 }
             }
+            EndRunTelemetry("RunImportScript", _runCancelled || token.IsCancellationRequested);
             return DMEEditor.ErrorObject;
 
         }
@@ -1054,7 +2141,13 @@ namespace TheTechIdea.Beep.Editor.ETL
                     }
                 }
                 CurrentScriptRecord += 1;
+                _runRecordsProcessed += 1;
                  SendMessege(progress, token, destEntitystructure, null, $"Inserting Record {CurrentScriptRecord} ");
+                if (_runRecordsProcessed % 250 == 0)
+                {
+                    ReportEtlProgress(progress, "Heartbeat", $"Heartbeat entity={destentity} recordsProcessed={_runRecordsProcessed}");
+                    AddLoadLogLine($"Heartbeat entity={destentity} recordsProcessed={_runRecordsProcessed}");
+                }
                 DMEEditor.ErrorObject = destds.InsertEntity(destEntitystructure.EntityName, retval);
                 token.ThrowIfCancellationRequested();
 
@@ -1093,32 +2186,36 @@ namespace TheTechIdea.Beep.Editor.ETL
                 if (sc != null)
                 {
                     tr.ParentScriptId = sc.Id;
+                    tr.Script = sc.ScriptType.ToString();
                     sc.Tracking.Add(tr);
+                    sc.LastRunCorrelationId = _currentRunCorrelationId;
+                    sc.LastEventType = "StepFailed";
+                    sc.LastEventMessage = DMEEditor.ErrorObject.Message;
+                    sc.LastUpdatedUtc = DateTime.UtcNow;
                 }
 
-                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"Failed   {CurrentScriptRecord} -{messege} : {tr.ErrorMessage}" });
-                if (progress != null)
-                {
-                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
-                    progress.Report(ps);
-
-                }
+                AddLoadLogLine($"Failed {CurrentScriptRecord} - {messege} : {tr.ErrorMessage}", sc?.Id.ToString());
+                ReportEtlProgress(progress, "StepFailed", DMEEditor.ErrorObject.Message);
+                CountStepOutcome(false);
                 if (errorcount > StopErrorCount)
                 {
                     stoprun = true;
-                    PassedArgs ps = new PassedArgs { EventType = "Stop", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
-                    progress.Report(ps);
+                    ReportEtlProgress(progress, "RunStopped", $"StopErrorCount reached ({StopErrorCount}).");
+                    AddLoadLogLine($"Run stopped after reaching StopErrorCount={StopErrorCount}", sc?.Id.ToString());
 
                 }
             }
             else
             {
-                LoadDataLogs.Add(new LoadDataLogResult() { InputLine = $"{messege} " });
-                if (progress != null)
+                if (sc != null)
                 {
-                    PassedArgs ps = new PassedArgs { EventType = "Update", ParameterInt1 = CurrentScriptRecord, ParameterInt2 = ScriptCount, Messege = DMEEditor.ErrorObject.Message };
-                    progress.Report(ps);
+                    sc.LastRunCorrelationId = _currentRunCorrelationId;
+                    sc.LastEventType = "StepUpdate";
+                    sc.LastEventMessage = messege;
+                    sc.LastUpdatedUtc = DateTime.UtcNow;
                 }
+                AddLoadLogLine($"{messege}", sc?.Id.ToString());
+                ReportEtlProgress(progress, "StepUpdate", messege);
             }
         }
 
