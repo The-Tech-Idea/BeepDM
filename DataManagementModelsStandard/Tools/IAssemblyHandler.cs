@@ -49,6 +49,7 @@ namespace TheTechIdea.Beep.Tools
         bool LoadNugget(string path);
         bool UnloadNugget(string nuggetname);
         bool UnloadAssembly(string assemblyname);
+        List<NuggetInfo> GetAllNuggets();
         bool RunMethod(object ObjInstance, string FullClassName, string MethodName);
         AssemblyClassDefinition GetAssemblyClassDefinition(TypeInfo type, string typename);
         List<Assembly> LoadAssembliesFromFolder(string folderPath, FolderFileTypes folderFileType, bool scanForDataSources = true);

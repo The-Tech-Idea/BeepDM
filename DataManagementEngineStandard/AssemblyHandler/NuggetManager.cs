@@ -2,19 +2,22 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Threading;
+using System.Threading.Tasks;
+using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Tools.PluginSystem;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Tools
 {
     /// <summary>
-    /// Manages NuGet packages (nuggets) loading and unloading with support for both traditional and isolated contexts
-    /// Can be used by both AssemblyHandler and SharedContextAssemblyHandler
+    /// NuGet SDK-first package manager for package discovery, download, and assembly loading.
+    /// All package acquisition goes through NuggetPackageDownloader; load/unload tracking remains here.
     /// </summary>
     public class NuggetManager
     {
@@ -22,6 +25,7 @@ namespace TheTechIdea.Beep.Tools
         private readonly IDMLogger _logger;
         private readonly IErrorsInfo _errorObject;
         private readonly IUtil _utilFunction;
+        private readonly NuggetPackageDownloader _packageDownloader;
         
         // Track loaded nuggets and their assemblies
         private readonly ConcurrentDictionary<string, NuggetInfo> _loadedNuggets = new();
@@ -42,20 +46,140 @@ namespace TheTechIdea.Beep.Tools
             _logger = logger;
             _errorObject = errorObject;
             _utilFunction = utilFunction;
+            _packageDownloader = new NuggetPackageDownloader(logger);
         }
         #endregion
 
         #region Public Methods
 
         /// <summary>
-        /// Load a nugget from specified path (supports .nupkg files, single DLL, and directory)
+        /// Searches NuGet sources for packages.
         /// </summary>
-        /// <param name="path">Path to nugget .nupkg file, directory, or DLL file</param>
+        public Task<List<NuGetSearchResult>> SearchNuGetPackagesAsync(
+            string searchTerm,
+            int skip = 0,
+            int take = 20,
+            bool includePrerelease = false,
+            IEnumerable<string> sources = null,
+            CancellationToken token = default)
+        {
+            return _packageDownloader.SearchPackagesAsync(searchTerm, skip, take, includePrerelease, sources, token);
+        }
+
+        /// <summary>
+        /// Gets package versions from NuGet sources.
+        /// </summary>
+        public async Task<List<string>> GetNuGetPackageVersionsAsync(
+            string packageId,
+            bool includePrerelease = false,
+            IEnumerable<string> sources = null,
+            CancellationToken token = default)
+        {
+            var versions = await _packageDownloader.GetPackageVersionsAsync(packageId, includePrerelease, sources, token);
+            return versions.Select(v => v.ToNormalizedString()).ToList();
+        }
+
+        /// <summary>
+        /// Installs package files into an application plugin directory.
+        /// </summary>
+        public string InstallPackageToAppDirectory(
+            string packageFrameworkPath,
+            string appDirectory = null,
+            string pluginId = null,
+            string version = null,
+            bool overwrite = false)
+        {
+            return _packageDownloader.InstallPackageToAppDirectory(packageFrameworkPath, appDirectory, pluginId, version, overwrite);
+        }
+
+        /// <summary>
+        /// Downloads package + dependencies using NuGet SDK and loads assemblies.
+        /// </summary>
+        public async Task<List<Assembly>> LoadNuggetFromNuGetAsync(
+            string packageName,
+            string version = null,
+            IEnumerable<string> sources = null,
+            bool useSingleSharedContext = true,
+            IProgress<PassedArgs> progress = null,
+            CancellationToken token = default,
+            string appInstallPath = null,
+            bool useProcessHost = false)
+        {
+            var loadedAssemblies = new List<Assembly>();
+            var sourceList = (sources ?? new[] { "https://api.nuget.org/v3/index.json" }).ToList();
+
+            try
+            {
+                var results = await _packageDownloader.DownloadPackageWithDependenciesAsync(
+                    packageName,
+                    version,
+                    sourceList,
+                    progress,
+                    token);
+
+                foreach (var kvp in results)
+                {
+                    var pkgId = kvp.Key;
+                    var pkgPath = kvp.Value;
+                    var loaded = LoadNugget(pkgPath, useIsolatedContext: !useSingleSharedContext, packageId: pkgId, packageVersion: version);
+                    if (!loaded)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        var targetRoot = appInstallPath ?? Path.Combine(AppContext.BaseDirectory, "Plugins");
+                        var installedPath = InstallPackageToAppDirectory(pkgPath, targetRoot, pkgId, version);
+                        if (useProcessHost && !string.IsNullOrWhiteSpace(installedPath) && Directory.Exists(installedPath))
+                        {
+                            var exe = Directory.GetFiles(installedPath, "*.exe", SearchOption.AllDirectories).FirstOrDefault();
+                            if (!string.IsNullOrWhiteSpace(exe))
+                            {
+                                var psi = new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = exe,
+                                    UseShellExecute = false,
+                                    CreateNoWindow = true
+                                };
+                                System.Diagnostics.Process.Start(psi);
+                                _logger?.WriteLog($"LoadNuggetFromNuGetAsync: Started process-hosted package '{pkgId}' at '{exe}'");
+                            }
+                        }
+                    }
+                    catch (Exception installEx)
+                    {
+                        _logger?.WriteLog($"LoadNuggetFromNuGetAsync: Install/start host skipped for '{pkgId}'. {installEx.Message}");
+                    }
+
+                    foreach (var assembly in GetNuggetAssemblies(pkgId))
+                    {
+                        if (!loadedAssemblies.Contains(assembly))
+                        {
+                            loadedAssemblies.Add(assembly);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.WriteLog($"LoadNuggetFromNuGetAsync: Error loading package '{packageName}': {ex.Message}");
+                _errorObject.Flag = Errors.Failed;
+                _errorObject.Message = ex.Message;
+                _errorObject.Ex = ex;
+            }
+
+            return loadedAssemblies;
+        }
+
+        /// <summary>
+        /// Load a nugget from filesystem path (single DLL or directory containing DLLs).
+        /// </summary>
+        /// <param name="path">Path to nugget directory or DLL file</param>
         /// <param name="useIsolatedContext">If true, uses AssemblyLoadContext for isolation (.NET Core/.NET 5+)</param>
         /// <returns>True if loaded successfully</returns>
-        public bool LoadNugget(string path, bool useIsolatedContext = false)
+        public bool LoadNugget(string path, bool useIsolatedContext = false, string packageId = null, string packageVersion = null)
         {
-            string extractedPath = null;
             try
             {
                 if (string.IsNullOrWhiteSpace(path))
@@ -70,22 +194,13 @@ namespace TheTechIdea.Beep.Tools
                     return false;
                 }
 
-                // If path is a .nupkg file, extract it first
                 if (File.Exists(path) && path.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger?.WriteLog($"LoadNugget: Extracting .nupkg file: {path}");
-                    extractedPath = ExtractNuGetPackage(path);
-                    if (string.IsNullOrEmpty(extractedPath) || !Directory.Exists(extractedPath))
-                    {
-                        _logger?.WriteLog($"LoadNugget: Failed to extract .nupkg file: {path}");
-                        return false;
-                    }
-                    path = extractedPath; // Use extracted directory for loading
-                    _logger?.WriteLog($"LoadNugget: Extracted to: {extractedPath}");
+                    _logger?.WriteLog("LoadNugget: Direct .nupkg loading is not supported. Use LoadNuggetFromNuGetAsync.");
+                    return false;
                 }
 
-                // Determine nugget name
-                string nuggetName = GetNuggetName(path);
+                var nuggetName = ResolveNuggetKey(path, packageId);
                 
                 // Check if already loaded
                 if (_loadedNuggets.ContainsKey(nuggetName))
@@ -121,13 +236,21 @@ namespace TheTechIdea.Beep.Tools
                 {
                     Id = nuggetName,
                     Name = nuggetName,
-                    Version = GetNuggetVersion(loadedAssemblies.First()),
+                    Version = packageVersion ?? GetNuggetVersion(loadedAssemblies.First()),
                     LoadedAt = DateTime.UtcNow,
                     LoadedAssemblies = loadedAssemblies,
                     SourcePath = path,
                     IsSharedContext = !useIsolatedContext,
                     IsActive = true
                 };
+                if (!string.IsNullOrWhiteSpace(packageId))
+                {
+                    nuggetInfo.Metadata["PackageId"] = packageId;
+                }
+                if (!string.IsNullOrWhiteSpace(packageVersion))
+                {
+                    nuggetInfo.Metadata["PackageVersion"] = packageVersion;
+                }
 
                 _loadedNuggets.TryAdd(nuggetName, nuggetInfo);
                 _nuggetAssemblies.TryAdd(nuggetName, loadedAssemblies);
@@ -152,12 +275,6 @@ namespace TheTechIdea.Beep.Tools
                 _errorObject.Ex = ex;
                 return false;
             }
-            finally
-            {
-                // Note: We don't delete extractedPath here because assemblies may reference files in it
-                // The extracted directory will remain until the nugget is unloaded or the process exits
-                // If cleanup is needed, it should be done in UnloadNugget
-            }
         }
 
         /// <summary>
@@ -169,15 +286,16 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
-                if (!_loadedNuggets.TryGetValue(nuggetName, out var nuggetInfo))
+                var resolvedKey = ResolveLoadedNuggetKey(nuggetName);
+                if (resolvedKey == null || !_loadedNuggets.TryGetValue(resolvedKey, out var nuggetInfo))
                 {
                     _logger?.WriteLog($"UnloadNugget: Nugget '{nuggetName}' not found");
                     return false;
                 }
 
                 // Remove from tracking
-                _loadedNuggets.TryRemove(nuggetName, out _);
-                _nuggetAssemblies.TryRemove(nuggetName, out var assemblies);
+                _loadedNuggets.TryRemove(resolvedKey, out _);
+                _nuggetAssemblies.TryRemove(resolvedKey, out var assemblies);
 
                 // Remove assembly path mappings
                 if (assemblies != null)
@@ -192,7 +310,7 @@ namespace TheTechIdea.Beep.Tools
                 }
 
                 // Unload context if isolated
-                if (_nuggetContexts.TryRemove(nuggetName, out var context))
+                if (_nuggetContexts.TryRemove(resolvedKey, out var context))
                 {
                     context.Unload();
                     
@@ -203,11 +321,11 @@ namespace TheTechIdea.Beep.Tools
                         GC.WaitForPendingFinalizers();
                     }
                     
-                    _logger?.WriteLog($"UnloadNugget: Unloaded isolated context for '{nuggetName}'");
+                    _logger?.WriteLog($"UnloadNugget: Unloaded isolated context for '{resolvedKey}'");
                 }
                 else
                 {
-                    _logger?.WriteLog($"UnloadNugget: Removed tracking for '{nuggetName}' (shared context - assemblies remain in memory)");
+                    _logger?.WriteLog($"UnloadNugget: Removed tracking for '{resolvedKey}' (shared context - assemblies remain in memory)");
                 }
 
                 return true;
@@ -227,7 +345,8 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         public List<Assembly> GetNuggetAssemblies(string nuggetName)
         {
-            if (_nuggetAssemblies.TryGetValue(nuggetName, out var assemblies))
+            var resolvedKey = ResolveLoadedNuggetKey(nuggetName);
+            if (resolvedKey != null && _nuggetAssemblies.TryGetValue(resolvedKey, out var assemblies))
             {
                 return new List<Assembly>(assemblies);
             }
@@ -239,7 +358,9 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         public NuggetInfo GetNuggetInfo(string nuggetName)
         {
-            _loadedNuggets.TryGetValue(nuggetName, out var info);
+            var resolvedKey = ResolveLoadedNuggetKey(nuggetName);
+            if (resolvedKey == null) return null;
+            _loadedNuggets.TryGetValue(resolvedKey, out var info);
             return info;
         }
 
@@ -256,7 +377,7 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         public bool IsNuggetLoaded(string nuggetName)
         {
-            return _loadedNuggets.ContainsKey(nuggetName);
+            return ResolveLoadedNuggetKey(nuggetName) != null;
         }
 
         /// <summary>
@@ -379,7 +500,7 @@ namespace TheTechIdea.Beep.Tools
         /// <param name="expectedAssemblyName">Optional expected assembly name to check for</param>
         /// <param name="expectedClassName">Optional expected class name to verify the package is loaded</param>
         /// <returns>True if package appears to be installed</returns>
-        public bool IsPackageAlreadyInstalled(string packageName, string destinationFolder, string? expectedAssemblyName = null, string? expectedClassName = null)
+        public bool IsPackageAlreadyInstalled(string packageName, string destinationFolder, string expectedAssemblyName = null, string expectedClassName = null)
         {
             if (!Directory.Exists(destinationFolder))
                 return false;
@@ -644,43 +765,65 @@ namespace TheTechIdea.Beep.Tools
             }
         }
 
-        /// <summary>
-        /// Extracts a .nupkg file to a temporary directory
-        /// </summary>
-        /// <param name="nupkgPath">Path to the .nupkg file</param>
-        /// <returns>Path to the extracted directory, or null if extraction failed</returns>
-        private string ExtractNuGetPackage(string nupkgPath)
+        private string ResolveNuggetKey(string path, string packageId)
         {
-            try
+            if (!string.IsNullOrWhiteSpace(packageId))
             {
-                if (!File.Exists(nupkgPath))
-                {
-                    _logger?.WriteLog($"ExtractNuGetPackage: File not found: {nupkgPath}");
-                    return null;
-                }
-
-                // Extract to a subdirectory next to the .nupkg file
-                var extractDir = Path.Combine(
-                    Path.GetDirectoryName(nupkgPath) ?? Path.GetTempPath(),
-                    Path.GetFileNameWithoutExtension(nupkgPath) + "_extracted");
-
-                // If directory already exists, use it (may have been extracted before)
-                if (!Directory.Exists(extractDir))
-                {
-                    Directory.CreateDirectory(extractDir);
-                }
-
-                // Extract the .nupkg file (it's a ZIP archive)
-                ZipFile.ExtractToDirectory(nupkgPath, extractDir, overwriteFiles: true);
-
-                _logger?.WriteLog($"ExtractNuGetPackage: Extracted '{nupkgPath}' to '{extractDir}'");
-                return extractDir;
+                return packageId.Trim();
             }
-            catch (Exception ex)
+
+            if (File.Exists(path))
             {
-                _logger?.WriteLog($"ExtractNuGetPackage: Error extracting '{nupkgPath}': {ex.Message}");
+                return Path.GetFileNameWithoutExtension(path);
+            }
+
+            if (Directory.Exists(path))
+            {
+                var dirInfo = new DirectoryInfo(path);
+                if (dirInfo.Parent != null && dirInfo.Parent.Parent != null)
+                {
+                    var parent = dirInfo.Parent;
+                    var grandParent = parent.Parent;
+                    if (parent.Name.Equals("lib", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return grandParent.Name;
+                    }
+                }
+                return dirInfo.Name;
+            }
+
+            return Path.GetFileNameWithoutExtension(path ?? string.Empty);
+        }
+
+        private string ResolveLoadedNuggetKey(string nuggetName)
+        {
+            if (string.IsNullOrWhiteSpace(nuggetName))
+            {
                 return null;
             }
+
+            if (_loadedNuggets.ContainsKey(nuggetName))
+            {
+                return nuggetName;
+            }
+
+            foreach (var kvp in _loadedNuggets)
+            {
+                var info = kvp.Value;
+                if (info == null) continue;
+                if (info.Name != null && info.Name.Equals(nuggetName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return kvp.Key;
+                }
+                if (info.Metadata != null
+                    && info.Metadata.TryGetValue("PackageId", out var packageIdObj)
+                    && packageIdObj is string packageId
+                    && packageId.Equals(nuggetName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return kvp.Key;
+                }
+            }
+            return null;
         }
 
         #endregion

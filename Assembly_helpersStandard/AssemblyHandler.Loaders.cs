@@ -663,6 +663,14 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>
+        /// Returns all nuggets currently tracked by the NuggetManager.
+        /// </summary>
+        public List<NuggetInfo> GetAllNuggets()
+        {
+            return _nuggetManager?.GetAllNuggets() ?? new List<NuggetInfo>();
+        }
+
+        /// <summary>
         /// Download a nugget from NuGet.org and load it into the engine
         /// </summary>
         public async Task<List<Assembly>> LoadNuggetFromNuGetAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false)

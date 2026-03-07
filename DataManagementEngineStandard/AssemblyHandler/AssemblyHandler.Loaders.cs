@@ -603,37 +603,18 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
-                // Use isolated context for hot-reload capability
-                var result = _nuggetManager.LoadNugget(path, useIsolatedContext: true);
-
-                if (result)
+                // Default to shared app-visible context so all loaded assemblies can resolve each other.
+                var result = _nuggetManager.LoadNugget(path, useIsolatedContext: false);
+                if (!result)
                 {
-                    // Add nugget assemblies to LoadedAssemblies
-                    var nuggetName = Path.GetFileNameWithoutExtension(path);
-                    var nuggetAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
-
-                    foreach (var assembly in nuggetAssemblies)
-                    {
-                        if (!LoadedAssemblies.Contains(assembly))
-                        {
-                            LoadedAssemblies.Add(assembly);
-
-                            // Add to Assemblies list
-                            var assemblyRep = new assemblies_rep(assembly, path, assembly.FullName, FolderFileTypes.OtherDLL);
-                            if (!Assemblies.Any(a => a.DllLib == assembly))
-                            {
-                                Assemblies.Add(assemblyRep);
-                            }
-
-                            // Scan the assembly for types
-                            ScanAssembly(assembly);
-                        }
-                    }
-
-                    Logger?.WriteLog($"LoadNugget: Successfully loaded and scanned nugget from {path}");
+                    return false;
                 }
 
-                return result;
+                var nuggetName = Path.GetFileNameWithoutExtension(path?.TrimEnd(Path.DirectorySeparatorChar));
+                var nuggetAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
+                SyncNuggetAssembliesToHandlerCollections(nuggetAssemblies, path, FolderFileTypes.OtherDLL);
+                Logger?.WriteLog($"LoadNugget: Successfully loaded and synchronized {nuggetAssemblies.Count} assembly(ies) from {path}");
+                return true;
             }
             catch (Exception ex)
             {
@@ -655,6 +636,21 @@ namespace TheTechIdea.Beep.Tools
 
                 if (result)
                 {
+                    var removedAssemblies = LoadedAssemblies
+                        .Where(a => a?.GetName()?.Name != null &&
+                                    a.GetName().Name.IndexOf(nuggetname, StringComparison.OrdinalIgnoreCase) >= 0)
+                        .ToList();
+
+                    foreach (var assembly in removedAssemblies)
+                    {
+                        LoadedAssemblies.Remove(assembly);
+                        Assemblies.RemoveAll(a => a?.DllLib == assembly);
+                        if (!string.IsNullOrWhiteSpace(assembly.Location))
+                        {
+                            _loadedAssemblyCache.TryRemove(assembly.Location, out _);
+                        }
+                    }
+
                     Logger?.WriteLog($"UnloadNugget: Successfully unloaded '{nuggetname}'");
                 }
 
@@ -667,6 +663,14 @@ namespace TheTechIdea.Beep.Tools
                 ErrorObject.Message = ex.Message;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Returns all nuggets currently tracked by the NuggetManager.
+        /// </summary>
+        public List<NuggetInfo> GetAllNuggets()
+        {
+            return _nuggetManager?.GetAllNuggets() ?? new List<NuggetInfo>();
         }
 
         /// <summary>

@@ -8,7 +8,6 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
-using TheTechIdea.Beep.Tools.PluginSystem;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Tools
@@ -34,10 +33,6 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         private NuggetManager _nuggetManager;
 
-        /// <summary>
-        /// Singleton NuGet package downloader — reused across all NuGet operations
-        /// </summary>
-        private NuggetPackageDownloader _packageDownloader;
         #endregion
 
         #region Public Properties - IAssemblyHandler Implementation
@@ -126,9 +121,6 @@ namespace TheTechIdea.Beep.Tools
             // Initialize NuggetManager
             _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);
 
-            // Initialize singleton NuGet package downloader
-            _packageDownloader = new NuggetPackageDownloader(Logger);
-            
             // Initialize loaded assemblies from dependency context
             InitializeLoadedAssemblies();
         }

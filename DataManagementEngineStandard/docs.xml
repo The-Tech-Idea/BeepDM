@@ -40,11 +40,6 @@
             NuGet package manager for loading/unloading nuggets
             </summary>
         </member>
-        <member name="F:TheTechIdea.Beep.Tools.AssemblyHandler._packageDownloader">
-            <summary>
-            Singleton NuGet package downloader — reused across all NuGet operations
-            </summary>
-        </member>
         <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.LoaderExtensionClasses">
             <summary>
             List of classes that extend the loader functionality.
@@ -237,6 +232,11 @@
             Checks if drivers already exist in the list to avoid duplicates
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.SyncNuggetAssembliesToHandlerCollections(System.Collections.Generic.IEnumerable{System.Reflection.Assembly},System.String,TheTechIdea.Beep.Utilities.FolderFileTypes)">
+            <summary>
+            Synchronize nugget-loaded assemblies into handler-level tracking and scanning collections.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.InitializeLoadedAssemblies">
             <summary>
             Initialize loaded assemblies from dependency context and current domain
@@ -300,6 +300,11 @@
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.UnloadNugget(System.String)">
             <summary>
             Unload a NuGet package by name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.GetAllNuggets">
+            <summary>
+            Returns all nuggets currently tracked by the NuggetManager.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.UnloadAssembly(System.String)">
@@ -439,8 +444,8 @@
         </member>
         <member name="T:TheTechIdea.Beep.Tools.NuggetManager">
             <summary>
-            Manages NuGet packages (nuggets) loading and unloading with support for both traditional and isolated contexts
-            Can be used by both AssemblyHandler and SharedContextAssemblyHandler
+            NuGet SDK-first package manager for package discovery, download, and assembly loading.
+            All package acquisition goes through NuggetPackageDownloader; load/unload tracking remains here.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.NuggetManager.#ctor(TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.Utilities.IUtil)">
@@ -448,11 +453,31 @@
             Initializes a new instance of the NuggetManager
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.LoadNugget(System.String,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.SearchNuGetPackagesAsync(System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
             <summary>
-            Load a nugget from specified path (supports .nupkg files, single DLL, and directory)
+            Searches NuGet sources for packages.
             </summary>
-            <param name="path">Path to nugget .nupkg file, directory, or DLL file</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.GetNuGetPackageVersionsAsync(System.String,System.Boolean,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Gets package versions from NuGet sources.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.InstallPackageToAppDirectory(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Installs package files into an application plugin directory.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.LoadNuggetFromNuGetAsync(System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.String,System.Boolean)">
+            <summary>
+            Downloads package + dependencies using NuGet SDK and loads assemblies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.LoadNugget(System.String,System.Boolean,System.String,System.String)">
+            <summary>
+            Load a nugget from filesystem path (single DLL or directory containing DLLs).
+            </summary>
+            <param name="path">Path to nugget directory or DLL file</param>
             <param name="useIsolatedContext">If true, uses AssemblyLoadContext for isolation (.NET Core/.NET 5+)</param>
             <returns>True if loaded successfully</returns>
         </member>
@@ -542,13 +567,6 @@
             <summary>
             Get nugget version from assembly
             </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.NuggetManager.ExtractNuGetPackage(System.String)">
-            <summary>
-            Extracts a .nupkg file to a temporary directory
-            </summary>
-            <param name="nupkgPath">Path to the .nupkg file</param>
-            <returns>Path to the extracted directory, or null if extraction failed</returns>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant">
             <summary>
@@ -1845,6 +1863,11 @@
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.UnloadNugget(System.String)">
             <summary>
             Unload a nugget package by name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.GetAllNuggets">
+            <summary>
+            Returns all nuggets currently tracked by the SharedContextManager.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.UnloadAssembly(System.String)">

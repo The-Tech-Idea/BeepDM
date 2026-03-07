@@ -1185,6 +1185,11 @@ namespace TheTechIdea.Beep.Tools
         }
     }
 
+    public List<NuggetInfo> GetAllNuggets()
+    {
+        return _nuggetManager?.GetAllNuggets() ?? new List<NuggetInfo>();
+    }
+
     /// <summary>
     /// Unload an assembly by name
     /// </summary>

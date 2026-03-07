@@ -1233,6 +1233,14 @@ namespace TheTechIdea.Beep.Tools
     }
 
     /// <summary>
+    /// Returns all nuggets currently tracked by the SharedContextManager.
+    /// </summary>
+    public List<NuggetInfo> GetAllNuggets()
+    {
+        return _sharedContextManager?.GetLoadedNuggets()?.ToList() ?? new List<NuggetInfo>();
+    }
+
+    /// <summary>
     /// Unload an assembly by name
     /// </summary>
     public bool UnloadAssembly(string assemblyname)

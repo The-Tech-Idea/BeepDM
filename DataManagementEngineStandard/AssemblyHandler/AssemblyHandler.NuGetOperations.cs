@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet.Versioning;
 using TheTechIdea.Beep.Tools.PluginSystem;
 
 namespace TheTechIdea.Beep.Tools
@@ -31,7 +29,7 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 var sources = GetActiveSourceUrls();
-                return await _packageDownloader.SearchPackagesAsync(searchTerm, skip, take, includePrerelease, sources, token);
+                return await _nuggetManager.SearchNuGetPackagesAsync(searchTerm, skip, take, includePrerelease, sources, token);
             }
             catch (Exception ex)
             {
@@ -51,8 +49,7 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 var sources = GetActiveSourceUrls();
-                var versions = await _packageDownloader.GetPackageVersionsAsync(packageId, includePrerelease, sources, token);
-                return versions.Select(v => v.ToNormalizedString()).ToList();
+                return await _nuggetManager.GetNuGetPackageVersionsAsync(packageId, includePrerelease, sources, token);
             }
             catch (Exception ex)
             {
@@ -72,68 +69,50 @@ namespace TheTechIdea.Beep.Tools
             string appInstallPath = null,
             bool useProcessHost = false)
         {
-            var loadedAssemblies = new List<Assembly>();
             try
             {
                 var sourceList = sources?.ToList() ?? GetActiveSourceUrls();
+                var loadedAssemblies = await _nuggetManager.LoadNuggetFromNuGetAsync(
+                    packageName,
+                    version,
+                    sourceList,
+                    useSingleSharedContext,
+                    progress: null,
+                    token: CancellationToken.None,
+                    appInstallPath: appInstallPath,
+                    useProcessHost: useProcessHost);
 
-                var results = await _packageDownloader.DownloadPackageWithDependenciesAsync(packageName, version, sourceList);
-
-                foreach (var kvp in results)
+                SyncNuggetAssembliesToHandlerCollections(loadedAssemblies);
+                if (loadedAssemblies.Count > 0)
                 {
-                    var path = kvp.Value;
-                    var useIsolated = !useSingleSharedContext;
-                    var loaded = _nuggetManager.LoadNugget(path, useIsolated);
-                    if (loaded)
+                    foreach (var assembly in loadedAssemblies)
                     {
-                        var nuggetName = Path.GetFileNameWithoutExtension(path.TrimEnd(Path.DirectorySeparatorChar));
-                        var nusAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
-                        foreach (var a in nusAssemblies)
+                        var drivers = GetDrivers(assembly);
+                        var owningPackage = string.IsNullOrWhiteSpace(assembly?.Location)
+                            ? packageName
+                            : _nuggetManager.FindNuggetByAssemblyPath(assembly.Location) ?? packageName;
+                        foreach (var driver in drivers)
                         {
-                            if (!LoadedAssemblies.Contains(a)) LoadedAssemblies.Add(a);
-                            if (!loadedAssemblies.Contains(a)) loadedAssemblies.Add(a);
-                        }
-
-                        // Optionally install DLLs to application directory
-                        try
-                        {
-                            var installPath = appInstallPath ?? Path.Combine(ConfigEditor.ExePath, "Plugins");
-                            _packageDownloader.InstallPackageToAppDirectory(path, installPath, packageName, version);
-                            if (useProcessHost)
+                            if (!string.IsNullOrWhiteSpace(driver?.DriverClass))
                             {
-                                var exe = Directory.GetFiles(installPath, "*.exe", SearchOption.AllDirectories).FirstOrDefault();
-                                if (!string.IsNullOrWhiteSpace(exe))
-                                {
-                                    try
-                                    {
-                                        var psi = new System.Diagnostics.ProcessStartInfo { FileName = exe, UseShellExecute = false, CreateNoWindow = true };
-                                        System.Diagnostics.Process.Start(psi);
-                                        Logger?.WriteLog($"Started process-hosted plugin {packageName} @ {exe}");
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Logger?.WriteLog($"Failed to start process-hosted plugin: {ex.Message}");
-                                    }
-                                }
+                                TrackDriverPackage(owningPackage, version, driver.DriverClass, driver.DatasourceType);
                             }
                         }
-                        catch { }
-
-                        RecordNuGetSuccess();
                     }
-                    else
-                    {
-                        RecordNuGetFailure();
-                    }
+                    RecordNuGetSuccess();
                 }
+                else
+                {
+                    RecordNuGetFailure();
+                }
+                return loadedAssemblies;
             }
             catch (Exception ex)
             {
                 Logger?.WriteLog($"LoadNuggetFromNuGetAsync: Error - {ex.Message}");
                 RecordNuGetFailure();
+                return new List<Assembly>();
             }
-
-            return loadedAssemblies;
         }
 
         #endregion

@@ -701,6 +701,49 @@ namespace TheTechIdea.Beep.Tools
             }
         }
 
+        /// <summary>
+        /// Synchronize nugget-loaded assemblies into handler-level tracking and scanning collections.
+        /// </summary>
+        private void SyncNuggetAssembliesToHandlerCollections(
+            IEnumerable<Assembly> nuggetAssemblies,
+            string sourcePath = null,
+            FolderFileTypes fileType = FolderFileTypes.OtherDLL)
+        {
+            if (nuggetAssemblies == null)
+            {
+                return;
+            }
+
+            foreach (var assembly in nuggetAssemblies)
+            {
+                if (assembly == null)
+                {
+                    continue;
+                }
+
+                if (!LoadedAssemblies.Contains(assembly))
+                {
+                    LoadedAssemblies.Add(assembly);
+                }
+
+                var trackedPath = !string.IsNullOrWhiteSpace(sourcePath)
+                    ? sourcePath
+                    : (string.IsNullOrWhiteSpace(assembly.Location) ? "NuggetSDK" : assembly.Location);
+
+                if (!Assemblies.Any(a => a.DllLib == assembly))
+                {
+                    Assemblies.Add(new assemblies_rep(assembly, trackedPath, assembly.FullName, fileType));
+                }
+
+                if (!string.IsNullOrWhiteSpace(assembly.Location))
+                {
+                    _loadedAssemblyCache[assembly.Location] = assembly;
+                }
+
+                ScanAssembly(assembly);
+            }
+        }
+
         #endregion
     }
 }
