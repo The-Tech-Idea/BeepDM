@@ -1,33 +1,31 @@
 ---
 name: rdbms-schema-query-helper
-description: Guidance for DatabaseSchemaQueryHelper to generate and validate schema, table-existence, and column metadata queries across datasource types.
+description: Guidance for DatabaseSchemaQueryHelper in BeepDM. Use when generating or validating schema, table-existence, and column metadata queries across RDBMS providers.
 ---
 
 # RDBMS Schema Query Helper
 
-Use this skill when building metadata queries and validating schema-discovery SQL/commands.
+Use this skill when building metadata queries and schema-discovery SQL.
 
-## Core API Surface
-- `GetSchemasorDatabases(DataSourceType rdbms, string userName)`
+## File Locations
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DatabaseSchemaQueryHelper.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DatabaseQueryRepositoryHelper.cs`
+
+## Core APIs
+- `GetSchemasorDatabases(...)`
 - `GetSchemasorDatabasesSafe(...)`
 - `ValidateSchemaQuery(...)`
-- `GetTableExistsQuery(DataSourceType, string tableName, string schemaName = null)`
-- `GetColumnInfoQuery(DataSourceType, string tableName, string schemaName = null)`
+- `GetTableExistsQuery(...)`
+- `GetColumnInfoQuery(...)`
 
-## Usage Pattern
-1. Generate query based on provider and user/schema context.
-2. Validate with `ValidateSchemaQuery(...)` for safety and diagnostics.
-3. Execute through datasource query API.
+## Working Rules
+1. Keep `DataSourceType` explicit for provider-specific syntax.
+2. Use safe/validated variants where caller diagnostics matter.
+3. Preserve placeholders and schema-name handling consistently across providers.
 
-## Validation and Safety
-- Escape or sanitize user/schema input before query generation.
-- Use safe variant for error-aware flows.
-- Expect provider-specific non-SQL commands for some NoSQL types.
+## Related Skills
+- [`rdbms-helper-facade`](../rdbms-helper-facade/SKILL.md)
+- [`rdbms-query-repository-helper`](../rdbms-query-repository-helper/SKILL.md)
 
-## Pitfalls
-- Do not assume relational SQL for all datasource types.
-- Do not ignore warnings from validation results.
-
-## Integration Points
-- [rdbms-helper-facade](../rdbms-helper-facade/SKILL.md)
-- [rdbms-query-repository-helper](../rdbms-query-repository-helper/SKILL.md)
+## Detailed Reference
+Use [`reference.md`](./reference.md) for method list, validation notes, and pitfalls.

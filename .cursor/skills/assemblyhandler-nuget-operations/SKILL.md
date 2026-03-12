@@ -1,54 +1,33 @@
 ---
 name: assemblyhandler-nuget-operations
-description: Detailed guidance for AssemblyHandler NuGet operations: package search, version lookup, package download/load, and source management persistence. Use when implementing or consuming SearchNuGetPackagesAsync, GetNuGetPackageVersionsAsync, LoadNuggetFromNuGetAsync, and source CRUD.
+description: Detailed guidance for AssemblyHandler NuGet operations. Use when implementing or consuming package search, version lookup, package download/load, and source management persistence through NuggetManager and AssemblyHandler.
 ---
 
 # AssemblyHandler NuGet Operations
 
-Use this skill when working on NuGet-backed plugin workflows.
+Use this skill when working on NuGet-backed plugin workflows in the classic handler.
 
-## Additional Resources
-- End-to-end scenarios: [reference.md](reference.md)
+## File Locations
+- `Assembly_helpersStandard/NuggetManager.cs`
+- `Assembly_helpersStandard/AssemblyHandler.Core.cs`
+- `Assembly_helpersStandard/AssemblyHandler.Loaders.cs`
 
-## Search, Versions, Download APIs
-- `SearchNuGetPackagesAsync(string searchTerm, int skip = 0, int take = 20, bool includePrerelease = false, CancellationToken token = default)`
-- `GetNuGetPackageVersionsAsync(string packageId, bool includePrerelease = false, CancellationToken token = default)`
-- `LoadNuggetFromNuGetAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false)`
+## Core APIs
+- `SearchNuGetPackagesAsync(...)`
+- `GetNuGetPackageVersionsAsync(...)`
+- `LoadNuggetFromNuGetAsync(...)`
+- source CRUD methods such as `GetNuGetSources`, `AddNuGetSource`, `RemoveNuGetSource`, `EnableNuGetSource`, `DisableNuGetSource`, and `GetActiveSourceUrls`
 
-## Source Management APIs
-- `GetNuGetSources()`
-- `AddNuGetSource(string name, string url, bool isEnabled = true)`
-- `RemoveNuGetSource(string name)`
-- `EnableNuGetSource(string name)`
-- `DisableNuGetSource(string name)`
-- `GetActiveSourceUrls()`
+## Working Rules
+1. Keep source mutations thread-safe and persisted after writes.
+2. Preserve default-source fallback behavior.
+3. Keep download/load failures non-fatal to callers unless the contract explicitly changes.
+4. Keep assembly collections and statistics updated after package load.
 
-## Persistence Contracts
-- NuGet sources file: `nuget_sources.json` under `ConfigEditor.ExePath` (or app base directory fallback).
-- Default source is guaranteed: `https://api.nuget.org/v3/index.json`.
-- Driver mapping persistence is separate (`driver_packages.json`).
+## Related Skills
+- [`assemblyhandler`](../assemblyhandler/SKILL.md)
+- [`assemblyhandler-driver-statistics`](../assemblyhandler-driver-statistics/SKILL.md)
+- [`shared-context-nuget-source-tracking`](../shared-context-nuget-source-tracking/SKILL.md)
 
-## Runtime Notes
-- Operations delegate to singleton `_packageDownloader`.
-- `LoadNuggetFromNuGetAsync` downloads dependencies, loads nugget assemblies, optionally installs binaries into app folder, and can launch process-hosted plugins.
-- Success/failure counters are recorded through statistics helpers.
-
-## Safe Modification Rules
-1. Keep source list thread-safe (`_sourcesLock`) and always persist after CRUD changes.
-2. Do not remove default source auto-healing logic unless replacing it with equivalent behavior.
-3. Preserve fallback to `GetActiveSourceUrls()` when caller does not provide explicit sources.
-4. Keep download/load exceptions logged and non-crashing for caller.
-5. Maintain assembly collection updates after nugget load.
-
-## Common Pitfalls
-- Returning null lists on errors instead of empty lists.
-- Forgetting to save source file after enable/disable operations.
-- Treating version list as `NuGetVersion` when interface currently returns normalized `List<string>`.
-- Skipping install-path checks before process-host launch logic.
-
-## Quick Verification
-- Search returns results from active sources only.
-- Added source appears in `GetNuGetSources()` and survives restart.
-- Loaded nugget assemblies become visible in `LoadedAssemblies`.
-- Statistics reflect package success/failure counters.
-
+## Detailed Reference
+Use [`reference.md`](./reference.md) for persistence contracts, pitfalls, and verification checks.

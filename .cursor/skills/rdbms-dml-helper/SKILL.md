@@ -1,33 +1,36 @@
 ---
 name: rdbms-dml-helper
-description: Guidance for DatabaseDMLHelper to generate insert, update, delete, select, bulk, parameterized, and advanced SQL queries across RDBMS providers.
+description: Guidance for DatabaseDMLHelper in BeepDM. Use when generating insert, update, delete, select, bulk, parameterized, or advanced SQL queries across RDBMS providers instead of composing SQL manually.
 ---
 
 # RDBMS DML Helper
 
-Use this skill when generating DML SQL centrally instead of composing query strings manually.
+Use this skill when generating DML centrally instead of hand-building query strings.
 
-## Core API Surface
-- Basic: `GenerateInsertQuery`, `GenerateUpdateQuery`, `GenerateDeleteQuery`
-- Advanced: `GenerateSelectQuery`, `GenerateJoinQuery`, `GenerateAggregationQuery`, `GenerateWindowFunctionQuery`
-- Bulk: `GenerateBulkInsertQuery`, `GenerateUpsertQuery`, `GenerateBulkDeleteQuery`
-- Parameterized: `GenerateParameterizedInsertQuery`, `GenerateParameterizedUpdateQuery`, `GenerateParameterizedDeleteQuery`
-- Utility: `GetPagingSyntax`, `GetRecordCountQuery`, `SafeQuote`
+## File Locations
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DMLHelpers/DatabaseDMLHelper.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DMLHelpers/DatabaseDMLBasicOperations.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DMLHelpers/DatabaseDMLAdvancedQueryGenerator.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DMLHelpers/DatabaseDMLParameterizedQueries.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DMLHelpers/DatabaseDMLBulkOperations.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DMLHelpers/DatabaseDMLUtilities.cs`
 
-## Usage Pattern
-1. Build dictionaries/column lists from validated entities.
-2. Generate SQL through helper.
-3. Bind parameters through datasource provider if needed.
+## Core APIs
+- basic operations such as `GenerateInsertQuery`, `GenerateUpdateQuery`, `GenerateDeleteQuery`
+- advanced operations such as `GenerateSelectQuery`, joins, aggregations, and window functions
+- bulk and upsert helpers
+- parameterized query generators
+- utilities such as `GetPagingSyntax`, `GetRecordCountQuery`, and `SafeQuote`
 
-## Validation and Safety
-- Prefer parameterized generator methods for external input.
-- Use `SafeQuote` only for unavoidable literal composition.
-- Keep `DataSourceType` explicit for provider-specific SQL.
+## Working Rules
+1. Prefer parameterized generators for external input.
+2. Keep `DataSourceType` explicit for provider-specific syntax.
+3. Use helper paging/count utilities instead of manual clauses.
 
-## Pitfalls
-- Do not hand-build paging clauses where helper supports them.
-- Do not use unescaped identifiers from user input.
+## Related Skills
+- [`rdbms-helper-facade`](../rdbms-helper-facade/SKILL.md)
+- [`rdbms-entity-helper-sql`](../rdbms-entity-helper-sql/SKILL.md)
+- [`idatasource`](../idatasource/SKILL.md)
 
-## Integration Points
-- [universal-rdbms-helper](../universal-rdbms-helper/SKILL.md)
-- [rdbms-query-repository-helper](../rdbms-query-repository-helper/SKILL.md)
+## Detailed Reference
+Use [`reference.md`](./reference.md) for the DML API surface and safety notes.

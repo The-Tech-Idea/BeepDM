@@ -1,32 +1,35 @@
 ---
 name: rdbms-query-repository-helper
-description: Guidance for DatabaseQueryRepositoryHelper to retrieve predefined SQL templates by DataSourceType and Sqlcommandtype, validate query repository quality, and inspect coverage.
+description: Guidance for DatabaseQueryRepositoryHelper in BeepDM. Use when retrieving predefined SQL templates by DataSourceType and Sqlcommandtype, validating repository coverage, or deciding when to fall back to generated SQL.
 ---
 
 # RDBMS Query Repository Helper
 
 Use this skill when consuming or validating prebuilt query templates.
 
-## Core API Surface
-- `GetQuery(DataSourceType, Sqlcommandtype)`
-- `GetQueriesForDatabase(DataSourceType)`
-- `GetDatabasesForQueryType(Sqlcommandtype)`
-- `QueryExists(DataSourceType, Sqlcommandtype)`
-- `IsSqlStatementValid(string sqlString)`
+## File Locations
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DatabaseQueryRepositoryHelper.cs`
+- `DataManagementEngineStandard/ConfigUtil/Managers/QueryManager.cs`
+
+## Core APIs
+- `GetQuery(...)`
+- `GetQueriesForDatabase(...)`
+- `GetDatabasesForQueryType(...)`
+- `QueryExists(...)`
+- `IsSqlStatementValid(...)`
 - `CreateQuerySqlRepos()`
 - `GetQueryStatistics()`
 - `ValidateAllQueries()`
 
-## Usage Pattern
-1. Resolve query by database + command type.
-2. Validate query is present before execution.
-3. Fall back to helper-generated SQL when repository entry is absent.
+## Working Rules
+1. Prefer repository lookups for stable provider templates.
+2. Fall back to generated SQL when a repository entry is absent or too generic.
+3. Keep placeholder expectations explicit and avoid baking runtime values into shared templates.
 
-## Pitfalls
-- Do not treat all repository commands as ANSI SQL (some are provider commands).
-- Avoid hardcoding `"YourSchema"` placeholders; replace with runtime values.
+## Related Skills
+- [`rdbms-schema-query-helper`](../rdbms-schema-query-helper/SKILL.md)
+- [`rdbms-dml-helper`](../rdbms-dml-helper/SKILL.md)
+- [`configeditor`](../configeditor/SKILL.md)
 
-## Integration Points
-- [rdbms-schema-query-helper](../rdbms-schema-query-helper/SKILL.md)
-- [rdbms-dml-helper](../rdbms-dml-helper/SKILL.md)
-- [connection](../connection/SKILL.md)
+## Detailed Reference
+Use [`reference.md`](./reference.md) for query coverage checks and fallback guidance.

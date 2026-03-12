@@ -1,12 +1,16 @@
-````skill
 ---
 name: unitofwork
-description: Guidance for UnitofWork<T>  CRUD, change tracking, transactions, validation, undo/redo, aggregates, virtual loading, master-detail, and all OBL-integrated features in BeepDM.
+description: Guidance for UnitofWork<T> CRUD, change tracking, transactions, validation, undo/redo, dynamic wrappers, and ObservableBindingList-integrated features in BeepDM. Use when building service-layer persistence flows over DataManagementEngineStandard and DataManagementModelsStandard entities.
 ---
 
 # UnitOfWork<T> Pattern Guide
 
 Use this skill when implementing CRUD operations, change tracking, transactions, validation, undo/redo, aggregates, virtual loading, master-detail, or any service layer on top of BeepDM's UnitofWork.
+
+## Do not use this skill when
+- The task is only about direct datasource plugin implementation. Use [`idatasource`](../idatasource/SKILL.md).
+- The task is only about migration or schema creation. Use [`migration`](../migration/SKILL.md).
+- The task is only about runtime orchestration of datasources and config. Use [`beepdm`](../beepdm/SKILL.md).
 
 ## Architecture
 
@@ -50,6 +54,7 @@ public partial class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged, IDi
 - Master-detail auto-sync between parent/child UOWs
 - Thread safety, Freeze (read-only mode), Batch update scoping
 - Event hooks for pre/post operations (cancellable)
+- Dynamic runtime creation through `UnitOfWorkFactory` and wrappers when entity types are not known at compile time
 
 ## Workflow
 1. Create `UnitofWork<T>` for entity and datasource.
@@ -65,6 +70,8 @@ public partial class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged, IDi
 - `DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.Extensions.cs`  Delete, Commit, Rollback, batch ops, events, logging
 - `DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.Utilities.cs`  Navigation, tracking queries, filtering, helpers
 - `DataManagementEngineStandard/Editor/UOW/UnitofWork.OBLIntegration.cs`  All OBL feature passthroughs (Validation, Undo/Redo, Computed, Bookmarks, ThreadSafety, Freeze, Aggregates, Virtual Loading, Master-Detail, Navigation enhancements)
+- `DataManagementEngineStandard/Editor/UOW/UnitOfWorkFactory.cs`  Runtime type creation and wrappers
+- `DataManagementEngineStandard/Editor/UOW/UnitOfWorkWrapper.cs`  Late-bound access wrapper
 - `DataManagementModelsStandard/Editor/IUnitofWork.cs`  Generic interface
 - `DataManagementModelsStandard/Editor/IUnitofWorkNonGeneric.cs`  Non-generic interface (Entity-based)
 
@@ -221,4 +228,23 @@ public class CustomerService
     }
 }
 ```
-````
+
+### Runtime Type Creation With Factory
+```csharp
+var wrapper = UnitOfWorkFactory.CreateUnitOfWork(
+    typeof(Customer),
+    editor,
+    "MyDb",
+    "Customers",
+    primaryKey: "Id");
+
+var result = await wrapper.CommitAsync();
+```
+
+## Related Skills
+- [`beepdm`](../beepdm/SKILL.md)
+- [`idatasource`](../idatasource/SKILL.md)
+- [`migration`](../migration/SKILL.md)
+
+## Detailed Reference
+Use [`reference.md`](./reference.md) for method-level examples and OBL passthrough patterns.

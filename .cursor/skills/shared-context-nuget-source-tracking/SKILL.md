@@ -1,52 +1,32 @@
 ---
 name: shared-context-nuget-source-tracking
-description: Detailed guidance for SharedContextAssemblyHandler NuGet operations, source persistence, driver package tracking, and load statistics reporting. Use when working on SearchNuGetPackagesAsync, LoadNuggetFromNuGetAsync, source CRUD, driver provenance, and stats aggregation.
+description: Detailed guidance for shared-context NuGet operations, source persistence, driver-package tracking, and load statistics in BeepDM. Use when working on package search/load flows and source or provenance state in SharedContextAssemblyHandler.
 ---
 
 # Shared Context NuGet, Sources, And Tracking
 
-Use this skill for package-driven runtime extension workflows.
+Use this skill for package-driven runtime extension workflows in shared-context mode.
 
-## Additional Resources
-- End-to-end scenarios: [reference.md](reference.md)
+## File Locations
+- `Assembly_helpersStandard/SharedContextAssemblyHandler.cs`
+- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/NuggetPackageDownloader.cs`
+- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/NuggetPluginLoader.cs`
 
-## NuGet APIs
-- `SearchNuGetPackagesAsync(...)`
-- `GetNuGetPackageVersionsAsync(...)`
-- `LoadNuggetFromNuGetAsync(...)`
+## Core APIs
+- NuGet search/version/load methods
+- source CRUD methods
+- driver mapping and statistics methods
 
-## Source APIs
-- `GetNuGetSources()`
-- `AddNuGetSource(...)`
-- `RemoveNuGetSource(...)`
-- `GetActiveSourceUrls()`
+## Working Rules
+1. Keep source and mapping mutations thread-safe and persisted after writes.
+2. Keep NuGet API failures non-fatal with safe fallback returns.
+3. Preserve default-source behavior and active-source filtering.
+4. Keep stats updates aligned with install/load success and failure paths.
 
-## Driver Mapping / Statistics APIs
-- `TrackDriverPackage(...)`
-- `GetAllDriverPackageMappings()`
-- `IsDriverFromNuGet(...)`
-- `GetLoadStatistics()`
+## Related Skills
+- [`shared-context-assemblyhandler`](../shared-context-assemblyhandler/SKILL.md)
+- [`shared-context-plugin-system`](../shared-context-plugin-system/SKILL.md)
+- [`assemblyhandler-nuget-operations`](../assemblyhandler-nuget-operations/SKILL.md)
 
-## Persistence Contracts
-- Sources: `nuget_sources.json`
-- Driver mappings: `driver_packages.json`
-- Paths rooted in `ConfigEditor.ExePath` with fallback behavior
-
-## Safe Change Rules
-1. Keep source and mapping mutations lock-protected and persisted after writes.
-2. Keep NuGet API failures non-fatal (log + safe fallback returns).
-3. Preserve default source fallback behavior and active-source filtering.
-4. Keep stats updates aligned with load/nuget success-failure paths.
-
-## Common Pitfalls
-- Returning null collections on errors instead of empty lists.
-- Failing to persist source enable/disable or remove operations.
-- Forgetting to map installed driver classes after package load.
-- Drift between in-memory counters and externally reported statistics.
-
-## Verification Checklist
-- Search and version calls work against configured active sources.
-- Installed nugget assemblies appear in shared/loaded assembly collections.
-- Driver mapping lookup returns tracked package provenance.
-- Statistics show updated counts after load/install cycles.
-
+## Detailed Reference
+Use [`reference.md`](./reference.md) for persistence contracts and verification checks.

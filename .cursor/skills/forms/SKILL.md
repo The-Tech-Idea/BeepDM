@@ -1,62 +1,61 @@
 ---
 name: forms
-description: Entry-point guidance for FormsManager orchestration in DataManagementEngineStandard/Editor/Forms. Use when implementing Oracle Forms style behavior, master-detail blocks, mode transitions, navigation, dirty-state handling, event triggers, and performance/configuration patterns.
+description: Entry-point guidance for FormsManager orchestration in BeepDM. Use when implementing Oracle Forms style behavior with block registration, master-detail coordination, mode transitions, navigation, dirty-state handling, trigger/event flow, and performance/configuration policies.
 ---
 
 # Forms Manager Guide
 
-Use this skill as the top-level entry point for `FormsManager` orchestration.  
-For deeper workflows, read the specialized skills listed below.
+Use this skill as the top-level entry point for `FormsManager` orchestration.
 
-## What This Module Is
-- `FormsManager` is the coordinator for block registration, relationships, form lifecycle, navigation, mode transitions, and commit/rollback orchestration.
-- It delegates core behavior to helpers: `RelationshipManager`, `DirtyStateManager`, `EventManager`, `FormsSimulationHelper`, `PerformanceManager`, `ConfigurationManager`.
-- It is split into partial classes for maintainability: core registration, form operations, navigation, mode transitions, and enhanced operations.
+## Use this skill when
+- Wiring a new block-based form over `UnitofWork` instances
+- Coordinating master-detail behavior, form lifecycle, and navigation
+- Deciding whether a change belongs in mode transitions, helpers, enhanced CRUD, or performance/configuration
 
-## Use This Skill When
-- You need to wire a new master-detail form with `UnitOfWork` blocks.
-- You need safe transitions between Query and CRUD behavior.
-- You need cross-block commit/rollback with dirty-state management.
-- You are debugging trigger/event behavior or navigation side effects.
-- You are tuning cache/performance and form-level configuration defaults.
+## Do not use this skill when
+- The task is only about direct `UnitofWork` behavior outside forms orchestration. Use [`unitofwork`](../unitofwork/SKILL.md).
+- The task is only about import/sync/ETL pipelines. Use [`importing`](../importing/SKILL.md), [`beepsync`](../beepsync/SKILL.md), or [`etl`](../etl/SKILL.md).
 
-## Fast Workflow
-1. Create `FormsManager(editor)`.
-2. Register all blocks with `RegisterBlock(...)` and valid `IEntityStructure`.
-3. Define parent-child links with `CreateMasterDetailRelation(...)`.
-4. Open form and run mode transitions (`EnterQueryModeAsync` -> `ExecuteQueryAndEnterCrudModeAsync`).
-5. Use navigation/data operations and always inspect returned `IErrorsInfo` or `bool`.
-6. Commit with `CommitFormAsync()` or rollback with `RollbackFormAsync()`.
+## Architecture
+- `FormsManager` is the coordinator class in `TheTechIdea.Beep.Editor.UOWManager`.
+- Core responsibilities are split across partial classes:
+  - registration and coordination in `FormsManager.cs`
+  - lifecycle in `FormsManager.FormOperations.cs`
+  - navigation in `FormsManager.Navigation.cs`
+  - mode flow in `FormsManager.ModeTransitions.cs`
+  - CRUD/query enhancements in `FormsManager.EnhancedOperations.cs`
+- Helper managers own focused behavior:
+  - `RelationshipManager`
+  - `DirtyStateManager`
+  - `EventManager`
+  - `FormsSimulationHelper`
+  - `PerformanceManager`
+  - `ConfigurationManager`
 
-## Specialized Skills
-- Mode transitions and CRUD/query flow: [forms-mode-transitions](../forms-mode-transitions/SKILL.md)
-- Form lifecycle and navigation: [forms-operations-navigation](../forms-operations-navigation/SKILL.md)
-- Enhanced CRUD and query operations: [forms-enhanced-data-operations](../forms-enhanced-data-operations/SKILL.md)
-- Helpers and trigger pipeline: [forms-helper-managers](../forms-helper-managers/SKILL.md)
-- Performance/cache/config tuning: [forms-performance-configuration](../forms-performance-configuration/SKILL.md)
-
-## Key Files
+## File Locations
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.cs`
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.FormOperations.cs`
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.Navigation.cs`
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.ModeTransitions.cs`
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.EnhancedOperations.cs`
-- `DataManagementEngineStandard/Editor/Forms/Helpers/*.cs`
+- `DataManagementEngineStandard/Editor/Forms/Helpers/`
+- `DataManagementEngineStandard/Editor/Forms/Configuration/`
+- `DataManagementEngineStandard/Editor/Forms/Models/`
 
-## Baseline Example
-```csharp
-var forms = new FormsManager(editor);
+## Fast Workflow
+1. Create `FormsManager(editor)`.
+2. Register each block with `RegisterBlock(...)`.
+3. Create relationships with `CreateMasterDetailRelation(...)`.
+4. Open the form and enter the right mode for the target block.
+5. Use form/navigation/CRUD APIs through `FormsManager`, not direct ad-hoc block mutations.
+6. Commit or roll back through form-level APIs.
 
-using var customerUow = new UnitofWork<Customer>(editor, "MyDb", "Customers", "Id");
-var customerStructure = editor.GetDataSource("MyDb").GetEntityStructure("Customers", true);
-forms.RegisterBlock("CUSTOMERS", customerUow, customerStructure, "MyDb", isMasterBlock: true);
+## Specialized Skills
+- [`forms-mode-transitions`](../forms-mode-transitions/SKILL.md)
+- [`forms-operations-navigation`](../forms-operations-navigation/SKILL.md)
+- [`forms-enhanced-data-operations`](../forms-enhanced-data-operations/SKILL.md)
+- [`forms-helper-managers`](../forms-helper-managers/SKILL.md)
+- [`forms-performance-configuration`](../forms-performance-configuration/SKILL.md)
 
-using var orderUow = new UnitofWork<Order>(editor, "MyDb", "Orders", "Id");
-var orderStructure = editor.GetDataSource("MyDb").GetEntityStructure("Orders", true);
-forms.RegisterBlock("ORDERS", orderUow, orderStructure, "MyDb", isMasterBlock: false);
-
-forms.CreateMasterDetailRelation("CUSTOMERS", "ORDERS", "Id", "CustomerId");
-await forms.OpenFormAsync("CustomerOrderForm");
-await forms.EnterQueryModeAsync("CUSTOMERS");
-await forms.ExecuteQueryAndEnterCrudModeAsync("CUSTOMERS");
-```
+## Detailed Reference
+Use [`reference.md`](./reference.md) for scenarios and examples.

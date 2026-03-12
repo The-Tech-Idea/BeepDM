@@ -5,41 +5,80 @@ description: Expert guidance for BeepDM development, including IDMEEditor usage,
 
 # BeepDM Development Guide
 
-Use this skill when building or integrating with BeepDM, implementing new datasources, or working with configuration and schema operations.
+Use this skill when the task spans multiple BeepDM subsystems and you need the right entry point before dropping into a narrower skill.
 
-## Scope
-- IDMEEditor as the central orchestrator
-- IDataSource and IDataSourceHelper contracts
-- ConfigEditor for persisted configuration
-- ETL, mapping, and UnitOfWork integration points
+## Use this skill when
+- Bootstrapping or debugging core BeepDM flows around `IDMEEditor`
+- Adding a new datasource or integrating an existing datasource into application startup
+- Routing work between connection, configuration, schema, ETL, mapping, and unit-of-work concerns
+- Reviewing BeepDM code and deciding which specialized skill should handle the next step
+
+## Do not use this skill as the only source when
+- The task is only about DI registration and app startup. Use [`beepserviceregistration`](../beepserviceregistration/SKILL.md).
+- The task is only about legacy desktop initialization. Use [`beepservice`](../beepservice/SKILL.md).
+- The task is only about connection building, driver selection, or connection-string validation. Use [`connection`](../connection/SKILL.md) and [`connectionproperties`](../connectionproperties/SKILL.md).
+- The task is only about CRUD/query execution. Use [`idatasource`](../idatasource/SKILL.md).
+- The task is only about transactions. Use [`unitofwork`](../unitofwork/SKILL.md).
+- The task is only about migration, ETL, import, sync, or forms. Use the dedicated subsystem skill.
+
+## Responsibilities
+- Treat `IDMEEditor` as the orchestration boundary for datasource lifecycle, helper resolution, and service access.
+- Keep `ConfigEditor` as the persisted source of truth for connections and metadata-related configuration.
+- Route implementation details to the narrowest useful BeepDM skill instead of duplicating guidance.
+- Ground recommendations in current source files and existing BeepDM patterns.
 
 ## Core Types
-- IDMEEditor: main entry point for datasource lifecycle and services
-- IDataSource: CRUD, schema, and transaction operations
-- IDataSourceHelper: dialect-aware SQL and schema helpers
-- ConfigEditor: persisted configuration and metadata
+- `IDMEEditor`: main orchestration entry point for datasource creation, lookup, helpers, ETL, mapping, and unit-of-work.
+- `IDataSource`: runtime datasource contract for CRUD, metadata, execution, and transaction operations.
+- `IDataSourceHelper`: dialect-aware SQL/schema helper surface used for DDL, DML, and capability checks.
+- `ConfigEditor`: persisted configuration manager for `ConnectionProperties`, mappings, and runtime settings.
 
-## Common Workflow
-1. Create or obtain `IDMEEditor`.
-2. Add or update `ConnectionProperties` via `ConfigEditor`.
-3. Open datasource with `OpenDataSource(name)` and fetch with `GetDataSource(name)`.
-4. Use helpers for schema or SQL generation, then execute via datasource.
-5. Use UnitOfWork, ETL, MappingManager, or DataImportManager as needed.
+## Task Routing Matrix
+- App startup or dependency injection: [`beepserviceregistration`](../beepserviceregistration/SKILL.md)
+- Legacy desktop bootstrapping: [`beepservice`](../beepservice/SKILL.md)
+- Connection creation, normalization, validation, security: [`connection`](../connection/SKILL.md)
+- Building `ConnectionProperties`: [`connectionproperties`](../connectionproperties/SKILL.md)
+- Direct datasource CRUD and queries: [`idatasource`](../idatasource/SKILL.md)
+- Batch commit and rollback flows: [`unitofwork`](../unitofwork/SKILL.md)
+- Entity copy or transformation pipelines: [`etl`](../etl/SKILL.md)
+- Schema creation and upgrade flows: [`migration`](../migration/SKILL.md)
+- Dynamic UI or master-detail forms: [`forms`](../forms/SKILL.md)
 
-## Validation
+## Typical Workflow
+1. Decide whether the code should start from `DMEEditor` directly or from the DI/service-registration path.
+2. Load or create `ConnectionProperties` through `ConfigEditor`, not ad-hoc objects that are never persisted.
+3. Open the datasource with `OpenDataSource(connectionName)` and confirm it reached `ConnectionState.Open`.
+4. Fetch the live datasource with `GetDataSource(connectionName)` only after open succeeds.
+5. Resolve `IDataSourceHelper` by `DataSourceType` when schema or SQL generation is required.
+6. Hand off to ETL, mapping, migrations, forms, or unit-of-work only after the datasource and helper state is valid.
+
+## Validation and Safety
 - Check `ConnectionState.Open` after `OpenDataSource`.
-- For operations returning `IErrorsInfo`, require `Flag == Errors.Ok`.
-- Validate entity structures with `IDataSourceHelper.ValidateEntity()` before create/alter.
+- For operations returning `IErrorsInfo`, require `Flag == Errors.Ok` before continuing.
+- Validate entity structures with `IDataSourceHelper.ValidateEntity()` before create/alter operations.
+- Prefer capability checks before emitting dialect-specific SQL.
+- Preserve the BeepDM error model for routine failures: populate `ErrorObject` or `IErrorsInfo`, do not convert every runtime issue into a thrown exception.
 
 ## Pitfalls
-- Do not throw for routine datasource failures; populate `ErrorObject` and return.
-- Avoid bypassing `ConfigEditor` managers when persisting settings.
+- Do not call `GetDataSource` before a successful `OpenDataSource`.
+- Do not bypass `ConfigEditor` when a connection needs to survive application restarts.
+- Do not hardcode helper assumptions across datasource types; resolve by `DataSourceType`.
+- Do not mix orchestration guidance into subsystem skills; keep this skill as the router and overview layer.
 
-## File Locations
-- DataManagementEngineStandard/Editor/DM/DMEEditor.cs
-- DataManagementModelsStandard/IDataSource.cs
-- DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs
-- DataManagementEngineStandard/Helpers/ConnectionHelpers/ConnectionHelper.cs
+## Working Set
+- `DataManagementEngineStandard/Editor/DM/DMEEditor.cs`
+- `DataManagementEngineStandard/Editor/DM/DMEEditor.UniversalDataSourceHelpers.cs`
+- `DataManagementModelsStandard/IDataSource.cs`
+- `DataManagementModelsStandard/Editor/IDataSourceHelper.cs`
+- `DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs`
+- `DataManagementEngineStandard/Helpers/ConnectionHelpers/ConnectionHelper.cs`
+- `.cursor/skills/beepdm/reference.md`
+
+## Review Checklist
+- Is the task starting from the correct entry point: direct editor, service registration, or subsystem helper?
+- Is connection state validated before issuing CRUD or schema operations?
+- Is persisted configuration updated through `ConfigEditor` when the change should survive restarts?
+- Is there a narrower skill that should own the next implementation step?
 
 ## Example
 ```csharp
@@ -94,3 +133,14 @@ if (existing != null)
 
 editor.OpenDataSource("MyDb");
 ```
+
+## Related Skills
+- [`beepserviceregistration`](../beepserviceregistration/SKILL.md)
+- [`beepservice`](../beepservice/SKILL.md)
+- [`connection`](../connection/SKILL.md)
+- [`connectionproperties`](../connectionproperties/SKILL.md)
+- [`idatasource`](../idatasource/SKILL.md)
+- [`unitofwork`](../unitofwork/SKILL.md)
+
+## Detailed Reference
+Use [`reference.md`](./reference.md) for method-level examples, defaults management, migration snippets, and capability-oriented helper usage.

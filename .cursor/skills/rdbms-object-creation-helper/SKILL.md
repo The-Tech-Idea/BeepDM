@@ -1,34 +1,34 @@
 ---
 name: rdbms-object-creation-helper
-description: Guidance for DatabaseObjectCreationHelper to generate create/drop/truncate table SQL and index/primary-key DDL from entity structures.
+description: Guidance for DatabaseObjectCreationHelper in BeepDM. Use when generating create, drop, truncate, primary-key, or index DDL from EntityStructure metadata across RDBMS providers.
 ---
 
 # RDBMS Object Creation Helper
 
-Use this skill when creating or altering database objects from `EntityStructure` definitions.
+Use this skill when creating or altering database objects from `EntityStructure`.
 
-## Core API Surface
+## File Locations
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DatabaseObjectCreationHelper.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DatabaseFeatureHelper.cs`
+
+## Core APIs
 - `GenerateCreateTableSQL(EntityStructure entity)`
-- `GeneratePrimaryKeyQuery(DataSourceType, tableName, primaryKey, type)`
-- `GeneratePrimaryKeyFromEntity(EntityStructure entity)`
-- `GenerateCreateIndexQuery(DataSourceType, tableName, indexName, columns, options = null)`
-- `GenerateUniqueIndexFromEntity(EntityStructure entity)`
-- `GetDropEntity(DataSourceType, entityName)`
-- `GetTruncateTableQuery(DataSourceType, tableName, schemaName = null)`
+- `GeneratePrimaryKeyQuery(...)`
+- `GeneratePrimaryKeyFromEntity(...)`
+- `GenerateCreateIndexQuery(...)`
+- `GenerateUniqueIndexFromEntity(...)`
+- `GetDropEntity(...)`
+- `GetTruncateTableQuery(...)`
 
-## Usage Pattern
-1. Validate entity first.
-2. Generate DDL via helper.
-3. Execute DDL and handle provider-specific constraints.
+## Working Rules
+1. Validate entity shape before DDL generation.
+2. Keep provider-specific identity and index semantics delegated through helper logic.
+3. Preserve tuple-style success/error contracts where exposed.
 
-## Validation and Safety
-- Always check `Success` and `ErrorMessage` tuples.
-- Use normalized entity and field names to avoid identifier issues.
+## Related Skills
+- [`rdbms-entity-validation`](../rdbms-entity-validation/SKILL.md)
+- [`rdbms-feature-helper`](../rdbms-feature-helper/SKILL.md)
+- [`migration`](../migration/SKILL.md)
 
-## Pitfalls
-- Avoid generating DDL for entities with missing fields.
-- Do not assume all databases support identical identity syntax.
-
-## Integration Points
-- [rdbms-entity-validation](../rdbms-entity-validation/SKILL.md)
-- [rdbms-feature-helper](../rdbms-feature-helper/SKILL.md)
+## Detailed Reference
+Use [`reference.md`](./reference.md) for DDL helpers, pitfalls, and example flows.

@@ -1,42 +1,26 @@
 ---
 name: shared-context-assemblyhandler
-description: Entry-point guidance for SharedContextAssemblyHandler and AssemblyHandler/PluginSystem integration. Use when loading assemblies in shared context mode, scanning components, handling NuGet package operations, and coordinating plugin lifecycle managers.
+description: Entry-point guidance for SharedContextAssemblyHandler and the PluginSystem integration in BeepDM. Use when loading assemblies in shared-context mode, scanning components, handling NuGet package operations, or coordinating plugin lifecycle managers.
 ---
 
 # SharedContextAssemblyHandler Guide
 
-Use this as the routing skill for `SharedContextAssemblyHandler` work.
+Use this as the routing skill for shared-context `IAssemblyHandler` work.
 
-## Additional Resources
-- End-to-end scenarios: [reference.md](reference.md)
+## File Locations
+- `Assembly_helpersStandard/SharedContextAssemblyHandler.cs`
+- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/`
 
-## Scope
-- `DataManagementEngineStandard/AssemblyHandler/SharedContextAssemblyHandler.cs`
-- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/*.cs`
-
-## What This Handler Does
-- Implements `IAssemblyHandler` with shared-context-first loading behavior.
-- Delegates core assembly isolation and cross-plugin resolution to `SharedContextManager`.
-- Uses `IScanningService` and `DriverDiscoveryAssistant` for discovery.
-- Integrates NuGet download/search through `NuggetPackageDownloader`.
-- Persists NuGet source and driver-package mappings, and exposes load statistics.
-
-## Primary API Surface
-- Loading/discovery: `LoadAllAssembly`, `LoadAssembly`, `GetBuiltinClasses`
-- Type helpers: `CreateInstanceFromString`, `GetType`, `RunMethod`
-- NuGet: `SearchNuGetPackagesAsync`, `GetNuGetPackageVersionsAsync`, `LoadNuggetFromNuGetAsync`
-- Source management: `GetNuGetSources`, `AddNuGetSource`, `RemoveNuGetSource`, `GetActiveSourceUrls`
-- Driver mapping/stats: `TrackDriverPackage`, `GetAllDriverPackageMappings`, `IsDriverFromNuGet`, `GetLoadStatistics`
+## Responsibilities
+- Keep `SharedContextAssemblyHandler` as the top-level shared-context handler.
+- Route subsystem work to loading/resolution, scanning/discovery, plugin-system, or NuGet/source tracking.
+- Preserve shared-context-first loading behavior and `IAssemblyHandler` caller contracts.
 
 ## Specialized Skills
-- Loading and assembly resolution flow: [shared-context-loading-resolution](../shared-context-loading-resolution/SKILL.md)
-- Scanning and discovery model: [shared-context-scanning-discovery](../shared-context-scanning-discovery/SKILL.md)
-- PluginSystem manager architecture: [shared-context-plugin-system](../shared-context-plugin-system/SKILL.md)
-- NuGet + source + driver mapping operations: [shared-context-nuget-source-tracking](../shared-context-nuget-source-tracking/SKILL.md)
+- [`shared-context-loading-resolution`](../shared-context-loading-resolution/SKILL.md)
+- [`shared-context-scanning-discovery`](../shared-context-scanning-discovery/SKILL.md)
+- [`shared-context-plugin-system`](../shared-context-plugin-system/SKILL.md)
+- [`shared-context-nuget-source-tracking`](../shared-context-nuget-source-tracking/SKILL.md)
 
-## Working Rules
-1. Keep `SharedContextManager` as the canonical runtime assembly visibility source.
-2. Prefer `IAssemblyHandler` methods from callers instead of direct PluginSystem coupling.
-3. Preserve logging and non-throwing behavior for discovery/install workflows.
-4. Keep persistence contracts stable (`nuget_sources.json`, `driver_packages.json`).
-
+## Detailed Reference
+Use [`reference.md`](./reference.md) for API examples and end-to-end scenarios.

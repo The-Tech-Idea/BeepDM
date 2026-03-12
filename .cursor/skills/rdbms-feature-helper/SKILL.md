@@ -1,33 +1,29 @@
 ---
 name: rdbms-feature-helper
-description: Guidance for DatabaseFeatureHelper covering sequence/identity SQL, transaction statements, feature support checks, and database capability metadata.
+description: Guidance for DatabaseFeatureHelper in BeepDM. Use when behavior must change based on sequence, identity, transaction, view, stored-procedure, or capability support across RDBMS providers.
 ---
 
 # RDBMS Feature Helper
 
-Use this skill when behavior must change based on datasource capabilities or feature support.
+Use this skill when behavior must change based on provider capabilities.
 
-## Core API Surface
-- Identity/sequence:
-  - `GenerateFetchNextSequenceValueQuery`
-  - `GenerateFetchLastIdentityQuery`
-- Transactions:
-  - `GetTransactionStatement(DataSourceType, TransactionOperation)`
-- Capabilities:
-  - `SupportsFeature(DataSourceType, DatabaseFeature)`
-  - `GetSupportedFeatures(DataSourceType)`
-  - `SupportsSequences`, `SupportsAutoIncrement`, `SupportsStoredProcedures`, `SupportsViews`
-  - `GetMaxIdentifierLength`, `GetDatabaseInfo`
+## File Locations
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/DatabaseFeatureHelper.cs`
 
-## Usage Pattern
+## Core APIs
+- identity/sequence helpers such as `GenerateFetchNextSequenceValueQuery` and `GenerateFetchLastIdentityQuery`
+- transaction helpers such as `GetTransactionStatement(...)`
+- capability checks such as `SupportsFeature(...)`, `SupportsSequences`, and `SupportsAutoIncrement`
+- provider metadata such as `GetMaxIdentifierLength` and `GetDatabaseInfo`
+
+## Working Rules
 1. Check support before emitting feature-specific SQL.
-2. Generate proper identity/transaction syntax per provider.
-3. Use identifier-length limits during schema generation.
+2. Keep identifier-length limits in schema-generation flows.
+3. Preserve provider-specific transaction and identity semantics.
 
-## Pitfalls
-- Do not assume sequence support for all providers.
-- Do not emit feature SQL before checking support flags.
+## Related Skills
+- [`rdbms-object-creation-helper`](../rdbms-object-creation-helper/SKILL.md)
+- [`rdbms-dml-helper`](../rdbms-dml-helper/SKILL.md)
 
-## Integration Points
-- [rdbms-object-creation-helper](../rdbms-object-creation-helper/SKILL.md)
-- [rdbms-entity-validation](../rdbms-entity-validation/SKILL.md)
+## Detailed Reference
+Use [`reference.md`](./reference.md) for feature checks and capability-oriented routing.

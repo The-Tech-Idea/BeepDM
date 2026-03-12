@@ -1,46 +1,69 @@
 ---
 name: connectionproperties
-description: Guidance for ConnectionProperties usage, flags, filtering patterns, and safe configuration in BeepDM.
+description: Guidance for ConnectionProperties usage in BeepDM, including provider selection, endpoint/file settings, credentials, flags, and safe persistence. Use when building or updating datasource definitions before saving them through ConfigEditor or opening them with IDMEEditor.
 ---
 
 # ConnectionProperties Guide
 
-Use this skill when creating or filtering datasource connections and when setting feature flags for local, remote, file, or in-memory sources.
+Use this skill when creating or modifying `ConnectionProperties` objects that will be stored in `ConfigEditor.DataConnections` and later used by `IDMEEditor`.
 
-## Core Properties
-- ConnectionName, DatabaseType, Category, ConnectionString
-- Host, Port, Database, UserID, Password
-- FilePath, FileName, Ext (file based sources)
+## Use this skill when
+- Creating a new datasource definition before calling `AddDataConnection`
+- Translating UI input or app settings into a BeepDM connection model
+- Debugging why driver selection, file resolution, or datasource categorization is wrong
+- Filtering saved connections by capability or deployment style
 
-## Feature Flags
-- IsLocal, IsRemote, IsWebApi
-- IsFile, IsDatabase, IsCloud
-- IsInMemory, IsComposite
+## Do not use this skill when
+- The main problem is driver lookup, connection-string validation, or masking. Use [`connection`](../connection/SKILL.md).
+- The main problem is persistence of config files. Use [`configeditor`](../configeditor/SKILL.md).
+- The main problem is opening or using the datasource after save. Use [`beepdm`](../beepdm/SKILL.md) or [`idatasource`](../idatasource/SKILL.md).
 
-## Filtering Patterns
-```csharp
-var localConnections = editor.ConfigEditor.DataConnections
-    .Where(c => c.IsLocal)
-    .ToList();
+## Responsibilities
+- Populate the correct provider identity: `DatabaseType`, `Category`, `DriverName`, `DriverVersion`.
+- Populate the correct transport details: host/database/schema for server systems, file path/name for file systems, URL and API settings for remote systems.
+- Set behavior flags consistently so UI grouping, lifecycle helpers, and filtering code behave correctly.
+- Keep secrets and persistence concerns separate from usage concerns.
 
-var inMemory = editor.ConfigEditor.DataConnections
-    .Where(c => c.IsLocal && c.IsInMemory)
-    .ToList();
-```
+## Core Property Groups
+- Identity:
+  - `ConnectionName`, `GuidID`, `CompositeLayerName`
+- Provider and category:
+  - `DatabaseType`, `Category`, `DriverName`, `DriverVersion`
+- Endpoint and storage:
+  - `Host`, `Port`, `Database`, `SchemaName`, `OracleSIDorService`
+  - `FilePath`, `FileName`, `Ext`, `Url`, `Delimiter`
+- Credentials and request settings:
+  - `UserID`, `Password`, `ConnectionString`, `Parameters`, `ParameterList`, `ApiKey`, `KeyToken`, `HttpMethod`, `Timeout`
+- Metadata and defaults:
+  - `Entities`, `DatasourceDefaults`, `Databases`
+- Behavioral flags:
+  - `IsLocal`, `IsRemote`, `IsWebApi`, `IsFile`, `IsDatabase`, `IsCloud`, `IsInMemory`, `IsComposite`, `ReadOnly`, `Favourite`
 
-## Validation
-- Ensure `ConnectionName` is set and unique.
-- For file sources, validate `FilePath` and `FileName`.
-- Link drivers with `ConnectionHelper.GetBestMatchingDriver`.
+## Typical Usage Pattern
+1. Start with `ConnectionName`, `DatabaseType`, and `Category`.
+2. Fill the location fields that match the provider type.
+3. Build or normalize `ConnectionString` using the driver template and helper methods.
+4. Resolve `DriverName` and `DriverVersion` dynamically, not by guesswork.
+5. Set classification flags so later filtering code and UI behavior are accurate.
+6. Save through `ConfigEditor.AddDataConnection` and `SaveDataconnectionsValues`.
+
+## Validation and Safety
+- Ensure `ConnectionName` is unique in `ConfigEditor.DataConnections`.
+- Prefer `ConnectionHelper.GetBestMatchingDriver` instead of hardcoded driver names.
+- Normalize file paths for local/file datasources before save.
+- Do not log `Password`, `ApiKey`, `KeyToken`, or raw secure connection strings.
+- Keep `Category` aligned with `DatabaseType`; mismatches can break discovery and UI categorization.
 
 ## Pitfalls
-- Missing flags can break filtering and UI grouping.
-- Saving passwords by default can leak secrets.
-- Forgetting driver linkage can cause runtime load failures.
+- Setting `ConnectionString` but leaving location fields inconsistent makes maintenance harder and breaks template-based regeneration.
+- Forgetting `IsInMemory`, `IsFile`, or `IsWebApi` causes downstream filtering and UX issues.
+- Treating all providers like RDBMS connections hides API/file-specific settings that the runtime depends on.
+- Saving secrets in plain text without masking or policy consideration creates avoidable exposure.
 
 ## File Locations
-- DataManagementModelsStandard/ConfigUtil/ConnectionProperties.cs
-- DataManagementModelsStandard/ConfigUtil/IConnectionProperties.cs
+- `DataManagementModelsStandard/ConfigUtil/ConnectionProperties.cs`
+- `DataManagementModelsStandard/ConfigUtil/IConnectionProperties.cs`
+- `DataManagementEngineStandard/Helpers/ConnectionHelpers/ConnectionHelper.cs`
 
 ## Example
 ```csharp
@@ -67,16 +90,20 @@ var localFileDbs = editor.ConfigEditor.DataConnections
     .ToList();
 ```
 
-### Create In-Memory Connection
+### Resolve Driver Metadata Before Save
 ```csharp
-var inMemory = new ConnectionProperties
+var driver = ConnectionHelper.GetBestMatchingDriver(conn, editor.ConfigEditor);
+if (driver != null)
 {
-    ConnectionName = "InMemoryDb",
-    DatabaseType = DataSourceType.SqlLite,
-    Category = DatasourceCategory.RDBMS,
-    IsLocal = true,
-    IsInMemory = true,
-    IsDatabase = true,
-    ConnectionString = "Data Source=:memory:;Version=3;New=True;"
-};
+    conn.DriverName = driver.PackageName;
+    conn.DriverVersion = driver.version;
+}
 ```
+
+## Related Skills
+- [`connection`](../connection/SKILL.md)
+- [`configeditor`](../configeditor/SKILL.md)
+- [`beepdm`](../beepdm/SKILL.md)
+
+## Detailed Reference
+Use [`reference.md`](./reference.md) for quick property examples and common filtering patterns.

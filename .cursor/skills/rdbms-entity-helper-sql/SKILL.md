@@ -1,36 +1,32 @@
 ---
 name: rdbms-entity-helper-sql
-description: Guidance for DatabaseEntityHelper and DatabaseEntitySqlGenerator to create insert/update/delete SQL from EntityStructure plus value dictionaries.
+description: Guidance for DatabaseEntityHelper and DatabaseEntitySqlGenerator in BeepDM. Use when converting EntityStructure metadata plus value dictionaries into insert, update, or delete SQL for RDBMS providers.
 ---
 
 # RDBMS Entity Helper SQL
 
-Use this skill when converting entity metadata + value maps into SQL operations.
+Use this skill when converting entity metadata plus value maps into SQL operations.
 
-## Responsibilities
-- Use `DatabaseEntityHelper` facade for entity SQL generation.
-- Delegate concrete SQL building to `DatabaseEntitySqlGenerator`.
+## File Locations
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/EntityHelpers/DatabaseEntityHelper.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/EntityHelpers/DatabaseEntitySqlGenerator.cs`
+- `DataManagementEngineStandard/Helpers/RDBMSHelpers/EntityHelpers/DatabaseEntityAnalyzer.cs`
 
-## Core API Surface
-- `GenerateDeleteEntityWithValues(EntityStructure, Dictionary<string, object>)`
-- `GenerateInsertWithValues(EntityStructure, Dictionary<string, object>)`
-- `GenerateUpdateEntityWithValues(EntityStructure, Dictionary<string, object>, Dictionary<string, object>)`
-- `CreateBasicField(...)` for field construction helpers
+## Core APIs
+- `GenerateDeleteEntityWithValues(...)`
+- `GenerateInsertWithValues(...)`
+- `GenerateUpdateEntityWithValues(...)`
+- `CreateBasicField(...)`
 
-## Usage Pattern
-1. Ensure `EntityStructure.DatabaseType` and fields are valid.
-2. Prepare value and condition dictionaries.
-3. Generate SQL via helper and execute in datasource.
+## Working Rules
+1. Ensure `EntityStructure.DatabaseType` and fields are valid before generation.
+2. Keep value/condition dictionary keys aligned with actual field names.
+3. Prefer this helper when entity metadata is already available instead of re-deriving column lists manually.
 
-## Validation and Safety
-- Validate entity shape before generation.
-- Keep dictionary keys aligned with real field names.
+## Related Skills
+- [`rdbms-entity-validation`](../rdbms-entity-validation/SKILL.md)
+- [`rdbms-dml-helper`](../rdbms-dml-helper/SKILL.md)
+- [`idatasource`](../idatasource/SKILL.md)
 
-## Pitfalls
-- Do not call with empty value dictionaries.
-- Do not pass entities with unknown `DatabaseType`.
-
-## Integration Points
-- [rdbms-entity-validation](../rdbms-entity-validation/SKILL.md)
-- [rdbms-dml-helper](../rdbms-dml-helper/SKILL.md)
-- [idatasource](../idatasource/SKILL.md)
+## Detailed Reference
+Use [`reference.md`](./reference.md) for entity-SQL generation patterns and pitfalls.

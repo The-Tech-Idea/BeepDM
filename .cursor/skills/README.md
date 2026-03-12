@@ -1,506 +1,119 @@
 # BeepDM Skills Reference
 
-This directory contains AI-assisted coding skills for working with the BeepDM framework. Each skill provides detailed guidance, examples, and best practices for specific aspects of the framework.
-
-## 📚 Available Skills
-
-### 🆕 Service Registration & Configuration
-
-#### [`beepserviceregistration`](beepserviceregistration/) - **NEW Enhanced API**
-Modern fluent API for BeepService registration with environment-specific optimizations.
-
-**Use when:**
-- Setting up BeepDM in a new application (Desktop, Web, Blazor)
-- Migrating from legacy registration patterns
-- Configuring environment-specific features (progress reporting, connection pooling, SignalR)
-
-**Key Features:**
-- Fluent builder API with method chaining
-- Desktop-optimized: `AddBeepForDesktop()` (Singleton, progress UI, design-time support)
-- Web-optimized: `AddBeepForWeb()` (Scoped, connection pooling, cleanup middleware)
-- Blazor Server: `AddBeepForBlazorServer()` (Scoped, SignalR support)
-- Blazor WASM: `AddBeepForBlazorWasm()` (Singleton, browser storage)
-- Enhanced validation with descriptive errors
-- Standardized naming (`AppRepoName` vs `Containername`)
-
-**Quick Start:**
-```csharp
-// Desktop
-builder.Services.AddBeepForDesktop(opts => {
-    opts.AppRepoName = "MyApp";
-    opts.DirectoryPath = AppContext.BaseDirectory;
-});
-
-// Web API
-builder.Services.AddBeepForWeb(opts => {
-    opts.AppRepoName = "MyAPI";
-    opts.DirectoryPath = Path.Combine(AppContext.BaseDirectory, "Beep");
-});
-```
-
----
-
-#### [`beepservice`](beepservice/) - Legacy Initialization
-Traditional DMEEditor initialization patterns for desktop applications.
-
-**Use when:**
-- Working with existing code using direct `DMEEditor` instantiation
-- Understanding legacy patterns during migration
-- Simple scenarios without dependency injection
-
-**Quick Start:**
-```csharp
-var editor = new DMEEditor();
-var props = new ConnectionProperties { /* ... */ };
-editor.ConfigEditor.AddDataConnection(props);
-var state = editor.OpenDataSource(props.ConnectionName);
-```
-
----
-
-### 🔌 Connection Management
-
-#### [`connection`](connection/)
-Managing database connections and connection lifecycle.
-
-**Use when:**
-- Creating and configuring data connections
-- Managing connection state (open/close)
-- Handling connection errors and retries
-
-**Quick Start:**
-```csharp
-var connProps = new ConnectionProperties {
-    ConnectionName = "MyDB",
-    ConnectionString = "Data Source=./data.db",
-    DatabaseType = DataSourceType.SqlLite
-};
-beepService.DMEEditor.ConfigEditor.AddDataConnection(connProps);
-```
-
----
-
-#### [`connectionproperties`](connectionproperties/)
-Building and configuring connection properties for different database types.
-
-**Use when:**
-- Creating connection strings for SQL Server, MySQL, PostgreSQL, SQLite, etc.
-- Understanding connection property structure
-- Debugging connection issues
-
----
-
-### ⚙️ Configuration
-
-#### [`configeditor`](configeditor/)
-Managing BeepDM configuration files and runtime configuration.
-
-**Use when:**
-- Adding/updating/removing connections
-- Managing data type mappings
-- Reading/writing configuration files
-
-**Quick Start:**
-```csharp
-var editor = beepService.DMEEditor.ConfigEditor;
-editor.AddDataConnection(connProps);
-editor.SaveDataconnectionsValues(); // Persist to DataConnections.json
-```
-
----
-
-#### [`environmentservice`](environmentservice/)
-Managing environment-specific settings and multi-environment configurations.
-
-**Use when:**
-- Supporting Dev/Staging/Production environments
-- Managing environment variables
-- Loading environment-specific configurations
-
----
-
-### 💾 Data Access
-
-#### [`idatasource`](idatasource/)
-Working with IDataSource interface for CRUD operations.
-
-**Use when:**
-- Querying data from any datasource
-- Inserting, updating, deleting records
-- Getting entity metadata and structure
-
-**Quick Start:**
-```csharp
-var ds = beepService.DMEEditor.GetDataSource("MyDB");
-var data = await ds.GetEntityAsync("Customers", filters);
-var result = ds.InsertEntity("Customers", newCustomer);
-```
-
----
-
-#### [`unitofwork`](unitofwork/)
-Transactional operations with UnitOfWork pattern.
-
-**Use when:**
-- Performing multiple operations as a transaction
-- Implementing batch inserts/updates/deletes
-- Need rollback capability
-
-**Quick Start:**
-```csharp
-var uow = beepService.DMEEditor.CreateUnitOfWork<Customer>();
-uow.AddNew(customer1);
-uow.Modify(customer2);
-uow.Delete(customer3);
-uow.Commit(); // All or nothing
-```
-
----
-
-### 📊 Data Processing
-
-#### [`etl`](etl/)
-Extract, Transform, Load operations for data migration and synchronization.
-
-**Use when:**
-- Copying data between datasources
-- Transforming data during migration
-- Bulk data operations
-
-**Quick Start:**
-```csharp
-var sourceDs = beepService.DMEEditor.GetDataSource("SourceDB");
-var targetDs = beepService.DMEEditor.GetDataSource("TargetDB");
-await beepService.DMEEditor.ETL.CopyEntityDataAsync(sourceDs, targetDs, "Customers");
-```
-
----
-
-#### [`beepsync`](beepsync/)
-Real-time data synchronization between datasources.
-
-**Use when:**
-- Keeping multiple databases in sync
-- Implementing offline-first patterns
-- Building data replication pipelines
-
----
-
-#### [`mapping`](mapping/)
-Entity type mapping and data transformation.
-
-**Use when:**
-- Mapping database entities to C# classes
-- Auto-mapping configurations
-- Custom type conversions
-
----
-
-#### [`importing`](importing/)
-Importing data from files (CSV, Excel, JSON, XML).
-
-**Use when:**
-- Bulk importing from files
-- Initial data loading
-- Data migration from external sources
-
----
-
-### 🧩 Advanced Features
-
-#### [`forms`](forms/)
-Dynamic form generation and master-detail relationships.
-
-**Use when:**
-- Building data-driven forms
-- Implementing master-detail patterns
-- Creating dynamic UI from entity metadata
-
----
-
-#### [`migration`](migration/)
-Database schema migrations and versioning.
-
-**Use when:**
-- Creating/updating database schema
-- Running migrations on startup
-- Managing schema versions
-
-**Quick Start:**
-```csharp
-var migrationManager = new MigrationManager(editor, dataSource);
-migrationManager.EnsureDatabaseCreated("MyApp.Entities", createIfNotExists: true);
-```
-
----
-
-### 💾 In-Memory & Local Storage
-
-#### [`inmemorydb`](inmemorydb/)
-In-memory database operations and caching.
-
-**Use when:**
-- Testing without database setup
-- Fast temporary data storage
-- Caching frequently accessed data
-
----
-
-#### [`localdb`](localdb/)
-Local database operations (SQLite, LiteDB).
-
-**Use when:**
-- Desktop apps with local storage
-- Offline-capable applications
-- Lightweight embedded databases
-
----
-
-#### [`observablebindinglist`](observablebindinglist/)
-Observable collections for data binding in UI applications.
-
-**Use when:**
-- Binding data to WinForms/WPF controls
-- Auto-updating UI on data changes
-- Implementing MVVM patterns
-
----
-
-## 🚀 Getting Started Paths
-
-### New Desktop Application
-1. Start with [`beepserviceregistration`](beepserviceregistration/) - Set up services with `AddBeepForDesktop()`
-2. Use [`connection`](connection/) - Add database connections
-3. Try [`unitofwork`](unitofwork/) - Implement CRUD operations
-4. Explore [`forms`](forms/) - Build dynamic UI
-
-### New Web API
-1. Start with [`beepserviceregistration`](beepserviceregistration/) - Set up services with `AddBeepForWeb()`
-2. Use [`connection`](connection/) - Configure connections
-3. Try [`idatasource`](idatasource/) - Build API endpoints
-4. Explore [`etl`](etl/) - Data synchronization endpoints
-
-### New Blazor Application
-1. Start with [`beepserviceregistration`](beepserviceregistration/) - Set up services with `AddBeepForBlazorServer()` or `AddBeepForBlazorWasm()`
-2. Use [`connection`](connection/) - Add connections
-3. Try [`idatasource`](idatasource/) - Query data in components
-4. Explore [`beepsync`](beepsync/) - Real-time updates
-
-### Migrating Existing Application
-1. Read [`beepserviceregistration`](beepserviceregistration/) - Migration guide section
-2. Update to environment-specific registration
-3. Replace `Containername` with `AppRepoName`
-4. Test thoroughly (breaking changes documented)
-
-## 📖 Skill Structure
-
-Each skill directory contains:
-
-- **`SKILL.md`** - Comprehensive guide with:
-  - Scope and when to use
-  - Core steps and patterns
-  - Validation and error handling
-  - Pitfalls and best practices
-  - File locations
-  - Detailed examples
-
-- **`reference.md`** - Quick reference with:
-  - Code snippets
-  - Common patterns
-  - Key methods and classes
-  - Troubleshooting
-
-## 🔗 Cross-Skill Workflows
-
-### Workflow: Complete CRUD Application
-
-```csharp
-// 1. Service Registration (beepserviceregistration)
-builder.Services.AddBeepForDesktop(opts => {
-    opts.AppRepoName = "CRUDApp";
-    opts.DirectoryPath = AppContext.BaseDirectory;
-});
-
-// 2. Connection Setup (connection)
-var connProps = new ConnectionProperties {
-    ConnectionName = "AppDB",
-    ConnectionString = "Data Source=./app.db",
-    DatabaseType = DataSourceType.SqlLite
-};
-beepService.DMEEditor.ConfigEditor.AddDataConnection(connProps);
-
-// 3. Migrations (migration)
-var ds = beepService.DMEEditor.GetDataSource("AppDB");
-var migrationManager = new MigrationManager(beepService.DMEEditor, ds);
-migrationManager.EnsureDatabaseCreated("MyApp.Entities", true);
-
-// 4. CRUD Operations (unitofwork)
-var uow = beepService.DMEEditor.CreateUnitOfWork<Customer>();
-uow.AddNew(new Customer { Name = "John" });
-uow.Commit();
-
-// 5. Query Data (idatasource)
-var customers = await ds.GetEntityAsync("Customers", new List<AppFilter>());
-```
-
-### Workflow: Data Synchronization
-
-```csharp
-// 1. Service Registration (beepserviceregistration)
-builder.Services.AddBeepForWeb(opts => {
-    opts.AppRepoName = "SyncService";
-    opts.MaxConnectionPoolSize = 100;
-});
-
-// 2. Setup Connections (connection)
-beepService.DMEEditor.ConfigEditor.AddDataConnection(sourceProps);
-beepService.DMEEditor.ConfigEditor.AddDataConnection(targetProps);
-
-// 3. ETL Operations (etl)
-var sourceDs = beepService.DMEEditor.GetDataSource("SourceDB");
-var targetDs = beepService.DMEEditor.GetDataSource("TargetDB");
-await beepService.DMEEditor.ETL.CopyEntityDataAsync(sourceDs, targetDs, "Products");
-
-// 4. Sync Service (beepsync)
-var syncConfig = new SyncConfiguration { /* ... */ };
-await beepService.DMEEditor.SyncManager.ExecuteSyncAsync(syncConfig);
-```
-
-### Workflow: Offline-First Blazor App
-
-```csharp
-// 1. Service Registration (beepserviceregistration)
-builder.Services.AddBeepForBlazorWasm(opts => {
-    opts.AppRepoName = "OfflineApp";
-    opts.EnableBrowserStorage = true;
-    opts.BrowserStorageQuota = 100 * 1024 * 1024; // 100MB
-});
-
-// 2. Local Storage (localdb / inmemorydb)
-var localDs = beepService.DMEEditor.GetDataSource("LocalStorage");
-var cachedData = await localDs.GetEntityAsync("Products", filters);
-
-// 3. Sync When Online (beepsync)
-if (await IsOnlineAsync())
-{
-    var serverDs = beepService.DMEEditor.GetDataSource("ServerAPI");
-    await beepService.DMEEditor.SyncManager.SyncToServerAsync(localDs, serverDs);
-}
-```
-
-## 🎯 Best Practices
-
-### 1. Always Use Environment-Specific Registration
-```csharp
-// ✅ GOOD - Desktop
-services.AddBeepForDesktop(opts => { /* ... */ });
-
-// ✅ GOOD - Web
-services.AddBeepForWeb(opts => { /* ... */ });
-
-// ❌ BAD - Generic (no optimizations)
-services.AddBeepServices(opts => { /* ... */ });
-```
-
-### 2. Use Standardized Property Names
-```csharp
-// ✅ GOOD
-opts.AppRepoName = "MyApp";
-
-// ❌ BAD (Deprecated)
-opts.Containername = "MyApp";
-```
-
-### 3. Prefer UnitOfWork for Transactions
-```csharp
-// ✅ GOOD - Transactional
-var uow = editor.CreateUnitOfWork<Customer>();
-uow.AddNew(customer);
-uow.Commit(); // All or nothing
-
-// ❌ BAD - No transaction
-ds.InsertEntity("Customers", customer); // Individual operation
-```
-
-### 4. Always Check Connection State
-```csharp
-// ✅ GOOD
-var state = ds.Openconnection();
-if (state != ConnectionState.Open)
-{
-    // Handle error
-    logger.LogError(ds.ErrorObject.Message);
-}
-
-// ❌ BAD
-ds.Openconnection(); // Ignoring result
-```
-
-### 5. Use Async Methods When Available
-```csharp
-// ✅ GOOD
-var data = await ds.GetEntityAsync("Customers", filters);
-
-// ⚠️ OK but blocks thread
-var data = ds.GetEntity("Customers", filters);
-```
-
-## 📚 Additional Resources
-
-### Documentation Files
-- **Services README**: `DataManagementEngineStandard/Services/README.md`
-- **Migration Guide**: `DataManagementEngineStandard/Services/MIGRATION.md`
-- **Implementation Summary**: `DataManagementEngineStandard/Services/IMPLEMENTATION_SUMMARY.md`
-- **Code Examples**: `DataManagementEngineStandard/Services/Examples/`
-
-### BeepDM Core Documentation
-- **Main README**: `BeepDM/README.md`
-- **Architecture**: `DataManagementEngineStandard/Docs/`
-- **Integration Tests**: `tests/IntegrationTests/`
-
-### Related Repositories
-- **[BeepDM](https://github.com/The-Tech-Idea/BeepDM)** - Core data management engine
-- **[BeepDataSources](https://github.com/The-Tech-Idea/BeepDataSources)** - 287+ datasource implementations
-- **[Beep.Desktop](https://github.com/The-Tech-Idea/Beep.Desktop)** - Desktop UI controls and AppManager
-- **[Beep.Winform](https://github.com/The-Tech-Idea/Beep.Winform)** - WinForms controls library
-
-## 🆘 Getting Help
-
-### Common Issues by Skill
-
-| Issue | Related Skill | Quick Fix |
-|-------|---------------|-----------|
-| "AppRepoName cannot be null" | [`beepserviceregistration`](beepserviceregistration/) | Set `opts.AppRepoName = "YourAppName"` |
-| Connection fails to open | [`connection`](connection/) | Check connection string, verify database exists |
-| "Already configured" error | [`beepserviceregistration`](beepserviceregistration/) | Call `Dispose()` before reconfiguring |
-| UnitOfWork not committing | [`unitofwork`](unitofwork/) | Ensure `Commit()` is called after changes |
-| Entity not found | [`idatasource`](idatasource/) | Verify entity name matches database table |
-| Migration fails | [`migration`](migration/) | Check namespace contains entities, verify permissions |
-| Assembly loading errors | [`beepserviceregistration`](beepserviceregistration/) | Ensure plugins in `ProjectClasses` or `ConnectionDrivers` folder |
-
-### Debugging Steps
-1. Check logs for detailed error messages
-2. Verify connection strings in `DataConnections.json`
-3. Ensure `DirectoryPath` points to valid folder with configs
-4. Use try-catch to capture `IErrorsInfo` details
-5. Consult skill-specific troubleshooting section
-
-## 📊 Version Information
-
-- **Skills Version**: 2.0
-- **Last Updated**: 2026-02-17
-- **BeepDM Version**: 2.0+
-- **.NET Version**: 8.0+
-
-## 🤝 Contributing
-
-When creating new skills:
-1. Follow the established structure (SKILL.md + reference.md)
-2. Include comprehensive examples
-3. Document pitfalls and best practices
-4. Cross-reference related skills
-5. Update this README with skill information
-
----
-
-**Need help choosing a skill?** Start with [`beepserviceregistration`](beepserviceregistration/) for new projects, or [`beepservice`](beepservice/) for understanding existing code.
+This directory contains the BeepDM skill catalog used to route work across the current codebase. The catalog is organized around entry-point skills, narrower subsystem skills, and helper-focused routing skills.
+
+## Catalog Rules
+
+- Keep `SKILL.md` short and routing-focused.
+- Keep `reference.md` for deeper API lists, examples, and troubleshooting.
+- Update both files together when a skill changes materially.
+- Prefer tightening an existing skill before creating a near-duplicate.
+- Ground every skill in real source files and current type names.
+
+## How To Choose A Skill
+
+Start with the narrowest skill that matches the task:
+- Use [`beepdm`](beepdm/) for cross-cutting `IDMEEditor` orchestration and routing.
+- Use [`beepserviceregistration`](beepserviceregistration/) for DI and application startup.
+- Use [`beepservice`](beepservice/) for legacy desktop bootstrapping.
+- Use subsystem skills only when the task is clearly isolated to that subsystem.
+
+## Core Entry Points
+
+### Framework Core
+- [`beepdm`](beepdm/) - top-level BeepDM routing around `IDMEEditor`, `IDataSource`, helpers, config, migrations, ETL, and forms.
+- [`beepserviceregistration`](beepserviceregistration/) - modern service-registration and environment-specific startup.
+- [`beepservice`](beepservice/) - legacy initialization and desktop-hosted patterns.
+
+### Connection And Configuration
+- [`connectionproperties`](connectionproperties/) - build and classify `ConnectionProperties`.
+- [`connection`](connection/) - driver resolution, connection-string processing, validation, and masking.
+- [`configeditor`](configeditor/) - persisted configuration, delegated managers, and config synchronization.
+- [`environmentservice`](environmentservice/) - environment-specific settings and app-folder behavior.
+
+### Data Contracts And Runtime
+- [`idatasource`](idatasource/) - datasource contract implementation and usage.
+- [`unitofwork`](unitofwork/) - service-layer persistence, change tracking, and runtime wrappers.
+- [`migration`](migration/) - schema creation and upgrade flows.
+- [`mapping`](mapping/) - entity and field mapping logic.
+
+## Domain Skills
+
+### ETL, Import, And Sync
+- [`etl`](etl/) - direct ETL orchestration, script generation, and datasource copy flows.
+- [`importing`](importing/) - governed imports with validation, batching, replay, quality, staging, history, and watermarks.
+- [`beepsync`](beepsync/) - sync-schema orchestration via `BeepSyncManager`, `DataSyncSchema`, and `DataImportManager`.
+
+### Forms
+- [`forms`](forms/) - entry point for `FormsManager`.
+- [`forms-mode-transitions`](forms-mode-transitions/) - query/CRUD mode flow.
+- [`forms-operations-navigation`](forms-operations-navigation/) - form lifecycle and navigation.
+- [`forms-enhanced-data-operations`](forms-enhanced-data-operations/) - enhanced CRUD/query helpers.
+- [`forms-helper-managers`](forms-helper-managers/) - relationship, dirty-state, trigger, and simulation helpers.
+- [`forms-performance-configuration`](forms-performance-configuration/) - cache, metrics, and configuration management.
+
+### Local And UI-Oriented Data
+- [`inmemorydb`](inmemorydb/) - in-memory datasource behavior.
+- [`localdb`](localdb/) - local/embedded database scenarios.
+- [`observablebindinglist`](observablebindinglist/) - binding-oriented collection behavior.
+
+## Helper Clusters
+
+### Assembly And Plugin Loading
+- [`assemblyhandler`](assemblyhandler/) - classic assembly-handler entry point.
+- [`assemblyhandler-loading-scanning`](assemblyhandler-loading-scanning/) - load orchestration and scanning.
+- [`assemblyhandler-helpers-reflection`](assemblyhandler-helpers-reflection/) - reflection, type resolution, and driver discovery helpers.
+- [`assemblyhandler-nuget-operations`](assemblyhandler-nuget-operations/) - NuGet search/load/source operations.
+- [`assemblyhandler-driver-statistics`](assemblyhandler-driver-statistics/) - driver provenance and load metrics.
+
+### Shared-Context Plugin System
+- [`shared-context-assemblyhandler`](shared-context-assemblyhandler/) - shared-context handler entry point.
+- [`shared-context-loading-resolution`](shared-context-loading-resolution/) - shared-context load and binding behavior.
+- [`shared-context-scanning-discovery`](shared-context-scanning-discovery/) - discovery services and shared-context scanning.
+- [`shared-context-plugin-system`](shared-context-plugin-system/) - plugin-system managers and lifecycle.
+- [`shared-context-nuget-source-tracking`](shared-context-nuget-source-tracking/) - package loading, source persistence, and provenance in shared-context mode.
+
+### RDBMS Helpers
+- [`rdbms-helper-facade`](rdbms-helper-facade/) - static `RDBMSHelper` routing layer.
+- [`rdbms-schema-query-helper`](rdbms-schema-query-helper/) - schema and metadata query generation.
+- [`rdbms-query-repository-helper`](rdbms-query-repository-helper/) - predefined query repository behavior.
+- [`rdbms-object-creation-helper`](rdbms-object-creation-helper/) - DDL and object creation helpers.
+- [`rdbms-dml-helper`](rdbms-dml-helper/) - DML query generation.
+- [`rdbms-feature-helper`](rdbms-feature-helper/) - provider capability and feature checks.
+- [`rdbms-entity-validation`](rdbms-entity-validation/) - entity validation and naming/keyword safety.
+- [`rdbms-entity-helper-sql`](rdbms-entity-helper-sql/) - entity-structure-to-SQL generation.
+- [`universal-rdbms-helper`](universal-rdbms-helper/) - instance-based universal `RdbmsHelper` implementing `IDataSourceHelper`.
+
+## Other Skills
+
+- [`importing`](importing/) and [`etl`](etl/) overlap intentionally but serve different layers:
+  - `etl` for direct copy/script execution
+  - `importing` for governed import pipelines
+- [`helper-skill-template`](helper-skill-template/) is the local authoring template for new or upgraded BeepDM skills.
+- [`universal-helper-factory`](universal-helper-factory/) and [`universal-general-helper`](universal-general-helper/) remain helper-routing skills for the universal helper layer.
+
+## Skill Structure
+
+Each skill directory should contain:
+- `SKILL.md` for routing, scope, workflow, pitfalls, and related skills
+- `reference.md` for deeper examples, method inventories, and troubleshooting
+
+Recommended split:
+- Keep `SKILL.md` under roughly 150 lines unless the subsystem genuinely needs more routing guidance.
+- Put long examples, option matrices, and method inventories in `reference.md`.
+
+## Maintenance Loop
+
+When updating a skill:
+1. Verify the source files and public APIs in the repository.
+2. Tighten trigger language so the skill routes to the narrowest useful area.
+3. Add or fix related-skill links.
+4. Remove duplicated detail from `SKILL.md` when `reference.md` can own it.
+5. Update this README if the catalog entry points or grouping changed.
+
+## Version Information
+
+- Skills Version: 2.0
+- Last Updated: 2026-03-11
+- BeepDM Version: 2.0+
+- .NET Version: 8.0+

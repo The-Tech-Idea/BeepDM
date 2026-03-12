@@ -1,53 +1,33 @@
 ---
 name: shared-context-loading-resolution
-description: Detailed guidance for SharedContextAssemblyHandler loading workflow and assembly resolution. Use when modifying LoadAllAssembly orchestration, framework-specific path resolution, AppDomain registration, and shared context assembly binding behavior.
+description: Detailed guidance for SharedContextAssemblyHandler loading workflow and assembly resolution in BeepDM. Use when modifying LoadAllAssembly orchestration, framework-specific path resolution, AppDomain registration, or shared-context binding behavior.
 ---
 
 # Shared Context Loading And Resolution
 
-Use this skill when changing the runtime loading pipeline.
+Use this skill when changing the runtime loading pipeline in shared-context mode.
 
-## Additional Resources
-- End-to-end scenarios: [reference.md](reference.md)
+## File Locations
+- `Assembly_helpersStandard/SharedContextAssemblyHandler.cs`
+- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/SharedContextManager.cs`
+- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/SharedAssemblyTracker.cs`
 
 ## Core Methods
-- `LoadAllAssembly(IProgress<PassedArgs> progress, CancellationToken token)`
-- `LoadAssembly(string path, FolderFileTypes fileTypes)`
-- `LoadAssembly(string path)`
+- `LoadAllAssembly(...)`
+- `LoadAssembly(...)`
 - `GetBuiltinClasses()`
-- `CurrentDomain_AssemblyResolve(...)`
+- assembly resolve hooks and shared-context registration paths
 
-## Loader Pipeline (High Level)
-1. Builtin class scan
-2. Runtime assembly registration (`LoadAssemblyFromRuntime`)
-3. Framework extension load
-4. Folder-type loads (drivers, data sources, project/addin, other dlls)
-5. Driver/data source/addin scans
-6. Default drivers + dedupe
-7. Extension processing + addin hierarchy
+## Working Rules
+1. Keep shared-context registration aligned with assembly collections and resolver state.
+2. Preserve framework/path resolution for multi-target package layouts.
+3. Preserve cancellation and progress behavior in long-running loads.
+4. Avoid duplicate type identity problems by keeping already-loaded assemblies registered in the shared context.
 
-## Resolution/Interop Details
-- `LoadAssembly(path, fileTypes)` loads via `SharedContextManager.LoadNuggetAsync(...)`.
-- Runtime/AppDomain assemblies are registered into shared context to avoid duplicate type identities.
-- Resolver flow combines shared context visibility and app-domain fallback behavior.
-- Multi-target path handling uses framework-specific resolution before load.
+## Related Skills
+- [`shared-context-assemblyhandler`](../shared-context-assemblyhandler/SKILL.md)
+- [`shared-context-scanning-discovery`](../shared-context-scanning-discovery/SKILL.md)
+- [`shared-context-plugin-system`](../shared-context-plugin-system/SKILL.md)
 
-## Safe Change Rules
-1. Keep `_assemblies` and `_loadedAssemblies` updates synchronized.
-2. Preserve subfolder scanning for downloaded package layouts.
-3. Do not bypass registration of already-loaded AppDomain assemblies.
-4. Keep progress reporting non-blocking.
-5. Keep cancellation token plumbing when extending long-running loops.
-
-## Common Pitfalls
-- Removing runtime registration causes duplicate load/type conflicts.
-- Loading from path without framework resolution breaks multi-target package layouts.
-- Skipping dedupe on assembly collections causes repeated scanning work.
-- Throwing on a single folder failure aborts full discovery unnecessarily.
-
-## Verification Checklist
-- `LoadAllAssembly` completes with populated `LoadedAssemblies`.
-- Drivers and data source classes are discovered for configured folders.
-- Shared-context resolver can serve already-loaded project references.
-- `GetLoadStatistics` reflects recent load operation.
-
+## Detailed Reference
+Use [`reference.md`](./reference.md) for loader pipeline notes and verification checks.
