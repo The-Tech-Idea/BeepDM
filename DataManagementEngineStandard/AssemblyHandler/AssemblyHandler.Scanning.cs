@@ -10,6 +10,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
+using TheTechIdea.Beep.Pipelines.Interfaces;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -165,6 +166,12 @@ namespace TheTechIdea.Beep.Tools
                 if (typeInfo.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
                 {
                     GetAddinObjects(asm);
+                }
+
+                // Check for IPipelinePlugin interface
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(IPipelinePlugin)))
+                {
+                    ConfigEditor.PipelinePluginClasses.Add(GetAssemblyClassDefinition(typeInfo, "IPipelinePlugin"));
                 }
             }
             catch (Exception ex)

@@ -42,6 +42,7 @@ namespace TheTechIdea.Beep.ConfigUtil
     //    List<ConnectionDriversConfig> DriverDefinitionsConfig { get; set; }
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         List<AssemblyClassDefinition> BranchesClasses { get; set; }
+        List<AssemblyClassDefinition> PipelinePluginClasses { get; set; }
         List<AssemblyClassDefinition> AppWritersClasses { get; set; }
         List<AssemblyClassDefinition> GlobalFunctions { get; set; }
         List<AssemblyClassDefinition> AppComponents { get; set; }

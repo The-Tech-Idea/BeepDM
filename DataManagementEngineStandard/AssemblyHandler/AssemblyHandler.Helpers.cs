@@ -13,6 +13,8 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Pipelines.Attributes;
+using TheTechIdea.Beep.Pipelines.Interfaces;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
 
@@ -248,7 +250,19 @@ namespace TheTechIdea.Beep.Tools
                 xcls.InMemory = true;
             }
 
-            
+            // Check for PipelinePluginAttribute
+            var pipelineAttr = (PipelinePluginAttribute)type.GetCustomAttribute(typeof(PipelinePluginAttribute), false);
+            if (pipelineAttr != null)
+            {
+                xcls.IsPipelinePlugin = true;
+                xcls.PipelinePluginId = pipelineAttr.PluginId;
+                xcls.PipelinePluginType = pipelineAttr.PluginType;
+                xcls.PipelinePluginAuthor = pipelineAttr.Author;
+                xcls.RootName = pipelineAttr.DisplayName;
+                xcls.Imagename = pipelineAttr.IconPath;
+                xcls.Version = pipelineAttr.Version;
+            }
+
             xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
             if (xcls.classProperties != null)
             {

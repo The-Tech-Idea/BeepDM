@@ -85,6 +85,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 			// Initialize all the assembly class definition lists
 			ViewModels = new List<AssemblyClassDefinition>();
 			BranchesClasses = new List<AssemblyClassDefinition>();
+			PipelinePluginClasses = new List<AssemblyClassDefinition>();
 			GlobalFunctions = new List<AssemblyClassDefinition>();
 			AppWritersClasses = new List<AssemblyClassDefinition>();
 			AppComponents = new List<AssemblyClassDefinition>();
@@ -205,6 +206,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 		// Direct properties
         public List<AssemblyClassDefinition> ViewModels { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> PipelinePluginClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
@@ -657,6 +659,7 @@ namespace TheTechIdea.Beep.ConfigUtil
                     CategoryFolders?.Clear();
                     ViewModels?.Clear();
                     BranchesClasses?.Clear();
+                    PipelinePluginClasses?.Clear();
                     GlobalFunctions?.Clear();
                     AppWritersClasses?.Clear();
                     AppComponents?.Clear();

@@ -5345,6 +5345,1048 @@
             Additional options specific to the messaging system.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute">
+            <summary>
+            Decorate any <c>IPipelinePlugin</c> implementation with this attribute.
+            <c>PipelinePluginRegistry</c> discovers it at startup via AssemblyHandler —
+            the same pattern as <c>[AddinAttribute]</c> connectors.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.PluginId">
+            <summary>Stable unique identifier, e.g. "beep.source.sqlite".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.DisplayName">
+            <summary>Human-readable name shown in Designer UI, e.g. "SQLite Source".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.PluginType">
+            <summary>Functional role of this plugin: Source, Sink, Transformer, etc.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.Category">
+            <summary>Optional grouping label, e.g. "Database", "File", "Cloud".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.Version">
+            <summary>Semantic version string, e.g. "1.2.0".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.Author">
+            <summary>Author or team name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute.IconPath">
+            <summary>Optional path to an icon displayed in the Designer palette.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginType">
+            <summary>
+            Classifies the role of a pipeline plugin.
+            Used by <see cref="T:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute"/> and the <c>PipelinePluginRegistry</c>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent">
+            <summary>
+            Describes an alert event raised by the pipeline engine.
+            Consumed by <see cref="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineNotifier"/> implementations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.RunId">
+            <summary>Unique run identifier this alert belongs to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.PipelineName">
+            <summary>Pipeline name for display in notifications.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.Severity">
+            <summary>Severity level of the alert.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.Title">
+            <summary>Short title for the notification subject / headline.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.Message">
+            <summary>Detailed alert message body.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.RaisedAtUtc">
+            <summary>UTC time the alert was raised.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.AlertEvent.Data">
+            <summary>Optional additional key-value data for the notification template.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.AlertSeverity">
+            <summary>
+            Severity levels for pipeline alert events.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.AlertSeverity.Info">
+            <summary>Informational — run started, completed, etc.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.AlertSeverity.Warning">
+            <summary>Non-critical issue that may need attention.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.AlertSeverity.Error">
+            <summary>Serious failure requiring immediate attention.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.AlertSeverity.Critical">
+            <summary>Run-stopping failure.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.ILineageStore">
+            <summary>
+            Query interface for column-level data lineage records accumulated during pipeline runs.
+            Implemented by <c>ObservabilityStore</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.ILineageStore.GetByRunAsync(System.String)">
+            <summary>Get all lineage records recorded for a specific run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.ILineageStore.TraceBackwardAsync(System.String,System.String,System.String)">
+            <summary>
+            Trace which source columns fed a destination field (backward lineage).
+            Returns a chain: <c>destField ← transformer ← sourceField ← ...</c>
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.ILineageStore.TraceForwardAsync(System.String,System.String,System.String)">
+            <summary>
+            Trace all downstream fields that received data from a source column (forward).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.ILineageStore.GetGraphAsync(System.String,System.String)">
+            <summary>Return the full lineage graph between two data sources.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineNotifier">
+            <summary>
+            Sends notifications (email, webhook, log file, etc.) when an alert rule fires.
+            Implement and decorate with <c>[PipelinePlugin(..., PipelinePluginType.Notifier)]</c>
+            to register in the plugin registry.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineNotifier.NotifyAsync(TheTechIdea.Beep.Pipelines.Observability.AlertEvent,System.Threading.CancellationToken)">
+            <summary>
+            Deliver notification for the given alert event.
+            Implementations must not throw — log failures and return gracefully.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelinePlugin">
+            <summary>
+            Marker interface. All pipeline plugins implement this.
+            Provides identity, discovery metadata, and parameter schema.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.IPipelinePlugin.PluginId">
+            <summary>Unique plugin identity — matches PipelinePluginAttribute.PluginId.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.IPipelinePlugin.DisplayName">
+            <summary>Human-readable display name shown in Designer UI.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Interfaces.IPipelinePlugin.Description">
+            <summary>Short description shown in tooltip / help.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelinePlugin.GetParameterDefinitions">
+            <summary>
+            Returns the parameter schema this plugin accepts.
+            Used by Designer UI to auto-generate property panels.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelinePlugin.Configure(System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>Apply a parameter bag at runtime before the pipeline starts.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineScheduler">
+            <summary>
+            Triggers pipeline runs on a schedule or external event.
+            Built-in implementations: CronScheduler, FileWatchScheduler, ManualScheduler.
+            Custom schedulers are plugins decorated with <see cref="T:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute"/>.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineScheduler.Triggered">
+            <summary>Raised when the trigger condition fires.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineScheduler.StartAsync(System.Threading.CancellationToken)">
+            <summary>Start watching / waiting for the trigger condition.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineScheduler.StopAsync">
+            <summary>Stop the scheduler gracefully.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSink">
+            <summary>
+            Writes records into a target data store.
+            Receives records in batches for efficient I/O.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSink.BeginBatchAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,TheTechIdea.Beep.Pipelines.Models.PipelineSchema,System.Threading.CancellationToken)">
+            <summary>
+            Called once before streaming begins. Use to open connections,
+            create missing tables, begin transactions, etc.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSink.WriteBatchAsync(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Pipelines.Models.PipelineRecord},TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>Write one batch of records.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSink.CommitAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>
+            Called once after all batches. Commit transactions, close files, update metadata.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSink.RollbackAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>Called on cancellation or error. Roll back / clean up.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSource">
+            <summary>
+            Extracts records from a data source as an async stream.
+            The runtime never loads all records into memory simultaneously.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSource.GetSchemaAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>Schema of the records this source produces.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSource.ReadAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>
+            Produces records as an async stream.
+            Callers consume via <c>await foreach</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineSource.GetEstimatedRowCountAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>Estimated total rows, or -1 if unknown. Used for progress %.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineTransformer">
+            <summary>
+            Transforms an async stream of records into another stream.
+            A single transformer can map columns, split rows, enrich data, etc.
+            Transformers are composable — chain N transformers between source and sink.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineTransformer.GetOutputSchema(TheTechIdea.Beep.Pipelines.Models.PipelineSchema)">
+            <summary>
+            Declares the output schema given an input schema.
+            Called before execution to allow downstream plugins to plan.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineTransformer.TransformAsync(System.Collections.Generic.IAsyncEnumerable{TheTechIdea.Beep.Pipelines.Models.PipelineRecord},TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>
+            Transforms the incoming record stream into an outgoing record stream.
+            Can yield 1:1, 1:N, or N:1 records (split / aggregate / filter are all transformers).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineValidator">
+            <summary>
+            Validates records against rules.
+            Records that fail are routed to the error sink; valid records continue to the main sink.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineValidator.ValidateAsync(TheTechIdea.Beep.Pipelines.Models.PipelineRecord,TheTechIdea.Beep.Pipelines.Models.PipelineRunContext,System.Threading.CancellationToken)">
+            <summary>
+            Validate one record. Return Pass, Warn, or Reject with message.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.PipelineConstants">
+            <summary>
+            Central repository for all pipeline framework constants.
+            Never use magic numbers or strings in pipeline code — reference these instead.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.ValidationOutcome">
+            <summary>
+            Outcome of a single record validation rule.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.ValidationOutcome.Pass">
+            <summary>Record passed all rules — continue to main sink.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.ValidationOutcome.Warn">
+            <summary>Record has an issue but should still be written — flag it in metadata.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Interfaces.ValidationOutcome.Reject">
+            <summary>Record failed a rule — route to the error sink.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Interfaces.ValidationResult">
+            <summary>
+            Result of validating a single record.
+            Immutable — created by the validator and consumed by the engine.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Interfaces.ValidationResult.#ctor(TheTechIdea.Beep.Pipelines.Interfaces.ValidationOutcome,System.String,System.String,TheTechIdea.Beep.Pipelines.Models.PipelineRecord)">
+            <summary>
+            Result of validating a single record.
+            Immutable — created by the validator and consumed by the engine.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord">
+            <summary>
+            Records column-level data lineage for a pipeline run.
+            Captured by the engine during execution and persisted to the lineage store.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord.RunId">
+            <summary>Correlation identifier of the pipeline run this record belongs to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord.StepId">
+            <summary>Identifier of the step that produced this lineage entry.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord.StepName">
+            <summary>Display name of the step for reporting.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord.TransformExpression">
+            <summary>
+            Optional expression applied during transformation, e.g. "UPPER(FirstName)".
+            Empty string if it's a direct pass-through mapping.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord.Timestamp">
+            <summary>UTC time this lineage entry was captured.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.DQReport">
+            <summary>
+            Aggregated data-quality report produced by the validation layer after a pipeline run.
+            One <see cref="T:TheTechIdea.Beep.Pipelines.Models.DQReport"/> is appended to <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult"/> when
+            at least one validator step is present in the pipeline definition.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQReport.RunId">
+            <summary>Correlation identifier of the pipeline run this report belongs to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQReport.GeneratedAtUtc">
+            <summary>UTC timestamp when the report was assembled.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQReport.PassRate">
+            <summary>
+            Percentage of records that passed all validation rules (0–100).
+            Returns 0 when <see cref="P:TheTechIdea.Beep.Pipelines.Models.DQReport.TotalRecords"/> is 0 (no records processed yet).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQReport.RuleResults">
+            <summary>
+            One entry per validator + rule combination that fired during the run.
+            Empty when all records pass all rules.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.DQRuleResult">
+            <summary>
+            Per-rule quality statistics accumulated across all records in a pipeline run.
+            Aggregated into <see cref="P:TheTechIdea.Beep.Pipelines.Models.DQReport.RuleResults"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQRuleResult.RuleName">
+            <summary>Human-readable rule name supplied by the validator configuration.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQRuleResult.ValidatorPluginId">
+            <summary>Plugin ID of the validator that produced this result.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQRuleResult.FailCount">
+            <summary>Number of records that received a <c>Reject</c> outcome from this rule.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQRuleResult.WarnCount">
+            <summary>Number of records that received a <c>Warn</c> outcome from this rule.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.DQRuleResult.SampleFailures">
+            <summary>
+            Up to 100 sample records that triggered a Warn or Reject outcome.
+            Useful for diagnosing data problems without trawling the full error sink.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.ParamType">
+            <summary>
+            Data type of a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef"/> value.
+            Used by the Designer UI to render the appropriate input control.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.String">
+            <summary>Free-text string.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.Integer">
+            <summary>32-bit integer.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.Long">
+            <summary>64-bit integer.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.Decimal">
+            <summary>Floating-point decimal.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.Boolean">
+            <summary>Boolean (true / false).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.DateTime">
+            <summary>Date and time value.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.FilePath">
+            <summary>File-system path (Designer may show a file picker).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.ConnectionName">
+            <summary>Registered BeepDM data source connection name.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.Json">
+            <summary>JSON fragment for advanced plugin configuration.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.ParamType.Secret">
+            <summary>Single-line credential / secret — masked in the UI.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition">
+            <summary>
+            Full pipeline specification: source, transformers, sinks, validators,
+            scheduler, parameters, and execution policy.
+            Replaces <see cref="T:TheTechIdea.Beep.Editor.ETLScriptHDR"/> — can be constructed from one for backward compatibility.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition.Tags">
+            <summary>Comma-separated tags for filtering in the Designer.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition.ErrorSinkPluginId">
+            <summary>Sink for records that fail validators. Defaults to the built-in error-log sink.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition.StopOnErrorCount">
+            <summary>Stop the run after this many consecutive errors. 0 means never stop.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition.VisualLayoutJson">
+            <summary>JSON serialized node/edge positions for the visual designer canvas.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition.FromLegacyScript(TheTechIdea.Beep.Editor.ETLScriptHDR)">
+            <summary>
+            Creates a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition"/> from a legacy <see cref="T:TheTechIdea.Beep.Editor.ETLScriptHDR"/>.
+            Preserves all existing step data — nothing is lost.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineField">
+            <summary>
+            Describes a single field in a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineSchema"/>.
+            Immutable — created by source plugins and consumed throughout the pipeline.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineField.#ctor(System.String,System.Type,System.Boolean,System.Boolean,System.Int32,System.String)">
+            <summary>
+            Describes a single field in a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineSchema"/>.
+            Immutable — created by source plugins and consumed throughout the pipeline.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef">
+            <summary>
+            Defines a single configuration parameter exposed by a pipeline plugin.
+            Consumed by the Designer UI to auto-generate the property panel.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.Name">
+            <summary>Parameter key used in the config dictionary.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.DisplayName">
+            <summary>Human-readable label for the Designer UI.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.Description">
+            <summary>Tooltip / help text shown next to the input.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.Type">
+            <summary>Expected value type — drives the UI input control.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.IsRequired">
+            <summary>Whether a value must be provided before the pipeline can run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.DefaultValue">
+            <summary>Default value applied when the parameter is omitted.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.Group">
+            <summary>Optional group label for organizing parameters in the UI panel.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.Order">
+            <summary>Display order within the group (lower = first).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineParameterDef.ValidationPattern">
+            <summary>Optional regex for validating string values.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineRecord">
+            <summary>
+            A single row flowing through the pipeline.
+            Carries a schema reference, typed field values, and a metadata bag.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Values">
+            <summary>
+            Ordered field values. Each index aligns with the corresponding
+            <see cref="P:TheTechIdea.Beep.Pipelines.Models.PipelineSchema.Fields"/> entry.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Schema">
+            <summary>Schema this record conforms to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Meta">
+            <summary>
+            Metadata bag: source row number, file path, correlation ID, etc.
+            Keys are defined as constants in <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Item(System.String)">
+            <summary>Gets or sets a field value by name (case-insensitive).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Get``1(System.String)">
+            <summary>Gets a strongly-typed field value, returning <c>default</c> on type mismatch.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Clone">
+            <summary>
+            Shallow-clones this record.
+            Used by transformer steps that need to mutate values without affecting upstream records.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta">
+            <summary>
+            Well-known key constants for <see cref="P:TheTechIdea.Beep.Pipelines.Models.PipelineRecord.Meta"/>.
+            Use these rather than raw strings to avoid typo bugs.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.SourceRowNumber">
+            <summary>Original row number in the source file or table.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.SourceFileName">
+            <summary>Source file path, if applicable.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.CorrelationId">
+            <summary>Correlation ID inherited from the pipeline run.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.PartitionKey">
+            <summary>Partition key for parallel processing routing.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.Timestamp">
+            <summary>UTC timestamp when this record was created by the source.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.ValidationRule">
+            <summary>Validation rule name if the record was flagged or rejected.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.PipelineRecordMeta.ValidationMessage">
+            <summary>Validation message set by a validator step.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext">
+            <summary>
+            Immutable-ish bag of runtime state passed to every plugin during a pipeline run.
+            Carries correlation ID, resolved services, parameters, and accumulated telemetry.
+            Created by the engine at the start of each run and disposed when the run ends.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.RunId">
+            <summary>Unique identifier for this specific run instance.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.PipelineId">
+            <summary>ID of the pipeline definition being executed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.PipelineName">
+            <summary>Display name of the pipeline for progress messages.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.StartedAtUtc">
+            <summary>UTC time this run started.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.DMEEditor">
+            <summary>Central BeepDM services: data sources, config, logging, etc.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.Progress">
+            <summary>Progress reporter — call <see cref="M:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.ReportProgress(System.String,System.Int32)"/> instead of using directly.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.Token">
+            <summary>Cancellation token signalled when the caller requests a stop.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.Parameters">
+            <summary>
+            Resolved parameters: pipeline definition defaults merged with trigger-supplied overrides.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.RuntimeState">
+            <summary>
+            Shared state bag for cross-step communication.
+            Plugins may write to this to pass data to later steps.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.CheckpointId">
+            <summary>Last saved checkpoint ID for resumable runs.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineRunContext.ReportProgress(System.String,System.Int32)">
+            <summary>
+            Emits a progress update to the calling application.
+            Can be called by any plugin without blocking the data stream.
+            </summary>
+            <param name="message">Human-readable status message.</param>
+            <param name="pct">Optional completion percentage (0-100). Use -1 if unknown.</param>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult">
+            <summary>
+            Summary of a completed (or failed) pipeline run.
+            Returned by the engine, persisted to the run history store.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.RunId">
+            <summary>Unique identifier for this run instance.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.PipelineId">
+            <summary>ID of the pipeline definition that was executed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.PipelineName">
+            <summary>Display name of the pipeline.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.Status">
+            <summary>Terminal status of this run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.StartedAtUtc">
+            <summary>UTC time the run started.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.FinishedAtUtc">
+            <summary>UTC time the run finished (or was cancelled / failed).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.Duration">
+            <summary>Wall-clock duration of the run, or null if still executing.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.ErrorMessage">
+            <summary>Top-level error message set when <see cref="P:TheTechIdea.Beep.Pipelines.Models.PipelineRunResult.Status"/> is <see cref="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Failed"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineStepResult">
+            <summary>
+            Summary for a single step within a pipeline run.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineSchema">
+            <summary>
+            Describes the ordered set of fields in a record stream flowing through the pipeline.
+            Immutable after construction — transformer plugins produce new schemas, never mutate existing ones.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineSchema.Name">
+            <summary>Logical name of this schema, typically the entity / table name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineSchema.Fields">
+            <summary>Ordered field definitions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineSchema.GetFieldIndex(System.String)">
+            <summary>Returns the zero-based index of <paramref name="name"/>, or -1 if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineSchema.FromEntityStructure(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Creates a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineSchema"/> from a BeepDM <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>.
+            Allows sources backed by <c>IDataSource</c> to describe their output schema.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef">
+            <summary>
+            Defines a single step inside a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition"/>.
+            Replaces <see cref="T:TheTechIdea.Beep.Editor.ETLScriptDet"/> — a superset that adds plugin identity,
+            field mappings, filter expressions, and retry policy.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef.Config">
+            <summary>Plugin-specific configuration key-value pairs.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef.FieldMappings">
+            <summary>
+            Field mapping: key = destination field name, value = source expression.
+            Supports simple column names and basic computed expressions.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef.FilterExpression">
+            <summary>
+            Optional filter predicate, e.g. <c>"Age &gt; 18 AND Country = 'US'"</c>.
+            Evaluated by the engine before the step runs on each record.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef.MaxRetries">
+            <summary>
+            Per-step maximum retry count.
+            0 means inherit from <see cref="P:TheTechIdea.Beep.Pipelines.Models.PipelineDefinition.MaxRetries"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef.TimeoutSeconds">
+            <summary>
+            Per-step timeout in seconds.
+            0 means inherit from the run context.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef.FromLegacyScriptDet(TheTechIdea.Beep.Editor.ETLScriptDet)">
+            <summary>
+            Creates a <see cref="T:TheTechIdea.Beep.Pipelines.Models.PipelineStepDef"/> from a legacy <see cref="T:TheTechIdea.Beep.Editor.ETLScriptDet"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineTriggerArgs">
+            <summary>
+            Arguments passed to <see cref="E:TheTechIdea.Beep.Pipelines.Interfaces.IPipelineScheduler.Triggered"/>
+            when a scheduler fires.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineTriggerArgs.PipelineId">
+            <summary>ID of the pipeline the scheduler is configured for.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineTriggerArgs.TriggeredAt">
+            <summary>UTC time the trigger fired.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineTriggerArgs.TriggerSource">
+            <summary>Human-readable description of what caused this trigger.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineTriggerArgs.Parameters">
+            <summary>Optional parameters the scheduler adds to the run context.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.QueuedRun">
+            <summary>
+            A pending pipeline or workflow run waiting in the <c>PipelineRunQueue</c>.
+            Created by <c>SchedulerHost</c> when a trigger fires.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.RunId">
+            <summary>Unique run identifier assigned at creation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.ScheduleId">
+            <summary>The <see cref="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.Id"/> that originated this run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.PipelineId">
+            <summary>ID of the pipeline or workflow to execute.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.IsWorkflow">
+            <summary>When true, <see cref="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.PipelineId"/> is a workflow ID.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.Priority">
+            <summary>Dispatch priority: 1 (highest) – 10 (lowest).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.TriggeredAtUtc">
+            <summary>UTC time the trigger fired.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.TriggerSource">
+            <summary>Who or what triggered this run (e.g. "cron", "filewatch", "manual").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.OverrideParams">
+            <summary>Optional parameter overrides to pass to the pipeline/workflow engine.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.QueuedRun.Cts">
+            <summary>Cancellation source for this individual run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.RateLimitPolicy">
+            <summary>
+            Controls how many times and how fast a scheduled pipeline may run.
+            All limits default to disabled (0 = no limit).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.RateLimitPolicy.MaxRuns">
+            <summary>Maximum runs allowed within <see cref="P:TheTechIdea.Beep.Pipelines.Models.RateLimitPolicy.WindowSeconds"/>. 0 = unlimited.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.RateLimitPolicy.WindowSeconds">
+            <summary>Sliding window size in seconds for <see cref="P:TheTechIdea.Beep.Pipelines.Models.RateLimitPolicy.MaxRuns"/> tracking (default 1 hour).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.RateLimitPolicy.MinGapSeconds">
+            <summary>Minimum gap in seconds between consecutive runs. 0 = no gap enforced.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.RunStatus">
+            <summary>
+            Terminal status of a pipeline run or individual step.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Running">
+            <summary>Run is currently executing.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Success">
+            <summary>All records processed without errors.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Failed">
+            <summary>Run stopped due to a fatal error.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Cancelled">
+            <summary>Run was cancelled by the caller or CancellationToken.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Partial">
+            <summary>Run completed but some records were rejected or skipped.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.RunStatus.Skipped">
+            <summary>This step was skipped (e.g. disabled, condition not met).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition">
+            <summary>
+            Persisted definition of a scheduled pipeline or workflow trigger.
+            Stored as JSON under {BeepDataPath}/Schedules/{id}.schedule.json.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.Id">
+            <summary>Unique identifier (auto-generated GUID).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.Name">
+            <summary>Human-readable name for this schedule.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.PipelineId">
+            <summary>ID of the pipeline or workflow to run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.IsWorkflow">
+            <summary>When true, <see cref="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.PipelineId"/> refers to a workflow rather than a pipeline.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.SchedulerPluginId">
+            <summary>Plugin ID of the scheduler (e.g. <c>"beep.schedule.cron"</c>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.SchedulerConfig">
+            <summary>Key-value configuration forwarded to the scheduler plugin via <c>Configure()</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.IsEnabled">
+            <summary>Whether this schedule is active. Disabled schedules are loaded but not started.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.Priority">
+            <summary>Dispatch priority: 1 (highest) – 10 (lowest). Default 5.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.MaxConcurrentRuns">
+            <summary>Maximum simultaneous runs for this pipeline. Default 1.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.TimeoutSeconds">
+            <summary>Per-run timeout in seconds. 0 = no timeout.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.RetryPolicy">
+            <summary>How to retry failed runs.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.RateLimitPolicy">
+            <summary>Rate-limit guard for this schedule.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.DependsOn">
+            <summary>Other schedule IDs that must complete successfully before this one fires.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.NextRunAt">
+            <summary>UTC time of the next scheduled run (computed by the scheduler plugin).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.LastRunAt">
+            <summary>UTC time the schedule last ran.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.LastRunStatus">
+            <summary>Status string of the most recent run (e.g. "Success", "Failed").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.CreatedAtUtc">
+            <summary>UTC time this definition was created.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleDefinition.ModifiedAtUtc">
+            <summary>UTC time this definition was last modified.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.ScheduleRetryPolicy">
+            <summary>
+            Retry policy applied to a scheduled run when it fails.
+            Distinct from <c>PipelineRetryPolicy</c> (which is an exponential-backoff engine helper).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleRetryPolicy.MaxRetries">
+            <summary>Number of additional attempts after the first failure (0 = no retries).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleRetryPolicy.BaseDelayMs">
+            <summary>Base delay in milliseconds before the first retry.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Models.ScheduleRetryPolicy.BackoffFactor">
+            <summary>Multiplier applied to the delay on each subsequent retry.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.StepKind">
+            <summary>
+            Describes the functional role of a pipeline execution step.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Extract">
+            <summary>Reads records from a source plugin.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Transform">
+            <summary>Maps or converts field values.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Filter">
+            <summary>Drops records not matching a predicate.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Validate">
+            <summary>Applies data-quality rules; rejects route to the error sink.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Enrich">
+            <summary>Enriches records via lookup or join against reference data.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Aggregate">
+            <summary>Groups and aggregates records (group-by / sum / count).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Load">
+            <summary>Writes records to a sink plugin.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Notify">
+            <summary>Sends a notification (email / webhook / event bus).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Models.StepKind.Script">
+            <summary>Executes a user C# snippet (sandboxed Roslyn expression).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AlertEvent">
+            <summary>
+            A fired instance of an <see cref="T:TheTechIdea.Beep.Pipelines.Observability.AlertRule"/>.
+            Written to the alert event log by <c>AlertingEngine</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AlertEvent.RunId">
+            <summary>The run that triggered this alert (null for liveness alerts).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AlertRule">
+            <summary>
+            Defines when and how an alert should fire against pipeline run logs.
+            Evaluated by <c>AlertingEngine</c> after every run completion.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AlertRule.PipelineIds">
+            <summary>
+            Which pipelines this rule applies to.
+            <c>null</c> means all pipelines.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AlertRule.Condition">
+            <summary>
+            Optional expression evaluated on a <see cref="T:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog"/>.
+            Examples:
+            <c>"RecordsRejected > 1000"</c>, <c>"DQPassRate &lt; 0.95"</c>
+            Used when <see cref="P:TheTechIdea.Beep.Pipelines.Observability.AlertRule.Trigger"/> is <see cref="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnCustomExpression"/> or any threshold trigger.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AlertRule.NotifierPluginIds">
+            <summary>Plugin IDs of notifiers to fire (email, webhook, logfile, etc.).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AlertRule.NotifierConfig">
+            <summary>Merged config passed to each notifier (overrides per-plugin defaults).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AlertRule.SilenceWindowMinutes">
+            <summary>Do not re-fire for the same pipeline within this window (minutes). Default 60.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger">
+            <summary>Defines what condition causes an alert rule to trigger.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnFailure">
+            <summary>Pipeline run ends with Status = Failed.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnSuccess">
+            <summary>Pipeline run ends with Status = Success.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnCompletion">
+            <summary>Pipeline run completes with any terminal status.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnDQThreshold">
+            <summary>DQ pass rate drops below a configured threshold.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnRejectedThreshold">
+            <summary>Rejected row count exceeds a configured threshold.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnDurationThreshold">
+            <summary>Run duration exceeds a configured threshold.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnNoRunWithin">
+            <summary>An expected run has not occurred within N hours.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.AlertTrigger.OnCustomExpression">
+            <summary>User-defined expression on the run log evaluates to true.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AlertSeverity">
+            <summary>Severity classification for alert events.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AuditEntry">
+            <summary>
+            Immutable audit record of a state-changing operation.
+            Written append-only by <c>PipelineManager</c>, <c>SchedulerHost</c>, and <c>AlertingEngine</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AuditEntry.Action">
+            <summary>e.g. "PipelineCreated", "PipelineDeleted", "RunTriggered", "ConfigChanged", "AlertAcknowledged"</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AuditEntry.EntityType">
+            <summary>"Pipeline" | "Schedule" | "AlertRule" | "Run"</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AuditEntry.PreviousValue">
+            <summary>JSON snapshot of the entity before the change, or null for creates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.AuditEntry.NewValue">
+            <summary>JSON snapshot of the entity after the change, or null for deletes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.LineageGraph">
+            <summary>
+            A graph-shaped view of column-level data lineage between data sources.
+            Returned by <c>ILineageStore.GetGraphAsync</c> and the Dashboard API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.LineageGraph.Nodes">
+            <summary>All lineage records that form the vertices of this graph.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.LineageGraph.Edges">
+            <summary>Directed edges between lineage records.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.LineageEdge">
+            <summary>Directed edge connecting two lineage nodes via a labelled transformation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Observability.LineageEdge.#ctor(System.String,System.String,System.String)">
+            <summary>Directed edge connecting two lineage nodes via a labelled transformation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.MaskingConfig">
+            <summary>
+            Controls how sensitive column values are masked when captured in <see cref="P:TheTechIdea.Beep.Pipelines.Observability.RowRunLog.FieldSnapshot"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.MaskingConfig.GlobalMaskedFields">
+            <summary>
+            Column names that are always masked regardless of which pipeline produced the row.
+            Comparison is case-insensitive.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.MaskingConfig.ShowFirstChars">
+            <summary>Number of leading characters to preserve when <see cref="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Partial"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.MaskingConfig.ShowLastChars">
+            <summary>Number of trailing characters to preserve — e.g. 4 yields "****1234".</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy">
+            <summary>How sensitive field values are represented in row-level logs.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Redact">
+            <summary>Replace the value with <c>"***REDACTED***"</c>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Partial">
+            <summary>Show first/last N characters; mask the middle with asterisks.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Hash">
+            <summary>Replace the value with its SHA-256 hex digest.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.PipelineMetrics">
+            <summary>
+            Aggregated KPI summary for a pipeline over a time window.
+            Computed by <c>MetricsEngine</c> from stored <see cref="T:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog"/> records.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineMetrics.P95Duration">
+            <summary>95th-percentile run duration.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineMetrics.RunsOverTime">
+            <summary>Daily run counts over the period.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineMetrics.RowsOverTime">
+            <summary>Daily rows-processed totals.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineMetrics.TopErrors">
+            <summary>Most frequent error messages across runs.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.MetricDataPoint">
+            <summary>A single time-series data point used in metric charts.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Pipelines.Observability.MetricDataPoint.#ctor(System.DateTime,System.Double,System.String)">
+            <summary>A single time-series data point used in metric charts.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog">
+            <summary>Complete audit record of a single pipeline execution.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog.TriggerSource">
+            <summary>"cron" | "filewatch" | "manual" | "dependency" | "api"</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog.TriggeredBy">
+            <summary>User or service identity that triggered the run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog.RetryNumber">
+            <summary>0 = first attempt; &gt;0 = retry number.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.StepRunLog">
+            <summary>Per-step execution record nested inside a <see cref="T:TheTechIdea.Beep.Pipelines.Observability.PipelineRunLog"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.StepRunLog.RowLogs">
+            <summary>Row-level rejection / warning logs (capped via MaxRowLogs).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.StepRunLog.Metrics">
+            <summary>Plugin-emitted telemetry (latency, bytes, custom KPIs).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.RowRunLog">
+            <summary>Per-row rejection or warning entry captured during a step.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.RowRunLog.Outcome">
+            <summary>"Rejected" | "Warning" | "Error"</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Pipelines.Observability.RowRunLog.FieldSnapshot">
+            <summary>
+            Field values of the offending row (up to 50 fields).
+            Sensitive columns are masked by <c>MaskingConfig</c> before writing.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.RunLogQuery">
+            <summary>Filter parameters for querying stored run logs.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AlertEventQuery">
+            <summary>Filter parameters for querying stored alert events.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.AuditQuery">
+            <summary>Filter parameters for querying the audit trail.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.LiveRunStatus">
+            <summary>Snapshot of a currently executing run for live dashboard display.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Observability.DashboardSummary">
+            <summary>High-level summary for the main dashboard view.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Rules.IRule.RuleText">
             <summary>
             The textual expression that defines the rule's logic.
@@ -6252,6 +7294,155 @@
             Sends a GET request and deserializes the JSON response to type T.
             Returns default(T) if the request fails or content cannot be parsed.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.ApprovalState">
+            <summary>
+            Approval state persisted for Approval-kind steps so that the engine can
+            resume after a human approves or rejects the workflow.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.StepActionKind">
+            <summary>Identifies the type of action a workflow step performs.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.OnFailureBehavior">
+            <summary>Controls what the engine does when a step fails.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Workflow.OnFailureBehavior.Fail">
+            <summary>Abort the entire workflow run.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Workflow.OnFailureBehavior.Skip">
+            <summary>Log the failure and continue to the next step.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Workflow.OnFailureBehavior.Route">
+            <summary>Route execution to <see cref="P:TheTechIdea.Beep.Workflow.WorkFlowStepDef.OnFailureRouteToStepId"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Workflow.OnFailureBehavior.Retry">
+            <summary>Retry using the step's <see cref="P:TheTechIdea.Beep.Workflow.WorkFlowStepDef.RetryPolicy"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.ApprovalDecision">
+            <summary>Approval decision for an Approval step.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.StepConnection">
+            <summary>
+            A directed edge in the workflow step graph.
+            An optional <see cref="P:TheTechIdea.Beep.Workflow.StepConnection.Condition"/> expression is evaluated against the
+            predecessor step's <see cref="T:TheTechIdea.Beep.Workflow.StepExecutionRecord"/>; when null the edge
+            is always followed.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.StepConnection.Condition">
+            <summary>
+            Simple expression evaluated as a boolean against the predecessor
+            step result, e.g. "result.Success == true" or "result.RecordsWritten > 0".
+            Null means unconditional.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.StepConnection.Priority">
+            <summary>Lower number = higher priority when multiple edges leave the same step.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.StepExecutionRecord">
+            <summary>Per-step audit record captured during a workflow run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.StepExecutionRecord.Output">
+            <summary>Step-specific output data (pipeline run result, script output, etc.).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.StepExecutionRecord.DataLogs">
+            <summary>Row-level log entries from ETL/data steps.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowDefinition">
+            <summary>
+            Serializable, self-contained definition of a workflow. Replaces the old
+            JSON-persisted <see cref="T:TheTechIdea.Beep.Workflow.WorkFlow"/> for new engine usage while the
+            legacy type remains untouched.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowDefinition.Steps">
+            <summary>Ordered step definitions (graph nodes).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowDefinition.Connections">
+            <summary>Directed edges between steps (graph edges).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowDefinition.Parameters">
+            <summary>Declared input parameters for this workflow.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowDefinition.Trigger">
+            <summary>When / how the workflow is triggered.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowDefinition.RetryPolicy">
+            <summary>Default retry policy applied to all steps (can be overridden per step).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowParameter">
+            <summary>A named, typed parameter that can be passed into a workflow run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowParameter.TypeName">
+            <summary>CLR type name, e.g. "System.String", "System.Int32".</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowRetryPolicy">
+            <summary>
+            Retry policy for a workflow step (distinct from the pipeline-level
+            <c>PipelineRetryPolicy</c>). Supports fixed-interval and exponential
+            back-off strategies.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRetryPolicy.MaxRetries">
+            <summary>Maximum number of retry attempts (0 = no retries).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRetryPolicy.DelaySeconds">
+            <summary>Delay in seconds before first retry.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRetryPolicy.ExponentialBackoff">
+            <summary>When true each retry doubles the delay up to <see cref="P:TheTechIdea.Beep.Workflow.WorkFlowRetryPolicy.MaxDelaySeconds"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowRunContext">
+            <summary>
+            Carries all runtime state for one workflow execution, shared across all
+            steps in the run.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRunContext.Parameters">
+            <summary>Resolved parameters available to all steps.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRunContext.State">
+            <summary>Shared state bag — steps communicate results here.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRunContext.StepResults">
+            <summary>Completed step results, keyed by step ID.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRunContext.CurrentStepId">
+            <summary>ID of the step currently executing.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowRunResult">
+            <summary>Structured result returned after a complete workflow run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowRunResult.StepRecords">
+            <summary>Per-step audit records in execution order.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowStepDef">
+            <summary>
+            Extended step definition that adds execution metadata on top of the
+            existing <see cref="T:TheTechIdea.Beep.Workflow.WorkFlowStep"/> model.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowStepDef.PipelineId">
+            <summary>Reference to a <c>PipelineDefinition.Id</c> (Kind == ETLPipeline).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowStepDef.OnFailureRouteToStepId">
+            <summary>Target step ID when <see cref="P:TheTechIdea.Beep.Workflow.WorkFlowStepDef.OnFailure"/> is <see cref="F:TheTechIdea.Beep.Workflow.OnFailureBehavior.Route"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.TriggerKind">
+            <summary>How a workflow run may be initiated.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Workflow.WorkFlowTrigger">
+            <summary>Describes when and how a workflow is triggered.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowTrigger.CronExpression">
+            <summary>Cron expression (used when Kind == Scheduled).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowTrigger.EventTopic">
+            <summary>Event topic name (used when Kind == EventDriven).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Workflow.WorkFlowTrigger.PipelineId">
+            <summary>Pipeline Id whose completion fires this workflow (used when Kind == PipelineCompletion).</summary>
         </member>
     </members>
 </doc>

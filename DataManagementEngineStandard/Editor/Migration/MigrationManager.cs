@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Core;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.UOW.Helpers;
@@ -767,6 +768,11 @@ namespace TheTechIdea.Beep.Editor.Migration
             int scannedCount = 0;
             foreach (var asm in asmList)
             {
+                if (!ShouldScanAssembly(asm, assembly))
+                {
+                    continue;
+                }
+
                 try
                 {
                     var types = asm.GetTypes()
@@ -791,6 +797,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         .ToList();
                     entityTypes.AddRange(loadedTypes);
                     scannedCount++;
+                    LogLoaderExceptions(asm, ex);
 
                     if (loadedTypes.Count > 0)
                     {
@@ -838,6 +845,16 @@ namespace TheTechIdea.Beep.Editor.Migration
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
+                var readiness = BuildReadinessReport(entityTypes, usesDiscovery: true);
+                LogReadinessReport(nameof(EnsureDatabaseCreated), readiness, progress);
+                if (readiness.HasBlockingIssues)
+                {
+                    var blocking = string.Join("; ", readiness.Issues
+                        .Where(issue => issue.Severity == MigrationIssueSeverity.Error)
+                        .Select(issue => issue.Message));
+                    return CreateErrorsInfo(Errors.Failed, $"Migration readiness failed: {blocking}");
+                }
+
                 if (entityTypes.Count == 0)
                 {
                     var msg = string.IsNullOrWhiteSpace(namespaceName) 
@@ -922,6 +939,16 @@ namespace TheTechIdea.Beep.Editor.Migration
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
+                var readiness = BuildReadinessReport(entityTypes, usesDiscovery: true);
+                LogReadinessReport(nameof(ApplyMigrations), readiness, progress);
+                if (readiness.HasBlockingIssues)
+                {
+                    var blocking = string.Join("; ", readiness.Issues
+                        .Where(issue => issue.Severity == MigrationIssueSeverity.Error)
+                        .Select(issue => issue.Message));
+                    return CreateErrorsInfo(Errors.Failed, $"Migration readiness failed: {blocking}");
+                }
+
                 if (entityTypes.Count == 0)
                 {
                     var msg = string.IsNullOrWhiteSpace(namespaceName) 
@@ -1082,6 +1109,169 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         /// <summary>
+        /// Builds a datasource-aware readiness report for discovery-based migrations.
+        /// </summary>
+        public MigrationReadinessReport GetMigrationReadiness(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true)
+        {
+            if (MigrateDataSource == null)
+            {
+                return CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
+            }
+
+            try
+            {
+                var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
+                return BuildReadinessReport(entityTypes, usesDiscovery: true);
+            }
+            catch (Exception ex)
+            {
+                var report = CreateBaseReadinessReport(usesDiscovery: true);
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "readiness-discovery-failed",
+                    Severity = MigrationIssueSeverity.Error,
+                    Message = $"Could not discover entity types: {ex.Message}",
+                    Recommendation = "Register the required assemblies explicitly or use the explicit-type migration APIs."
+                });
+                return report;
+            }
+        }
+
+        /// <summary>
+        /// Builds a datasource-aware readiness report for explicit-type migrations.
+        /// </summary>
+        public MigrationReadinessReport GetMigrationReadinessForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true)
+        {
+            if (MigrateDataSource == null)
+            {
+                return CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
+            }
+
+            return BuildReadinessReport(entityTypes, usesDiscovery: false);
+        }
+
+        /// <summary>
+        /// Returns datasource-aware migration best-practice guidance for the current or requested platform.
+        /// </summary>
+        public IReadOnlyList<string> GetMigrationBestPractices(DataSourceType? dataSourceType = null, DatasourceCategory? dataSourceCategory = null)
+        {
+            var effectiveType = dataSourceType ?? MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown;
+            var effectiveCategory = dataSourceCategory ?? MigrateDataSource?.Category ?? MigrateDataSource?.Dataconnection?.ConnectionProp?.Category ?? DatasourceCategory.NONE;
+            var capabilities = GetCapabilities(effectiveType, effectiveCategory);
+            var practices = new List<string>();
+
+            switch (effectiveCategory)
+            {
+                case DatasourceCategory.FILE:
+                case DatasourceCategory.VIEWS:
+                    practices.Add("Prefer additive and non-destructive changes; keep file backups and avoid assuming full ALTER support.");
+                    practices.Add("Treat schema preparation and data bootstrap as separate steps so recovery is simple when file format changes fail.");
+                    break;
+
+                case DatasourceCategory.NOSQL:
+                    practices.Add("Favor backward-compatible document or key-space evolution and validate whether schema enforcement is optional or application-driven.");
+                    practices.Add("Avoid assuming joins, relational constraints, or in-place DDL parity with RDBMS platforms.");
+                    break;
+
+                case DatasourceCategory.WEBAPI:
+                case DatasourceCategory.Connector:
+                    practices.Add("Treat migration as contract evolution rather than physical DDL; validate endpoint capabilities, throttling, and version compatibility first.");
+                    practices.Add("Do not assume remote APIs support transactional rollback or bulk schema operations.");
+                    break;
+
+                case DatasourceCategory.STREAM:
+                case DatasourceCategory.QUEUE:
+                    practices.Add("Treat entities as topics, streams, or queues; validate retention, partitioning, and consumer impact before structural changes.");
+                    practices.Add("Prefer new-version topics/queues over destructive in-place changes when downstream consumers are already attached.");
+                    break;
+
+                case DatasourceCategory.INMEMORY:
+                    practices.Add("Treat schema as volatile runtime metadata and separate durable migration concerns from cache or in-memory topology changes.");
+                    practices.Add("Validate warm-up, replay, or persistence strategy before relying on in-memory schema preparation in production.");
+                    break;
+
+                case DatasourceCategory.VectorDB:
+                    practices.Add("Review embedding dimension, index type, and similarity-metric compatibility before altering vector collections.");
+                    practices.Add("Plan reindexing or backfill workflows explicitly because structural changes may require expensive rebuilds.");
+                    break;
+
+                case DatasourceCategory.Blockchain:
+                    practices.Add("Treat migration as smart-contract or ledger-compatible evolution rather than mutable table DDL.");
+                    practices.Add("Avoid assumptions about destructive rollback; validate versioning, signing, and deployment governance first.");
+                    break;
+            }
+
+            switch (effectiveType)
+            {
+                case DataSourceType.Oracle:
+                    practices.Add("Keep identifiers conservative and stable; avoid quoted-name dependence and review sequence/identity behavior explicitly.");
+                    practices.Add("Prefer additive migrations and staged rewrites for type changes rather than assuming in-place ALTER operations are operationally cheap.");
+                    break;
+
+                case DataSourceType.SqlServer:
+                case DataSourceType.AzureSQL:
+                    practices.Add("Review lock impact, default constraints, and index rebuild implications before applying type or nullability changes on large tables.");
+                    practices.Add("Validate helper-generated DDL against operational requirements such as online maintenance windows and rollback plans.");
+                    break;
+
+                case DataSourceType.SqlLite:
+                case DataSourceType.DuckDB:
+                case DataSourceType.FlatFile:
+                case DataSourceType.CSV:
+                case DataSourceType.TSV:
+                case DataSourceType.Text:
+                case DataSourceType.Json:
+                case DataSourceType.XML:
+                case DataSourceType.YAML:
+                    practices.Add("Prefer create-if-missing and additive-only changes; destructive alters and complex column rewrites are limited or emulated.");
+                    practices.Add("Separate schema preparation from seed/bootstrap flows and validate file-level backups before structural changes.");
+                    break;
+
+                case DataSourceType.Mysql:
+                case DataSourceType.MariaDB:
+                case DataSourceType.Postgre:
+                case DataSourceType.DB2:
+                case DataSourceType.FireBird:
+                case DataSourceType.Hana:
+                case DataSourceType.Cockroach:
+                case DataSourceType.SnowFlake:
+                case DataSourceType.AWSRDS:
+                    practices.Add("Validate reserved words, casing, nullability transitions, and helper capability on the real target engine before rollout.");
+                    practices.Add("Treat provider portability as opt-in; rerun migration summary and readiness checks per provider rather than reusing assumptions.");
+                    break;
+
+                default:
+                    if (practices.Count == 0)
+                    {
+                        practices.Add("Prefer explicit-type migration for application-owned schemas and discovery only for dynamic or plugin-driven entity sets.");
+                        practices.Add("Review migration summary and datasource capabilities before applying structural changes in production.");
+                    }
+                    break;
+            }
+
+            if (!capabilities.SupportsSchemaEvolution)
+            {
+                practices.Add("This datasource advertises limited schema evolution support; verify whether migration should create new entities/resources rather than alter existing ones.");
+            }
+
+            if (!capabilities.IsSchemaEnforced)
+            {
+                practices.Add("This datasource is not strongly schema-enforced; validate compatibility at the application layer rather than relying only on DDL.");
+            }
+
+            practices.Add("Resolve operations through IDMEEditor.GetDataSourceHelper when helper-backed validation or platform-specific DDL is required; avoid hardcoded SQL or file mutations in application code.");
+            practices.Add("Normalize and persist ConnectionProperties before running migrations so datasource category, file settings, and remote endpoints stay consistent across discovery, creation, and upgrade steps.");
+            practices.Add("Keep entity names deterministic and avoid platform-specific type assumptions in entity classes; let the datasource map .NET types.");
+            return practices.AsReadOnly();
+        }
+
+        [Obsolete("Use GetMigrationBestPractices instead. This alias remains for backward compatibility.")]
+        public IReadOnlyList<string> GetProviderBestPractices(DataSourceType? dataSourceType = null)
+        {
+            return GetMigrationBestPractices(dataSourceType);
+        }
+
+        /// <summary>
         /// Checks if a type inherits from Entity (or implements IEntity) and matches namespace filter.
         /// </summary>
         private bool IsEntityType(Type type, string namespaceFilter, bool includeSubNamespaces)
@@ -1233,6 +1423,405 @@ namespace TheTechIdea.Beep.Editor.Migration
             return assemblies;
         }
 
+        private static bool ShouldScanAssembly(Assembly assembly, Assembly explicitlyRequestedAssembly)
+        {
+            if (assembly == null || assembly.IsDynamic)
+                return false;
+
+            if (explicitlyRequestedAssembly != null)
+                return true;
+
+            var name = assembly.GetName().Name;
+            if (string.IsNullOrWhiteSpace(name))
+                return true;
+
+            return !IsFrameworkAssemblyName(name);
+        }
+
+        private static bool IsFrameworkAssemblyName(string assemblyName)
+        {
+            return assemblyName.Equals("mscorlib", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("netstandard", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("WindowsBase", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("PresentationCore", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("PresentationFramework", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("Accessibility", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.StartsWith("System", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void LogLoaderExceptions(Assembly assembly, ReflectionTypeLoadException exception)
+        {
+            if (exception.LoaderExceptions == null || exception.LoaderExceptions.Length == 0)
+                return;
+
+            var distinctMessages = exception.LoaderExceptions
+                .Where(loaderException => loaderException != null)
+                .Select(loaderException => loaderException.Message)
+                .Where(message => !string.IsNullOrWhiteSpace(message))
+                .Distinct(StringComparer.Ordinal)
+                .Take(5)
+                .ToList();
+
+            if (distinctMessages.Count == 0)
+                return;
+
+            _editor?.AddLogMessage(
+                "Beep",
+                $"  Loader issues while scanning '{assembly.GetName().Name}': {string.Join(" | ", distinctMessages)}",
+                DateTime.Now,
+                0,
+                null,
+                Errors.Warning);
+        }
+
+        private MigrationReadinessReport BuildReadinessReport(IEnumerable<Type> entityTypes, bool usesDiscovery)
+        {
+            var report = CreateBaseReadinessReport(usesDiscovery);
+
+            if (entityTypes == null)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "entity-types-null",
+                    Severity = MigrationIssueSeverity.Error,
+                    Message = "No entity types were provided for readiness analysis.",
+                    Recommendation = "Pass explicit entity types or fix discovery configuration before attempting migration."
+                });
+                return report;
+            }
+
+            var typeList = entityTypes.Where(type => type != null).Distinct().ToList();
+            report.EntityTypeCount = typeList.Count;
+
+            if (typeList.Count == 0)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "entity-types-empty",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = "Readiness analysis found zero entity types.",
+                    Recommendation = usesDiscovery
+                        ? "Register the correct assemblies or use explicit-type migration."
+                        : "Pass a non-empty entity type collection."
+                });
+                return report;
+            }
+
+            if (usesDiscovery)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "discovery-scope-review",
+                    Severity = MigrationIssueSeverity.Info,
+                    Message = "Discovery-based migration is in use.",
+                    Recommendation = "For enterprise application schemas, prefer explicit-type migration to reduce assembly/version noise."
+                });
+            }
+
+            var entityNames = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entityType in typeList)
+            {
+                var entityStructure = TryGetEntityStructure(entityType);
+                var entityName = GetEntityName(entityType, entityStructure);
+
+                if (string.IsNullOrWhiteSpace(entityName))
+                {
+                    report.Issues.Add(new MigrationReadinessIssue
+                    {
+                        Code = "entity-name-missing",
+                        Severity = MigrationIssueSeverity.Error,
+                        Message = $"Entity type '{entityType.FullName}' does not resolve to a valid entity name.",
+                        Recommendation = "Add a stable class name or [Table] attribute before running migrations.",
+                        EntityName = entityType.Name
+                    });
+                    continue;
+                }
+
+                if (!entityNames.TryGetValue(entityName, out var mappedTypes))
+                {
+                    mappedTypes = new List<string>();
+                    entityNames[entityName] = mappedTypes;
+                }
+                mappedTypes.Add(entityType.FullName ?? entityType.Name);
+
+                AnalyzeEntityName(report, entityName, entityType);
+                AnalyzeEntityStructure(report, entityName, entityStructure);
+            }
+
+            foreach (var duplicate in entityNames.Where(item => item.Value.Count > 1))
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "duplicate-entity-name",
+                    Severity = MigrationIssueSeverity.Error,
+                    Message = $"Multiple entity types map to the same entity name '{duplicate.Key}'.",
+                    Recommendation = "Use distinct [Table] names or remove duplicate entity registrations before running migrations.",
+                    EntityName = duplicate.Key
+                });
+            }
+
+            return report;
+        }
+
+        private MigrationReadinessReport CreateBaseReadinessReport(bool usesDiscovery)
+        {
+            var dataSourceType = MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown;
+            var dataSourceCategory = MigrateDataSource?.Category ?? DatasourceCategory.NONE;
+            var capabilities = GetCapabilities(dataSourceType, dataSourceCategory);
+            var report = new MigrationReadinessReport
+            {
+                DataSourceName = MigrateDataSource?.DatasourceName ?? string.Empty,
+                DataSourceType = dataSourceType,
+                DataSourceCategory = dataSourceCategory,
+                UsesDiscovery = usesDiscovery
+                ,
+                HelperAvailable = TryHasHelper(dataSourceType),
+                SupportsSchemaEvolution = capabilities.SupportsSchemaEvolution,
+                IsSchemaEnforced = capabilities.IsSchemaEnforced,
+                SupportsTransactions = capabilities.SupportsTransactions,
+                CapabilityNotes = capabilities.Notes ?? string.Empty
+            };
+
+            report.MigrationBestPractices.AddRange(GetMigrationBestPractices(report.DataSourceType, report.DataSourceCategory));
+
+            if (report.HelperAvailable)
+            {
+                report.MigrationBestPractices.Add("A specialized IDataSourceHelper is registered for this datasource type. Use it as the authoritative path for validation and platform-specific schema operations.");
+            }
+            else
+            {
+                report.MigrationBestPractices.Add("No specialized IDataSourceHelper was resolved. Prefer capability-driven create-if-missing flows and validate structural changes against the concrete datasource implementation.");
+            }
+
+            if (!report.HelperAvailable)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "helper-not-registered",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"No specialized helper is registered for datasource type '{report.DataSourceType}'.",
+                    Recommendation = "Register or verify the appropriate helper if helper-driven DDL generation is required."
+                });
+            }
+
+            if (MigrateDataSource?.Dataconnection?.ConnectionProp == null)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "connection-properties-missing",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = "Migration datasource does not expose ConnectionProperties.",
+                    Recommendation = "Persist and normalize connection metadata before migration so category, endpoint, and file settings remain consistent across helper resolution and runtime reconnects."
+                });
+            }
+            else if (MigrateDataSource.Dataconnection.ConnectionProp.Category != DatasourceCategory.NONE &&
+                     report.DataSourceCategory != DatasourceCategory.NONE &&
+                     MigrateDataSource.Dataconnection.ConnectionProp.Category != report.DataSourceCategory)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "connection-category-mismatch",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"Datasource category '{report.DataSourceCategory}' does not match connection category '{MigrateDataSource.Dataconnection.ConnectionProp.Category}'.",
+                    Recommendation = "Reconcile datasource and ConnectionProperties category values before migration so helper and capability selection stay deterministic."
+                });
+            }
+
+            if (!report.SupportsSchemaEvolution)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "schema-evolution-limited",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"Datasource '{report.DataSourceName}' reports limited schema-evolution capability.",
+                    Recommendation = "Prefer create-new-resource/additive migration patterns and validate helper behavior against the target datasource before altering existing structures."
+                });
+            }
+
+            return report;
+        }
+
+        private MigrationReadinessReport CreateReadinessReportWithError(string code, string message, string recommendation)
+        {
+            var report = CreateBaseReadinessReport(usesDiscovery: false);
+            report.Issues.Add(new MigrationReadinessIssue
+            {
+                Code = code,
+                Severity = MigrationIssueSeverity.Error,
+                Message = message,
+                Recommendation = recommendation
+            });
+            return report;
+        }
+
+        private EntityStructure TryGetEntityStructure(Type entityType)
+        {
+            try
+            {
+                return _editor?.classCreator?.ConvertToEntityStructure(entityType);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string GetEntityName(Type entityType, EntityStructure entityStructure = null)
+        {
+            var tableAttr = entityType.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
+            if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+                return tableAttr.Name;
+
+            if (!string.IsNullOrWhiteSpace(entityStructure?.EntityName))
+                return entityStructure.EntityName;
+
+            return entityType.Name;
+        }
+
+        private void AnalyzeEntityName(MigrationReadinessReport report, string entityName, Type entityType)
+        {
+            if (entityName.IndexOfAny(new[] { ' ', '-', '.', '/' }) >= 0)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "identifier-portability",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"Entity '{entityName}' uses characters that reduce provider portability.",
+                    Recommendation = "Prefer simple alphanumeric and underscore naming for cross-platform migration safety.",
+                    EntityName = entityName
+                });
+            }
+
+            if (report.DataSourceCategory == DatasourceCategory.RDBMS &&
+                report.DataSourceType == DataSourceType.Oracle &&
+                entityName.Length > 30)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "oracle-identifier-length",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"Entity '{entityName}' exceeds 30 characters, which is risky across Oracle estates and tooling.",
+                    Recommendation = "Use shorter table names or stable aliases when targeting Oracle environments.",
+                    EntityName = entityName
+                });
+            }
+        }
+
+        private void AnalyzeEntityStructure(MigrationReadinessReport report, string entityName, EntityStructure entityStructure)
+        {
+            if (entityStructure == null)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "entity-structure-unavailable",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"Could not inspect structure for entity '{entityName}'.",
+                    Recommendation = "Verify classCreator availability and entity metadata conversion before migration.",
+                    EntityName = entityName
+                });
+                return;
+            }
+
+            if (report.IsSchemaEnforced &&
+                report.DataSourceCategory == DatasourceCategory.RDBMS &&
+                (entityStructure.PrimaryKeys == null || entityStructure.PrimaryKeys.Count == 0) &&
+                (entityStructure.Fields == null || !entityStructure.Fields.Any(field => field.IsKey || field.IsIdentity || field.IsAutoIncrement)))
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "primary-key-missing",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = $"Entity '{entityName}' does not appear to define a primary key or identity field.",
+                    Recommendation = "Add an explicit key definition for operationally safe migrations and downstream CRUD behavior.",
+                    EntityName = entityName
+                });
+            }
+
+            if (entityStructure.Fields == null)
+                return;
+
+            foreach (var field in entityStructure.Fields.Where(field => field != null && !string.IsNullOrWhiteSpace(field.FieldName)))
+            {
+                if (field.FieldName.IndexOfAny(new[] { ' ', '-', '.', '/' }) >= 0)
+                {
+                    report.Issues.Add(new MigrationReadinessIssue
+                    {
+                        Code = "column-portability",
+                        Severity = MigrationIssueSeverity.Warning,
+                        Message = $"Field '{field.FieldName}' in entity '{entityName}' uses characters that reduce provider portability.",
+                        Recommendation = "Prefer simple alphanumeric and underscore column naming across providers.",
+                        EntityName = entityName
+                    });
+                }
+
+                if (report.DataSourceCategory == DatasourceCategory.RDBMS &&
+                    report.DataSourceType == DataSourceType.Oracle &&
+                    field.FieldName.Length > 30)
+                {
+                    report.Issues.Add(new MigrationReadinessIssue
+                    {
+                        Code = "oracle-column-length",
+                        Severity = MigrationIssueSeverity.Warning,
+                        Message = $"Field '{field.FieldName}' in entity '{entityName}' exceeds 30 characters, which is risky across Oracle estates and tooling.",
+                        Recommendation = "Use shorter column names or stable aliases for Oracle portability.",
+                        EntityName = entityName
+                    });
+                }
+            }
+        }
+
+        private static DataSourceCapabilities GetCapabilities(DataSourceType dataSourceType, DatasourceCategory dataSourceCategory)
+        {
+            try
+            {
+                return DataSourceCapabilityMatrix.GetCapabilities(dataSourceType, dataSourceCategory) ?? new DataSourceCapabilities();
+            }
+            catch
+            {
+                return new DataSourceCapabilities();
+            }
+        }
+
+        private bool TryHasHelper(DataSourceType dataSourceType)
+        {
+            try
+            {
+                return _editor?.GetDataSourceHelper(dataSourceType) != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void LogReadinessReport(string operationName, MigrationReadinessReport report, IProgress<PassedArgs> progress = null)
+        {
+            if (report == null)
+                return;
+
+            foreach (var practice in report.MigrationBestPractices)
+            {
+                var message = $"{operationName} best practice [{report.DataSourceCategory}/{report.DataSourceType}]: {practice}";
+                _editor?.AddLogMessage("Beep", message, DateTime.Now, 0, null, Errors.Ok);
+                progress?.Report(new PassedArgs { Messege = message });
+            }
+
+            foreach (var issue in report.Issues)
+            {
+                var message = $"{operationName} readiness [{issue.Severity}] {issue.Code}: {issue.Message}";
+                var errorLevel = issue.Severity == MigrationIssueSeverity.Error
+                    ? Errors.Failed
+                    : issue.Severity == MigrationIssueSeverity.Warning
+                        ? Errors.Warning
+                        : Errors.Ok;
+
+                _editor?.AddLogMessage("Beep", message, DateTime.Now, 0, null, errorLevel);
+                progress?.Report(new PassedArgs { Messege = $"{message} Recommendation: {issue.Recommendation}" });
+            }
+        }
+
         #endregion
 
         #region Explicit-Type Migration (bypasses discovery)
@@ -1261,6 +1850,16 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             try
             {
+                var readiness = BuildReadinessReport(typeList, usesDiscovery: false);
+                LogReadinessReport(nameof(EnsureDatabaseCreatedForTypes), readiness, progress);
+                if (readiness.HasBlockingIssues)
+                {
+                    var blocking = string.Join("; ", readiness.Issues
+                        .Where(issue => issue.Severity == MigrationIssueSeverity.Error)
+                        .Select(issue => issue.Message));
+                    return CreateErrorsInfo(Errors.Failed, $"Migration readiness failed: {blocking}");
+                }
+
                 progress?.Report(new PassedArgs { Messege = $"EnsureDatabaseCreatedForTypes: Processing {typeList.Count} explicit type(s)" });
 
                 _editor?.AddLogMessage("Beep",
@@ -1357,6 +1956,16 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             try
             {
+                var readiness = BuildReadinessReport(typeList, usesDiscovery: false);
+                LogReadinessReport(nameof(ApplyMigrationsForTypes), readiness, progress);
+                if (readiness.HasBlockingIssues)
+                {
+                    var blocking = string.Join("; ", readiness.Issues
+                        .Where(issue => issue.Severity == MigrationIssueSeverity.Error)
+                        .Select(issue => issue.Message));
+                    return CreateErrorsInfo(Errors.Failed, $"Migration readiness failed: {blocking}");
+                }
+
                 progress?.Report(new PassedArgs { Messege = $"ApplyMigrationsForTypes: Migrating {typeList.Count} explicit type(s)" });
 
                 _editor?.AddLogMessage("Beep",

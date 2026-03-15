@@ -8,6 +8,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Vis;
+using TheTechIdea.Beep.Pipelines.Attributes;
 
 namespace TheTechIdea.Beep.ConfigUtil
 {
@@ -157,6 +158,34 @@ namespace TheTechIdea.Beep.ConfigUtil
             get { return _datasourcetype; }
             set { SetProperty(ref _datasourcetype, value); }
 
+        }
+
+        private bool _isPipelinePlugin = false;
+        public bool IsPipelinePlugin
+        {
+            get { return _isPipelinePlugin; }
+            set { SetProperty(ref _isPipelinePlugin, value); }
+        }
+
+        private string _pipelinePluginId = string.Empty;
+        public string PipelinePluginId
+        {
+            get { return _pipelinePluginId; }
+            set { SetProperty(ref _pipelinePluginId, value); }
+        }
+
+        private PipelinePluginType _pipelinePluginType;
+        public PipelinePluginType PipelinePluginType
+        {
+            get { return _pipelinePluginType; }
+            set { SetProperty(ref _pipelinePluginType, value); }
+        }
+
+        private string _pipelinePluginAuthor = string.Empty;
+        public string PipelinePluginAuthor
+        {
+            get { return _pipelinePluginAuthor; }
+            set { SetProperty(ref _pipelinePluginAuthor, value); }
         }
     }
 }

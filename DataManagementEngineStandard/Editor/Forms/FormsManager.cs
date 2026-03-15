@@ -10,6 +10,8 @@ using TheTechIdea.Beep.Editor.UOWManager.Configuration;
 using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
+using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.Forms.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
@@ -40,6 +42,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly IFormsSimulationHelper _formsSimulationHelper;
         private readonly IPerformanceManager _performanceManager;
         private readonly IConfigurationManager _configurationManager;
+        private readonly ISystemVariablesManager _systemVariablesManager;
+        private readonly IValidationManager _validationManager;
+        private readonly ILOVManager _lovManager;
+        private readonly IItemPropertyManager _itemPropertyManager;
+        private readonly ITriggerManager _triggerManager;
         
         private readonly object _lockObject = new object();
         private bool _disposed;
@@ -86,6 +93,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Gets the performance manager</summary>
         public IPerformanceManager PerformanceManager => _performanceManager;
 
+        /// <summary>Gets the system variables manager</summary>
+        public ISystemVariablesManager SystemVariables => _systemVariablesManager;
+
+        /// <summary>Gets the validation manager</summary>
+        public IValidationManager Validation => _validationManager;
+
+        /// <summary>Gets the LOV manager</summary>
+        public ILOVManager LOV => _lovManager;
+
+        /// <summary>Gets the item property manager</summary>
+        public IItemPropertyManager ItemProperties => _itemPropertyManager;
+
+        /// <summary>Gets the trigger manager</summary>
+        public ITriggerManager Triggers => _triggerManager;
+
         /// <summary>Gets the configuration</summary>
         public UnitofWorksManagerConfiguration Configuration => _configurationManager?.Configuration;
         #endregion
@@ -102,7 +124,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             IEventManager eventManager = null,
             IFormsSimulationHelper formsSimulationHelper = null,
             IPerformanceManager performanceManager = null,
-            IConfigurationManager configurationManager = null)
+            IConfigurationManager configurationManager = null,
+            ISystemVariablesManager systemVariablesManager = null,
+            IValidationManager validationManager = null,
+            ILOVManager lovManager = null,
+            IItemPropertyManager itemPropertyManager = null,
+            ITriggerManager triggerManager = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             
@@ -113,6 +140,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _formsSimulationHelper = formsSimulationHelper ?? new FormsSimulationHelper(_dmeEditor, _blocks);
             _performanceManager = performanceManager ?? new PerformanceManager(_dmeEditor);
             _configurationManager = configurationManager ?? new ConfigurationManager();
+            _systemVariablesManager = systemVariablesManager ?? new SystemVariablesManager(_dmeEditor, _blocks);
+            _validationManager = validationManager ?? new ValidationManager();
+            _lovManager = lovManager ?? new LOVManager(_dmeEditor, _blocks);
+            _itemPropertyManager = itemPropertyManager ?? new ItemPropertyManager(_dmeEditor);
+            _triggerManager = triggerManager ?? new TriggerManager(_dmeEditor, _blocks);
 
             InitializeManager();
         }
@@ -121,7 +153,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Simple constructor for backward compatibility
         /// </summary>
         public FormsManager(IDMEEditor dmeEditor) 
-            : this(dmeEditor, null, null, null, null, null, null)
+            : this(dmeEditor, null, null, null, null, null, null, null, null, null, null, null)
         {
         }
         #endregion

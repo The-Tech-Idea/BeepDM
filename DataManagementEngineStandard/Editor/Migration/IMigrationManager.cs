@@ -48,6 +48,55 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// </summary>
         public bool HasPendingMigrations => TotalPendingMigrations > 0;
     }
+
+    /// <summary>
+    /// Severity levels used by migration readiness diagnostics.
+    /// </summary>
+    public enum MigrationIssueSeverity
+    {
+        Info,
+        Warning,
+        Error
+    }
+
+    /// <summary>
+    /// Structured migration-readiness finding with datasource and operational guidance.
+    /// </summary>
+    public class MigrationReadinessIssue
+    {
+        public string Code { get; set; } = string.Empty;
+        public MigrationIssueSeverity Severity { get; set; } = MigrationIssueSeverity.Info;
+        public string Message { get; set; } = string.Empty;
+        public string Recommendation { get; set; } = string.Empty;
+        public string EntityName { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Datasource-aware readiness report for enterprise migration planning.
+    /// </summary>
+    public class MigrationReadinessReport
+    {
+        public string DataSourceName { get; set; } = string.Empty;
+        public DataSourceType DataSourceType { get; set; } = DataSourceType.Unknown;
+        public DatasourceCategory DataSourceCategory { get; set; } = DatasourceCategory.NONE;
+        public bool UsesDiscovery { get; set; }
+        public bool HelperAvailable { get; set; }
+        public bool SupportsSchemaEvolution { get; set; }
+        public bool IsSchemaEnforced { get; set; }
+        public bool SupportsTransactions { get; set; }
+        public string CapabilityNotes { get; set; } = string.Empty;
+        public List<string> MigrationBestPractices { get; set; } = new List<string>();
+        [Obsolete("Use MigrationBestPractices instead. This alias remains for backward compatibility.")]
+        public List<string> ProviderBestPractices
+        {
+            get => MigrationBestPractices;
+            set => MigrationBestPractices = value ?? new List<string>();
+        }
+        public List<MigrationReadinessIssue> Issues { get; set; } = new List<MigrationReadinessIssue>();
+        public int EntityTypeCount { get; set; }
+        public bool HasBlockingIssues => Issues.Exists(issue => issue.Severity == MigrationIssueSeverity.Error);
+    }
+
     public interface IMigrationManager
     {
         IDMEEditor DMEEditor { get; }
@@ -125,6 +174,13 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// </summary>
         MigrationSummary GetMigrationSummary(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true);
 
+        /// <summary>
+        /// Builds a datasource-aware readiness report for discovery-based migrations.
+        /// Use this before running migrations in enterprise environments where platform behavior,
+        /// naming standards, and operational risk need explicit review.
+        /// </summary>
+        MigrationReadinessReport GetMigrationReadiness(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true);
+
         // ── Database-level migration (explicit types — no discovery needed) ──
 
         /// <summary>
@@ -144,5 +200,22 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
         /// </summary>
         IErrorsInfo ApplyMigrationsForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null);
+
+        /// <summary>
+        /// Builds a datasource-aware readiness report for explicit-type migrations.
+        /// </summary>
+        MigrationReadinessReport GetMigrationReadinessForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true);
+
+        /// <summary>
+        /// Returns datasource-aware migration best-practice guidance for the current migration datasource
+        /// or for an explicitly requested datasource type/category.
+        /// </summary>
+        IReadOnlyList<string> GetMigrationBestPractices(DataSourceType? dataSourceType = null, DatasourceCategory? dataSourceCategory = null);
+
+        /// <summary>
+        /// Backward-compatible alias for older provider-named guidance calls.
+        /// </summary>
+        [Obsolete("Use GetMigrationBestPractices instead. This alias remains for backward compatibility.")]
+        IReadOnlyList<string> GetProviderBestPractices(DataSourceType? dataSourceType = null);
     }
 }
