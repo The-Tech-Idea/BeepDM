@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Reflection;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Logger;
@@ -43,6 +43,12 @@ namespace TheTechIdea.Beep.ConfigUtil
         List<AssemblyClassDefinition> DataSourcesClasses { get; set; }
         List<AssemblyClassDefinition> BranchesClasses { get; set; }
         List<AssemblyClassDefinition> PipelinePluginClasses { get; set; }
+        /// <summary>Third-party <c>IFileFormatReader</c> implementations discovered by <c>AssemblyHandler</c>.
+        /// Built-in readers (CSV, TSV, JSON, Text) are registered directly by <c>FileReaderFactory.RegisterDefaults()</c>.</summary>
+        List<AssemblyClassDefinition> FileReaderClasses { get; set; }
+        /// <summary>Third-party <c>IDefaultValueResolver</c> implementations discovered by <c>AssemblyHandler</c>.
+        /// Built-in resolvers (DateTime, GUID, Sequence, etc.) are registered directly by <c>DefaultsManager</c>.</summary>
+        List<AssemblyClassDefinition> DefaultResolverClasses { get; set; }
         List<AssemblyClassDefinition> AppWritersClasses { get; set; }
         List<AssemblyClassDefinition> GlobalFunctions { get; set; }
         List<AssemblyClassDefinition> AppComponents { get; set; }
@@ -55,6 +61,7 @@ namespace TheTechIdea.Beep.ConfigUtil
         List<AssemblyClassDefinition> FunctionExtensions { get; set; }
         List<AssemblyClassDefinition> Addins { get; set; }
         List<AssemblyClassDefinition> Rules { get; set; }
+        List<AssemblyClassDefinition> RuleParserClasses { get; set; }
         List<AssemblyClassDefinition> PrintManagers { get; set; }
         List<CategoryFolder> CategoryFolders { get; set; }
         List<Assembly> LoadedAssemblies { get; set; }

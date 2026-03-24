@@ -49,9 +49,71 @@ namespace TheTechIdea.Beep.Pipelines.Models
         public bool EnableCheckpointing    { get; set; } = true;
         public bool EnableLineageTracking  { get; set; } = true;
 
+        // ── Workload & resource policy ─────────────────────────────────────
+        /// <summary>Workload class: "critical", "standard", "backfill". Drives profile defaults.</summary>
+        public string WorkloadClass { get; set; } = "standard";
+
+        /// <summary>Soft memory cap in MB for in-memory transforms. 0 = use profile default.</summary>
+        public int MemoryCapMB { get; set; }
+
+        /// <summary>Cost budget per run in abstract cost units. 0 = no budget enforcement.</summary>
+        public double CostBudgetPerRun { get; set; }
+
+        // ── Security & compliance ──────────────────────────────────────────
+        /// <summary>User or team that owns this pipeline (for access-control and audit).</summary>
+        public string? Owner { get; set; }
+
+        /// <summary>Data sensitivity classification. Drives masking and audit requirements.</summary>
+        public DataClassification DataClassification { get; set; } = DataClassification.Internal;
+
+        /// <summary>Field names that contain sensitive / PII data and must be masked in logs.</summary>
+        public List<string> SensitiveFields { get; set; } = new();
+
+        /// <summary>How sensitive fields are masked in log snapshots and error sinks.</summary>
+        public MaskingStrategy MaskingStrategy { get; set; } = MaskingStrategy.Redact;
+
+        /// <summary>Roles/permissions required to execute or modify this pipeline.</summary>
+        public List<string> RequiredPermissions { get; set; } = new();
+
+        /// <summary>Days to retain run logs and audit entries. 0 = use system default.</summary>
+        public int RetentionDays { get; set; }
+
+        /// <summary>Free-form compliance tags (e.g. "GDPR", "HIPAA", "SOX").</summary>
+        public List<string> ComplianceTags { get; set; } = new();
+
         // ── Visual layout (Phase 7 — Designer) ────────────────────────────
         /// <summary>JSON serialized node/edge positions for the visual designer canvas.</summary>
         public string? VisualLayoutJson    { get; set; }
+
+        // ── Migration / rollout (Phase 9) ─────────────────────────────────
+        /// <summary>Business criticality tier — controls migration wave assignment.</summary>
+        public PipelineTier Tier { get; set; } = PipelineTier.NonCritical;
+
+        /// <summary>ID of the migration wave this pipeline is enrolled in.</summary>
+        public string? MigrationWaveId { get; set; }
+
+        /// <summary>
+        /// When true, the engine also runs the <see cref="CandidatePipelineId"/> side-by-side
+        /// (canary) and records a <see cref="CanaryRunComparison"/>.
+        /// </summary>
+        public bool IsCanaryEnabled { get; set; }
+
+        /// <summary>
+        /// Pipeline ID of the candidate definition to run in parallel for canary/shadow testing.
+        /// </summary>
+        public string? CandidatePipelineId { get; set; }
+
+        /// <summary>
+        /// When true, runs the candidate in shadow mode (output discarded, only metrics compared).
+        /// Requires <see cref="CandidatePipelineId"/> to be set.
+        /// </summary>
+        public bool IsShadowRunEnabled { get; set; }
+
+        /// <summary>
+        /// When true, the pipeline runs in a backward-compatibility mode that preserves
+        /// legacy step behaviour during the transition window.
+        /// </summary>
+        public bool CompatibilityMode { get; set; }
 
         // ── Run history (denormalized for quick display) ──────────────────
         public DateTime? LastRunAt     { get; set; }

@@ -42,6 +42,17 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             get => _engine.Alerting;
             set => _engine.Alerting = value;
         }
+        public SecurityPolicyEngine? SecurityPolicy
+        {
+            get => _engine.SecurityPolicy;
+            set => _engine.SecurityPolicy = value;
+        }
+
+        /// <summary>
+        /// Caller identity for audit attribution. Set by the host application
+        /// before calling Save/Delete/Run methods.
+        /// </summary>
+        public SecurityContext? SecurityContext { get; set; }
 
         private static readonly JsonSerializerOptions _json = new()
         {
@@ -73,10 +84,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 if (ObservabilityStore != null)
                     await ObservabilityStore.AppendAuditAsync(new AuditEntry
                     {
-                        Action     = "PipelineConfigured",
-                        EntityType = "Pipeline",
-                        EntityId   = pipeline.Id,
-                        EntityName = pipeline.Name
+                        Action      = "PipelineConfigured",
+                        EntityType  = "Pipeline",
+                        EntityId    = pipeline.Id,
+                        EntityName  = pipeline.Name,
+                        PerformedBy = SecurityContext?.UserName ?? SecurityContext?.UserId,
+                        IpAddress   = SecurityContext?.IpAddress
                     }).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -101,9 +114,11 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 if (ObservabilityStore != null)
                     _ = ObservabilityStore.AppendAuditAsync(new AuditEntry
                     {
-                        Action     = "PipelineDeleted",
-                        EntityType = "Pipeline",
-                        EntityId   = pipelineId
+                        Action      = "PipelineDeleted",
+                        EntityType  = "Pipeline",
+                        EntityId    = pipelineId,
+                        PerformedBy = SecurityContext?.UserName ?? SecurityContext?.UserId,
+                        IpAddress   = SecurityContext?.IpAddress
                     });
             }
             catch (Exception ex)
@@ -164,7 +179,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             IProgress<PassedArgs>? progress = null,
             CancellationToken token = default)
         {
-            var result = await _engine.RunAsync(def, progress, token);
+            var result = await _engine.RunAsync(def, progress, token, securityContext: SecurityContext);
 
             // Update denormalised run summary on the definition
             def.LastRunAt     = result.FinishedAtUtc ?? DateTime.UtcNow;
@@ -175,7 +190,60 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             // Persist run result to history
             await PersistRunResultAsync(def.Id, result);
 
+            // If canary or shadow mode is configured, execute the candidate in parallel
+            if (!string.IsNullOrWhiteSpace(def.CandidatePipelineId)
+                && (def.IsCanaryEnabled || def.IsShadowRunEnabled))
+            {
+                _ = RunCandidateSidecarAsync(def, result, progress, token);
+            }
+
             return result;
+        }
+
+        /// <summary>
+        /// Fires-and-forgets the candidate pipeline sidecar run (canary/shadow).
+        /// Failures are swallowed so they never affect the baseline result.
+        /// </summary>
+        private async Task RunCandidateSidecarAsync(
+            PipelineDefinition baselineDef,
+            PipelineRunResult  baselineResult,
+            IProgress<PassedArgs>? progress,
+            CancellationToken token)
+        {
+            try
+            {
+                var candidateDef = await LoadAsync(baselineDef.CandidatePipelineId!)
+                    .ConfigureAwait(false);
+                if (candidateDef == null) return;
+
+                var candidateResult = await _engine
+                    .RunAsync(candidateDef, progress, token, securityContext: SecurityContext)
+                    .ConfigureAwait(false);
+
+                await PersistRunResultAsync(candidateDef.Id, candidateResult)
+                    .ConfigureAwait(false);
+
+                // Log comparison to observability if available
+                if (ObservabilityStore != null)
+                {
+                    var action = baselineDef.IsShadowRunEnabled ? "ShadowRunCompleted" : "CanaryRunCompleted";
+                    bool passed = candidateResult.Status == RunStatus.Succeeded
+                               && candidateResult.RecordsRejected <= baselineResult.RecordsRejected * 1.05;
+
+                    await ObservabilityStore.AppendAuditAsync(new AuditEntry
+                    {
+                        Action      = action,
+                        EntityType  = "Pipeline",
+                        EntityId    = baselineDef.Id,
+                        EntityName  = $"{baselineDef.Name} vs {candidateDef.Name}",
+                        NewValue    = $"Passed={passed} baseline={baselineResult.RunId} candidate={candidateResult.RunId}"
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // Candidate sidecar failures must never propagate to the baseline caller
+            }
         }
 
         public async Task<PipelineRunResult> ResumeAsync(

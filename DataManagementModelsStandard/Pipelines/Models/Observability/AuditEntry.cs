@@ -23,6 +23,10 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         /// <summary>JSON snapshot of the entity after the change, or null for deletes.</summary>
         public string? NewValue      { get; set; }
         public string? IpAddress     { get; set; }
+        /// <summary>SHA-256 hash of the previous audit entry, forming a tamper-evident chain.</summary>
+        public string? PreviousHash  { get; set; }
+        /// <summary>SHA-256 hash of this entry's content (excluding PreviousHash itself).</summary>
+        public string? EntryHash     { get; set; }
         public Dictionary<string, string> Tags { get; set; } = new();
     }
 }

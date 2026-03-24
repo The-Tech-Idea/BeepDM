@@ -62,7 +62,15 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         /// <summary>An expected run has not occurred within N hours.</summary>
         OnNoRunWithin,
         /// <summary>User-defined expression on the run log evaluates to true.</summary>
-        OnCustomExpression
+        OnCustomExpression,
+        /// <summary>Peak memory usage exceeds a configured threshold (bytes).</summary>
+        OnMemoryThreshold,
+        /// <summary>Estimated cost exceeds a configured threshold (cost units).</summary>
+        OnCostThreshold,
+        /// <summary>A caller failed pre-run authorization checks.</summary>
+        OnUnauthorizedAccess,
+        /// <summary>A security policy violation was detected (e.g. missing owner, restricted w/o masking).</summary>
+        OnPolicyViolation
     }
 
     // ─────────────────────────────────────────────────────────────────────────

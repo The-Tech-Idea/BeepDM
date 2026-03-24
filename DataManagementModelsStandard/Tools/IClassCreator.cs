@@ -368,6 +368,71 @@ namespace TheTechIdea.Beep.Tools
         string ConvertEFClassesFileToEntity(string efClassesFilePath, string outputPath,
             string namespaceString = "TheTechIdea.ProjectClasses", bool generateSingleFile = true);
 
+        /// <summary>
+        /// Scans a namespace and returns EF Core decorated classes.
+        /// </summary>
+        List<Type> ScanNamespaceForEfCoreClasses(string namespaceName, Assembly assembly = null);
+
+        /// <summary>
+        /// Converts an EF Core decorated CLR type to EntityStructure.
+        /// </summary>
+        EntityStructure ConvertEfCoreTypeToEntityStructure(Type efCoreType, bool includeRelationships = true);
+
+        /// <summary>
+        /// Converts EF Core decorated CLR types to EntityStructure list.
+        /// </summary>
+        List<EntityStructure> ConvertEfCoreTypesToEntityStructures(IEnumerable<Type> efCoreTypes, bool includeRelationships = true);
+
+        /// <summary>
+        /// Converts EF Core classes from namespace to EntityStructure list.
+        /// </summary>
+        List<EntityStructure> ConvertEfCoreNamespaceToEntityStructures(string namespaceName, Assembly assembly = null, bool includeRelationships = true);
+
+        /// <summary>
+        /// Converts EF Core classes from a C# file to EntityStructure list.
+        /// </summary>
+        List<EntityStructure> ConvertEfCoreFileToEntityStructures(string filePath, bool includeRelationships = true);
+
+        /// <summary>
+        /// Converts EF Core classes from C# source text to EntityStructure list.
+        /// </summary>
+        List<EntityStructure> ConvertEfCoreSourceToEntityStructures(string sourceCode, bool includeRelationships = true);
+
+        /// <summary>
+        /// Converts EF Core classes from a directory of C# files to EntityStructure list.
+        /// </summary>
+        List<EntityStructure> ConvertEfCoreDirectoryToEntityStructures(string directoryPath, bool recursive = true, bool includeRelationships = true);
+
+        /// <summary>
+        /// Generates a Beep Entity class from an EF Core CLR type.
+        /// </summary>
+        string GenerateEntityClassFromEfCore(Type efCoreType, string outputPath = null,
+            string namespaceString = "TheTechIdea.ProjectClasses", bool generateFile = true, bool includeRelationships = true);
+
+        /// <summary>
+        /// Generates Beep Entity classes from EF Core decorated classes in a namespace.
+        /// </summary>
+        List<string> GenerateEntityClassesFromEfCoreNamespace(string sourceNamespace, string outputPath = null,
+            string targetNamespace = "TheTechIdea.ProjectClasses", bool generateFiles = true, Assembly assembly = null, bool includeRelationships = true);
+
+        /// <summary>
+        /// Generates EF Core class files from EntityStructure list.
+        /// </summary>
+        List<string> GenerateEfCoreClassesFromEntityStructures(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectEfModels", bool generateFiles = true);
+
+        /// <summary>
+        /// Generates one combined EF Core C# file from EntityStructure list.
+        /// </summary>
+        string GenerateEfCoreCombinedFileFromEntityStructures(List<EntityStructure> entities, string outputFilePath,
+            string namespaceName = "TheTechIdea.ProjectEfModels");
+
+        /// <summary>
+        /// Generates a compiled EF Core model DLL from EntityStructure list.
+        /// </summary>
+        string GenerateEfCoreDllFromEntityStructures(List<EntityStructure> entities, string dllName, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectEfModels");
+
         #endregion
 
         /// <summary>

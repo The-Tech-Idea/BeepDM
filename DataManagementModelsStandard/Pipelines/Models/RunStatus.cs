@@ -21,6 +21,8 @@ namespace TheTechIdea.Beep.Pipelines.Models
         Partial,
 
         /// <summary>This step was skipped (e.g. disabled, condition not met).</summary>
-        Skipped
+        Skipped,
+        Succeeded,
+        TimedOut
     }
 }

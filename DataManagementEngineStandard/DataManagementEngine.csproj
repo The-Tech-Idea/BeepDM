@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>2.0.84</Version>
+    <Version>2.0.85</Version>
 	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -36,6 +36,24 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Compile Remove="CodeDom\CodeDomCompiler.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Include="Editor\ETL_BK\ETLDataCopier.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLDataCopier.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\ETLEditor.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLEditor.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\ETLEntityCopyHelper.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLEntityCopyHelper.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\ETLEntityProcessor.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLEntityProcessor.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\ETLScriptBuilder.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLScriptBuilder.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\ETLScriptManager.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLScriptManager.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\ETLValidator.examples.md" />
+	  <Content Include="Editor\ETL_BK\ETLValidator.howto.readme.md" />
+	  <Content Include="Editor\ETL_BK\README.md" />
+	  <Content Include="Editor\ETL_BK\recommendation.instructions.md" />
 	</ItemGroup>
 
   <ItemGroup>
@@ -67,6 +85,7 @@
     <PackageReference Include="NuGet.Packaging" Version="7.3.0" />
     <PackageReference Include="NuGet.Protocol" Version="7.3.0" />
     <PackageReference Include="NuGet.Versioning" Version="7.3.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.65.0" />
     <!-- Switched from NuGet to ProjectReference for local development to pick up OBL enhancements -->
     <!-- <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.125" /> -->
   </ItemGroup>

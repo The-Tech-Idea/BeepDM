@@ -396,3 +396,57 @@ foreach (var example in examples)
 ## Conclusion
 
 The Enhanced DefaultsManager provides a robust, extensible system for managing default values in any data source. Its helper-based architecture makes it easy to extend with custom resolvers while maintaining backward compatibility with existing code.
+
+---
+
+## Phase Completion Summary
+
+| Phase | Title | Status | Key Deliverables |
+|-------|-------|--------|-----------------|
+| 1 | Rule DSL Normalization | ✅ Complete | `DotStyleRuleParser`, `RuleNormalizer`, `ParsedRule` — converts dot-style `ADD.2.3` to canonical `ADD(2,3)` |
+| 2 | DataSource & Expression Resolvers | ✅ Complete | `DataSourceResolver` (GetEntity + AppFilter, no raw SQL), `ExpressionResolver` (AND/OR/NOT + 6 comparison operators) |
+| 3 | FormulaResolver & Split Interfaces | ✅ Complete | `FormulaResolver` extended; `IDefaultValueInterfaces.cs` split into 7 individual interface files |
+| 4 | Resolver Priority & Capabilities | ✅ Complete | `IResolverCapabilities` interface wired into `BaseDefaultValueResolver`; `RegisterResolver()` reads self-declared priority |
+| 5 | Telemetry | ✅ Complete | `ResolveWithTelemetry` returns `ResolverExecutionResult` with timing, FNV-1a fingerprint, fallback flag |
+| 6 | Value-Result Cache | ✅ Complete | 512-entry FIFO cache keyed on `normalizedRule + contextHash`; only deterministic resolvers (`SupportsCaching=true`) benefit |
+| 7 | Examples & Documentation | ✅ Complete | `DotSyntaxExamples`, `TelemetryAndCacheExamples`, `MigrationToolkitExamples` added to `DefaultsManagerExamples.cs`; this README updated |
+
+---
+
+## Dot-Style DSL Cheat Sheet
+
+The following forms are equivalent. Use whichever is more readable in your context.
+
+| Function-style | Dot-style | Description |
+|----------------|-----------|-------------|
+| `ADD(2,3)` | `ADD.2.3` | Addition |
+| `MULTIPLY(6,7)` | `MULTIPLY.6.7` | Multiplication |
+| `DIVIDE(100,4)` | `DIVIDE.100.4` | Division |
+| `IF(GTE(x,y),a,b)` | `IF.GTE.x.y.a.b` | Conditional |
+| `COALESCE(a,b,c)` | `COALESCE.a.b.c` | First non-null |
+| `FORMAT(NOW,fmt)` | `FORMAT.NOW.fmt` | Date format |
+| `ADDDAYS(NOW,30)` | `ADDDAYS.NOW.30` | Add days |
+
+**Dot-style rules are normalized transparently** — you don't need to change anything in the resolver implementations.
+
+---
+
+## QUERY Resolver Modes
+
+`DataSourceResolver` supports four QUERY sub-modes:
+
+| Mode | Syntax | Returns |
+|------|--------|---------|
+| `scalar` | `QUERY(scalar,ds,entity,field)` | Single field value of first matching row |
+| `first` | `QUERY(first,ds,entity,filter)` | First matching record as string |
+| `exists` | `QUERY(exists,ds,entity,filter)` | `true`/`false` |
+| `aggregate` | `QUERY(aggregate,ds,entity,agg)` | `COUNT`, `SUM(field)`, `MAX(field)`, `MIN(field)`, `AVG(field)` |
+
+---
+
+## Value-Result Cache Notes
+
+- **Which resolvers cache?** Only those where `IResolverCapabilities.SupportsCaching == true`.  The property defaults to `IsDeterministic`, so `ConfigurationResolver`, `ObjectPropertyResolver`, and `SystemInfoResolver` cache automatically.  `DateTimeResolver`, `GuidResolver`, and `FormulaResolver` (`RANDOM`/`SEQUENCE`) do **not** cache.
+- **Cache key** = FNV-1a hash of `(normalizedRule, DatasourceName, CurrentEntity, ParameterString1)`.  Record-level field values are intentionally excluded to keep the key stable across rows.
+- **Eviction** = FIFO at 512 entries.  Override `_valueCacheMaxSize` in a subclass if needed.
+- **Invalidation** = call `DefaultsManager.ResolverManager.InvalidateValueCache()` when datasource connections or configuration change.

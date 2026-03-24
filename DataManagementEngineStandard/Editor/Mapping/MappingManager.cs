@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Reflection;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
@@ -170,17 +169,28 @@ namespace TheTechIdea.Beep.Editor.Mapping
             if (destobj == null)
                 throw new InvalidOperationException($"Failed to create destination object for entity: {destentityname}");
 
-            // Map each property from the source to the destination
-            foreach (Mapping_rep_fields mapping in SelectedMapping.FieldMapping ?? new List<Mapping_rep_fields>())
+            // Prefer compiled plan path for repeated executions, then fallback to reflection path.
+            var executedCompiledPlan = ExecuteCompiledPlan(
+                DMEEditor,
+                sourceobj,
+                destobj,
+                SelectedMapping.EntityDataSource,
+                destentityname,
+                SelectedMapping);
+
+            if (!executedCompiledPlan)
             {
-                try
+                foreach (Mapping_rep_fields mapping in SelectedMapping.FieldMapping ?? new List<Mapping_rep_fields>())
                 {
-                    MapProperty(sourceobj, destobj, mapping);
-                }
-                catch (Exception ex)
-                {
-                    // Log and continue mapping the next field
-                    DMEEditor.AddLogMessage("MappingError", $"Error mapping field '{mapping?.FromFieldName}' to '{mapping?.ToFieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                    try
+                    {
+                        MapProperty(sourceobj, destobj, mapping, SelectedMapping.EntityDataSource, destentityname);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log and continue mapping the next field
+                        DMEEditor.AddLogMessage("MappingError", $"Error mapping field '{mapping?.FromFieldName}' to '{mapping?.ToFieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                    }
                 }
             }
 
@@ -195,6 +205,19 @@ namespace TheTechIdea.Beep.Editor.Mapping
             }
 
             return destobj;
+        }
+
+        /// <summary>
+        /// Persists a mapping through MappingManager so cache invalidation and governance hooks are applied.
+        /// </summary>
+        public static void SaveEntityMap(IDMEEditor DMEEditor, string entityName, string dataSourceID, EntityDataMap mapping)
+        {
+            if (DMEEditor == null) throw new ArgumentNullException(nameof(DMEEditor));
+            if (string.IsNullOrWhiteSpace(entityName)) throw new ArgumentException("Entity name is required.", nameof(entityName));
+            if (string.IsNullOrWhiteSpace(dataSourceID)) throw new ArgumentException("Data source is required.", nameof(dataSourceID));
+            if (mapping == null) throw new ArgumentNullException(nameof(mapping));
+
+            SaveMapping(DMEEditor, entityName, dataSourceID, mapping);
         }
 
         #region Helper Methods
@@ -226,7 +249,10 @@ namespace TheTechIdea.Beep.Editor.Mapping
 
         private static void SaveMapping(IDMEEditor DMEEditor, string entityName, string dataSourceID, EntityDataMap Mapping)
         {
+            var previousMapping = TryLoadMappingSnapshot(DMEEditor, entityName, dataSourceID);
             DMEEditor.ConfigEditor.SaveMappingValues(entityName, dataSourceID, Mapping);
+            ApplyGovernanceOnSave(DMEEditor, entityName, dataSourceID, previousMapping, Mapping);
+            InvalidateMappingCaches(dataSourceID, entityName);
         }
 
         private static void InitializeEntityDataMapDetail(EntityDataMap_DTL det, EntityStructure destent)
@@ -239,54 +265,6 @@ namespace TheTechIdea.Beep.Editor.Mapping
         private static void LogError(IDMEEditor DMEEditor, string message, Exception ex)
         {
             DMEEditor.AddLogMessage(LogSource, $"{message} - {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-        }
-
-        private static void MapProperty(object source, object destination, Mapping_rep_fields mapping)
-        {
-            if (mapping == null)
-                throw new ArgumentNullException(nameof(mapping));
-
-            // Get the source property
-            PropertyInfo sourceProperty = source.GetType().GetProperty(mapping.FromFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
-            if (sourceProperty == null)
-                throw new InvalidOperationException($"Source property '{mapping.FromFieldName}' not found on object of type '{source.GetType().Name}'.");
-
-            // Get the destination property
-            PropertyInfo destinationProperty = destination.GetType().GetProperty(mapping.ToFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
-            if (destinationProperty == null)
-                throw new InvalidOperationException($"Destination property '{mapping.ToFieldName}' not found on object of type '{destination.GetType().Name}'.");
-
-            // Get the value from the source property
-            object value = sourceProperty.GetValue(source, null);
-
-            // Convert the value if the types differ and are compatible
-            if (value != null && destinationProperty.PropertyType != sourceProperty.PropertyType)
-            {
-                value = ConvertValue(value, destinationProperty.PropertyType);
-            }
-
-            // Set the value on the destination property
-            destinationProperty.SetValue(destination, value, null);
-        }
-
-        private static object ConvertValue(object value, Type targetType)
-        {
-            try
-            {
-                if (value == null)
-                    return null;
-
-                var srcType = value.GetType();
-                if (targetType.IsAssignableFrom(srcType))
-                {
-                    return value;
-                }
-                return Convert.ChangeType(value, targetType);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Failed to convert value '{value}' to type '{targetType.Name}'.", ex);
-            }
         }
 
         #endregion

@@ -187,5 +187,76 @@ namespace TheTechIdea.Beep.ConfigUtil
             get { return _pipelinePluginAuthor; }
             set { SetProperty(ref _pipelinePluginAuthor, value); }
         }
+
+        // ── Rule properties ──────────────────────────────────────────────────────
+        private bool _isRule = false;
+        public bool IsRule
+        {
+            get { return _isRule; }
+            set { SetProperty(ref _isRule, value); }
+        }
+
+        private string _ruleKey = string.Empty;
+        /// <summary>Key from <c>[RuleAttribute(ruleKey)]</c>.</summary>
+        public string RuleKey
+        {
+            get { return _ruleKey; }
+            set { SetProperty(ref _ruleKey, value); }
+        }
+
+        private bool _isRuleParser = false;
+        public bool IsRuleParser
+        {
+            get { return _isRuleParser; }
+            set { SetProperty(ref _isRuleParser, value); }
+        }
+
+        private string _ruleParserKey = string.Empty;
+        /// <summary>Key from <c>[RuleParserAttribute(parserKey)]</c>.</summary>
+        public string RuleParserKey
+        {
+            get { return _ruleParserKey; }
+            set { SetProperty(ref _ruleParserKey, value); }
+        }
+
+        // ── File Reader plugin properties ────────────────────────────────────
+
+        private bool _isFileReader = false;
+        /// <summary>True when this type implements <c>IFileFormatReader</c>
+        /// and is decorated with <c>[FileReaderAttribute]</c>.</summary>
+        public bool IsFileReader
+        {
+            get { return _isFileReader; }
+            set { SetProperty(ref _isFileReader, value); }
+        }
+
+        private string _fileReaderExtension = string.Empty;
+        /// <summary>Primary file extension from <c>[FileReaderAttribute(…, defaultExtension)]</c>,
+        /// e.g. "parquet" or "db".</summary>
+        public string FileReaderExtension
+        {
+            get { return _fileReaderExtension; }
+            set { SetProperty(ref _fileReaderExtension, value); }
+        }
+
+        // ── Default Resolver plugin properties ───────────────────────────────
+
+        private bool _isDefaultResolver = false;
+        /// <summary>True when this type implements <c>IDefaultValueResolver</c>
+        /// and is decorated with <c>[DefaultResolverAttribute]</c>.</summary>
+        public bool IsDefaultResolver
+        {
+            get { return _isDefaultResolver; }
+            set { SetProperty(ref _isDefaultResolver, value); }
+        }
+
+        private string _defaultResolverName = string.Empty;
+        /// <summary>Unique resolver name from <c>[DefaultResolverAttribute(resolverName, …)]</c>,
+        /// e.g. "TenantContextResolver".</summary>
+        public string DefaultResolverName
+        {
+            get { return _defaultResolverName; }
+            set { SetProperty(ref _defaultResolverName, value); }
+        }
     }
 }

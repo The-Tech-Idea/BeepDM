@@ -58,6 +58,51 @@ namespace TheTechIdea.Beep.Pipelines.Models
         /// <summary>Last saved checkpoint ID for resumable runs.</summary>
         public string? CheckpointId      { get; set; }
 
+        // ── Orchestration / CDC / Backfill ────────────────────────────────
+
+        /// <summary>The schedule ID that triggered this run (empty for ad-hoc).</summary>
+        public string ScheduleId { get; init; } = string.Empty;
+
+        /// <summary>What triggered the run: "cron", "manual", "dependency", "event", "backfill".</summary>
+        public string TriggerSource { get; init; } = string.Empty;
+
+        /// <summary>Workload class for queue priority: "critical", "standard", "backfill".</summary>
+        public string WorkloadClass { get; init; } = "standard";
+
+        /// <summary>True when this run uses CDC/watermark-based incremental loading.</summary>
+        public bool IsIncremental { get; init; }
+
+        /// <summary>True when this run is part of a backfill request.</summary>
+        public bool IsBackfill { get; init; }
+
+        /// <summary>Backfill request ID when <see cref="IsBackfill"/> is true.</summary>
+        public string? BackfillRequestId { get; init; }
+
+        // ── Security ──────────────────────────────────────────────────────
+        /// <summary>Identity and permissions of the caller. Null when no auth is configured.</summary>
+        public SecurityContext? Security { get; init; }
+
+        /// <summary>Watermark column name for incremental runs.</summary>
+        public string? WatermarkColumn { get; init; }
+
+        /// <summary>Type of watermark ("timestamp", "integer", "string").</summary>
+        public string? WatermarkType { get; init; }
+
+        /// <summary>Lower bound of the watermark window (exclusive).</summary>
+        public string? WatermarkFrom { get; init; }
+
+        /// <summary>Upper bound of the watermark window (inclusive), null = open-ended.</summary>
+        public string? WatermarkTo { get; init; }
+
+        /// <summary>True if this is the first run (no prior watermark exists).</summary>
+        public bool WatermarkIsFirstRun { get; init; }
+
+        /// <summary>
+        /// After the run, the engine or plugin should set this to the new high-water
+        /// value so the scheduler can persist it for the next incremental run.
+        /// </summary>
+        public string? NewWatermarkValue { get; set; }
+
         // ── Lineage (populated when EnableLineageTracking = true) ─────────
         public List<DataLineageRecord> LineageEntries { get; } = new();
 

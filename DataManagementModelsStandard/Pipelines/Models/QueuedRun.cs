@@ -34,6 +34,12 @@ namespace TheTechIdea.Beep.Pipelines.Models
         /// <summary>Optional parameter overrides to pass to the pipeline/workflow engine.</summary>
         public IReadOnlyDictionary<string, object>? OverrideParams { get; init; }
 
+        /// <summary>
+        /// Workload class for queue isolation ("critical", "standard", "backfill").
+        /// Default "standard". Lower-class runs yield concurrency to higher-class runs.
+        /// </summary>
+        public string WorkloadClass { get; init; } = "standard";
+
         /// <summary>Cancellation source for this individual run.</summary>
         public CancellationTokenSource Cts { get; } = new();
     }

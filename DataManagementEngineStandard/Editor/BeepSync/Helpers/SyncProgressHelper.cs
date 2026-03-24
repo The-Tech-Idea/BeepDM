@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
 using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Rules;
 
 namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 {
@@ -249,6 +252,227 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             {
                 LogMessage($"Error while logging sync cancellation for schema '{schema?.Id}': {ex.Message}", Errors.Failed);
             }
+        }
+
+        // ── Phase 6: Reconciliation report builder ────────────────────────────────
+
+        /// <inheritdoc cref="ISyncProgressHelper.BuildReconciliationReport"/>
+        public SyncReconciliationReport BuildReconciliationReport(
+            DataSyncSchema schema,
+            string runId,
+            int sourceRowsScanned,
+            int destRowsWritten,
+            int destRowsInserted,
+            int destRowsUpdated,
+            int destRowsSkipped,
+            int rejectCount,
+            int quarantineCount,
+            int defaultsFillCount,
+            int conflictCount,
+            bool runAbortedByThreshold,
+            List<DqGateResult> dqFailures,
+            int mappingQualityScore = -1,
+            string mappingQualityBand = null,
+            List<string> unmappedRequiredFields = null)
+        {
+            double rejectRate = sourceRowsScanned > 0
+                ? (double)rejectCount / sourceRowsScanned
+                : 0.0;
+
+            var report = new SyncReconciliationReport
+            {
+                SchemaId               = schema?.Id,
+                RunId                  = runId ?? Guid.NewGuid().ToString(),
+                GeneratedAt            = DateTime.UtcNow,
+                GeneratedBy            = Environment.UserName,
+                SourceRowsScanned      = sourceRowsScanned,
+                DestRowsWritten        = destRowsWritten,
+                DestRowsInserted       = destRowsInserted,
+                DestRowsUpdated        = destRowsUpdated,
+                DestRowsSkipped        = destRowsSkipped,
+                RejectCount            = rejectCount,
+                QuarantineCount        = quarantineCount,
+                DefaultsFillCount      = defaultsFillCount,
+                ConflictCount          = conflictCount,
+                RejectRate             = rejectRate,
+                RunAbortedByThreshold  = runAbortedByThreshold,
+                DqFailures             = dqFailures ?? new List<DqGateResult>(),
+                MappingQualityScore    = mappingQualityScore,
+                MappingQualityBand     = mappingQualityBand,
+                UnmappedRequiredFields = unmappedRequiredFields ?? new List<string>()
+            };
+
+            LogMessage(
+                $"Reconciliation report for schema '{schema?.Id}': " +
+                $"scanned={sourceRowsScanned}, written={destRowsWritten}, " +
+                $"rejected={rejectCount} ({rejectRate:P1}), " +
+                $"DQ failures={report.DqFailures.Count}, " +
+                $"mappingScore={mappingQualityScore}.",
+                runAbortedByThreshold ? Errors.Failed : Errors.Ok);
+
+            return report;
+        }
+
+        // ── Phase 7: SLO metrics + alert evaluation ───────────────────────────────
+
+        /// <inheritdoc cref="ISyncProgressHelper.EmitSloMetrics"/>
+        public void EmitSloMetrics(
+            DataSyncSchema schema,
+            SyncMetrics metrics,
+            string runId,
+            int rejectCount,
+            int conflictCount,
+            int retryCount,
+            int ruleEvaluationCount,
+            string mappingPlanVersion,
+            bool mappingDriftDetected,
+            IRuleEngine ruleEngine = null)
+        {
+            if (metrics == null) return;
+
+            int total = metrics.TotalRecords > 0 ? metrics.TotalRecords : 1;
+
+            metrics.RejectRate           = (double)rejectCount / total;
+            metrics.ConflictRate         = (double)conflictCount / total;
+            metrics.RetryCount           = retryCount;
+            metrics.RuleEvaluationCount  = ruleEvaluationCount;
+            metrics.MappingPlanVersion   = mappingPlanVersion ?? "unknown";
+            metrics.MappingDriftDetected = mappingDriftDetected;
+            metrics.CorrelationId        = $"{schema?.Id}.{runId}.{metrics.MappingPlanVersion}";
+
+            // Try SLO classify-run rule
+            if (ruleEngine != null && ruleEngine.HasRule("sync.slo.classify-run"))
+            {
+                try
+                {
+                    var slo = schema?.SloProfile;
+                    var classifyPolicy = new TheTechIdea.Beep.Rules.RuleExecutionPolicy
+                    {
+                        MaxDepth = 10, MaxExecutionMs = 5000
+                    };
+                    var (classifyOutputs, _) = ruleEngine.SolveRule(
+                        "sync.slo.classify-run",
+                        new Dictionary<string, object>
+                        {
+                            ["successRate"]         = metrics.SuccessRate,
+                            ["runDurationMs"]       = metrics.Duration.TotalMilliseconds,
+                            ["rejectRate"]          = metrics.RejectRate,
+                            ["conflictRate"]        = metrics.ConflictRate,
+                            ["freshnessLagSeconds"] = metrics.FreshnessLagSeconds,
+                            ["minSuccessRate"]      = slo?.MinSuccessRate ?? 0.95,
+                            ["maxDurationMs"]       = slo?.MaxDurationMs ?? 300_000,
+                            ["maxRejectRate"]       = slo?.MaxRejectRate ?? 0.05,
+                            ["maxConflictRate"]     = slo?.MaxConflictRate ?? 0.05
+                        },
+                        classifyPolicy);
+
+                    if (classifyOutputs?.TryGetValue("tier", out var tier) == true)
+                        metrics.SloComplianceTier = tier?.ToString() ?? "Unknown";
+                }
+                catch (Exception ex)
+                {
+                    _editor.AddLogMessage("BeepSync",
+                        $"SLO classify-run rule threw: {ex.Message}",
+                        DateTime.Now, -1, "", Errors.Failed);
+                }
+            }
+
+            LogMessage(
+                $"[SLO] schema='{schema?.Id}' run='{runId}' tier='{metrics.SloComplianceTier}' " +
+                $"successRate={metrics.SuccessRate:P1} rejectRate={metrics.RejectRate:P1} " +
+                $"conflictRate={metrics.ConflictRate:P1} retries={retryCount} ruleEvals={ruleEvaluationCount}");
+        }
+
+        /// <inheritdoc cref="ISyncProgressHelper.EvaluateAlertRules"/>
+        public List<SyncAlertRecord> EvaluateAlertRules(
+            DataSyncSchema schema,
+            SyncMetrics metrics,
+            IRuleEngine ruleEngine)
+        {
+            var alerts = new List<SyncAlertRecord>();
+            if (ruleEngine == null || schema?.SloProfile?.AlertRuleKeys == null) return alerts;
+
+            var alertContext = new Dictionary<string, object>
+            {
+                ["successRate"]         = metrics.SuccessRate,
+                ["runDurationMs"]       = metrics.Duration.TotalMilliseconds,
+                ["rejectRate"]          = metrics.RejectRate,
+                ["conflictRate"]        = metrics.ConflictRate,
+                ["freshnessLagSeconds"] = metrics.FreshnessLagSeconds,
+                ["retryCount"]         = metrics.RetryCount,
+                ["sloProfile"]         = schema.SloProfile.ProfileName
+            };
+
+            var alertPolicy = new TheTechIdea.Beep.Rules.RuleExecutionPolicy
+            {
+                MaxDepth = 10, MaxExecutionMs = 5000
+            };
+
+            foreach (var ruleKey in schema.SloProfile.AlertRuleKeys)
+            {
+                if (string.IsNullOrWhiteSpace(ruleKey)) continue;
+                if (!ruleEngine.HasRule(ruleKey)) continue;
+
+                try
+                {
+                    var (outputs, _) = ruleEngine.SolveRule(ruleKey, alertContext, alertPolicy);
+
+                    bool triggered = outputs?.TryGetValue("triggered", out var t) == true
+                        && t is bool b && b;
+                    if (!triggered) continue;
+
+                    var record = BuildAlertPayload(schema, metrics, ruleKey, outputs);
+                    alerts.Add(record);
+                    _editor.AddLogMessage("BeepSync",
+                        $"[Alert] rule='{ruleKey}' severity='{record.Severity}' reason='{record.Reason}'",
+                        DateTime.Now, -1, "", Errors.Failed);
+                }
+                catch (Exception ex)
+                {
+                    _editor.AddLogMessage("BeepSync",
+                        $"Alert rule '{ruleKey}' threw: {ex.Message}",
+                        DateTime.Now, -1, "", Errors.Failed);
+                }
+            }
+
+            return alerts;
+        }
+
+        /// <inheritdoc cref="ISyncProgressHelper.BuildAlertPayload"/>
+        public SyncAlertRecord BuildAlertPayload(
+            DataSyncSchema schema,
+            SyncMetrics metrics,
+            string ruleKey,
+            Dictionary<string, object> ruleOutputs)
+        {
+            string Get(string key) =>
+                ruleOutputs?.TryGetValue(key, out var v) == true ? v?.ToString() : null;
+
+            return new SyncAlertRecord
+            {
+                SchemaId         = schema?.Id,
+                RunId            = metrics?.CorrelationId?.Split('.') is { Length: > 1 } parts
+                                       ? parts[1] : null,
+                CorrelationId    = metrics?.CorrelationId,
+                RuleKey          = ruleKey,
+                Severity         = Get("severity") ?? "Warning",
+                Reason           = Get("reason")  ?? $"Alert rule '{ruleKey}' fired.",
+                RemediationHint  = Get("remediation"),
+                EmittedAt        = DateTime.UtcNow,
+                EmittedBy        = Environment.UserName,
+                Status           = "Open",
+                AdditionalContext = new Dictionary<string, object>
+                {
+                    ["sloSchema"]         = schema?.Id,
+                    ["successRate"]       = metrics?.SuccessRate,
+                    ["rejectRate"]        = metrics?.RejectRate,
+                    ["conflictRate"]      = metrics?.ConflictRate,
+                    ["runDurationMs"]     = metrics?.Duration.TotalMilliseconds,
+                    ["mappingDrift"]      = metrics?.MappingDriftDetected == true
+                                               ? "Detected — review mapping before next run"
+                                               : "None"
+                }
+            };
         }
     }
 }

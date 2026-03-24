@@ -1,44 +1,69 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Proxy
 {
-    // Define a dedicated circuit breaker class
+    /// <summary>
+    /// Thread-safe circuit breaker that supports three states (Closed, Open, HalfOpen),
+    /// severity-weighted failure accumulation, and a configurable consecutive-success
+    /// threshold before closing from HalfOpen.
+    /// </summary>
     public class CircuitBreaker
     {
-        private readonly object _stateLock = new object();
-        private CircuitState _state = CircuitState.Closed;
-        private DateTime _lastStateChange = DateTime.UtcNow;
-        private int _failureCount;
-        private readonly int _failureThreshold;
+        private readonly object   _stateLock = new object();
+        private CircuitBreakerState _state    = CircuitBreakerState.Closed;
+        private DateTime          _lastStateChange     = DateTime.UtcNow;
+        private int               _failureCount;
+        private int               _consecutiveSuccesses;
+        private readonly int      _failureThreshold;
+        private readonly int      _successThreshold;
         private readonly TimeSpan _resetTimeout;
 
-        public CircuitBreaker(int failureThreshold, TimeSpan resetTimeout)
+        // ── Public read-only state ─────────────────────────────────────
+
+        public CircuitBreakerState State
         {
-            _failureThreshold = failureThreshold;
-            _resetTimeout = resetTimeout;
+            get { lock (_stateLock) return _state; }
         }
 
+        public int FailureCount
+        {
+            get { lock (_stateLock) return _failureCount; }
+        }
+
+        public DateTime LastStateChange
+        {
+            get { lock (_stateLock) return _lastStateChange; }
+        }
+
+        // ── Constructor ───────────────────────────────────────────────
+
+        public CircuitBreaker(int failureThreshold, TimeSpan resetTimeout, int successThreshold = 2)
+        {
+            if (failureThreshold <= 0) throw new ArgumentOutOfRangeException(nameof(failureThreshold));
+            if (successThreshold <= 0) throw new ArgumentOutOfRangeException(nameof(successThreshold));
+
+            _failureThreshold = failureThreshold;
+            _successThreshold = successThreshold;
+            _resetTimeout     = resetTimeout;
+        }
+
+        // ── State transitions ─────────────────────────────────────────
+
+        /// <summary>Returns true when a request may proceed through the circuit.</summary>
         public bool CanExecute()
         {
             lock (_stateLock)
             {
-                // Allow execution when circuit is closed
-                if (_state == CircuitState.Closed)
+                if (_state == CircuitBreakerState.Closed)
                     return true;
 
-                // If in half-open state, allow a test request
-                if (_state == CircuitState.HalfOpen)
+                if (_state == CircuitBreakerState.HalfOpen)
                     return true;
 
-                // If reset timeout has elapsed, transition to half-open
-                if (_state == CircuitState.Open &&
-                    DateTime.UtcNow - _lastStateChange >= _resetTimeout)
+                // Open: check if reset window has elapsed — transition to HalfOpen
+                if (DateTime.UtcNow - _lastStateChange >= _resetTimeout)
                 {
-                    _state = CircuitState.HalfOpen;
+                    _state           = CircuitBreakerState.HalfOpen;
                     _lastStateChange = DateTime.UtcNow;
                     return true;
                 }
@@ -47,43 +72,79 @@ namespace TheTechIdea.Beep.Proxy
             }
         }
 
+        /// <summary>Records a successful call. Closes circuit after enough consecutive successes in HalfOpen.</summary>
         public void RecordSuccess()
         {
             lock (_stateLock)
             {
-                _failureCount = 0;
-                _state = CircuitState.Closed;
-                _lastStateChange = DateTime.UtcNow;
+                _consecutiveSuccesses++;
+
+                if (_state == CircuitBreakerState.HalfOpen && _consecutiveSuccesses >= _successThreshold)
+                {
+                    _failureCount        = 0;
+                    _consecutiveSuccesses = 0;
+                    _state               = CircuitBreakerState.Closed;
+                    _lastStateChange     = DateTime.UtcNow;
+                }
+                else if (_state == CircuitBreakerState.Closed)
+                {
+                    _failureCount = 0;
+                }
             }
         }
 
-        public void RecordFailure()
+        /// <summary>
+        /// Records a failed call. Critical/High severity failures accumulate extra weight,
+        /// accelerating the transition to Open.
+        /// </summary>
+        public void RecordFailure(ProxyErrorSeverity severity = ProxyErrorSeverity.Medium)
         {
             lock (_stateLock)
             {
-                _failureCount++;
+                _consecutiveSuccesses = 0;
 
-                // Transition to open state if threshold reached
-                if (_state == CircuitState.Closed && _failureCount >= _failureThreshold)
+                // Severity-weighted increment: critical errors immediately breach threshold
+                int increment = severity switch
                 {
-                    _state = CircuitState.Open;
+                    ProxyErrorSeverity.Critical => _failureThreshold,
+                    ProxyErrorSeverity.High     => 2,
+                    _                           => 1
+                };
+
+                _failureCount += increment;
+
+                if (_state == CircuitBreakerState.Closed && _failureCount >= _failureThreshold)
+                {
+                    _state           = CircuitBreakerState.Open;
                     _lastStateChange = DateTime.UtcNow;
                 }
-                else if (_state == CircuitState.HalfOpen)
+                else if (_state == CircuitBreakerState.HalfOpen)
                 {
-                    // Return to open state if test request failed
-                    _state = CircuitState.Open;
+                    // Failed probe: revert to Open and restart the reset timer
+                    _state           = CircuitBreakerState.Open;
                     _lastStateChange = DateTime.UtcNow;
                 }
             }
         }
 
-        private enum CircuitState
+        /// <summary>Forces the circuit to Closed state. Use only for manual recovery or tests.</summary>
+        public void Reset()
         {
-            Closed,   // Normal operation
-            Open,     // Failing - rejecting requests
-            HalfOpen  // Testing if system has recovered
+            lock (_stateLock)
+            {
+                _failureCount        = 0;
+                _consecutiveSuccesses = 0;
+                _state               = CircuitBreakerState.Closed;
+                _lastStateChange     = DateTime.UtcNow;
+            }
         }
     }
 
+    public enum CircuitBreakerState
+    {
+        Closed,   // Normal operation — requests pass through
+        Open,     // Failing — requests are rejected immediately
+        HalfOpen  // Recovery probe — limited requests allowed to test health
+    }
 }
+

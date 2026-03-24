@@ -178,6 +178,8 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 AlertTrigger.OnRejectedThreshold   => EvalNumericCondition(rule.Condition, log.RecordsRejected),
                 AlertTrigger.OnDurationThreshold   => EvalNumericCondition(rule.Condition, log.Duration.TotalSeconds),
                 AlertTrigger.OnCustomExpression    => EvalCustom(rule.Condition, log),
+                AlertTrigger.OnMemoryThreshold     => EvalNumericCondition(rule.Condition, log.MemoryPeakBytes),
+                AlertTrigger.OnCostThreshold       => EvalNumericCondition(rule.Condition, log.EstimatedCostUnits),
                 _ => false
             };
         }
@@ -250,6 +252,8 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 AlertTrigger.OnDQThreshold => $"DQ pass rate {log.DQPassRate:P1} breached threshold (Run {log.RunId})",
                 AlertTrigger.OnRejectedThreshold => $"{log.RecordsRejected:N0} rows rejected (Run {log.RunId})",
                 AlertTrigger.OnDurationThreshold => $"Run {log.RunId} took {log.Duration:g}",
+                AlertTrigger.OnMemoryThreshold => $"Memory peak {log.MemoryPeakBytes:N0} bytes (Run {log.RunId})",
+                AlertTrigger.OnCostThreshold => $"Estimated cost {log.EstimatedCostUnits:F4} units (Run {log.RunId})",
                 _ => $"Alert '{rule.Name}' triggered for pipeline '{log.PipelineName}' (Run {log.RunId})"
             };
         }

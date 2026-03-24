@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Report;
 
 
@@ -193,6 +194,154 @@ namespace TheTechIdea.Beep.Editor
         {
             get { return _syncruns; }
             set { SetProperty(ref _syncruns, value); }
+        }
+
+        // ── Integration policies (Phase 1) ──────────────────────────────────────
+
+        private SyncRulePolicy _rulepolicy;
+        /// <summary>Optional Rule Engine wiring for this schema. Null = Rule Engine disabled.</summary>
+        public SyncRulePolicy RulePolicy
+        {
+            get { return _rulepolicy; }
+            set { SetProperty(ref _rulepolicy, value); }
+        }
+
+        private SyncDefaultsPolicy _defaultspolicy;
+        /// <summary>Optional DefaultsManager wiring for this schema. Null = Defaults disabled.</summary>
+        public SyncDefaultsPolicy DefaultsPolicy
+        {
+            get { return _defaultspolicy; }
+            set { SetProperty(ref _defaultspolicy, value); }
+        }
+
+        private SyncMappingPolicy _mappingpolicy;
+        /// <summary>Optional MappingManager wiring for this schema. Null = Mapping integration disabled.</summary>
+        public SyncMappingPolicy MappingPolicy
+        {
+            get { return _mappingpolicy; }
+            set { SetProperty(ref _mappingpolicy, value); }
+        }
+
+        // ── Schema versioning (Phase 2) ──────────────────────────────────────────
+
+        private SyncSchemaVersion _currentschemaversion;
+        /// <summary>Most recent version artifact stamped when this schema was last saved or promoted.</summary>
+        public SyncSchemaVersion CurrentSchemaVersion
+        {
+            get { return _currentschemaversion; }
+            set { SetProperty(ref _currentschemaversion, value); }
+        }
+
+        // ── Incremental / CDC (Phase 3) ──────────────────────────────────────────
+
+        private WatermarkPolicy _watermarkpolicy;
+        /// <summary>
+        /// Optional incremental-sync policy.  When set, the orchestrator uses watermark-based
+        /// filtering instead of a full table load.  Null = full load (default).
+        /// </summary>
+        public WatermarkPolicy WatermarkPolicy
+        {
+            get { return _watermarkpolicy; }
+            set { SetProperty(ref _watermarkpolicy, value); }
+        }
+
+        // ── Bidirectional conflict resolution (Phase 4) ──────────────────────────
+
+        private ConflictPolicy _conflictpolicy;
+        /// <summary>
+        /// Optional conflict-resolution policy for bidirectional syncs.
+        /// When null the legacy <see cref="ConflictResolutionStrategy"/> string drives behaviour.
+        /// </summary>
+        public ConflictPolicy ConflictPolicy
+        {
+            get { return _conflictpolicy; }
+            set { SetProperty(ref _conflictpolicy, value); }
+        }
+
+        // ── Reliability / Retry & Idempotency (Phase 5) ──────────────────────────
+
+        private RetryPolicy _retrypolicy;
+        /// <summary>
+        /// Optional retry/backoff policy for transient failures.
+        /// When null the sync will not be retried on failure.
+        /// </summary>
+        public RetryPolicy RetryPolicy
+        {
+            get { return _retrypolicy; }
+            set { SetProperty(ref _retrypolicy, value); }
+        }
+
+        private SyncCheckpoint _activecheckpoint;
+        /// <summary>
+        /// The most recently saved checkpoint for this schema.
+        /// Populated during a run when <see cref="RetryPolicy.CheckpointEnabled"/> is true.
+        /// </summary>
+        public SyncCheckpoint ActiveCheckpoint
+        {
+            get { return _activecheckpoint; }
+            set { SetProperty(ref _activecheckpoint, value); }
+        }
+
+        // ── Data Quality & Reconciliation (Phase 6) ───────────────────────────────
+
+        private DqPolicy _dqpolicy;
+        /// <summary>
+        /// Optional Data Quality gate policy.
+        /// When set, each record passes through RuleEngine DQ checks before being written
+        /// to the destination.  Failures are routed to the reject channel.
+        /// </summary>
+        public DqPolicy DqPolicy
+        {
+            get { return _dqpolicy; }
+            set { SetProperty(ref _dqpolicy, value); }
+        }
+
+        private SyncReconciliationReport _lastreconciliationreport;
+        /// <summary>
+        /// The reconciliation report produced by the most recent sync run.
+        /// Null when no run has completed yet.
+        /// </summary>
+        public SyncReconciliationReport LastReconciliationReport
+        {
+            get { return _lastreconciliationreport; }
+            set { SetProperty(ref _lastreconciliationreport, value); }
+        }
+
+        // ── Phase 7: Observability / SLO ─────────────────────────────────────────
+
+        private SloProfile _sloprofile;
+        /// <summary>
+        /// SLO thresholds and alert rule keys for this schema.
+        /// When set, SLO metrics and alert trigger rules are evaluated at the end of every run.
+        /// </summary>
+        public SloProfile SloProfile
+        {
+            get { return _sloprofile; }
+            set { SetProperty(ref _sloprofile, value); }
+        }
+
+        private System.Collections.Generic.List<SyncAlertRecord> _lastrunalerts;
+        /// <summary>
+        /// Alert records emitted during the most recent sync run.
+        /// Reset at the start of each run.
+        /// </summary>
+        public System.Collections.Generic.List<SyncAlertRecord> LastRunAlerts
+        {
+            get { return _lastrunalerts; }
+            set { SetProperty(ref _lastrunalerts, value); }
+        }
+
+        // ── Phase 8: Performance & Scale ─────────────────────────────────────────
+
+        private SyncPerformanceProfile _perfprofile;
+        /// <summary>
+        /// Performance and scale knobs for this schema's sync runs.
+        /// Controls batch size, parallelism degree, rule policy mode, and cache TTLs.
+        /// </summary>
+        public SyncPerformanceProfile PerfProfile
+        {
+            get { return _perfprofile; }
+            set { SetProperty(ref _perfprofile, value); }
         }
 
         public DataSyncSchema()

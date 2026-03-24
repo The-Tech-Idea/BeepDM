@@ -18,7 +18,8 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
     /// <summary>
     /// Singleton service that manages all scheduler plugins, handles triggers,
     /// priority-queues runs, and dispatches them to <see cref="PipelineEngine"/> /
-    /// <see cref="WorkFlowEngine"/> with concurrency and dependency enforcement.
+    /// <see cref="WorkFlowEngine"/> with concurrency, dependency, circuit-breaker,
+    /// watermark/CDC, backfill, and audit enforcement.
     /// </summary>
     public sealed class SchedulerHost : IAsyncDisposable
     {
@@ -41,13 +42,20 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
 
         private CancellationTokenSource? _cts;
         private Task?                    _dispatchTask;
+        private Task?                    _governanceTask;
 
         // Max parallel pipelines across the host
         private const int MaxParallel = 8;
 
+        // Governance loop interval (how often to check for dependency timeouts, fail-fast, etc.)
+        private const int GovernanceIntervalMs = 15_000;
+
         // ── Public surface ─────────────────────────────────────────────────────
 
-        public ScheduleStorage Storage { get; }
+        public ScheduleStorage Storage   { get; }
+        public WatermarkTracker Watermarks { get; }
+        public BackfillManager  Backfills  { get; }
+        public ScheduleAuditLog AuditLog   { get; }
 
         /// <summary>Fired when a run is pulled from the queue and started.</summary>
         public event EventHandler<SchedulerRunEventArgs>? RunStarted;
@@ -57,6 +65,9 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
 
         /// <summary>Fired when a run fails (after all retries).</summary>
         public event EventHandler<SchedulerRunEventArgs>? RunFailed;
+
+        /// <summary>Fired when a circuit breaker trips or resets.</summary>
+        public event EventHandler<SchedulerRunEventArgs>? CircuitBreakerChanged;
 
         // ── Constructor ────────────────────────────────────────────────────────
 
@@ -70,6 +81,9 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             _registry        = new PipelinePluginRegistry(editor);
             _registry.Discover();
             Storage          = new ScheduleStorage(editor);
+            Watermarks       = new WatermarkTracker(editor);
+            Backfills        = new BackfillManager(editor, Watermarks);
+            AuditLog         = new ScheduleAuditLog(editor);
             _queue           = new PipelineRunQueue();
             _gate            = new ConcurrencyGate();
             _deps            = new DependencyGraph();
@@ -82,8 +96,19 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
         {
             _cts          = CancellationTokenSource.CreateLinkedTokenSource(token);
             _dispatchTask = Task.Run(() => DispatchLoopAsync(_cts.Token), CancellationToken.None);
+            _governanceTask = Task.Run(() => GovernanceLoopAsync(_cts.Token), CancellationToken.None);
 
             await LoadAndWireSchedulesAsync().ConfigureAwait(false);
+
+            // Validate dependency graph for cycles at startup
+            var cycles = _deps.DetectCycles();
+            if (cycles.Count > 0)
+            {
+                _editor.AddLogMessage(nameof(SchedulerHost),
+                    $"WARNING: Dependency cycle detected among schedules: {string.Join(" → ", cycles)}. " +
+                    "These schedules may never fire.",
+                    DateTime.Now, -1, null, Errors.Failed);
+            }
 
             _editor.AddLogMessage(nameof(SchedulerHost),
                 $"Started — {_schedules.Count} schedule(s).", DateTime.Now, -1, null, Errors.Ok);
@@ -99,6 +124,10 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
 
             if (_dispatchTask != null)
                 try { await _dispatchTask.ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+
+            if (_governanceTask != null)
+                try { await _governanceTask.ConfigureAwait(false); }
                 catch (OperationCanceledException) { }
         }
 
@@ -130,6 +159,7 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                 IsWorkflow     = def?.IsWorkflow ?? false,
                 Priority       = def?.Priority ?? 5,
                 TriggerSource  = "manual",
+                WorkloadClass  = def?.WorkloadClass ?? "standard",
                 OverrideParams = overrideParams
             };
 
@@ -137,11 +167,59 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             return Task.FromResult(run.RunId);
         }
 
+        /// <summary>
+        /// Submit a backfill request. The next pending window is queued immediately;
+        /// subsequent windows are queued as each completes.
+        /// </summary>
+        public async Task<string> SubmitBackfillAsync(
+            string scheduleId, string fromValue, string toValue,
+            string reason = "", string requestedBy = "",
+            int windowSizeSeconds = 86400)
+        {
+            if (!_schedules.TryGetValue(scheduleId, out var def))
+                throw new InvalidOperationException($"Schedule '{scheduleId}' not found.");
+
+            var request = await Backfills.CreateRequestAsync(
+                scheduleId, def.PipelineId,
+                fromValue, toValue,
+                def.Watermark.WatermarkType, def.Watermark.WatermarkColumn,
+                reason, requestedBy, windowSizeSeconds).ConfigureAwait(false);
+
+            // Queue the first window
+            EnqueueNextBackfillWindow(request, def);
+
+            return request.Id;
+        }
+
+        /// <summary>
+        /// Reset a circuit breaker for a schedule, re-enabling it for execution.
+        /// </summary>
+        public async Task ResetCircuitBreakerAsync(string scheduleId, string resetBy = "")
+        {
+            if (!_schedules.TryGetValue(scheduleId, out var def)) return;
+
+            def.ConsecutiveFailures  = 0;
+            def.CircuitBreakerTripped = false;
+            def.IsEnabled            = true;
+            _schedules[scheduleId]   = def;
+            _deps.SetCircuitBroken(scheduleId, false);
+
+            await Storage.SaveAsync(def).ConfigureAwait(false);
+            await AuditLog.LogCircuitBreakerAsync(scheduleId, def.Name, false, 0).ConfigureAwait(false);
+
+            CircuitBreakerChanged?.Invoke(this,
+                new SchedulerRunEventArgs(string.Empty, def.PipelineId, scheduleId));
+
+            _editor.AddLogMessage(nameof(SchedulerHost),
+                $"Circuit breaker reset for schedule '{def.Name}' by {resetBy}.",
+                DateTime.Now, -1, null, Errors.Ok);
+        }
+
         /// <summary>Snapshot of all currently executing runs.</summary>
         public IReadOnlyList<(string RunId, string PipelineId, RunStatus Status)> GetActiveRuns()
             => _active.Select(kv => (kv.Key, kv.Value.PipelineId, kv.Value.Status)).ToList();
 
-        // ── Private methods ────────────────────────────────────────────────────
+        // ── Private: Loading & wiring ──────────────────────────────────────────
 
         private async Task LoadAndWireSchedulesAsync()
         {
@@ -150,6 +228,11 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             foreach (var def in defs)
             {
                 _schedules[def.Id] = def;
+
+                // Apply circuit breaker state from persisted data
+                if (def.CircuitBreakerTripped)
+                    _deps.SetCircuitBroken(def.Id, true);
+
                 if (!def.IsEnabled) continue;
 
                 if (def.DependsOn.Count > 0)
@@ -157,6 +240,9 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                     string condition = def.SchedulerConfig.TryGetValue("Condition", out var cv)
                         ? cv?.ToString() ?? "ALL_SUCCESS" : "ALL_SUCCESS";
                     _deps.RegisterDependency(def.Id, def.DependsOn, condition);
+
+                    if (def.DependencyMaxWaitSeconds > 0)
+                        _deps.SetMaxWait(def.Id, def.DependencyMaxWaitSeconds);
                 }
 
                 // Dependency schedulers are triggered by DependencyGraph, not a plugin
@@ -194,6 +280,9 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
 
         private void OnTriggered(ScheduleDefinition def, PipelineTriggerArgs args)
         {
+            // Block triggers if circuit breaker is tripped
+            if (def.CircuitBreakerTripped) return;
+
             if (!CheckRateLimit(def)) return;
 
             var run = new QueuedRun
@@ -203,6 +292,7 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                 IsWorkflow     = def.IsWorkflow,
                 Priority       = def.Priority,
                 TriggerSource  = args.TriggerSource,
+                WorkloadClass  = def.WorkloadClass,
                 OverrideParams = args.Parameters
             };
             _queue.Enqueue(run);
@@ -240,6 +330,84 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             }
         }
 
+        // ── Governance loop (dependency timeouts, fail-fast, day-window reset) ─
+
+        private async Task GovernanceLoopAsync(CancellationToken token)
+        {
+            DateTime lastDayReset = DateTime.UtcNow.Date;
+
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(GovernanceIntervalMs, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { break; }
+
+                // Day-window reset at midnight UTC
+                var today = DateTime.UtcNow.Date;
+                if (today > lastDayReset)
+                {
+                    _deps.ResetDayWindow();
+                    lastDayReset = today;
+                    _editor.AddLogMessage(nameof(SchedulerHost),
+                        "Dependency graph day-window reset.", DateTime.Now, -1, null, Errors.Ok);
+                }
+
+                // Fail-fast propagation
+                foreach (var failFastId in _deps.GetFailFastSchedules())
+                {
+                    if (_schedules.TryGetValue(failFastId, out var ffDef))
+                    {
+                        _editor.AddLogMessage(nameof(SchedulerHost),
+                            $"Fail-fast: schedule '{ffDef.Name}' ({failFastId}) cannot execute — upstream dependency failed.",
+                            DateTime.Now, -1, null, Errors.Failed);
+
+                        PipelineEventBus.PublishPipelineEvent("fail_fast", string.Empty,
+                            ffDef.PipelineId, failFastId, "Upstream dependency failed");
+
+                        // Propagate: notify graph so downstream of this schedule also fail-fast
+                        _deps.NotifyCompletion(failFastId, false, DateTime.UtcNow);
+                    }
+                }
+
+                // Dependency timeout handling
+                foreach (var timedOutId in _deps.GetTimedOutSchedules())
+                {
+                    if (_schedules.TryGetValue(timedOutId, out var toDef))
+                    {
+                        _editor.AddLogMessage(nameof(SchedulerHost),
+                            $"Dependency timeout: schedule '{toDef.Name}' ({timedOutId}) exceeded max-wait of {toDef.DependencyMaxWaitSeconds}s.",
+                            DateTime.Now, -1, null, Errors.Failed);
+
+                        PipelineEventBus.PublishPipelineEvent("dependency_timeout", string.Empty,
+                            toDef.PipelineId, timedOutId, "Dependency wait exceeded max-wait");
+
+                        _deps.NotifyCompletion(timedOutId, false, DateTime.UtcNow);
+                    }
+                }
+
+                // Freshness SLA check for active schedules
+                foreach (var def in _schedules.Values)
+                {
+                    if (def.FreshnessSlaSeconds > 0 && def.LastRunAt.HasValue)
+                    {
+                        var age = (DateTime.UtcNow - def.LastRunAt.Value).TotalSeconds;
+                        if (age > def.FreshnessSlaSeconds)
+                        {
+                            _editor.AddLogMessage(nameof(SchedulerHost),
+                                $"Freshness SLA breach: schedule '{def.Name}' data age {age:F0}s exceeds SLA of {def.FreshnessSlaSeconds}s.",
+                                DateTime.Now, -1, null, Errors.Failed);
+
+                            PipelineEventBus.PublishPipelineEvent("freshness_sla_breach", string.Empty,
+                                def.PipelineId, def.Id,
+                                $"Data age {age:F0}s exceeds SLA of {def.FreshnessSlaSeconds}s");
+                        }
+                    }
+                }
+            }
+        }
+
         // ── Dispatcher loop ────────────────────────────────────────────────────
 
         private async Task DispatchLoopAsync(CancellationToken token)
@@ -260,7 +428,11 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                 _ = Task.Run(async () =>
                 {
                     try   { await ExecuteRunAsync(run, token).ConfigureAwait(false); }
-                    finally { semaphore.Release(); }
+                    finally
+                    {
+                        semaphore.Release();
+                        _queue.NotifyRunCompleted(run.WorkloadClass);
+                    }
                 }, CancellationToken.None);
             }
         }
@@ -282,12 +454,33 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
 
             _active[run.RunId] = (run.PipelineId, RunStatus.Running);
             RunStarted?.Invoke(this, new SchedulerRunEventArgs(run.RunId, run.PipelineId, run.ScheduleId));
+            PipelineEventBus.PublishPipelineEvent("run_started", run.RunId, run.PipelineId, run.ScheduleId);
 
             bool success = false;
             string? error = null;
+            PipelineRunResult? lastResult = null;
 
             try
             {
+                // Prepare watermark overrides for incremental runs
+                Dictionary<string, object>? watermarkOverrides = null;
+                if (def != null && def.RunMode == "incremental" &&
+                    !string.IsNullOrEmpty(def.Watermark.WatermarkColumn))
+                {
+                    var wmState = await Watermarks.LoadAsync(def.Id).ConfigureAwait(false);
+                    var window  = Watermarks.ComputeWindow(def.Watermark, wmState);
+
+                    watermarkOverrides = new Dictionary<string, object>
+                    {
+                        ["__watermark_column"]   = window.WatermarkColumn,
+                        ["__watermark_type"]     = window.WatermarkType,
+                        ["__watermark_from"]     = window.FromValue ?? string.Empty,
+                        ["__watermark_is_first"] = window.IsFirstRun
+                    };
+                    if (window.ToValue != null)
+                        watermarkOverrides["__watermark_to"] = window.ToValue;
+                }
+
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
                     try
@@ -311,14 +504,18 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                                 throw new InvalidOperationException(
                                     $"Pipeline '{run.PipelineId}' not found.");
 
-                            var overrides = run.OverrideParams != null
-                                ? new Dictionary<string, object>(run.OverrideParams)
-                                : null;
+                            // Merge watermark + trigger overrides
+                            var overrides = new Dictionary<string, object>();
+                            if (watermarkOverrides != null)
+                                foreach (var kv in watermarkOverrides) overrides[kv.Key] = kv.Value;
+                            if (run.OverrideParams != null)
+                                foreach (var kv in run.OverrideParams) overrides[kv.Key] = kv.Value;
 
-                            var result = await _pipelineEngine.RunAsync(
-                                pipeDef, null, linkedCts.Token, overrides).ConfigureAwait(false);
+                            lastResult = await _pipelineEngine.RunAsync(
+                                pipeDef, null, linkedCts.Token,
+                                overrides.Count > 0 ? overrides : null).ConfigureAwait(false);
 
-                            success = result.Status is RunStatus.Success or RunStatus.Partial;
+                            success = lastResult.Status is RunStatus.Success or RunStatus.Partial;
                             if (success) break;
                         }
 
@@ -352,11 +549,59 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             {
                 _active.TryRemove(run.RunId, out _);
 
-                // Persist last-run status
+                // Persist last-run status & handle circuit breaker
                 if (def != null)
                 {
                     def.LastRunAt     = DateTime.UtcNow;
                     def.LastRunStatus = success ? "Success" : "Failed";
+
+                    if (success)
+                    {
+                        def.ConsecutiveFailures = 0;
+
+                        // Advance watermark on successful incremental run
+                        if (def.RunMode == "incremental" &&
+                            !string.IsNullOrEmpty(def.Watermark.WatermarkColumn) &&
+                            lastResult != null)
+                        {
+                            // The pipeline should set __watermark_new_value in run context
+                            // For now, update the last watermark with current UTC as fallback
+                            var wmState = new WatermarkState
+                            {
+                                ScheduleId          = def.Id,
+                                PipelineId          = def.PipelineId,
+                                LastWatermarkValue  = DateTime.UtcNow.ToString("O"),
+                                LastRunId           = run.RunId,
+                                LastRecordsProcessed = lastResult.RecordsWritten
+                            };
+                            await Watermarks.SaveAsync(def.Id, wmState).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        // Circuit breaker logic
+                        def.ConsecutiveFailures++;
+                        if (def.CircuitBreakerThreshold > 0 &&
+                            def.ConsecutiveFailures >= def.CircuitBreakerThreshold &&
+                            !def.CircuitBreakerTripped)
+                        {
+                            def.CircuitBreakerTripped = true;
+                            def.IsEnabled            = false;
+                            _deps.SetCircuitBroken(def.Id, true);
+
+                            await AuditLog.LogCircuitBreakerAsync(def.Id, def.Name, true,
+                                def.ConsecutiveFailures).ConfigureAwait(false);
+
+                            CircuitBreakerChanged?.Invoke(this,
+                                new SchedulerRunEventArgs(run.RunId, def.PipelineId, def.Id, error));
+
+                            _editor.AddLogMessage(nameof(SchedulerHost),
+                                $"Circuit breaker TRIPPED for schedule '{def.Name}' " +
+                                $"after {def.ConsecutiveFailures} consecutive failures.",
+                                DateTime.Now, -1, null, Errors.Failed);
+                        }
+                    }
+
                     _schedules[def.Id] = def;
                     await Storage.SaveAsync(def).ConfigureAwait(false);
                 }
@@ -376,17 +621,49 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                             PipelineId    = depDef.PipelineId,
                             IsWorkflow    = depDef.IsWorkflow,
                             Priority      = depDef.Priority,
-                            TriggerSource = "dependency"
+                            TriggerSource = "dependency",
+                            WorkloadClass = depDef.WorkloadClass
                         });
                     }
                 }
 
+                // Publish lifecycle events
                 if (success)
+                {
                     RunCompleted?.Invoke(this, new SchedulerRunEventArgs(run.RunId, run.PipelineId, run.ScheduleId));
+                    PipelineEventBus.PublishPipelineEvent("run_completed", run.RunId, run.PipelineId, run.ScheduleId);
+                }
                 else
+                {
                     RunFailed?.Invoke(this,
                         new SchedulerRunEventArgs(run.RunId, run.PipelineId, run.ScheduleId, error));
+                    PipelineEventBus.PublishPipelineEvent("run_failed", run.RunId, run.PipelineId, run.ScheduleId, error);
+                }
             }
+        }
+
+        // ── Backfill helpers ───────────────────────────────────────────────────
+
+        private void EnqueueNextBackfillWindow(BackfillRequest request, ScheduleDefinition def)
+        {
+            var window = Backfills.GetNextPendingWindow(request);
+            if (window == null) return;
+
+            window.Status = BackfillWindowStatus.Running;
+            var overrides = Backfills.BuildWindowOverrides(request, window);
+
+            var run = new QueuedRun
+            {
+                ScheduleId     = def.Id,
+                PipelineId     = def.PipelineId,
+                IsWorkflow     = def.IsWorkflow,
+                Priority       = 8, // Lower priority for backfill
+                TriggerSource  = "backfill",
+                WorkloadClass  = "backfill",
+                OverrideParams = overrides
+            };
+
+            _queue.Enqueue(run);
         }
 
         // ── IAsyncDisposable ───────────────────────────────────────────────────

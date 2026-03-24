@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace TheTechIdea.Beep.Rules
 {
-    public class Token
+    public partial class Token
     {
         public TokenType Type { get; set; }
         public string Value { get; set; }
@@ -15,8 +9,19 @@ namespace TheTechIdea.Beep.Rules
         {
             Type = type;
             Value = value;
+            SchemaVersion = RuleStructure.CurrentSchemaVersion;
         }
 
-        public override string ToString() => $"{Type}: {Value}";
+        public Token(TokenType type, string value, int start, int length)
+        {
+            Type = type;
+            Value = value;
+            Start = start;
+            Length = length;
+            SchemaVersion = RuleStructure.CurrentSchemaVersion;
+        }
+
+        public override string ToString() => $"{Type}({Value})@{Start}+{Length}";
     }
 }
+

@@ -125,6 +125,33 @@ namespace TheTechIdea.Beep.ConfigUtil
             set { SetProperty(ref _modifiedDate, value); }
         }
 
+        private string _ruleSyntaxVersion;
+        /// <summary>
+        /// Identifies the DSL syntax used for this rule.
+        /// Stored as a string so the model project has no dependency on the engine.
+        /// Typical values: "V1Legacy" (default, function-style like IF(...))
+        ///                  "V1Dot"    (dot-segment style like IF.cond.trueVal.falseVal)
+        /// Null or empty means the engine will auto-detect.
+        /// </summary>
+        public string RuleSyntaxVersion
+        {
+            get { return _ruleSyntaxVersion; }
+            set { SetProperty(ref _ruleSyntaxVersion, value); }
+        }
+
+        private string _ruleOptions;
+        /// <summary>
+        /// Optional JSON or key=value string supplying per-rule execution hints.
+        /// Examples:  "timeout=5000;readonly=true"
+        ///            "fallback=ONEMPTY.static.0"
+        /// Parsed by the resolver pipeline at runtime; ignored if null/empty.
+        /// </summary>
+        public string RuleOptions
+        {
+            get { return _ruleOptions; }
+            set { SetProperty(ref _ruleOptions, value); }
+        }
+
         /// <summary>
         /// Gets whether this default value uses a rule (dynamic) vs static value
         /// </summary>
@@ -239,6 +266,8 @@ namespace TheTechIdea.Beep.ConfigUtil
                 PropertyCategory = this.PropertyCategory,
                 Description = this.Description,
                 IsEnabled = this.IsEnabled,
+                RuleSyntaxVersion = this.RuleSyntaxVersion,
+                RuleOptions = this.RuleOptions,
                 CreatedDate = DateTime.Now, // Set new creation date
                 ModifiedDate = DateTime.Now
             };

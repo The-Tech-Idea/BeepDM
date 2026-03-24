@@ -100,6 +100,37 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         /// </summary>
         public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
 
+        // ── Phase 7: Observability fields ─────────────────────────────────────────
+
+        /// <summary>Mapping governance version used during this run.</summary>
+        public string MappingPlanVersion { get; set; }
+
+        /// <summary>
+        /// Composite correlation ID: <c>{SchemaID}.{RunId}.{MappingPlanVersion}</c>.
+        /// </summary>
+        public string CorrelationId { get; set; }
+
+        /// <summary>Fraction of records rejected by the DQ gate (0.0–1.0).</summary>
+        public double RejectRate { get; set; }
+
+        /// <summary>Fraction of records that triggered a conflict (0.0–1.0).</summary>
+        public double ConflictRate { get; set; }
+
+        /// <summary>Seconds elapsed since the source data was last modified (freshness lag).</summary>
+        public double FreshnessLagSeconds { get; set; }
+
+        /// <summary>Number of retry attempts made during the run (0 = first attempt succeeded).</summary>
+        public int RetryCount { get; set; }
+
+        /// <summary>Total number of rule evaluations recorded via <c>RuleEngine.RuleEvaluated</c>.</summary>
+        public int RuleEvaluationCount { get; set; }
+
+        /// <summary>SLO compliance tier computed at the end of the run: <c>Green</c>, <c>Yellow</c>, or <c>Red</c>.</summary>
+        public string SloComplianceTier { get; set; }
+
+        /// <summary>When <c>true</c>, mapping drift was detected during preflight but the run was allowed to proceed.</summary>
+        public bool MappingDriftDetected { get; set; }
+
         /// <summary>
         /// Creates a SyncMetrics instance from a completed ImportRunRecord.
         /// </summary>

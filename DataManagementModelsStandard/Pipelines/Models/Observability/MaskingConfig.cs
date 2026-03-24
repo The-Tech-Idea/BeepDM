@@ -29,6 +29,8 @@ namespace TheTechIdea.Beep.Pipelines.Observability
     /// <summary>How sensitive field values are represented in row-level logs.</summary>
     public enum MaskingStrategy
     {
+        /// <summary>No masking — value logged as-is.</summary>
+        None,
         /// <summary>Replace the value with <c>"***REDACTED***"</c>.</summary>
         Redact,
         /// <summary>Show first/last N characters; mask the middle with asterisks.</summary>

@@ -140,6 +140,7 @@ editor.OpenDataSource("MyDb");
 - [`connection`](../connection/SKILL.md)
 - [`connectionproperties`](../connectionproperties/SKILL.md)
 - [`idatasource`](../idatasource/SKILL.md)
+- [`rules-engine`](../rules-engine/SKILL.md)
 - [`unitofwork`](../unitofwork/SKILL.md)
 
 ## Detailed Reference

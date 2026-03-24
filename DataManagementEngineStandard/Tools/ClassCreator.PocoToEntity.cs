@@ -1470,6 +1470,51 @@ namespace TheTechIdea.Beep.Tools
 
         #endregion
 
+        #region EF Core Dedicated Conversion (EfCoreToEntityGeneratorHelper)
+
+        public List<Type> ScanNamespaceForEfCoreClasses(string namespaceName, Assembly assembly = null)
+            => _efCoreToEntityHelper.ScanNamespaceForEfCoreClasses(namespaceName, assembly);
+
+        public EntityStructure ConvertEfCoreTypeToEntityStructure(Type efCoreType, bool includeRelationships = true)
+            => _efCoreToEntityHelper.ConvertEfCoreTypeToEntityStructure(efCoreType, includeRelationships);
+
+        public List<EntityStructure> ConvertEfCoreTypesToEntityStructures(IEnumerable<Type> efCoreTypes, bool includeRelationships = true)
+            => _efCoreToEntityHelper.ConvertEfCoreTypesToEntityStructures(efCoreTypes, includeRelationships);
+
+        public List<EntityStructure> ConvertEfCoreNamespaceToEntityStructures(string namespaceName, Assembly assembly = null, bool includeRelationships = true)
+            => _efCoreToEntityHelper.ConvertEfCoreNamespaceToEntityStructures(namespaceName, assembly, includeRelationships);
+
+        public List<EntityStructure> ConvertEfCoreFileToEntityStructures(string filePath, bool includeRelationships = true)
+            => _efCoreToEntityHelper.ConvertEfCoreFileToEntityStructures(filePath, includeRelationships);
+
+        public List<EntityStructure> ConvertEfCoreSourceToEntityStructures(string sourceCode, bool includeRelationships = true)
+            => _efCoreToEntityHelper.ConvertEfCoreSourceToEntityStructures(sourceCode, includeRelationships);
+
+        public List<EntityStructure> ConvertEfCoreDirectoryToEntityStructures(string directoryPath, bool recursive = true, bool includeRelationships = true)
+            => _efCoreToEntityHelper.ConvertEfCoreDirectoryToEntityStructures(directoryPath, recursive, includeRelationships);
+
+        public string GenerateEntityClassFromEfCore(Type efCoreType, string outputPath = null,
+            string namespaceString = "TheTechIdea.ProjectClasses", bool generateFile = true, bool includeRelationships = true)
+            => _efCoreToEntityHelper.GenerateEntityClassFromEfCore(efCoreType, outputPath, namespaceString, generateFile, includeRelationships);
+
+        public List<string> GenerateEntityClassesFromEfCoreNamespace(string sourceNamespace, string outputPath = null,
+            string targetNamespace = "TheTechIdea.ProjectClasses", bool generateFiles = true, Assembly assembly = null, bool includeRelationships = true)
+            => _efCoreToEntityHelper.GenerateEntityClassesFromEfCoreNamespace(sourceNamespace, outputPath, targetNamespace, generateFiles, assembly, includeRelationships);
+
+        public List<string> GenerateEfCoreClassesFromEntityStructures(List<EntityStructure> entities, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectEfModels", bool generateFiles = true)
+            => _efCoreToEntityHelper.GenerateEfCoreClassesFromEntityStructures(entities, outputPath, namespaceName, generateFiles);
+
+        public string GenerateEfCoreCombinedFileFromEntityStructures(List<EntityStructure> entities, string outputFilePath,
+            string namespaceName = "TheTechIdea.ProjectEfModels")
+            => _efCoreToEntityHelper.GenerateEfCoreCombinedFileFromEntityStructures(entities, outputFilePath, namespaceName);
+
+        public string GenerateEfCoreDllFromEntityStructures(List<EntityStructure> entities, string dllName, string outputPath,
+            string namespaceName = "TheTechIdea.ProjectEfModels")
+            => _efCoreToEntityHelper.GenerateEfCoreDllFromEntityStructures(entities, dllName, outputPath, namespaceName);
+
+        #endregion
+
         #endregion
     }
 }

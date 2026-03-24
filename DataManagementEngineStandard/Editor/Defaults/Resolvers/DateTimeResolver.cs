@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for date/time related default values with enhanced functionality
     /// </summary>
+    [DefaultResolver("DateTime", "Date/Time Resolver",
+        Description = "Resolves date and time values including relative dates, offsets, and formatting.",
+        SupportedTokens = "NOW,TODAY,YESTERDAY,TOMORROW,CURRENTDATE,CURRENTTIME,CURRENTDATETIME,ADDDAYS,ADDHOURS,ADDMINUTES,ADDMONTHS,ADDYEARS,FORMAT,DATEFORMAT,STARTOFMONTH,ENDOFMONTH,STARTOFYEAR,ENDOFYEAR,STARTOFWEEK,ENDOFWEEK")]
     public class DateTimeResolver : BaseDefaultValueResolver
     {
         public DateTimeResolver(IDMEEditor editor) : base(editor) { }

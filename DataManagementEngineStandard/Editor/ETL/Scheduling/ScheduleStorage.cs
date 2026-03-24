@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Pipelines.Models;
+using TheTechIdea.Beep.Pipelines.Observability;
 using TheTechIdea.Beep.Services;
 
 namespace TheTechIdea.Beep.Pipelines.Scheduling
@@ -31,6 +32,9 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             _folder = EnvironmentService.CreateAppfolder("Schedules");
         }
 
+        /// <summary>Optional observability store for audit logging.</summary>
+        public ObservabilityStore? ObservabilityStore { get; set; }
+
         public async Task<IErrorsInfo> SaveAsync(ScheduleDefinition def)
         {
             _editor.ErrorObject.Flag = Errors.Ok;
@@ -42,6 +46,15 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                 string tmp  = path + ".tmp";
                 await File.WriteAllTextAsync(tmp, text).ConfigureAwait(false);
                 File.Move(tmp, path, overwrite: true);
+
+                if (ObservabilityStore != null)
+                    await ObservabilityStore.AppendAuditAsync(new AuditEntry
+                    {
+                        Action     = "ScheduleConfigured",
+                        EntityType = "Schedule",
+                        EntityId   = def.Id,
+                        EntityName = def.Name
+                    }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -94,6 +107,14 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             {
                 string path = SchedulePath(id);
                 if (File.Exists(path)) File.Delete(path);
+
+                if (ObservabilityStore != null)
+                    _ = ObservabilityStore.AppendAuditAsync(new AuditEntry
+                    {
+                        Action     = "ScheduleDeleted",
+                        EntityType = "Schedule",
+                        EntityId   = id
+                    });
             }
             catch (Exception ex)
             {

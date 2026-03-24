@@ -38,11 +38,25 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         public long   TotalRejected { get; set; }
         public long   TotalWarned   { get; set; }
 
+        // ── Cost & resource ─────────────────────────────────────────────────
+        /// <summary>Total estimated cost units across all runs in the period.</summary>
+        public double TotalCostUnits { get; set; }
+        /// <summary>Average cost per run.</summary>
+        public double AvgCostPerRun  { get; set; }
+        /// <summary>Maximum peak memory (bytes) among all runs in the period.</summary>
+        public long MaxMemoryPeakBytes { get; set; }
+        /// <summary>Average peak memory (bytes) per run.</summary>
+        public long AvgMemoryPeakBytes { get; set; }
+        /// <summary>Workload class for per-class breakdown queries.</summary>
+        public string WorkloadClass { get; set; } = string.Empty;
+
         // ── Time-series ──────────────────────────────────────────────────────
         /// <summary>Daily run counts over the period.</summary>
         public List<MetricDataPoint> RunsOverTime { get; set; } = new();
         /// <summary>Daily rows-processed totals.</summary>
         public List<MetricDataPoint> RowsOverTime { get; set; } = new();
+        /// <summary>Daily cost units.</summary>
+        public List<MetricDataPoint> CostOverTime { get; set; } = new();
         /// <summary>Most frequent error messages across runs.</summary>
         public List<string> TopErrors { get; set; } = new();
     }

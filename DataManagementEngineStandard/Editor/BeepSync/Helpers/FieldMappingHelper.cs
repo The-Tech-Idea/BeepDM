@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
 using TheTechIdea.Beep.Report;
 
@@ -127,6 +128,91 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 result.Errors = errors.Select(e => (IErrorsInfo)new ErrorsInfo { Message = e }).ToList();
             }
 
+            return result;
+        }
+
+        // ── Phase 2: Schema Governance ────────────────────────────────────────────
+
+        /// <inheritdoc cref="IFieldMappingHelper.LoadGovernedMapping"/>
+        public IEnumerable<FieldSyncData> LoadGovernedMapping(DataSyncSchema schema)
+        {
+            try
+            {
+                if (schema?.MappedFields == null || schema.MappedFields.Count == 0)
+                {
+                    _editor.AddLogMessage("BeepSync", $"Schema '{schema?.Id}' has no governed field mappings.", DateTime.Now, -1, "", Errors.Ok);
+                    return Enumerable.Empty<FieldSyncData>();
+                }
+
+                _editor.AddLogMessage("BeepSync", $"Loaded {schema.MappedFields.Count} governed mappings for schema '{schema.Id}'.", DateTime.Now, -1, "", Errors.Ok);
+                return schema.MappedFields.ToList();
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync", $"Error loading governed mapping: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                return Enumerable.Empty<FieldSyncData>();
+            }
+        }
+
+        /// <inheritdoc cref="IFieldMappingHelper.CheckMappingDrift"/>
+        public bool CheckMappingDrift(DataSyncSchema schema, IEnumerable<FieldSyncData> baseline)
+        {
+            try
+            {
+                if (schema?.MappedFields == null && baseline == null) return false;
+                if (schema?.MappedFields == null || baseline == null) return true;
+
+                var livePairs = schema.MappedFields
+                    .Select(f => $"{f.SourceField}>{f.DestinationField}")
+                    .OrderBy(x => x).ToList();
+                var basePairs = baseline
+                    .Select(f => $"{f.SourceField}>{f.DestinationField}")
+                    .OrderBy(x => x).ToList();
+
+                bool drifted = !livePairs.SequenceEqual(basePairs);
+                if (drifted)
+                    _editor.AddLogMessage("BeepSync", $"Mapping drift detected for schema '{schema?.Id}'.", DateTime.Now, -1, "", Errors.Ok);
+                return drifted;
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync", $"Error checking mapping drift: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFieldMappingHelper.PromoteMappingState"/>
+        public IErrorsInfo PromoteMappingState(DataSyncSchema schema, string targetState)
+        {
+            var result = new ErrorsInfo { Flag = Errors.Ok };
+            try
+            {
+                if (schema == null)
+                {
+                    result.Flag    = Errors.Failed;
+                    result.Message = "Schema cannot be null.";
+                    return result;
+                }
+
+                if (schema.CurrentSchemaVersion == null)
+                {
+                    schema.CurrentSchemaVersion = new SyncSchemaVersion
+                    {
+                        SchemaId = schema.Id,
+                        Version  = 1
+                    };
+                }
+
+                schema.CurrentSchemaVersion.ApprovalState = targetState;
+                result.Message = $"Mapping state promoted to '{targetState}' for schema '{schema.Id}'.";
+                _editor.AddLogMessage("BeepSync", result.Message, DateTime.Now, -1, "", Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                result.Flag    = Errors.Failed;
+                result.Message = $"Error promoting mapping state: {ex.Message}";
+                _editor.AddLogMessage("BeepSync", result.Message, DateTime.Now, -1, "", Errors.Failed);
+            }
             return result;
         }
     }

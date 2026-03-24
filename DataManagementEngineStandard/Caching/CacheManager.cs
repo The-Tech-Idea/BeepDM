@@ -8,7 +8,8 @@ using TheTechIdea.Beep.Caching.Providers;
 namespace TheTechIdea.Beep.Caching
 {
     /// <summary>
-    /// Advanced cache manager with pluggable providers, retry logic, and comprehensive monitoring.
+    /// Advanced cache manager with pluggable providers, stale-while-revalidate support,
+    /// scoped provider access, and SLO-ready statistics.
     /// Supports multiple cache backends including In-Memory, MemoryCache, Redis, and custom providers.
     /// </summary>
     public static partial class CacheManager
@@ -19,6 +20,14 @@ namespace TheTechIdea.Beep.Caching
         private static CacheConfiguration _configuration;
         private static readonly object _lock = new object();
         private static bool _initialized = false;
+
+        // SWR: tracks "soft" expiry (stale window) per key — key → soft-expiry time
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>
+            _swrExpiry = new System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>(StringComparer.Ordinal);
+
+        // SWR: guards against stampede — only one background refresh per key at a time
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int>
+            _swrInFlight = new System.Collections.Concurrent.ConcurrentDictionary<string, int>(StringComparer.Ordinal);
         #endregion
 
         #region Initialization
@@ -81,39 +90,94 @@ namespace TheTechIdea.Beep.Caching
         #region Core Cache Operations
         /// <summary>
         /// Gets a cached value or creates it using the provided factory function.
+        /// Uses an explicit hit/miss contract — null, 0, false, and empty collections are valid
+        /// cached values and are NOT treated as cache misses.
         /// </summary>
-        /// <typeparam name="T">The type of the cached value.</typeparam>
-        /// <param name="key">The cache key.</param>
-        /// <param name="factory">Factory function to create the value if not cached.</param>
-        /// <param name="expiry">Optional expiration time.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>The cached or newly created value.</returns>
         public static async Task<T> GetOrCreateAsync<T>(
-            string key, 
-            Func<Task<T>> factory, 
+            string key,
+            Func<Task<T>> factory,
             TimeSpan? expiry = null,
             CancellationToken cancellationToken = default)
         {
             EnsureInitialized();
 
             if (string.IsNullOrWhiteSpace(key) || factory == null)
-                return default(T);
+                return default;
 
-            // Try to get from cache first
-            var cachedValue = await GetAsync<T>(key, cancellationToken);
-            if (!EqualityComparer<T>.Default.Equals(cachedValue, default(T)))
-            {
-                return cachedValue;
-            }
+            // Use presence check (ExistsAsync) rather than value equality so that
+            // valid cached values of null / 0 / false / empty are honoured as hits.
+            if (await ExistsAsync(key, cancellationToken).ConfigureAwait(false))
+                return await GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
 
-            // Create new value
-            var newValue = await factory();
-            if (!EqualityComparer<T>.Default.Equals(newValue, default(T)))
-            {
-                await SetAsync(key, newValue, expiry, cancellationToken);
-            }
-
+            var newValue = await factory().ConfigureAwait(false);
+            await SetAsync(key, newValue, expiry, cancellationToken).ConfigureAwait(false);
             return newValue;
+        }
+
+        /// <summary>
+        /// Gets a cached value or creates it using stale-while-revalidate semantics.
+        /// Returns a (possibly stale) cached value immediately; if the entry is older than
+        /// <paramref name="softTtl"/>, a background refresh is triggered so the next caller
+        /// will receive fresh data. The hard TTL (<paramref name="hardTtl"/>) is when the
+        /// item is fully evicted and the next call will block on the factory.
+        /// </summary>
+        /// <param name="key">Cache key.</param>
+        /// <param name="factory">Async factory invoked on misses and background refreshes.</param>
+        /// <param name="softTtl">How long a value is considered fresh (serve without refresh).</param>
+        /// <param name="hardTtl">How long the value stays in cache after softTtl passes.</param>
+        /// <param name="cancellationToken">Cancellation token (only used for blocking path).</param>
+        public static async Task<T> GetOrCreateWithStaleAsync<T>(
+            string key,
+            Func<Task<T>> factory,
+            TimeSpan softTtl,
+            TimeSpan hardTtl,
+            CancellationToken cancellationToken = default)
+        {
+            EnsureInitialized();
+
+            if (string.IsNullOrWhiteSpace(key) || factory == null)
+                return default;
+
+            bool exists = await ExistsAsync(key, cancellationToken).ConfigureAwait(false);
+
+            if (exists)
+            {
+                // Check whether soft TTL has expired
+                bool stale = _swrExpiry.TryGetValue(key, out var softExpiry)
+                          && DateTime.UtcNow > softExpiry;
+
+                if (!stale)
+                    return await GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
+
+                // Stale but still in hard-TTL window — serve stale + background refresh
+                var staleValue = await GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
+
+                // Only launch one background refresh per key
+                if (_swrInFlight.TryAdd(key, 1))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var fresh = await factory().ConfigureAwait(false);
+                            await SetAsync(key, fresh, hardTtl).ConfigureAwait(false);
+                            _swrExpiry[key] = DateTime.UtcNow.Add(softTtl);
+                        }
+                        finally
+                        {
+                            _swrInFlight.TryRemove(key, out _);
+                        }
+                    });
+                }
+
+                return staleValue;
+            }
+
+            // Hard miss — blocking factory call
+            var value = await factory().ConfigureAwait(false);
+            await SetAsync(key, value, hardTtl, cancellationToken).ConfigureAwait(false);
+            _swrExpiry[key] = DateTime.UtcNow.Add(softTtl);
+            return value;
         }
 
         /// <summary>
@@ -131,53 +195,45 @@ namespace TheTechIdea.Beep.Caching
 
         /// <summary>
         /// Gets a cached value by key.
+        /// Returns default(T) only when the key is genuinely absent — a cached null/0/false/empty
+        /// is returned as-is and is NOT treated as a miss.
         /// </summary>
-        /// <typeparam name="T">The type of the cached value.</typeparam>
-        /// <param name="key">The cache key.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>The cached value or default(T) if not found.</returns>
         public static async Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
             EnsureInitialized();
 
             if (string.IsNullOrWhiteSpace(key))
-                return default(T);
+                return default;
 
             try
             {
-                // Try primary provider first
                 if (_primaryProvider?.IsAvailable == true)
                 {
-                    var value = await _primaryProvider.GetAsync<T>(key, cancellationToken);
-                    if (!EqualityComparer<T>.Default.Equals(value, default(T)))
-                    {
-                        return value;
-                    }
+                    // Existence check guards against default(T) false-miss
+                    if (await _primaryProvider.ExistsAsync(key, cancellationToken).ConfigureAwait(false))
+                        return await _primaryProvider.GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
                 }
 
-                // Try fallback provider
                 if (_fallbackProvider?.IsAvailable == true)
                 {
-                    return await _fallbackProvider.GetAsync<T>(key, cancellationToken);
+                    if (await _fallbackProvider.ExistsAsync(key, cancellationToken).ConfigureAwait(false))
+                        return await _fallbackProvider.GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
                 }
             }
-            catch (Exception)
+            catch
             {
-                // Try fallback on primary provider failure
-                if (_fallbackProvider?.IsAvailable == true && _fallbackProvider != _primaryProvider)
+                if (_fallbackProvider?.IsAvailable == true && !ReferenceEquals(_fallbackProvider, _primaryProvider))
                 {
                     try
                     {
-                        return await _fallbackProvider.GetAsync<T>(key, cancellationToken);
+                        if (await _fallbackProvider.ExistsAsync(key, cancellationToken).ConfigureAwait(false))
+                            return await _fallbackProvider.GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
                     }
-                    catch
-                    {
-                        // Ignore fallback errors
-                    }
+                    catch { /* swallow — return default below */ }
                 }
             }
 
-            return default(T);
+            return default;
         }
 
         /// <summary>
@@ -508,6 +564,50 @@ namespace TheTechIdea.Beep.Caching
 
         #region Provider Management and Diagnostics
         /// <summary>
+        /// Resets the CacheManager to an un-initialized state, disposing current providers.
+        /// Primarily useful for testing or hot-provider-swap scenarios.
+        /// </summary>
+        public static void Reset()
+        {
+            lock (_lock)
+            {
+                _primaryProvider?.Dispose();
+                _fallbackProvider?.Dispose();
+                _primaryProvider  = null;
+                _fallbackProvider = null;
+                _configuration    = null;
+                _swrExpiry.Clear();
+                _swrInFlight.Clear();
+                _initialized = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates an isolated <see cref="CacheScope"/> backed by a dedicated provider instance.
+        /// Use this to give each <see cref="TheTechIdea.Beep.Proxy.ProxyDataSource"/> its own
+        /// cache namespace and statistics without sharing global state.
+        /// </summary>
+        /// <param name="providerType">Provider type for the scope (default: InMemory).</param>
+        /// <param name="configuration">Optional configuration override for the scope.</param>
+        public static CacheScope CreateScope(
+            CacheProviderType providerType = CacheProviderType.InMemory,
+            CacheConfiguration configuration = null)
+        {
+            var cfg      = configuration ?? _configuration ?? new CacheConfiguration();
+            var provider = CreateProvider(providerType, cfg);
+            return new CacheScope(provider);
+        }
+
+        /// <summary>
+        /// Creates an isolated <see cref="CacheScope"/> backed by an externally supplied provider.
+        /// </summary>
+        public static CacheScope CreateScope(ICacheProvider provider)
+        {
+            if (provider == null) throw new ArgumentNullException(nameof(provider));
+            return new CacheScope(provider);
+        }
+
+        /// <summary>
         /// Gets comprehensive cache statistics from all providers.
         /// </summary>
         /// <returns>Combined cache statistics.</returns>
@@ -536,17 +636,6 @@ namespace TheTechIdea.Beep.Caching
             return _configuration;
         }
 
-        /// <summary>
-        /// Forces a refresh of the cache providers (reconnects if needed).
-        /// </summary>
-        public static void RefreshProviders()
-        {
-            lock (_lock)
-            {
-                // In a production environment, you might want to implement
-                // provider health checking and reconnection logic here
-            }
-        }
         #endregion
 
         #region Provider Access Methods
@@ -584,10 +673,15 @@ namespace TheTechIdea.Beep.Caching
         {
             return providerType switch
             {
-                CacheProviderType.InMemory => new SimpleCacheProvider(configuration),
-                CacheProviderType.MemoryCache => new MemoryCacheProvider(configuration),
-                CacheProviderType.Redis => new RedisCacheProvider(configuration),
-                _ => new SimpleCacheProvider(configuration)
+                CacheProviderType.InMemory        => new InMemoryCacheProvider(configuration),  // high-perf LRU
+                CacheProviderType.Simple          => new SimpleCacheProvider(configuration),    // lightweight fallback
+                CacheProviderType.MemoryCache     => new MemoryCacheProvider(configuration),
+                CacheProviderType.Redis           => new RedisCacheProvider(configuration),
+                CacheProviderType.Hybrid          => new HybridCacheProvider(
+                                                        new InMemoryCacheProvider(configuration),
+                                                        new SimpleCacheProvider(configuration),
+                                                        configuration),
+                _                                 => new InMemoryCacheProvider(configuration)
             };
         }
         #endregion

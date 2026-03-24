@@ -5,6 +5,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults.Interfaces;
+using TheTechIdea.Beep.Editor.Defaults.RuleParsing;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Helpers
@@ -447,5 +448,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
 
             return result;
         }
+
+        // ── (Migration toolkit removed — use EntityDefaultsProfile with ':' prefix tokens) ──
     }
 }

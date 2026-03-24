@@ -14,6 +14,7 @@ using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Pipelines.Attributes;
+using TheTechIdea.Beep.Rules;
 using TheTechIdea.Beep.Pipelines.Interfaces;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
@@ -261,6 +262,53 @@ namespace TheTechIdea.Beep.Tools
                 xcls.RootName = pipelineAttr.DisplayName;
                 xcls.Imagename = pipelineAttr.IconPath;
                 xcls.Version = pipelineAttr.Version;
+            }
+
+            // Check for FileReaderAttribute (IFileFormatReader — core + plugin assemblies)
+            var fileReaderAttr = (TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute)type.GetCustomAttribute(
+                typeof(TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute), false);
+            if (fileReaderAttr != null)
+            {
+                xcls.IsFileReader = true;
+                xcls.FileReaderExtension = fileReaderAttr.DefaultExtension;
+                xcls.DatasourceType = fileReaderAttr.FormatType;
+                xcls.RootName = fileReaderAttr.DisplayName;
+                xcls.Imagename = fileReaderAttr.IconPath;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = fileReaderAttr.Version;
+            }
+
+            // Check for DefaultResolverAttribute (third-party IDefaultValueResolver plugins)
+            var defaultResolverAttr = (TheTechIdea.Beep.Editor.Defaults.Attributes.DefaultResolverAttribute)type.GetCustomAttribute(
+                typeof(TheTechIdea.Beep.Editor.Defaults.Attributes.DefaultResolverAttribute), false);
+            if (defaultResolverAttr != null)
+            {
+                xcls.IsDefaultResolver = true;
+                xcls.DefaultResolverName = defaultResolverAttr.ResolverName;
+                xcls.RootName = defaultResolverAttr.DisplayName;
+                xcls.Imagename = defaultResolverAttr.IconPath;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = defaultResolverAttr.Version;
+            }
+
+            // Check for RuleAttribute
+            var ruleAttr = (TheTechIdea.Beep.Rules.RuleAttribute)type.GetCustomAttribute(
+                typeof(TheTechIdea.Beep.Rules.RuleAttribute), false);
+            if (ruleAttr != null)
+            {
+                xcls.IsRule = true;
+                xcls.RuleKey = ruleAttr.RuleKey;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = ruleAttr.RuleVersion;
+                if (string.IsNullOrEmpty(xcls.RootName)) xcls.RootName = ruleAttr.RuleName;
+            }
+
+            // Check for RuleParserAttribute
+            var ruleParserAttr = (TheTechIdea.Beep.Rules.RuleParserAttribute)type.GetCustomAttribute(
+                typeof(TheTechIdea.Beep.Rules.RuleParserAttribute), false);
+            if (ruleParserAttr != null)
+            {
+                xcls.IsRuleParser = true;
+                xcls.RuleParserKey = ruleParserAttr.ParserKey;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = ruleParserAttr.ParserVersion;
+                if (string.IsNullOrEmpty(xcls.RootName)) xcls.RootName = ruleParserAttr.ParserName;
             }
 
             xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);

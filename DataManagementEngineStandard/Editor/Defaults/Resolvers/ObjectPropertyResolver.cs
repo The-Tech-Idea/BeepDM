@@ -4,14 +4,21 @@ using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for extracting values from passed objects using property/field names
     /// </summary>
+    [DefaultResolver("ObjectProperty", "Object Property Resolver",
+        Description = "Extracts values from runtime objects by property or field name via reflection.",
+        SupportedTokens = "PROPERTY,FIELD,OBJECTVALUE,PARENTVALUE,CHILDVALUE,GETPROPERTY,GETFIELD,NESTED,ARRAYITEM,DICTVALUE")]
     public class ObjectPropertyResolver : BaseDefaultValueResolver
     {
+        /// <summary>Property reflection on a given object is deterministic for a fixed rule.</summary>
+        public override bool IsDeterministic => true;
+
         public ObjectPropertyResolver(IDMEEditor editor) : base(editor) { }
 
         public override string ResolverName => "ObjectProperty";

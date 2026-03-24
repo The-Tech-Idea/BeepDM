@@ -11,6 +11,7 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Vis;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Pipelines.Interfaces;
+using TheTechIdea.Beep.Rules;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -144,10 +145,16 @@ namespace TheTechIdea.Beep.Tools
                     ConfigEditor.WorkFlowStepEditors.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowEditor"));
                 }
 
-                // Check for IWorkFlowRule interface
-                if (typeInfo.ImplementedInterfaces.Contains(typeof(IWorkFlowRule)))
+                // Check for IRule interface
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(IRule)))
                 {
-                    ConfigEditor.Rules.Add(GetAssemblyClassDefinition(typeInfo, "IWorkFlowRule"));
+                    ConfigEditor.Rules.Add(GetAssemblyClassDefinition(typeInfo, "IRule"));
+                }
+
+                // Check for IRuleParser interface
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(IRuleParser)))
+                {
+                    ConfigEditor.RuleParserClasses.Add(GetAssemblyClassDefinition(typeInfo, "IRuleParser"));
                 }
 
                 // Check for IFunctionExtension interface
@@ -172,6 +179,20 @@ namespace TheTechIdea.Beep.Tools
                 if (typeInfo.ImplementedInterfaces.Contains(typeof(IPipelinePlugin)))
                 {
                     ConfigEditor.PipelinePluginClasses.Add(GetAssemblyClassDefinition(typeInfo, "IPipelinePlugin"));
+                }
+
+                // Check for IFileFormatReader interface (third-party file readers)
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(TheTechIdea.Beep.FileManager.Readers.IFileFormatReader)))
+                {
+                    if (ConfigEditor.FileReaderClasses != null)
+                        ConfigEditor.FileReaderClasses.Add(GetAssemblyClassDefinition(typeInfo, "IFileFormatReader"));
+                }
+
+                // Check for IDefaultValueResolver interface (third-party default-value resolvers)
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(TheTechIdea.Beep.Editor.Defaults.Interfaces.IDefaultValueResolver)))
+                {
+                    if (ConfigEditor.DefaultResolverClasses != null)
+                        ConfigEditor.DefaultResolverClasses.Add(GetAssemblyClassDefinition(typeInfo, "IDefaultValueResolver"));
                 }
             }
             catch (Exception ex)

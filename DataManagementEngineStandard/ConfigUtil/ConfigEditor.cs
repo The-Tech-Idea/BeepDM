@@ -86,6 +86,8 @@ namespace TheTechIdea.Beep.ConfigUtil
 			ViewModels = new List<AssemblyClassDefinition>();
 			BranchesClasses = new List<AssemblyClassDefinition>();
 			PipelinePluginClasses = new List<AssemblyClassDefinition>();
+			FileReaderClasses = new List<AssemblyClassDefinition>();
+			DefaultResolverClasses = new List<AssemblyClassDefinition>();
 			GlobalFunctions = new List<AssemblyClassDefinition>();
 			AppWritersClasses = new List<AssemblyClassDefinition>();
 			AppComponents = new List<AssemblyClassDefinition>();
@@ -100,6 +102,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 			Addins = new List<AssemblyClassDefinition>();
 			Others = new List<AssemblyClassDefinition>();
 			Rules = new List<AssemblyClassDefinition>();
+			RuleParserClasses = new List<AssemblyClassDefinition>();
 
 			// Initialize other collections
 			AddinTreeStructure = new List<AddinTreeStructure>();
@@ -207,6 +210,8 @@ namespace TheTechIdea.Beep.ConfigUtil
         public List<AssemblyClassDefinition> ViewModels { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> BranchesClasses { get; set; } = new List<AssemblyClassDefinition>();
         public List<AssemblyClassDefinition> PipelinePluginClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> FileReaderClasses { get; set; } = new List<AssemblyClassDefinition>();
+        public List<AssemblyClassDefinition> DefaultResolverClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> GlobalFunctions { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppWritersClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> AppComponents { get; set; } = new List<AssemblyClassDefinition>();
@@ -221,6 +226,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 		public List<AssemblyClassDefinition> Addins { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> Others { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AssemblyClassDefinition> Rules { get; set; } = new List<AssemblyClassDefinition>();
+		public List<AssemblyClassDefinition> RuleParserClasses { get; set; } = new List<AssemblyClassDefinition>();
 		public List<AddinTreeStructure> AddinTreeStructure { get; set; } = new List<AddinTreeStructure>();
 		public List<Function2FunctionAction> Function2Functions { get; set; } = new List<Function2FunctionAction>();
 		public List<ObjectTypes> objectTypes { get; set; } = new List<ObjectTypes>();
@@ -660,6 +666,8 @@ namespace TheTechIdea.Beep.ConfigUtil
                     ViewModels?.Clear();
                     BranchesClasses?.Clear();
                     PipelinePluginClasses?.Clear();
+                    FileReaderClasses?.Clear();
+                    DefaultResolverClasses?.Clear();
                     GlobalFunctions?.Clear();
                     AppWritersClasses?.Clear();
                     AppComponents?.Clear();
@@ -674,6 +682,7 @@ namespace TheTechIdea.Beep.ConfigUtil
                     Addins?.Clear();
                     Others?.Clear();
                     Rules?.Clear();
+                    RuleParserClasses?.Clear();
                     AddinTreeStructure?.Clear();
                     Function2Functions?.Clear();
                     objectTypes?.Clear();

@@ -142,15 +142,17 @@ namespace TheTechIdea.Beep.Caching
     /// </summary>
     public enum CacheProviderType
     {
-        /// <summary>In-memory cache provider (default).</summary>
+        /// <summary>High-performance in-memory O(1) LRU provider (default).</summary>
         InMemory,
+        /// <summary>Lightweight simple in-memory provider (low-overhead fallback).</summary>
+        Simple,
         /// <summary>Microsoft MemoryCache provider.</summary>
         MemoryCache,
         /// <summary>Redis cache provider.</summary>
         Redis,
         /// <summary>Distributed cache provider.</summary>
         Distributed,
-        /// <summary>Hybrid cache provider (combination of multiple providers).</summary>
+        /// <summary>Hybrid cache provider (L1 InMemory + L2 Redis/other).</summary>
         Hybrid
     }
 }

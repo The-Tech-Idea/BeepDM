@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Pipelines.Models;
 using TheTechIdea.Beep.Pipelines.Observability;
 
 namespace TheTechIdea.Beep.Pipelines.Observability
@@ -15,13 +16,18 @@ namespace TheTechIdea.Beep.Pipelines.Observability
     public class MetricsEngine
     {
         private readonly ObservabilityStore _store;
+        private readonly CostModel _costModel;
 
         /// <summary>Live metric accumulators keyed by RunId.</summary>
         private readonly ConcurrentDictionary<string, LiveAccumulator> _live = new();
 
         public MetricsEngine(ObservabilityStore store)
+            : this(store, CostModel.Default) { }
+
+        public MetricsEngine(ObservabilityStore store, CostModel costModel)
         {
-            _store = store;
+            _store     = store;
+            _costModel = costModel ?? CostModel.Default;
         }
 
         // ── Historical metrics ─────────────────────────────────────────────────
@@ -37,7 +43,7 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 Limit      = int.MaxValue
             }).ConfigureAwait(false);
 
-            return Aggregate(pipelineId, string.Empty, from, to, logs);
+            return Aggregate(pipelineId, string.Empty, from, to, logs, _costModel);
         }
 
         public async Task<IReadOnlyList<PipelineMetrics>> ComputeAllAsync(
@@ -52,7 +58,94 @@ namespace TheTechIdea.Beep.Pipelines.Observability
 
             return allLogs
                 .GroupBy(l => l.PipelineId)
-                .Select(g => Aggregate(g.Key, g.First().PipelineName, from, to, g.ToList()))
+                .Select(g => Aggregate(g.Key, g.First().PipelineName, from, to, g.ToList(), _costModel))
+                .ToList();
+        }
+
+        /// <summary>Returns per-workload-class metrics for a given period.</summary>
+        public async Task<IReadOnlyList<PipelineMetrics>> ComputeByClassAsync(
+            DateTime from, DateTime to)
+        {
+            var allLogs = await _store.QueryRunLogsAsync(new RunLogQuery
+            {
+                From  = from,
+                To    = to,
+                Limit = int.MaxValue
+            }).ConfigureAwait(false);
+
+            return allLogs
+                .GroupBy(l => l.WorkloadClass ?? "standard")
+                .Select(g =>
+                {
+                    var m = Aggregate(string.Empty, string.Empty, from, to, g.ToList(), _costModel);
+                    m.WorkloadClass = g.Key;
+                    return m;
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// Computes per-<see cref="PipelineTier"/> KPI snapshots for the governance dashboard.
+        /// Each snapshot aggregates KPIs for all pipelines sharing the same tier.
+        /// </summary>
+        public async Task<IReadOnlyList<MigrationKpiSnapshot>> ComputeByTierAsync(
+            DateTime from, DateTime to)
+        {
+            var allLogs = await _store.QueryRunLogsAsync(new RunLogQuery
+            {
+                From  = from,
+                To    = to,
+                Limit = int.MaxValue
+            }).ConfigureAwait(false);
+
+            // Group by WorkloadClass as a proxy for tier (stored in run log)
+            return allLogs
+                .GroupBy(l => l.WorkloadClass ?? "standard")
+                .Select(g =>
+                {
+                    var tier = g.Key switch
+                    {
+                        "businesscritical" => PipelineTier.BusinessCritical,
+                        "standard"         => PipelineTier.Standard,
+                        _                  => PipelineTier.NonCritical
+                    };
+
+                    var logs        = g.ToList();
+                    int total       = logs.Count;
+                    int succeeded   = logs.Count(l => l.Status == RunStatus.Succeeded);
+                    long records    = logs.Sum(l => l.RecordsRead);
+                    long rejected   = logs.Sum(l => l.RecordsRejected);
+
+                    var durations   = logs.Select(l => l.Duration)
+                                         .Where(d => d.Ticks > 0)
+                                         .OrderBy(d => d)
+                                         .ToList();
+                    TimeSpan p95    = durations.Count > 0
+                        ? durations[(int)Math.Ceiling(durations.Count * 0.95) - 1]
+                        : TimeSpan.Zero;
+
+                    var violations  = new List<string>();
+                    double successRate = total > 0 ? (double)succeeded / total * 100.0 : 100.0;
+                    double rejectRate  = records > 0 ? (double)rejected / records * 100.0 : 0.0;
+
+                    return new MigrationKpiSnapshot
+                    {
+                        WaveId            = g.Key,
+                        Tier              = tier,
+                        WindowStart       = from,
+                        WindowEnd         = to,
+                        TotalRuns         = total,
+                        SuccessRatePct    = successRate,
+                        DqRejectRatioPct  = rejectRate,
+                        AvgP95Duration    = p95,
+                        AvgCostPerRun     = total > 0
+                            ? logs.Sum(l => l.EstimatedCostUnits) / total : 0,
+                        Violations        = violations,
+                        MeetsExitCriteria = successRate >= 99.0 && rejectRate <= 1.0,
+                        TriggersRollback  = successRate < 95.0,
+                        ComputedAtUtc     = DateTime.UtcNow
+                    };
+                })
                 .ToList();
         }
 
@@ -70,6 +163,18 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 PipelineId   = pipelineId,
                 PipelineName = pipelineName,
                 StartedAt    = DateTime.UtcNow
+            };
+        }
+
+        public void RecordStart(string runId, string pipelineId, string pipelineName, string workloadClass)
+        {
+            _live[runId] = new LiveAccumulator
+            {
+                RunId         = runId,
+                PipelineId    = pipelineId,
+                PipelineName  = pipelineName,
+                StartedAt     = DateTime.UtcNow,
+                WorkloadClass = workloadClass ?? "standard"
             };
         }
 
@@ -91,6 +196,18 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         public void UpdateCurrentStep(string runId, string stepName)
         {
             if (_live.TryGetValue(runId, out var a)) a.CurrentStep = stepName;
+        }
+
+        /// <summary>Records a memory peak observation (keeps maximum).</summary>
+        public void RecordMemoryPeak(string runId, long bytes)
+        {
+            if (_live.TryGetValue(runId, out var a))
+            {
+                long prev;
+                do { prev = a.MemoryPeakBytes; }
+                while (bytes > prev && System.Threading.Interlocked.CompareExchange(
+                    ref a.MemoryPeakBytes, bytes, prev) != prev);
+            }
         }
 
         public void RecordCompletion(string runId)
@@ -125,7 +242,8 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         private static PipelineMetrics Aggregate(
             string pipelineId, string pipelineName,
             DateTime from, DateTime to,
-            IReadOnlyList<PipelineRunLog> logs)
+            IReadOnlyList<PipelineRunLog> logs,
+            CostModel costModel)
         {
             if (logs.Count == 0)
                 return new PipelineMetrics
@@ -178,6 +296,20 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 .Select(g => new MetricDataPoint(g.Key, g.Sum(x => x.RecordsRead), "rows"))
                 .ToList();
 
+            // Cost metrics
+            m.TotalCostUnits      = logs.Sum(l => l.EstimatedCostUnits > 0 ? l.EstimatedCostUnits : costModel.Estimate(l));
+            m.AvgCostPerRun       = logs.Count > 0 ? m.TotalCostUnits / logs.Count : 0;
+            m.MaxMemoryPeakBytes  = logs.Max(l => l.MemoryPeakBytes);
+            m.AvgMemoryPeakBytes  = (long)logs.Average(l => l.MemoryPeakBytes);
+
+            m.CostOverTime = logs
+                .GroupBy(l => l.StartedAtUtc.Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new MetricDataPoint(g.Key,
+                    g.Sum(x => x.EstimatedCostUnits > 0 ? x.EstimatedCostUnits : costModel.Estimate(x)),
+                    "cost"))
+                .ToList();
+
             // Top errors (most frequent non-null error messages)
             m.TopErrors = logs
                 .Where(l => !string.IsNullOrEmpty(l.ErrorMessage))
@@ -202,6 +334,8 @@ namespace TheTechIdea.Beep.Pipelines.Observability
             public long     RecordsRead    { get; set; }
             public long     RecordsWritten { get; set; }
             public long     RecordsRejected { get; set; }
+            public long     MemoryPeakBytes;
+            public string   WorkloadClass  { get; set; } = "standard";
         }
     }
 }

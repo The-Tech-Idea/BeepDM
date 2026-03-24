@@ -22,6 +22,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
     ///   <item><c>OutputFields</c>  — JSON object <c>{ "lookupField": "destField" }</c>.</item>
     ///   <item><c>OnMiss</c>        — <c>"Null"</c> (default), <c>"Reject"</c>, or <c>"Default"</c>.</item>
     ///   <item><c>CacheSize</c>     — max entries in the LRU cache (default 1000).</item>
+    ///   <item><c>PreLoad</c>       — <c>true</c> to load the entire lookup table at startup (ignores CacheSize during pre-load).</item>
     /// </list>
     /// </summary>
     [PipelinePlugin(
@@ -43,6 +44,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
         private string  _inputKey     = string.Empty;
         private string  _onMiss       = "Null";
         private int     _cacheSize    = 1000;
+        private bool    _preLoad;
+        private bool    _preLoaded;
+
+        // hit / miss counters
+        private long _cacheHits;
+        private long _cacheMisses;
 
         // lookupField → destField
         private readonly Dictionary<string, string> _outputFields = new(StringComparer.OrdinalIgnoreCase);
@@ -59,7 +66,8 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             new PipelineParameterDef { Name = "InputKey",     Type = ParamType.String, IsRequired = true  },
             new PipelineParameterDef { Name = "OutputFields", Type = ParamType.Json,   IsRequired = true,  Description = "{ \"lookupField\": \"destField\" }" },
             new PipelineParameterDef { Name = "OnMiss",       Type = ParamType.String, IsRequired = false, DefaultValue = "Null",  Description = "Null | Reject | Default" },
-            new PipelineParameterDef { Name = "CacheSize",    Type = ParamType.Integer,    IsRequired = false, DefaultValue = "1000"  }
+            new PipelineParameterDef { Name = "CacheSize",    Type = ParamType.Integer,    IsRequired = false, DefaultValue = "1000"  },
+            new PipelineParameterDef { Name = "PreLoad",      Type = ParamType.String, IsRequired = false, DefaultValue = "false", Description = "Load entire lookup table at startup." }
         };
 
         public void Configure(IReadOnlyDictionary<string, object> parameters)
@@ -73,6 +81,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             if (parameters.TryGetValue("CacheSize", out var cs) &&
                 int.TryParse(cs?.ToString(), out int csi) && csi > 0)
                 _cacheSize = csi;
+
+            _preLoad = parameters.TryGetValue("PreLoad", out var pl)
+                && (pl is true || (pl is string ps && ps.Equals("true", StringComparison.OrdinalIgnoreCase)));
+            _preLoaded = false;
+            _cacheHits = 0;
+            _cacheMisses = 0;
 
             _outputFields.Clear();
             if (!parameters.TryGetValue("OutputFields", out var of)) return;
@@ -104,6 +118,13 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             PipelineRunContext ctx,
             [EnumeratorCancellation] CancellationToken token)
         {
+            // Pre-load entire lookup table if requested
+            if (_preLoad && !_preLoaded)
+            {
+                await PreLoadCacheAsync(ctx, token);
+                _preLoaded = true;
+            }
+
             var outSchema = (PipelineSchema?)null;
 
             await foreach (var record in input.WithCancellation(token))
@@ -137,6 +158,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                 foreach (var kv in record.Meta) outRec.Meta[kv.Key] = kv.Value;
                 yield return outRec;
             }
+
+            // Report metrics
+            ctx.RuntimeState["lookup_cache_hits"]   = _cacheHits;
+            ctx.RuntimeState["lookup_cache_misses"] = _cacheMisses;
+            double total = _cacheHits + _cacheMisses;
+            ctx.RuntimeState["lookup_cache_hit_rate"] = total > 0 ? Math.Round(_cacheHits / total, 4) : 0.0;
         }
 
         private async Task<Dictionary<string, object?>?> FetchLookupRowAsync(
@@ -149,8 +176,11 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             {
                 _cacheOrder.Remove(keyVal);
                 _cacheOrder.AddLast(keyVal);
+                _cacheHits++;
                 return cached;
             }
+
+            _cacheMisses++;
 
             // Cache miss — query data source
             var ds = ctx.DMEEditor?.GetDataSource(_lookupSource);
@@ -200,6 +230,37 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             }
             _cache[key] = value!;
             _cacheOrder.AddLast(key);
+        }
+
+        private async Task PreLoadCacheAsync(PipelineRunContext ctx, CancellationToken token)
+        {
+            var ds = ctx.DMEEditor?.GetDataSource(_lookupSource);
+            if (ds == null) return;
+
+            ds.Openconnection();
+            try
+            {
+                var dt = ds.GetEntity(_lookupEntity, null) as System.Data.DataTable;
+                if (dt == null) return;
+
+                foreach (System.Data.DataRow row in dt.Rows)
+                {
+                    token.ThrowIfCancellationRequested();
+                    var keyVal = row[_lookupKey]?.ToString() ?? "";
+                    if (_cache.ContainsKey(keyVal)) continue;
+
+                    var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                    foreach (System.Data.DataColumn col in dt.Columns)
+                        dict[col.ColumnName] = row[col] == DBNull.Value ? null : row[col];
+
+                    _cache[keyVal] = dict;
+                    _cacheOrder.AddLast(keyVal);
+                }
+            }
+            finally
+            {
+                ds.Closeconnection();
+            }
         }
     }
 }

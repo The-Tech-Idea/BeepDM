@@ -1,40 +1,66 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults.Interfaces;
+using TheTechIdea.Beep.Editor.Defaults.RuleParsing;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
-    /// Manager for default value resolvers with extensible resolver registration
-    /// Enhanced to support Dictionary parameters and better resolver management
+    /// Manager for default value resolvers with extensible resolver registration.
+    /// Enhanced to support Dictionary parameters, better resolver management,
+    /// and Phase-1 rule normalization (dot-style DSL + legacy function-style).
     /// </summary>
     public class DefaultValueResolverManager : IDefaultValueResolverManager
     {
         private readonly Dictionary<string, IDefaultValueResolver> _resolvers;
+        private readonly Dictionary<string, int>                    _priorities;
+        private readonly Dictionary<string, ParsedRule>             _ruleCache;
+
+        // ── Phase 6: Value result cache ──────────────────────────────────────
+        // Key: "<normalizedRule>\0<contextHash>"  —  only populated for deterministic/cacheable resolvers.
+        // Size is bounded by _valueCacheMaxSize; entries are evicted by insertion order (FIFO).
+        private readonly Dictionary<string, object>    _valueCache;
+        private readonly Queue<string>                 _valueCacheKeys;
+        private const    int                           _valueCacheMaxSize = 512;
+
         private readonly IDMEEditor _editor;
 
         public DefaultValueResolverManager(IDMEEditor editor)
         {
-            _editor = editor ?? throw new ArgumentNullException(nameof(editor));
-            _resolvers = new Dictionary<string, IDefaultValueResolver>(StringComparer.OrdinalIgnoreCase);
-            
+            _editor     = editor ?? throw new ArgumentNullException(nameof(editor));
+            _resolvers   = new Dictionary<string, IDefaultValueResolver>(StringComparer.OrdinalIgnoreCase);
+            _priorities  = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            _ruleCache   = new Dictionary<string, ParsedRule>(StringComparer.OrdinalIgnoreCase);
+            _valueCache  = new Dictionary<string, object>(StringComparer.Ordinal);
+            _valueCacheKeys = new Queue<string>();
+
             // Register built-in resolvers
             RegisterBuiltInResolvers();
         }
 
         public void RegisterResolver(IDefaultValueResolver resolver)
         {
+            // Honour self-declared priority from IResolverCapabilities, fall back to 100.
+            int selfPriority = resolver is IResolverCapabilities caps ? caps.Priority : 100;
+            RegisterResolver(resolver, selfPriority);
+        }
+
+        /// <summary>[Phase 4] Register with explicit priority — lower values win.</summary>
+        public void RegisterResolver(IDefaultValueResolver resolver, int priority)
+        {
             if (resolver == null)
                 throw new ArgumentNullException(nameof(resolver));
 
-            _resolvers[resolver.ResolverName] = resolver;
-            _editor.AddLogMessage("DefaultValueResolverManager", 
-                $"Registered resolver '{resolver.ResolverName}'", DateTime.Now, -1, "", Errors.Ok);
+            _resolvers[resolver.ResolverName]  = resolver;
+            _priorities[resolver.ResolverName] = priority;
+            _editor.AddLogMessage("DefaultValueResolverManager",
+                $"Registered resolver '{resolver.ResolverName}' at priority {priority}", DateTime.Now, -1, "", Errors.Ok);
         }
 
         public void UnregisterResolver(string resolverName)
@@ -51,54 +77,113 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             if (string.IsNullOrWhiteSpace(rule))
                 return null;
 
-            var resolver = GetResolverForRule(rule);
+            // Short-circuit: plain literals (no ':' prefix) are returned as-is.
+            var quickParse = RuleNormalizer.Normalize(rule);
+            if (quickParse.IsLiteral)
+                return quickParse.NormalizedRule;
+
+            // Phase-1: normalize through the rule-parsing pipeline.
+            // Dot-style rules are converted to legacy function style before routing.
+            var routedRule = RuleNormalizer.GetNormalizedRule(rule, out var diagMsg);
+            if (diagMsg != null)
+            {
+                _editor.AddLogMessage("DefaultValueResolverManager",
+                    $"Rule normalization warnings for '{rule}': {diagMsg}", DateTime.Now, -1, "", Errors.Warning);
+            }
+
+            var resolver = GetResolverForRule(routedRule);
             if (resolver == null)
             {
-                _editor.AddLogMessage("DefaultValueResolverManager", 
-                    $"No resolver found for rule '{rule}'", DateTime.Now, -1, "", Errors.Failed);
+                _editor.AddLogMessage("DefaultValueResolverManager",
+                    $"No resolver found for rule '{rule}' (normalized: '{routedRule}')", DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
 
+            // ── Phase 6: value result cache ───────────────────────────────────
+            bool cacheable = resolver is IResolverCapabilities rc && rc.SupportsCaching;
+            string cacheKey = cacheable ? BuildCacheKey(routedRule, parameters) : null;
+
+            if (cacheKey != null && _valueCache.TryGetValue(cacheKey, out var cached))
+                return cached;
+
             try
             {
-                return resolver.ResolveValue(rule, parameters);
+                var value = resolver.ResolveValue(routedRule, parameters);
+
+                if (cacheKey != null)
+                    StoreInValueCache(cacheKey, value);
+
+                return value;
             }
             catch (Exception ex)
             {
-                _editor.AddLogMessage("DefaultValueResolverManager", 
+                _editor.AddLogMessage("DefaultValueResolverManager",
                     $"Error resolving rule '{rule}': {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
         }
 
         /// <summary>
-        /// Enhanced ResolveValue method that accepts Dictionary parameters for better flexibility
+        /// Resolves a value after normalization. Implements <see cref="IDefaultValueResolverManagerV2"/>.
+        /// Identical to <see cref="ResolveValue(string, IPassedArgs)"/> — exposed explicitly
+        /// so callers that hold the V2 interface can call it by name.
         /// </summary>
-        /// <param name="rule">Rule to resolve</param>
-        /// <param name="parameters">Dictionary of parameters</param>
-        /// <returns>Resolved value</returns>
+        public object ResolveValueWithNormalization(string rule, IPassedArgs parameters)
+            => ResolveValue(rule, parameters);
+
+        /// <summary>
+        /// Returns the <see cref="ParsedRule"/> produced by the normalization pipeline
+        /// without executing resolution (useful for validators and tooling).
+        /// Implements <see cref="IDefaultValueResolverManagerV2"/>.
+        /// </summary>
+        public ParsedRule ParseRule(string rule)
+            => RuleNormalizer.Normalize(rule);
+
+        /// <summary>
+        /// Enhanced ResolveValue method that accepts Dictionary parameters for better flexibility.
+        /// Rule normalization (dot-style DSL→legacy) is applied before routing.
+        /// </summary>
         public object ResolveValue(string rule, Dictionary<string, object> parameters)
         {
             if (string.IsNullOrWhiteSpace(rule))
                 return null;
 
-            var resolver = GetResolverForRule(rule);
+            var routedRule = RuleNormalizer.GetNormalizedRule(rule, out var diagMsg);
+            if (diagMsg != null)
+            {
+                _editor.AddLogMessage("DefaultValueResolverManager",
+                    $"Rule normalization warnings for '{rule}': {diagMsg}", DateTime.Now, -1, "", Errors.Warning);
+            }
+
+            var resolver = GetResolverForRule(routedRule);
             if (resolver == null)
             {
-                _editor.AddLogMessage("DefaultValueResolverManager", 
-                    $"No resolver found for rule '{rule}'", DateTime.Now, -1, "", Errors.Failed);
+                _editor.AddLogMessage("DefaultValueResolverManager",
+                    $"No resolver found for rule '{rule}' (normalized: '{routedRule}')", DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
 
+            var passedArgs = ConvertToPassedArgs(parameters);
+
+            // ── Phase 6: value result cache ─────────────────────────────────────────
+            bool cacheable = resolver is IResolverCapabilities rc2 && rc2.SupportsCaching;
+            string cacheKey2 = cacheable ? BuildCacheKey(routedRule, passedArgs) : null;
+
+            if (cacheKey2 != null && _valueCache.TryGetValue(cacheKey2, out var cached2))
+                return cached2;
+
             try
             {
-                // Convert Dictionary to IPassedArgs for compatibility
-                var passedArgs = ConvertToPassedArgs(parameters);
-                return resolver.ResolveValue(rule, passedArgs);
+                var value = resolver.ResolveValue(routedRule, passedArgs);
+
+                if (cacheKey2 != null)
+                    StoreInValueCache(cacheKey2, value);
+
+                return value;
             }
             catch (Exception ex)
             {
-                _editor.AddLogMessage("DefaultValueResolverManager", 
+                _editor.AddLogMessage("DefaultValueResolverManager",
                     $"Error resolving rule '{rule}': {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
@@ -111,7 +196,130 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         public IDefaultValueResolver GetResolverForRule(string rule)
         {
-            return _resolvers.Values.FirstOrDefault(r => r.CanHandle(rule));
+            return _resolvers
+                .Where(kvp => kvp.Value.CanHandle(rule))
+                .OrderBy(kvp => _priorities.TryGetValue(kvp.Key, out var p) ? p : 100)
+                .Select(kvp => kvp.Value)
+                .FirstOrDefault();
+        }
+
+        /// <summary>[Phase 5] Resolve with full telemetry — timing, resolver name, fingerprint.</summary>
+        public ResolverExecutionResult ResolveWithTelemetry(string rule, IPassedArgs parameters)
+        {
+            var sw      = Stopwatch.StartNew();
+            var normalized = RuleNormalizer.GetNormalizedRule(rule, out _);
+            var fingerprint = ResolverExecutionResult.ComputeFingerprint(normalized);
+
+            try
+            {
+                var resolver = GetResolverForRule(normalized);
+                if (resolver == null)
+                {
+                    return new ResolverExecutionResult
+                    {
+                        ResolverName   = "none",
+                        OriginalRule   = rule,
+                        NormalizedRule = normalized,
+                        Succeeded      = false,
+                        FallbackUsed   = false,
+                        Duration       = sw.Elapsed,
+                        ErrorMessage   = $"No resolver found for rule '{rule}'",
+                        RuleFingerprint = fingerprint
+                    };
+                }
+
+                var value = resolver.ResolveValue(normalized, parameters);
+                return new ResolverExecutionResult
+                {
+                    ResolverName    = resolver.ResolverName,
+                    OriginalRule    = rule,
+                    NormalizedRule  = normalized,
+                    ResolvedValue   = value,
+                    Succeeded       = true,
+                    FallbackUsed    = false,
+                    Duration        = sw.Elapsed,
+                    RuleFingerprint = fingerprint
+                };
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("DefaultValueResolverManager",
+                    $"ResolveWithTelemetry error for rule '{rule}': {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                return new ResolverExecutionResult
+                {
+                    ResolverName    = "error",
+                    OriginalRule    = rule,
+                    NormalizedRule  = normalized,
+                    Succeeded       = false,
+                    Duration        = sw.Elapsed,
+                    ErrorMessage    = ex.Message,
+                    RuleFingerprint = fingerprint
+                };
+            }
+        }
+
+        /// <summary>[Phase 6] Pre-parse and cache a rule to eliminate parse overhead on first use.</summary>
+        public void CompileRule(string rule)
+        {
+            if (string.IsNullOrWhiteSpace(rule)) return;
+            if (_ruleCache.ContainsKey(rule)) return;
+            try
+            {
+                var parsed = RuleNormalizer.Normalize(rule);
+                _ruleCache[rule] = parsed;
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("DefaultValueResolverManager",
+                    $"CompileRule error for '{rule}': {ex.Message}", DateTime.Now, -1, "", Errors.Warning);
+            }
+        }
+
+        /// <summary>
+        /// [Phase 6] Clears the value result cache entirely.  Call when datasource connections
+        /// or configuration change to ensure stale cached values are not returned.
+        /// </summary>
+        public void InvalidateValueCache()
+        {
+            _valueCache.Clear();
+            _valueCacheKeys.Clear();
+            _editor.AddLogMessage("DefaultValueResolverManager",
+                "Value result cache invalidated.", DateTime.Now, -1, "", Errors.Ok);
+        }
+
+        // ── Phase 6 private cache helpers ─────────────────────────────────────
+
+        /// <summary>
+        /// Builds a stable, short cache key from the normalized rule and a lightweight
+        /// context hash derived from datasource name + entity name + field name.
+        /// Using only metadata — not record values — keeps the key stable across rows.
+        /// </summary>
+        private static string BuildCacheKey(string normalizedRule, IPassedArgs parameters)
+        {
+            // FNV-1a over the context identifiers that affect deterministic resolution.
+            uint h = 2166136261u;
+            void Mix(string s)
+            {
+                if (s == null) return;
+                foreach (char c in s) { h ^= (uint)c; h *= 16777619u; }
+                h ^= (uint)'|'; h *= 16777619u;
+            }
+            Mix(parameters?.DatasourceName);
+            Mix(parameters?.CurrentEntity);
+            Mix(parameters?.ParameterString1);
+            return normalizedRule + "\0" + h.ToString("x8");
+        }
+
+        private void StoreInValueCache(string key, object value)
+        {
+            if (_valueCacheKeys.Count >= _valueCacheMaxSize)
+            {
+                // FIFO eviction — remove oldest entry.
+                var oldest = _valueCacheKeys.Dequeue();
+                _valueCache.Remove(oldest);
+            }
+            _valueCache[key] = value;
+            _valueCacheKeys.Enqueue(key);
         }
 
         private void RegisterBuiltInResolvers()

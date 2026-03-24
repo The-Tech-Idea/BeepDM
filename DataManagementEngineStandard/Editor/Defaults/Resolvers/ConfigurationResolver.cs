@@ -4,14 +4,21 @@ using System.Configuration;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for configuration values from app settings, config files, etc.
     /// </summary>
+    [DefaultResolver("Configuration", "Configuration Resolver",
+        Description = "Resolves configuration values from app settings, config files, and connection strings.",
+        SupportedTokens = "CONFIGURATIONVALUE,CONFIG,APPSETTING,SETTING,CONNECTIONSTRING,APPCONFIG,WEBCONFIG")]
     public class ConfigurationResolver : BaseDefaultValueResolver
     {
+        /// <summary>Configuration values are stable for a given rule string — safe to cache.</summary>
+        public override bool IsDeterministic => true;
+
         public ConfigurationResolver(IDMEEditor editor) : base(editor) { }
 
         public override string ResolverName => "Configuration";

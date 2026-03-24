@@ -37,6 +37,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
         public ObservabilityStore? ObservabilityStore { get; set; }
         public MetricsEngine?      Metrics            { get; set; }
         public AlertingEngine?     Alerting           { get; set; }
+        public SecurityPolicyEngine? SecurityPolicy   { get; set; }
 
         public PipelineEngine(IDMEEditor editor)
         {
@@ -55,8 +56,9 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             PipelineDefinition def,
             IProgress<PassedArgs>? progress = null,
             CancellationToken token = default,
-            Dictionary<string, object>? overrideParams = null)
-            => ExecuteAsync(def, progress, token, overrideParams, resumeCheckpoint: null);
+            Dictionary<string, object>? overrideParams = null,
+            SecurityContext? securityContext = null)
+            => ExecuteAsync(def, progress, token, overrideParams, resumeCheckpoint: null, securityContext);
 
         /// <summary>
         /// Resume a previously interrupted run from its last checkpoint.
@@ -80,8 +82,9 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             PipelineDefinition def,
             PipelineCheckpoint checkpoint,
             IProgress<PassedArgs>? progress,
-            CancellationToken token)
-            => ExecuteAsync(def, progress, token, overrideParams: null, resumeCheckpoint: checkpoint);
+            CancellationToken token,
+            SecurityContext? securityContext = null)
+            => ExecuteAsync(def, progress, token, overrideParams: null, resumeCheckpoint: checkpoint, securityContext);
 
         // ── Core execution ──────────────────────────────────────────────
 
@@ -90,9 +93,10 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             IProgress<PassedArgs>? progress,
             CancellationToken token,
             Dictionary<string, object>? overrideParams,
-            PipelineCheckpoint? resumeCheckpoint)
+            PipelineCheckpoint? resumeCheckpoint,
+            SecurityContext? securityContext = null)
         {
-            var ctx = BuildContext(def, progress, token, overrideParams);
+            var ctx = BuildContext(def, progress, token, overrideParams, securityContext);
             var result = new PipelineRunResult
             {
                 RunId        = ctx.RunId,
@@ -104,14 +108,35 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             Metrics?.RecordStart(ctx.RunId, def.Id, def.Name);
 
+            // Declared outside try so the finally block can call RollbackAsync on failure.
+            IPipelineSink? sink = null;
+            IPipelineSink? errorSink = null;
+            bool sinkBegan = false;
+            bool errorSinkBegan = false;
+            bool thresholdExceeded = false;
+
             try
             {
+                // ── Pre-run security validation ──────────────────────────
+                if (SecurityPolicy != null)
+                {
+                    var violations = await SecurityPolicy.ValidatePreRunAsync(def, securityContext);
+                    if (SecurityPolicyEngine.HasBlockingViolations(violations))
+                    {
+                        result.Status       = RunStatus.Failed;
+                        result.ErrorMessage = "Security policy violation: " +
+                            string.Join("; ", violations);
+                        result.FinishedAtUtc = DateTime.UtcNow;
+                        await PostRunObservabilityAsync(def, result, securityContext).ConfigureAwait(false);
+                        return result;
+                    }
+                }
+
                 // ── Resolve source ───────────────────────────────────────
                 var source = _registry.Create<IPipelineSource>(def.SourcePluginId);
                 source.Configure(MergeParams(def.Parameters, overrideParams));
 
                 // ── Resolve optional error sink ──────────────────────────
-                IPipelineSink? errorSink = null;
                 if (!string.IsNullOrWhiteSpace(def.ErrorSinkPluginId))
                 {
                     errorSink = _registry.Create<IPipelineSink>(def.ErrorSinkPluginId);
@@ -124,7 +149,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 }
 
                 // ── Resolve main sink ────────────────────────────────────
-                var sink = _registry.Create<IPipelineSink>(def.SinkPluginId);
+                sink = _registry.Create<IPipelineSink>(def.SinkPluginId);
                 sink.Configure(MergeParams(def.Parameters, overrideParams));
 
                 // ── Get schema ───────────────────────────────────────────
@@ -132,8 +157,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
                 // ── Begin sink batch ─────────────────────────────────────
                 await sink.BeginBatchAsync(ctx, schema, token);
+                sinkBegan = true;
                 if (errorSink != null)
+                {
                     await errorSink.BeginBatchAsync(ctx, schema, token);
+                    errorSinkBegan = true;
+                }
 
                 // ── Build the processing pipeline ────────────────────────
                 var stream = source.ReadAsync(ctx, token);
@@ -157,6 +186,15 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                         await retry.ExecuteAsync(() => sink.WriteBatchAsync(batchToWrite, ctx, token));
                         batchOffset += batchToWrite.Count;
 
+                        // ── Stop-on-error threshold ──────────────────────
+                        if (def.StopOnErrorCount > 0 && ctx.TotalRecordsRejected >= def.StopOnErrorCount)
+                        {
+                            thresholdExceeded = true;
+                            throw new OperationCanceledException(
+                                $"Pipeline stopped: rejection threshold ({def.StopOnErrorCount}) reached " +
+                                $"with {ctx.TotalRecordsRejected} rejections.");
+                        }
+
                         if (def.EnableCheckpointing)
                             await _checkpoints.SaveAsync(ctx, "sink", batchOffset);
 
@@ -169,6 +207,15 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 {
                     await retry.ExecuteAsync(() => sink.WriteBatchAsync(batch, ctx, token));
                     batchOffset += batch.Count;
+
+                    // ── Stop-on-error threshold (final batch) ────────────
+                    if (def.StopOnErrorCount > 0 && ctx.TotalRecordsRejected >= def.StopOnErrorCount)
+                    {
+                        thresholdExceeded = true;
+                        throw new OperationCanceledException(
+                            $"Pipeline stopped: rejection threshold ({def.StopOnErrorCount}) reached " +
+                            $"with {ctx.TotalRecordsRejected} rejections.");
+                    }
                 }
 
                 // ── Commit ───────────────────────────────────────────────
@@ -185,10 +232,20 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
                 result.Status = RunStatus.Success;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException oce)
             {
-                result.Status       = RunStatus.Cancelled;
-                result.ErrorMessage = "Run was cancelled.";
+                if (thresholdExceeded)
+                {
+                    result.Status       = RunStatus.Failed;
+                    result.ErrorMessage = oce.Message;
+                    _editor.AddLogMessage(nameof(PipelineEngine),
+                        oce.Message, DateTime.Now, -1, null, Errors.Failed);
+                }
+                else
+                {
+                    result.Status       = RunStatus.Cancelled;
+                    result.ErrorMessage = "Run was cancelled.";
+                }
             }
             catch (Exception ex)
             {
@@ -200,6 +257,15 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             }
             finally
             {
+                // ── Rollback on non-success ─────────────────────────────
+                if (result.Status != RunStatus.Success)
+                {
+                    if (sinkBegan && sink != null)
+                        try { await sink.RollbackAsync(ctx, CancellationToken.None); } catch { }
+                    if (errorSinkBegan && errorSink != null)
+                        try { await errorSink.RollbackAsync(ctx, CancellationToken.None); } catch { }
+                }
+
                 result.FinishedAtUtc     = DateTime.UtcNow;
                 result.RecordsRead       = ctx.TotalRecordsRead;
                 result.RecordsWritten    = ctx.TotalRecordsWritten;
@@ -209,7 +275,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 Metrics?.RecordCompletion(ctx.RunId);
             }
 
-            await PostRunObservabilityAsync(def, result).ConfigureAwait(false);
+            await PostRunObservabilityAsync(def, result, securityContext).ConfigureAwait(false);
             return result;
         }
 
@@ -244,7 +310,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 var stepResult = _stepRunner.CreateResult(step);
                 result.StepResults.Add(stepResult);
 
-                stream = ApplySingleStep(stream, step, ctx, errorSink, token, stepResult);
+                stream = ApplySingleStep(stream, step, def, ctx, errorSink, token, stepResult);
             }
 
             return stream;
@@ -253,18 +319,35 @@ namespace TheTechIdea.Beep.Pipelines.Engine
         private IAsyncEnumerable<PipelineRecord> ApplySingleStep(
             IAsyncEnumerable<PipelineRecord> stream,
             PipelineStepDef step,
+            PipelineDefinition def,
             PipelineRunContext ctx,
             IPipelineSink? errorSink,
             CancellationToken token,
             PipelineStepResult stepResult)
         {
+            // ── Per-step timeout ─────────────────────────────────────────
+            CancellationTokenSource? stepCts = null;
+            CancellationToken stepToken = token;
+            if (step.TimeoutSeconds > 0)
+            {
+                stepCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                stepCts.CancelAfter(TimeSpan.FromSeconds(step.TimeoutSeconds));
+                stepToken = stepCts.Token;
+            }
+
             if (!_registry.Contains(step.PluginId))
             {
+                stepCts?.Dispose();
                 _editor.AddLogMessage(nameof(PipelineEngine),
                     $"Step '{step.Name}' skipped — plugin '{step.PluginId}' not registered.",
                     DateTime.Now, -1, null, Errors.Ok);
                 return stream;
             }
+
+            // ── Per-step filter ──────────────────────────────────────────
+            var filteredStream = !string.IsNullOrWhiteSpace(step.FilterExpression)
+                ? FilterStream(stream, step.FilterExpression, stepToken)
+                : stream;
 
             switch (step.Kind)
             {
@@ -273,8 +356,8 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                     var transformer = _registry.Create<IPipelineTransformer>(step.PluginId);
                     transformer.Configure(step.Config);
                     return WrapWithStepTracking(
-                        _stepRunner.ApplyTransform(transformer, stream, ctx, token),
-                        stepResult, ctx);
+                        _stepRunner.ApplyTransform(transformer, filteredStream, ctx, stepToken),
+                        stepResult, ctx, stepCts);
                 }
 
                 case StepKind.Validate:
@@ -282,11 +365,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                     var validator = _registry.Create<IPipelineValidator>(step.PluginId);
                     validator.Configure(step.Config);
                     return WrapWithStepTracking(
-                        _stepRunner.ApplyValidatorAsync(validator, stream, ctx, errorSink, token),
-                        stepResult, ctx);
+                        _stepRunner.ApplyValidatorAsync(validator, filteredStream, ctx, errorSink, stepToken),
+                        stepResult, ctx, stepCts);
                 }
 
                 default:
+                    stepCts?.Dispose();
                     return stream;
             }
         }
@@ -295,6 +379,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             IAsyncEnumerable<PipelineRecord> inner,
             PipelineStepResult stepResult,
             PipelineRunContext ctx,
+            CancellationTokenSource? timeoutCts = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
             stepResult.Status = RunStatus.Running;
@@ -318,11 +403,14 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             finally
             {
                 await enumerator.DisposeAsync();
+                timeoutCts?.Dispose();
                 stepResult.FinishedAt = DateTime.UtcNow;
                 ctx.StepsCompleted++;
                 if (fault != null)
                 {
-                    stepResult.Status = RunStatus.Failed;
+                    stepResult.Status       = RunStatus.Failed;
+                    stepResult.ErrorMessage = fault.Message;
+                    ctx.StepsFailed++;
                 }
                 else
                 {
@@ -336,13 +424,112 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(fault);
         }
 
+        // ── Filter expression evaluation ──────────────────────────────
+
+        /// <summary>
+        /// Filters <paramref name="input"/> using a simple boolean expression.
+        /// Syntax: <c>Field OP Value [AND|OR ...]</c>.
+        /// Supported operators: <c>=</c>, <c>!=</c>, <c>&lt;&gt;</c>, <c>&gt;</c>, <c>&gt;=</c>, <c>&lt;</c>, <c>&lt;=</c>.
+        /// Numeric fields are compared numerically; all others use case-insensitive string comparison.
+        /// Records that cannot be evaluated are passed through unchanged.
+        /// </summary>
+        private static async IAsyncEnumerable<PipelineRecord> FilterStream(
+            IAsyncEnumerable<PipelineRecord> input,
+            string filterExpression,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            await foreach (var record in input.WithCancellation(token))
+            {
+                if (EvaluateFilterExpression(record, filterExpression))
+                    yield return record;
+            }
+        }
+
+        private static bool EvaluateFilterExpression(PipelineRecord record, string expression)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) return true;
+            try
+            {
+                // OR has lowest precedence; AND groups are evaluated first.
+                var orParts = expression.Split(new[] { " OR ", " or " }, StringSplitOptions.None);
+                return orParts.Length > 1
+                    ? orParts.Any(p => EvaluateAndGroup(record, p.Trim()))
+                    : EvaluateAndGroup(record, expression.Trim());
+            }
+            catch
+            {
+                return true; // on parse failure, allow record through
+            }
+        }
+
+        private static bool EvaluateAndGroup(PipelineRecord record, string expr)
+        {
+            var andParts = expr.Split(new[] { " AND ", " and " }, StringSplitOptions.None);
+            return andParts.All(p => EvaluatePredicate(record, p.Trim()));
+        }
+
+        /// <summary>
+        /// Evaluates a single predicate of the form <c>FieldName OP Value</c>.
+        /// Operators are checked longest-first to avoid prefix conflicts (e.g. &gt;= before &gt;).
+        /// </summary>
+        private static bool EvaluatePredicate(PipelineRecord record, string predicate)
+        {
+            string[] ops = { ">=", "<=", "!=", "<>", "=", ">", "<" };
+            foreach (var op in ops)
+            {
+                int idx = predicate.IndexOf(op, StringComparison.Ordinal);
+                if (idx < 0) continue;
+
+                var fieldName = predicate.Substring(0, idx).Trim();
+                var rawValue  = predicate.Substring(idx + op.Length).Trim().Trim('\'', '"');
+
+                var fieldValue = record[fieldName];
+                var fieldStr   = fieldValue?.ToString() ?? string.Empty;
+
+                // Numeric comparison (invariant culture)
+                if (double.TryParse(rawValue, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out double numTarget) &&
+                    double.TryParse(fieldStr, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out double numField))
+                {
+                    return op switch
+                    {
+                        ">=" => numField >= numTarget,
+                        "<=" => numField <= numTarget,
+                        "!=" => Math.Abs(numField - numTarget) > double.Epsilon,
+                        "<>" => Math.Abs(numField - numTarget) > double.Epsilon,
+                        "="  => Math.Abs(numField - numTarget) <= double.Epsilon,
+                        ">"  => numField >  numTarget,
+                        "<"  => numField <  numTarget,
+                        _    => true
+                    };
+                }
+
+                // String comparison (case-insensitive)
+                int cmp = string.Compare(fieldStr, rawValue, StringComparison.OrdinalIgnoreCase);
+                return op switch
+                {
+                    ">=" => cmp >= 0,
+                    "<=" => cmp <= 0,
+                    "!=" => cmp != 0,
+                    "<>" => cmp != 0,
+                    "="  => cmp == 0,
+                    ">"  => cmp >  0,
+                    "<"  => cmp <  0,
+                    _    => true
+                };
+            }
+            return true; // no recognized operator — allow record through
+        }
+
         // ── Helpers ────────────────────────────────────────────────────
 
         private static PipelineRunContext BuildContext(
             PipelineDefinition def,
             IProgress<PassedArgs>? progress,
             CancellationToken token,
-            Dictionary<string, object>? overrides)
+            Dictionary<string, object>? overrides,
+            SecurityContext? securityContext = null)
         {
             var merged = MergeParams(def.Parameters, overrides);
             return new PipelineRunContext
@@ -351,7 +538,8 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 PipelineName = def.Name,
                 Progress     = progress ?? new Progress<PassedArgs>(),
                 Token        = token,
-                Parameters   = merged
+                Parameters   = merged,
+                Security     = securityContext
             };
         }
 
@@ -370,7 +558,8 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
         private async Task PostRunObservabilityAsync(
             PipelineDefinition def,
-            PipelineRunResult result)
+            PipelineRunResult result,
+            SecurityContext? securityContext = null)
         {
             if (ObservabilityStore == null && Alerting == null) return;
 
@@ -381,6 +570,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 PipelineName    = result.PipelineName,
                 PipelineVersion = def.Version.ToString(),
                 TriggerSource   = "engine",
+                TriggeredBy     = securityContext?.UserName ?? securityContext?.UserId,
                 StartedAtUtc    = result.StartedAtUtc,
                 FinishedAtUtc   = result.FinishedAtUtc ?? DateTime.UtcNow,
                 Status          = result.Status,

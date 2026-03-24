@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for environment variables and system environment settings
     /// </summary>
+    [DefaultResolver("Environment", "Environment Resolver",
+        Description = "Resolves environment variables and system environment settings.",
+        SupportedTokens = "ENVIRONMENTVARIABLE,ENV,ENVIRONMENT,ENVVAR,SYSTEMPATH,USERPATH,TEMP,TEMPPATH")]
     public class EnvironmentResolver : BaseDefaultValueResolver
     {
         public EnvironmentResolver(IDMEEditor editor) : base(editor) { }

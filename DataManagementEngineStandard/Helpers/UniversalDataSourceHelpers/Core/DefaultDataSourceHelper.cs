@@ -35,31 +35,31 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
         #region DDL Operations
 
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(EntityStructure entity, string schemaName = null, DataSourceType? dataSourceType = null)
-            => GenerateUnsupportedOrNoOp("CREATE TABLE");
+            => GenerateUnsupportedOrNoOp("CREATE TABLE", operationSupported: Capabilities.SupportsSchemaEvolution);
 
         public (string Sql, bool Success, string ErrorMessage) GenerateDropTableSql(string tableName, string schemaName = null)
-            => GenerateUnsupportedOrNoOp("DROP TABLE");
+            => GenerateUnsupportedOrNoOp("DROP TABLE", operationSupported: Capabilities.SupportsSchemaEvolution && Capabilities.IsSchemaEnforced);
 
         public (string Sql, bool Success, string ErrorMessage) GenerateTruncateTableSql(string tableName, string schemaName = null)
-            => GenerateUnsupportedOrNoOp("TRUNCATE TABLE");
+            => GenerateUnsupportedOrNoOp("TRUNCATE TABLE", operationSupported: Capabilities.SupportsSchemaEvolution && Capabilities.IsSchemaEnforced);
 
         public (string Sql, bool Success, string ErrorMessage) GenerateCreateIndexSql(string tableName, string indexName, string[] columns, Dictionary<string, object> options = null)
-            => GenerateUnsupportedOrNoOp("CREATE INDEX");
+            => GenerateUnsupportedOrNoOp("CREATE INDEX", operationSupported: Capabilities.SupportsIndexes);
 
         public (string Sql, bool Success, string ErrorMessage) GenerateAddColumnSql(string tableName, EntityField column)
-            => GenerateUnsupportedOrNoOp("ADD COLUMN");
+            => GenerateUnsupportedOrNoOp("ADD COLUMN", operationSupported: Capabilities.SupportsSchemaEvolution);
 
         public (string Sql, bool Success, string ErrorMessage) GenerateAlterColumnSql(string tableName, string columnName, EntityField newColumn)
-            => GenerateUnsupportedOrNoOp("ALTER COLUMN");
+            => GenerateUnsupportedOrNoOp("ALTER COLUMN", operationSupported: SupportsAlterOrRenameOperations());
 
         public (string Sql, bool Success, string ErrorMessage) GenerateDropColumnSql(string tableName, string columnName)
-            => GenerateUnsupportedOrNoOp("DROP COLUMN");
+            => GenerateUnsupportedOrNoOp("DROP COLUMN", operationSupported: SupportsAlterOrRenameOperations());
 
         public (string Sql, bool Success, string ErrorMessage) GenerateRenameTableSql(string oldTableName, string newTableName)
-            => GenerateUnsupportedOrNoOp("RENAME TABLE");
+            => GenerateUnsupportedOrNoOp("RENAME TABLE", operationSupported: SupportsAlterOrRenameOperations());
 
         public (string Sql, bool Success, string ErrorMessage) GenerateRenameColumnSql(string tableName, string oldColumnName, string newColumnName)
-            => GenerateUnsupportedOrNoOp("RENAME COLUMN");
+            => GenerateUnsupportedOrNoOp("RENAME COLUMN", operationSupported: SupportsAlterOrRenameOperations());
 
         #endregion
 
@@ -88,13 +88,19 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
         #region Transaction Control
 
         public (string Sql, bool Success, string ErrorMessage) GenerateBeginTransactionSql()
-            => (string.Empty, false, "Transactions are not supported for this datasource type");
+            => Capabilities.SupportsTransactions
+                ? (string.Empty, true, "Datasource manages transaction boundaries without generated SQL")
+                : (string.Empty, false, "Transactions are not supported for this datasource type");
 
         public (string Sql, bool Success, string ErrorMessage) GenerateCommitSql()
-            => (string.Empty, false, "Transactions are not supported for this datasource type");
+            => Capabilities.SupportsTransactions
+                ? (string.Empty, true, "Datasource manages transaction boundaries without generated SQL")
+                : (string.Empty, false, "Transactions are not supported for this datasource type");
 
         public (string Sql, bool Success, string ErrorMessage) GenerateRollbackSql()
-            => (string.Empty, false, "Transactions are not supported for this datasource type");
+            => Capabilities.SupportsTransactions
+                ? (string.Empty, true, "Datasource manages transaction boundaries without generated SQL")
+                : (string.Empty, false, "Transactions are not supported for this datasource type");
 
         #endregion
 
@@ -146,15 +152,31 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
 
         #endregion
 
-        private (string Sql, bool Success, string ErrorMessage) GenerateUnsupportedOrNoOp(string operation)
+        private bool SupportsAlterOrRenameOperations()
+        {
+            if (!Capabilities.SupportsSchemaEvolution)
+                return false;
+
+            // Conservative default:
+            // rename/alter operations are primarily safe to assume for schema-enforced RDBMS-like stores.
+            return Capabilities.IsSchemaEnforced && SupportedType != DataSourceType.FlatFile &&
+                   SupportedType != DataSourceType.CSV &&
+                   SupportedType != DataSourceType.TSV &&
+                   SupportedType != DataSourceType.Text &&
+                   SupportedType != DataSourceType.Json &&
+                   SupportedType != DataSourceType.XML &&
+                   SupportedType != DataSourceType.YAML;
+        }
+
+        private (string Sql, bool Success, string ErrorMessage) GenerateUnsupportedOrNoOp(string operation, bool operationSupported)
         {
             if (!Capabilities.IsSchemaEnforced)
                 return (string.Empty, true, "Datasource is schema-flexible - no DDL required");
 
-            if (!Capabilities.SupportsSchemaEvolution)
+            if (!Capabilities.SupportsSchemaEvolution || !operationSupported)
                 return (string.Empty, false, $"Datasource does not support {operation}");
 
-            return (string.Empty, false, $"No DDL generator available for {operation} on this datasource type");
+            return (string.Empty, false, $"No DDL generator available for {operation} on this datasource type. Use provider-specific helper or fallback migration strategy.");
         }
     }
 }

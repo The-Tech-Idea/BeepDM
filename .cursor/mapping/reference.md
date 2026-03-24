@@ -1,6 +1,16 @@
 # Entity Mapping Quick Reference
 
-## Create Mapping
+## Folder Index
+
+- `Editor/Mapping/Configuration`: mapper options and type-map registration.
+- `Editor/Mapping/Core`: AutoObjMapper execution and compiled delegate runtime.
+- `Editor/Mapping/Models`: mapper result and diff models.
+- `Editor/Mapping/Interfaces`: contracts for mapper components.
+- `Editor/Mapping/Helpers`: defaults, conversion, validation, performance helpers.
+- `Editor/Mapping/Extensions`: fluent and diagnostics-oriented extension APIs.
+- `Editor/Mapping/Utilities`: reusable static utility methods.
+
+## Create / Load Mapping
 
 ```csharp
 // From entity names
@@ -14,6 +24,9 @@ var (error, entityMap) = MappingManager.CreateEntityMap(dmeEditor, destEntity, "
 
 // Empty mapping
 var (error, entityMap) = MappingManager.CreateEntityMap(dmeEditor, "Customers", "MainDB");
+
+// Load existing mapping
+var existingMap = dmeEditor.ConfigEditor.LoadMappingValues("Customers", "MainDB");
 ```
 
 ## Add Source Entity
@@ -47,11 +60,52 @@ var destObject = MappingManager.MapObjectToAnother(
 // Automatically applies defaults via DefaultsManager
 ```
 
+## Object Graph Transformation
+
+```csharp
+var (dest, result) = MappingManager.MapObjectGraph(
+    dmeEditor,
+    "Customers",
+    mappedEntity,
+    sourceObject,
+    new ObjectGraphMappingOptions
+    {
+        MaxDepth = 6,
+        DetectCycles = true,
+        CollectionMode = CollectionMappingMode.MergeByKey,
+        CollectionMergeKeyPropertyName = "Id"
+    });
+```
+
+## Quality and Drift Gate
+
+```csharp
+var quality = MappingManager.ValidateMappingWithScore(dmeEditor, entityMap, productionThreshold: 80);
+var drift = MappingManager.DetectMappingDrift(dmeEditor, entityMap, "SourceDB", "DestDB");
+var allowed = MappingManager.EnforceProductionQualityThreshold(quality, 80);
+```
+
 ## Persistence
 
 ```csharp
-MappingManager.SaveMapping(dmeEditor, "Customers", "MainDB", entityMap);
-var entityMap = MappingManager.LoadOrInitializeMapping(dmeEditor, "Customers", "MainDB");
+MappingManager.SaveEntityMap(dmeEditor, "Customers", "MainDB", entityMap);
+var entityMap = dmeEditor.ConfigEditor.LoadMappingValues("Customers", "MainDB");
+```
+
+## Governance and Approval
+
+```csharp
+using (MappingManager.BeginGovernanceScope(
+    author: "data-eng",
+    changeReason: "Align source aliases",
+    targetState: MappingApprovalState.Review))
+{
+    MappingManager.SaveEntityMap(dmeEditor, "Customers", "MainDB", entityMap);
+}
+
+var history = MappingManager.GetMappingVersionHistory(dmeEditor, "Customers", "MainDB");
+MappingManager.UpdateMappingApprovalState(
+    dmeEditor, "Customers", "MainDB", MappingApprovalState.Approved, "release", "Approved for prod");
 ```
 
 ## Integration with ETL

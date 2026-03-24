@@ -54,6 +54,9 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 RowsProcessedToday = allToday.Sum(r => r.RecordsRead),
                 AvgSuccessRate     = allMetrics.Count > 0
                     ? allMetrics.Average(m => m.SuccessRate) : 0.0,
+                CostToday          = allToday.Sum(r => r.EstimatedCostUnits),
+                AvgMemoryPeakToday = allToday.Count > 0
+                    ? (long)allToday.Average(r => r.MemoryPeakBytes) : 0,
                 RecentAlerts       = alerts.ToList(),
                 RecentRuns         = recent.ToList()
             };
@@ -87,9 +90,18 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                     CurrentStep      = a.CurrentStep,
                     RecordsRead      = a.RecordsRead,
                     RecordsWritten   = a.RecordsWritten,
-                    RecordsRejected  = a.RecordsRejected
+                    RecordsRejected  = a.RecordsRejected,
+                    MemoryUsageBytes = System.Threading.Interlocked.Read(ref a.MemoryPeakBytes),
+                    WorkloadClass    = a.WorkloadClass
                 }).ToList();
         }
+
+        // ── Cost & performance ────────────────────────────────────────────────
+
+        /// <summary>Returns per-workload-class cost/resource metrics.</summary>
+        public Task<IReadOnlyList<PipelineMetrics>> GetCostByClassAsync(
+            DateTime from, DateTime to)
+            => _metrics.ComputeByClassAsync(from, to);
 
         // ── Alerts ────────────────────────────────────────────────────────────
 
@@ -112,5 +124,40 @@ namespace TheTechIdea.Beep.Pipelines.Observability
                 EntityId   = entityId,
                 Limit      = 500
             });
+
+        // ── Migration KPIs (Phase 9) ──────────────────────────────────────────
+
+        /// <summary>
+        /// Returns per-tier KPI aggregates for the governance review window.
+        /// </summary>
+        public async Task<IReadOnlyList<MigrationKpiSnapshot>> GetMigrationKpiByTierAsync(
+            DateTime from, DateTime to)
+            => await _metrics.ComputeByTierAsync(from, to).ConfigureAwait(false);
+
+        /// <summary>
+        /// Returns overall migration completion and health indicators
+        /// for the governance board view.
+        /// </summary>
+        public async Task<KpiGovernanceReport> GetGovernanceSummaryAsync(
+            DateTime from, DateTime to,
+            IReadOnlyList<MigrationWave> waves)
+        {
+            var snapshots = await _metrics.ComputeByTierAsync(from, to).ConfigureAwait(false);
+
+            int totalPipelines = waves.Sum(w => w.PipelineIds.Count);
+            int completedPipelines = waves
+                .Where(w => w.Status == WaveStatus.Completed)
+                .Sum(w => w.PipelineIds.Count);
+
+            return new KpiGovernanceReport
+            {
+                WindowStart          = from,
+                WindowEnd            = to,
+                WaveSnapshots        = snapshots.ToList(),
+                OverallCompletionPct = totalPipelines > 0
+                    ? (double)completedPipelines / totalPipelines * 100.0 : 0.0,
+                WavesWithRollbackTrigger = snapshots.Count(s => s.TriggersRollback)
+            };
+        }
     }
 }

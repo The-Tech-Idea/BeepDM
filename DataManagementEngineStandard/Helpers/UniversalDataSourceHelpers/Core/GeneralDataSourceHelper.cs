@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
         {
             SupportedType = dataSourceType;
             var factory = new DataSourceHelperFactory(dmeEditor);
-            _currentHelper = factory.CreateHelper(dataSourceType);
+            _currentHelper = factory.CreateHelper(dataSourceType) ?? new DefaultDataSourceHelper(dmeEditor) { SupportedType = dataSourceType };
         }
 
         public DataSourceType SupportedType { get; set; }

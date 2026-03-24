@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
 using TheTechIdea.Beep.Report;
 
@@ -251,6 +255,115 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             return File.Exists(_filePath);
         }
 
+        // ── Phase 2: Schema Versioning ────────────────────────────────────────────
+
+        /// <inheritdoc cref="ISchemaPersistenceHelper.SaveVersionedSchemaAsync"/>
+        public async Task SaveVersionedSchemaAsync(DataSyncSchema schema, SyncSchemaVersion version)
+        {
+            try
+            {
+                if (schema == null || version == null) return;
+
+                var versionsDir = Path.Combine(_directoryPath, "versions", schema.Id);
+                Directory.CreateDirectory(versionsDir);
+
+                var fileName = $"v{version.Version:D4}.json";
+                var filePath = Path.Combine(versionsDir, fileName);
+
+                var json = await Task.Run(() => JsonConvert.SerializeObject(version, Formatting.Indented));
+                await File.WriteAllTextAsync(filePath, json);
+
+                _editor.AddLogMessage("BeepSync", $"Schema '{schema.Id}' version {version.Version} saved to {filePath}.", DateTime.Now, -1, "", Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync", $"Error saving versioned schema: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                throw;
+            }
+        }
+
+        /// <inheritdoc cref="ISchemaPersistenceHelper.LoadSchemaVersionsAsync"/>
+        public async Task<List<SyncSchemaVersion>> LoadSchemaVersionsAsync(string schemaId)
+        {
+            try
+            {
+                var versionsDir = Path.Combine(_directoryPath, "versions", schemaId);
+                if (!Directory.Exists(versionsDir))
+                    return new List<SyncSchemaVersion>();
+
+                var versions = new List<SyncSchemaVersion>();
+                foreach (var file in Directory.GetFiles(versionsDir, "v*.json").OrderByDescending(f => f))
+                {
+                    try
+                    {
+                        var json = await File.ReadAllTextAsync(file);
+                        var v = JsonConvert.DeserializeObject<SyncSchemaVersion>(json);
+                        if (v != null) versions.Add(v);
+                    }
+                    catch { /* skip corrupt version entries */ }
+                }
+
+                return versions;
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync", $"Error loading schema versions for '{schemaId}': {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                return new List<SyncSchemaVersion>();
+            }
+        }
+
+        /// <inheritdoc cref="ISchemaPersistenceHelper.DiffSchemaToPersistedAsync"/>
+        public async Task<string> DiffSchemaToPersistedAsync(DataSyncSchema schema)
+        {
+            try
+            {
+                if (schema == null) return "Schema is null.";
+
+                var versions = await LoadSchemaVersionsAsync(schema.Id);
+                if (versions.Count == 0)
+                    return "No persisted version found — this is a new schema.";
+
+                var latest      = versions[0]; // newest first
+                var currentHash = ComputeSchemaHash(schema);
+
+                if (currentHash == latest.SchemaHash)
+                    return string.Empty; // unchanged
+
+                return $"Schema '{schema.Id}' has changed since v{latest.Version} " +
+                       $"(saved {latest.SavedAt:u} by {latest.SavedBy}). " +
+                       $"Current: {currentHash.Substring(0, 8)}…, persisted: {(latest.SchemaHash?.Length >= 8 ? latest.SchemaHash.Substring(0, 8) : latest.SchemaHash)}…";
+            }
+            catch (Exception ex)
+            {
+                return $"Diff error: {ex.Message}";
+            }
+        }
+
+        private string ComputeSchemaHash(DataSyncSchema schema)
+        {
+            try
+            {
+                var fingerprint =
+                    $"{schema.SourceDataSourceName}|{schema.DestinationDataSourceName}" +
+                    $"|{schema.SourceEntityName}|{schema.DestinationEntityName}" +
+                    $"|{schema.SyncDirection}|{schema.SyncType}";
+
+                if (schema.MappedFields != null)
+                    fingerprint += "|" + string.Join(",",
+                        schema.MappedFields
+                            .Select(f => $"{f.SourceField}:{f.DestinationField}")
+                            .OrderBy(x => x));
+
+                using var sha   = SHA256.Create();
+                var bytes       = sha.ComputeHash(Encoding.UTF8.GetBytes(fingerprint));
+                return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+            }
+            catch
+            {
+                return Guid.NewGuid().ToString(); // fallback: always treat as changed
+            }
+        }
+
         /// <summary>
         /// Ensure the directory exists for storing schemas
         /// </summary>
@@ -268,6 +381,78 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             {
                 _editor.AddLogMessage("BeepSync", $"Error creating schemas directory: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
                 throw;
+            }
+        }
+
+        // ── Phase 5: Checkpoint persistence ──────────────────────────────────────
+
+        /// <inheritdoc cref="ISchemaPersistenceHelper.SaveCheckpointAsync"/>
+        public async Task SaveCheckpointAsync(SyncCheckpoint checkpoint)
+        {
+            if (checkpoint == null) return;
+            try
+            {
+                var dir  = Path.Combine(_directoryPath, "checkpoints");
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                var path = Path.Combine(dir, $"{checkpoint.SchemaId}.json");
+                checkpoint.SavedAt = DateTime.UtcNow;
+                var json = await Task.Run(() => JsonConvert.SerializeObject(checkpoint, Formatting.Indented));
+                await File.WriteAllTextAsync(path, json);
+
+                _editor.AddLogMessage("BeepSync",
+                    $"Checkpoint saved for schema '{checkpoint.SchemaId}' at offset {checkpoint.ProcessedOffset}.",
+                    DateTime.Now, -1, "", Errors.Ok);
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync",
+                    $"Error saving checkpoint for schema '{checkpoint?.SchemaId}': {ex.Message}",
+                    DateTime.Now, -1, "", Errors.Failed);
+            }
+        }
+
+        /// <inheritdoc cref="ISchemaPersistenceHelper.LoadCheckpointAsync"/>
+        public async Task<SyncCheckpoint> LoadCheckpointAsync(string schemaId)
+        {
+            if (string.IsNullOrWhiteSpace(schemaId)) return null;
+            try
+            {
+                var path = Path.Combine(_directoryPath, "checkpoints", $"{schemaId}.json");
+                if (!File.Exists(path)) return null;
+
+                var json = await File.ReadAllTextAsync(path);
+                return await Task.Run(() => JsonConvert.DeserializeObject<SyncCheckpoint>(json));
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync",
+                    $"Error loading checkpoint for schema '{schemaId}': {ex.Message}",
+                    DateTime.Now, -1, "", Errors.Failed);
+                return null;
+            }
+        }
+
+        /// <inheritdoc cref="ISchemaPersistenceHelper.ClearCheckpointAsync"/>
+        public async Task ClearCheckpointAsync(string schemaId)
+        {
+            if (string.IsNullOrWhiteSpace(schemaId)) return;
+            try
+            {
+                var path = Path.Combine(_directoryPath, "checkpoints", $"{schemaId}.json");
+                if (File.Exists(path))
+                {
+                    await Task.Run(() => File.Delete(path));
+                    _editor.AddLogMessage("BeepSync",
+                        $"Checkpoint cleared for schema '{schemaId}'.",
+                        DateTime.Now, -1, "", Errors.Ok);
+                }
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync",
+                    $"Error clearing checkpoint for schema '{schemaId}': {ex.Message}",
+                    DateTime.Now, -1, "", Errors.Failed);
             }
         }
     }

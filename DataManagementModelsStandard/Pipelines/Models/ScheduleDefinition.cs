@@ -62,5 +62,77 @@ namespace TheTechIdea.Beep.Pipelines.Models
 
         /// <summary>UTC time this definition was last modified.</summary>
         public DateTime ModifiedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // ── Phase 5: Governance and Orchestration Fields ───────────────────
+
+        /// <summary>Owner (team or individual) accountable for this schedule.</summary>
+        public string Owner { get; set; } = string.Empty;
+
+        /// <summary>Optional steward responsible for data quality of the pipeline output.</summary>
+        public string Steward { get; set; } = string.Empty;
+
+        /// <summary>Freshness SLA in seconds — maximum allowed age of data before an alert fires. 0 = no SLA.</summary>
+        public int FreshnessSlaSeconds { get; set; } = 0;
+
+        /// <summary>
+        /// Workload class used for queue isolation and concurrency quotas.
+        /// E.g. "critical", "standard", "backfill". Default "standard".
+        /// </summary>
+        public string WorkloadClass { get; set; } = "standard";
+
+        /// <summary>
+        /// Run mode: "full" (complete refresh) or "incremental" (CDC/watermark-based).
+        /// Default "full".
+        /// </summary>
+        public string RunMode { get; set; } = "full";
+
+        /// <summary>
+        /// Configuration for incremental/CDC runs.
+        /// Only used when <see cref="RunMode"/> is "incremental".
+        /// </summary>
+        public WatermarkConfig Watermark { get; set; } = new();
+
+        /// <summary>
+        /// Maximum seconds to wait for upstream dependencies before timing out.
+        /// 0 = wait indefinitely.
+        /// </summary>
+        public int DependencyMaxWaitSeconds { get; set; } = 0;
+
+        /// <summary>
+        /// Circuit breaker: consecutive failure count before auto-disabling this schedule.
+        /// 0 = circuit breaker disabled.
+        /// </summary>
+        public int CircuitBreakerThreshold { get; set; } = 0;
+
+        /// <summary>Current consecutive failure count (runtime state, persisted for continuity).</summary>
+        public int ConsecutiveFailures { get; set; } = 0;
+
+        /// <summary>When true, this schedule was auto-disabled by the circuit breaker.</summary>
+        public bool CircuitBreakerTripped { get; set; } = false;
+
+        /// <summary>Tags for classification and filtering.</summary>
+        public List<string> Tags { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Configuration for watermark-based incremental/CDC processing.
+    /// Stores the column or key used to track incremental progress.
+    /// </summary>
+    public class WatermarkConfig
+    {
+        /// <summary>Column name in the source entity that holds the watermark value (e.g. "ModifiedDate").</summary>
+        public string WatermarkColumn { get; set; } = string.Empty;
+
+        /// <summary>Serialized last-known watermark value. Null = first run (full initial load).</summary>
+        public string? LastWatermarkValue { get; set; }
+
+        /// <summary>Data type of the watermark column: "datetime", "long", "string".</summary>
+        public string WatermarkType { get; set; } = "datetime";
+
+        /// <summary>
+        /// Overlap/lookback seconds subtracted from the watermark to guard against late-arriving data.
+        /// Default 0 (no overlap).
+        /// </summary>
+        public int LookbackSeconds { get; set; } = 0;
     }
 }

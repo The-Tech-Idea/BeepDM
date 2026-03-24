@@ -257,6 +257,7 @@ namespace TheTechIdea.Beep.Helpers
             // Add new connector categories
             configs.AddRange(GetAllConnectorConfigs());
             configs.AddRange(GetBlockchainConnectorConfigs());
+            configs.AddRange(GetProxyConfigs());
 
             return configs;
         }

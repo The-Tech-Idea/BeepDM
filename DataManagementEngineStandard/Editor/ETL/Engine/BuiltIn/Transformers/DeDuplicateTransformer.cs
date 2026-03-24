@@ -82,7 +82,9 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                     aggField = _strategy.Substring(lparen + 1, rparen - lparen - 1).Trim();
             }
 
-            // For KeepLast / KeepMax / KeepMin: buffer all candidates, emit at end
+            long evictions = 0;
+
+            // KeepLast / KeepMax / KeepMin: windowed buffer with LRU eviction, emit survivors at end
             if (isLast || isMax || isMin)
             {
                 await foreach (var record in input.WithCancellation(token))
@@ -90,7 +92,18 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                     string key = BuildKey(record);
                     if (!seen.ContainsKey(key))
                     {
+                        // Evict oldest 10% when window is full
+                        if (seen.Count >= _windowSize)
+                        {
+                            int evict = Math.Max(1, _windowSize / 10);
+                            for (int i = 0; i < evict && order.Count > 0; i++)
+                            {
+                                seen.Remove(order.Dequeue());
+                                evictions++;
+                            }
+                        }
                         seen[key] = record;
+                        order.Enqueue(key);
                     }
                     else
                     {
@@ -112,7 +125,10 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                         {
                             int evict = Math.Max(1, _windowSize / 10);
                             for (int i = 0; i < evict && order.Count > 0; i++)
+                            {
                                 seen.Remove(order.Dequeue());
+                                evictions++;
+                            }
                         }
                         seen[key] = null;
                         order.Enqueue(key);
@@ -124,6 +140,9 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                     }
                 }
             }
+
+            ctx.RuntimeState["dedup_distinct_keys"]    = (long)seen.Count;
+            ctx.RuntimeState["dedup_eviction_count"]   = evictions;
         }
 
         private string BuildKey(PipelineRecord rec)

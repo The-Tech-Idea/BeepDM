@@ -4,9 +4,12 @@ using System.Data;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
+using TheTechIdea.Beep.Editor.Defaults;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Rules;
 
 namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 {
@@ -281,6 +284,73 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             return result;
         }
 
+        // ── Phase 3: Watermark / CDC validation ────────────────────────────────────────
+
+        /// <inheritdoc cref="ISyncValidationHelper.ValidateWatermarkPolicy"/>
+        public IErrorsInfo ValidateWatermarkPolicy(DataSyncSchema schema)
+        {
+            var result = new ErrorsInfo { Flag = Errors.Ok };
+
+            if (schema?.WatermarkPolicy == null)
+            {
+                result.Message = "No watermark policy — full-load mode.";
+                return result;
+            }
+
+            var policy = schema.WatermarkPolicy;
+            var errors = new List<string>();
+
+            // Mode must be a known value
+            var knownModes = new[] { "Timestamp", "Sequence", "CompositeKey" };
+            if (!string.IsNullOrWhiteSpace(policy.WatermarkMode) &&
+                !knownModes.Contains(policy.WatermarkMode, StringComparer.OrdinalIgnoreCase))
+                errors.Add($"Unknown WatermarkMode '{policy.WatermarkMode}'. Expected: {string.Join(", ", knownModes)}.");
+
+            // Watermark field must be specified
+            if (string.IsNullOrWhiteSpace(policy.WatermarkField))
+            {
+                errors.Add("WatermarkPolicy.WatermarkField is required.");
+            }
+            else
+            {
+                // Watermark field must exist on the source entity
+                try
+                {
+                    var sourceDs = _editor.GetDataSource(schema.SourceDataSourceName);
+                    if (sourceDs != null)
+                    {
+                        var structure = sourceDs.GetEntityStructure(schema.SourceEntityName, false);
+                        if (structure?.Fields != null)
+                        {
+                            bool fieldExists = structure.Fields.Any(f =>
+                                string.Equals(f.FieldName, policy.WatermarkField,
+                                    StringComparison.OrdinalIgnoreCase));
+                            if (!fieldExists)
+                                errors.Add($"Watermark field '{policy.WatermarkField}' not found in " +
+                                           $"source entity '{schema.SourceEntityName}'.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Error checking watermark field: {ex.Message}");
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                result.Flag    = Errors.Failed;
+                result.Message = string.Join("; ", errors);
+                result.Errors  = errors.Select(e => (IErrorsInfo)new ErrorsInfo { Message = e }).ToList();
+            }
+            else
+            {
+                result.Message = $"Watermark policy valid (field='{policy.WatermarkField}', mode='{policy.WatermarkMode}').";
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Helper method to validate required fields
         /// </summary>
@@ -288,6 +358,169 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
         {
             if (string.IsNullOrWhiteSpace(fieldValue))
                 errors.Add(new ErrorsInfo { Message = $"{FieldName} is empty or null" });
+        }
+
+        // ── Phase 6: DQ gate helpers ──────────────────────────────────────────────
+
+        /// <inheritdoc cref="ISyncValidationHelper.EvaluateDqGateRules"/>
+        public List<DqGateResult> EvaluateDqGateRules(
+            DataSyncSchema schema,
+            Dictionary<string, object> record,
+            TheTechIdea.Beep.Rules.IRuleEngine ruleEngine = null)
+        {
+            var failures = new List<DqGateResult>();
+
+            var dqPolicy = schema?.DqPolicy;
+            if (dqPolicy == null || !dqPolicy.Enabled || dqPolicy.RuleKeys?.Count == 0)
+                return failures;
+
+            var rulePolicy = new TheTechIdea.Beep.Rules.RuleExecutionPolicy
+            {
+                MaxDepth       = schema.RulePolicy?.MaxDepth > 0 ? schema.RulePolicy.MaxDepth : 10,
+                MaxExecutionMs = schema.RulePolicy?.MaxExecutionMs > 0 ? schema.RulePolicy.MaxExecutionMs : 5000
+            };
+
+            foreach (var ruleKey in dqPolicy.RuleKeys)
+            {
+                if (string.IsNullOrWhiteSpace(ruleKey)) continue;
+
+                if (ruleEngine == null || !ruleEngine.HasRule(ruleKey))
+                {
+                    // Rule not registered — skip gracefully (log only)
+                    _editor.AddLogMessage("BeepSync",
+                        $"DQ rule '{ruleKey}' not registered in Rule Engine — skipped.",
+                        DateTime.Now, -1, "", Errors.Ok);
+                    continue;
+                }
+
+                try
+                {
+                    var context = new Dictionary<string, object>
+                    {
+                        ["record"]     = record,
+                        ["entityName"] = schema.DestinationEntityName,
+                        ["schemaId"]   = schema.Id
+                    };
+
+                    var (outputs, dqResult) = ruleEngine.SolveRule(ruleKey, context, rulePolicy);
+
+                    bool passed = dqResult is bool b ? b : dqResult?.ToString() != "false";
+                    if (!passed)
+                    {
+                        failures.Add(new DqGateResult
+                        {
+                            RuleKey    = ruleKey,
+                            Passed     = false,
+                            ReasonCode = outputs?.TryGetValue("reasonCode", out var rc) == true
+                                         ? rc?.ToString() ?? "DQ-FAIL" : "DQ-FAIL",
+                            FieldName  = outputs?.TryGetValue("field", out var fn) == true
+                                         ? fn?.ToString() : null,
+                            Message    = outputs?.TryGetValue("message", out var msg) == true
+                                         ? msg?.ToString() : null,
+                            EntityName = schema.DestinationEntityName,
+                            EvaluatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _editor.AddLogMessage("BeepSync",
+                        $"DQ rule '{ruleKey}' threw: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                    failures.Add(new DqGateResult
+                    {
+                        RuleKey    = ruleKey,
+                        Passed     = false,
+                        ReasonCode = "RULE-EXCEPTION",
+                        Message    = ex.Message,
+                        EntityName = schema.DestinationEntityName
+                    });
+                }
+            }
+
+            return failures;
+        }
+
+        /// <inheritdoc cref="ISyncValidationHelper.FillMissingFieldsWithDefaults"/>
+        public int FillMissingFieldsWithDefaults(
+            DataSyncSchema schema,
+            Dictionary<string, object> record,
+            TheTechIdea.Beep.Editor.Defaults.IDefaultsManager defaultsManager)
+        {
+            if (schema == null || record == null || defaultsManager == null)
+                return 0;
+
+            int countBefore = record.Count(kvp => kvp.Value != null);
+
+            try
+            {
+                defaultsManager.Apply(
+                    _editor,
+                    schema.DestinationDataSourceName,
+                    schema.DestinationEntityName,
+                    record);
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("BeepSync",
+                    $"DefaultsManager.Apply threw for schema '{schema.Id}': {ex.Message}",
+                    DateTime.Now, -1, "", Errors.Failed);
+            }
+
+            int countAfter = record.Count(kvp => kvp.Value != null);
+            return Math.Max(0, countAfter - countBefore);
+        }
+
+        /// <inheritdoc cref="ISyncValidationHelper.CheckMappingQualityGate"/>
+        public IErrorsInfo CheckMappingQualityGate(
+            DataSyncSchema schema,
+            out int qualityScore,
+            out string qualityBand)
+        {
+            qualityScore = -1;
+            qualityBand  = null;
+
+            var policy = schema?.MappingPolicy;
+            if (policy == null || !policy.Enabled || policy.MinQualityScore <= 0)
+                return new ErrorsInfo { Flag = Errors.Ok, Message = "Mapping quality gate not configured — skipped." };
+
+            try
+            {
+                // Build a simple score from mapped-field coverage
+                var fields      = schema.MappedFields;
+                var totalFields = fields?.Count ?? 0;
+
+                if (totalFields == 0)
+                {
+                    qualityScore = 0;
+                    qualityBand  = "Poor";
+                }
+                else
+                {
+                    int mapped   = fields.Count(f =>
+                        !string.IsNullOrWhiteSpace(f.SourceField) &&
+                        !string.IsNullOrWhiteSpace(f.DestinationField));
+                    qualityScore = (int)Math.Round(100.0 * mapped / totalFields);
+                    qualityBand  = qualityScore >= 90 ? "Good" : qualityScore >= 70 ? "Fair" : "Poor";
+                }
+
+                if (qualityScore < policy.MinQualityScore)
+                    return new ErrorsInfo
+                    {
+                        Flag    = Errors.Failed,
+                        Message = $"Mapping quality score {qualityScore} is below threshold " +
+                                  $"{policy.MinQualityScore} ({qualityBand}). DQ checks cannot run."
+                    };
+
+                return new ErrorsInfo
+                {
+                    Flag    = Errors.Ok,
+                    Message = $"Mapping quality OK: {qualityScore} ({qualityBand})."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorsInfo { Flag = Errors.Failed, Message = $"Error checking mapping quality: {ex.Message}" };
+            }
         }
     }
 }

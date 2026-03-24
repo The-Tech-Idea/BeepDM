@@ -4,14 +4,21 @@ using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for system information with enhanced system data access
     /// </summary>
+    [DefaultResolver("SystemInfo", "System Info Resolver",
+        Description = "Resolves system information: machine name, OS version, processor count, memory, and timestamps.",
+        SupportedTokens = "MACHINENAME,HOSTNAME,VERSION,APPVERSION,OSVERSION,PLATFORM,PROCESSORCOUNT,WORKINGSET,TIMESTAMP,TICKS")]
     public class SystemInfoResolver : BaseDefaultValueResolver
     {
+        /// <summary>System-info values (hostname, OS, etc.) are stable within a run — safe to cache.</summary>
+        public override bool IsDeterministic => true;
+
         public SystemInfoResolver(IDMEEditor editor) : base(editor) { }
 
         public override string ResolverName => "SystemInfo";

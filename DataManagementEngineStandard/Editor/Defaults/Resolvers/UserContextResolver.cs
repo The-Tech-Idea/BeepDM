@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for user context information with enhanced user data access
     /// </summary>
+    [DefaultResolver("UserContext", "User Context Resolver",
+        Description = "Resolves current user identity, domain, profile, group, and role information.",
+        SupportedTokens = "USERNAME,USERID,USEREMAIL,USERLOGIN,CURRENTUSER,USERDOMAIN,USERPROFILE,USERGROUP,USERROLE,USERPRINCIPAL")]
     public class UserContextResolver : BaseDefaultValueResolver
     {
         public UserContextResolver(IDMEEditor editor) : base(editor) { }

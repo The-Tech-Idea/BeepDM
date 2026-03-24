@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for mathematical formulas and expressions
     /// </summary>
+    [DefaultResolver("Formula", "Formula Resolver",
+        Description = "Resolves mathematical formulas, sequences, auto-increment, and random values.",
+        SupportedTokens = "SEQUENCE,INCREMENT,AUTOINCREMENT,RANDOM,RANDOMVALUE,CALCULATE,COMPUTE,MATH,ADD,SUBTRACT,MULTIPLY,DIVIDE,SUB,MUL,DIV,ROUND")]
     public class FormulaResolver : BaseDefaultValueResolver
     {
         private readonly Random _random = new Random();
@@ -19,8 +23,15 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         public override IEnumerable<string> SupportedRuleTypes => new[]
         {
-            "SEQUENCE", "INCREMENT", "AUTOINCREMENT", "RANDOM", "RANDOMVALUE", 
-            "CALCULATE", "COMPUTE", "MATH", "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"
+            // Legacy function-style (v1 legacy)
+            "SEQUENCE", "INCREMENT", "AUTOINCREMENT", "RANDOM", "RANDOMVALUE",
+            "CALCULATE", "COMPUTE", "MATH", "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE",
+            // Canonical Phase-3 short aliases
+            "SUB", "MUL", "DIV", "ROUND",
+            // Dot-style operator tokens (v1 dot) — normalized to function style before resolution
+            "ADD.", "SUBTRACT.", "MULTIPLY.", "DIVIDE.",
+            "SUB.", "MUL.", "DIV.", "ROUND.",
+            "RANDOM.", "SEQUENCE.", "CALCULATE."
         };
 
         public override object ResolveValue(string rule, IPassedArgs parameters)
@@ -37,9 +48,10 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     _ when upperRule.StartsWith("CALCULATE(") || upperRule.StartsWith("COMPUTE(") => ParseCalculation(rule, parameters),
                     _ when upperRule.StartsWith("MATH(") => ParseMathFunction(rule),
                     _ when upperRule.StartsWith("ADD(") => ParseBinaryOperation(rule, (a, b) => a + b),
-                    _ when upperRule.StartsWith("SUBTRACT(") => ParseBinaryOperation(rule, (a, b) => a - b),
-                    _ when upperRule.StartsWith("MULTIPLY(") => ParseBinaryOperation(rule, (a, b) => a * b),
-                    _ when upperRule.StartsWith("DIVIDE(") => ParseBinaryOperation(rule, (a, b) => b != 0 ? a / b : 0),
+                    _ when upperRule.StartsWith("SUBTRACT(") || upperRule.StartsWith("SUB(") => ParseBinaryOperation(rule, (a, b) => a - b),
+                    _ when upperRule.StartsWith("MULTIPLY(") || upperRule.StartsWith("MUL(") => ParseBinaryOperation(rule, (a, b) => a * b),
+                    _ when upperRule.StartsWith("DIVIDE(") || upperRule.StartsWith("DIV(") => ParseBinaryOperation(rule, (a, b) => b != 0 ? a / b : 0),
+                    _ when upperRule.StartsWith("ROUND(") => ParseRound(rule),
                     _ => 0
                 };
             }
@@ -56,18 +68,37 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 return false;
 
             var upperRule = rule.ToUpperInvariant().Trim();
-            return upperRule.StartsWith("SEQUENCE(") ||
-                   upperRule.StartsWith("INCREMENT(") ||
-                   upperRule.StartsWith("AUTOINCREMENT(") ||
-                   upperRule.StartsWith("RANDOM(") ||
-                   upperRule.StartsWith("RANDOMVALUE(") ||
-                   upperRule.StartsWith("CALCULATE(") ||
-                   upperRule.StartsWith("COMPUTE(") ||
-                   upperRule.StartsWith("MATH(") ||
-                   upperRule.StartsWith("ADD(") ||
-                   upperRule.StartsWith("SUBTRACT(") ||
-                   upperRule.StartsWith("MULTIPLY(") ||
-                   upperRule.StartsWith("DIVIDE(");
+            // Legacy function-style
+            if (upperRule.StartsWith("SEQUENCE(") ||
+                upperRule.StartsWith("INCREMENT(") ||
+                upperRule.StartsWith("AUTOINCREMENT(") ||
+                upperRule.StartsWith("RANDOM(") ||
+                upperRule.StartsWith("RANDOMVALUE(") ||
+                upperRule.StartsWith("CALCULATE(") ||
+                upperRule.StartsWith("COMPUTE(") ||
+                upperRule.StartsWith("MATH(") ||
+                upperRule.StartsWith("ADD(") ||
+                upperRule.StartsWith("SUBTRACT(") ||
+                upperRule.StartsWith("SUB(") ||
+                upperRule.StartsWith("MULTIPLY(") ||
+                upperRule.StartsWith("MUL(") ||
+                upperRule.StartsWith("DIVIDE(") ||
+                upperRule.StartsWith("DIV(") ||
+                upperRule.StartsWith("ROUND("))
+                return true;
+
+            // Dot-style pre-normalization fallback
+            return upperRule.StartsWith("ADD.") ||
+                   upperRule.StartsWith("SUBTRACT.") ||
+                   upperRule.StartsWith("SUB.") ||
+                   upperRule.StartsWith("MULTIPLY.") ||
+                   upperRule.StartsWith("MUL.") ||
+                   upperRule.StartsWith("DIVIDE.") ||
+                   upperRule.StartsWith("DIV.") ||
+                   upperRule.StartsWith("ROUND.") ||
+                   upperRule.StartsWith("RANDOM.") ||
+                   upperRule.StartsWith("SEQUENCE.") ||
+                   upperRule.StartsWith("CALCULATE.");
         }
 
         public override IEnumerable<string> GetExamples()
@@ -85,9 +116,10 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 "MATH(PI) - Mathematical constant",
                 "MATH(SQRT, 16) - Square root of 16",
                 "ADD(10, 5) - Add two numbers",
-                "SUBTRACT(20, 8) - Subtract numbers",
-                "MULTIPLY(3, 7) - Multiply numbers",
-                "DIVIDE(100, 4) - Divide numbers"
+                "SUBTRACT(20, 8) or SUB(20, 8) - Subtract numbers",
+                "MULTIPLY(3, 7) or MUL(3, 7) - Multiply numbers",
+                "DIVIDE(100, 4) or DIV(100, 4) - Divide numbers",
+                "ROUND(3.14159, 2) - Round to 2 decimal places"
             };
         }
 
@@ -360,6 +392,29 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
             LogWarning($"Could not evaluate expression '{expression}'");
             return 0;
+        }
+
+        /// <summary>
+        /// ROUND(value[, decimals]) — rounds value to the specified number of decimal places (default 0).
+        /// Phase-3 canonical operator.
+        /// </summary>
+        private object ParseRound(string rule)
+        {
+            try
+            {
+                var parts = SplitParameters(ExtractParenthesesContent(rule));
+                if (parts.Length < 1) { LogError("ROUND requires at least a value parameter"); return 0; }
+
+                if (!TryConvert<double>(parts[0].Trim(), out double value)) return 0;
+                var decimals = 0;
+                if (parts.Length > 1) TryConvert<int>(parts[1].Trim(), out decimals);
+                return Math.Round(value, decimals, MidpointRounding.AwayFromZero);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error parsing ROUND rule '{rule}'", ex);
+                return 0;
+            }
         }
 
         #endregion

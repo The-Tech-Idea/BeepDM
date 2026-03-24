@@ -183,6 +183,10 @@ namespace TheTechIdea.Beep.Utilities
         FTP, SFTP,  // File Transfer Protocols
         Email, IMAP, POP3, SMTP, Gmail, Outlook, Yahoo, // Email Protocols
         XMLRPC, SOAP,JSONRPC, GRPC, WebSocket, SSE, // Remote Procedure Call Protocols
+
+        // Beep Proxy Cluster
+        BeepProxyNode, BeepProxyCluster,
+
         Other
     }
     public enum DatasourceCategory
@@ -204,7 +208,8 @@ namespace TheTechIdea.Beep.Utilities
         IoT,
         VectorDB,
         Connector, // Added new category for connectors
-        Blockchain // Added for distributed ledger technologies
+        Blockchain, // Added for distributed ledger technologies
+        Proxy // Beep internal proxy/cluster data sources
     }
 
     public enum FileTypes

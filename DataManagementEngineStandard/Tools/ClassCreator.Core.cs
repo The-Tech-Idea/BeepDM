@@ -32,6 +32,7 @@ namespace TheTechIdea.Beep.Tools
         private DatabaseClassGeneratorHelper _databaseHelper;
         private WebApiGeneratorHelper _webApiHelper;
         private PocoToEntityGeneratorHelper _pocoToEntityHelper;
+        private EfCoreToEntityGeneratorHelper _efCoreToEntityHelper;
 
         #endregion
 
@@ -80,6 +81,7 @@ namespace TheTechIdea.Beep.Tools
             _databaseHelper = new DatabaseClassGeneratorHelper(dmeEditor);
             _webApiHelper = new WebApiGeneratorHelper(dmeEditor);
             _pocoToEntityHelper = new PocoToEntityGeneratorHelper(dmeEditor);
+            _efCoreToEntityHelper = new EfCoreToEntityGeneratorHelper(dmeEditor);
         }
 
         #endregion

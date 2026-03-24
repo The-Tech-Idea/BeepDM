@@ -59,6 +59,10 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         public long     RecordsRead   { get; set; }
         public long     RecordsWritten { get; set; }
         public long     RecordsRejected { get; set; }
+        /// <summary>Current estimated memory usage in bytes (0 if not tracked).</summary>
+        public long     MemoryUsageBytes { get; set; }
+        /// <summary>Workload class of this run.</summary>
+        public string   WorkloadClass { get; set; } = string.Empty;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -72,6 +76,13 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         public int    FailuresToday       { get; set; }
         public long   RowsProcessedToday  { get; set; }
         public double AvgSuccessRate      { get; set; }
+
+        // ── Cost & resource ──────────────────────────────────────────────
+        /// <summary>Total cost units consumed today.</summary>
+        public double CostToday           { get; set; }
+        /// <summary>Average peak memory (bytes) across today's runs.</summary>
+        public long   AvgMemoryPeakToday  { get; set; }
+
         public List<AlertEvent>      RecentAlerts { get; set; } = new();
         public List<PipelineRunLog>  RecentRuns   { get; set; } = new();
     }

@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Defaults.Attributes;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
     /// Resolver for GUID generation with various format options
     /// </summary>
+    [DefaultResolver("Guid", "GUID Resolver",
+        Description = "Generates GUID/UUID values in various string formats.",
+        SupportedTokens = "NEWGUID,GUID,UUID,GENERATEUNIQUEID")]
     public class GuidResolver : BaseDefaultValueResolver
     {
         public GuidResolver(IDMEEditor editor) : base(editor) { }

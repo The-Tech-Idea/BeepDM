@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,6 +43,7 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         };
 
         private readonly SemaphoreSlim _appendLock = new SemaphoreSlim(1, 1);
+        private string? _lastAuditHash;
 
         public ObservabilityStore()
         {
@@ -215,8 +218,45 @@ namespace TheTechIdea.Beep.Pipelines.Observability
 
         public async Task AppendAuditAsync(AuditEntry entry)
         {
-            string line = JsonSerializer.Serialize(entry, _json);
-            await AppendLineAsync(_auditFile, line).ConfigureAwait(false);
+            // Build hash chain: link to previous entry hash
+            await _appendLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (_lastAuditHash == null)
+                    _lastAuditHash = await ReadLastAuditHashAsync().ConfigureAwait(false);
+
+                entry.PreviousHash = _lastAuditHash;
+                entry.EntryHash    = ComputeAuditEntryHash(entry);
+                _lastAuditHash     = entry.EntryHash;
+
+                string line = JsonSerializer.Serialize(entry, _json);
+                await File.AppendAllTextAsync(_auditFile, line + "\n").ConfigureAwait(false);
+            }
+            finally { _appendLock.Release(); }
+        }
+
+        /// <summary>
+        /// Verifies tamper-evident hash chain integrity of the audit log.
+        /// Returns the index of the first broken link, or -1 if the chain is valid.
+        /// </summary>
+        public async Task<int> VerifyAuditIntegrityAsync()
+        {
+            var entries = await ReadJsonlAsync<AuditEntry>(_auditFile).ConfigureAwait(false);
+            string? previousHash = null;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var e = entries[i];
+                if (e.PreviousHash != previousHash)
+                    return i;
+
+                string computed = ComputeAuditEntryHash(e);
+                if (e.EntryHash != computed)
+                    return i;
+
+                previousHash = e.EntryHash;
+            }
+            return -1;
         }
 
         public async Task<IReadOnlyList<AuditEntry>> GetAuditTrailAsync(AuditQuery query)
@@ -281,6 +321,27 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         {
             var lines = items.Select(item => JsonSerializer.Serialize(item, _json));
             await File.WriteAllLinesAsync(file, lines).ConfigureAwait(false);
+        }
+
+        private async Task<string?> ReadLastAuditHashAsync()
+        {
+            if (!File.Exists(_auditFile)) return null;
+            var lines = await File.ReadAllLinesAsync(_auditFile).ConfigureAwait(false);
+            for (int i = lines.Length - 1; i >= 0; i--)
+            {
+                if (string.IsNullOrWhiteSpace(lines[i])) continue;
+                var entry = JsonSerializer.Deserialize<AuditEntry>(lines[i], _json);
+                return entry?.EntryHash;
+            }
+            return null;
+        }
+
+        private static string ComputeAuditEntryHash(AuditEntry entry)
+        {
+            // Hash over the content fields (excluding EntryHash itself)
+            var payload = $"{entry.Id}|{entry.Action}|{entry.EntityType}|{entry.EntityId}|{entry.EntityName}|{entry.PerformedBy}|{entry.PerformedAt:O}|{entry.PreviousHash}";
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+            return Convert.ToHexString(bytes);
         }
     }
 }

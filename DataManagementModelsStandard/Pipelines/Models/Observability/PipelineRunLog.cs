@@ -32,6 +32,16 @@ namespace TheTechIdea.Beep.Pipelines.Observability
         public long RecordsWarned    { get; set; }
         public long BytesProcessed   { get; set; }
 
+        // ── Performance & cost ─────────────────────────────────────────────
+        /// <summary>Peak memory usage in bytes during this run (0 if not tracked).</summary>
+        public long MemoryPeakBytes { get; set; }
+
+        /// <summary>Workload class assigned to this run.</summary>
+        public string WorkloadClass { get; set; } = "standard";
+
+        /// <summary>Estimated cost in abstract cost units (computed post-run).</summary>
+        public double EstimatedCostUnits { get; set; }
+
         // ── Per-step detail ───────────────────────────────────────────────────
         public List<StepRunLog> StepLogs { get; set; } = new();
 

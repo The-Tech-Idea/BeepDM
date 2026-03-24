@@ -21,6 +21,8 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
     ///     <c>{ "TotalAmt": "SUM(Amount)", "RowCount": "COUNT(*)", "MaxSal": "MAX(Salary)" }</c>.
     ///     Supported functions: <c>SUM COUNT AVG MAX MIN FIRST LAST</c>.
     ///   </item>
+    ///   <item><c>MaxGroupCount</c> — (int) Maximum groups to hold in memory. Default 1,000,000. 0 = unlimited.</item>
+    ///   <item><c>OverflowStrategy</c> — "Fail" (default) throws when limit is hit; "DropOldest" evicts the least-recently-seen group.</item>
     /// </list>
     /// </summary>
     [PipelinePlugin(
@@ -36,16 +38,22 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
         public string DisplayName => "Aggregate";
         public string Description => "Groups and aggregates records in-memory.";
 
-        private string[]  _groupBy   = Array.Empty<string>();
+        private string[]  _groupBy          = Array.Empty<string>();
+        private int        _maxGroupCount    = 1_000_000;
+        private string     _overflowStrategy = "Fail";
 
         // destField → (function, sourceField)
         private readonly List<(string Dest, string Func, string SrcField)> _aggDefs = new();
 
         public IReadOnlyList<PipelineParameterDef> GetParameterDefinitions() => new[]
         {
-            new PipelineParameterDef { Name = "GroupBy",    Type = ParamType.String, IsRequired = true  },
-            new PipelineParameterDef { Name = "Aggregates", Type = ParamType.Json,   IsRequired = true,
-                Description = "JSON: { \"destField\": \"FUNC(srcField)\" }" }
+            new PipelineParameterDef { Name = "GroupBy",          Type = ParamType.String,  IsRequired = true  },
+            new PipelineParameterDef { Name = "Aggregates",       Type = ParamType.Json,    IsRequired = true,
+                Description = "JSON: { \"destField\": \"FUNC(srcField)\" }" },
+            new PipelineParameterDef { Name = "MaxGroupCount",    Type = ParamType.Integer, IsRequired = false,
+                Description = "Max groups in memory. Default 1,000,000; 0 = unlimited." },
+            new PipelineParameterDef { Name = "OverflowStrategy", Type = ParamType.String,  IsRequired = false,
+                Description = "Fail (default) or DropOldest." }
         };
 
         public void Configure(IReadOnlyDictionary<string, object> parameters)
@@ -55,6 +63,11 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                 : Array.Empty<string>();
 
             _aggDefs.Clear();
+
+            if (parameters.TryGetValue("MaxGroupCount", out var mgc))
+                _maxGroupCount = Convert.ToInt32(mgc);
+            if (parameters.TryGetValue("OverflowStrategy", out var ofs))
+                _overflowStrategy = ofs?.ToString() ?? "Fail";
 
             if (!parameters.TryGetValue("Aggregates", out var ag)) return;
             Dictionary<string, string>? map = ag switch
@@ -95,9 +108,14 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             PipelineRunContext ctx,
             [EnumeratorCancellation] CancellationToken token)
         {
-            // Buffer phase: group rows
+            // Buffer phase: group rows with memory bound
             var groups = new Dictionary<string, GroupAccumulator>(StringComparer.Ordinal);
+            // Insertion order tracking for DropOldest eviction
+            var insertionOrder = _overflowStrategy.Equals("DropOldest", StringComparison.OrdinalIgnoreCase)
+                ? new Queue<string>() : null;
             PipelineSchema? inSchema = null;
+            long rowsBuffered = 0;
+            long evictions = 0;
 
             await foreach (var record in input.WithCancellation(token))
             {
@@ -105,14 +123,46 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
                 string key = BuildGroupKey(record);
                 if (!groups.TryGetValue(key, out var acc))
                 {
+                    // Enforce group limit
+                    if (_maxGroupCount > 0 && groups.Count >= _maxGroupCount)
+                    {
+                        if (_overflowStrategy.Equals("DropOldest", StringComparison.OrdinalIgnoreCase)
+                            && insertionOrder != null && insertionOrder.Count > 0)
+                        {
+                            // Evict oldest 10% (minimum 1)
+                            int evictCount = Math.Max(1, groups.Count / 10);
+                            for (int e = 0; e < evictCount && insertionOrder.Count > 0; e++)
+                            {
+                                var oldKey = insertionOrder.Dequeue();
+                                groups.Remove(oldKey);
+                                evictions++;
+                            }
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(
+                                $"AggregateTransformer: MaxGroupCount ({_maxGroupCount}) exceeded. " +
+                                $"Set OverflowStrategy to DropOldest or increase MaxGroupCount.");
+                        }
+                    }
+
                     acc = new GroupAccumulator(_groupBy.Length, _aggDefs.Count);
-                    // Store group-by values
                     for (int i = 0; i < _groupBy.Length; i++)
                         acc.GroupValues[i] = record[_groupBy[i]];
                     groups[key] = acc;
+                    insertionOrder?.Enqueue(key);
                 }
                 Accumulate(acc, record);
+                rowsBuffered++;
+
+                // Progress every 50 000 rows
+                if (rowsBuffered % 50_000 == 0)
+                    ctx.RuntimeState["aggregate_buffered_rows"] = rowsBuffered;
             }
+
+            ctx.RuntimeState["aggregate_buffered_rows"]  = rowsBuffered;
+            ctx.RuntimeState["aggregate_group_count"]    = (long)groups.Count;
+            ctx.RuntimeState["aggregate_eviction_count"] = evictions;
 
             if (inSchema == null) yield break;
 

@@ -9,9 +9,10 @@ using TheTechIdea.Beep.Utilities;
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
     /// <summary>
-    /// Base resolver class for common functionality across all default value resolvers
+    /// Base resolver class for common functionality across all default value resolvers.
+    /// Implements <see cref="IResolverCapabilities"/> with safe defaults that subclasses can override.
     /// </summary>
-    public abstract class BaseDefaultValueResolver : IDefaultValueResolver
+    public abstract class BaseDefaultValueResolver : IDefaultValueResolver, IResolverCapabilities
     {
         protected readonly IDMEEditor Editor;
 
@@ -19,6 +20,26 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         {
             Editor = editor ?? throw new ArgumentNullException(nameof(editor));
         }
+
+        // ── IResolverCapabilities — safe defaults (subclasses override as needed) ──
+
+        /// <summary>Resolver scheduling priority. Lower values are tried first. Default: 100.</summary>
+        public virtual int Priority => 100;
+
+        /// <summary>
+        /// True when the same rule + context always yields the same value.
+        /// Returns false by default — subclasses that are truly deterministic should override this to true.
+        /// Non-deterministic resolvers (RANDOM, volatile NOW) must leave this false so the
+        /// value cache skips them.
+        /// </summary>
+        public virtual bool IsDeterministic => false;
+
+        /// <summary>True when resolver results are safe to cache. Mirrors <see cref="IsDeterministic"/> by default.</summary>
+        public virtual bool SupportsCaching => IsDeterministic;
+
+        /// <summary>Future-ready async marker. Base class returns false (sync only).</summary>
+        public virtual bool SupportsAsync => false;
+
 
         public abstract string ResolverName { get; }
         public abstract IEnumerable<string> SupportedRuleTypes { get; }

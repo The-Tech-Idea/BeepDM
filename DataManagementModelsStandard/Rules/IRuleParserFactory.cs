@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.Rules
 {
     public interface IRuleParserFactory
     {
-        IRuleParser GetParser(IRuleStructure ruleStructure);
+        IRuleParser GetParser(string ruleType);
+        void RegisterParser(string ruleType, IRuleParser parser);
+        bool HasParser(string ruleType);
+        IEnumerable<string> GetRegisteredTypes();
     }
-
 }
+
