@@ -4,6 +4,7 @@
 
 - Define target `DataSourceType` for the format.
 - Implement `IFileFormatReader` with deterministic row contract.
+- Add `[FileReader(DataSourceType.X, "Label", "ext")]` on the reader class.
 - Support `Configure(IConnectionProperties)` for format options.
 - Implement `ReadHeaders` and `GetEntityStructure` for schema bootstrap.
 - Implement `ReadRows` with `ParseMode` + `RowDiagnostic` behavior.
@@ -41,6 +42,29 @@ FileReaderFactory.RegisterDefaults();
 FileReaderFactory.Register(new YourCustomReader());
 ```
 
+### Registry discovery (descriptor-based)
+```csharp
+using TheTechIdea.Beep.FileManager.Registry;
+
+var registry = new FileReaderRegistry(editor);
+registry.Discover(); // finds classes decorated with [FileReader(...)]
+
+var reader = registry.Create(DataSourceType.CSV);
+```
+
+### Attribute example
+```csharp
+using TheTechIdea.Beep.FileManager.Attributes;
+
+[FileReader(DataSourceType.CSV, "CSV", "csv")]
+public sealed class CsvFileReader : IFileFormatReader
+{
+    public DataSourceType SupportedType => DataSourceType.CSV;
+    public string GetDefaultExtension() => "csv";
+    // ...
+}
+```
+
 ### Test registration
 ```csharp
 FileReaderFactory.Reset(); // internal test-only helper
@@ -71,6 +95,7 @@ FileReaderFactory.Register(new YourCustomReader());
 ## 6) Troubleshooting
 
 - **Reader not used**: ensure registration happens before `Openconnection()`.
+- **Reader not discovered**: ensure class has `[FileReader(...)]` and assembly is loaded before `registry.Discover()`.
 - **Wrong parser selected**: check `DatasourceType` and `SupportedType`.
 - **Header mismatch**: verify `HasHeader` and delimiter/config values.
 - **Malformed row crashes in lenient mode**: ensure exceptions are caught in `ReadRows`.

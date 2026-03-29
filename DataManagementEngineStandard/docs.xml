@@ -5605,6 +5605,9 @@
             Filter evaluation is format-agnostic (works on projected string values).
             </summary>
             <summary>
+            Reader host surface for listing/switching file readers at runtime.
+            </summary>
+            <summary>
             Schema inference partial — GetEntityStructure, CreateEntityAs, CreateEntities.
             Delegates header reading and type inference to <see cref="F:TheTechIdea.Beep.FileManager.FileDataSource._reader"/>.
             Phase 3: uses confidence-scored <see cref="M:TheTechIdea.Beep.FileManager.Readers.TypeInferenceHelper.InferWithStats(System.Collections.Generic.IEnumerable{System.String})"/>

@@ -5424,6 +5424,87 @@
         <member name="P:TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute.IconPath">
             <summary>Optional path to an icon (used by designer tooling).</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.FileManager.FileReaderDescriptorInfo">
+            <summary>
+            Shared metadata for a discoverable file reader implementation.
+            This type is models-only and does not depend on EngineStandard internals.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.FileReaderDescriptorInfo.ReaderId">
+            <summary>Stable identifier for the reader implementation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.FileReaderDescriptorInfo.FormatType">
+            <summary>The datasource type handled by the reader.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.FileReaderDescriptorInfo.DisplayName">
+            <summary>Human-readable reader name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.FileReaderDescriptorInfo.DefaultExtension">
+            <summary>Primary file extension without leading dot.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.FileManager.FileReaderDescriptorInfo.ImplementationTypeName">
+            <summary>Optional fully qualified implementation type name.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost">
+            <summary>
+            Exposes file-reader discovery and runtime selection behavior for file datasource hosts.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.GetAvailableReaderDescriptors(System.Boolean)">
+            <summary>
+            Returns available reader descriptors.
+            When <paramref name="discover"/> is <c>true</c>, implementations should trigger
+            registry discovery before returning descriptors (if a registry is available).
+            When <c>false</c>, implementations should return cached/discovered data and
+            may fall back to factory-registered readers.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.GetAvailableReaderTypes">
+            <summary>
+            Returns all available format types known by the host.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.GetCurrentReaderDescriptor">
+            <summary>
+            Returns metadata for the currently active reader selection, or <c>null</c>
+            when no reader is currently selected.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.GetCurrentReader">
+            <summary>
+            Returns the currently active reader instance as an opaque object, or <c>null</c>
+            when no reader has been resolved yet.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.TrySwitchReader(TheTechIdea.Beep.Utilities.DataSourceType,System.Boolean,System.String@)">
+            <summary>
+            Attempts to switch the active reader to <paramref name="targetType"/>.
+            Implementations should return <c>false</c> with a reason when the switch
+            cannot be completed and should avoid throwing for expected failures.
+            On success, the datasource type should be updated to match the new reader.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.TrySwitchReader(System.String,System.Boolean,System.String@)">
+            <summary>
+            Attempts to switch the active reader to a specific implementation type name.
+            This enables selecting between multiple readers for the same datasource type.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.TrySwitchReader(System.Guid,System.Boolean,System.String@)">
+            <summary>
+            Attempts to switch the active reader by stable reader identifier.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.ResetReaderSelection">
+            <summary>
+            Clears any manual reader override and returns selection behavior to datasource default.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.IFileDataSourceReaderHost.TrySwitchReaderByExtension(System.String,System.Boolean,System.String@)">
+            <summary>
+            Attempts to switch the active reader by file extension (without leading dot).
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.FileManager.RootFolder">
             <summary>
             Represents a root folder for a project, containing subfolders and metadata.

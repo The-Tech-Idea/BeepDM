@@ -34,8 +34,10 @@ namespace TheTechIdea.Beep.FileManager
                 LoadConnectionProperties();
 
                 // Resolve and configure the format reader for this DatasourceType
+                // (or a runtime override selected through IFileDataSourceReaderHost).
                 FileReaderFactory.RegisterDefaults();
-                _reader = FileReaderFactory.GetReader(DatasourceType);
+                var selectedType = _selectedReaderTypeOverride ?? DatasourceType;
+                _reader = FileReaderFactory.GetReader(selectedType);
                 _reader.Configure(Dataconnection?.ConnectionProp);
 
                 // Open the underlying connection (validates path etc.)

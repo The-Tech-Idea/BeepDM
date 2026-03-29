@@ -47,11 +47,24 @@ Use this skill when working on `DataManagementEngineStandard/FileManager` to eit
 
 ## Creating a Reader Extension
 1. Create a class under `FileManager/Readers` implementing `IFileFormatReader`.
-2. Set `SupportedType` and `GetDefaultExtension()` for the format.
-3. Implement `Configure(IConnectionProperties)` for delimiter/encoding/flags.
-4. Implement schema (`ReadHeaders`, `GetEntityStructure`) and row streaming (`ReadRows`).
-5. Implement write operations (`CreateFile`, `AppendRow`, `RewriteFile`).
-6. Register the reader with `FileReaderFactory.Register(new YourReader())` at startup (or plugin bootstrap).
+2. Decorate the class with `FileReaderAttribute` so `FileReaderRegistry.Discover()` can build a `FileReaderDescriptor`.
+   - Example:
+```csharp
+[FileReader(DataSourceType.CSV, "CSV", "csv")]
+public sealed class CsvFileReader : IFileFormatReader
+{
+    public DataSourceType SupportedType => DataSourceType.CSV;
+    public string GetDefaultExtension() => "csv";
+    // ... implement contract
+}
+```
+3. Set `SupportedType` and `GetDefaultExtension()` for the format. Keep them consistent with the attribute.
+4. Implement `Configure(IConnectionProperties)` for delimiter/encoding/flags.
+5. Implement schema (`ReadHeaders`, `GetEntityStructure`) and row streaming (`ReadRows`).
+6. Implement write operations (`CreateFile`, `AppendRow`, `RewriteFile`).
+7. Register the reader:
+   - Static path: `FileReaderFactory.Register(new YourReader())`
+   - Discovery path: ensure assembly is loaded, then run `new FileReaderRegistry(editor).Discover()`.
 
 ## Validation and Safety
 - Honor `ParseMode` (`Strict` vs `Lenient`) and populate `LastDiagnostics`.
@@ -59,6 +72,7 @@ Use this skill when working on `DataManagementEngineStandard/FileManager` to eit
 - Use atomic rewrite semantics for update/delete style operations.
 - Normalize/retain source column names consistently with `FileReaderEntityHelper`.
 - Avoid embedding format-specific logic in `FileDataSource` partials.
+- If using registry discovery, do not omit `[FileReader(...)]`; without it, the reader will not produce a `FileReaderDescriptor`.
 
 ## Pitfalls
 - Forgetting to register the reader before `Openconnection()`.

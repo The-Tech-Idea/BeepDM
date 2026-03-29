@@ -1,52 +1,94 @@
-# DefaultsManager Enhancement Program - Overview and Gap Matrix
+# DefaultsManager — Current Architecture Overview
 
-## Objective
-Define a phased enhancement roadmap for `DefaultsManager` to support modern, safe, and expressive default-value computation, including query-driven defaults and a simplified expression DSL.
+_Last updated: reflects the rewritten defaults system (EntityDefaultsProfile, instance
+IDefaultsManager, unified rule convention).  The old partials `DefaultsManager.Extended.cs`
+and `DefaultsManager.Templates.cs` have been folded into the main file and profile
+templates respectively._
 
-## Baseline Architecture
-- Core manager: `DefaultsManager.cs`, `DefaultsManager.Extended.cs`, `DefaultsManager.Templates.cs`
-- Resolver orchestration: `Resolvers/DefaultValueResolverManager.cs`
-- Validation: `Helpers/DefaultValueValidationHelper.cs`
-- Existing dynamic resolvers:
-  - `Resolvers/DataSourceResolver.cs` (query/getscalar/lookup/aggregate)
-  - `Resolvers/ExpressionResolver.cs` (if/case/coalesce/eval)
-  - `Resolvers/FormulaResolver.cs` (math/sequence/random)
-  - plus environment/config/system/user/property resolvers
+---
 
-## Current Gaps (High Signal)
-- Rule language is inconsistent across resolvers (function-like syntax only, different semantics per resolver).
-- Query-based defaults exist but need stronger safety controls (parameterization, allowlist, timeout, result shape).
-- Expression handling is basic and split across `ExpressionResolver` and `FormulaResolver`.
-- No formal grammar/versioning strategy for rule syntax.
-- Limited operational controls for caching, diagnostics, and deterministic testability.
+## Architecture
 
-## Requested Direction
-- Add new defaults using query and expressions.
-- Add a simple expression language style like `Operator.value1.value2`.
+### File map
 
-## Gap Matrix
+| File | Role |
+|------|------|
+| `DefaultsManager.cs` | Central static class + `IDefaultsManager` instance bridge. Owns profile registry and resolver delegation. Previously split across `Extended.cs` + `Templates.cs` — both are gone. |
+| `DefaultsManager.Apply.cs` | Partial — `Apply<T>` (POCO), `Apply(DataRow)`, `ApplyToNew<T>`. |
+| `EntityDefaultsProfile.cs` | Fluent profile builder + `FieldDefaultRule`. Built-in template factories: `AuditTemplate`, `TimestampTemplate`, `UserStampTemplate`, `IdentityTemplate`, `FullTemplate`. |
+| `IDefaultsManager.cs` | Instance interface (no `static abstract`). DI-friendly. |
+| `Resolvers/DefaultValueResolverManager.cs` | Dispatches canonical token strings to 11 built-in resolvers. |
+| `RuleParsing/RuleNormalizer.cs` | Converts DSL variants → canonical function form before dispatching. |
+| `RuleParsing/ParsedRule.cs` | AST-like result with `IsLiteral` flag, `NormalizedRule`, `SyntaxVersion`. |
+| `Helpers/DefaultValueHelper.cs` | Persistence bridge to `ConnectionProperties.DatasourceDefaults`. |
+| `Helpers/DefaultValueValidationHelper.cs` | Syntax validation without side effects. |
+| `Registry/DefaultResolverRegistry.cs` | Describes available resolvers (self-registration). |
 
-| Capability | Current | Target | Priority |
-|---|---|---|---|
-| Rule DSL | Function syntax only (`IF(...)`, `QUERY(...)`) | Dual syntax: existing + simple dot DSL (`Operator.value1.value2`) with versioning | P0 |
-| Query Defaults | Supported in `DataSourceResolver` | Secure query templates, parameter binding, policy checks, deterministic fallback | P0 |
-| Expression Defaults | Supported but basic parser/evaluator | Unified expression engine with typed operators and extensible functions | P0 |
-| Validation | Rule validation exists | Grammar-aware compile-time validation and diagnostics catalog | P1 |
-| Observability | Logs exist | Resolver-level metrics, latency/error counters, troubleshooting context IDs | P1 |
-| Performance | No shared cache policy | Resolver/query cache strategy and expression pre-compilation | P2 |
-| Migration | Backward compatibility implicit | Explicit compatibility mode and migration linter/autofix rules | P1 |
+### Rule-string convention
 
-## Proposed Phase Sequence
-1. Rule Language and Compatibility Model
-2. Query Default Enhancements
-3. Expression and Formula Unification
-4. Resolver Extensibility and Context Model
-5. Validation, Safety, and Observability
-6. Performance and Caching
-7. Migration, DevEx, and Rollout
+| Rule string | Meaning | Example resolved value |
+|--|--|--|
+| `:NOW` | Expression: current datetime | `DateTime.Now` |
+| `:TODAY` | Expression: current date (time = 00:00) | `DateTime.Today` |
+| `:USERNAME` | Expression: current Windows/OS user | `"alice.doe"` |
+| `:NEWGUID` | Expression: new UUID v4 with dashes | `"d7a0-..."` |
+| `:GUID(N)` | Expression: UUID no dashes | `"d7a0..."` |
+| `:MACHINENAME` | Expression: machine hostname | `"DEVLAP01"` |
+| `:ENV.MY_VAR` | Expression: OS environment variable | `"/usr/local"` |
+| `:CONFIG.MyKey` | Expression: config key value | `"prod"` |
+| `:SEQUENCE` | Expression: next integer from sequence | `42` |
+| `:ADDDAYS(NOW,7)` | Expression: compound datetime formula | `DateTime.Now+7d` |
+| `Active` | **Literal** — no colon, no resolver | `"Active"` |
+| `1` | **Literal** | integer `1` |
+| *(empty)* | No rule — field left as-is | — |
 
-## Success Criteria
-- New DSL supports both `Operator.value1.value2` and current function syntax.
-- Query defaults are safer and policy-governed.
-- Expression behavior is deterministic and testable.
-- Existing defaults continue to run under compatibility mode with migration guidance.
+Rule strings starting with `:` are stripped of the prefix and handed to
+`RuleNormalizer.Normalize` → `DefaultValueResolverManager.ResolveValue`.
+Rule strings **without** `:` are passed through as-is (literal).
+
+### Data flow
+
+```
+Caller sets rule string on EntityDefaultsProfile or DefaultValue.Rule
+    │
+    ▼  DefaultsManager.Apply / Resolve
+ParsedRule ← RuleNormalizer.Normalize(ruleString)
+    │  IsLiteral? → return ruleString unchanged
+    │  else
+    ▼  DefaultValueResolverManager.ResolveValue(normalizedRule, context)
+Dispatched to matching IDefaultValueResolver.Resolve()
+    │
+    ▼  Actual runtime value
+```
+
+---
+
+## Built-in template factories (`EntityDefaultsProfile`)
+
+| Factory | Fields set |
+|---------|-----------|
+| `AuditTemplate(entity)` | CreatedBy=:USERNAME, CreatedAt=:NOW, ModifiedBy=:USERNAME, ModifiedAt=:NOW, IsActive=true, Version=1, RowGuid=:NEWGUID |
+| `TimestampTemplate(entity)` | CreatedAt=:NOW, ModifiedAt=:NOW |
+| `UserStampTemplate(entity)` | CreatedBy=:USERNAME, ModifiedBy=:USERNAME |
+| `IdentityTemplate(entity)` | Id=:NEWGUID |
+| `FullTemplate(entity)` | IdentityTemplate + AuditTemplate combined |
+
+All templates use canonical resolver tokens (`:NOW`, `:USERNAME`, `:NEWGUID`) — not the
+legacy aliases *CurrentDateTime*, *CurrentUser*, *GenerateUniqueId* which are no longer used.
+
+---
+
+## Enhancement roadmap (future phases)
+
+The files `01–07-phase*.md` in this directory describe planned enhancements:
+dot-style DSL, query-driven defaults, expression unification, caching, and rollout.
+These are not yet implemented; the gap matrix below was their starting point.
+
+| Capability | Current state | Planned target |
+|------------|--------------|----------------|
+| Rule DSL | `:TOKEN` + function syntax | + dot-style DSL (`ADDDAYS.NOW.7`) |
+| Query Defaults | `DataSourceResolver` (basic) | Secure templates, parameter binding, timeout |
+| Expression engine | `ExpressionResolver` + `FormulaResolver` | Unified engine + typed operators |
+| Validation | Syntax check (DefaultValueValidationHelper) | Grammar-aware, diagnostics catalog |
+| Caching | None | Resolver-level cache + pre-compilation |
+| Observability | Logger | Per-resolver latency/error counters |

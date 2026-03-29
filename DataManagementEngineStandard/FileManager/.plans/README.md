@@ -21,6 +21,7 @@ Phased enhancement program for `DataManagementEngineStandard/FileManager`, revis
 |---|---|---|---|
 | 0 | [00-overview-filemanager-gap-matrix.md](./00-overview-filemanager-gap-matrix.md) | Gap matrix, 10 capability gaps | in-progress |
 | 1 | [01-phase1-contracts-and-reader-abstractions.md](./01-phase1-contracts-and-reader-abstractions.md) | Reader contracts, invariants | planned |
+| 1A | [01a-phase1a-filedatasource-reader-registry-interface.md](./01a-phase1a-filedatasource-reader-registry-interface.md) | FileDataSource interface for list/switch readers via registry/factory | planned |
 | 2 | [02-phase2-csv-parsing-correctness-and-edge-cases.md](./02-phase2-csv-parsing-correctness-and-edge-cases.md) | Parsing correctness, RFC 4180 | planned |
 | 3 | [03-phase3-schema-inference-and-type-mapping.md](./03-phase3-schema-inference-and-type-mapping.md) | Confidence-scored schema inference | planned |
 | 4 | [04-phase4-streaming-large-files-and-memory-controls.md](./04-phase4-streaming-large-files-and-memory-controls.md) | Streaming reads, memory bounds | planned |

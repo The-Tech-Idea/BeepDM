@@ -37,7 +37,7 @@ namespace TheTechIdea.Beep.FileManager
         Category       = DatasourceCategory.FILE,
         DatasourceType = DataSourceType.CSV | DataSourceType.TSV | DataSourceType.Json | DataSourceType.Text,
         FileType       = "csv,tsv,json,txt")]
-    public partial class FileDataSource : IDataSource, IIdempotentFileIngester
+    public partial class FileDataSource : IDataSource, IIdempotentFileIngester, IFileDataSourceReaderHost
     {
         // ── IDataSource contract ─────────────────────────────────────────────
         public event EventHandler<PassedArgs> PassEvent;
