@@ -10,6 +10,10 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.UOW.Helpers;
 using TheTechIdea.Beep.Editor.UOW.Interfaces;
 using TheTechIdea.Beep.Utilities;
+using System.Data;
+using System.IO;
+using System.Threading.Tasks;
+using TheTechIdea.Beep.Editor.UOW.Models;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
@@ -24,7 +28,10 @@ namespace TheTechIdea.Beep.Editor.UOW
     [ToolboxBitmap(typeof(UnitOfWork<>), "TheTechIdea.Beep.GFX.unitofwork.ico")]
     [DisplayName("Unit of Work")]
 #endif
-    public partial class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged where T : Entity, new()
+    public partial class UnitofWork<T> : IUnitofWork<T>, INotifyPropertyChanged,
+        IRevertable, IBatchCommittable, IExportable, IImportable,
+        IAggregatable, IUndoable, IMergeable, IUnitofWorkHistory
+        where T : Entity, new()
     {
         #region Private Fields
 
@@ -167,6 +174,16 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         /// <summary>Gets the current item</summary>
         public T CurrentItem => Units.Current;
+
+        /// <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        public event EventHandler CurrentChanged;
+
+        /// <summary>Fires when a field changes on a tracked item.</summary>
+        public event EventHandler<ItemChangedEventArgs<T>> ItemChanged;
+
+        private void OnUnitsCurrentChanged(object sender, EventArgs e) => CurrentChanged?.Invoke(this, e);
+
+        private void OnUnitsItemChanged(object sender, ItemChangedEventArgs<T> e) => ItemChanged?.Invoke(this, e);
 
         // Soft delete support
         /// <summary>
@@ -621,6 +638,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                     item.PropertyChanged -= ItemPropertyChangedHandler;
                 }
                 collection.CollectionChanged -= Units_CollectionChanged;
+                collection.CurrentChanged -= OnUnitsCurrentChanged;
+                collection.ItemChanged -= OnUnitsItemChanged;
             }
         }
 
@@ -641,6 +660,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                     item.PropertyChanged += ItemPropertyChangedHandler;
                 }
                 collection.CollectionChanged += Units_CollectionChanged;
+                collection.CurrentChanged += OnUnitsCurrentChanged;
+                collection.ItemChanged += OnUnitsItemChanged;
             }
         }
 
@@ -778,6 +799,110 @@ namespace TheTechIdea.Beep.Editor.UOW
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+        #endregion
+
+        #region "Phase 2 — Change Summary, Query History & Export (2-A, 2-E, 2-F, 2-G)"
+
+        // ── Phase 2 private fields ──────────────────────────────────────────────────
+        private UnitofWorkQueryHistory _queryHistory = new UnitofWorkQueryHistory();
+        private UnitofWorkExportHelper<T> _exportHelper;
+        private UnitofWorkExportHelper<T> ExportHelper
+            => _exportHelper ??= new UnitofWorkExportHelper<T>(_units);
+
+        // ── Event ────────────────────────────────────────────────────────────────────
+        /// <summary>Raised after an item is successfully reverted to its original values.</summary>
+        public event EventHandler<UnitofWorkParams> OnItemReverted;
+
+        // ── Change Summary (2-A) ─────────────────────────────────────────────────────
+        /// <summary>Returns a lightweight summary of pending inserts, updates and deletes.</summary>
+        public ChangeSummary GetChangeSummary()
+        {
+            if (Units == null) return new ChangeSummary();
+            var cs = Units.GetChangeSetSummary();
+            return new ChangeSummary
+            {
+                InsertCount = cs.InsertCount,
+                UpdateCount = cs.UpdateCount,
+                DeleteCount = cs.DeleteCount
+            };
+        }
+
+        /// <summary>Returns all items currently in the Inserted state.</summary>
+        public IReadOnlyList<T> GetInsertedItems() => Units?.GetInserted() ?? (IReadOnlyList<T>)Array.Empty<T>();
+
+        /// <summary>Returns all items currently in the Modified state.</summary>
+        public IReadOnlyList<T> GetUpdatedItems()  => Units?.GetUpdated()  ?? (IReadOnlyList<T>)Array.Empty<T>();
+
+        /// <summary>Returns all items currently in the Deleted state.</summary>
+        public IReadOnlyList<T> GetDeletedItems()  => Units?.GetDeleted()  ?? (IReadOnlyList<T>)Array.Empty<T>();
+
+        // ── Query History (2-E) ──────────────────────────────────────────────────────
+        /// <summary>Read-only view of recent query executions (FIFO, capped at <see cref="MaxQueryHistorySize"/>).</summary>
+        public IReadOnlyList<QueryHistoryEntry> QueryHistory => _queryHistory.Entries;
+
+        /// <summary>Removes all recorded query-history entries.</summary>
+        public void ClearQueryHistory() => _queryHistory.Clear();
+
+        /// <summary>Maximum number of query history entries retained. Default is 20.</summary>
+        public int MaxQueryHistorySize
+        {
+            get => _queryHistory.MaxSize;
+            set => _queryHistory.MaxSize = value;
+        }
+
+        // ── Export / Import (2-F, 2-G) ────────────────────────────────────────────────
+        /// <summary>Materialises the current <see cref="Units"/> collection into a <see cref="DataTable"/>.</summary>
+        public DataTable ToDataTable() => ExportHelper.ToDataTable();
+
+        /// <summary>Serialises <see cref="Units"/> to JSON and writes it to <paramref name="stream"/>.</summary>
+        public Task ToJsonAsync(Stream stream, CancellationToken ct = default)
+            => ExportHelper.ToJsonAsync(stream, ct);
+
+        /// <summary>Serialises <see cref="Units"/> to CSV and writes it to <paramref name="stream"/>.</summary>
+        public Task ToCsvAsync(Stream stream, char delimiter = ',', CancellationToken ct = default)
+            => ExportHelper.ToCsvAsync(stream, delimiter, ct);
+
+        /// <summary>Deserialises JSON from <paramref name="stream"/> and loads the items into <see cref="Units"/>.</summary>
+        public Task<int> LoadFromJsonAsync(Stream stream, bool clearFirst = true, CancellationToken ct = default)
+            => ExportHelper.LoadFromJsonAsync(stream, clearFirst, ct);
+
+        /// <summary>Parses CSV from <paramref name="stream"/> and loads the rows into <see cref="Units"/>.</summary>
+        public Task<int> LoadFromCsvAsync(Stream stream, char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true, CancellationToken ct = default)
+            => ExportHelper.LoadFromCsvAsync(stream, delimiter, clearFirst, hasHeaderRow, ct);
+
+        #endregion
+
+        #region IRevertable explicit bridge (Phase 3)
+
+        bool IRevertable.RevertItem(object item)
+            => item is T typed && RevertItem(typed);
+
+        Task<bool> IRevertable.RevertItemAsync(object item, CancellationToken ct)
+            => item is T typed ? RevertItemAsync(typed, ct) : Task.FromResult(false);
+
+        #endregion
+
+        #region IMergeable explicit bridge (Phase 3)
+
+        async Task<bool> IMergeable.RefreshAsync(
+            List<AppFilter> filters,
+            ConflictMode conflictMode,
+            CancellationToken ct)
+        {
+            var result = await RefreshAsync(filters, conflictMode, ct);
+            return result?.Flag == Errors.Ok;
+        }
+
+        #endregion
+
+        #region IUnitofWorkHistory explicit bridge (Phase 3)
+
+        ChangeSummary IUnitofWorkHistory.GetChangeSummary() => GetChangeSummary();
+        IReadOnlyList<QueryHistoryEntry> IUnitofWorkHistory.GetQueryHistory() => QueryHistory;
+        void IUnitofWorkHistory.ClearQueryHistory() => ClearQueryHistory();
+        object IUnitofWorkHistory.CloneItem(object item, bool deep)
+            => item is T typed ? CloneItem(typed, deep) : null;
 
         #endregion
     }

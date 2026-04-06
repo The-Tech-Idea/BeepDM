@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeepSync Manager - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="bi bi-sun-fill" id="theme-icon"></i></button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>BeepSync Manager</span>
+                </nav>
+                <div class="page-header">
+                    <h1>BeepSync Manager</h1>
+                    <p class="page-subtitle">Modern, async-first data synchronization orchestrator with CDC, conflict resolution, retry/checkpoint, schema governance, and rule-engine integration</p>
+                </div>
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>Editor/BeepSync/BeepSyncManager.Core.cs</code> — constructor, properties, dispose</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.Sync.cs</code> — main <code>SyncDataAsync</code> orchestration</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.BulkSync.cs</code> — sequential &amp; parallel bulk helpers</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.Cdc.cs</code> — CDC / watermark filter builder</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.ConflictResolution.cs</code> — conflict gate &amp; evidence</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.Preflight.cs</code> — pre-run validation</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.SchemaManagement.cs</code> — schema CRUD &amp; persistence</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.RetryCheckpoint.cs</code> — retry classification &amp; checkpoint</li>
+                        <li><code>Editor/BeepSync/BeepSyncManager.SchemaGovernance.cs</code> — promotion gate &amp; versioning</li>
+                        <li><code>Editor/BeepSync/SyncMetrics.cs</code> — metrics model</li>
+                        <li><code>Editor/BeepSync/SyncRuleExecutionPolicies.cs</code> — rule policy profiles</li>
+                        <li><code>Editor/BeepSync/Helpers/*.cs</code> — helper classes</li>
+                        <li><code>Editor/BeepSync/Examples/*.cs</code> — runnable examples</li>
+                    </ul>
+                </div>
+
+                <!-- TOC -->
+                <div class="toc-box">
+                    <strong>On this page</strong>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#quickstart">Quick Start</a></li>
+                        <li><a href="#core-api">Core API — Constructor &amp; Properties</a></li>
+                        <li><a href="#schema-management">Schema Management</a></li>
+                        <li><a href="#sync-data">SyncDataAsync — Full Orchestration</a></li>
+                        <li><a href="#bulk-sync">Bulk Sync</a></li>
+                        <li><a href="#preflight">Preflight Validation</a></li>
+                        <li><a href="#cdc-watermark">CDC &amp; Watermark (Incremental Sync)</a></li>
+                        <li><a href="#conflict-resolution">Conflict Resolution</a></li>
+                        <li><a href="#retry-checkpoint">Retry &amp; Checkpoint</a></li>
+                        <li><a href="#schema-governance">Schema Governance &amp; Promotion</a></li>
+                        <li><a href="#metrics">Sync Metrics</a></li>
+                        <li><a href="#rule-policies">Rule Execution Policies</a></li>
+                        <li><a href="#helpers">Helper Classes</a></li>
+                        <li><a href="#examples">Examples</a></li>
+                    </ul>
+                </div>
+
+                <!-- ================================================================ -->
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>BeepSyncManager</code> is the modern replacement for the legacy <code>DataSyncManager</code>. It is a <code>partial class</code> split across nine focused files and orchestrates one-way or bidirectional data synchronization between any two registered <code>IDataSource</code> instances.</p>
+                    <h3>Folder map</h3>
+                    <pre><code class="language-text">Editor/BeepSync/
+  BeepSyncManager.Core.cs              constructor, properties, dispose
+  BeepSyncManager.Sync.cs              main SyncDataAsync() pipeline
+  BeepSyncManager.BulkSync.cs          SyncAllData*, SyncData overloads
+  BeepSyncManager.Cdc.cs               BuildCdcFilterContext()
+  BeepSyncManager.ConflictResolution.cs TryEvaluateConflictGate()
+  BeepSyncManager.Preflight.cs         RunPreflightAsync()
+  BeepSyncManager.SchemaManagement.cs  Add/Remove/Update, Save/Load
+  BeepSyncManager.RetryCheckpoint.cs   TryClassifyError, IsCheckpointResumeSafe
+  BeepSyncManager.SchemaGovernance.cs  PromoteSchemaAsync()
+  SyncMetrics.cs                       metrics/telemetry data model
+  SyncRuleExecutionPolicies.cs         DefaultSafe / FastPath profiles
+  Interfaces/
+    ISyncHelpers.cs                    helper interfaces
+  Helpers/
+    DataSourceHelper.cs                IDataSource open/get/insert/update
+    FieldMappingHelper.cs              AutoMapFields, type conversion
+    SyncValidationHelper.cs            schema & watermark validation
+    SyncProgressHelper.cs              progress reporting & run history
+    SchemaPersistenceHelper.cs         JSON file save/load/backup
+  Models/
+    CdcFilterContext.cs                CDC filter result envelope
+    SyncIntegrationContext.cs          optional rule/defaults/mapping wiring
+    SyncPlanMetadata.cs                run-time plan metadata
+  Examples/
+    Example01_BasicFullSync.cs
+    Example02_SchemaVersioning.cs
+    Example03_IncrementalSync.cs
+    Example04_BidirectionalConflict.cs
+    Example05_RetryAndCheckpoint.cs
+    Example06_DataQualityAndReconciliation.cs
+    Example07_SloAndAlerting.cs
+    Example08_PerformanceAndParallel.cs</code></pre>
+
+                    <h3>Key design principles</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Principle</th><th>How it is applied</th></tr></thead>
+                        <tbody>
+                            <tr><td>Single Responsibility</td><td>Each partial file / helper class owns one domain (CDC, conflict, preflight, …)</td></tr>
+                            <tr><td>Async-first</td><td>All long-running operations are <code>async Task</code> with <code>CancellationToken</code></td></tr>
+                            <tr><td>Rule-engine integration</td><td>Every policy gate (DQ, conflict, retry, promotion) can be overridden by named rules</td></tr>
+                            <tr><td>Testability</td><td>All helpers are injected via interfaces; the manager accepts mocks transparently</td></tr>
+                            <tr><td>Progress &amp; observability</td><td><code>IProgress&lt;PassedArgs&gt;</code> propagated at every step; <code>SyncMetrics</code> emitted per run</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Migration from DataSyncManager</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Old API</th><th>New API</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SyncData()</code></td><td><code>SyncDataAsync()</code> / <code>SyncData(schemaId)</code></td></tr>
+                            <tr><td><code>ValidateSchema()</code></td><td><code>ValidateSchema()</code> (enhanced, returns <code>IErrorsInfo</code>)</td></tr>
+                            <tr><td><code>SaveSchemas()</code></td><td><code>SaveSchemasAsync()</code> / <code>SaveSchemas()</code></td></tr>
+                            <tr><td><code>LoadSchemas()</code></td><td><code>LoadSchemasAsync()</code> / <code>LoadSchemas()</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="quickstart" class="section">
+                    <h2>Quick Start</h2>
+                    <p>Minimal example — one-way full sync of a <code>Customers</code> table.</p>
+                    <pre><code class="language-csharp">// 1. Create the manager
+var syncManager = new BeepSyncManager(dmeEditor);
+
+// 2. Describe the sync
+var schema = new DataSyncSchema
+{
+    Id                        = Guid.NewGuid().ToString(),
+    SourceDataSourceName      = "SourceDB",
+    DestinationDataSourceName = "DestDB",
+    SourceEntityName          = "Customers",
+    DestinationEntityName     = "Customers",
+    SourceKeyField            = "CustomerId",
+    DestinationKeyField       = "CustomerId",
+    SyncType                  = "Full",       // "Full" | "Incremental"
+    SyncDirection             = "OneWay",     // "OneWay" | "Bidirectional"
+    BatchSize                 = 500,
+};
+
+// 3. Auto-map fields (name matching)
+var fieldHelper = new FieldMappingHelper(dmeEditor);
+foreach (var m in fieldHelper.AutoMapFields("SourceDB", "Customers", "DestDB", "Customers"))
+    schema.MappedFields.Add(m);
+
+// 4. Register &amp; run
+syncManager.AddSyncSchema(schema);
+var progress = new Progress&lt;PassedArgs&gt;(p => Console.WriteLine(p.Messege));
+await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+
+// 5. Inspect result
+Console.WriteLine($"Status: {schema.SyncStatus}  LastSync: {schema.LastSyncDate:u}");
+
+// 6. Persist
+await syncManager.SaveSchemasAsync();</code></pre>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="core-api" class="section">
+                    <h2>Core API — Constructor &amp; Properties</h2>
+
+                    <h3>Constructors</h3>
+                    <pre><code class="language-csharp">// Minimal — helpers wired internally
+BeepSyncManager(IDMEEditor editor)
+
+// With optional rule/defaults integration context
+BeepSyncManager(IDMEEditor editor, SyncIntegrationContext integrationContext)</code></pre>
+
+                    <h3>SyncIntegrationContext</h3>
+                    <p>When set, unlocks rule-engine gating for every policy decision point.</p>
+                    <pre><code class="language-csharp">var ctx = new SyncIntegrationContext
+{
+    RuleEngine      = myRuleEngine,     // IRuleEngine — drives all rule policy gates
+    DefaultsManager = myDefaults,       // IDefaultsManager — fills default field values
+    RunInitiatedBy  = "scheduler",      // stamped on schema versions &amp; audit logs
+    // MappingPlanState = ...           // optional: shared mapping plan state
+};
+var syncManager = new BeepSyncManager(editor, ctx);</code></pre>
+
+                    <h3>Properties</h3>
+                    <table class="reference-table">
+                        <thead>
+                            <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>Editor</code></td><td><code>IDMEEditor</code></td><td>Data management engine provided at construction</td></tr>
+                            <tr><td><code>SyncSchemas</code></td><td><code>List&lt;DataSyncSchema&gt;</code></td><td>All registered schemas</td></tr>
+                            <tr><td><code>Filepath</code></td><td><code>string</code></td><td>Path used for schema JSON persistence</td></tr>
+                            <tr><td><code>IntegrationContext</code></td><td><code>SyncIntegrationContext</code></td><td>Optional rule/defaults wiring</td></tr>
+                            <tr><td><code>LastRunConflicts</code></td><td><code>List&lt;ConflictEvidence&gt;</code></td><td>Populated by bidirectional runs when <code>CaptureEvidence = true</code></td></tr>
+                            <tr><td><code>LastRunCheckpoint</code></td><td><code>SyncCheckpoint</code></td><td>Latest checkpoint persisted during the last run</td></tr>
+                            <tr><td><code>LastRunReconciliationReport</code></td><td><code>ReconciliationReport</code></td><td>DQ reconciliation results from the last run</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="schema-management" class="section">
+                    <h2>Schema Management</h2>
+
+                    <h3>CRUD methods</h3>
+                    <pre><code class="language-csharp">// Add a new schema to the in-memory list
+syncManager.AddSyncSchema(schema);
+
+// Update an existing schema by Id
+syncManager.UpdateSyncSchema(schema);
+
+// Remove by Id
+syncManager.RemoveSyncSchema(schemaId);
+
+// Manual schema validation (returns IErrorsInfo)
+IErrorsInfo result = syncManager.ValidateSchema(schema);</code></pre>
+
+                    <h3>Filters &amp; field mappings</h3>
+                    <pre><code class="language-csharp">// Add a filter clause (AppFilter wraps a field/operator/value predicate)
+syncManager.AddFilter(schemaId, new AppFilter
+{
+    FieldName  = "Region",
+    Operator   = "=",
+    FilterValue = "EU"
+});
+
+// Remove a filter by field name
+syncManager.RemoveFilter(schemaId, "Region");
+
+// Add a single field mapping
+syncManager.AddFieldMapping(schemaId, new FieldSyncData
+{
+    SourceField      = "CustomerName",
+    DestinationField = "Name",
+});</code></pre>
+
+                    <h3>Persistence</h3>
+                    <pre><code class="language-csharp">// Async — preferred
+await syncManager.SaveSchemasAsync();
+await syncManager.LoadSchemasAsync();
+
+// Sync fallback
+syncManager.SaveSchemas();
+syncManager.LoadSchemas();</code></pre>
+
+                    <h3>DataSyncSchema — key fields</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Id</code></td><td><code>string</code></td><td>Unique identifier (GUID string)</td></tr>
+                            <tr><td><code>SourceDataSourceName</code></td><td><code>string</code></td><td>Registered name of the source <code>IDataSource</code></td></tr>
+                            <tr><td><code>DestinationDataSourceName</code></td><td><code>string</code></td><td>Registered name of the destination</td></tr>
+                            <tr><td><code>SourceEntityName</code></td><td><code>string</code></td><td>Table / entity in the source</td></tr>
+                            <tr><td><code>DestinationEntityName</code></td><td><code>string</code></td><td>Table / entity in the destination</td></tr>
+                            <tr><td><code>SourceKeyField</code></td><td><code>string</code></td><td>Primary key in the source</td></tr>
+                            <tr><td><code>DestinationKeyField</code></td><td><code>string</code></td><td>Primary key in the destination</td></tr>
+                            <tr><td><code>SyncType</code></td><td><code>string</code></td><td><code>"Full"</code> or <code>"Incremental"</code></td></tr>
+                            <tr><td><code>SyncDirection</code></td><td><code>string</code></td><td><code>"OneWay"</code> or <code>"Bidirectional"</code></td></tr>
+                            <tr><td><code>BatchSize</code></td><td><code>int</code></td><td>Records per batch (default 500)</td></tr>
+                            <tr><td><code>MappedFields</code></td><td><code>List&lt;FieldSyncData&gt;</code></td><td>Source-to-destination field mappings</td></tr>
+                            <tr><td><code>Filters</code></td><td><code>List&lt;AppFilter&gt;</code></td><td>Pre-fetch filter predicates</td></tr>
+                            <tr><td><code>WatermarkPolicy</code></td><td><code>WatermarkPolicy</code></td><td>CDC / incremental configuration</td></tr>
+                            <tr><td><code>ConflictPolicy</code></td><td><code>ConflictPolicy</code></td><td>Bidirectional conflict handling strategy</td></tr>
+                            <tr><td><code>RetryPolicy</code></td><td><code>RetryPolicy</code></td><td>Retry &amp; checkpoint settings</td></tr>
+                            <tr><td><code>RulePolicy</code></td><td><code>SyncRulePolicy</code></td><td>Global rule-engine on/off flag</td></tr>
+                            <tr><td><code>SyncStatus</code></td><td><code>string</code></td><td>Updated after each run (<code>"Success"</code>, <code>"Failed"</code>, …)</td></tr>
+                            <tr><td><code>LastSyncDate</code></td><td><code>DateTime</code></td><td>Timestamp of the most recent completed run</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="sync-data" class="section">
+                    <h2>SyncDataAsync — Full Orchestration</h2>
+
+                    <h3>Signature</h3>
+                    <pre><code class="language-csharp">Task SyncDataAsync(
+    DataSyncSchema         schema,
+    CancellationToken      token          = default,
+    IProgress&lt;PassedArgs&gt; progress       = null,
+    IImportErrorStore      errorStore     = null,
+    IImportHistoryStore    historyStore   = null
+);</code></pre>
+
+                    <h3>Pipeline steps</h3>
+                    <p>When called, <code>SyncDataAsync</code> executes the following ordered pipeline:</p>
+                    <table class="reference-table">
+                        <thead><tr><th>#</th><th>Step</th><th>What happens</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>Structural validation</td><td><code>ValidateSchema</code> — null, missing names, empty mappings</td></tr>
+                            <tr><td>2</td><td>Preflight</td><td><code>RunPreflightAsync</code> — connectivity, rule checks, defaults readiness</td></tr>
+                            <tr><td>3</td><td>DQ mapping quality gate</td><td>Rule <code>sync.dq.mapping-quality</code> inspects field map completeness (if rules enabled)</td></tr>
+                            <tr><td>4</td><td>Rule audit telemetry</td><td>Rule <code>sync.audit.pre-run</code> emits tracing metadata</td></tr>
+                            <tr><td>5</td><td>Performance profile</td><td>Rule <code>sync.perf.profile</code> selects RU/batch tuning values</td></tr>
+                            <tr><td>6</td><td>Retry / checkpoint load</td><td>Loads existing checkpoint from <code>ActiveCheckpoint</code>; classifies last error if any</td></tr>
+                            <tr><td>7</td><td>CDC filter build</td><td><code>BuildCdcFilterContext</code> — calculates watermark window, filters, late-arrival rule</td></tr>
+                            <tr><td>8</td><td>Import</td><td>Delegates to <code>DataImportManager.RunImportAsync</code> with the CDC-enriched import config</td></tr>
+                            <tr><td>9</td><td>Bidirectional reverse import</td><td>If <code>SyncDirection = "Bidirectional"</code>, swaps source &harr; dest and re-imports</td></tr>
+                            <tr><td>10</td><td>Conflict gate</td><td><code>TryEvaluateConflictGate</code> runs built-in or rule-driven resolution; quarantines if required</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="tip">
+                        <strong>Cancellation</strong> — Pass a <code>CancellationToken</code> from a UI button or scheduler. The sync manager propagates it to <code>RunImportAsync</code> and all awaited helpers. On cancellation the schema <code>SyncStatus</code> is set to <code>"Cancelled"</code>.
+                    </div>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="bulk-sync" class="section">
+                    <h2>Bulk Sync</h2>
+                    <p>When you have multiple schemas registered, the bulk helpers iterate them in one call.</p>
+
+                    <h3>Sequential</h3>
+                    <pre><code class="language-csharp">// Async — processes schemas one after another
+await syncManager.SyncAllDataAsync(CancellationToken.None, progress);
+
+// Sync fallback
+syncManager.SyncAllData();</code></pre>
+
+                    <h3>Parallel</h3>
+                    <pre><code class="language-csharp">// Runs schemas in parallel, bounded by SyncPerformanceProfile.MaxDegreeOfParallelism
+await syncManager.SyncAllDataParallelAsync(CancellationToken.None, progress);</code></pre>
+                    <p>The semaphore count is read from the schema's performance profile rule result (default <code>4</code>). This avoids overwhelming shared data sources under load.</p>
+
+                    <h3>SyncData overloads (sync, by schema ID)</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Overload</th><th>Notes</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SyncData(string schemaId)</code></td><td>Minimal — find schema by ID and run synchronously</td></tr>
+                            <tr><td><code>SyncData(string schemaId, IProgress&lt;PassedArgs&gt; progress)</code></td><td>With progress reporter</td></tr>
+                            <tr><td><code>SyncData(string schemaId, IProgress&lt;PassedArgs&gt; progress, IImportErrorStore errors)</code></td><td>With error store</td></tr>
+                            <tr><td><code>SyncData(string schemaId, IProgress&lt;PassedArgs&gt; progress, IImportErrorStore e, IImportHistoryStore h)</code></td><td>With full history store</td></tr>
+                            <tr><td><code>SyncData(string schemaId, CancellationToken token, IProgress&lt;PassedArgs&gt; progress)</code></td><td>With cancellation</td></tr>
+                            <tr><td><code>SyncData(string schemaId, CancellationToken token, IProgress&lt;PassedArgs&gt; progress, IImportErrorStore e, IImportHistoryStore h)</code></td><td>Full six-arg overload</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="preflight" class="section">
+                    <h2>Preflight Validation</h2>
+
+                    <h3>Method</h3>
+                    <pre><code class="language-csharp">Task&lt;SyncPreflightReport&gt; RunPreflightAsync(
+    DataSyncSchema    schema,
+    CancellationToken token = default
+);</code></pre>
+
+                    <h3>Checks performed</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>#</th><th>Check</th><th>Gate type</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>Structural validation — null fields, missing source/dest names</td><td>Hard fail</td></tr>
+                            <tr><td>2</td><td>Rule Engine gate — <code>sync.plan.validate</code> (if rules enabled)</td><td>Soft / configurable</td></tr>
+                            <tr><td>3</td><td>Defaults profile readiness — <code>IDefaultsManager.IsReady</code></td><td>Warning</td></tr>
+                            <tr><td>4</td><td>Watermark policy validation — field name set, mode recognised</td><td>Warning</td></tr>
+                            <tr><td>5</td><td>Conflict policy rule existence — if <code>ResolutionRuleKey</code> set, engine must have it</td><td>Warning</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>SyncPreflightReport</h3>
+                    <pre><code class="language-csharp">var report = await syncManager.RunPreflightAsync(schema);
+
+if (!report.IsApproved)
+{
+    foreach (var issue in report.Issues)
+        Console.WriteLine($"[{issue.Severity}] {issue.Code}: {issue.Message}");
+    return; // block the run
+}
+
+Console.WriteLine($"Rules passed : {report.RulesPassed}");
+Console.WriteLine($"Defaults ready: {report.DefaultsReady}");</code></pre>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="cdc-watermark" class="section">
+                    <h2>CDC &amp; Watermark (Incremental Sync)</h2>
+                    <p>Set <code>SyncType = "Incremental"</code> and configure <code>WatermarkPolicy</code> to restrict each sync run to only records changed since the previous run.</p>
+
+                    <h3>WatermarkPolicy</h3>
+                    <pre><code class="language-csharp">schema.WatermarkPolicy = new WatermarkPolicy
+{
+    WatermarkMode        = "Timestamp",   // "Timestamp" | "Sequence" | "CompositeKey"
+    WatermarkField       = "UpdatedAt",   // column that advances monotonically
+    LastWatermarkValue   = null,          // null = start from beginning; engine updates this
+    OverlapWindowSeconds = 300,           // re-scan last 5 min to catch late arrivals
+    DedupeStrategy       = "LastWrite",   // "LastWrite" | "FirstWrite" | "None"
+    ReplayEnabled        = true,          // idempotent: safe to re-run the same window
+
+    // Optional: rule keys override the built-in filter/late-arrival logic
+    FilterRuleKey        = "sync.watermark.filter",
+    LateArrivalRuleKey   = "sync.watermark.late-arrival",
+};</code></pre>
+
+                    <h3>WatermarkMode values</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Mode</th><th>Typical field type</th><th>Use case</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Timestamp</code></td><td><code>DateTime</code> / <code>DateTimeOffset</code></td><td>Audit timestamp, <code>UpdatedAt</code>, <code>ModifiedAt</code></td></tr>
+                            <tr><td><code>Sequence</code></td><td><code>long</code> / <code>int</code></td><td>Auto-increment IDs, sequence numbers, offsets</td></tr>
+                            <tr><td><code>CompositeKey</code></td><td>Multiple columns</td><td>Change-version tables with composite change keys</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>CdcFilterContext (output)</h3>
+                    <p>Returned by <code>BuildCdcFilterContext</code> — the runtime filter envelope passed to <code>DataImportManager</code>.</p>
+                    <table class="reference-table">
+                        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ResolvedFilters</code></td><td><code>List&lt;AppFilter&gt;</code></td><td>Computed filter predicates using the watermark window</td></tr>
+                            <tr><td><code>WindowStart</code></td><td><code>object</code></td><td>Effective lower-bound (includes overlap window)</td></tr>
+                            <tr><td><code>WindowEnd</code></td><td><code>object</code></td><td>Effective upper-bound (current watermark)</td></tr>
+                            <tr><td><code>NewWatermarkValue</code></td><td><code>object</code></td><td>Value to be persisted as <code>LastWatermarkValue</code> after a successful run</td></tr>
+                            <tr><td><code>LateArrivalAction</code></td><td><code>string</code></td><td><code>"Include"</code> / <code>"Warn"</code> / <code>"Quarantine"</code> per rule result</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="conflict-resolution" class="section">
+                    <h2>Conflict Resolution</h2>
+                    <p>Applies only when <code>SyncDirection = "Bidirectional"</code>. When a record exists in both source and destination with different values, <code>TryEvaluateConflictGate</code> decides which value wins.</p>
+
+                    <h3>ConflictPolicy</h3>
+                    <pre><code class="language-csharp">schema.ConflictPolicy = new ConflictPolicy
+{
+    // Built-in rule keys (no rule engine required):
+    //   "sync.conflict.source-wins"
+    //   "sync.conflict.destination-wins"
+    //   "sync.conflict.latest-timestamp-wins"
+    //   "sync.conflict.fail-on-conflict"
+    ResolutionRuleKey     = "sync.conflict.latest-timestamp-wins",
+
+    CaptureEvidence       = true,    // populate BeepSyncManager.LastRunConflicts
+
+    // Quarantine records whose conflict could not be resolved:
+    QuarantineDsName      = "QuarantineDB",
+    QuarantineEntity      = "ConflictQuarantine",
+
+    MaxConflictsPerRun    = 500,
+    OnMaxExceededAction   = "QuarantineRest",  // "Abort" | "Continue" | "QuarantineRest"
+};</code></pre>
+
+                    <h3>Built-in strategies</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Rule key</th><th>Behaviour</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>sync.conflict.source-wins</code></td><td>Source record always overwrites destination</td></tr>
+                            <tr><td><code>sync.conflict.destination-wins</code></td><td>Destination record is kept unchanged (<strong>default fallback</strong>)</td></tr>
+                            <tr><td><code>sync.conflict.latest-timestamp-wins</code></td><td>Record with the later timestamp wins; requires <code>WatermarkField</code></td></tr>
+                            <tr><td><code>sync.conflict.fail-on-conflict</code></td><td>Any conflict halts the run immediately</td></tr>
+                            <tr><td>(custom key)</td><td>Rule engine evaluates your custom rule; output must be <code>"source"</code>, <code>"destination"</code>, or <code>"quarantine"</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>ConflictEvidence (audit)</h3>
+                    <pre><code class="language-csharp">// After a bidirectional run:
+var conflicts = syncManager.LastRunConflicts;
+Console.WriteLine($"Conflicts this run: {conflicts.Count}");
+
+foreach (var ev in conflicts)
+{
+    Console.WriteLine($"  Key={ev.RecordKey}  " +
+                      $"Resolution={ev.Resolution}  " +
+                      $"Rule={ev.AppliedRuleKey}");
+}</code></pre>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="retry-checkpoint" class="section">
+                    <h2>Retry &amp; Checkpoint</h2>
+                    <p>Configure <code>RetryPolicy</code> to automatically re-attempt on transient errors and resume from a mid-run checkpoint without re-processing already-committed batches.</p>
+
+                    <h3>RetryPolicy</h3>
+                    <pre><code class="language-csharp">schema.RetryPolicy = new RetryPolicy
+{
+    MaxAttempts              = 4,
+    BaseDelayMs              = 2000,
+    BackoffMode              = "Exponential",  // "Fixed" | "Linear" | "Exponential"
+    MaxResumeWindowHours     = 48,             // checkpoint invalidated after 48 h
+
+    CheckpointEnabled        = true,           // save offset after each committed batch
+
+    // Rule Engine key that classifies errors into categories
+    ErrorCategoryRuleKey     = "sync.error.classify",
+
+    NonRetryableCategories   = new List&lt;string&gt; { "Fatal", "Validation" },
+};</code></pre>
+
+                    <h3>Error categories</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Category</th><th>Default action</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Transient</code></td><td>Retry</td><td>Network timeout, transient DB lock</td></tr>
+                            <tr><td><code>Validation</code></td><td>Quarantine</td><td>Schema mismatch, constraint violation</td></tr>
+                            <tr><td><code>Conflict</code></td><td>Retry</td><td>Optimistic-concurrency write conflict</td></tr>
+                            <tr><td><code>Fatal</code></td><td>Abort</td><td>Authentication failure, data source not found</td></tr>
+                        </tbody>
+                    </table>
+                    <p>If the rule key <code>ErrorCategoryRuleKey</code> is not set or the rule engine is disabled, <code>TryClassifyError</code> applies keyword heuristics (e.g. "timeout" → Transient, "constraint" → Validation).</p>
+
+                    <h3>Checkpoint resume</h3>
+                    <pre><code class="language-csharp">// After a partial failure the checkpoint is stored in schema.ActiveCheckpoint.
+// On the next call to SyncDataAsync, the manager calls IsCheckpointResumeSafe()
+// which evaluates the rule "sync.checkpoint.resume-safe" or checks the age window.
+
+// Force a full re-run by clearing the checkpoint:
+schema.ActiveCheckpoint = null;
+await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);</code></pre>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="schema-governance" class="section">
+                    <h2>Schema Governance &amp; Promotion</h2>
+                    <p><code>PromoteSchemaAsync</code> advances a schema through an approval lifecycle (e.g. Draft → Review → Approved). A rule engine gate can block promotion if the mapping quality or approval evidence is insufficient.</p>
+
+                    <h3>PromoteSchemaAsync</h3>
+                    <pre><code class="language-csharp">Task&lt;SyncPreflightReport&gt; PromoteSchemaAsync(
+    DataSyncSchema    schema,
+    string            targetState,    // e.g. "Review", "Approved", "Archived"
+    string            approver   = null,
+    string            changeNotes = null,
+    CancellationToken token      = default
+);</code></pre>
+
+                    <h3>Promotion pipeline</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>#</th><th>Step</th><th>Gate</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>Null / empty checks on schema and targetState</td><td>Hard fail</td></tr>
+                            <tr><td>2</td><td>Rule <code>sync.schema.promotion-gate</code> evaluated with <code>schema</code>, <code>targetState</code>, <code>mappingApprovalState</code>, <code>requiredApprovalState</code> context</td><td>Configurable block</td></tr>
+                            <tr><td>3</td><td>Version artifact built (SHA hash of schema content, stamped with approver + notes)</td><td>—</td></tr>
+                            <tr><td>4</td><td>Schema persisted via <code>SaveSchemasAsync</code></td><td>—</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Example</h3>
+                    <pre><code class="language-csharp">var report = await syncManager.PromoteSchemaAsync(
+    schema,
+    targetState  : "Approved",
+    approver     : "data-steward@example.com",
+    changeNotes  : "Reviewed mapping completeness — 100%"
+);
+
+if (report.IsApproved)
+    Console.WriteLine("Schema promoted to Approved.");
+else
+    foreach (var issue in report.Issues)
+        Console.WriteLine($"  BLOCKED: {issue.Code} — {issue.Message}");</code></pre>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="metrics" class="section">
+                    <h2>Sync Metrics</h2>
+                    <p><code>SyncMetrics</code> is the telemetry model emitted (and stored via <code>SyncProgressHelper</code>) after every run.</p>
+
+                    <h3>SyncMetrics properties</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SchemaID</code></td><td><code>string</code></td><td>ID of the sync schema that produced this record</td></tr>
+                            <tr><td><code>SyncDate</code></td><td><code>DateTime</code></td><td>When the sync run started</td></tr>
+                            <tr><td><code>TotalRecords</code></td><td><code>int</code></td><td>Total records considered for sync</td></tr>
+                            <tr><td><code>SuccessfulRecords</code></td><td><code>int</code></td><td>Records successfully written to destination</td></tr>
+                            <tr><td><code>FailedRecords</code></td><td><code>int</code></td><td>Records that raised an error</td></tr>
+                            <tr><td><code>SkippedRecords</code></td><td><code>int</code></td><td>Records skipped (filter, dedup, quarantine)</td></tr>
+                            <tr><td><code>RecordsInserted</code></td><td><code>int</code></td><td>Net new inserts</td></tr>
+                            <tr><td><code>RecordsUpdated</code></td><td><code>int</code></td><td>Updates to existing rows</td></tr>
+                            <tr><td><code>RecordsDeleted</code></td><td><code>int</code></td><td>Deletions (if delete-propagation enabled)</td></tr>
+                            <tr><td><code>Duration</code></td><td><code>TimeSpan</code></td><td>Total wall-clock time for the run</td></tr>
+                            <tr><td><code>AverageRecordProcessingTime</code></td><td><code>TimeSpan</code></td><td>Computed: <code>Duration / TotalRecords</code></td></tr>
+                            <tr><td><code>SuccessRate</code></td><td><code>double</code></td><td>Computed: <code>SuccessfulRecords / TotalRecords × 100</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="rule-policies" class="section">
+                    <h2>Rule Execution Policies</h2>
+                    <p><code>SyncRuleExecutionPolicies</code> provides two pre-built <code>RuleExecutionPolicy</code> profiles used internally when invoking the rule engine at each gate.</p>
+
+                    <table class="reference-table">
+                        <thead><tr><th>Profile</th><th>MaxDepth</th><th>MaxExecutionMs</th><th>AllowDeprecated</th><th>Use case</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DefaultSafe</code></td><td>10</td><td>5000</td><td>false</td><td>Critical gates: preflight, conflict, promotion</td></tr>
+                            <tr><td><code>FastPath</code></td><td>3</td><td>2000</td><td>false</td><td>High-volume DQ checks, performance-sensitive paths</td></tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// The schema's performance profile mode selects the policy at runtime:
+var policy = SyncRuleExecutionPolicies.Resolve(schema.PerformanceProfile?.RulePolicyMode);
+// "FastPath" → FastPath profile; anything else → DefaultSafe</code></pre>
+
+                    <h3>Built-in rule keys used by BeepSyncManager</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>Rule key</th><th>Phase</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>sync.plan.validate</code></td><td>Preflight</td><td>Policy-driven schema validation</td></tr>
+                            <tr><td><code>sync.dq.mapping-quality</code></td><td>Pre-import</td><td>Mapping completeness quality gate</td></tr>
+                            <tr><td><code>sync.audit.pre-run</code></td><td>Pre-import</td><td>Emit audit telemetry before data movement</td></tr>
+                            <tr><td><code>sync.perf.profile</code></td><td>Pre-import</td><td>Select RU / parallel-degree tuning values</td></tr>
+                            <tr><td><code>sync.watermark.filter</code></td><td>CDC</td><td>Override built-in watermark filter generation</td></tr>
+                            <tr><td><code>sync.watermark.late-arrival</code></td><td>CDC</td><td>Classify and route late-arriving records</td></tr>
+                            <tr><td><code>sync.conflict.&lt;strategy&gt;</code></td><td>Conflict</td><td>Custom or built-in conflict resolution</td></tr>
+                            <tr><td><code>sync.error.classify</code></td><td>Retry</td><td>Classify error string into retry categories</td></tr>
+                            <tr><td><code>sync.checkpoint.resume-safe</code></td><td>Checkpoint</td><td>Decide whether an existing checkpoint is current enough to resume from</td></tr>
+                            <tr><td><code>sync.schema.promotion-gate</code></td><td>Governance</td><td>Block or allow schema promotion to target approval state</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="helpers" class="section">
+                    <h2>Helper Classes</h2>
+                    <p>All five helpers are instantiated by <code>BeepSyncManager</code> internally. You can also instantiate them directly for unit testing or standalone use.</p>
+
+                    <table class="reference-table">
+                        <thead><tr><th>Class</th><th>File</th><th>Responsibility</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DataSourceHelper</code></td><td><code>Helpers/DataSourceHelper.cs</code></td><td>Open connections, fetch records, insert/update with error capture</td></tr>
+                            <tr><td><code>FieldMappingHelper</code></td><td><code>Helpers/FieldMappingHelper.cs</code></td><td><code>AutoMapFields</code> by name, type-safe value conversion between source and destination schemas</td></tr>
+                            <tr><td><code>SyncValidationHelper</code></td><td><code>Helpers/SyncValidationHelper.cs</code></td><td>Validate schema completeness, data source accessibility, entity existence, watermark policy</td></tr>
+                            <tr><td><code>SyncProgressHelper</code></td><td><code>Helpers/SyncProgressHelper.cs</code></td><td>Progress events, structured log messages, run-history tracking</td></tr>
+                            <tr><td><code>SchemaPersistenceHelper</code></td><td><code>Helpers/SchemaPersistenceHelper.cs</code></td><td>Async save/load JSON, per-schema backup, atomic replace</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>AutoMapFields</h3>
+                    <pre><code class="language-csharp">var fieldHelper = new FieldMappingHelper(editor);
+
+// Returns List&lt;FieldSyncData&gt; for all columns with matching names
+var mappings = fieldHelper.AutoMapFields(
+    "SourceDB", "Customers",
+    "DestDB",   "Customers");
+
+// Override specific mappings after auto-map:
+var nameMapping = mappings.First(m => m.SourceField == "ContactName");
+nameMapping.DestinationField = "FullName";</code></pre>
+
+                    <h3>ValidateWatermarkPolicy</h3>
+                    <pre><code class="language-csharp">var validationHelper = new SyncValidationHelper(editor);
+
+var result = validationHelper.ValidateWatermarkPolicy(schema);
+if (result.Flag == Errors.Failed)
+    Console.WriteLine($"[ERROR] {result.Message}");</code></pre>
+                </section>
+
+                <!-- ================================================================ -->
+                <section id="examples" class="section">
+                    <h2>Examples</h2>
+                    <p>Eight runnable examples live in <code>Editor/BeepSync/Examples/</code>. Below is a representative selection.</p>
+
+                    <h3>Example 01 — Basic full sync</h3>
+                    <pre><code class="language-csharp">// Example01_BasicFullSync.cs
+var syncManager = new BeepSyncManager(editor);
+var schema = new DataSyncSchema
+{
+    Id                        = Guid.NewGuid().ToString(),
+    SourceDataSourceName      = "SourceDB",
+    DestinationDataSourceName = "DestDB",
+    SourceEntityName          = "Customers",
+    DestinationEntityName     = "Customers",
+    SourceKeyField            = "CustomerId",
+    DestinationKeyField       = "CustomerId",
+    SyncType                  = "Full",
+    SyncDirection             = "OneWay",
+    BatchSize                 = 500,
+};
+
+var fieldHelper = new FieldMappingHelper(editor);
+foreach (var m in fieldHelper.AutoMapFields("SourceDB","Customers","DestDB","Customers"))
+    schema.MappedFields.Add(m);
+
+syncManager.AddSyncSchema(schema);
+await syncManager.SyncDataAsync(schema, CancellationToken.None,
+    new Progress&lt;PassedArgs&gt;(p => Console.WriteLine(p.Messege)));
+
+Console.WriteLine($"Status: {schema.SyncStatus}  LastSync: {schema.LastSyncDate:u}");</code></pre>
+
+                    <h3>Example 03 — Incremental sync with watermark</h3>
+                    <pre><code class="language-csharp">// Example03_IncrementalSync.cs
+var schema = new DataSyncSchema
+{
+    // ... source/dest/entity/key fields ...
+    SyncType  = "Incremental",
+    WatermarkPolicy = new WatermarkPolicy
+    {
+        WatermarkMode        = "Timestamp",
+        WatermarkField       = "UpdatedAt",
+        OverlapWindowSeconds = 300,
+        DedupeStrategy       = "LastWrite",
+        ReplayEnabled        = true,
+    },
+};
+
+// First run — syncs records changed since epoch:
+await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+
+// Second run — only picks up records changed since the first run:
+await syncManager.SyncDataAsync(schema, CancellationToken.None, null);</code></pre>
+
+                    <h3>Example 04 — Bidirectional conflict resolution</h3>
+                    <pre><code class="language-csharp">// Example04_BidirectionalConflict.cs
+schema.SyncDirection  = "Bidirectional";
+schema.WatermarkPolicy = new WatermarkPolicy
+    { WatermarkMode = "Timestamp", WatermarkField = "ModifiedAt", ReplayEnabled = true };
+
+schema.ConflictPolicy = new ConflictPolicy
+{
+    ResolutionRuleKey   = "sync.conflict.latest-timestamp-wins",
+    CaptureEvidence     = true,
+    QuarantineDsName    = "QuarantineDB",
+    QuarantineEntity    = "ConflictQuarantine",
+    MaxConflictsPerRun  = 500,
+    OnMaxExceededAction = "QuarantineRest",
+};
+
+await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+
+foreach (var ev in syncManager.LastRunConflicts)
+    Console.WriteLine($"Key={ev.RecordKey}  Resolution={ev.Resolution}");</code></pre>
+
+                    <h3>Example 05 — Retry with checkpoint resume</h3>
+                    <pre><code class="language-csharp">// Example05_RetryAndCheckpoint.cs
+schema.RetryPolicy = new RetryPolicy
+{
+    MaxAttempts           = 4,
+    BaseDelayMs           = 2000,
+    BackoffMode           = "Exponential",
+    MaxResumeWindowHours  = 48,
+    CheckpointEnabled     = true,
+    ErrorCategoryRuleKey  = "sync.error.classify",
+    NonRetryableCategories = new List&lt;string&gt; { "Fatal", "Validation" },
+};
+
+// Run 1 — saves a checkpoint if it fails mid-way
+await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+
+// Run 2 — resumes from the checkpoint automatically if it is still within 48 h
+await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+
+// Force full re-run:
+schema.ActiveCheckpoint = null;
+await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);</code></pre>
+
+                    <h3>Example 02 — Schema versioning &amp; promotion</h3>
+                    <pre><code class="language-csharp">// Example02_SchemaVersioning.cs
+var ctx = new SyncIntegrationContext
+{
+    RuleEngine     = myRuleEngine,
+    RunInitiatedBy = "data-steward@example.com",
+};
+var syncManager = new BeepSyncManager(editor, ctx);
+
+// ... add schema, configure mappings ...
+
+var report = await syncManager.PromoteSchemaAsync(
+    schema,
+    targetState  : "Approved",
+    approver     : "data-steward@example.com",
+    changeNotes  : "All mappings reviewed and complete."
+);
+
+if (report.IsApproved)
+    Console.WriteLine("Schema is now Approved and versioned.");
+else
+    foreach (var issue in report.Issues)
+        Console.WriteLine($"[BLOCKED] {issue.Code}: {issue.Message}");</code></pre>
+
+                    <h3>All examples summary</h3>
+                    <table class="reference-table">
+                        <thead><tr><th>File</th><th>Topic</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Example01_BasicFullSync.cs</code></td><td>One-way full sync, automap, basic run</td></tr>
+                            <tr><td><code>Example02_SchemaVersioning.cs</code></td><td>Schema versioning &amp; <code>PromoteSchemaAsync</code></td></tr>
+                            <tr><td><code>Example03_IncrementalSync.cs</code></td><td>Timestamp watermark, repeated delta runs</td></tr>
+                            <tr><td><code>Example04_BidirectionalConflict.cs</code></td><td>Bidirectional sync, conflict policy, quarantine</td></tr>
+                            <tr><td><code>Example05_RetryAndCheckpoint.cs</code></td><td>Retry policy, exponential back-off, checkpoint resume</td></tr>
+                            <tr><td><code>Example06_DataQualityAndReconciliation.cs</code></td><td>DQ gates, mapping quality, reconciliation report</td></tr>
+                            <tr><td><code>Example07_SloAndAlerting.cs</code></td><td>SLO thresholds, SyncMetrics, alerting integration</td></tr>
+                            <tr><td><code>Example08_PerformanceAndParallel.cs</code></td><td>Parallel bulk sync, performance profile tuning</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- page nav -->
+                <div class="page-nav">
+                    <a href="rules-engine-parser.html">&larr; Rules Engine &amp; Parsers</a>
+                    <a href="services-registration-lifetimes.html">Services Registration &amp; Lifetimes &rarr;</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="navigation.js"></script>
+    <script src="theme.js"></script>
+    <script src="search.js"></script>
+</body>
+</html>

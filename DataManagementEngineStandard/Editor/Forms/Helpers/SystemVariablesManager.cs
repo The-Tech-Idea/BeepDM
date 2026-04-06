@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 
@@ -411,6 +413,73 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             }
         }
         
+        #endregion
+
+        #region Per-Block Snapshot (Phase 8)
+
+        // Dedicated per-block snapshot store (separate from _blockSystemVariables which
+        // is lazily-created on any access; this one is only written via UpdateBlockVariables).
+        private readonly Dictionary<string, SystemVariables> _blockVars
+            = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Store a rich per-block snapshot. Called by FormsManager after every significant
+        /// operation so BeepDataBlock can read system variables without calling FormsManager directly.
+        /// </summary>
+        public void UpdateBlockVariables(
+            string blockName,
+            string masterBlockName,
+            string mode,
+            int cursorRecord,
+            int lastRecord,
+            int recordsDisplayed,
+            bool isQueryMode,
+            bool isDirty,
+            string triggerItem = null,
+            TriggerType? activeTrigger = null)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+
+            lock (_lockObject)
+            {
+                if (!_blockVars.TryGetValue(blockName, out var sv))
+                {
+                    sv = new SystemVariables { CURRENT_BLOCK = blockName };
+                    _blockVars[blockName] = sv;
+                }
+
+                sv.MASTER_BLOCK      = masterBlockName;
+                sv.MODE              = mode;
+                sv.CURSOR_RECORD     = cursorRecord;
+                sv.LAST_RECORD       = lastRecord;
+                sv.RECORDS_DISPLAYED = recordsDisplayed;
+                sv.BLOCK_STATUS      = isQueryMode ? "Query" : (isDirty ? "Changed" : "Normal");
+                sv.LAST_OPERATION_TIME = DateTime.UtcNow;
+
+                if (!string.IsNullOrEmpty(triggerItem))
+                {
+                    sv.TRIGGER_BLOCK  = blockName;
+                    sv.TRIGGER_ITEM   = triggerItem;
+                    sv.TRIGGER_FIELD  = triggerItem;
+                    sv.TRIGGER_RECORD = cursorRecord;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retrieve the latest per-block snapshot. Returns a new empty instance when none exists.
+        /// </summary>
+        public SystemVariables GetBlockVariables(string blockName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName))
+                return new SystemVariables();
+
+            lock (_lockObject)
+            {
+                return _blockVars.TryGetValue(blockName, out var sv) ? sv : new SystemVariables();
+            }
+        }
+
         #endregion
         
         #region Private Helpers

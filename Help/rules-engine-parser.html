@@ -3,11 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rules Engine & Parsers - Beep DME Documentation</title>
+    <title>Rules Engine &amp; Parsers - Beep Data Management Engine Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="bi bi-sun-fill" id="theme-icon"></i></button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -15,53 +21,589 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>Rules Engine & Parsers</span>
+                    <span>Rules Engine &amp; Parsers</span>
                 </nav>
-
                 <div class="page-header">
-                    <h1>Rules Engine & Parsers</h1>
-                    <p class="page-subtitle">Rule execution runtime plus parser contracts and built-in parser implementations</p>
+                    <h1>Rules Engine &amp; Parsers</h1>
+                    <p class="page-subtitle">Compose, store, and execute named business-logic rules with a pluggable parser pipeline and rich built-in rule library</p>
                 </div>
-
                 <div class="note">
-                    <strong>Source of truth (2026)</strong>
+                    <strong>Source files</strong>
                     <ul>
-                        <li><code>DataManagementEngineStandard/Rules/RulesEngine.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Rules/RulesEngine.ExpressionEvaluation.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Rules/RuleParserFactory.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Rules/BuiltinParsers/*.cs</code></li>
+                        <li><code>Rules/RulesEngine.cs</code> &amp; <code>RulesEngine.ExpressionEvaluation.cs</code></li>
+                        <li><code>Rules/RuleParserFactory.cs</code>, <code>RuleCatalog.cs</code>, <code>RuleRegistry.cs</code>, <code>Tokenizer.cs</code></li>
+                        <li><code>Rules/BuiltinParsers/*.cs</code></li>
+                        <li><code>Rules/BuiltinRules/**/*.cs</code></li>
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The Rules Engine lets you attach named business-logic units to any data pipeline without coupling rule code to controllers or service classes. Every rule implements one interface, returns a typed output bag, and is auto-discovered from assemblies — no manual wiring required.</p>
+                    <h3>Folder map</h3>
+                    <pre><code class="language-text">Rules/
+  RulesEngine.cs                   core engine (register, solve, audit)
+  RulesEngine.ExpressionEvaluation.cs   shunting-yard + RPN evaluator
+  RuleParserFactory.cs             pluggable parser registry
+  RuleCatalog.cs                   lifecycle-managed rule-structure store
+  RuleRegistry.cs                  assembly-scanning auto-wiring
+  RulesParser.cs                   default tokenizer-based parser
+  Tokenizer.cs                     stateless lexer
+  InMemoryRuleStateStore.cs        ConcurrentDictionary state for stateful rules
+  BuiltinParsers/
+    CsvColumnParser.cs             col[N] / row.col[N] references
+    FormulaParser.cs               Excel-style SUM(A,B), A1 cell refs
+    SqlWhereParser.cs              field = 'v', IN (...), BETWEEN, IS NULL
+    JsonRuleTreeParser.cs          n8n-style JSON node tree
+    NfelParser.cs                  Natural Formula Expression Language
+  BuiltinRules/
+    Compute/       arithmetic, IfElse, MapValueTable
+    Date/          DateDiff, AddDatePart, business hours
+    DQ/            IsNullOrEmpty, IsInRange, MatchesRegex, IsUnique...
+    Enrich/        AddMetadataFields, LookupEnrich, MergeFields
+    Flow/          CircuitBreaker, RetryWithBackoff, DeadLetterQueue
+    Notify/        EmitAuditTrail, LogMessage, SendWebhook
+    Numeric/       Clamp, RoundNumeric, GetEntityAggregate
+    Query/         RunScalarQuery, RunParameterizedLookup, SetFromQuery
+    Record/        SetFieldValue, CopyField, IncrementField, ConditionalSetField
+    Route/         RouteOnCondition, SplitIntoBuckets, ThrottleRule
+    Schema/        EnforceNotNull, ValidateSchemaFields
+    Security/      hashing, masking, tokenisation
+    Transform/     string cleaning and reshaping
+    Validate/      email, phone, URL, credit-card, SSN</code></pre>
+                    <h3>Common parameter conventions</h3>
+                    <table>
+                        <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Value</code></td><td>Primary input scalar (string, number, date).</td></tr>
+                            <tr><td><code>Record</code></td><td><code>IDictionary&lt;string,object&gt;</code> or <code>"field=val;field2=val2"</code> string. Record-group rules return an updated copy in <code>outputs["Record"]</code>.</td></tr>
+                            <tr><td><code>IDMEEditor</code></td><td>Required by data-access rules.</td></tr>
+                            <tr><td><code>DataSourceName</code></td><td>Registered connection name.</td></tr>
+                            <tr><td><code>Filters</code></td><td>Semicolon-separated <code>"field:op:value"</code> triples.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="quickstart" class="section">
+                    <h2>Quick-Start — Three lines to run a rule</h2>
+                    <pre><code class="language-csharp">// 1. Build registry once at startup
+var registry = new RuleRegistry(editor);
+registry.Discover();   // scans loaded assemblies automatically
+
+// 2. Solve a named built-in rule
+var (outputs, result) = registry.Engine.SolveRule(
+    "DQ.IsNullOrEmpty",
+    new Dictionary&lt;string, object&gt; { ["Value"] = "alice@example.com" });
+
+bool isEmpty = (bool)result;   // false</code></pre>
+                    <h3>Subscribing to audit events</h3>
+                    <pre><code class="language-csharp">registry.Engine.RuleEvaluated += (_, e) =&gt;
+    Console.WriteLine($"{e.RuleKey} | ok={e.Success} | {e.Elapsed.TotalMilliseconds:F1} ms");</code></pre>
+                </section>
+
+                <section id="rule-engine-api" class="section">
+                    <h2>RuleEngine API</h2>
                     <pre><code class="language-csharp">public partial class RuleEngine : IRuleEngine
 {
     public RuleEngine(IRuleParser parser);
+
+    // Fires after every SolveRule call (success or fail)
     public event EventHandler&lt;RuleAuditEventArgs&gt; RuleEvaluated;
 
-    public void RegisterRule(IRule rule);
-    public bool UnregisterRule(string ruleKey);
-    public bool HasRule(string ruleKey);
+    // Registration
+    public void              RegisterRule(IRule rule);       // throws on duplicate key
+    public bool              UnregisterRule(string ruleKey);
+    public bool              HasRule(string ruleKey);
     public IEnumerable&lt;string&gt; GetRegisteredKeys();
 
-    public (Dictionary&lt;string, object&gt; outputs, object result) SolveRule(
-        string ruleKey, Dictionary&lt;string, object&gt; parameters);
-    public (Dictionary&lt;string, object&gt; outputs, object result) SolveRule(
-        string ruleKey, Dictionary&lt;string, object&gt; parameters, RuleExecutionPolicy policy);
+    // Execution
+    public (Dictionary&lt;string, object&gt; outputs, object result)
+        SolveRule(string ruleKey, Dictionary&lt;string, object&gt; parameters);
+    public (Dictionary&lt;string, object&gt; outputs, object result)
+        SolveRule(string ruleKey, Dictionary&lt;string, object&gt; parameters, RuleExecutionPolicy policy);
 
+    // Direct expression evaluation
     public object EvaluateExpression(IList&lt;Token&gt; tokens, Dictionary&lt;string, object&gt; parameters);
     public object EvaluateExpression(IList&lt;Token&gt; tokens, Dictionary&lt;string, object&gt; parameters, RuleExecutionPolicy policy);
+}</code></pre>
+                    <h3>RuleAuditEventArgs</h3>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RuleKey</code></td><td><code>string</code></td><td>Key of the evaluated rule.</td></tr>
+                            <tr><td><code>Success</code></td><td><code>bool</code></td><td><code>true</code> if evaluation completed without exception.</td></tr>
+                            <tr><td><code>Elapsed</code></td><td><code>TimeSpan</code></td><td>Wall-clock time (Stopwatch).</td></tr>
+                            <tr><td><code>Result</code></td><td><code>object</code></td><td>Primary result value (null on failure).</td></tr>
+                            <tr><td><code>Diagnostics</code></td><td><code>List&lt;ParseDiagnostic&gt;</code></td><td>Parse or validation messages.</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>RuleExecutionPolicy</h3>
+                    <pre><code class="language-csharp">var policy = new RuleExecutionPolicy
+{
+    MaxDepth                 = 10,      // max recursive rule-reference depth
+    AllowDeprecatedExecution = false,   // reject Deprecated rules
+    MinimumLifecycleState    = RuleLifecycleState.Approved,
+    AllowedTokenTypes        = null     // null = allow all types
+};
+var (_, result) = engine.SolveRule("MyRule", parameters, policy);</code></pre>
+                    <h3>Exceptions</h3>
+                    <table>
+                        <thead><tr><th>Exception</th><th>DiagnosticCode</th><th>Cause</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RuleEvaluationException</code></td><td><code>MaxDepthExceeded</code></td><td>Recursive depth &gt; <code>policy.MaxDepth</code></td></tr>
+                            <tr><td><code>RuleEvaluationException</code></td><td><code>CircularRuleReference</code></td><td>Cycle in <code>@RuleReference</code> chain</td></tr>
+                            <tr><td><code>RuleEvaluationException</code></td><td><code>RuleNotFound</code></td><td>Key not registered</td></tr>
+                            <tr><td><code>RuleEvaluationException</code></td><td><code>LifecycleStateViolation</code></td><td>Rule state blocked by policy</td></tr>
+                            <tr><td><code>RuleEvaluationException</code></td><td><code>DivisionByZero</code></td><td>Divide/modulo by zero</td></tr>
+                            <tr><td><code>RuleParseException</code></td><td>—</td><td>Parser returned errors during lazy parse</td></tr>
+                            <tr><td><code>RuleCatalogException</code></td><td><code>DuplicateRuleRegistration</code></td><td>RegisterRule called with existing key</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="expression-evaluation" class="section">
+                    <h2>Expression Evaluation</h2>
+                    <p>Rule expressions use a <strong>shunting-yard → RPN</strong> pipeline: infix token stream → Reverse Polish Notation → stack-based evaluator with automatic type coercion.</p>
+                    <h3>Operator precedence (high → low)</h3>
+                    <table>
+                        <thead><tr><th>Precedence</th><th>Operators</th><th>Associativity</th></tr></thead>
+                        <tbody>
+                            <tr><td>5</td><td><code>NOT</code></td><td>right</td></tr>
+                            <tr><td>4</td><td><code>*</code> <code>/</code> <code>%</code></td><td>left</td></tr>
+                            <tr><td>3</td><td><code>+</code> <code>-</code></td><td>left</td></tr>
+                            <tr><td>2</td><td><code>=</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td><td>left</td></tr>
+                            <tr><td>1</td><td><code>AND</code></td><td>left</td></tr>
+                            <tr><td>0</td><td><code>OR</code></td><td>left</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>Token types and syntax</h3>
+                    <table>
+                        <thead><tr><th>Token type</th><th>Syntax</th><th>Example</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>NumericLiteral</code></td><td>Digits, optional <code>.</code></td><td><code>42</code>, <code>3.14</code></td></tr>
+                            <tr><td><code>StringLiteral</code></td><td><code>"…"</code> or <code>'…'</code>, <code>\"</code> escape</td><td><code>"hello"</code></td></tr>
+                            <tr><td><code>BooleanLiteral</code></td><td><code>true</code> / <code>false</code> (case-insensitive)</td><td><code>true</code></td></tr>
+                            <tr><td><code>NullLiteral</code></td><td><code>null</code></td><td><code>null</code></td></tr>
+                            <tr><td><code>EntityField</code></td><td>Prefixed with <code>:</code></td><td><code>:price</code></td></tr>
+                            <tr><td><code>RuleReference</code></td><td>Prefixed with <code>@</code></td><td><code>@DQ.IsNullOrEmpty</code></td></tr>
+                            <tr><td><code>Identifier</code></td><td>Bare alphanumeric name</td><td><code>qty</code></td></tr>
+                            <tr><td><code>StringLiteral</code> (hash)</td><td>Prefixed with <code>#</code></td><td><code>#active</code></td></tr>
+                        </tbody>
+                    </table>
+                    <h3>Type coercion rules</h3>
+                    <ul>
+                        <li>Any arithmetic/comparison with <code>null</code> propagates <code>null</code>, except <code>=</code>/<code>!=</code> which compare nullity.</li>
+                        <li><code>+</code> with a string operand performs string concatenation.</li>
+                        <li>Comparison operators attempt numeric comparison first; fall back to <code>StringComparer.OrdinalIgnoreCase</code>.</li>
+                        <li><code>AND</code>/<code>OR</code> coerce both sides to <code>bool</code> via <code>Convert.ToBoolean</code>.</li>
+                    </ul>
+                    <h3>Rule references (recursive)</h3>
+                    <pre><code class="language-csharp">engine.RegisterRule(new SimpleRule("DQ.Base", ":score &gt; 0"));
+engine.RegisterRule(new SimpleRule("DQ.Full", "@DQ.Base AND :score &lt; 100"));
+
+var (_, ok) = engine.SolveRule("DQ.Full",
+    new Dictionary&lt;string, object&gt; { [":score"] = 55.0 });  // true</code></pre>
+                    <div class="note">Circular references are detected at runtime and throw <code>CircularRuleReference</code>. Default max depth is 10.</div>
+                </section>
+
+                <section id="tokenizer" class="section">
+                    <h2>Tokenizer</h2>
+                    <p><code>Tokenizer</code> is a stateless, deterministic lexer — never throws for malformed input, always returns structured diagnostics.</p>
+                    <pre><code class="language-csharp">var result = new Tokenizer(":price * 1.1 &gt; 50").Tokenize();
+// result.Tokens     → [ EntityField(":price"), Multiply, NumericLiteral("1.1"), GreaterThan, NumericLiteral("50") ]
+// result.Diagnostics → []</code></pre>
+                    <h3>ParseDiagnostic fields</h3>
+                    <table>
+                        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Code</code></td><td><code>DiagnosticCode</code> enum value.</td></tr>
+                            <tr><td><code>Severity</code></td><td><code>Error</code> or <code>Warning</code>.</td></tr>
+                            <tr><td><code>Start</code> / <code>Length</code></td><td>Byte offset + span within the input string.</td></tr>
+                            <tr><td><code>Message</code></td><td>Human-readable description.</td></tr>
+                            <tr><td><code>Suggestion</code></td><td>Actionable fix hint.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="parsers" class="section">
+                    <h2>Parsers</h2>
+                    <p><code>RuleParserFactory</code> is a case-insensitive registry of <code>IRuleParser</code> implementations. The default parser handles the standard Beep expression language; five additional built-in parsers cover common domain syntaxes.</p>
+                    <pre><code class="language-csharp">public sealed class RuleParserFactory : IRuleParserFactory
+{
+    void                   RegisterParser(string ruleType, IRuleParser parser);  // throws on duplicate
+    IRuleParser            GetParser(string ruleType);     // throws if not found
+    bool                   HasParser(string ruleType);
+    IEnumerable&lt;string&gt;   GetRegisteredTypes();
+}</code></pre>
+                    <h3>Built-in parsers</h3>
+                    <table>
+                        <thead><tr><th>Parser key</th><th>Class</th><th>Syntax handled</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RulesParser</code></td><td><code>RuleParser</code></td><td>Standard Beep expression language — tokenizer-driven, full operator set.</td></tr>
+                            <tr><td><code>CsvColumnParser</code></td><td><code>CsvColumnParser</code></td><td><code>col[N]</code> or <code>row.col[N]</code> — 0-based column reference for CSV rules.</td></tr>
+                            <tr><td><code>FormulaParser</code></td><td><code>FormulaParser</code></td><td>Excel/spreadsheet: <code>SUM(A,B)</code>, cell refs <code>A1</code>, <code>$B$2</code>, <code>Sheet1!C3</code>.</td></tr>
+                            <tr><td><code>SqlWhereParser</code></td><td><code>SqlWhereParser</code></td><td>SQL WHERE subset: comparisons, <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code>, <code>AND</code>/<code>OR</code>.</td></tr>
+                            <tr><td><code>JsonRuleTreeParser</code></td><td><code>JsonRuleTreeParser</code></td><td>JSON tree with <code>rule</code>, <code>params</code>, <code>children</code> keys. DFS traversal → flat token stream.</td></tr>
+                            <tr><td><code>NfelParser</code></td><td><code>NfelParser</code></td><td>Natural Formula Expression Language — <code>&amp;&amp;</code>/<code>||</code>, ternary <code>? :</code>, field paths, <code>!flag</code>.</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>Parser examples</h3>
+                    <pre><code class="language-csharp">// SQL WHERE
+var sqlResult = new SqlWhereParser().ParseRule("Status IN ('Active','Pending') AND Score &gt;= 50");
+
+// NFEL
+var nfelResult = new NfelParser().ParseRule("order.total &gt; 100 &amp;&amp; !isCancelled");
+
+// CSV Column
+var csvResult = new CsvColumnParser().ParseRule("row.Amount[3]");
+// Token[0]: Identifier "Amount", Token[1]: NumericLiteral "3"
+
+// JSON tree
+string json = @"{""rule"":""DQ.IsInRange"",""params"":{""Min"":""0"",""Max"":""100""},""children"":[]}";
+var jsonResult = new JsonRuleTreeParser().ParseRule(json);</code></pre>
+                    <h3>Registering a custom parser</h3>
+                    <pre><code class="language-csharp">[RuleParser(parserKey: "MyDslParser")]
+public sealed class MyDslParser : IRuleParser
+{
+    List&lt;IRuleStructure&gt; IRuleParser.RuleStructures { get; } = new();
+    public ParseResult ParseRule(string expression) { /* tokenise, return ParseResult */ }
+    public ParseResult ParseRule(IRule rule) =&gt; ParseRule(rule.RuleText);
+    public void Clear() { }
 }
 
-public sealed class RuleParserFactory : IRuleParserFactory
-{
-    public void RegisterParser(string ruleType, IRuleParser parser);
-    public IRuleParser GetParser(string ruleType);
-    public bool HasParser(string ruleType);
-    public IEnumerable&lt;string&gt; GetRegisteredTypes();
-}</code></pre>
+// Manual registration or auto-discovered via RuleRegistry.Discover():
+factory.RegisterParser("MyDslParser", new MyDslParser());</code></pre>
                 </section>
+
+                <section id="rule-catalog" class="section">
+                    <h2>RuleCatalog</h2>
+                    <p>In-memory store for <code>IRuleStructure</code> instances with lifecycle-state management. Use it to enumerate, filter, and promote rules independently of the execution engine.</p>
+                    <pre><code class="language-csharp">public sealed class RuleCatalog : IRuleCatalog
+{
+    void                           Register(IRuleStructure structure);   // throws on duplicate GuidID or name
+    void                           Unregister(string guidId);
+    IRuleStructure                 GetByGuid(string guidId);
+    IRuleStructure                 GetByName(string ruleName);
+    IEnumerable&lt;IRuleStructure&gt;   GetAll();
+    IEnumerable&lt;IRuleStructure&gt;   GetByModule(string module);
+    IEnumerable&lt;IRuleStructure&gt;   GetByTag(string tag);           // comma-separated Tags field
+    IEnumerable&lt;IRuleStructure&gt;   GetByLifecycleState(RuleLifecycleState state);
+    void                           Promote(string guidId, RuleLifecycleState newState);  // forward-only
+}</code></pre>
+                    <h3>RuleLifecycleState</h3>
+                    <table>
+                        <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Draft</code></td><td>Work-in-progress, not yet validated.</td></tr>
+                            <tr><td><code>Review</code></td><td>Under peer review.</td></tr>
+                            <tr><td><code>Approved</code></td><td>Validated, production-ready.</td></tr>
+                            <tr><td><code>Deprecated</code></td><td>Executable if policy allows, scheduled for removal.</td></tr>
+                            <tr><td><code>Retired</code></td><td>No longer executable.</td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">catalog.Promote(guid, RuleLifecycleState.Approved);  // forward only — downgrade throws</code></pre>
+                </section>
+
+                <section id="rule-registry" class="section">
+                    <h2>RuleRegistry — Auto-wiring</h2>
+                    <pre><code class="language-csharp">public sealed class RuleRegistry
+{
+    public IRuleEngine        Engine        { get; }   // populated by Discover()
+    public IRuleParserFactory ParserFactory { get; }
+
+    public RuleRegistry(IDMEEditor editor);
+    public RuleRegistry(IDMEEditor editor, IRuleEngine engine, IRuleParserFactory parserFactory);
+
+    // Scans ConfigEditor.RuleParserClasses + ConfigEditor.Rules
+    // Safe to call multiple times — already-registered keys are skipped
+    public void Discover();
+}</code></pre>
+                    <pre><code class="language-csharp">var registry = new RuleRegistry(editor);
+registry.Discover();
+
+var engine  = registry.Engine;
+var factory = registry.ParserFactory;</code></pre>
+                </section>
+
+                <section id="state-store" class="section">
+                    <h2>Rule State Store</h2>
+                    <p>Stateful rules (CircuitBreaker, RetryWithBackoff, DeadLetterQueue, ThrottleRule) use <code>IRuleStateStore</code> to persist counters between calls. Pass one via the <code>"IRuleStateStore"</code> parameter key.</p>
+                    <pre><code class="language-csharp">public interface IRuleStateStore
+{
+    object?  Get(string stateKey);
+    void     Set(string stateKey, object value);
+    int      Increment(string stateKey, int delta = 1);
+    void     Remove(string stateKey);
+    bool     Contains(string stateKey);
+    void     Clear();
+}</code></pre>
+                    <div class="warning"><strong>Distributed systems:</strong> Replace <code>InMemoryRuleStateStore</code> with a Redis- or database-backed implementation to share state across process instances.</div>
+                </section>
+
+                <section id="builtin-rules" class="section">
+                    <h2>Built-in Rules Reference</h2>
+
+                    <h3 id="group-dq">Group: DQ — Data Quality</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DQ.IsNullOrEmpty</code></td><td><code>Value</code> (object)</td><td><code>bool</code> — true when null, DBNull, empty, or whitespace.</td></tr>
+                            <tr><td><code>DQ.IsInRange</code></td><td><code>Value</code>, <code>Min</code>, <code>Max</code> (numeric); optional <code>Inclusive</code> (default <code>"true"</code>)</td><td><code>bool</code></td></tr>
+                            <tr><td><code>DQ.IsInList</code></td><td><code>Value</code>; <code>List</code> (comma-string or <code>IEnumerable</code>)</td><td><code>bool</code></td></tr>
+                            <tr><td><code>DQ.MatchesRegex</code></td><td><code>Value</code> (string); <code>Pattern</code></td><td><code>bool</code></td></tr>
+                            <tr><td><code>DQ.MatchesExpectedType</code></td><td><code>Value</code>; <code>ExpectedType</code> (<code>"int"</code>, <code>"double"</code>, <code>"DateTime"</code>, <code>"bool"</code>)</td><td><code>bool</code></td></tr>
+                            <tr><td><code>DQ.IsUnique</code></td><td><code>Value</code>; <code>IDMEEditor</code>; <code>DataSourceName</code>; <code>EntityName</code>; <code>FieldName</code></td><td><code>bool</code> — queries data source; outputs <code>Count</code>.</td></tr>
+                            <tr><td><code>DQ.ReferentialIntegrity</code></td><td><code>Value</code>; <code>IDMEEditor</code>; <code>DataSourceName</code>; <code>RefEntityName</code>; <code>RefFieldName</code></td><td><code>bool</code></td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">var (_, inRange) = engine.SolveRule("DQ.IsInRange",
+    new Dictionary&lt;string, object&gt; { ["Value"] = 75.0, ["Min"] = 0.0, ["Max"] = 100.0 });
+// inRange → true</code></pre>
+
+                    <h3 id="group-validate">Group: Validate</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Validate.ValidEmail</code></td><td><code>Value</code></td><td><code>bool</code> (RFC 5321/5322 via <code>MailAddress</code>)</td></tr>
+                            <tr><td><code>Validate.ValidPhone</code></td><td><code>Value</code>; optional <code>Format</code> (<code>"E164"</code>)</td><td><code>bool</code></td></tr>
+                            <tr><td><code>Validate.ValidUrl</code></td><td><code>Value</code>; optional <code>RequireHttps</code></td><td><code>bool</code></td></tr>
+                            <tr><td><code>Validate.ValidCreditCard</code></td><td><code>Value</code> — Luhn check</td><td><code>bool</code>, outputs <code>CardType</code></td></tr>
+                            <tr><td><code>Validate.ValidSSN</code></td><td><code>Value</code> — US SSN format</td><td><code>bool</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-record">Group: Record</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Outputs</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Record.SetFieldValue</code></td><td><code>FieldName</code>, <code>Value</code> (supports <code>{Token}</code> interpolation), optional <code>Record</code></td><td>Updated <code>Record</code></td></tr>
+                            <tr><td><code>Record.CopyField</code></td><td><code>SourceField</code>, <code>TargetField</code>, <code>Record</code></td><td>Updated <code>Record</code></td></tr>
+                            <tr><td><code>Record.IncrementField</code></td><td><code>FieldName</code>, optional <code>By</code> (delta, default 1), <code>Record</code></td><td>Updated <code>Record</code>, <code>NewValue</code></td></tr>
+                            <tr><td><code>Record.ConditionalSetField</code></td><td><code>FieldName</code>, <code>Value</code>, <code>Condition</code>, <code>Record</code></td><td>Updated <code>Record</code> only if condition true</td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">// {Token} interpolation in SetFieldValue
+var (outputs, _) = engine.SolveRule("Record.SetFieldValue",
+    new Dictionary&lt;string, object&gt;
+    {
+        ["FieldName"] = "FullName",
+        ["Value"]     = "{FirstName} {LastName}",
+        ["Record"]    = new Dictionary&lt;string, object&gt; { ["FirstName"] = "Alice", ["LastName"] = "Smith" }
+    });
+// outputs["Record"]["FullName"] → "Alice Smith"</code></pre>
+
+                    <h3 id="group-compute">Group: Compute</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Compute.EvalExpression</code></td><td><code>Expression</code> (Beep expr string) + field params</td><td>Evaluated result.</td></tr>
+                            <tr><td><code>Compute.IfElseValue</code></td><td><code>Condition</code> (bool), <code>TrueValue</code>, <code>FalseValue</code></td><td>Selected value.</td></tr>
+                            <tr><td><code>Compute.AgeFromDate</code></td><td><code>BirthDate</code>; optional <code>ReferenceDate</code></td><td><code>int</code> full years.</td></tr>
+                            <tr><td><code>Compute.MapValueTable</code></td><td><code>Value</code>; <code>MapTable</code> (JSON or <code>k=v;…</code>); optional <code>Default</code></td><td>Mapped output value.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-date">Group: Date</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Date.DateDiff</code></td><td><code>StartDate</code>, <code>EndDate</code>; <code>Unit</code> (<code>"Days"</code>, <code>"Hours"</code>, <code>"Minutes"</code>, <code>"Months"</code>, <code>"Years"</code>)</td><td><code>double</code></td></tr>
+                            <tr><td><code>Date.AddDatePart</code></td><td><code>Date</code>, <code>Amount</code>, <code>Part</code></td><td><code>DateTime</code></td></tr>
+                            <tr><td><code>Date.IsWithinBusinessHours</code></td><td>optional <code>StartHour</code> (9), <code>EndHour</code> (17), <code>TimeZone</code></td><td><code>bool</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-numeric">Group: Numeric</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Numeric.Clamp</code></td><td><code>Value</code>, <code>Min</code>, <code>Max</code></td><td>Clamped <code>double</code>.</td></tr>
+                            <tr><td><code>Numeric.RoundNumeric</code></td><td><code>Value</code>; optional <code>Decimals</code> (default 2)</td><td>Rounded <code>double</code>.</td></tr>
+                            <tr><td><code>Numeric.GetEntityAggregate</code></td><td><code>IDMEEditor</code>, <code>DataSourceName</code>, <code>EntityName</code>, <code>FieldName</code>, <code>Aggregation</code> (<code>"Sum"</code>, <code>"Avg"</code>, <code>"Min"</code>, <code>"Max"</code>, <code>"Count"</code>)</td><td><code>double</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-enrich">Group: Enrich</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Outputs</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Enrich.AddMetadataFields</code></td><td><code>Record</code>; optional <code>Fields</code> (default: <code>CreatedAt</code>, <code>UpdatedAt</code>, <code>RecordId</code>)</td><td>Updated <code>Record</code>.</td></tr>
+                            <tr><td><code>Enrich.LookupEnrich</code></td><td><code>Record</code>; <code>IDMEEditor</code>; <code>DataSourceName</code>; <code>LookupEntity</code>; <code>MatchField</code>; <code>MatchValue</code>; <code>OutputFields</code></td><td>Record with looked-up fields.</td></tr>
+                            <tr><td><code>Enrich.MergeFields</code></td><td><code>Record</code>; <code>Overrides</code> (string or IDictionary)</td><td>Merged <code>Record</code>.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-flow">Group: Flow — Resilience</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Key parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Flow.CircuitBreaker</code></td><td><code>StateKey</code>, <code>FailureThreshold</code> (5), <code>ResetSeconds</code> (30), <code>CallSucceeded</code>, <code>IRuleStateStore</code></td><td><code>bool</code> — true=Closed/HalfOpen (allow); false=Open (reject). Outputs <code>CircuitState</code>.</td></tr>
+                            <tr><td><code>Flow.RetryWithBackoff</code></td><td><code>StateKey</code>, <code>MaxRetries</code> (3), <code>InitialDelayMs</code> (500), <code>BackoffMultiplier</code> (2.0), <code>CallSucceeded</code></td><td><code>bool</code> — true=retry allowed. Outputs <code>RetryCount</code>, <code>DelayMs</code>.</td></tr>
+                            <tr><td><code>Flow.DeadLetterQueue</code></td><td><code>StateKey</code>, <code>Record</code>, optional <code>Reason</code></td><td><code>int</code> — DLQ size after enqueue.</td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">var store = new InMemoryRuleStateStore();
+var (outputs, allowed) = engine.SolveRule("Flow.CircuitBreaker",
+    new Dictionary&lt;string, object&gt;
+    {
+        ["StateKey"]         = "PaymentGateway",
+        ["FailureThreshold"] = "3",
+        ["ResetSeconds"]     = "60",
+        ["CallSucceeded"]    = lastCallOk.ToString(),
+        ["IRuleStateStore"]  = store
+    });
+// (bool)allowed  → true  = Closed/HalfOpen (proceed)
+// outputs["CircuitState"] → "Closed" | "Open" | "HalfOpen"</code></pre>
+
+                    <h3 id="group-route">Group: Route</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Route.RouteOnCondition</code></td><td><code>Condition</code>, <code>TrueRoute</code>, <code>FalseRoute</code></td><td><code>string</code> — chosen route label.</td></tr>
+                            <tr><td><code>Route.SplitIntoBuckets</code></td><td><code>Value</code>; <code>Buckets</code> (JSON array of <code>{Label, Max}</code>)</td><td><code>string</code> — matching bucket label.</td></tr>
+                            <tr><td><code>Route.ThrottleRule</code></td><td><code>StateKey</code>, <code>MaxCalls</code>, <code>WindowSeconds</code>, <code>IRuleStateStore</code></td><td><code>bool</code> — true=allowed; outputs <code>CurrentCount</code>.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-notify">Group: Notify</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Notify.LogMessage</code></td><td><code>Message</code>; optional <code>Level</code> (<code>"Info"</code>, <code>"Warn"</code>, <code>"Error"</code>); <code>IDMEEditor</code></td><td><code>bool</code> always true.</td></tr>
+                            <tr><td><code>Notify.EmitAuditTrail</code></td><td><code>Record</code>; <code>EventName</code>; optional <code>IDMEEditor</code>, <code>DataSourceName</code></td><td><code>bool</code></td></tr>
+                            <tr><td><code>Notify.SendWebhook</code></td><td><code>Url</code>; <code>Payload</code>; optional <code>Method</code>, <code>Headers</code></td><td><code>bool</code> — HTTP 2xx = true; outputs <code>StatusCode</code>.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-query">Group: Query</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Query.RunScalarQuery</code></td><td><code>IDMEEditor</code>, <code>DataSourceName</code>, <code>EntityName</code>, <code>FieldName</code>, optional <code>Filters</code></td><td>First matching field value.</td></tr>
+                            <tr><td><code>Query.RunParameterizedLookup</code></td><td><code>IDMEEditor</code>, <code>DataSourceName</code>, <code>Query</code>, <code>Parameters</code></td><td>First row as <code>IDictionary&lt;string,object&gt;</code>.</td></tr>
+                            <tr><td><code>Query.SetFromQuery</code></td><td><code>Record</code>, <code>IDMEEditor</code>, <code>DataSourceName</code>, <code>EntityName</code>, <code>Filters</code>, <code>OutputFields</code></td><td>Record enriched from query row.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="group-schema">Group: Schema</h3>
+                    <table>
+                        <thead><tr><th>Rule key</th><th>Parameters</th><th>Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Schema.EnforceNotNull</code></td><td><code>Record</code>; <code>Fields</code> (comma-separated)</td><td><code>bool</code>; outputs <code>ViolatingFields</code>.</td></tr>
+                            <tr><td><code>Schema.ValidateSchemaFields</code></td><td><code>Record</code>; <code>IDMEEditor</code>; <code>DataSourceName</code>; <code>EntityName</code></td><td><code>bool</code>; outputs <code>Violations</code>.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="create-rule" class="section">
+                    <h2>Creating a Custom Rule</h2>
+                    <p>Implement <code>IRule</code>, annotate with <code>[Rule]</code>, deploy the assembly — <code>RuleRegistry.Discover()</code> picks it up.</p>
+                    <pre><code class="language-csharp">[Rule(ruleKey: "Pricing.ApplyDiscount",
+      ParserKey = "RulesParser",
+      RuleName  = "ApplyDiscount",
+      RuleType  = "Transform")]
+public sealed class ApplyDiscount : IRule
+{
+    public string         RuleText  { get; set; } = "Pricing.ApplyDiscount";
+    public IRuleStructure Structure { get; set; } = new RuleStructure();
+
+    public (Dictionary&lt;string, object&gt; outputs, object result)
+        SolveRule(Dictionary&lt;string, object&gt; parameters = null)
+    {
+        var output = new Dictionary&lt;string, object&gt;();
+        if (!parameters.TryGetValue("Price",    out var priceRaw) ||
+            !parameters.TryGetValue("Discount", out var discRaw))
+        { output["Error"] = "Missing parameters"; return (output, null); }
+
+        double price    = Convert.ToDouble(priceRaw);
+        double discount = Convert.ToDouble(discRaw);       // 0–100 %
+        double final    = price * (1 - discount / 100.0);
+
+        output["FinalPrice"]  = final;
+        output["SavedAmount"] = price - final;
+        return (output, final);
+    }
+}
+
+// Usage:
+var (outputs, finalPrice) = engine.SolveRule("Pricing.ApplyDiscount",
+    new Dictionary&lt;string, object&gt; { ["Price"] = 120.00, ["Discount"] = 15.0 });
+// finalPrice → 102.0 | outputs["SavedAmount"] → 18.0</code></pre>
+                    <h3>Rule attribute fields</h3>
+                    <table>
+                        <thead><tr><th>Property</th><th>Required</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ruleKey</code></td><td>Yes</td><td>Unique lookup key. Convention: <code>Group.Name</code>.</td></tr>
+                            <tr><td><code>ParserKey</code></td><td>Yes</td><td>Which parser to use.</td></tr>
+                            <tr><td><code>RuleName</code></td><td>Recommended</td><td>Short display name for <code>RuleCatalog</code>.</td></tr>
+                            <tr><td><code>RuleType</code></td><td>Optional</td><td>Category tag.</td></tr>
+                            <tr><td><code>RuleAuthor</code></td><td>Optional</td><td>Author identifier.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>End-to-End Examples</h2>
+
+                    <h3>1. Validate and enrich an order record</h3>
+                    <pre><code class="language-csharp">var registry = new RuleRegistry(editor);
+registry.Discover();
+var engine = registry.Engine;
+
+var record = new Dictionary&lt;string, object&gt;
+    { ["CustomerEmail"] = "bob@example.com", ["OrderTotal"] = 250.0, ["Status"] = "New" };
+
+// Validate email
+var (_, emailOk) = engine.SolveRule("Validate.ValidEmail",
+    new Dictionary&lt;string, object&gt; { ["Value"] = record["CustomerEmail"] });
+if (!(bool)emailOk) throw new Exception("Invalid email");
+
+// Check total in range
+var (_, rangeOk) = engine.SolveRule("DQ.IsInRange",
+    new Dictionary&lt;string, object&gt; { ["Value"] = record["OrderTotal"], ["Min"] = 1.0, ["Max"] = 9999.0 });
+if (!(bool)rangeOk) throw new Exception("Total out of range");
+
+// Add metadata timestamps
+var (enrichOut, _) = engine.SolveRule("Enrich.AddMetadataFields",
+    new Dictionary&lt;string, object&gt; { ["Record"] = record });
+var enriched = (IDictionary&lt;string, object&gt;)enrichOut["Record"];
+// enriched now has CreatedAt, UpdatedAt, RecordId</code></pre>
+
+                    <h3>2. Expression evaluation without a stored rule</h3>
+                    <pre><code class="language-csharp">var parseResult = new RuleParser().ParseRule(":discount &gt; 10 AND :total &gt;= 200");
+if (parseResult.Success)
+{
+    object ok = engine.EvaluateExpression(
+        parseResult.Structure.Tokens,
+        new Dictionary&lt;string, object&gt; { [":discount"] = 15.0, [":total"] = 350.0 });
+    // ok → true
+}</code></pre>
+
+                    <h3>3. DQ pipeline with audit log</h3>
+                    <pre><code class="language-csharp">engine.RuleEvaluated += (_, e) =&gt;
+    logger.LogInformation("[{Key}] ok={Ok} {Ms:F1}ms", e.RuleKey, e.Success, e.Elapsed.TotalMilliseconds);
+
+string[] dqKeys = { "DQ.IsNullOrEmpty", "DQ.MatchesRegex", "Schema.EnforceNotNull" };
+var bag = new Dictionary&lt;string, object&gt;
+{
+    ["Value"]   = record["CustomerEmail"],
+    ["Pattern"] = @"^[\w.+-]+@[\w-]+\.[a-z]{2,}$",
+    ["Record"]  = record,
+    ["Fields"]  = "CustomerEmail,OrderTotal,Status"
+};
+bool allPassed = dqKeys.All(key =&gt; engine.SolveRule(key, bag).result is bool b &amp;&amp; b);</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="json-datasource.html" class="nav-link prev">
+                        <span class="nav-arrow">←</span>
+                        <span>JSON DataSource</span>
+                    </a>
+                    <a href="helpers-runtime-reference.html" class="nav-link next">
+                        <span>Advanced Tools &amp; Utilities</span>
+                        <span class="nav-arrow">→</span>
+                    </a>
+                </div>
             </div>
         </main>
     </div>

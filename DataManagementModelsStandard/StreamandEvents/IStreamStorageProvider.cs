@@ -115,11 +115,17 @@ namespace TheTechIdea.Beep.StreamandEvents
         /// <summary>Maximum total size in bytes before retention kicks in. Null = unlimited.</summary>
         public long? MaxSizeBytes { get; init; }
 
+        /// <summary>Maximum number of messages to keep per partition. Null = unlimited.</summary>
+        public long? MaxMessageCount { get; init; }
+
         /// <summary>If true, only the latest message per key is kept (log compaction).</summary>
         public bool IsCompacted { get; init; }
 
         /// <summary>Replication factor — how many nodes should hold a copy.</summary>
         public int ReplicationFactor { get; init; } = 1;
+
+        /// <summary>What to do with expired data.</summary>
+        public RetentionCleanupMode CleanupMode { get; init; } = RetentionCleanupMode.Delete;
 
         public static TopicStorageConfig Default => new()
         {
@@ -127,6 +133,21 @@ namespace TheTechIdea.Beep.StreamandEvents
             IsCompacted = false,
             ReplicationFactor = 1
         };
+
+        /// <summary>Returns true when any retention constraint is configured.</summary>
+        public bool HasRetentionPolicy =>
+            RetentionPeriod.HasValue || MaxSizeBytes.HasValue || MaxMessageCount.HasValue;
+    }
+
+    /// <summary>Determines how expired messages are handled.</summary>
+    public enum RetentionCleanupMode
+    {
+        /// <summary>Permanently delete expired messages.</summary>
+        Delete = 0,
+        /// <summary>Key-based log compaction.</summary>
+        Compact = 1,
+        /// <summary>Move to cold/tiered storage (Phase 2).</summary>
+        Tiered = 2,
     }
 
     /// <summary>Metadata snapshot for a stored topic.</summary>

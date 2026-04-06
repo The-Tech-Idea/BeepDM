@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON DataSource - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>JSON DataSource</span>
+                </nav>
+
+                <div class="page-header">
+                    <h1>JSON DataSource</h1>
+                    <p class="page-subtitle">Complete reference for JsonDataSource, JsonDataSourceAdvanced, and the full helper pipeline: schema inference, filtering, CRUD, async streaming, graph hydration, relations, and caching.</p>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#json-overview">Overview</a></li>
+                        <li><a href="#json-datasource">JsonDataSource</a></li>
+                        <li><a href="#json-advanced">JsonDataSourceAdvanced</a></li>
+                        <li><a href="#json-schema">Schema Inference (JsonSchemaHelper)</a></li>
+                        <li><a href="#json-filter">Filter Compilation (JsonFilterHelper)</a></li>
+                        <li><a href="#json-crud">CRUD Operations (JsonCrudHelper)</a></li>
+                        <li><a href="#json-async">Async Streaming (JsonAsyncDataHelper)</a></li>
+                        <li><a href="#json-graph">Graph Hydration &amp; Relations</a></li>
+                        <li><a href="#json-cache">Caching (JsonCacheManager)</a></li>
+                        <li><a href="#json-examples">End-to-End Examples</a></li>
+                    </ul>
+                </div>
+
+                <!-- SECTION 1 -->
+                <section id="json-overview" class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        The <code>Json</code> folder (<code>DataManagementEngineStandard/Json/</code>) delivers
+                        file-document-style JSON data handling under the standard BeepDM
+                        <code>IDataSource</code> abstraction. A JSON file becomes a fully queryable,
+                        writable, and schema-aware data source with no external database engine.
+                    </p>
+
+                    <div class="success">
+                        <strong>Two implementation tiers</strong>
+                        <ul>
+                            <li><code>JsonDataSource</code> — lightweight, direct file I/O, single-class CRUD. Good for simple scenarios.</li>
+                            <li><code>JsonDataSourceAdvanced</code> — full helper pipeline: async streaming, graph hydration, relation traversal, schema sync, and predicate caching.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Folder Structure</h3>
+                    <pre><code class="language-text">Json/
+├── JsonDataSource.cs            ← basic datasource
+├── JsonDataSourceAdvanced.cs    ← advanced datasource (helper pipeline)
+├── JsonExtensions.cs            ← shared JToken/JObject extension methods
+└── Helpers/
+    ├── JsonDataHelper.cs        ← synchronous entity query
+    ├── JsonAsyncDataHelper.cs   ← async streaming, pagination
+    ├── JsonCrudHelper.cs        ← Insert / Update / Delete on JArray
+    ├── JsonSchemaHelper.cs      ← schema inference, entity tree construction
+    ├── JsonSchemaSyncHelper.cs  ← live field sync, PK integrity
+    ├── JsonSchemaPersistenceHelper.cs  ← save/load derived schemas
+    ├── JsonFilterHelper.cs      ← AppFilter → JObject predicate compilation
+    ├── JsonCacheManager.cs      ← predicate, property-map, child-entity caches
+    ├── JsonGraphHelper.cs       ← graph node hydration with depth control
+    ├── JsonRelationHelper.cs    ← FK parent/child traversal
+    ├── JsonPathNavigator.cs     ← JSONPath array resolution from EntityStructure
+    ├── JsonDeepEntityResolver.cs← deep multi-level entity resolution
+    └── GraphHydrationOptions.cs ← depth / ancestor-chain / circular-ref options</code></pre>
+
+                    <div class="note">
+                        <strong>Dependency</strong>
+                        <p>Both classes use <strong>Newtonsoft.Json</strong> (<code>JToken</code> / <code>JArray</code> / <code>JObject</code>) internally.</p>
+                    </div>
+                </section>
+
+                <!-- SECTION 2 -->
+                <section id="json-datasource" class="section">
+                    <h2>JsonDataSource</h2>
+                    <p>
+                        <code>JsonDataSource</code> is the lightweight implementation. It loads the entire
+                        JSON file into memory on construction and performs all CRUD in-memory, flushing back
+                        to disk on write operations.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>AddinAttribute registration</h3>
+                        <pre><code class="language-csharp">[AddinAttribute(
+    Category       = DatasourceCategory.FILE,
+    DatasourceType = DataSourceType.Json)]
+public class JsonDataSource : IDataSource, IDisposable { }</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Constructor &amp; connection setup</h3>
+                        <pre><code class="language-csharp">// Constructor resolves the connection from ConfigEditor,
+// then reads the file immediately.
+public JsonDataSource(
+    string         datasourcename,
+    IDMLogger      logger,
+    IDMEEditor     pDMEEditor,
+    DataSourceType databasetype,
+    IErrorsInfo    per)
+
+// Internal after ctor:
+//   Dataconnection.ConnectionProp = ConfigEditor.DataConnections[datasourcename]
+//   FileName = Path.Combine(FilePath, FileName)
+//   if (File.Exists(FileName)) ReadJson(FileName);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Key IDataSource members</h3>
+                        <pre><code class="language-csharp">// Core state
+DataSourceType DatasourceType { get; set; }   // Json
+DatasourceCategory Category   { get; set; }   // FILE
+ConnectionState ConnectionStatus { get; set; }
+
+// Entity management
+List&lt;string&gt;          EntitiesNames { get; set; }
+List&lt;EntityStructure&gt; Entities      { get; set; }
+
+// Standard CRUD (delegates to JToken in-memory tree)
+IErrorsInfo  InsertEntity   (string entityName, object entity);
+IErrorsInfo  UpdateEntities (string entityName, IErrorsInfo errObject, object entity);
+IErrorsInfo  DeleteEntity   (string entityName, object entity);
+object       GetEntity      (string entityName, List&lt;AppFilter&gt; filters);
+Task&lt;object&gt; GetEntityAsync (string entityName, List&lt;AppFilter&gt; filters);
+
+// Schema
+EntityStructure GetEntityStructure(string entityname, bool refresh = false);
+List&lt;string&gt;    GetEntitiesNames  (string schemaName);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Add a JSON connection and open it</h3>
+                        <pre><code class="language-csharp">dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "products",
+    FilePath       = @"C:\data",
+    FileName       = "products.json",
+    DatabaseType   = DataSourceType.Json,
+    DriverName     = "JsonDataSource"
+});
+
+var ds = dmeEditor.GetDataSource("products") as JsonDataSource;
+ds.Openconnection();
+
+// Get all entities inferred from the file
+var entityNames = ds.GetEntitiesNames(null);
+Console.WriteLine(string.Join(", ", entityNames));</code></pre>
+                    </div>
+                </section>
+
+                <!-- SECTION 3 -->
+                <section id="json-advanced" class="section">
+                    <h2>JsonDataSourceAdvanced</h2>
+                    <p>
+                        <code>JsonDataSourceAdvanced</code> composes the full helper pipeline. Each concern
+                        is delegated to a dedicated helper class injected at connection-open time.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Private helper composition</h3>
+                        <pre><code class="language-csharp">// Fields wired up inside Openconnection():
+private JsonDataHelper             _dataHelper;      // sync entity query
+private JsonAsyncDataHelper        _asyncHelper;     // streaming / pagination
+private JsonCrudHelper             _crudHelper;      // insert / update / delete
+private JsonGraphHelper            _graphHelper;     // graph hydration
+private JsonSchemaPersistenceHelper _schemaPersistence; // schema save/load
+
+// Root JSON state
+private JToken _rootJson;     // original root (object or array)
+private JArray _rootArray;    // normalized array root
+private bool   _rootWasObject; // true when root was {}, not []
+
+// Thread safety
+private readonly object _lock = new();
+private bool _dataDirty;     // true after any write, triggers SaveJson on close</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced-only methods (beyond IDataSource)</h3>
+                        <pre><code class="language-csharp">// Async streaming — yields objects one at a time without loading all rows
+IAsyncEnumerable&lt;object&gt; StreamEntityAsync(
+    string entityName, List&lt;AppFilter&gt; filters,
+    CancellationToken cancellationToken = default);
+
+// Paged fetch
+Task&lt;List&lt;object&gt;&gt; GetPageAsync(
+    string entityName, List&lt;AppFilter&gt; filters,
+    int pageNumber, int pageSize,
+    CancellationToken cancellationToken = default);
+
+// Count without materializing all rows
+Task&lt;int&gt; CountAsync(
+    string entityName, List&lt;AppFilter&gt; filters,
+    CancellationToken cancellationToken = default);
+
+// Graph hydration with depth and options
+IEnumerable&lt;object&gt; MaterializeGraph(
+    string rootEntityName, List&lt;AppFilter&gt; rootFilters,
+    GraphHydrationOptions options,
+    Func&lt;EntityStructure, bool&gt; includeChildPredicate = null);
+
+// Schema sync — scan data rows and add previously-unseen fields
+bool SyncSchema(string entityName);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>When to use which class</strong>
+                        <ul>
+                            <li>Use <code>JsonDataSource</code> for configuration files, small lookup tables, or simple import/export scenarios.</li>
+                            <li>Use <code>JsonDataSourceAdvanced</code> when you need async streaming, graph traversal, schema evolution, or large-file pagination.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- SECTION 4 -->
+                <section id="json-schema" class="section">
+                    <h2>Schema Inference (JsonSchemaHelper)</h2>
+                    <p>
+                        <code>JsonSchemaHelper</code> traverses the JSON tree and produces a list of
+                        <code>EntityStructure</code> objects — one per array-of-objects node — plus
+                        <code>RelationShipKeys</code> linking parent arrays to their nested children.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>BuildEntityStructures</h3>
+                        <pre><code class="language-csharp">// Static entry point — called by both datasource classes during Openconnection()
+(List&lt;EntityStructure&gt; entities, List&lt;RelationShipKeys&gt; relations) =
+    JsonSchemaHelper.BuildEntityStructures(
+        root:           _rootJson,
+        rootEntityName: "products",   // derived from file name
+        dataSourceId:   DatasourceName,
+        dsType:         DataSourceType.Json);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Traversal rules</h3>
+                        <pre><code class="language-csharp">// JArray of JObject  → new EntityStructure, recurse into first element's nested arrays
+// JObject (root)     → single-row entity, recurse into nested arrays/objects
+// JArray of primitives → ignored (not entity-modelled)
+// Nested array       → child entity named "parent_propertyName", parent FK added automatically
+
+// PK auto-detection order (PreferredKeyNames):
+//   "_id", "id", "Id", "ID"
+// If none found → synthetic field "__id" added with type Guid</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>JsonSchemaSyncHelper — live field discovery</h3>
+                        <pre><code class="language-csharp">// Add fields seen in data but absent from current EntityStructure
+// Returns true if any fields were added
+bool changed = JsonSchemaSyncHelper.SyncFieldsFromData(dataArray, entityStructure);
+
+// Ensure the synthetic PK field is still present in es.Fields
+bool fixed   = JsonSchemaSyncHelper.EnsurePrimaryKeyIntegrity(entityStructure);
+
+// CLR type inference for new fields:
+//   JTokenType.Integer → long
+//   JTokenType.Float   → double
+//   JTokenType.Boolean → bool
+//   JTokenType.Date    → DateTime
+//   everything else    → string</code></pre>
+                    </div>
+                </section>
+
+                <!-- SECTION 5 -->
+                <section id="json-filter" class="section">
+                    <h2>Filter Compilation (JsonFilterHelper)</h2>
+                    <p>
+                        <code>JsonFilterHelper.CompileFilters</code> converts a <code>List&lt;AppFilter&gt;</code>
+                        into a list of <code>Func&lt;JObject, bool&gt;</code> predicates that are applied to
+                        each row during query execution.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Supported operators</h3>
+                        <pre><code class="language-csharp">// Equality
+"="  | "equals"           → case-insensitive string equality
+"!=" | "&lt;&gt;" | "notequals"  → negated equality
+
+// Containment
+"contains"                → IndexOf ≥ 0 (case-insensitive)
+"notcontains" | "!contains"
+"startswith" | "starts with"
+"endswith"   | "ends with"
+
+// Set membership
+"in"     → FilterValue is comma-separated list
+"notin"  | "not in"
+
+// Pattern
+"regex" | "matches"       → Regex.IsMatch(value, FilterValue)
+
+// Range
+"between"  → FilterValue + FilterValue1 (or single comma-separated FilterValue)
+"&gt;" | "&gt;=" | "&lt;" | "&lt;="
+
+// Null checks
+"is null"     | "isnull"
+"is not null" | "isnotnull"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage — manual filter construction</h3>
+                        <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Category", Operator = "=",        FilterValue  = "Electronics" },
+    new AppFilter { FieldName = "Price",    Operator = "between",  FilterValue  = "100",
+                                                                    FilterValue1 = "500" },
+    new AppFilter { FieldName = "Name",     Operator = "contains", FilterValue  = "Pro" }
+};
+
+var predicates = JsonFilterHelper.CompileFilters(filters, entityStructure);
+
+// Returns objects that match ALL predicates (AND semantics)
+var results = ds.GetEntity("products", filters);
+
+// MongoDB-style $oid fields are unwrapped automatically before comparison
+// DateTime fields are serialised to ISO-8601 for string comparisons</code></pre>
+                    </div>
+                </section>
+
+                <!-- SECTION 6 -->
+                <section id="json-crud" class="section">
+                    <h2>CRUD Operations (JsonCrudHelper)</h2>
+                    <p>
+                        <code>JsonCrudHelper</code> operates on an in-memory <code>JToken</code> tree.
+                        All mutations are accumulated until <code>Closeconnection()</code> (or an explicit
+                        <code>SaveJson</code> call) flushes the file.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Insert</h3>
+                        <pre><code class="language-csharp">// Resolves the target JArray via JsonPathNavigator, then:
+// 1. Converts the POCO to JObject via JObject.FromObject(data)
+// 2. Ensures a synthetic PK value exists (adds GUID if missing)
+// 3. Adds parent-FK reference if entity is a child
+// 4. Appends to the resolved array
+bool ok = _crudHelper.Insert("products", new Product { Name = "Laptop", Price = 999.99m });</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Update</h3>
+                        <pre><code class="language-csharp">// Finds row where PrimaryKey field matches, then merges all properties
+// Returns false if PK field is missing from entity definition or data object
+bool ok = _crudHelper.Update("products", updatedProduct);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Delete</h3>
+                        <pre><code class="language-csharp">// Deletes by AppFilter key match (typically PK equality filter)
+var keyFilter = new AppFilter
+{
+    FieldName   = "id",
+    Operator    = "=",
+    FilterValue = "abc-123"
+};
+bool ok = _crudHelper.Delete("products", keyFilter);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Via IDataSource (JsonDataSourceAdvanced)</h3>
+                        <pre><code class="language-csharp">// All three operations go through _crudHelper internally
+IErrorsInfo result;
+
+result = ds.InsertEntity("products", new Product { Name = "Tablet", Price = 499m });
+result = ds.UpdateEntities("products", result, updatedTablet);
+result = ds.DeleteEntity("products", new AppFilter { FieldName = "id", Operator = "=", FilterValue = "xyz" });
+
+// File is written on Closeconnection() if _dataDirty == true
+ds.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>Thread safety</strong>
+                        <p>
+                            <code>JsonDataSourceAdvanced</code> wraps all write operations in a <code>lock(_lock)</code>
+                            to prevent concurrent mutation of the in-memory JSON tree. Read operations are not locked
+                            — do not mix concurrent reads with writes without external coordination.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- SECTION 7 -->
+                <section id="json-async" class="section">
+                    <h2>Async Streaming (JsonAsyncDataHelper)</h2>
+                    <p>
+                        <code>JsonAsyncDataHelper</code> provides <code>IAsyncEnumerable</code>-based streaming
+                        and paged access. It inserts a <code>Task.Yield()</code> between each row to keep the
+                        calling thread responsive when processing large files.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>StreamAsync</h3>
+                        <pre><code class="language-csharp">// Yields materialized objects one at a time, applying filter predicates per row.
+// Supports typed POCO materialization when the entity type is registered.
+await foreach (var product in ds.StreamEntityAsync(
+    "products",
+    filters,
+    cancellationToken))
+{
+    Console.WriteLine(((Product)product).Name);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Paged fetch</h3>
+                        <pre><code class="language-csharp">// Page 2, 25 rows per page
+var page = await ds.GetPageAsync(
+    entityName:  "products",
+    filters:     filters,
+    pageNumber:  2,
+    pageSize:    25,
+    cancellationToken: ct);
+
+Console.WriteLine($"Got {page.Count} rows");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>CountAsync</h3>
+                        <pre><code class="language-csharp">// Counts without materializing objects — useful for pagination metadata
+int total = await ds.CountAsync("products", filters, ct);
+int totalPages = (int)Math.Ceiling((double)total / pageSize);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Materialization priority</strong>
+                        <ol>
+                            <li>If a runtime type is registered for the entity name, properties are mapped via <code>PropertyInfo.SetValue</code> using a cached property map (<code>JsonCacheManager</code>).</li>
+                            <li>Otherwise rows are returned as <code>Dictionary&lt;string, object&gt;</code>.</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- SECTION 8 -->
+                <section id="json-graph" class="section">
+                    <h2>Graph Hydration &amp; Relations</h2>
+
+                    <h3>JsonGraphHelper — MaterializeGraph</h3>
+                    <p>
+                        Recursively builds a graph of nested dictionaries from the in-memory JSON tree,
+                        controlled by <code>GraphHydrationOptions</code>.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>GraphHydrationOptions</h3>
+                        <pre><code class="language-csharp">public class GraphHydrationOptions
+{
+    public int    Depth               { get; set; } = 1;         // 0 = root only
+    public bool   IncludeAncestorChain { get; set; } = false;
+    public string AncestorsKey        { get; set; } = "__ancestors";
+    public bool   BreakCircularRefs   { get; set; } = true;
+    // Func to include/exclude child entity types dynamically
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>MaterializeGraph usage</h3>
+                        <pre><code class="language-csharp">var options = new GraphHydrationOptions
+{
+    Depth              = 2,
+    IncludeAncestorChain = true
+};
+
+// Returns IEnumerable&lt;object&gt; where each object is a
+// Dictionary&lt;string, object&gt; with child collections inlined.
+var graph = ds.MaterializeGraph(
+    rootEntityName:       "orders",
+    rootFilters:          new List&lt;AppFilter&gt; { /* ... */ },
+    options:              options,
+    includeChildPredicate: es =&gt; es.EntityName != "orders_audit");
+
+foreach (Dictionary&lt;string, object&gt; order in graph)
+{
+    var lines = (List&lt;Dictionary&lt;string, object&gt;&gt;)order["orders_lines"];
+    Console.WriteLine($"Order {order["id"]} has {lines.Count} lines");
+}</code></pre>
+                    </div>
+
+                    <h3>JsonRelationHelper — FK Traversal</h3>
+                    <p>
+                        Provides direct parent/child traversal using <code>EntityStructure.Relations</code>
+                        metadata without materializing the full graph.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>GetChildren / GetParents</h3>
+                        <pre><code class="language-csharp">// Resolve child entities for a given parent row key value
+IEnumerable&lt;JObject&gt; lines = JsonRelationHelper.GetChildren(
+    root:           _rootJson,
+    parent:         ordersEntity,
+    child:          orderLinesEntity,
+    parentKeyValue: "order-abc-123");
+
+// Resolve parent rows from a child FK value
+IEnumerable&lt;JObject&gt; parents = JsonRelationHelper.GetParents(
+    root:                   _rootJson,
+    child:                  orderLinesEntity,
+    parent:                 ordersEntity,
+    childRowParentKeyValue: "order-abc-123");
+
+// Relation metadata used:
+//   child.Relations[x].RelatedEntityID  == parent.EntityName
+//   child.Relations[x].EntityColumnID   == FK field name in child</code></pre>
+                    </div>
+                </section>
+
+                <!-- SECTION 9 -->
+                <section id="json-cache" class="section">
+                    <h2>Caching (JsonCacheManager)</h2>
+                    <p>
+                        <code>JsonCacheManager</code> is a static, thread-safe cache using
+                        <code>ConcurrentDictionary</code>. It amortises the cost of predicate compilation,
+                        property-map reflection, and child-entity list construction across repeated calls.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Cache surfaces</h3>
+                        <pre><code class="language-csharp">// 1. Predicate cache — key: "entityName|field:op:val;field:op:val;..."
+List&lt;Func&lt;JObject, bool&gt;&gt; preds =
+    JsonCacheManager.GetOrAddPredicates(entityName, filters, entity);
+
+// 2. Property-map cache — key: type.FullName
+//    Maps FieldName → PropertyInfo for POCO materialization
+Dictionary&lt;string, PropertyInfo&gt; propMap =
+    JsonCacheManager.GetOrAddPropertyMap(typeof(Product), entity);
+
+// 3. Child-entity list cache — key: parent.EntityName
+List&lt;EntityStructure&gt; children =
+    JsonCacheManager.GetOrAddChildren(parentEntity, allEntities);
+
+// Partial invalidation (e.g. after schema sync)
+JsonCacheManager.InvalidateEntity("products");
+
+// Full reset (e.g. after file reload)
+JsonCacheManager.InvalidateAll();</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Cache lifetime</strong>
+                        <p>
+                            The static caches survive for the process lifetime. Call
+                            <code>InvalidateEntity</code> after schema changes and
+                            <code>InvalidateAll</code> after reloading a file to avoid stale predicate
+                            or property-map entries.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- SECTION 10 -->
+                <section id="json-examples" class="section">
+                    <h2>End-to-End Examples</h2>
+
+                    <div class="code-example">
+                        <h3>Basic: read a JSON file</h3>
+                        <pre><code class="language-csharp">// 1. Register connection
+dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "catalog",
+    FilePath       = @"C:\data",
+    FileName       = "catalog.json",
+    DatabaseType   = DataSourceType.Json,
+    DriverName     = "JsonDataSource"
+});
+
+// 2. Open
+var ds = dmeEditor.GetDataSource("catalog") as JsonDataSource;
+ds.Openconnection();
+
+// 3. List entities inferred from schema
+foreach (var name in ds.GetEntitiesNames(null))
+    Console.WriteLine(name);
+
+// 4. Query with filters
+var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "inStock", Operator = "=", FilterValue = "true" }
+};
+var rows = (IEnumerable&lt;object&gt;)ds.GetEntity("products", filters);
+ds.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced: async streaming with pagination</h3>
+                        <pre><code class="language-csharp">var ads = dmeEditor.GetDataSource("catalog") as JsonDataSourceAdvanced;
+ads.Openconnection();
+
+int total     = await ads.CountAsync("products", null, CancellationToken.None);
+int pageSize  = 50;
+int pageCount = (int)Math.Ceiling((double)total / pageSize);
+
+for (int p = 1; p &lt;= pageCount; p++)
+{
+    var page = await ads.GetPageAsync("products", null, p, pageSize);
+    Console.WriteLine($"Page {p}: {page.Count} rows");
+}
+
+ads.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced: CRUD cycle</h3>
+                        <pre><code class="language-csharp">var ads = dmeEditor.GetDataSource("catalog") as JsonDataSourceAdvanced;
+ads.Openconnection();
+
+// Insert
+ads.InsertEntity("products", new { id = Guid.NewGuid(), name = "Widget", price = 9.99 });
+
+// Update
+ads.UpdateEntities("products", ads.ErrorObject,
+    new { id = existingId, name = "Widget Pro", price = 19.99 });
+
+// Delete
+ads.DeleteEntity("products",
+    new AppFilter { FieldName = "id", Operator = "=", FilterValue = existingId.ToString() });
+
+// File is written here
+ads.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced: graph hydration</h3>
+                        <pre><code class="language-csharp">// Given catalog.json:
+// { "orders": [ { "id": 1, "lines": [ { "sku": "A", "qty": 2 } ] } ] }
+
+var ads = dmeEditor.GetDataSource("catalog") as JsonDataSourceAdvanced;
+ads.Openconnection();
+
+var options = new GraphHydrationOptions { Depth = 2 };
+
+var graph = ads.MaterializeGraph(
+    rootEntityName: "orders",
+    rootFilters:    null,
+    options:        options);
+
+foreach (Dictionary&lt;string, object&gt; order in graph)
+{
+    var lines = order["orders_lines"] as List&lt;Dictionary&lt;string, object&gt;&gt;;
+    Console.WriteLine($"Order {order["id"]}: {lines?.Count ?? 0} lines");
+}
+
+ads.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Advanced: schema sync after data change</h3>
+                        <pre><code class="language-csharp">// A new field "tags" appears in some product objects — sync the schema
+bool changed = ads.SyncSchema("products");
+if (changed)
+{
+    // Invalidate predicate and property-map caches so next query uses new fields
+    JsonCacheManager.InvalidateEntity("products");
+    Console.WriteLine("Schema updated: new fields discovered");
+}</code></pre>
+                    </div>
+                </section>
+
+                <div class="nav-links">
+                    <a href="filemanager-reader-host.html"><i class="bi bi-arrow-left"></i> FileManager Reference</a>
+                    <a href="advanced-tools-utilities.html">Advanced Tools &amp; Utilities <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            &copy; 2026 The Tech Idea. Beep Data Management Engine Documentation.
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

@@ -45,6 +45,15 @@ namespace TheTechIdea.Beep.StreamandEvents
         public string ConsumerGroupId { get; init; }
         public bool AutoCommit { get; init; }
         public int MaxConcurrency { get; init; } = 1;
+
+        /// <summary>Subscription type controlling message delivery semantics. Default: ConsumerGroup.</summary>
+        public SubscriptionType SubscriptionType { get; init; } = SubscriptionType.ConsumerGroup;
+
+        /// <summary>Subscription name for tracking (required for Exclusive/Shared/Failover/KeyShared).</summary>
+        public string SubscriptionName { get; init; }
+
+        /// <summary>For KeyShared: number of hash buckets. Default 256.</summary>
+        public int KeySharedBuckets { get; init; } = 256;
     }
 
     public sealed class BrokerMessage

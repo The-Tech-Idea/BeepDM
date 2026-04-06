@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FileManager Reader Host - Beep Data Management Engine Documentation</title>
+    <title>FileManager DataSource - Beep Data Management Engine Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,234 +28,544 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>FileManager Reader Host</span>
+                    <span>FileManager DataSource</span>
                 </nav>
 
                 <div class="page-header">
-                    <h1>FileManager Reader Host</h1>
-                    <p class="page-subtitle">How to discover, select, and switch file readers in FileDataSource.</p>
+                    <h1>FileManager DataSource</h1>
+                    <p class="page-subtitle"><code>FileDataSource</code> is BeepDM's format-agnostic file data source. It handles CSV, TSV, JSON, Text, and any plugin format through a pluggable reader model — all behind the standard <code>IDataSource</code> interface.</p>
                 </div>
 
                 <div class="toc">
                     <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
-                        <li><a href="#api">Reader Host API</a></li>
-                        <li><a href="#selection">How Reader Selection Works</a></li>
-                        <li><a href="#duplicates">Multiple Readers for Same Format</a></li>
-                        <li><a href="#create-reader">Create a New FileReader</a></li>
-                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#filemanager-datasource">FileDataSource</a></li>
+                        <li><a href="#filemanager-builtin">Built-in Readers</a></li>
+                        <li><a href="#filemanager-factory">FileReaderFactory</a></li>
+                        <li><a href="#filemanager-registry">FileReaderRegistry &amp; Plugin Readers</a></li>
+                        <li><a href="#filemanager-readerhost">Feature: Reader Switching</a></li>
+                        <li><a href="#create-reader">Create a Custom Reader</a></li>
+                        <li><a href="#filemanager-enterprise">Enterprise Contracts</a></li>
+                        <li><a href="#examples">Examples</a></li>
                     </ul>
                 </div>
 
+                <!-- ═══ SECTION 1: OVERVIEW ═══════════════════════════════════════════ -->
                 <section id="overview" class="section">
                     <h2>Overview</h2>
                     <p>
-                        <code>FileDataSource</code> supports runtime reader selection through
-                        <code>IFileDataSourceReaderHost</code>. You can list available readers,
-                        inspect metadata, and switch by type, implementation identity, or stable reader ID.
+                        <code>FileDataSource</code> (<code>FileManager/FileDataSource.cs</code>) is the
+                        single <code>[AddinAttribute]</code>-registered data source for all flat-file and
+                        structured-file formats. It never parses bytes itself — every format is handled by
+                        an <code>IFileFormatReader</code> that it selects and delegates to at connection-open
+                        time.
                     </p>
+
                     <div class="success">
-                        <strong>What this solves</strong>
+                        <strong>What FileDataSource gives you</strong>
                         <ul>
-                            <li>Discover all registered readers from <code>FileReaderRegistry</code>.</li>
-                            <li>Switch readers without changing connection object construction code.</li>
-                            <li>Select between multiple readers for the same <code>DataSourceType</code> (for example, two CSV readers).</li>
+                            <li>One <code>classHandler = "FileDataSource"</code> connection type covers <em>all</em> formats.</li>
+                            <li>Format is chosen by <code>DatasourceType</code> on the connection — no code changes needed to switch from CSV to TSV.</li>
+                            <li>Plugin formats (Parquet, ORC, …) are discovered at runtime and appear in the connection manager automatically.</li>
+                            <li>At runtime you can even switch which reader handles a live connection without recreating it.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Folder Structure</h3>
+                    <pre><code class="language-text">FileManager/
+├── FileDataSource.cs           ← IDataSource host, IFileDataSourceReaderHost
+├── FileDataSource.Connection.cs
+├── FileDataSource.Entity.cs
+├── FileReaderFactory.cs        ← static DataSourceType → IFileFormatReader registry
+├── Readers/
+│   ├── IFileFormatReader.cs    ← reader contract
+│   ├── CsvFileReader.cs
+│   ├── TsvFileReader.cs
+│   ├── JsonFileReader.cs
+│   └── TextFileReader.cs
+├── Registry/
+│   ├── FileReaderRegistry.cs   ← assembly-level discovery
+│   ├── FileReaderDescriptor.cs
+│   └── FileReaderAttribute.cs
+└── Attributes/
+    └── FileReaderAttribute.cs  ← [FileReader(...)] decoration</code></pre>
+                </section>
+
+                <!-- ═══ SECTION 2: FILEDATASOURCE ════════════════════════════════════ -->
+                <section id="filemanager-datasource" class="section">
+                    <h2>FileDataSource</h2>
+
+                    <div class="code-example">
+                        <h3>Registration</h3>
+                        <pre><code class="language-csharp">// Handles CSV, TSV, JSON and Text out of the box.
+// Plugin readers extend this list without changing the registration.
+[AddinAttribute(
+    Category       = DatasourceCategory.FILE,
+    DatasourceType = DataSourceType.CSV | DataSourceType.TSV
+                   | DataSourceType.Json | DataSourceType.Text,
+    FileType       = "csv,tsv,json,txt")]
+public partial class FileDataSource : IDataSource, IFileDataSourceReaderHost { }</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Add a connection and open it</h3>
+                        <pre><code class="language-csharp">dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "SalesData",
+    FilePath       = @"C:\data",
+    FileName       = "sales.csv",
+    DatabaseType   = DataSourceType.CSV,
+    DriverName     = "FileDataSource"   // classHandler value
+});
+
+var fs = dmeEditor.GetDataSource("SalesData") as FileDataSource;
+fs.Openconnection();
+// Openconnection() sequence:
+//   1. FileReaderFactory.RegisterDefaults()        — ensures built-ins are available
+//   2. activeReader = FileReaderFactory.GetReader(DatasourceType)
+//   3. activeReader.Configure(connectionProperties)
+//   4. HasHeader / ParseMode applied from connection props</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Standard IDataSource CRUD</h3>
+                        <pre><code class="language-csharp">// All calls delegate to the active IFileFormatReader internally
+EntityStructure entity  = fs.GetEntityStructure("sales.csv", refresh: false);
+object          rows    = fs.GetEntity("sales.csv", filters);
+IErrorsInfo     ins     = fs.InsertEntity("sales.csv", newRow);
+IErrorsInfo     upd     = fs.UpdateEntities("sales.csv", fs.ErrorObject, updatedRow);
+IErrorsInfo     del     = fs.DeleteEntity("sales.csv", keyFilter);
+
+fs.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>classHandler = "FileDataSource" is the routing key</strong>
+                        <p>
+                            Every <code>ConnectionDriversConfig</code> for a file-based format must set
+                            <code>classHandler = "FileDataSource"</code>. BeepDM's driver resolver
+                            instantiates <code>FileDataSource</code> and the correct reader is then
+                            resolved from <code>DatasourceType</code> at connection-open time.
+                            <code>FileReaderFactory.BuildDriverConfig</code> sets this automatically.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- ═══ SECTION 3: BUILT-IN READERS ══════════════════════════════════ -->
+                <section id="filemanager-builtin" class="section">
+                    <h2>Built-in Readers</h2>
+                    <p>
+                        Four readers ship with the core assembly and are registered automatically when
+                        <code>FileReaderFactory.RegisterDefaults()</code> is called (which happens inside
+                        every <code>Openconnection()</code>).
+                    </p>
+
+                    <table>
+                        <thead><tr><th>Reader class</th><th>DataSourceType</th><th>Extension</th><th>Notes</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>CsvFileReader</code></td><td><code>CSV</code></td><td>csv</td><td>Configurable delimiter &amp; quote char</td></tr>
+                            <tr><td><code>TsvFileReader</code></td><td><code>TSV</code></td><td>tsv</td><td>Tab-separated values</td></tr>
+                            <tr><td><code>JsonFileReader</code></td><td><code>Json</code></td><td>json</td><td>JSON arrays / newline-delimited JSON</td></tr>
+                            <tr><td><code>TextFileReader</code></td><td><code>Text</code></td><td>txt</td><td>Fixed-width or line-per-record text</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>IFileFormatReader contract</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">public interface IFileFormatReader
+{
+    // Identity
+    DataSourceType SupportedType { get; }
+    string         GetDefaultExtension();
+
+    // Configuration
+    bool      HasHeader { get; set; }
+    ParseMode ParseMode { get; set; }  // Lenient | Strict
+    void      Configure(IConnectionProperties props);
+
+    // Schema
+    string[]        ReadHeaders(string filePath);
+    EntityStructure GetEntityStructure(string filePath);
+
+    // Read
+    IEnumerable&lt;string[]&gt; ReadRows(string filePath);
+    string InferFieldType(string current, string rawValue);
+
+    // Write
+    bool CreateFile  (string filePath, IReadOnlyList&lt;string&gt; headers);
+    bool AppendRow   (string filePath, IReadOnlyList&lt;string&gt; headers, IReadOnlyList&lt;string&gt; values);
+    bool RewriteFile (string filePath, IReadOnlyList&lt;string&gt; headers, IEnumerable&lt;IReadOnlyList&lt;string&gt;&gt; rows);
+
+    // Diagnostics
+    IReadOnlyList&lt;RowDiagnostic&gt; LastDiagnostics { get; }
+    void ClearDiagnostics();
+}
+
+public enum ParseMode { Lenient, Strict }
+
+public record RowDiagnostic(int RowIndex, DiagnosticSeverity Severity, string Message, string? RawLine = null);
+public enum DiagnosticSeverity { Info, Warning, Error }</code></pre>
+                    </div>
+
+                    <p>
+                        Every built-in and custom reader is decorated with
+                        <code>[FileReaderAttribute]</code> which carries display metadata used by
+                        <code>FileReaderFactory.BuildDriverConfig</code>:
+                    </p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Attribute properties
+DataSourceType FormatType       // routes to this reader
+string         DisplayName      // shown in connection manager UI
+string         DefaultExtension // e.g. "csv"
+string         Description
+string         Author
+string         Version
+string         IconPath         // defaults to "{ext}.svg" if empty</code></pre>
+                    </div>
+                </section>
+
+                <!-- ═══ SECTION 4: FILEREADERFACTORY ═════════════════════════════════ -->
+                <section id="filemanager-factory" class="section">
+                    <h2>FileReaderFactory</h2>
+                    <p>
+                        <code>FileReaderFactory</code> is a static <code>DataSourceType → IFileFormatReader</code>
+                        dictionary. It is the single source of truth consulted by <code>FileDataSource</code>
+                        at connection-open time.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Core API</h3>
+                        <pre><code class="language-csharp">// Register a reader (replaces any existing entry for the same DataSourceType)
+FileReaderFactory.Register(IFileFormatReader reader);
+
+// Scan the core assembly for [FileReaderAttribute] classes — safe to call many times
+FileReaderFactory.RegisterDefaults();
+
+// Resolve; falls back to CSV reader for unknown types
+IFileFormatReader r = FileReaderFactory.GetReader(DataSourceType.CSV);
+
+// Introspection
+bool supported = FileReaderFactory.IsSupported(DataSourceType.Json);
+IEnumerable&lt;DataSourceType&gt; all = FileReaderFactory.SupportedTypes;</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>RegisterWithConfig — also add the format to the connection manager</h3>
+                        <pre><code class="language-csharp">// Registers in the factory AND upserts a ConnectionDriversConfig into
+// configEditor.DataDriversClasses so the format appears in the connection manager.
+// classHandler is always set to "FileDataSource".
+// Idempotent: duplicate DataSourceType entries are skipped.
+FileReaderFactory.RegisterWithConfig(reader, dmeEditor.ConfigEditor);
+
+// Example — third-party Parquet reader registered at startup:
+var parquet = new ThirdParty.ParquetFileReader();
+FileReaderFactory.RegisterWithConfig(parquet, dmeEditor.ConfigEditor);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>BuildDriverConfig — inspect the generated ConnectionDriversConfig</h3>
+                        <pre><code class="language-csharp">ConnectionDriversConfig cfg = FileReaderFactory.BuildDriverConfig(reader);
+// cfg.classHandler       = "FileDataSource"
+// cfg.DatasourceCategory = DatasourceCategory.FILE
+// cfg.DatasourceType     = reader.SupportedType
+// cfg.extensionstoHandle = attr.DefaultExtension ?? reader.GetDefaultExtension()
+// cfg.GuidID             = deterministic MD5 GUID from reader type name
+// cfg.NeedDrivers        = false</code></pre>
+                    </div>
+                </section>
+
+                <!-- ═══ SECTION 5: FILEREADERREGISTRY ════════════════════════════════ -->
+                <section id="filemanager-registry" class="section">
+                    <h2>FileReaderRegistry &amp; Plugin Readers</h2>
+                    <p>
+                        <code>FileReaderRegistry</code> bridges plugin assemblies (loaded by
+                        <code>AssemblyHandler</code>) into the factory. Call <code>Discover()</code> once
+                        at application startup after assemblies are loaded.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Discover — the startup call</h3>
+                        <pre><code class="language-csharp">// Scans editor.assemblyHandler.ConfigEditor.FileReaderClasses,
+// instantiates each reader, and calls RegisterWithConfig so the format
+// also surfaces as a connection type in the connection manager.
+var registry = new FileReaderRegistry(dmeEditor);
+registry.Discover();   // call once after assemblies are loaded</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Other registry API</h3>
+                        <pre><code class="language-csharp">IFileFormatReader              fresh   = registry.Create(DataSourceType.CSV);
+IReadOnlyList&lt;FileReaderDescriptor&gt; all = registry.GetAll();
+bool                           hasCsv  = registry.Contains(DataSourceType.CSV);
+
+// Static — scan ONE assembly without ConfigEditor access (used by RegisterDefaults)
+FileReaderRegistry.RegisterAttributedReadersFromAssembly(assembly);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Discover() vs RegisterDefaults()</strong>
+                        <ul>
+                            <li><code>RegisterDefaults()</code> — core assembly only, no ConfigEditor, called automatically by <code>Openconnection()</code> as a safety net.</li>
+                            <li><code>Discover()</code> — all plugin assemblies, calls <code>RegisterWithConfig</code>, adds formats to the connection manager.</li>
                         </ul>
                     </div>
                 </section>
 
-                <section id="api" class="section">
-                    <h2>Reader Host API</h2>
+                <!-- ═══ SECTION 6: READER SWITCHING FEATURE ══════════════════════════ -->
+                <section id="filemanager-readerhost" class="section">
+                    <h2>Feature: Reader Switching</h2>
+                    <p>
+                        <code>FileDataSource</code> also implements <code>IFileDataSourceReaderHost</code>,
+                        which lets you inspect all registered readers and switch the active reader on a
+                        live connection — without recreating the data-source object.
+                    </p>
+
                     <div class="code-example">
-                        <h3>IFileDataSourceReaderHost</h3>
+                        <h3>IFileDataSourceReaderHost interface</h3>
                         <pre><code class="language-csharp">public interface IFileDataSourceReaderHost
 {
+    // Enumerate
     IReadOnlyList&lt;FileReaderDescriptorInfo&gt; GetAvailableReaderDescriptors(bool discover = false);
-    IReadOnlyList&lt;DataSourceType&gt; GetAvailableReaderTypes();
-    FileReaderDescriptorInfo? GetCurrentReaderDescriptor();
-    object? GetCurrentReader();
+    IReadOnlyList&lt;DataSourceType&gt;           GetAvailableReaderTypes();
+    FileReaderDescriptorInfo?               GetCurrentReaderDescriptor();
+    object?                                 GetCurrentReader();
 
-    bool TrySwitchReader(DataSourceType targetType, bool reconfigure, out string? reason);
-    bool TrySwitchReader(string implementationTypeName, bool reconfigure, out string? reason);
-    bool TrySwitchReader(Guid readerId, bool reconfigure, out string? reason);
-    bool TrySwitchReaderByExtension(string extension, bool reconfigure, out string? reason);
+    // Switch — all overloads return false + reason on failure
+    bool TrySwitchReader(DataSourceType        targetType,            bool reconfigure, out string? reason);
+    bool TrySwitchReader(string                implementationTypeName, bool reconfigure, out string? reason);
+    bool TrySwitchReader(Guid                  readerId,              bool reconfigure, out string? reason);
+    bool TrySwitchReaderByExtension(string     extension,             bool reconfigure, out string? reason);
 
     void ResetReaderSelection();
 }</code></pre>
                     </div>
-                </section>
-
-                <section id="selection" class="section">
-                    <h2>How Reader Selection Works</h2>
-                    <p>
-                        During <code>Openconnection()</code>, <code>FileDataSource</code> resolves the reader using:
-                    </p>
-                    <ol>
-                        <li>Selected override (if a switch API was called), otherwise</li>
-                        <li><code>DatasourceType</code> default behavior.</li>
-                    </ol>
-                    <p>
-                        On successful switch, <code>DatasourceType</code> is updated and the reader is optionally reconfigured
-                        using connection properties.
-                    </p>
-                    <div class="note">
-                        <strong>Safety behavior</strong>
-                        <ul>
-                            <li>Switch calls return <code>false</code> with a reason string for expected failures.</li>
-                            <li>Switch is blocked while active transaction/ingestion state is in progress.</li>
-                        </ul>
-                    </div>
-                </section>
-
-                <section id="duplicates" class="section">
-                    <h2>Multiple Readers for Same Format</h2>
-                    <p>
-                        Descriptor listing does <strong>not</strong> collapse by <code>FormatType</code>, so multiple CSV readers
-                        are shown independently.
-                    </p>
-                    <p>
-                        Use one of these explicit selectors to choose the exact reader:
-                    </p>
-                    <ul>
-                        <li><code>TrySwitchReader(string implementationTypeName, ...)</code></li>
-                        <li><code>TrySwitchReader(Guid readerId, ...)</code></li>
-                    </ul>
-                    <div class="warning">
-                        <strong>Important</strong>
-                        <p>
-                            <code>TrySwitchReader(DataSourceType.CSV, ...)</code> is still valid, but it may resolve whichever CSV reader
-                            is currently mapped in the factory for that type. Use implementation identity or reader ID when deterministic
-                            selection is required.
-                        </p>
-                    </div>
-                </section>
-
-                <section id="create-reader" class="section">
-                    <h2>Create a New FileReader</h2>
-                    <p>
-                        To add a custom reader, implement <code>IFileFormatReader</code>, decorate it with
-                        <code>[FileReader(...)]</code>, and ensure the assembly is loaded so registry discovery can find it.
-                    </p>
 
                     <div class="code-example">
-                        <h3>1) Implement IFileFormatReader + Attribute</h3>
-                        <pre><code class="language-csharp">using System.Collections.Generic;
-using TheTechIdea.Beep.FileManager.Attributes;
-using TheTechIdea.Beep.FileManager.Readers;
-using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Utilities;
+                        <h3>How reader selection works during Openconnection()</h3>
+                        <pre><code class="language-csharp">// Priority order:
+//   1. Override set by TrySwitchReader*() — if one was called since last open
+//   2. DatasourceType default from ConnectionProperties
 
-[FileReader(DataSourceType.CSV, "My Fast CSV Reader", "csv")]
-public sealed class MyFastCsvReader : IFileFormatReader
-{
-    public DataSourceType SupportedType => DataSourceType.CSV;
-    public bool HasHeader { get; set; } = true;
-    public ParseMode ParseMode { get; set; } = ParseMode.Lenient;
-    public IReadOnlyList&lt;RowDiagnostic&gt; LastDiagnostics => new List&lt;RowDiagnostic&gt;();
-
-    public string GetDefaultExtension() => "csv";
-    public void Configure(IConnectionProperties props) { /* delimiter/encoding setup */ }
-    public void ClearDiagnostics() { }
-
-    public string[] ReadHeaders(string filePath) => new[] { "Id", "Name" };
-    public EntityStructure GetEntityStructure(string filePath) => null;
-    public IEnumerable&lt;string[]&gt; ReadRows(string filePath) { yield break; }
-    public string InferFieldType(string current, string rawValue) => typeof(string).FullName;
-
-    public bool CreateFile(string filePath, IReadOnlyList&lt;string&gt; headers) => true;
-    public bool AppendRow(string filePath, IReadOnlyList&lt;string&gt; headers, IReadOnlyList&lt;string&gt; values) => true;
-    public bool RewriteFile(string filePath, IReadOnlyList&lt;string&gt; headers, IEnumerable&lt;IReadOnlyList&lt;string&gt;&gt; rows) => true;
-}</code></pre>
+// After a successful switch, DatasourceType is updated automatically.
+// Switch is blocked while an active transaction / ingestion is in progress.</code></pre>
                     </div>
 
                     <div class="code-example">
-                        <h3>2) Discover and List Readers</h3>
-                        <pre><code class="language-csharp">var ds = dmeEditor.GetDataSource("MyFileConnection") as FileDataSource;
-var host = (IFileDataSourceReaderHost)ds;
+                        <h3>Switch by DataSourceType</h3>
+                        <pre><code class="language-csharp">var host = dmeEditor.GetDataSource("SalesData") as IFileDataSourceReaderHost;
 
-// discover=true triggers FileReaderRegistry discovery
-var readers = host.GetAvailableReaderDescriptors(discover: true);
-foreach (var r in readers)
-{
-    Console.WriteLine($"{r.DisplayName} | {r.FormatType} | {r.ImplementationTypeName}");
-}</code></pre>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>3) Select the New Reader Explicitly</h3>
-                        <pre><code class="language-csharp">var custom = host.GetAvailableReaderDescriptors(true)
-    .First(r => r.ImplementationTypeName == "MyNamespace.MyFastCsvReader");
-
-if (host.TrySwitchReader(custom.ReaderId, reconfigure: true, out var reason))
-{
-    ds.Openconnection();
-}
+if (host.TrySwitchReader(DataSourceType.TSV, reconfigure: true, out var reason))
+    (host as FileDataSource).Openconnection();
 else
-{
-    Console.WriteLine(reason);
-}</code></pre>
-                    </div>
-
-                    <div class="tip">
-                        <strong>Best practice for duplicate formats</strong>
-                        <p>
-                            If multiple readers target the same format (for example CSV), prefer switching by
-                            <code>ImplementationTypeName</code> or <code>ReaderId</code> instead of only
-                            <code>DataSourceType</code> to avoid ambiguity.
-                        </p>
-                    </div>
-                </section>
-
-                <section id="examples" class="section">
-                    <h2>Usage Examples</h2>
-                    <div class="code-example">
-                        <h3>List and Inspect Readers</h3>
-                        <pre><code class="language-csharp">var ds = dmeEditor.GetDataSource("MyFileConnection") as FileDataSource;
-var host = ds as IFileDataSourceReaderHost;
-
-var readers = host.GetAvailableReaderDescriptors(discover: true);
-foreach (var r in readers)
-{
-    Console.WriteLine($"{r.ReaderId} | {r.DisplayName} | {r.FormatType} | {r.DefaultExtension}");
-    Console.WriteLine($"  Impl: {r.ImplementationTypeName}");
-}</code></pre>
+    Console.WriteLine(reason);</code></pre>
                     </div>
 
                     <div class="code-example">
-                        <h3>Switch by Implementation Name</h3>
-                        <pre><code class="language-csharp">var ok = host.TrySwitchReader(
+                        <h3>Switch by implementation name (deterministic when multiple readers share a type)</h3>
+                        <pre><code class="language-csharp">host.TrySwitchReader(
     "DuckDBDataSourceCore.FileReaders.DuckDbCsvFileReader",
     reconfigure: true,
-    out var reason);
-
-Console.WriteLine(reason);
-if (ok) ds.Openconnection();</code></pre>
+    out var reason);</code></pre>
                     </div>
 
                     <div class="code-example">
                         <h3>Switch by ReaderId</h3>
-                        <pre><code class="language-csharp">var csvCandidates = host.GetAvailableReaderDescriptors(true)
+                        <pre><code class="language-csharp">var csvReaders = host.GetAvailableReaderDescriptors(discover: true)
     .Where(r => r.FormatType == DataSourceType.CSV)
     .ToList();
 
-var selected = csvCandidates.First(); // your UI/command selects one
-if (host.TrySwitchReader(selected.ReaderId, true, out var reason))
+// e.g. present list to user, then switch to selected
+host.TrySwitchReader(csvReaders[1].ReaderId, reconfigure: true, out _);</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>Multiple readers for the same format</strong>
+                        <p>
+                            <code>GetAvailableReaderDescriptors</code> does <em>not</em> collapse by
+                            <code>FormatType</code>. When two CSV readers are registered,
+                            <code>TrySwitchReader(DataSourceType.CSV, ...)</code> picks whichever is
+                            currently mapped. Use <code>ImplementationTypeName</code> or <code>ReaderId</code>
+                            for deterministic selection.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- ═══ SECTION 7: CREATE A CUSTOM READER ════════════════════════════ -->
+                <section id="create-reader" class="section">
+                    <h2>Create a Custom Reader</h2>
+                    <p>
+                        Implement <code>IFileFormatReader</code>, decorate with <code>[FileReader]</code>,
+                        load the assembly, and run <code>registry.Discover()</code>. The format then appears
+                        in the connection manager like any built-in.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>1) Implement &amp; decorate</h3>
+                        <pre><code class="language-csharp">using TheTechIdea.Beep.FileManager.Attributes;
+using TheTechIdea.Beep.FileManager.Readers;
+
+[FileReader(DataSourceType.CSV, "My Fast CSV Reader", "csv",
+    Description = "High-performance CSV parser",
+    Version     = "1.0.0")]
+public sealed class MyFastCsvReader : IFileFormatReader
 {
-    Console.WriteLine($"Switched to {selected.DisplayName}");
-    ds.Openconnection();
-}
-else
-{
-    Console.WriteLine(reason);
+    public DataSourceType SupportedType => DataSourceType.CSV;
+    public bool HasHeader   { get; set; } = true;
+    public ParseMode ParseMode { get; set; } = ParseMode.Lenient;
+    public IReadOnlyList&lt;RowDiagnostic&gt; LastDiagnostics { get; } = new List&lt;RowDiagnostic&gt;();
+
+    public string   GetDefaultExtension() => "csv";
+    public void     Configure(IConnectionProperties props) { /* delimiter / encoding */ }
+    public void     ClearDiagnostics() { }
+    public string[] ReadHeaders(string filePath)  => new[] { "Id", "Name" };
+    public EntityStructure GetEntityStructure(string filePath) => null;
+    public IEnumerable&lt;string[]&gt; ReadRows(string filePath) { yield break; }
+    public string InferFieldType(string current, string rawValue) => typeof(string).FullName;
+    public bool CreateFile(string fp, IReadOnlyList&lt;string&gt; h)  => true;
+    public bool AppendRow (string fp, IReadOnlyList&lt;string&gt; h, IReadOnlyList&lt;string&gt; v) => true;
+    public bool RewriteFile(string fp, IReadOnlyList&lt;string&gt; h, IEnumerable&lt;IReadOnlyList&lt;string&gt;&gt; r) => true;
 }</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>2) Register at startup</h3>
+                        <pre><code class="language-csharp">// Option A — manual (no assembly scanning needed)
+FileReaderFactory.RegisterWithConfig(new MyFastCsvReader(), dmeEditor.ConfigEditor);
+
+// Option B — automatic via registry (preferred for plugin assemblies)
+var registry = new FileReaderRegistry(dmeEditor);
+registry.Discover();   // picks up any [FileReader]-decorated class in loaded assemblies</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>3) Use it — switch to the new reader on an existing connection</h3>
+                        <pre><code class="language-csharp">var host = dmeEditor.GetDataSource("SalesData") as IFileDataSourceReaderHost;
+
+var descriptor = host.GetAvailableReaderDescriptors(discover: false)
+    .First(r => r.ImplementationTypeName == typeof(MyFastCsvReader).FullName);
+
+host.TrySwitchReader(descriptor.ReaderId, reconfigure: true, out var reason);
+(host as FileDataSource).Openconnection();</code></pre>
+                    </div>
+                </section>
+
+                <!-- ═══ SECTION 8: ENTERPRISE CONTRACTS ══════════════════════════════ -->
+                <section id="filemanager-enterprise" class="section">
+                    <h2>Enterprise Contracts</h2>
+
+                    <h3>Governance</h3>
+                    <ul>
+                        <li>Every config from <code>BuildDriverConfig</code> carries a deterministic
+                            <code>GuidID</code> (MD5 of type full name) — safe to persist in
+                            <code>ConnectionConfig.json</code> across restarts without duplication.</li>
+                        <li><code>DatasourceCategory.FILE</code> is always set.</li>
+                        <li><code>NeedDrivers = false</code> — no external ADO driver install required.</li>
+                    </ul>
+
+                    <h3>Observability</h3>
+                    <ul>
+                        <li><code>IFileFormatReader.LastDiagnostics</code> — per-reader list of
+                            <code>RowDiagnostic</code> (index, severity, message, raw line).</li>
+                        <li><code>ParseMode.Lenient</code> — skips bad rows and records them;
+                            <code>Strict</code> — throws immediately.</li>
+                        <li>Call <code>ClearDiagnostics()</code> before each read pass.</li>
+                    </ul>
+
+                    <h3>Resilience</h3>
+                    <ul>
+                        <li><code>GetReader</code> falls back to CSV for unknown types.</li>
+                        <li><code>RegisterWithConfig</code> and <code>RegisterDefaults</code> are idempotent.</li>
+                        <li>Reader switching is blocked during active ingestion.</li>
+                    </ul>
+
+                    <div class="code-example">
+                        <h3>Full end-to-end with a plugin Parquet reader</h3>
+                        <pre><code class="language-csharp">// After assemblies are loaded
+var registry = new FileReaderRegistry(dmeEditor);
+registry.Discover();  // Parquet reader found, RegisterWithConfig called
+
+// Format is now visible in the connection manager
+var cfg = dmeEditor.ConfigEditor.DataDriversClasses
+    .First(d => d.DatasourceType == DataSourceType.Parquet);
+// cfg.classHandler == "FileDataSource"
+
+dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "warehouse",
+    DriverName     = cfg.PackageName,
+    FilePath       = @"C:\data\warehouse.parquet",
+    DatabaseType   = DataSourceType.Parquet
+});
+
+var ds = dmeEditor.GetDataSource("warehouse");
+ds.Openconnection();  // FileDataSource routes to ParquetFileReader</code></pre>
+                    </div>
+                </section>
+
+                <!-- ═══ SECTION 9: EXAMPLES ═══════════════════════════════════════════ -->
+                <section id="examples" class="section">
+                    <h2>Examples</h2>
+
+                    <div class="code-example">
+                        <h3>Open a CSV file and read rows</h3>
+                        <pre><code class="language-csharp">dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "sales",
+    FilePath       = @"C:\data",
+    FileName       = "sales.csv",
+    DatabaseType   = DataSourceType.CSV,
+    DriverName     = "FileDataSource"
+});
+
+var fs = dmeEditor.GetDataSource("sales") as FileDataSource;
+fs.Openconnection();
+
+var entity = fs.GetEntityStructure("sales.csv", false);
+var rows   = (IEnumerable&lt;object&gt;)fs.GetEntity("sales.csv", null);
+
+fs.Closeconnection();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Inspect all registered readers</h3>
+                        <pre><code class="language-csharp">var host    = fs as IFileDataSourceReaderHost;
+var readers = host.GetAvailableReaderDescriptors(discover: true);
+
+foreach (var r in readers)
+    Console.WriteLine($"{r.DisplayName} | {r.FormatType} | {r.DefaultExtension}");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Switch format without recreating the connection</h3>
+                        <pre><code class="language-csharp">// Currently CSV — switch to TSV reader
+if (host.TrySwitchReaderByExtension("tsv", reconfigure: true, out var reason))
+    fs.Openconnection();
+else
+    Console.WriteLine(reason);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Insert and update rows</h3>
+                        <pre><code class="language-csharp">fs.InsertEntity("sales.csv", new { OrderId = "ORD-001", Amount = 150.00 });
+fs.UpdateEntities("sales.csv", fs.ErrorObject, new { OrderId = "ORD-001", Amount = 175.00 });
+fs.DeleteEntity("sales.csv", new AppFilter { FieldName = "OrderId", Operator = "=", FilterValue = "ORD-001" });
+fs.Closeconnection();</code></pre>
                     </div>
                 </section>
 
                 <div class="nav-links">
-                    <a href="advanced-tools-utilities.html"><i class="bi bi-arrow-left"></i> Advanced Tools & Utilities</a>
-                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                    <a href="advanced-tools-utilities.html"><i class="bi bi-arrow-left"></i> Advanced Tools &amp; Utilities</a>
+                    <a href="json-datasource.html">JSON DataSource <i class="bi bi-arrow-right"></i></a>
                 </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            &copy; 2026 The Tech Idea. Beep Data Management Engine Documentation.
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>

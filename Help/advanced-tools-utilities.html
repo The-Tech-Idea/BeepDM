@@ -47,7 +47,20 @@
                 <div class="note">
                     <strong>Source of truth (2026)</strong>
                     <ul>
-                        <li><code>ClassCreator</code>: <code>DataManagementEngineStandard/Tools/ClassCreator.Core.cs</code> and related partials.</li>
+                        <li><code>ClassCreator</code> (modular partial classes in <code>DataManagementEngineStandard/Tools/</code>):
+                            <ul>
+                                <li><code>ClassCreator.cs</code> &#8212; constructor, DI, helper wiring</li>
+                                <li><code>ClassCreator.Core.cs</code> &#8212; compilation, POCO &amp; modern class generation</li>
+                                <li><code>ClassCreator.Advanced.cs</code> &#8212; documentation, Blazor components, GraphQL</li>
+                                <li><code>ClassCreator.Database.cs</code> &#8212; DAL, EF Core DbContext, EntityConfiguration, Repository</li>
+                                <li><code>ClassCreator.DllCreation.cs</code> &#8212; DLL compilation &amp; batch creation</li>
+                                <li><code>ClassCreator.EntityExtensions.cs</code> &#8212; <code>FromType</code>, <code>FromDataTable</code>, <code>FromList</code></li>
+                                <li><code>ClassCreator.PocoToEntity.cs</code> &#8212; namespace scanning &amp; POCO&#8594;Entity reverse mapping</li>
+                                <li><code>ClassCreator.Testing.cs</code> &#8212; unit test &amp; FluentValidation generation</li>
+                                <li><code>ClassCreator.WebApi.cs</code> &#8212; Web API controllers &amp; Minimal API</li>
+                                <li><code>Helpers/</code> &#8212; 10 focused generator helpers (PocoClass, ModernClass, Database, WebApi, UiComponent, ValidationTesting, Documentation, PocoToEntity, EfCoreToEntity, ClassGeneration)</li>
+                            </ul>
+                        </li>
                         <li><code>IClassCreator</code>: <code>DataManagementModelsStandard/Tools/IClassCreator.cs</code>.</li>
                         <li><code>ConfigEditor</code>: <code>DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs</code> and manager delegates.</li>
                         <li><code>DataTypesHelper</code>: <code>DataManagementEngineStandard/Helpers/DataTypesHelpers/DataTypesHelper.cs</code>.</li>
@@ -59,7 +72,16 @@
                     <h3>Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
-                        <li><a href="#class-creator">ClassCreator</a></li>
+                        <li><a href="#class-creator">ClassCreator</a>
+                            <ul>
+                                <li><a href="#class-creator-architecture">Modular Architecture &amp; Helpers</a></li>
+                                <li><a href="#class-creator-database">Database &amp; EF Core Generation</a></li>
+                                <li><a href="#class-creator-webapi">Web API Generation</a></li>
+                                <li><a href="#class-creator-testing">Testing &amp; Validation Generation</a></li>
+                                <li><a href="#class-creator-ui">UI Components &amp; GraphQL</a></li>
+                                <li><a href="#class-creator-poco-entity">POCO-to-Entity &amp; Type Conversion</a></li>
+                            </ul>
+                        </li>
                         <li><a href="#config-editor">ConfigEditor</a></li>
                         <li><a href="#data-types-helper">DataTypesHelper</a></li>
                         <li><a href="#runtime-components">Runtime Components (Services/Rules/DataView/Caching/Proxy)</a></li>
@@ -67,7 +89,17 @@
                         <li><a href="#file-utilities">File Utilities</a></li>
                         <li><a href="#circuit-breaker">CircuitBreaker</a></li>
                         <li><a href="#batch-extensions">BatchExtensions</a></li>
-                        <li><a href="#csv-analyzer">CSV Analyzer & Tools</a></li>
+                        <li><a href="#csv-analyzer">CSV Analyzer &amp; Tools</a></li>
+                        <li><a href="#utils-overview">Utils &#8212; Internal Engine Helpers</a>
+                            <ul>
+                                <li><a href="#utils-util">Util / IUtil</a></li>
+                                <li><a href="#utils-data-conversion">DataConversionHelper</a></li>
+                                <li><a href="#utils-entity-structure">EntityStructureHelper</a></li>
+                                <li><a href="#utils-filter">FilterHelper</a></li>
+                                <li><a href="#utils-file-datasource">FileDataSourceHelper</a></li>
+                                <li><a href="#utils-reflection">ReflectionHelper</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
 
@@ -209,13 +241,351 @@ Console.WriteLine($"DLL created at: {dllPath}");</code></pre>
                     </div>
 
                     <div class="success">
-                        <strong>? ClassCreator Features</strong>
+                        <strong>&#128161; ClassCreator Features</strong>
                         <ul>
                             <li><strong>POCO Generation:</strong> Create Plain Old CLR Objects from database schemas</li>
                             <li><strong>Runtime Compilation:</strong> Compile classes to assemblies at runtime</li>
                             <li><strong>Type Creation:</strong> Dynamically create .NET types for use in applications</li>
                             <li><strong>Batch Processing:</strong> Generate multiple classes in a single operation</li>
+                            <li><strong>Database Layers:</strong> Generate DAL, EF Core DbContext, EntityConfiguration, and Repository classes</li>
+                            <li><strong>Web API:</strong> Scaffold ASP.NET Core controllers and Minimal API endpoints</li>
+                            <li><strong>Testing:</strong> Generate unit test templates and FluentValidation validators</li>
+                            <li><strong>UI &amp; GraphQL:</strong> Generate Blazor components and GraphQL schema types</li>
+                            <li><strong>Reverse Mapping:</strong> Convert CLR types, DataTables, and POCO lists back to <code>EntityStructure</code></li>
                         </ul>
+                    </div>
+                </section>
+
+                <!-- ClassCreator: Modular Architecture -->
+                <section id="class-creator-architecture" class="section">
+                    <h2>ClassCreator &#8212; Modular Architecture &amp; Helpers</h2>
+                    <p>
+                        <code>ClassCreator</code> is implemented as a set of C# partial classes, each delegating to a focused
+                        <em>generator helper</em>. All helpers accept an <code>IDMEEditor</code> and are initialized in the main
+                        constructor, so every partial has access to the full DME context.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Constructor &amp; Helpers (ClassCreator.cs)</h3>
+                        <pre><code class="language-csharp">public ClassCreator(IDMEEditor dmeEditor)
+{
+    DMEEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
+
+    // Core helpers (always initialized)
+    _generationHelper   = new ClassGenerationHelper(dmeEditor);    // naming, type mapping, validation
+    _pocoHelper         = new PocoClassGeneratorHelper(dmeEditor);  // POCO / domain classes
+    _modernHelper       = new ModernClassGeneratorHelper(dmeEditor); // record / init-only classes
+
+    // Specialized helpers
+    _validationTestingHelper = new ValidationAndTestingGeneratorHelper(dmeEditor);
+    _documentationHelper     = new DocumentationGeneratorHelper(dmeEditor);
+    _uiComponentHelper       = new UiComponentGeneratorHelper(dmeEditor);
+    _serverlessHelper        = new ServerlessGeneratorHelper(dmeEditor);
+    _databaseHelper          = new DatabaseClassGeneratorHelper(dmeEditor);
+    _webApiHelper            = new WebApiGeneratorHelper(dmeEditor);
+    _pocoToEntityHelper      = new PocoToEntityGeneratorHelper(dmeEditor);
+    _efCoreToEntityHelper    = new EfCoreToEntityGeneratorHelper(dmeEditor);
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Helpers at a glance</strong>
+                        <table>
+                            <thead><tr><th>Helper</th><th>Responsibility</th><th>Partial file</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>ClassGenerationHelper</code></td><td>Naming, type-mapping, validation utilities</td><td><code>ClassCreator.Core.cs</code></td></tr>
+                                <tr><td><code>PocoClassGeneratorHelper</code></td><td>Plain POCO class strings</td><td><code>ClassCreator.Core.cs</code></td></tr>
+                                <tr><td><code>ModernClassGeneratorHelper</code></td><td>Record / init-only class strings</td><td><code>ClassCreator.Core.cs</code></td></tr>
+                                <tr><td><code>DatabaseClassGeneratorHelper</code></td><td>DAL, DbContext, EntityConfig, Repository</td><td><code>ClassCreator.Database.cs</code></td></tr>
+                                <tr><td><code>WebApiGeneratorHelper</code></td><td>API controllers, Minimal API</td><td><code>ClassCreator.WebApi.cs</code></td></tr>
+                                <tr><td><code>ValidationAndTestingGeneratorHelper</code></td><td>Unit tests, FluentValidation</td><td><code>ClassCreator.Testing.cs</code></td></tr>
+                                <tr><td><code>DocumentationGeneratorHelper</code></td><td>XML docs, diff reports</td><td><code>ClassCreator.Advanced.cs</code></td></tr>
+                                <tr><td><code>UiComponentGeneratorHelper</code></td><td>Blazor components, GraphQL schemas</td><td><code>ClassCreator.Advanced.cs</code></td></tr>
+                                <tr><td><code>PocoToEntityGeneratorHelper</code></td><td>Namespace scanning, POCO&#8594;EntityStructure</td><td><code>ClassCreator.PocoToEntity.cs</code></td></tr>
+                                <tr><td><code>EfCoreToEntityGeneratorHelper</code></td><td>EF Core model&#8594;EntityStructure</td><td><code>ClassCreator.EntityExtensions.cs</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ClassCreator: Database & EF Core -->
+                <section id="class-creator-database" class="section">
+                    <h2>ClassCreator &#8212; Database &amp; EF Core Generation</h2>
+                    <p>
+                        The <code>ClassCreator.Database.cs</code> partial (backed by <code>DatabaseClassGeneratorHelper</code>)
+                        generates data-access artifacts directly from <code>EntityStructure</code> metadata.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Data Access Layer</h3>
+                        <pre><code class="language-csharp">// Generate a repository-style DAL class for a single entity
+var entity = dataSource.GetEntityStructure("Orders", true);
+string dalPath = classCreator.GenerateDataAccessLayer(entity, @"C:\Output\DAL");
+// Writes Orders.DAL.cs with CRUD methods wired to the Beep IDataSource API</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>EF Core DbContext</h3>
+                        <pre><code class="language-csharp">// Generate an EF Core DbContext for all entities in a data source
+var entities = entityNames
+    .Select(n => dataSource.GetEntityStructure(n, true))
+    .ToList();
+
+string ctxPath = classCreator.GenerateDbContext(
+    entities,
+    namespaceString: "MyApp.Data",
+    outputPath: @"C:\Output\EFCore"
+);
+// Writes MyAppDbContext.cs with DbSet&lt;T&gt; properties and OnModelCreating overrides</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>EF Core Entity Configuration</h3>
+                        <pre><code class="language-csharp">// Generate IEntityTypeConfiguration&lt;T&gt; from an EntityStructure
+string cfgPath = classCreator.GenerateEntityConfiguration(
+    entity,
+    namespaceString: "MyApp.Data.Configurations",
+    outputPath: @"C:\Output\EFCore\Config"
+);
+// Writes OrdersConfiguration.cs with column mappings, key, and index declarations</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Repository Pattern</h3>
+                        <pre><code class="language-csharp">// Generate interface + implementation
+string repoPath = classCreator.GenerateRepositoryImplementation(
+    entity,
+    outputPath: @"C:\Output\Repositories",
+    namespaceName: "MyApp.Repositories",
+    interfaceOnly: false   // set true to emit only IOrdersRepository.cs
+);
+// Writes IOrdersRepository.cs and OrdersRepository.cs with async CRUD + filtering</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>When to use each artifact</strong>
+                        <ul>
+                            <li><strong>DAL:</strong> Thin wrapper over <code>IDataSource</code> for non-EF scenarios or legacy migrations.</li>
+                            <li><strong>DbContext + EntityConfiguration:</strong> Full EF Core integration with explicit column/key mapping.</li>
+                            <li><strong>Repository:</strong> Clean separation layer for domain logic consuming either EF or direct Beep data sources.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- ClassCreator: Web API -->
+                <section id="class-creator-webapi" class="section">
+                    <h2>ClassCreator &#8212; Web API Generation</h2>
+                    <p>
+                        The <code>ClassCreator.WebApi.cs</code> partial wraps <code>WebApiGeneratorHelper</code> to produce
+                        ASP.NET Core controller classes and .NET 8+ Minimal API endpoint files.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Generate Controllers for Multiple Entities</h3>
+                        <pre><code class="language-csharp">// Scaffold one ApiController per entity
+List&lt;string&gt; paths = classCreator.GenerateWebApiControllers(
+    dataSourceName: "NorthwindDB",
+    entities: entities,
+    outputPath: @"C:\Output\Controllers",
+    namespaceName: "MyApp.Controllers"
+);
+
+foreach (var path in paths)
+    Console.WriteLine($"Created: {path}");
+
+// Each file contains:
+// [ApiController] [Route("api/[controller]")]
+// GET / GET {id} / POST / PUT {id} / DELETE {id}
+// wired to IBeepService.DMEEditor.GetDataSource(...)</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Parameterized Controller (Data Source + Entity as API Params)</h3>
+                        <pre><code class="language-csharp">// One generic controller that accepts dsName + entityName at runtime
+string path = classCreator.GenerateWebApiControllerForEntityWithParams(
+    className: "BeepDynamicController",
+    outputPath: @"C:\Output\Controllers",
+    namespaceName: "MyApp.Controllers"
+);
+// Useful for multi-tenant or data-explorer scenarios</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Minimal API (.NET 8+)</h3>
+                        <pre><code class="language-csharp">// Generate a Program.cs-style Minimal API with MapGet / MapPost / MapPut / MapDelete
+string apiPath = classCreator.GenerateMinimalWebApi(
+    outputPath: @"C:\Output\MinimalApi",
+    namespaceName: "MyApp.MinimalApi"
+);
+// Produces a single file with builder.Services + app.MapXxx registrations</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>WebApiGenerator.cs</strong>
+                        <p>
+                            <code>WebApiGenerator</code> is a standalone utility class (not part of <code>ClassCreator</code>) that
+                            can be used directly when you need finer control over the generated API surface &#8212; for example,
+                            to emit OpenAPI annotations, versioning attributes, or custom authorization policies.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- ClassCreator: Testing -->
+                <section id="class-creator-testing" class="section">
+                    <h2>ClassCreator &#8212; Testing &amp; Validation Generation</h2>
+                    <p>
+                        The <code>ClassCreator.Testing.cs</code> partial (backed by <code>ValidationAndTestingGeneratorHelper</code>)
+                        generates xUnit/NUnit test class templates and FluentValidation validator classes from entity metadata.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Unit Test Class</h3>
+                        <pre><code class="language-csharp">// Generate an xUnit test scaffold for CRUD operations against an entity
+string testPath = classCreator.GenerateUnitTestClass(entity, @"C:\Output\Tests");
+
+// Generated class includes:
+// - Arrange/Act/Assert patterns for Create, Read, Update, Delete
+// - Mocked IDataSource via Moq
+// - Constructor and field assertions for all EntityField entries</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>FluentValidation Validators</h3>
+                        <pre><code class="language-csharp">// Generate a FluentValidation AbstractValidator&lt;T&gt; from EntityStructure field metadata
+string validatorPath = classCreator.GenerateFluentValidators(
+    entity,
+    outputPath: @"C:\Output\Validators",
+    namespaceName: "MyApp.Validators"
+);
+
+// Fields with IsRequired=true emit .NotEmpty()
+// Fields with Size1 &gt; 0 emit .MaximumLength(n)
+// Fields typed as email convention emit .EmailAddress()
+// Nullable numeric fields emit .InclusiveBetween(min, max) if range metadata present</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Entity validation is a precondition</strong>
+                        <p>
+                            Both methods call <code>ValidateEntityStructure(entity)</code> internally before delegating to the
+                            helper. If the entity has no fields, duplicate field names, or an empty <code>EntityName</code>,
+                            an <code>ArgumentException</code> is thrown describing all validation failures.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- ClassCreator: UI Components & GraphQL -->
+                <section id="class-creator-ui" class="section">
+                    <h2>ClassCreator &#8212; UI Components &amp; GraphQL</h2>
+                    <p>
+                        The <code>ClassCreator.Advanced.cs</code> partial exposes UI artifact generation
+                        (Blazor components, GraphQL schemas) and documentation utilities.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Blazor Component</h3>
+                        <pre><code class="language-csharp">// Generate a Blazor edit/display component for an entity
+string componentPath = classCreator.GenerateBlazorComponent(
+    entity,
+    outputPath: @"C:\Output\Components",
+    namespaceName: "MyApp.Components"
+);
+// Writes Orders.razor + Orders.razor.cs:
+// - @inject IBeepService BeepService
+// - edit form bound to entity fields
+// - Save / Cancel buttons wired to UnitofWork</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>GraphQL Schema</h3>
+                        <pre><code class="language-csharp">// Generate SDL type definitions for multiple entities
+string schemaPath = classCreator.GenerateGraphQLSchema(
+    entities,
+    outputPath: @"C:\Output\GraphQL",
+    namespaceName: "TheTechIdea.ProjectGraphQL"
+);
+// Emits type Order { id: ID!, customerId: String, total: Float }
+// plus Query { orders: [Order] order(id: ID!): Order }
+// and Mutation { createOrder / updateOrder / deleteOrder }</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Entity Documentation &amp; Diff</h3>
+                        <pre><code class="language-csharp">// Generate XML documentation for an entity
+string docPath = classCreator.GenerateEntityDocumentation(entity, @"C:\Output\Docs");
+
+// Compare two schema versions and produce a human-readable diff
+string diffReport = classCreator.GenerateEntityDiffReport(originalEntity, updatedEntity);
+// Reports: added fields, removed fields, type changes, nullable changes</code></pre>
+                    </div>
+                </section>
+
+                <!-- ClassCreator: POCO-to-Entity & Type Conversion -->
+                <section id="class-creator-poco-entity" class="section">
+                    <h2>ClassCreator &#8212; POCO-to-Entity &amp; Type Conversion</h2>
+                    <p>
+                        Two partial files handle <em>reverse mapping</em> &#8212; going from existing CLR types or data structures
+                        back to <code>EntityStructure</code> metadata that the rest of Beep can consume:
+                        <code>ClassCreator.PocoToEntity.cs</code> (namespace scanning) and
+                        <code>ClassCreator.EntityExtensions.cs</code> (<code>EntitiesExtensions</code> integration).
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Namespace Scanning &amp; POCO &#8594; EntityStructure</h3>
+                        <pre><code class="language-csharp">// Discover all POCO types in a namespace
+List&lt;Type&gt; pocoTypes = classCreator.ScanNamespaceForPocos(
+    "MyApp.Domain",
+    assembly: Assembly.GetExecutingAssembly()
+);
+
+// Convert a single POCO type (with relationship detection)
+EntityStructure entity = classCreator.ConvertPocoToEntity(
+    typeof(Order),
+    detectRelationships: true  // scans navigation properties for FK relationships
+);
+
+// Generate entity class code from the POCO (optionally write to file)
+string code = classCreator.GenerateEntityClassFromPoco(
+    typeof(Order),
+    outputPath: @"C:\Output",
+    namespaceString: "MyApp.Entities"
+);
+
+// Bulk conversion: every POCO in the namespace
+List&lt;string&gt; codes = classCreator.GenerateEntityClassesFromNamespace(
+    "MyApp.Domain",
+    outputPath: @"C:\Output",
+    targetNamespace: "MyApp.Entities"
+);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>From .NET Type / DataTable / List (EntityExtensions)</h3>
+                        <pre><code class="language-csharp">// From a CLR type
+EntityStructure fromType = classCreator.CreateEntityStructureFromType(
+    typeof(Customer), entityName: "Customer");
+
+// Generic overload
+EntityStructure fromGeneric = classCreator.CreateEntityStructureFromType&lt;Customer&gt;();
+
+// From an ADO.NET DataTable
+EntityStructure fromTable = classCreator.CreateEntityStructureFromDataTable(myDataTable);
+
+// From a typed list (infers fields from item type)
+EntityStructure fromList = classCreator.CreateEntityStructureFromList(customers, "Customer");
+
+// Batch: multiple types at once
+List&lt;EntityStructure&gt; all = classCreator.CreateEntityStructuresFromTypes(
+    typeof(Customer), typeof(Order), typeof(Product));</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Field category mapping</strong>
+                        <p>
+                            <code>CreateEntityStructureFromType</code> uses <code>EntitiesExtensions.GetFieldCategory(Type)</code>
+                            via <code>DataTypesHelper</code> to assign the correct <code>FieldCategory</code> (Numeric, String, Date,
+                            Boolean, etc.) to each generated field, ensuring downstream type-mapping and query generation work correctly.
+                        </p>
                     </div>
                 </section>
 
@@ -865,6 +1235,347 @@ Console.WriteLine(createTableScript);</code></pre>
                     </div>
                 </section>
 
+                <!-- Utils -->
+                <section id="utils-overview" class="section">
+                    <h2>Utils &#8212; Internal Engine Helpers</h2>
+                    <p>
+                        The <code>DataManagementEngineStandard/Utils/</code> folder contains a set of
+                        <strong>internal</strong> static helpers and one public utility class (<code>Util</code>)
+                        that are reused across the engine to avoid duplication in data source drivers, editors,
+                        and feature modules.
+                    </p>
+
+                    <div class="note">
+                        <strong>Source files (<code>namespace TheTechIdea.Beep.Utils</code>)</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Visibility</th><th>Purpose</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>Util.cs</code></td><td><code>public</code></td><td>Implements <code>IUtil</code>; DI-registered utility surface for engine consumers</td></tr>
+                                <tr><td><code>DataConversionHelper.cs</code></td><td><code>internal static</code></td><td>DataTable &#8594; ObservableBindingList / List&lt;T&gt; conversion with DBNull, char, enum, and numeric safe-casts</td></tr>
+                                <tr><td><code>EntityStructureHelper.cs</code></td><td><code>internal static</code></td><td>Build <code>EntityStructure</code> + <code>EntityField</code> from <code>DataTable</code> or CLR <code>Type</code></td></tr>
+                                <tr><td><code>FilterHelper.cs</code></td><td><code>internal static</code></td><td>Apply <code>List&lt;AppFilter&gt;</code> to a <code>DataTable</code> via <code>DataView.RowFilter</code> or LINQ</td></tr>
+                                <tr><td><code>FileDataSourceHelper.cs</code></td><td><code>internal static</code></td><td>Create <code>ConnectionProperties</code> from file paths; map extensions to <code>DataSourceType</code></td></tr>
+                                <tr><td><code>ReflectionHelper.cs</code></td><td><code>internal static</code></td><td>Compiled activators (Expression trees), <code>ExpandoObject</code> projection, field mapping via reflection</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Util / IUtil -->
+                <section id="utils-util" class="section">
+                    <h2>Util / IUtil</h2>
+                    <p>
+                        <code>Util</code> is the only <em>public</em> class in the Utils namespace. It implements
+                        <code>IUtil</code> and is registered in the DI container so engine consumers can inject
+                        it via <code>IDMEEditor.Utilfunction</code>.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Key members</h3>
+                        <pre><code class="language-csharp">public class Util : IUtil
+{
+    public IDMLogger Logger { get; set; }
+    public IErrorsInfo ErrorObject { get; set; }
+    public IConfigEditor ConfigEditor { get; set; }
+    public IDMEEditor DME { get; set; }
+
+    // DataTable &#8594; typed ObservableBindingList (runtime type via MakeGenericType)
+    public IBindingList ConvertDataTableToObservableList(DataTable dataTable, Type type);
+
+    // DataTable &#8594; generic ObservableBindingList&lt;T&gt; (requires T : Entity, new())
+    public ObservableBindingList&lt;T&gt; ConvertDataTableToObservableBindingList&lt;T&gt;(DataTable dt) where T : Entity, new();
+
+    // DataTable &#8594; List&lt;T&gt;
+    public List&lt;T&gt; ConvertDataTable&lt;T&gt;(DataTable dt);
+
+    // Activator through compiled Expression tree
+    public T CreateInstance&lt;T&gt;(params object[] paramArray);
+    public static ObjectActivator&lt;T&gt; GetActivator&lt;T&gt;(ConstructorInfo ctor);
+
+    // Type helpers
+    public TypeCode GetTypeCode(Type dest);
+    public bool IsObjectNumeric(object o);
+
+    // Data helpers
+    public DataTable JsonToDataTable(string jsonString);
+
+    // Driver resolution: matches a ConnectionProperties to the best-fit ConnectionDriversConfig
+    public ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Typical usage via IDMEEditor</h3>
+                        <pre><code class="language-csharp">// Convert a DataTable returned by a data source to a typed list
+var dt = (DataTable)dataSource.GetEntity("Orders", null);
+var orders = dmeEditor.Utilfunction.ConvertDataTable&lt;Order&gt;(dt);
+
+// Resolve the correct driver config for a known connection
+var conn = dmeEditor.ConfigEditor.DataConnections.First(c => c.ConnectionName == "NorthwindDB");
+ConnectionDriversConfig drv = dmeEditor.Utilfunction.LinkConnection2Drivers(conn);
+Console.WriteLine($"Driver package: {drv.PackageName} v{drv.version}");
+
+// Parse a JSON string to DataTable
+DataTable tbl = dmeEditor.Utilfunction.JsonToDataTable(jsonPayload);</code></pre>
+                    </div>
+                </section>
+
+                <!-- DataConversionHelper -->
+                <section id="utils-data-conversion" class="section">
+                    <h2>DataConversionHelper</h2>
+                    <p>
+                        <code>DataConversionHelper</code> is an <code>internal static</code> class used internally
+                        by the engine whenever a <code>DataTable</code> needs to be materialized into a typed
+                        binding or list structure. It handles the standard edge-cases: <code>DBNull</code>,
+                        single-character strings, enums from strings, and safe numeric conversions.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Conversion methods</h3>
+                        <pre><code class="language-csharp">// Runtime-typed ObservableBindingList (type known only at runtime)
+IBindingList ConvertDataTableToObservableList(DataTable dataTable, Type type);
+
+// Strongly-typed ObservableBindingList&lt;T&gt; (compile-time type)
+ObservableBindingList&lt;T&gt; ConvertDataTableToObservableBindingList&lt;T&gt;(DataTable dt)
+    where T : Entity, new();
+
+// Simple List&lt;T&gt;
+List&lt;T&gt; ConvertDataTable&lt;T&gt;(DataTable dt);
+
+// Row-level conversion (supports DBNull, char, enum, numeric ChangeType)
+T GetItem&lt;T&gt;(DataRow dr);
+
+// Guard helper
+bool IsNumericType(Type type); // covers byte &#8594; decimal</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>DBNull &amp; type-coercion rules</strong>
+                        <ul>
+                            <li><strong>DBNull</strong> &#8212; value types get <code>Activator.CreateInstance(propType)</code> (i.e., default); reference types get <code>null</code>.</li>
+                            <li><strong>char</strong> &#8212; single-character strings are unwrapped to <code>char</code> automatically.</li>
+                            <li><strong>enum</strong> &#8212; string values are parsed with <code>Enum.Parse</code>.</li>
+                            <li><strong>numeric</strong> &#8212; <code>Convert.ChangeType</code> is attempted; falls back to default on failure.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- EntityStructureHelper -->
+                <section id="utils-entity-structure" class="section">
+                    <h2>EntityStructureHelper</h2>
+                    <p>
+                        Builds <code>EntityStructure</code> and <code>EntityField</code> metadata from either an
+                        ADO.NET <code>DataTable</code> or a CLR <code>Type</code>. This is the low-level
+                        implementation behind <code>ClassCreator.CreateEntityStructureFromDataTable</code> and
+                        <code>ClassCreator.CreateEntityStructureFromType</code>.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>API surface</h3>
+                        <pre><code class="language-csharp">// DataTable &#8594; EntityStructure (uses column metadata)
+EntityStructure FromDataTable(DataTable tb);
+
+// CLR Type &#8594; EntityStructure (uses public properties; detects [Key] attribute)
+EntityStructure FromType(Type type);
+
+// Column &#8594; EntityField (sets FieldCategory, AllowDBNull, IsAutoIncrement, IsUnique, Size1)
+EntityField BuildFieldFromColumn(DataColumn col);
+
+// PropertyInfo &#8594; EntityField (sets FieldCategory, IsKey from [Key] attribute)
+EntityField BuildFieldFromProperty(PropertyInfo prop);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>DbFieldCategory mapping</strong>
+                        <table>
+                            <thead><tr><th>.NET type</th><th>DbFieldCategory</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>string</code></td><td><code>String</code></td></tr>
+                                <tr><td><code>int / long / float / double / decimal</code></td><td><code>Numeric</code></td></tr>
+                                <tr><td><code>DateTime</code></td><td><code>Date</code></td></tr>
+                                <tr><td><code>bool</code></td><td><code>Boolean</code></td></tr>
+                                <tr><td><code>byte[]</code></td><td><code>Binary</code></td></tr>
+                                <tr><td><code>Guid</code></td><td><code>Guid</code></td></tr>
+                                <tr><td><code>JsonDocument</code></td><td><code>Json</code></td></tr>
+                                <tr><td><code>XmlDocument</code></td><td><code>Xml</code></td></tr>
+                                <tr><td>enum types</td><td><code>Enum</code></td></tr>
+                                <tr><td>everything else</td><td><code>String</code> (default)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- FilterHelper -->
+                <section id="utils-filter" class="section">
+                    <h2>FilterHelper</h2>
+                    <p>
+                        Translates a <code>List&lt;AppFilter&gt;</code> into a <code>DataView</code> row filter
+                        (fast, index-aware) or a LINQ predicate chain (flexible, streaming). Both paths
+                        support the same set of comparison operators.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>API</h3>
+                        <pre><code class="language-csharp">// Returns DataView with RowFilter built from filters (empty filters = full view)
+DataView ApplyFilters(DataTable records, List&lt;AppFilter&gt; filters);
+
+// Returns IEnumerable&lt;DataRow&gt; filtered via LINQ predicates
+IEnumerable&lt;DataRow&gt; ApplyFiltersEnumerable(DataTable records, List&lt;AppFilter&gt; filters);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Supported operators</strong>
+                        <table>
+                            <thead><tr><th>Operator string</th><th>Behaviour</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>"equals"</code> / <code>"="</code></td><td>Exact match</td></tr>
+                                <tr><td><code>"contains"</code></td><td>LIKE <code>%value%</code> (RowFilter) / <code>Contains</code> OrdinalIgnoreCase (LINQ)</td></tr>
+                                <tr><td><code>">"</code> / <code>"&lt;"</code> / <code>"&gt;="</code> / <code>"&lt;="</code></td><td>Numeric / date comparison</td></tr>
+                                <tr><td><code>"&lt;&gt;"</code> / <code>"!="</code></td><td>Not-equal</td></tr>
+                                <tr><td><code>"between"</code></td><td>Inclusive range using <code>FilterValue</code> (min) and <code>FilterValue1</code> (max)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Example</h3>
+                        <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Status",   Operator = "equals",  FilterValue = "Active" },
+    new AppFilter { FieldName = "Total",    Operator = "&gt;=",     FilterValue = 100 },
+    new AppFilter { FieldName = "OrderDate",Operator = "between", FilterValue = new DateTime(2025,1,1),
+                                                                   FilterValue1 = new DateTime(2025,12,31) }
+};
+
+// DataView path (preferred for DataGridView binding)
+DataView view = FilterHelper.ApplyFilters(ordersTable, filters);
+
+// LINQ path (preferred for server-side pagination)
+var rows = FilterHelper.ApplyFiltersEnumerable(ordersTable, filters)
+    .Skip(page * pageSize).Take(pageSize);</code></pre>
+                    </div>
+                </section>
+
+                <!-- FileDataSourceHelper -->
+                <section id="utils-file-datasource" class="section">
+                    <h2>FileDataSourceHelper</h2>
+                    <p>
+                        Converts file-system paths into <code>ConnectionProperties</code> objects by
+                        auto-resolving the correct <code>ConnectionDriversConfig</code> for each file
+                        extension. Supports all <code>DataSourceType</code> values registered in
+                        <code>ConfigEditor.DataDriversClasses</code>.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>API</h3>
+                        <pre><code class="language-csharp">// Create ConnectionProperties for multiple files (skips missing files and already-registered connections)
+List&lt;ConnectionProperties&gt; CreateFileConnections(IDMEEditor dme, string[] filenames);
+
+// Create a single ConnectionProperties from one file path
+ConnectionProperties CreateFileDataConnection(IDMEEditor dme, string file);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Extension &#8594; DataSourceType mapping (selected)</h3>
+                        <pre><code class="language-csharp">// Extension-to-type switch (full list in FileDataSourceHelper.MapExtToType)
+"csv"      &#8594; DataSourceType.CSV
+"json"     &#8594; DataSourceType.Json
+"xml"      &#8594; DataSourceType.XML
+"xls/xlsx" &#8594; DataSourceType.Xls
+"parquet"  &#8594; DataSourceType.Parquet
+"yaml/yml" &#8594; DataSourceType.YAML
+"avro"     &#8594; DataSourceType.Avro
+"md"       &#8594; DataSourceType.Markdown
+// ... plus tsv, orc, onnx, ini, log, pdf, doc/docx, ppt/pptx,
+//         feather, tfrecord, recordio, libsvm, graphml, dicom, las</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Register all CSV files in a folder as data connections
+var files = Directory.GetFiles(@"C:\Data", "*.csv");
+var connections = FileDataSourceHelper.CreateFileConnections(dmeEditor, files);
+foreach (var cn in connections)
+    dmeEditor.ConfigEditor.AddDataConnection(cn);
+
+// Register a single file
+var conn = FileDataSourceHelper.CreateFileDataConnection(dmeEditor, @"C:\Data\sales.parquet");
+if (conn != null)
+    dmeEditor.ConfigEditor.AddDataConnection(conn);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Driver selection precedence</strong>
+                        <ol>
+                            <li>First driver whose <code>extensionstoHandle</code> contains the file extension <strong>and</strong> is marked <code>Favourite = true</code>.</li>
+                            <li>Highest-version driver matching the extension.</li>
+                            <li>Returns <code>null</code> (logged) if no matching driver is found.</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- ReflectionHelper -->
+                <section id="utils-reflection" class="section">
+                    <h2>ReflectionHelper</h2>
+                    <p>
+                        Provides high-performance <strong>compiled-Expression activators</strong>, runtime
+                        numeric checks, generic <code>ExpandoObject</code> projection, and field-mapping
+                        via reflection. Used internally by ETL, data conversion, and object-mapping pipelines.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>API surface</h3>
+                        <pre><code class="language-csharp">// Create instance via Activator (simple path)
+T CreateInstance&lt;T&gt;(params object[] args);
+
+// Build a compiled Expression-tree activator for a constructor (cached by callers for hot paths)
+Util.ObjectActivator&lt;T&gt; GetActivator&lt;T&gt;(ConstructorInfo ctor);
+
+// Check whether an object's runtime type is a numeric primitive
+bool IsObjectNumeric(object o);
+
+// Get List&lt;T&gt; element type from a runtime list reference
+Type GetListElementType(object list);
+
+// Project all public properties of obj to an ExpandoObject / IDictionary&lt;string,object&gt;
+ExpandoObject ToExpando(object obj);
+
+// Map source object fields to a dest object using an EntityDataMap_DTL field-mapping descriptor
+object MapObject(IDMEEditor dme, string destEntityName, EntityDataMap_DTL map, object sourceObj);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Compiled activator pattern (hot-path object creation)</h3>
+                        <pre><code class="language-csharp">// One-time: compile the activator for Order's parameterless constructor
+var ctor = typeof(Order).GetConstructor(Type.EmptyTypes);
+var activator = ReflectionHelper.GetActivator&lt;Order&gt;(ctor);
+
+// Hot-path reuse (avoids Activator.CreateInstance overhead in tight loops)
+for (int i = 0; i &lt; 100_000; i++)
+{
+    var order = activator(); // compiled IL — ~3x faster than Activator.CreateInstance
+    // populate from DataRow ...
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>ToExpando &amp; MapObject</h3>
+                        <pre><code class="language-csharp">// Project a typed object to a loosely-typed dictionary (e.g. for dynamic JSON serialization)
+var order = new Order { Id = 1, Total = 99.50m };
+ExpandoObject exp = ReflectionHelper.ToExpando(order);
+var dict = (IDictionary&lt;string, object&gt;)exp;
+Console.WriteLine(dict["Total"]); // 99.50
+
+// Map between two entity types using a stored field-mapping descriptor
+var mappedObj = ReflectionHelper.MapObject(
+    dmeEditor,
+    destEntityName: "OrderArchive",
+    map: entityDataMapDetail,
+    sourceObj: sourceOrder
+);</code></pre>
+                    </div>
+                </section>
+
                 <!-- Navigation -->
                 <div class="nav-links">
                     <a href="etl-workflow-engine.html"><i class="bi bi-arrow-left"></i> ETL & Workflow Engine</a>
@@ -875,8 +1586,8 @@ Console.WriteLine(createTableScript);</code></pre>
                 <footer class="documentation-footer">
                     <div class="footer-content">
                         <div class="footer-copyright">
-                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
-                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                            <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
                         </div>
                         <div class="footer-links">
                             <a href="index.html">Home</a>

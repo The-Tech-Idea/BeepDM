@@ -13,8 +13,10 @@ using TheTechIdea.Beep.Utilities;
 namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 {
     /// <summary>
-    /// Helper class for managing master-detail relationships between data blocks
+    /// Deprecated legacy helper for the old FormsManager-owned relationship engine.
+    /// Active master/detail orchestration now lives in IUnitofWork implementations and is consumed through FormsManager.
     /// </summary>
+    [Obsolete("RelationshipManager is deprecated. Master/detail orchestration now belongs to IUnitofWork and FormsManager master/detail methods.")]
     public class RelationshipManager : IRelationshipManager
     {
         #region Fields

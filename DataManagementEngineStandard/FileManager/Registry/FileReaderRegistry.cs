@@ -93,12 +93,14 @@ namespace TheTechIdea.Beep.FileManager.Registry
 
                     _descriptors[attr.FormatType] = new FileReaderDescriptor(attr, cls.type);
 
-                    // Auto-register with the static factory so GetReader() resolves immediately.
+                    // Auto-register with the static factory and also ensure a ConnectionDriversConfig
+                    // entry exists in ConfigEditor so the format appears in the connection manager.
                     try
                     {
                         var instance = (IFileFormatReader)Activator.CreateInstance(cls.type);
                         if (instance != null)
-                            FileReaderFactory.Register(instance);
+                            FileReaderFactory.RegisterWithConfig(
+                                instance, _editor?.ConfigEditor);
                     }
                     catch (Exception ex)
                     {

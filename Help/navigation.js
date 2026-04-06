@@ -152,8 +152,16 @@ class NavigationManager {
                 activeId: 'nav-filemanager-reader-host',
                 openSection: 'nav-advanced-topics'
             },
+            'json-datasource': {
+                activeId: 'nav-json-datasource',
+                openSection: 'nav-advanced-topics'
+            },
             'rules-engine-parser': {
                 activeId: 'nav-rules-engine-parser',
+                openSection: 'nav-advanced-topics'
+            },
+            'beepsyncmanager': {
+                activeId: 'nav-beepsyncmanager',
                 openSection: 'nav-advanced-topics'
             },
             'services-registration-lifetimes': {
@@ -254,8 +262,10 @@ class NavigationManager {
                         <li><a href="etl-engine-observability.html" id="nav-etl-engine-observability">ETL Engine: Observability</a></li>
                         <li><a href="advanced-tools-utilities.html" id="nav-advanced-tools">Advanced Tools & Utilities</a></li>
                         <li><a href="assemblyhandler-loading-nuget-extensions.html" id="nav-assemblyhandler-loading-nuget-extensions">AssemblyHandler: Loading & NuGet</a></li>
-                        <li><a href="filemanager-reader-host.html" id="nav-filemanager-reader-host">FileManager Reader Host</a></li>
-                        <li><a href="rules-engine-parser.html" id="nav-rules-engine-parser">Rules Engine & Parsers</a></li>
+                        <li><a href="filemanager-reader-host.html" id="nav-filemanager-reader-host">FileManager DataSource</a></li>
+                        <li><a href="json-datasource.html" id="nav-json-datasource">JSON DataSource</a></li>
+                        <li><a href="rules-engine-parser.html" id="nav-rules-engine-parser">Rules Engine &amp; Parsers</a></li>
+                        <li><a href="beepsyncmanager.html" id="nav-beepsyncmanager">BeepSync Manager</a></li>
                         <li><a href="services-registration-lifetimes.html" id="nav-services-registration-lifetimes">Services Registration & Lifetimes</a></li>
                         <li><a href="helpers-runtime-reference.html" id="nav-helpers-runtime-reference">Helpers Runtime Reference</a></li>
                         <li><a href="migrationmanager.html" id="nav-migrationmanager">MigrationManager</a></li>

@@ -105,7 +105,16 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>On rollback (ON-ROLLBACK)</summary>
         OnRollback = 39,
         
-        // Reserved 40-49 for future block-level triggers
+        /// <summary>On insert — replaces default DB insert (ON-INSERT)</summary>
+        OnInsert = 40,
+        
+        /// <summary>On update — replaces default DB update (ON-UPDATE)</summary>
+        OnUpdate = 41,
+        
+        /// <summary>On delete — replaces default DB delete (ON-DELETE)</summary>
+        OnDelete = 42,
+        
+        // Reserved 43-49 for future block-level triggers
         
         #endregion
         
@@ -125,6 +134,9 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         /// <summary>Post Log Record Change</summary>
         PostLogRecordChange = 54,
+        
+        /// <summary>When validating a record (WHEN-VALIDATE-RECORD)</summary>
+        WhenValidateRecord = 55,
         
         // Reserved 55-69 for future record-level triggers
         
@@ -360,6 +372,67 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         #endregion
     }
     
+    #endregion
+
+    #region TriggerChainMode
+
+    /// <summary>
+    /// Controls behaviour when a trigger in a dependency chain fails.
+    /// </summary>
+    public enum TriggerChainMode
+    {
+        /// <summary>Stop execution of remaining triggers in the chain (default).</summary>
+        StopOnFailure,
+        /// <summary>Continue executing remaining triggers even after a failure.</summary>
+        Continue,
+        /// <summary>Roll back the entire form transaction if any trigger fails.</summary>
+        Rollback
+    }
+
+    #endregion
+
+    #region KeyTriggerType
+
+    /// <summary>
+    /// Convenience subset enum covering all Oracle Forms KEY-* trigger types.
+    /// Maps 1-to-1 to <see cref="TriggerType"/> values in the 100-169 range.
+    /// </summary>
+    public enum KeyTriggerType
+    {
+        NextItem       = 100,  // KEY-NEXT-ITEM
+        PreviousItem   = 101,  // KEY-PREV-ITEM
+        Up             = 102,  // KEY-UP
+        Down           = 103,  // KEY-DOWN
+        NextRecord     = 104,  // KEY-NXTREC
+        PreviousRecord = 105,  // KEY-PRVREC
+        NextBlock      = 106,  // KEY-NXTBLK
+        PreviousBlock  = 107,  // KEY-PRVBLK
+        ScrollUp       = 108,  // KEY-SCRDN
+        ScrollDown     = 109,  // KEY-SCRUP
+        Enter          = 110,  // KEY-ENTER
+        Exit           = 111,  // KEY-EXIT
+        ExecuteQuery   = 120,  // KEY-EXEQRY
+        CountRecords   = 121,  // KEY-CNTQRY
+        Commit         = 122,  // KEY-COMMIT
+        Rollback       = 123,  // KEY-ROLLBACK
+        CreateRecord   = 124,  // KEY-CREREC
+        DeleteRecord   = 125,  // KEY-DELREC
+        DuplicateRecord= 126,  // KEY-DUPREC
+        DuplicateItem  = 127,  // KEY-DUPITM
+        ClearBlock     = 128,  // KEY-CLRBLK
+        ClearForm      = 129,  // KEY-CLRFRM
+        ClearRecord    = 130,  // KEY-CLRREC
+        ClearItem      = 131,  // KEY-CLRITM
+        ListValues     = 132,  // KEY-LISTVAL
+        Help           = 133,  // KEY-HELP
+        Print          = 134,  // KEY-PRINT
+        Edit           = 135,  // KEY-EDIT
+        Menu           = 136,  // KEY-MENU
+        F1  = 150, F2  = 151, F3  = 152, F4  = 153,
+        F5  = 154, F6  = 155, F7  = 156, F8  = 157,
+        F9  = 158, F10 = 159, F11 = 160, F12 = 161
+    }
+
     #endregion
     
     #region Trigger Scope Enumeration

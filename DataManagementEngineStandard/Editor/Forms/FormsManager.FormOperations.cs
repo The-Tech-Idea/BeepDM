@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 
@@ -174,7 +175,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
                 }
 
-                // Get dirty blocks and sort by dependency
+                // Phase 4-C: cross-block validation before commit
+                var crossFailures = _crossBlockValidation.Validate();
+                if (_crossBlockValidation.HasErrorSeverityFailures(crossFailures))
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = "Cross-block validation failed: " + string.Join("; ", crossFailures);
+                    return result;
+                }
+
+                // Get dirty blocks, sort by FK dependency (Phase 4-A)
                 var dirtyBlocks = GetDirtyBlocks();
                 if (!dirtyBlocks.Any())
                 {
@@ -183,20 +193,62 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Reorder dirty blocks respecting master → detail commit order
+                var commitOrder = BuildCommitOrder();
+                var orderedDirty = commitOrder.Where(b => dirtyBlocks.Contains(b))
+                                              .Concat(dirtyBlocks.Except(commitOrder))
+                                              .ToList();
+
+                // Fire PRE-COMMIT trigger — abort if cancelled
+                var preCommitResult = await _triggerManager.FireFormTriggerAsync(
+                    TriggerType.PreCommit,
+                    _currentFormName ?? "FORM",
+                    TriggerContext.ForForm(TriggerType.PreCommit, _currentFormName ?? "FORM", _dmeEditor));
+                if (preCommitResult == TriggerResult.Cancelled)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = "Commit cancelled by PRE-COMMIT trigger";
+                    return result;
+                }
+
+                // Per-block validation before the actual save
+                foreach (var bName in orderedDirty)
+                {
+                    if (!ValidateBlock(bName))
+                    {
+                        result.Flag = Errors.Failed;
+                        result.Message = $"Pre-commit validation failed for block '{bName}'";
+                        return result;
+                    }
+                }
+
                 // Use dirty state manager for the actual commit
-                var commitSuccess = await _dirtyStateManager.SaveDirtyBlocksAsync(dirtyBlocks);
+                var commitSuccess = await _dirtyStateManager.SaveDirtyBlocksAsync(orderedDirty);
 
                 if (commitSuccess)
                 {
                     result.Message = "All changes committed successfully";
                     Status = "All changes committed successfully";
 
-                    // Trigger post-commit events
+                    // Phase 5: flush pending field changes as committed audit entries
+                    _auditManager?.FlushPendingToStore(_currentFormName ?? "FORM", AuditOperation.Commit);
+
+                    // Fire POST-COMMIT trigger after successful save
+                    await _triggerManager.FireFormTriggerAsync(
+                        TriggerType.PostCommit,
+                        _currentFormName ?? "FORM",
+                        TriggerContext.ForForm(TriggerType.PostCommit, _currentFormName ?? "FORM", _dmeEditor));
+
+                    // Raise .NET event for UI subscribers
                     var postCommitArgs = new FormTriggerEventArgs(_currentFormName, "Form commit completed")
                     {
                         OperationType = FormOperationType.Commit
                     };
                     OnFormCommit?.Invoke(this, postCommitArgs);
+
+                    // Phase 7: unlock all records after successful commit
+                    foreach (var blockName in _blocks.Keys)
+                        _lockManager.UnlockAllRecords(blockName);
 
                     LogOperation($"Form commit completed successfully for {dirtyBlocks.Count} blocks");
                 }
@@ -260,6 +312,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     result.Message = "All changes rolled back successfully";
                     Status = "All changes rolled back successfully";
+
+                    // Phase 5: discard pending audit field changes (they were never committed)
+                    _auditManager?.DiscardPending();
+
+                    // Phase 7: unlock all records after rollback
+                    foreach (var blockName in _blocks.Keys)
+                        _lockManager.UnlockAllRecords(blockName);
+
+                    // Phase 6: release all savepoints after rollback
+                    foreach (var blockName in _blocks.Keys)
+                        _savepointManager.ReleaseAllSavepoints(blockName);
+
                     LogOperation($"Form rollback completed successfully for {dirtyBlocks.Count} blocks");
                 }
                 else
@@ -472,6 +536,60 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 LogError("Error during form cleanup", ex);
             }
+        }
+
+        #endregion
+
+        #region Phase 4-A – FK-Aware Commit Order
+
+        /// <summary>
+        /// Kahn's topological sort of blocks using block master/detail metadata.
+        /// Master blocks appear before their detail blocks.
+        /// Falls back to insertion order on cycle detection.
+        /// </summary>
+        private List<string> BuildCommitOrder()
+        {
+            // Build in-degree map and adjacency list (master → detail)
+            var allBlocks  = _blocks.Keys.ToList();
+            var inDegree   = allBlocks.ToDictionary(b => b, _ => 0);
+            var adjacency  = allBlocks.ToDictionary(b => b, _ => new List<string>());
+
+            foreach (var block in _blocks.Values)
+            {
+                if (string.IsNullOrWhiteSpace(block.MasterBlockName))
+                    continue;
+                if (!adjacency.ContainsKey(block.MasterBlockName))
+                    continue;
+                if (!inDegree.ContainsKey(block.BlockName))
+                    continue;
+
+                adjacency[block.MasterBlockName].Add(block.BlockName);
+                inDegree[block.BlockName]++;
+            }
+
+            // Kahn BFS
+            var queue  = new Queue<string>(allBlocks.Where(b => inDegree[b] == 0));
+            var result = new List<string>();
+
+            while (queue.Count > 0)
+            {
+                var node = queue.Dequeue();
+                result.Add(node);
+                foreach (var detail in adjacency[node])
+                {
+                    if (--inDegree[detail] == 0)
+                        queue.Enqueue(detail);
+                }
+            }
+
+            // Cycle detected — fall back to original block order
+            if (result.Count < allBlocks.Count)
+            {
+                LogOperation("BuildCommitOrder: cycle detected in relationships, using insertion order");
+                return allBlocks;
+            }
+
+            return result;
         }
 
         #endregion

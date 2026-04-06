@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -80,6 +81,18 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         /// <summary>Whether execution should be logged</summary>
         public bool LogExecution { get; set; } = false;
+
+        /// <summary>
+        /// IDs of triggers that must complete (with Success/Continue result) before this trigger fires.
+        /// Used by <see cref="ITriggerDependencyManager"/> for ordered chain execution.
+        /// </summary>
+        public List<string> DependsOn { get; set; } = new List<string>();
+
+        /// <summary>
+        /// How the trigger chain behaves when this trigger fails.
+        /// Defaults to <see cref="TriggerChainMode.StopOnFailure"/>.
+        /// </summary>
+        public TriggerChainMode ChainMode { get; set; } = TriggerChainMode.StopOnFailure;
         
         #endregion
         

@@ -1,76 +1,983 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proxy DataSource API - Beep Data Management Engine Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProxyDataSource — BeepDM Documentation</title>
+<link rel="stylesheet" href="sphinx-style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
-    <div class="container">
-        <aside class="sidebar" id="sidebar"></aside>
-        <main class="content">
-            <div class="content-wrapper">
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <span>Proxy DataSource</span>
-                </nav>
+<div id="nav-placeholder"></div>
+<div class="main-content">
 
-                <div class="page-header">
-                    <h1>IProxyDataSource / IProxyCluster</h1>
-                    <p class="page-subtitle">Signature-verified proxy/failover contracts</p>
-                </div>
+<!-- ═══════════════════════════════════════════════════════════ HEADER -->
+<div class="content-header">
+  <div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <i class="bi bi-chevron-right"></i>
+    <span>Data Management</span>
+    <i class="bi bi-chevron-right"></i>
+    <span>ProxyDataSource</span>
+  </div>
+  <h1 class="page-title"><i class="bi bi-diagram-3-fill"></i> ProxyDataSource</h1>
+  <p class="page-subtitle">
+    High-availability multi-source proxy with intelligent routing, circuit breaking,
+    caching, watchdog promotion and cluster-tier scaling — all behind the standard
+    <code>IDataSource</code> interface.
+  </p>
+</div>
 
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/Proxy/IProxyDataSource.cs</code></li>
-                    </ul>
-                </div>
+<!-- ═══════════════════════════════════════════════════════════ TOC -->
+<div class="toc-container">
+  <h3><i class="bi bi-list-ul"></i> On This Page</h3>
+  <ul class="toc-list">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#architecture">Architecture &amp; Phase Map</a></li>
+    <li><a href="#core-types">Core Types &amp; Enums</a></li>
+    <li><a href="#constructors">Constructors</a></li>
+    <li><a href="#policy">ProxyPolicy</a></li>
+    <li><a href="#resilience-profiles">Resilience Profiles</a></li>
+    <li><a href="#routing">Routing Strategies</a></li>
+    <li><a href="#circuit-breaker">Circuit Breaker</a></li>
+    <li><a href="#connection-pool">Connection Pool</a></li>
+    <li><a href="#caching">Caching</a></li>
+    <li><a href="#watchdog">Watchdog</a></li>
+    <li><a href="#observability">Observability &amp; SLO</a></li>
+    <li><a href="#audit">Audit</a></li>
+    <li><a href="#error-taxonomy">Error Taxonomy</a></li>
+    <li><a href="#cluster">ProxyCluster</a></li>
+    <li><a href="#examples">Usage Examples</a></li>
+  </ul>
+</div>
 
-                <section class="section">
-                    <h2>IProxyDataSource</h2>
-                    <pre><code class="language-csharp">public interface IProxyDataSource : IDataSource, IDisposable
-{
-    event EventHandler&lt;FailoverEventArgs&gt; OnFailover;
-    event EventHandler&lt;RecoveryEventArgs&gt; OnRecovery;
-
-    void ApplyPolicy(ProxyPolicy policy);
-    Task&lt;T&gt; ExecuteWithLoadBalancing&lt;T&gt;(
-        Func&lt;IDataSource, Task&lt;T&gt;&gt; operation,
-        bool isWrite = false,
-        CancellationToken cancellationToken = default);
-
-    IDictionary&lt;string, DataSourceMetrics&gt; GetMetrics();
-    ProxySloSnapshot GetSloSnapshot(string dsName);
-    IReadOnlyList&lt;ProxySloSnapshot&gt; GetAllSloSnapshots();
-
-    IProxyAuditSink AuditSink { get; set; }
-}</code></pre>
-                </section>
-
-                <section class="section">
-                    <h2>IProxyCluster</h2>
-                    <pre><code class="language-csharp">public interface IProxyCluster : IProxyDataSource
-{
-    void AddNode(IProxyNode node);
-    void RemoveNode(string nodeId);
-    IReadOnlyList&lt;IProxyNode&gt; GetNodes();
-
-    void DrainNode(string nodeId, int timeoutMs = 30_000);
-    Task DrainNodeAsync(string nodeId, int timeoutMs = 30_000, CancellationToken cancellationToken = default);
-
-    void ApplyClusterPolicy(ProxyPolicy policy);
-    IDictionary&lt;string, DataSourceMetrics&gt; GetClusterMetrics();
-}</code></pre>
-                </section>
-            </div>
-        </main>
+<!-- ═══════════════════════════════════════════════════════════ OVERVIEW -->
+<section id="overview">
+  <h2><i class="bi bi-info-circle-fill"></i> Overview</h2>
+  <p>
+    <code>ProxyDataSource</code> wraps one or more concrete <code>IDataSource</code> instances
+    behind a single, transparent facade that the rest of the application treats as an ordinary
+    data source. It adds the following capabilities without any changes to calling code:
+  </p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <i class="bi bi-shuffle text-primary"></i>
+      <h4>Smart Routing</h4>
+      <p>Four strategies: Weighted Latency, Least Outstanding Requests, Round Robin, Health Weighted. Reads can be load-balanced across replicas; writes are pinned to the Primary role.</p>
     </div>
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <div class="feature-card">
+      <i class="bi bi-activity text-success"></i>
+      <h4>Circuit Breaker</h4>
+      <p>Per-source three-state (Closed / HalfOpen / Open) breaker with severity-weighted failure accumulation and configurable reset windows.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-arrow-repeat text-warning"></i>
+      <h4>Retry &amp; Failover</h4>
+      <p>Automatic retry with exponential back-off and jitter. Seamless failover across candidates on transient errors. Non-idempotent writes execute exactly once.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-database-check text-info"></i>
+      <h4>Connection Pool</h4>
+      <p>Per-source bounded pool (<code>MaxPoolSize=10</code>). Idle connections expire after <code>ConnectionTimeout</code> (5 min). TTL-based eviction runs on the health-check timer.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-lightning-charge-fill text-warning"></i>
+      <h4>Caching</h4>
+      <p>Stale-while-revalidate entity cache backed by <code>CacheScope</code>. Write-through invalidation keeps cache consistent on every insert/update/delete.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-heart-pulse-fill text-danger"></i>
+      <h4>Watchdog</h4>
+      <p>Tight-cycle background loop probes the write-primary independently of the health-check timer. Promotes a replica automatically when the primary fails, demotes it when the primary recovers.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-bar-chart-fill text-primary"></i>
+      <h4>Observability</h4>
+      <p>Per-source <code>DataSourceMetrics</code> counters and a rolling 500-sample latency buffer that yields p50/p95/p99 SLO snapshots on demand.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-shield-check text-success"></i>
+      <h4>Audit Trail</h4>
+      <p>Every proxied operation writes a <code>ProxyAuditEntry</code> to a swappable <code>IProxyAuditSink</code>. Ships with a file-based rolling JSON-lines sink out of the box.</p>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <i class="bi bi-info-circle"></i>
+    <div>
+      <strong>Drop-in replacement:</strong> <code>ProxyDataSource</code> implements both
+      <code>IProxyDataSource</code> and <code>IDataSource</code>, so you can pass it anywhere a
+      normal data source is expected. All resilience features are invisible to the caller.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ ARCHITECTURE -->
+<section id="architecture">
+  <h2><i class="bi bi-diagram-2-fill"></i> Architecture &amp; Phase Map</h2>
+  <p>
+    The implementation is split across partial classes by concern, each corresponding to a
+    numbered <em>phase</em> of the design plan:
+  </p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead>
+        <tr><th>Phase</th><th>File</th><th>Responsibility</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>ProxyDataSource.cs</code></td><td>Core shell — fields, constructors, IDataSource properties, events, policy bootstrap</td></tr>
+        <tr><td>2</td><td><code>ProxyotherClasses.cs</code></td><td>Error taxonomy (<code>ProxyErrorCategory</code>, <code>ProxyErrorSeverity</code>), resilience profiles, enums, <code>DataSourceMetrics</code></td></tr>
+        <tr><td>3</td><td><code>ProxyDataSource.Routing.cs</code></td><td>Candidate selection — WeightedLatency, RoundRobin, LeastOutstanding, HealthWeighted</td></tr>
+        <tr><td>4</td><td><code>ProxyDataSource.ExecutionHelpers.cs</code></td><td>Read/write execution loops — retry, jitter, saturation back-off, audit emission</td></tr>
+        <tr><td>5</td><td><code>ProxyDataSource.Caching.cs</code></td><td>Stale-while-revalidate entity cache, invalidation, cache key generation</td></tr>
+        <tr><td>6</td><td><code>ProxyDataSource.Observability.cs</code></td><td>Latency sample buffer, SLO snapshot, runtime <code>ApplyPolicy</code></td></tr>
+        <tr><td>7</td><td><code>ProxyDataSource.Audit.cs</code></td><td><code>IProxyAuditSink</code>, <code>NullProxyAuditSink</code>, <code>FileProxyAuditSink</code>, <code>ProxyAuditEntry</code></td></tr>
+        <tr><td>8</td><td><code>ProxyDataSource.CircuitState.cs</code></td><td><code>ICircuitStateStore</code>, <code>InProcessCircuitStateStore</code></td></tr>
+        <tr><td>9</td><td><code>ProxyDataSource.FanOut.cs</code></td><td>Fan-out / scatter-gather operations across multiple nodes</td></tr>
+        <tr><td>10</td><td><code>ProxyDataSource.Transactions.cs</code></td><td>Distributed transaction coordination</td></tr>
+        <tr><td>11</td><td><code>ProxyDataSource.Watchdog.cs</code></td><td>Tight-cycle liveness probe, role promotion/demotion</td></tr>
+        <tr><td>—</td><td><code>ProxyDataSource.RedisCircuitStateStore.cs</code></td><td>Redis-backed distributed circuit state</td></tr>
+        <tr><td>11+</td><td><code>ProxyCluster.cs</code> et al.</td><td>Cluster tier — node management, cluster routing, hedging, fault injection</td></tr>
+        <tr><td>—</td><td><code>Remote/</code></td><td>HTTP transport for remote/cross-process proxy calls</td></tr>
+        <tr><td>—</td><td><code>EntityAffinityMap.cs</code></td><td>Entity-name → datasource affinity routing</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Request lifecycle</h3>
+  <pre><code class="language-none">caller → ProxyDataSource.GetEntity(...)
+            │
+            ├─ SelectCandidates()          [Routing]
+            │     filter healthy + closed circuits
+            │     order by routing strategy
+            │
+            ├─ for each candidate:
+            │     GetPooledConnection()
+            │     for 1..MaxRetries:
+            │         execute operation
+            │         ├─ success → RecordSuccess, emit audit, return
+            │         └─ failure → ProxyErrorClassifier.Classify()
+            │                       ├─ non-retryable → throw immediately
+            │                       ├─ saturation    → 2× back-off, retry
+            │                       └─ transient     → exp back-off+jitter, retry
+            │
+            └─ all candidates exhausted → log + throw last exception</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CORE TYPES -->
+<section id="core-types">
+  <h2><i class="bi bi-boxes"></i> Core Types &amp; Enums</h2>
+
+  <h3><code>ProxyDataSourceRole</code></h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Value</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Primary</code></td><td>Receives all writes; eligible for reads</td></tr>
+        <tr><td><code>Replica</code></td><td>Read-only — never receives writes</td></tr>
+        <tr><td><code>Standby</code></td><td>No normal traffic; activated only on failover</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>ProxyRoutingStrategy</code></h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Value</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>WeightedLatency</code></td><td>Prefer high-weight, low-latency sources (default)</td></tr>
+        <tr><td><code>LeastOutstandingRequests</code></td><td>Route to the source with fewest in-flight operations</td></tr>
+        <tr><td><code>RoundRobin</code></td><td>Simple sequential rotation across healthy sources</td></tr>
+        <tr><td><code>HealthWeighted</code></td><td>Weight inversely proportional to observed failure rate</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>ProxyOperationSafety</code></h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Value</th><th>Retry behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><code>ReadSafe</code></td><td>May be retried freely — reads and queries</td></tr>
+        <tr><td><code>IdempotentWrite</code></td><td>May be retried with the same idempotency key</td></tr>
+        <tr><td><code>NonIdempotentWrite</code></td><td>Single-execute only; no automatic retry</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>DataSourceMetrics</code></h3>
+  <p>Thread-safe counters maintained per backend datasource. Available via <code>GetMetrics()</code>.</p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>TotalRequests</code></td><td><code>long</code></td><td>All proxied calls (reads + writes)</td></tr>
+        <tr><td><code>SuccessfulRequests</code></td><td><code>long</code></td><td>Calls that returned successfully</td></tr>
+        <tr><td><code>FailedRequests</code></td><td><code>long</code></td><td>Calls that threw an exception</td></tr>
+        <tr><td><code>AverageResponseTime</code></td><td><code>double</code></td><td>Rolling average response time (ms)</td></tr>
+        <tr><td><code>CircuitBreaks</code></td><td><code>long</code></td><td>Number of times the circuit opened for this source</td></tr>
+        <tr><td><code>LastRequested</code></td><td><code>DateTime</code></td><td>UTC timestamp of last attempted call</td></tr>
+        <tr><td><code>LastSuccessful</code></td><td><code>DateTime</code></td><td>UTC timestamp of last successful call</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>ProxySloSnapshot</code></h3>
+  <p>Point-in-time SLO report returned by <code>GetSloSnapshot(dsName)</code>.</p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>P50LatencyMs</code></td><td>Median latency (ms) over last 500 samples</td></tr>
+        <tr><td><code>P95LatencyMs</code></td><td>95th-percentile latency (ms)</td></tr>
+        <tr><td><code>P99LatencyMs</code></td><td>99th-percentile latency (ms)</td></tr>
+        <tr><td><code>ErrorRatePercent</code></td><td>Failure rate as a percentage of total requests</td></tr>
+        <tr><td><code>TotalRequests</code></td><td>Lifetime request count for this source</td></tr>
+        <tr><td><code>CacheHitRatio</code></td><td>Cache hit ratio (0–1); 0 when cache is disabled</td></tr>
+        <tr><td><code>SnapshotTime</code></td><td>UTC time of snapshot generation</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>PooledConnection</code></h3>
+  <p>A lease on a connection inside the per-source pool.</p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>DataSource</code></td><td>The underlying <code>IDataSource</code> instance</td></tr>
+        <tr><td><code>LastUsed</code></td><td>Timestamp used by idle-eviction to expire stale connections</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CONSTRUCTORS -->
+<section id="constructors">
+  <h2><i class="bi bi-hammer"></i> Constructors</h2>
+
+  <h3>Preferred constructor — policy-based</h3>
+  <pre><code class="language-csharp">public ProxyDataSource(
+    IDMEEditor         dmeEditor,
+    List&lt;string&gt;       dataSourceNames,
+    ProxyPolicy        policy           = null,
+    ICircuitStateStore circuitStateStore = null,
+    IProxyAuditSink    auditSink        = null)</code></pre>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Parameter</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>dmeEditor</code></td><td>Active <code>IDMEEditor</code> — used to resolve datasource instances and logging</td></tr>
+        <tr><td><code>dataSourceNames</code></td><td>Names of the pre-configured datasources to pool (must exist in <code>ConfigEditor.DataConnections</code>)</td></tr>
+        <tr><td><code>policy</code></td><td>Full routing + resilience + cache policy. Defaults to <code>ProxyPolicy.Default</code> (Balanced profile, WeightedLatency)</td></tr>
+        <tr><td><code>circuitStateStore</code></td><td>Swappable circuit state backend. Defaults to <code>InProcessCircuitStateStore</code> (in-process, no dependency)</td></tr>
+        <tr><td><code>auditSink</code></td><td>Audit write destination. Defaults to <code>NullProxyAuditSink</code> (no-op)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Backwards-compatible constructor</h3>
+  <pre><code class="language-csharp">public ProxyDataSource(
+    IDMEEditor   dmeEditor,
+    List&lt;string&gt; dataSourceNames,
+    int?         maxRetries              = null,
+    int?         retryDelayMilliseconds  = null,
+    int?         healthCheckIntervalMs   = null)</code></pre>
+  <p>
+    Wraps the scalar parameters into a <code>ProxyPolicy</code> internally.
+    Provided for compatibility with older call sites; prefer the policy overload for new code.
+  </p>
+
+  <div class="info-box">
+    <i class="bi bi-lightbulb"></i>
+    <div>
+      Both constructors call <code>InitializeFromPolicy()</code> which starts the health-check timer,
+      seeds per-source circuit breakers, and initialises the cache provider if enabled.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ POLICY -->
+<section id="policy">
+  <h2><i class="bi bi-gear-fill"></i> ProxyPolicy</h2>
+  <p>
+    <code>ProxyPolicy</code> is the single source of truth for every tunable behaviour.
+    It is applied at construction time and can be swapped at runtime via
+    <code>ApplyPolicy(ProxyPolicy)</code> without recreating the proxy.
+  </p>
+
+  <h3>Top-level properties</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Name</code></td><td><code>string</code></td><td><code>"Default"</code></td><td>Human-readable policy name used in log messages</td></tr>
+        <tr><td><code>Version</code></td><td><code>int</code></td><td><code>1</code></td><td>Monotonic version for change tracking</td></tr>
+        <tr><td><code>RoutingStrategy</code></td><td><code>ProxyRoutingStrategy</code></td><td><code>WeightedLatency</code></td><td>Algorithm used to order candidate sources for each request</td></tr>
+        <tr><td><code>HealthCheckIntervalMs</code></td><td><code>int</code></td><td><code>30 000</code></td><td>Interval between background health checks (ms)</td></tr>
+        <tr><td><code>Resilience</code></td><td><code>ProxyResilienceProfile</code></td><td>Balanced preset</td><td>Retry / circuit-breaker parameters</td></tr>
+        <tr><td><code>Cache</code></td><td><code>ProxyCacheProfile</code></td><td>disabled</td><td>Entity cache configuration</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Runtime hot-swap</h3>
+  <pre><code class="language-csharp">// Change to aggressive failover without recreating the proxy
+var aggressivePolicy = new ProxyPolicy
+{
+    Name            = "HighAvailability",
+    RoutingStrategy = ProxyRoutingStrategy.HealthWeighted,
+    Resilience      = ProxyResilienceProfile.AggressiveFailover,
+    HealthCheckIntervalMs = 10_000
+};
+
+proxy.ApplyPolicy(aggressivePolicy);   // thread-safe; stops old timer, reinitialises circuits</code></pre>
+
+  <div class="warning-box">
+    <i class="bi bi-exclamation-triangle"></i>
+    <div>
+      <code>ApplyPolicy</code> stops the old health-check timer <em>before</em> swapping the policy
+      reference to prevent a duplicate timer leak. Always use <code>ApplyPolicy</code> rather than
+      mutating <code>_policy</code> directly.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ RESILIENCE PROFILES -->
+<section id="resilience-profiles">
+  <h2><i class="bi bi-shield-fill"></i> Resilience Profiles</h2>
+  <p>
+    <code>ProxyResilienceProfile</code> bundles all retry and circuit-breaker knobs.
+    Three built-in presets cover most workloads; use <code>Custom</code> for fine tuning.
+  </p>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Conservative</th>
+          <th>Balanced (default)</th>
+          <th>AggressiveFailover</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>MaxRetries</code></td><td>5</td><td>3</td><td>1</td></tr>
+        <tr><td><code>RetryBaseDelayMs</code></td><td>1 000</td><td>500</td><td>100</td></tr>
+        <tr><td><code>RetryMaxDelayMs</code></td><td>60 000</td><td>30 000</td><td>5 000</td></tr>
+        <tr><td><code>UseExponentialBackoff</code></td><td>true</td><td>true</td><td>true</td></tr>
+        <tr><td><code>UseJitter</code></td><td>true</td><td>true</td><td>true</td></tr>
+        <tr><td><code>FailureThreshold</code></td><td>3</td><td>5</td><td>2</td></tr>
+        <tr><td><code>CircuitResetTimeout</code></td><td>10 min</td><td>5 min</td><td>30 s</td></tr>
+        <tr><td><code>ConsecutiveSuccessesToClose</code></td><td>3</td><td>2</td><td>1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <pre><code class="language-csharp">// Use a preset
+var policy = new ProxyPolicy { Resilience = ProxyResilienceProfile.Conservative };
+
+// Or inline-custom
+var policy = new ProxyPolicy
+{
+    Resilience = new ProxyResilienceProfile
+    {
+        ProfileType              = ProxyResilienceProfileType.Custom,
+        MaxRetries               = 4,
+        RetryBaseDelayMs         = 300,
+        FailureThreshold         = 7,
+        CircuitResetTimeout      = TimeSpan.FromMinutes(2),
+        ConsecutiveSuccessesToClose = 2
+    }
+};</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ ROUTING -->
+<section id="routing">
+  <h2><i class="bi bi-signpost-split-fill"></i> Routing Strategies</h2>
+  <p>
+    On every read operation, <code>SelectCandidates()</code> builds an ordered list of
+    healthy (non-open-circuit) sources and passes it to the active routing algorithm.
+    The execution loop tries candidates in that order with retries.
+    Writes are pre-filtered to <code>Primary</code>-role sources only.
+  </p>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Strategy</th><th>Algorithm</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>WeightedLatency</code></td>
+          <td>Sort by weight descending, then average latency ascending</td>
+          <td>Mixed-performance backends where weight and latency both matter</td>
+        </tr>
+        <tr>
+          <td><code>RoundRobin</code></td>
+          <td>Monotonic counter mod candidate count; rotates list so selected index is first</td>
+          <td>Homogeneous backends, simple equal distribution</td>
+        </tr>
+        <tr>
+          <td><code>LeastOutstandingRequests</code></td>
+          <td>Sort by number of in-flight connections ascending</td>
+          <td>Backends with variable concurrency limits or connection pools</td>
+        </tr>
+        <tr>
+          <td><code>HealthWeighted</code></td>
+          <td>Weight = 1 / (failure rate + ε); source with lowest failure rate gets most traffic</td>
+          <td>Sources that flip between healthy and degraded frequently</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box">
+    <i class="bi bi-info-circle"></i>
+    <div>
+      When <em>all</em> candidates have open circuits (fully degraded state), the proxy falls back
+      to including all registered sources regardless of circuit state to avoid total unavailability.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CIRCUIT BREAKER -->
+<section id="circuit-breaker">
+  <h2><i class="bi bi-toggle2-off"></i> Circuit Breaker</h2>
+  <p>
+    Each registered datasource gets its own <code>CircuitBreaker</code> instance managed by the
+    active <code>ICircuitStateStore</code>. The breaker uses three states:
+  </p>
+
+  <div class="state-diagram">
+    <div class="state closed"><strong>Closed</strong><br><small>Normal operation</small></div>
+    <div class="state-arrow">⟶ failures ≥ threshold ⟶</div>
+    <div class="state open"><strong>Open</strong><br><small>All calls rejected</small></div>
+    <div class="state-arrow">⟶ reset timeout elapsed ⟶</div>
+    <div class="state half-open"><strong>Half-Open</strong><br><small>Probe calls allowed</small></div>
+    <div class="state-arrow">⟶ successes ≥ threshold → Closed<br>⟵ failure → Open</div>
+  </div>
+
+  <h3>Severity-weighted failure accumulation</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Severity</th><th>Weight</th><th>Example exceptions</th></tr></thead>
+      <tbody>
+        <tr><td><code>Low</code></td><td>1</td><td><code>OperationCanceledException</code>, generic connection errors</td></tr>
+        <tr><td><code>Medium</code></td><td>1</td><td><code>TimeoutException</code>, deadlock, transient errors</td></tr>
+        <tr><td><code>High</code></td><td>2</td><td><code>UnauthorizedAccessException</code>, persistent errors</td></tr>
+        <tr><td><code>Critical</code></td><td>Immediate open</td><td><code>OutOfMemoryException</code> (saturation)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Swappable state store</h3>
+  <p>
+    The <code>ICircuitStateStore</code> interface allows replacing the default in-process store
+    with a distributed backend so circuit state is shared across multiple proxy instances:
+  </p>
+  <pre><code class="language-csharp">public interface ICircuitStateStore
+{
+    bool CanExecute(string dsName);
+    void RecordSuccess(string dsName);
+    void RecordFailure(string dsName, ProxyErrorSeverity severity = ProxyErrorSeverity.Medium);
+    void Initialize(string dsName, int failureThreshold, TimeSpan resetTimeout, int successThreshold = 2);
+    void Remove(string dsName);
+}</code></pre>
+  <p>
+    Use the provided <code>ProxyRedisCircuitStateStore</code> for clusters that share state across
+    processes, or implement the interface against any storage backend.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CONNECTION POOL -->
+<section id="connection-pool">
+  <h2><i class="bi bi-stack"></i> Connection Pool</h2>
+  <p>
+    Each registered datasource has its own bounded <code>ConcurrentQueue&lt;PooledConnection&gt;</code>.
+    Connections are leased from the pool before each operation and returned after.
+    Idle eviction runs on the health-check timer interval.
+  </p>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Knob</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>MaxPoolSize</code></td><td><code>10</code></td><td>Maximum number of connections per datasource</td></tr>
+        <tr><td><code>ConnectionTimeout</code></td><td><code>5 min</code></td><td>Idle threshold; connections older than this are closed on next eviction pass</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Pool API</h3>
+  <pre><code class="language-csharp">// Internal — used by execution helpers
+IDataSource lease  = proxy.GetPooledConnection(dsName);   // borrow from pool (or open new)
+proxy.ReturnConnection(dsName, lease);                    // return lease after use
+IDataSource direct = proxy.GetConnection(dsName);         // bypass pool — new connection always</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CACHING -->
+<section id="caching">
+  <h2><i class="bi bi-lightning-fill"></i> Caching</h2>
+  <p>
+    Enabled via <code>ProxyCacheProfile</code> inside <code>ProxyPolicy</code>.
+    The cache is backed by a <code>CacheScope</code> from the BeepDM caching subsystem.
+    The proxy uses a <em>stale-while-revalidate</em> strategy: a soft TTL (the visible
+    expiry) and a hard TTL (stale extension window). When a key is between soft and hard
+    TTL the stale value is returned immediately while a background refresh populates the cache.
+  </p>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Enabled</code></td><td><code>false</code></td><td>Must be explicitly set to <code>true</code> to activate the cache</td></tr>
+        <tr><td><code>DefaultExpiration</code></td><td><code>—</code></td><td>Soft TTL for cached entries</td></tr>
+        <tr><td><code>StaleWindow</code></td><td><code>—</code></td><td>Additional window during which stale data is served while revalidating</td></tr>
+        <tr><td><code>MaxItems</code></td><td><code>—</code></td><td>Upper bound on cached entries before LRU eviction</td></tr>
+        <tr><td><code>Tier</code></td><td><code>EntityProfile</code></td><td>Cache provider type (<code>InMemory</code> by default)</td></tr>
+        <tr><td><code>Consistency</code></td><td><code>—</code></td><td><code>WriteThrough</code> triggers automatic invalidation on write operations</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Cache API</h3>
+  <pre><code class="language-csharp">// Read with cache (respects stale-while-revalidate)
+var rows = proxy.GetEntityWithCache("Orders", filters, expiration: TimeSpan.FromMinutes(5));
+
+// Manual invalidation
+proxy.InvalidateCache("Orders");    // invalidate one entity
+proxy.InvalidateCache();            // clear all cached entries</code></pre>
+
+  <div class="info-box">
+    <i class="bi bi-info-circle"></i>
+    <div>
+      When <code>CacheConsistency = WriteThrough</code> any call to
+      <code>InsertEntity</code>, <code>UpdateEntity</code>, or <code>DeleteEntity</code>
+      automatically calls <code>InvalidateCache(entityName)</code> before returning.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ WATCHDOG -->
+<section id="watchdog">
+  <h2><i class="bi bi-heart-pulse-fill"></i> Watchdog</h2>
+  <p>
+    The watchdog runs as a background <code>Task</code> on a tight cycle (default 5 s) and probes
+    every registered datasource with a lightweight liveness call capped at
+    <code>WatchdogProbeTimeoutMs</code> (default 2 s).
+    It maintains independent consecutive failure/success counters per source, separate from the
+    main circuit breaker counters.
+  </p>
+
+  <h3>Role management</h3>
+  <ol class="steps-list">
+    <li>When a <strong>Primary</strong> source fails <code>WatchdogFailureThreshold</code> consecutive probes, the watchdog promotes the highest-weighted healthy <strong>Replica</strong> to Primary.</li>
+    <li>The promotion is recorded in <code>_originalRoles</code> so the role can be reversed.</li>
+    <li>When the original Primary recovers (<code>WatchdogRecoveryThreshold</code> consecutive successes), the watchdog demotes it back to Replica and restores the promoted Replica.</li>
+  </ol>
+
+  <h3>Knobs &amp; events</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Member</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>WatchdogIntervalMs</code></td><td><code>5 000</code></td><td>Probe loop delay (ms)</td></tr>
+        <tr><td><code>WatchdogProbeTimeoutMs</code></td><td><code>2 000</code></td><td>Max ms for a single probe call</td></tr>
+        <tr><td><code>WatchdogFailureThreshold</code></td><td><code>2</code></td><td>Consecutive failures before promotion</td></tr>
+        <tr><td><code>WatchdogRecoveryThreshold</code></td><td><code>3</code></td><td>Consecutive successes before demotion</td></tr>
+        <tr><td><code>OnRolePromoted</code></td><td>—</td><td>Fired when a Replica is promoted to Primary</td></tr>
+        <tr><td><code>OnRoleDemoted</code></td><td>—</td><td>Fired when the original Primary is restored</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Usage</h3>
+  <pre><code class="language-csharp">proxy.WatchdogIntervalMs       = 3_000;  // tighter probe on critical DB
+proxy.WatchdogFailureThreshold = 3;
+
+proxy.OnRolePromoted += (_, e) =>
+    Console.WriteLine($"{e.DataSourceName} promoted to {e.NewRole}");
+
+proxy.StartWatchdog();
+
+// ... application lifetime ...
+
+proxy.StopWatchdog();  // graceful — waits up to 5 s for loop exit</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ OBSERVABILITY -->
+<section id="observability">
+  <h2><i class="bi bi-bar-chart-line-fill"></i> Observability &amp; SLO</h2>
+  <p>
+    The observability layer maintains a bounded 500-sample circular latency buffer per datasource
+    and exposes p50/p95/p99 percentile summaries through the SLO snapshot API.
+    Samples are recorded automatically by the execution helpers on every successful call.
+  </p>
+
+  <h3>SLO snapshot API</h3>
+  <pre><code class="language-csharp">// Single source snapshot
+ProxySloSnapshot snap = proxy.GetSloSnapshot("orders-primary");
+Console.WriteLine($"p99={snap.P99LatencyMs:F1}ms  err={snap.ErrorRatePercent:F2}%  cache={snap.CacheHitRatio:P}");
+
+// All sources at once
+IReadOnlyList&lt;ProxySloSnapshot&gt; all = proxy.GetAllSloSnapshots();
+foreach (var s in all)
+    Console.WriteLine($"{s.DataSourceName}: p95={s.P95LatencyMs:F1}ms");</code></pre>
+
+  <h3>Raw metrics access</h3>
+  <pre><code class="language-csharp">IDictionary&lt;string, DataSourceMetrics&gt; metrics = proxy.GetMetrics();
+foreach (var (name, m) in metrics)
+    Console.WriteLine($"{name}: total={m.TotalRequests}  failed={m.FailedRequests}  breaks={m.CircuitBreaks}");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ AUDIT -->
+<section id="audit">
+  <h2><i class="bi bi-journal-text"></i> Audit</h2>
+  <p>
+    Every proxied operation emits a <code>ProxyAuditEntry</code> to the configured
+    <code>IProxyAuditSink</code> after the operation completes — whether it succeeded or failed.
+  </p>
+
+  <h3><code>ProxyAuditEntry</code> fields</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>CorrelationId</code></td><td>AsyncLocal GUID propagated across await boundaries</td></tr>
+        <tr><td><code>OperationName</code></td><td>Caller-supplied operation label (e.g. "GetEntity")</td></tr>
+        <tr><td><code>SelectedSource</code></td><td>Name of the datasource that ultimately served the request</td></tr>
+        <tr><td><code>Succeeded</code></td><td>Final outcome</td></tr>
+        <tr><td><code>TotalAttempts</code></td><td>Number of attempts across all candidates</td></tr>
+        <tr><td><code>ElapsedMs</code></td><td>End-to-end wall-clock duration</td></tr>
+        <tr><td><code>Safety</code></td><td><code>ProxyOperationSafety</code> of this call</td></tr>
+        <tr><td><code>Attempts</code></td><td>Per-attempt detail: datasource, number, success, duration, error</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Provided sinks</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Class</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>NullProxyAuditSink</code></td><td>Singleton no-op — default when no sink is supplied. Zero allocations.</td></tr>
+        <tr><td><code>FileProxyAuditSink</code></td><td>Rolling daily JSON-lines file: <code>{dir}/proxy-audit-YYYYMMDD.jsonl</code>. Uses a bounded background queue so the data path is never blocked.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <pre><code class="language-csharp">// Enable file audit sink at construction
+var sink = new FileProxyAuditSink(directory: @"C:\Logs\ProxyAudit", queueCapacity: 10_000);
+
+var proxy = new ProxyDataSource(
+    dmeEditor       : editor,
+    dataSourceNames : new List&lt;string&gt; { "db1", "db2" },
+    auditSink       : sink);
+
+// ... use proxy ...
+
+sink.Dispose();   // flushes background queue, waits up to 5 s</code></pre>
+
+  <div class="info-box">
+    <i class="bi bi-lightbulb"></i>
+    <div>
+      Implement <code>IProxyAuditSink</code> to write entries to a database, telemetry provider
+      (Application Insights, OpenTelemetry), or any other destination. The sink's
+      <code>Write</code> method <strong>must not throw</strong> and must complete quickly.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ ERROR TAXONOMY -->
+<section id="error-taxonomy">
+  <h2><i class="bi bi-bug-fill"></i> Error Taxonomy</h2>
+  <p>
+    <code>ProxyErrorClassifier.Classify(Exception)</code> maps every exception to a category +
+    severity pair that drives retry eligibility and circuit-breaker weight:
+  </p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Category</th><th>Retry?</th><th>Severity</th><th>Trigger</th></tr></thead>
+      <tbody>
+        <tr><td><code>Transient</code></td><td>✅ Yes</td><td>Low–Medium</td><td><code>OperationCanceledException</code>, <code>IOException</code>, "connection" in message</td></tr>
+        <tr><td><code>Timeout</code></td><td>✅ Yes</td><td>Medium</td><td><code>TimeoutException</code>, "timeout" in message</td></tr>
+        <tr><td><code>AuthFailure</code></td><td>❌ No</td><td>High</td><td><code>UnauthorizedAccessException</code></td></tr>
+        <tr><td><code>Saturation</code></td><td>⏳ Back-off 2×</td><td>Critical</td><td><code>OutOfMemoryException</code>, "connection pool full"</td></tr>
+        <tr><td><code>Persistent</code></td><td>❌ No</td><td>High</td><td>Schema errors, bad SQL, all other exceptions</td></tr>
+        <tr><td><code>Unknown</code></td><td>❌ No</td><td>Medium</td><td>Unmatched exceptions</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    <strong>Saturation</strong> is special: the proxy backs off with a delay proportional to
+    <code>attempt × 2</code> (double the normal back-off) to reduce load on an overwhelmed
+    backend rather than hammering it with rapid retries.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CLUSTER -->
+<section id="cluster">
+  <h2><i class="bi bi-hdd-network-fill"></i> ProxyCluster</h2>
+  <p>
+    <code>ProxyCluster</code> implements <code>IProxyCluster : IProxyDataSource</code> and
+    represents a cluster of <code>ProxyNode</code> instances behind a single
+    <code>IDataSource</code> facade. Use it when you need a second tier of abstraction:
+    clusters of proxies rather than clusters of bare datasources.
+  </p>
+
+  <h3>Node management</h3>
+  <pre><code class="language-csharp">var cluster = new ProxyCluster(
+    clusterPolicy : new ProxyPolicy { RoutingStrategy = ProxyRoutingStrategy.LeastOutstandingRequests },
+    auditSink     : new FileProxyAuditSink(@"C:\Logs\Cluster"));
+
+// Add nodes
+cluster.AddNode(new ProxyNode("primary",  primaryProxy,  weight: 2, role: ProxyDataSourceRole.Primary));
+cluster.AddNode(new ProxyNode("replica1", replicaProxy1, weight: 1, role: ProxyDataSourceRole.Replica));
+cluster.AddNode(new ProxyNode("replica2", replicaProxy2, weight: 1, role: ProxyDataSourceRole.Replica));
+
+// Remove a node gracefully (drains in-flight requests)
+cluster.RemoveNode("replica2");
+
+// Inspect nodes
+IReadOnlyList&lt;IProxyNode&gt; nodes = cluster.GetNodes();
+foreach (var n in nodes)
+    Console.WriteLine($"{n.NodeId}: alive={n.IsAlive} weight={n.Weight} inflight={n.InFlightCount}");</code></pre>
+
+  <h3><code>ProxyNode</code> properties</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>NodeId</code></td><td>Unique identifier within the cluster</td></tr>
+        <tr><td><code>Proxy</code></td><td>The underlying <code>IProxyDataSource</code> handling actual I/O</td></tr>
+        <tr><td><code>Weight</code></td><td>Routing weight (mutable; ramp via slow-start)</td></tr>
+        <tr><td><code>NodeRole</code></td><td><code>Primary</code>, <code>Replica</code>, or <code>Standby</code></td></tr>
+        <tr><td><code>IsAlive</code></td><td>Last probe result</td></tr>
+        <tr><td><code>InFlightCount</code></td><td>Atomic in-flight operation counter</td></tr>
+        <tr><td><code>Metrics</code></td><td>Aggregated node-level <code>DataSourceMetrics</code></td></tr>
+        <tr><td><code>NodeConfig</code></td><td><code>ConnectionProperties</code> for persistence across restarts</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Cluster routing strategies (<code>ProxyNodeRoutingStrategy</code>)</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Value</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>LeastConnections</code></td><td>Pick the node with fewest in-flight operations</td></tr>
+        <tr><td><code>WeightedRoundRobin</code></td><td>Rotate proportional to node <code>Weight</code></td></tr>
+        <tr><td><code>LowestLatency</code></td><td>Always route to the node with the lowest rolling average response time</td></tr>
+        <tr><td><code>PrimaryWithStandby</code></td><td>All traffic to Primary; Replicas only receive overflow/reads</td></tr>
+        <tr><td><code>ConsistentHash</code></td><td>Ring hash keyed on <code>CorrelationId</code> for session affinity</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Cluster events</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Event</th><th>Fired when</th></tr></thead>
+      <tbody>
+        <tr><td><code>OnNodeDown</code></td><td>A probe determines a node is unreachable</td></tr>
+        <tr><td><code>OnNodeRestored</code></td><td>A previously down node passes a probe</td></tr>
+        <tr><td><code>OnNodePromoted</code></td><td>Watchdog promotes a Replica to Primary role</td></tr>
+        <tr><td><code>OnNodeDemoted</code></td><td>Original Primary recovers; promoted node is restored to Replica</td></tr>
+        <tr><td><code>OnClusterPolicyChanged</code></td><td><code>ApplyPolicy</code> is called on the cluster</td></tr>
+        <tr><td><code>OnAffinityRebalanced</code></td><td>Session affinity map is rebuilt after a topology change</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ EXAMPLES -->
+<section id="examples">
+  <h2><i class="bi bi-code-slash"></i> Usage Examples</h2>
+
+  <h3>Example 1 — Basic read with default policy</h3>
+  <pre><code class="language-csharp">var proxy = new ProxyDataSource(
+    dmeEditor       : editor,
+    dataSourceNames : new List&lt;string&gt; { "orders-primary", "orders-replica" });
+
+proxy.Openconnection();
+
+var rows = proxy.GetEntity("Orders", new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Open" }
+});
+
+foreach (var row in rows)
+    Console.WriteLine(row);
+
+proxy.Closeconnection();
+proxy.Dispose();</code></pre>
+
+  <h3>Example 2 — Custom policy with caching</h3>
+  <pre><code class="language-csharp">var policy = new ProxyPolicy
+{
+    Name            = "ProductsPolicy",
+    RoutingStrategy = ProxyRoutingStrategy.WeightedLatency,
+    Resilience = new ProxyResilienceProfile
+    {
+        ProfileType         = ProxyResilienceProfileType.Custom,
+        MaxRetries          = 3,
+        RetryBaseDelayMs    = 200,
+        FailureThreshold    = 5,
+        CircuitResetTimeout = TimeSpan.FromSeconds(30)
+    },
+    Cache = new ProxyCacheProfile
+    {
+        Enabled           = true,
+        DefaultExpiration = TimeSpan.FromSeconds(60),
+        Consistency       = ProxyCacheConsistency.WriteThrough
+    }
+};
+
+var proxy = new ProxyDataSource(
+    dmeEditor       : editor,
+    dataSourceNames : new List&lt;string&gt; { "products-db1", "products-db2" },
+    policy          : policy);
+
+proxy.Openconnection();
+var result = proxy.RunQuery("SELECT COUNT(*) FROM Products");
+proxy.Dispose();</code></pre>
+
+  <h3>Example 3 — Read/write role separation</h3>
+  <pre><code class="language-csharp">var proxy = new ProxyDataSource(
+    dmeEditor       : editor,
+    dataSourceNames : new List&lt;string&gt; { "sales-primary", "sales-replica-1", "sales-replica-2" });
+
+// Assign roles
+proxy.SetRole("sales-primary",   ProxyDataSourceRole.Primary);
+proxy.SetRole("sales-replica-1", ProxyDataSourceRole.Replica);
+proxy.SetRole("sales-replica-2", ProxyDataSourceRole.Replica);
+
+proxy.Openconnection();
+
+// Read — may land on any healthy node
+var items = proxy.GetEntity("SaleItems", null);
+
+// Write — guaranteed to go to Primary-role source only
+proxy.InsertEntity("Orders", new { OrderId = Guid.NewGuid(), Total = 99.99 });
+
+proxy.Dispose();</code></pre>
+
+  <h3>Example 4 — Watchdog with role promotion events</h3>
+  <pre><code class="language-csharp">var proxy = new ProxyDataSource(
+    dmeEditor       : editor,
+    dataSourceNames : new List&lt;string&gt; { "db-primary", "db-replica" });
+
+proxy.SetRole("db-primary", ProxyDataSourceRole.Primary);
+proxy.SetRole("db-replica", ProxyDataSourceRole.Replica);
+
+proxy.WatchdogIntervalMs       = 3_000;
+proxy.WatchdogFailureThreshold = 2;
+proxy.WatchdogRecoveryThreshold = 4;
+
+proxy.OnRolePromoted += (_, e) =>
+    logger.LogWarning($"PROMOTED: {e.DataSourceName} is now {e.NewRole}");
+proxy.OnRoleDemoted += (_, e) =>
+    logger.LogInformation($"DEMOTED: {e.DataSourceName} restored to {e.NewRole}");
+
+proxy.Openconnection();
+proxy.StartWatchdog();
+
+// ... application lifetime ...
+
+proxy.StopWatchdog();
+proxy.Dispose();</code></pre>
+
+  <h3>Example 5 — Audit + observability</h3>
+  <pre><code class="language-csharp">using var sink = new FileProxyAuditSink(@"C:\Logs\ProxyAudit");
+
+var proxy = new ProxyDataSource(
+    dmeEditor       : editor,
+    dataSourceNames : new List&lt;string&gt; { "analytics-db1", "analytics-db2" },
+    auditSink       : sink);
+
+proxy.Openconnection();
+
+// ... run operations ...
+
+// Check SLO
+foreach (var snap in proxy.GetAllSloSnapshots())
+{
+    Console.WriteLine(
+        $"{snap.DataSourceName}: p50={snap.P50LatencyMs:F1}ms  " +
+        $"p99={snap.P99LatencyMs:F1}ms  " +
+        $"err={snap.ErrorRatePercent:F2}%  " +
+        $"cache={snap.CacheHitRatio:P}");
+}
+
+proxy.Dispose();
+// sink.Dispose() called by using — flushes queue</code></pre>
+
+  <h3>Example 6 — ProxyCluster</h3>
+  <pre><code class="language-csharp">// Build individual proxies (one per physical server)
+var primary = new ProxyDataSource(editor, new List&lt;string&gt; { "server-a" });
+var replica = new ProxyDataSource(editor, new List&lt;string&gt; { "server-b" });
+
+// Compose into a cluster
+var cluster = new ProxyCluster(
+    clusterPolicy : new ProxyPolicy { RoutingStrategy = ProxyRoutingStrategy.LeastOutstandingRequests });
+
+cluster.AddNode(new ProxyNode("primary",  primary,  weight: 2, role: ProxyDataSourceRole.Primary));
+cluster.AddNode(new ProxyNode("replica1", replica,  weight: 1, role: ProxyDataSourceRole.Replica));
+
+cluster.OnNodeDown      += (_, e) => Console.WriteLine($"Node down: {e.NodeId}");
+cluster.OnNodeRestored  += (_, e) => Console.WriteLine($"Node up:   {e.NodeId}");
+
+// Use the cluster exactly like a plain IDataSource
+IDataSource ds = cluster;
+var data = ds.GetEntity("Products", null);</code></pre>
+
+  <h3>Example 7 — Hot policy swap</h3>
+  <pre><code class="language-csharp">// Start with balanced policy
+var proxy = new ProxyDataSource(editor, new List&lt;string&gt; { "db1", "db2" });
+
+// During an incident: switch to aggressive failover in place
+proxy.ApplyPolicy(new ProxyPolicy
+{
+    Name            = "Incident-2024",
+    RoutingStrategy = ProxyRoutingStrategy.HealthWeighted,
+    Resilience      = ProxyResilienceProfile.AggressiveFailover,
+    HealthCheckIntervalMs = 5_000
+});
+
+// After the incident: restore normal policy
+proxy.ApplyPolicy(new ProxyPolicy { Resilience = ProxyResilienceProfile.Balanced });</code></pre>
+</section>
+
+</div><!-- .main-content -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof loadNavigation === 'function') loadNavigation('proxy');
+});
+</script>
+
+<style>
+.feature-grid      { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.feature-card      { background: var(--card-bg, #f8f9fa); border: 1px solid var(--border-color, #dee2e6); border-radius: .5rem; padding: 1rem; }
+.feature-card h4   { margin: .5rem 0 .3rem; font-size: .95rem; }
+.feature-card p    { margin: 0; font-size: .85rem; color: var(--text-muted, #6c757d); }
+.state-diagram     { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 1.5rem; font-size: .9rem; }
+.state             { padding: .5rem 1rem; border-radius: .4rem; text-align: center; min-width: 90px; }
+.state.closed      { background: #d1fae5; border: 1px solid #6ee7b7; }
+.state.open        { background: #fee2e2; border: 1px solid #fca5a5; }
+.state.half-open   { background: #fef3c7; border: 1px solid #fcd34d; }
+.state-arrow       { font-size: .8rem; color: var(--text-muted, #6c757d); white-space: pre-line; }
+.steps-list        { padding-left: 1.5rem; line-height: 1.9; }
+.text-primary      { color: #0d6efd; }
+.text-success      { color: #198754; }
+.text-warning      { color: #ffc107; }
+.text-info         { color: #0dcaf0; }
+.text-danger       { color: #dc3545; }
+</style>
 </body>
 </html>

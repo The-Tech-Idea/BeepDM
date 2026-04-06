@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor
@@ -176,6 +178,123 @@ namespace TheTechIdea.Beep.Editor
             var itemsToRemove = Items.Where(predicate).ToList();
             RemoveRange(itemsToRemove);
         }
+
+        #region "Batch Load (1-C)"
+
+        /// <summary>
+        /// Loads items in bulk with notification suppression, marking all as Unchanged.
+        /// Fires a single Reset event at the end.
+        /// </summary>
+        public void LoadBatch(IEnumerable<T> items)
+        {
+            if (items == null) return;
+            var itemsList = items as IList<T> ?? items.ToList();
+            if (itemsList.Count == 0) return;
+
+            BatchOperationStarted?.Invoke(this, new BatchOperationEventArgs("LoadBatch", itemsList.Count));
+
+            var savedSuppress = SuppressNotification;
+            var savedRaiseEvents = RaiseListChangedEvents;
+            SuppressNotification = true;
+            RaiseListChangedEvents = false;
+
+            try
+            {
+                foreach (var item in itemsList)
+                {
+                    int idx = Items.Count;
+                    base.InsertItem(idx, item);
+                    originalList.Add(item);
+                    _insertionOrderList.Add(item);
+                    var tr = new Tracking(Guid.NewGuid(), originalList.Count - 1, idx)
+                    {
+                        EntityState = EntityState.Unchanged,
+                        IsNew = false,
+                        IsSaved = true
+                    };
+                    AddTracking(tr);
+                    item.PropertyChanged += Item_PropertyChanged;
+                }
+            }
+            finally
+            {
+                SuppressNotification = savedSuppress;
+                RaiseListChangedEvents = savedRaiseEvents;
+            }
+
+            OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            BatchOperationCompleted?.Invoke(this, new BatchOperationEventArgs("LoadBatch", itemsList.Count));
+        }
+
+        /// <summary>
+        /// Loads items asynchronously in chunks of <paramref name="batchSize"/>,
+        /// reporting progress and supporting cancellation. All loaded items are Unchanged.
+        /// </summary>
+        public async Task LoadBatchAsync(
+            IEnumerable<T> items,
+            int batchSize = 500,
+            IProgress<int> progress = null,
+            CancellationToken ct = default)
+        {
+            if (items == null) return;
+            var itemsList = items as IList<T> ?? items.ToList();
+            if (itemsList.Count == 0) return;
+
+            int loaded = 0;
+            int total = itemsList.Count;
+            int chunkStart = 0;
+
+            BatchOperationStarted?.Invoke(this, new BatchOperationEventArgs("LoadBatchAsync", total));
+
+            while (chunkStart < total)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                int chunkEnd = Math.Min(chunkStart + batchSize, total);
+                var savedSuppress = SuppressNotification;
+                var savedRaiseEvents = RaiseListChangedEvents;
+                SuppressNotification = true;
+                RaiseListChangedEvents = false;
+
+                try
+                {
+                    for (int i = chunkStart; i < chunkEnd; i++)
+                    {
+                        var item = itemsList[i];
+                        int idx = Items.Count;
+                        base.InsertItem(idx, item);
+                        originalList.Add(item);
+                        _insertionOrderList.Add(item);
+                        var tr = new Tracking(Guid.NewGuid(), originalList.Count - 1, idx)
+                        {
+                            EntityState = EntityState.Unchanged,
+                            IsNew = false,
+                            IsSaved = true
+                        };
+                        AddTracking(tr);
+                        item.PropertyChanged += Item_PropertyChanged;
+                    }
+                }
+                finally
+                {
+                    SuppressNotification = savedSuppress;
+                    RaiseListChangedEvents = savedRaiseEvents;
+                }
+
+                loaded += (chunkEnd - chunkStart);
+                progress?.Report(loaded);
+                chunkStart = chunkEnd;
+
+                await System.Threading.Tasks.Task.Yield();
+            }
+
+            OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            BatchOperationCompleted?.Invoke(this, new BatchOperationEventArgs("LoadBatchAsync", total));
+        }
+
+        #endregion "Batch Load (1-C)"
 
         #endregion "CRUD"
     }

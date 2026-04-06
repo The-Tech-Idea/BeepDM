@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.Editor
         void Clear();
         bool IsInListMode { get; set; }
         bool IsDirty { get; }
-        Entity CurrentItem { get; }
+        dynamic CurrentItem { get; }
         bool IsLogging { get; set; }
         IDataSource DataSource { get; set; }
         string DatasourceName { get; set; }
@@ -26,14 +26,14 @@ namespace TheTechIdea.Beep.Editor
         Type EntityType { get; set; }
         string Sequencer { get; set; }
         Dictionary<int, string> DeletedKeys { get; set; }
-        List<Entity> DeletedUnits { get; set; }
+        List<dynamic> DeletedUnits { get; set; }
         Dictionary<int, string> InsertedKeys { get; set; }
         string PrimaryKey { get; set; }
         bool IsIdentity { get; set; }
         string GuidKey { get; set; }
 
-        // Here is the Units property specifically for Entity.
-        ObservableBindingList<Entity> Units { get; set; }
+        // Runtime UoW instances hold ObservableBindingList<T>; keep this dynamic to avoid generic invariance issues.
+        dynamic Units { get; set; }
 
         Dictionary<int, string> UpdatedKeys { get; set; }
 
@@ -47,60 +47,60 @@ namespace TheTechIdea.Beep.Editor
         Task<IErrorsInfo> Commit();
         Task<IErrorsInfo> Rollback();
 
-        void Add(Entity entity);
+        void Add(dynamic entity);
         void New();
         ErrorsInfo Delete(string id);
         ErrorsInfo Delete();
-        ErrorsInfo Update(string id, Entity entity);
-        ErrorsInfo Update(Func<Entity, bool> predicate, Entity updatedEntity);
-        ErrorsInfo Delete(Func<Entity, bool> predicate);
+        ErrorsInfo Update(string id, dynamic entity);
+        ErrorsInfo Update(Func<dynamic, bool> predicate, dynamic updatedEntity);
+        ErrorsInfo Delete(Func<dynamic, bool> predicate);
 
-        Entity Read(Func<Entity, bool> predicate);
-        Task<ObservableBindingList<Entity>> MultiRead(Func<Entity, bool> predicate);
-        Task<ObservableBindingList<Entity>> GetQuery(string query);
-        Task<ObservableBindingList<Entity>> Get();
-        Task<ObservableBindingList<Entity>> Get(List<AppFilter> filters);
+        dynamic Read(Func<dynamic, bool> predicate);
+        Task<dynamic> MultiRead(Func<dynamic, bool> predicate);
+        Task<dynamic> GetQuery(string query);
+        Task<dynamic> Get();
+        Task<dynamic> Get(List<AppFilter> filters);
 
         void UndoLastChange();
-        int DocExist(Entity doc);
-        int DocExistByKey(Entity doc);
-        int FindDocIdx(Entity doc);
+        int DocExist(dynamic doc);
+        int DocExistByKey(dynamic doc);
+        int FindDocIdx(dynamic doc);
 
-        Entity Get(string PrimaryKeyid);
+        dynamic Get(string PrimaryKeyid);
         double GetLastIdentity();
         IEnumerable<int> GetAddedEntities();
 
-        IEnumerable<Entity> GetDeletedEntities();
-        Entity Get(int key);
-        object GetIDValue(Entity entity);
+        IEnumerable<dynamic> GetDeletedEntities();
+        dynamic Get(int key);
+        object GetIDValue(dynamic entity);
 
         int Getindex(string id);
-        int Getindex(Entity entity);
+        int Getindex(dynamic entity);
         IEnumerable<int> GetModifiedEntities();
-        int GetPrimaryKeySequence(Entity doc);
+        int GetPrimaryKeySequence(dynamic doc);
         int GetSeq(string SeqName);
-        Entity Read(string id);
-        Entity GetItemFromCurrentList(int index);
+        dynamic Read(string id);
+        dynamic GetItemFromCurrentList(int index);
         void MoveFirst();
         void MoveNext();
         void MovePrevious();
         void MoveLast();
-        Task<IErrorsInfo> UpdateAsync(Entity doc);
-        Task<IErrorsInfo> InsertAsync(Entity doc);
-        Task<IErrorsInfo> DeleteAsync(Entity doc);
+        Task<IErrorsInfo> UpdateAsync(dynamic doc);
+        Task<IErrorsInfo> InsertAsync(dynamic doc);
+        Task<IErrorsInfo> DeleteAsync(dynamic doc);
 
-        Task<IErrorsInfo> InsertDoc(Entity doc);
-        Task<IErrorsInfo> UpdateDoc(Entity doc);
-        Task<IErrorsInfo> DeleteDoc(Entity doc);
+        Task<IErrorsInfo> InsertDoc(dynamic doc);
+        Task<IErrorsInfo> UpdateDoc(dynamic doc);
+        Task<IErrorsInfo> DeleteDoc(dynamic doc);
         void MoveTo(int index);
-        Tracking GetTrackingItem(Entity item);
+        Tracking GetTrackingItem(dynamic item);
         Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog { get; set; }
         bool SaveLog(string pathandname);
 
         // Batch operations
-        Task<IErrorsInfo> AddRange(IEnumerable<Entity> entities);
-        Task<IErrorsInfo> UpdateRange(IEnumerable<Entity> entities);
-        Task<IErrorsInfo> DeleteRange(IEnumerable<Entity> entities);
+        Task<IErrorsInfo> AddRange(IEnumerable<dynamic> entities);
+        Task<IErrorsInfo> UpdateRange(IEnumerable<dynamic> entities);
+        Task<IErrorsInfo> DeleteRange(IEnumerable<dynamic> entities);
 
         // Change audit
         List<ChangeRecord> GetChangeLog();
@@ -118,14 +118,29 @@ namespace TheTechIdea.Beep.Editor
         event EventHandler<UnitofWorkParams> PostDelete;
         event EventHandler<UnitofWorkParams> PostCommit;
         event EventHandler<UnitofWorkParams> PreCommit;
+        /// <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        event EventHandler CurrentChanged;
+        /// <summary>Fires when a field changes on a tracked item.</summary>
+        event EventHandler<ItemChangedEventArgs<Entity>> ItemChanged;
+
+        // Master-detail coordination owned by UoW
+        IReadOnlyList<IUnitofWork> DetailUnitOfWorks { get; }
+        IUnitofWork MasterUnitOfWork { get; }
+        string MasterKeyField { get; }
+        string ForeignKeyField { get; }
+        void RegisterDetail(IUnitofWork detailUnitOfWork, string masterKeyField, string detailForeignKeyField);
+        void UnregisterDetail(IUnitofWork detailUnitOfWork);
+        void UnregisterAllDetails();
+        Task SynchronizeDetailsAsync();
+        bool ApplyMasterValueToCurrentItem();
 
         // Validation (Phase 3)
         bool IsAutoValidateEnabled { get; set; }
         bool BlockCommitOnValidationError { get; set; }
-        ValidationResult ValidateItem(Entity item);
+        ValidationResult ValidateItem(dynamic item);
         ValidationResult ValidateAll();
-        List<ValidationError> GetErrors(Entity item);
-        List<Entity> GetInvalidItems();
+        List<ValidationError> GetErrors(dynamic item);
+        List<dynamic> GetInvalidItems();
 
         // Undo/Redo (Phase 4)
         bool IsUndoEnabled { get; set; }
@@ -146,20 +161,11 @@ namespace TheTechIdea.Beep.Editor
         Task PrefetchAdjacentPagesAsync();
         void InvalidatePageCache();
 
-        // Master-Detail (Phase 6)
-        void RegisterDetail<TChild>(ObservableBindingList<TChild> childList,
-            string foreignKeyProperty, string masterKeyProperty)
-            where TChild : class, INotifyPropertyChanged, new();
-        void UnregisterDetail<TChild>(ObservableBindingList<TChild> childList)
-            where TChild : class, INotifyPropertyChanged, new();
-        void UnregisterAllDetails();
-        IReadOnlyList<object> DetailLists { get; }
-
         // Computed Columns (Phase 7)
-        void RegisterComputed(string name, Func<Entity, object> computation);
+        void RegisterComputed(string name, Func<dynamic, object> computation);
         void UnregisterComputed(string name);
-        object GetComputed(Entity item, string name);
-        Dictionary<string, object> GetAllComputed(Entity item);
+        object GetComputed(dynamic item, string name);
+        Dictionary<string, object> GetAllComputed(dynamic item);
         IReadOnlyCollection<string> ComputedColumnNames { get; }
 
         // Bookmarks (Phase 8)
@@ -177,24 +183,22 @@ namespace TheTechIdea.Beep.Editor
 
         // Aggregates (Phase 10)
         decimal Sum(string propertyName);
-        decimal SumWhere(string propertyName, Func<Entity, bool> predicate);
+        decimal SumWhere(string propertyName, Func<dynamic, bool> predicate);
         decimal Average(string propertyName);
-        decimal AverageWhere(string propertyName, Func<Entity, bool> predicate);
+        decimal AverageWhere(string propertyName, Func<dynamic, bool> predicate);
         object Min(string propertyName);
         object Max(string propertyName);
-        int CountWhere(Func<Entity, bool> predicate);
-        Dictionary<object, List<Entity>> GroupBy(string propertyName);
+        int CountWhere(Func<dynamic, bool> predicate);
+        Dictionary<object, List<dynamic>> GroupBy(string propertyName);
         List<object> DistinctValues(string propertyName);
 
         // Navigation Enhancements (Phase 11)
         bool IsAtBOF { get; }
         bool IsAtEOF { get; }
         bool IsEmpty { get; }
-        bool MoveToItem(Entity item);
+        bool MoveToItem(dynamic item);
 
         // Commit Order
         CommitOrder CommitOrder { get; set; }
     }
-
-  
 }

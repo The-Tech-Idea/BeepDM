@@ -1,807 +1,1270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UnitOfWork Deep Dive - Beep Data Management Engine Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UnitofWork — Deep Dive — BeepDM Documentation</title>
+<link rel="stylesheet" href="sphinx-style.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
-        <i class="bi bi-list"></i>
-    </button>
+<div id="navigation-placeholder"></div>
+<div class="main-content">
+  <div class="content-wrapper">
+    <div class="toc-container">
+      <div class="toc-title">On this page</div>
+      <ul class="toc-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#constructors">Constructors</a></li>
+        <li><a href="#properties">Core Properties</a></li>
+        <li><a href="#entity-states">Entity States</a></li>
+        <li><a href="#crud">CRUD Operations</a></li>
+        <li><a href="#events">Events Reference</a></li>
+        <li><a href="#commit">Commit &amp; Rollback</a></li>
+        <li><a href="#validation">Validation</a></li>
+        <li><a href="#undo-redo">Undo / Redo</a></li>
+        <li><a href="#computed">Computed Columns</a></li>
+        <li><a href="#bookmarks">Bookmarks</a></li>
+        <li><a href="#thread-safety">Thread Safety</a></li>
+        <li><a href="#export-import">Export / Import</a></li>
+        <li><a href="#aggregates">Aggregates</a></li>
+        <li><a href="#batch">Batch Operations</a></li>
+        <li><a href="#factory">Factory &amp; Wrapper</a></li>
+        <li><a href="#advanced">Advanced Features</a></li>
+        <li><a href="#examples">Examples</a></li>
+      </ul>
+    </div>
+    <div class="content-area">
 
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-        <i class="bi bi-sun-fill" id="theme-icon"></i>
-    </button>
+      <section id="overview">
+        <h1><i class="bi bi-card-checklist"></i> UnitofWork&lt;T&gt; — Deep Dive</h1>
+        <p>
+          <code>UnitofWork&lt;T&gt;</code> is the primary transactional data-access component in BeepDM.
+          It wraps an <code>ObservableBindingList&lt;T&gt;</code> (OBL) and a backing
+          <code>IDataSource</code> to provide change-tracking, events, validation, undo/redo, export,
+          and commit/rollback — all in a single, generic unit pattern.
+        </p>
+        <p>
+          It works in two modes:
+        </p>
+        <ul>
+          <li><strong>Connected mode</strong> — backed by a live <code>IDataSource</code>
+              (SQL, file, REST, DataView, …). Changes are persisted on <code>Commit()</code>.</li>
+          <li><strong>List mode</strong> — works purely in-memory on a pre-loaded
+              <code>ObservableBindingList&lt;T&gt;</code>. No datasource I/O.</li>
+        </ul>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-bell"></i></div>
+            <div class="feature-title">14 Lifecycle Events</div>
+            <div class="feature-desc">Pre/Post hooks for Create, Insert, Update, Delete, Query, Commit, Edit, and Revert. Every hook supports <code>Cancel</code>.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-arrow-counterclockwise"></i></div>
+            <div class="feature-title">Undo / Redo</div>
+            <div class="feature-desc">Granular per-action undo/redo stack via OBL. Configurable depth, enable/disable at runtime.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="feature-title">Validation</div>
+            <div class="feature-desc">Data Annotations + EntityStructure-based custom rules. Can block commit when errors exist.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-database-up"></i></div>
+            <div class="feature-title">Commit Order</div>
+            <div class="feature-desc">FK-safe ordered commit: DeletesFirst, InsertsFirst, or UpdatesFirst.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-file-earmark-arrow-down"></i></div>
+            <div class="feature-title">Export / Import</div>
+            <div class="feature-desc">DataTable, JSON stream, CSV stream — async, streaming, with optional header row.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-gear-wide-connected"></i></div>
+            <div class="feature-title">Soft Delete &amp; Concurrency</div>
+            <div class="feature-desc">Configurable soft-delete field; optimistic concurrency with LastWriteWins or ThrowOnConflict.</div>
+          </div>
+        </div>
+      </section>
 
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <!-- Navigation will be loaded dynamically -->
-        </aside>
+      <section id="architecture">
+        <h2><i class="bi bi-diagram-2"></i> Architecture</h2>
+        <p>
+          <code>UnitofWork&lt;T&gt;</code> is split across multiple partial classes. Each partial owns a
+          clearly scoped concern:
+        </p>
+        <pre><code class="language-text">UnitofWork&lt;T&gt;  (partial classes)
+│
+├── UnitofWork.Core.cs           — properties, constructors, Units/FilteredUnits
+├── UnitofWork.Core.Extensions.cs — events declarations, Commit, Rollback, AddRange, Delete(doc)
+├── UnitofWork.Core.Utilities.cs — Clear, IsDirty, DocExist, Getindex, ItemPropertyChangedHandler
+├── UnitofWork.CRUD.cs           — Get, Get(filters), GetQuery, New, Add, Update, Delete(predicate)
+├── UnitofWork.OBLIntegration.cs — passthrough to OBL: Validation, Undo, Computed, Bookmarks,
+│                                   ThreadSafe, Freeze, BatchUpdate, Aggregates, Navigation
+│
+├── Helpers/
+│   ├── UnitofWorkEventHelper    — CreateEventParams, RaiseEvent
+│   ├── UnitofWorkValidationHelper — ValidateEntity, ValidateForInsert/Update/Delete
+│   ├── UnitofWorkStateHelper    — GetEntityState, SetEntityState, MarkFor*
+│   ├── UnitofWorkDataHelper     — InsertDoc, UpdateDoc, GetDataInUnits
+│   ├── UnitofWorkDefaultsHelper — ApplyInsertDefaults, ApplyUpdateDefaults
+│   ├── UnitofWorkCollectionHelper — FilterCollection, pagination helpers
+│   ├── UnitofWorkExportHelper   — ToDataTable, ToJsonAsync, ToCsvAsync, LoadFrom*
+│   ├── UnitofWorkQueryHistory   — RecordQuery, GetQueryHistory
+│   └── UnitofWorkStateHelper    — entity state management
+│
+├── Models/
+│   ├── ChangeSummary            — inserted/updated/deleted counts + per-field summary
+│   └── QueryHistoryEntry        — timestamp, filter params, row count
+│
+└── UnitOfWorkFactory            — runtime-type factory → IUnitOfWorkWrapper</code></pre>
 
-        <!-- Main Content -->
-        <main class="content">
-            <div class="content-wrapper">
-                <!-- Breadcrumb -->
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <a href="unitofwork.html">UnitOfWork Pattern</a>
-                    <span>&gt;</span>
-                    <span>Deep Dive</span>
-                </nav>
+        <h3>Interfaces implemented</h3>
+        <table class="ref-table">
+          <thead><tr><th>Interface</th><th>Adds</th></tr></thead>
+          <tbody>
+            <tr><td><code>IUnitofWork&lt;T&gt;</code></td><td>Core contract: CRUD, Commit, Rollback, Units, events</td></tr>
+            <tr><td><code>INotifyPropertyChanged</code></td><td>WinForms / WPF data binding</td></tr>
+            <tr><td><code>IRevertable</code></td><td><code>RevertItem</code>, <code>RevertItemAsync</code></td></tr>
+            <tr><td><code>IBatchCommittable</code></td><td><code>CommitBatchAsync</code> with progress</td></tr>
+            <tr><td><code>IExportable</code></td><td><code>ToDataTable</code>, <code>ToJsonAsync</code>, <code>ToCsvAsync</code></td></tr>
+            <tr><td><code>IImportable</code></td><td><code>LoadFromJsonAsync</code>, <code>LoadFromCsvAsync</code></td></tr>
+            <tr><td><code>IAggregatable</code></td><td><code>Sum</code>, <code>Average</code>, <code>Count</code></td></tr>
+            <tr><td><code>IUndoable</code></td><td><code>Undo</code>, <code>Redo</code>, <code>CanUndo</code>, <code>CanRedo</code></td></tr>
+            <tr><td><code>IMergeable</code></td><td><code>RefreshAsync</code> with <code>ConflictMode</code></td></tr>
+            <tr><td><code>IUnitofWorkHistory</code></td><td><code>GetChangeSummary</code>, <code>GetQueryHistory</code></td></tr>
+          </tbody>
+        </table>
+      </section>
 
-                <!-- Page Header -->
-                <div class="page-header">
-                    <h1>ðŸ”¬ UnitOfWork Deep Dive</h1>
-                    <p class="page-subtitle">Comprehensive guide to change tracking, entity management, and advanced patterns</p>
-                </div>
+      <section id="constructors">
+        <h2><i class="bi bi-hammer"></i> Constructors</h2>
+        <table class="ref-table">
+          <thead><tr><th>Constructor</th><th>Mode</th><th>Use when</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>UnitofWork()</code></td>
+              <td>Designer</td>
+              <td>WinForms designer surface. Properties must be set manually before use.</td>
+            </tr>
+            <tr>
+              <td><code>UnitofWork(dMEEditor, datasourceName, entityName)</code></td>
+              <td>Connected</td>
+              <td>Typical server-backed usage. Opens the datasource and initialises entity structure automatically.</td>
+            </tr>
+            <tr>
+              <td><code>UnitofWork(dMEEditor, datasourceName, entityName, entityStructure)</code></td>
+              <td>Connected</td>
+              <td>Same as above but supplies a pre-built <code>EntityStructure</code> (avoids a live schema query).</td>
+            </tr>
+            <tr>
+              <td><code>UnitofWork(dMEEditor, isInListMode, ts)</code></td>
+              <td>List</td>
+              <td>Wraps an existing <code>ObservableBindingList&lt;T&gt;</code> for in-memory operations only.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info-box">
+          <strong>Primary key (PrimaryKey / GuidKey)</strong>: If not supplied to the constructor you
+          can set <code>PrimaryKey = "ID"</code> after construction. The helper classes discover it
+          via reflection from the <code>EntityStructure</code> when the datasource is opened.
+        </div>
+        <pre><code class="language-csharp">// Connected — schema detected from datasource
+using var uow = new UnitofWork&lt;Customer&gt;(dme, "SalesDB", "Customers");
 
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.Extensions.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.Utilities.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.OBLIntegration.cs</code></li>
-                        <li>Runtime factory/wrapper surfaces: <code>DataManagementEngineStandard/Editor/UOW/UnitOfWorkFactory.cs</code> and <code>UnitOfWorkWrapper.cs</code>.</li>
-                    </ul>
-                </div>
+// Connected — schema supplied (faster, avoids round-trip)
+using var uow = new UnitofWork&lt;Customer&gt;(dme, "SalesDB", "Customers", entityStructure);
 
-                <!-- Table of Contents -->
-                <div class="toc">
-                    <h3>ðŸ“š Table of Contents</h3>
-                    <ul>
-                        <li><a href="#overview">Overview</a></li>
-                        <li><a href="#change-tracking">Change Tracking System</a></li>
-                        <li><a href="#entity-states">Entity State Management</a></li>
-                        <li><a href="#lifecycle-events">Lifecycle Events</a></li>
-                        <li><a href="#constructors">Constructor Patterns</a></li>
-                        <li><a href="#advanced-crud">Advanced CRUD Operations</a></li>
-                        <li><a href="#filtering-paging">Filtering & Paging</a></li>
-                        <li><a href="#undo-redo">Undo/Redo System</a></li>
-                        <li><a href="#navigation">Navigation & Positioning</a></li>
-                        <li><a href="#logging">Change Logging</a></li>
-                        <li><a href="#multi-datasource">Multi-DataSource UoW</a></li>
-                        <li><a href="#real-world-examples">Real-World Examples</a></li>
-                        <li><a href="#performance">Performance Optimization</a></li>
-                        <li><a href="#best-practices">Best Practices</a></li>
-                    </ul>
-                </div>
+// List mode — in-memory only
+var list = new ObservableBindingList&lt;Customer&gt;(existingCustomers);
+using var uow = new UnitofWork&lt;Customer&gt;(dme, true, list);</code></pre>
+      </section>
 
-                <!-- Overview -->
-                <section id="overview" class="section">
-                    <h2>Overview</h2>
-                    <p>
-                        The UnitOfWork pattern in Beep provides sophisticated change tracking, entity state management, and transaction coordination 
-                        for data operations. It acts as an in-memory representation of your data with automatic dirty tracking, undo/redo capabilities, 
-                        and event-driven lifecycle management.
-                    </p>
-                    
-                    <div class="success">
-                        <strong>ðŸŽ¯ Key Benefits</strong>
-                        <ul>
-                            <li><strong>Automatic Change Tracking:</strong> Monitors all entity modifications automatically</li>
-                            <li><strong>Batch Operations:</strong> Accumulate changes and commit as a single transaction</li>
-                            <li><strong>Entity State Management:</strong> Track Added, Modified, Deleted states</li>
-                            <li><strong>Undo/Redo Support:</strong> Built-in change history and rollback capabilities</li>
-                            <li><strong>Event-Driven Architecture:</strong> Pre/Post operation hooks for business logic</li>
-                            <li><strong>Observable Collections:</strong> UI binding with automatic notifications</li>
-                        </ul>
-                    </div>
+      <section id="properties">
+        <h2><i class="bi bi-card-list"></i> Core Properties</h2>
 
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <h3>ðŸ”§ Generic Type Safety</h3>
-                            <p>Strongly typed operations with compile-time safety using <code>UnitofWork&lt;T&gt;</code> where T : Entity</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>ðŸ’¾ Multiple Operation Modes</h3>
-                            <p>Database-connected mode for live data or List mode for in-memory operations</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>ðŸ”— Relationship Management</h3>
-                            <p>Handle parent-child relationships, foreign keys, and referential integrity</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>ðŸ“Š Progress Tracking</h3>
-                            <p>Built-in progress reporting for long-running operations with cancellation support</p>
-                        </div>
-                    </div>
+        <h3>Identity &amp; data access</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>DMEEditor</code></td><td><code>IDMEEditor</code></td><td>Read-only. Set by constructor.</td></tr>
+            <tr><td><code>DataSource</code></td><td><code>IDataSource</code></td><td>Resolved backing datasource. <code>null</code> in list mode.</td></tr>
+            <tr><td><code>DatasourceName</code></td><td><code>string</code></td><td>Registered datasource name.</td></tr>
+            <tr><td><code>EntityName</code></td><td><code>string</code></td><td>Entity / table name.</td></tr>
+            <tr><td><code>EntityType</code></td><td><code>Type</code></td><td><code>typeof(T)</code>.</td></tr>
+            <tr><td><code>EntityStructure</code></td><td><code>EntityStructure</code></td><td>Schema metadata (fields, keys, relations).</td></tr>
+            <tr><td><code>PrimaryKey</code></td><td><code>string</code></td><td>Primary key field name.</td></tr>
+            <tr><td><code>GuidKey</code></td><td><code>string</code></td><td>Optional GUID field name for secondary identity.</td></tr>
+            <tr><td><code>IsIdentity</code></td><td><code>bool</code></td><td>When <code>true</code>, the DB generates the PK value (no client-side sequencing).</td></tr>
+            <tr><td><code>Sequencer</code></td><td><code>string</code></td><td>Name of a server-side sequence to call for PK generation.</td></tr>
+          </tbody>
+        </table>
 
-                    <div class="code-example">
-                        <h3>Signature-Verified Methods (Commonly Used)</h3>
-                        <pre><code class="language-csharp">public IEnumerable&lt;int&gt; GetAddedEntities();
-public IEnumerable&lt;int&gt; GetModifiedEntities();
-public IEnumerable&lt;T&gt; GetDeletedEntities();
+        <h3>State &amp; collection</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>Units</code></td><td><code>ObservableBindingList&lt;T&gt;</code></td><td>The active collection. Returns <code>FilteredUnits</code> when a filter is applied.</td></tr>
+            <tr><td><code>FilteredUnits</code></td><td><code>ObservableBindingList&lt;T&gt;</code></td><td>Filter result set. Manages event subscriptions on set.</td></tr>
+            <tr><td><code>CurrentItem</code></td><td><code>T</code></td><td>Currently navigated item (<code>Units.Current</code>).</td></tr>
+            <tr><td><code>TotalItemCount</code></td><td><code>int</code></td><td><code>Units.Count</code>.</td></tr>
+            <tr><td><code>IsDirty</code></td><td><code>bool</code></td><td><code>true</code> when any insert/update/delete is pending.</td></tr>
+            <tr><td><code>IsInListMode</code></td><td><code>bool</code></td><td>Disables datasource I/O; use with in-memory collections.</td></tr>
+            <tr><td><code>IsFilterOn</code></td><td><code>bool</code></td><td>Internal flag — <code>true</code> while a filter is active.</td></tr>
+            <tr><td><code>DeletedUnits</code></td><td><code>List&lt;T&gt;</code></td><td>Items removed from the collection awaiting physical delete.</td></tr>
+            <tr><td><code>InsertedKeys</code></td><td><code>Dictionary&lt;int,string&gt;</code></td><td>Auxiliary insert tracking.</td></tr>
+            <tr><td><code>UpdatedKeys</code></td><td><code>Dictionary&lt;int,string&gt;</code></td><td>Auxiliary update tracking.</td></tr>
+            <tr><td><code>DeletedKeys</code></td><td><code>Dictionary&lt;int,string&gt;</code></td><td>Auxiliary delete tracking.</td></tr>
+            <tr><td><code>FilterExpression</code></td><td><code>string</code></td><td>Free-form filter string for in-memory LINQ filtering.</td></tr>
+          </tbody>
+        </table>
 
-public Task&lt;IErrorsInfo&gt; InsertAsync(T doc);
-public Task&lt;IErrorsInfo&gt; UpdateAsync(T doc);
-public Task&lt;IErrorsInfo&gt; DeleteAsync(T doc);
+        <h3>Paging</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>PageIndex</code></td><td><code>int</code></td><td>0</td></tr>
+            <tr><td><code>PageSize</code></td><td><code>int</code></td><td>10</td></tr>
+          </tbody>
+        </table>
 
-public Task&lt;IErrorsInfo&gt; Commit();
-public Task&lt;IErrorsInfo&gt; Commit(IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
-public Task&lt;IErrorsInfo&gt; Rollback();
+        <h3>Soft delete</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>SoftDeleteFieldName</code></td><td><code>string</code></td><td>When set (e.g. <code>"IsDeleted"</code>), <code>Delete()</code> sets this field instead of physically removing the record.</td></tr>
+            <tr><td><code>IncludeDeleted</code></td><td><code>bool</code></td><td>When <code>true</code>, <code>Get()</code> includes soft-deleted rows. Default <code>false</code>.</td></tr>
+          </tbody>
+        </table>
 
-public void MoveFirst();
-public void MoveNext();
-public void MovePrevious();
-public void MoveLast();
-public void MoveTo(int index);
+        <h3>Optimistic concurrency</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>ConcurrencyMode</code></td><td><code>ConcurrencyMode</code></td><td><code>None</code> (default), <code>LastWriteWins</code>, <code>ThrowOnConflict</code>.</td></tr>
+            <tr><td><code>ConcurrencyFieldName</code></td><td><code>string</code></td><td>Field to compare for staleness (e.g. <code>"RowVersion"</code> or <code>"LastModified"</code>).</td></tr>
+          </tbody>
+        </table>
 
-public bool Undo();
-public void UndoLastChange();
-public bool SaveLog(string pathandname);</code></pre>
-                    </div>
-                </section>
+        <h3>Commit control</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>CommitOrder</code></td><td><code>CommitOrder</code></td><td>Order entities are persisted during <code>Commit()</code>. <code>DeletesFirst</code> (default, FK-safe), <code>InsertsFirst</code>, <code>UpdatesFirst</code>.</td></tr>
+            <tr><td><code>BlockCommitOnValidationError</code></td><td><code>bool</code></td><td>When <code>true</code> (default), items with Error-severity validation failures are skipped during commit.</td></tr>
+            <tr><td><code>IsAutoValidateEnabled</code></td><td><code>bool</code></td><td>Validates each item on every property change when <code>true</code>.</td></tr>
+          </tbody>
+        </table>
+      </section>
 
-                <!-- Change Tracking -->
-                <section id="change-tracking" class="section">
-                    <h2>ðŸ” Change Tracking System</h2>
-                    
-                    <p>The UnitOfWork automatically tracks all changes to entities in the collection using a sophisticated change detection mechanism:</p>
+      <section id="entity-states">
+        <h2><i class="bi bi-toggles"></i> Entity States</h2>
+        <p>
+          State is tracked automatically by <code>ObservableBindingList&lt;T&gt;</code>. The
+          <code>UnitofWorkStateHelper</code> provides a facade over OBL's internal
+          <code>GetTrackingItem(entity)</code>.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>State</th><th>When set</th></tr></thead>
+          <tbody>
+            <tr><td><code>EntityState.Unchanged</code></td><td>Freshly loaded or after <code>AcceptChanges()</code>.</td></tr>
+            <tr><td><code>EntityState.Added</code></td><td>After <code>New()</code> or <code>Add(entity)</code>.</td></tr>
+            <tr><td><code>EntityState.Modified</code></td><td>After any property change on a tracked item.</td></tr>
+            <tr><td><code>EntityState.Deleted</code></td><td>After <code>Delete(entity)</code>.</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Read the state of a specific item
+var state = uow._stateHelper.GetEntityState(customer);
 
-                    <div class="code-example">
-                        <h3>Automatic Change Detection</h3>
-                        <pre><code class="language-csharp">// Automatic change tracking example
-var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
+// Force-mark as modified (useful when bypassing property change notification)
+uow._stateHelper.MarkAsModified(customer);
 
-// Load data - entities are automatically tracked
-await customerUoW.Get();
+// Accept all changes (clears dirty flag, resets all states to Unchanged)
+uow.Units.AcceptChanges();</code></pre>
 
-// Modify an entity - automatically tracked as "Modified"
-var customer = customerUoW.Units.First();
-customer.Name = "Updated Name";  // Change is automatically detected
+        <h3>Revert a single item</h3>
+        <pre><code class="language-csharp">// Revert one item to its original values (before the last AcceptChanges)
+bool reverted = uow.RevertItem(customer);
 
-// Check if there are uncommitted changes
-if (customerUoW.IsDirty)
+// Async overload
+bool reverted = await uow.RevertItemAsync(customer, cts.Token);</code></pre>
+      </section>
+
+      <section id="crud">
+        <h2><i class="bi bi-database-gear"></i> CRUD Operations</h2>
+
+        <h3>Create</h3>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>New()</code></td>
+              <td><code>void New()</code></td>
+              <td>Creates a <code>new T()</code>, applies <code>DefaultsManager</code> insert defaults, generates PK sequence if needed, adds to <code>Units</code>. Raises <code>PreCreate</code> → <code>PostCreate</code>.</td>
+            </tr>
+            <tr>
+              <td><code>Add(entity)</code></td>
+              <td><code>void Add(T entity)</code></td>
+              <td>Same as <code>New()</code> but accepts a pre-populated entity. Applies defaults. Raises <code>PreCreate</code> → <code>PostCreate</code>.</td>
+            </tr>
+            <tr>
+              <td><code>AddRange(entities)</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; AddRange(IEnumerable&lt;T&gt;)</code></td>
+              <td>Suppresses notifications during bulk insert for performance.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Read</h3>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>Get()</code></td>
+              <td><code>Task&lt;ObservableBindingList&lt;T&gt;&gt; Get()</code></td>
+              <td>Loads all rows from the datasource. Raises <code>PreQuery</code> → <code>PostQuery</code>. Cancellable.</td>
+            </tr>
+            <tr>
+              <td><code>Get(filters)</code></td>
+              <td><code>Task&lt;ObservableBindingList&lt;T&gt;&gt; Get(List&lt;AppFilter&gt;)</code></td>
+              <td>Loads rows matching the filter list. In list mode, applies <code>FilterCollection</code> in-memory.</td>
+            </tr>
+            <tr>
+              <td><code>GetQuery(query)</code></td>
+              <td><code>Task&lt;ObservableBindingList&lt;T&gt;&gt; GetQuery(string query)</code></td>
+              <td>Passes a free-form SQL or query string to the datasource.</td>
+            </tr>
+            <tr>
+              <td><code>Get(int key)</code></td>
+              <td><code>T Get(int key)</code></td>
+              <td>Returns the item at index <code>key</code> in the collection.</td>
+            </tr>
+            <tr>
+              <td><code>Get(string pkid)</code></td>
+              <td><code>T Get(string pkid)</code></td>
+              <td>Finds the item whose <code>PrimaryKey</code> field equals <code>pkid</code>. Auto-loads from datasource if collection is empty.</td>
+            </tr>
+            <tr>
+              <td><code>Read(string id)</code></td>
+              <td><code>T Read(string id)</code></td>
+              <td>Alias for index-based read.</td>
+            </tr>
+            <tr>
+              <td><code>Read(predicate)</code></td>
+              <td><code>T Read(Func&lt;T,bool&gt;)</code></td>
+              <td><code>Units.FirstOrDefault(predicate)</code>.</td>
+            </tr>
+            <tr>
+              <td><code>MultiRead(predicate)</code></td>
+              <td><code>Task&lt;ObservableBindingList&lt;T&gt;&gt; MultiRead(Func&lt;T,bool&gt;)</code></td>
+              <td>Returns all matching items as a new list.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Update</h3>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>Update(entity)</code></td>
+              <td><code>IErrorsInfo Update(T entity)</code></td>
+              <td>Applies update defaults, locates the item by PK, replaces it in <code>Units</code>. Raises <code>PreUpdate</code> → <code>PostUpdate</code>.</td>
+            </tr>
+            <tr>
+              <td><code>UpdateRange(entities)</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; UpdateRange(IEnumerable&lt;T&gt;)</code></td>
+              <td>Iterates and calls <code>Update</code> on each. Returns aggregate result.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Delete</h3>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>Delete(entity)</code></td>
+              <td><code>IErrorsInfo Delete(T entity)</code></td>
+              <td>Finds entity by reference/equality. Raises <code>PreDelete</code> → removes → <code>PostDelete</code>.</td>
+            </tr>
+            <tr>
+              <td><code>Delete(predicate)</code></td>
+              <td><code>ErrorsInfo Delete(Func&lt;T,bool&gt;)</code></td>
+              <td>First match. Raises <code>PreDelete</code> → <code>PostDelete</code>.</td>
+            </tr>
+            <tr>
+              <td><code>Delete()</code></td>
+              <td><code>IErrorsInfo Delete()</code></td>
+              <td>Deletes <code>CurrentItem</code>.</td>
+            </tr>
+            <tr>
+              <td><code>DeleteAsync(doc)</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; DeleteAsync(T doc)</code></td>
+              <td>Async path — calls datasource <code>DeleteEntity</code> directly.</td>
+            </tr>
+            <tr>
+              <td><code>DeleteRange(entities)</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; DeleteRange(IEnumerable&lt;T&gt;)</code></td>
+              <td>Materialises to list first to avoid collection-modified exception.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info-box">
+          <strong>Soft Delete:</strong> When <code>SoftDeleteFieldName</code> is set, <code>Delete()</code> sets the
+          specified field to <code>true</code> / current timestamp instead of removing the record.
+          Records with this field set are hidden from <code>Get()</code> unless
+          <code>IncludeDeleted = true</code>.
+        </div>
+      </section>
+
+      <section id="events">
+        <h2><i class="bi bi-bell-fill"></i> Events Reference</h2>
+        <p>
+          All events use <code>EventHandler&lt;UnitofWorkParams&gt;</code>. The
+          <code>UnitofWorkParams</code> argument carries the entity, a cancellation flag, and a
+          human-readable message. Setting <code>args.Cancel = true</code> in any <em>Pre-</em> handler
+          aborts the operation.
+        </p>
+
+        <h3>UnitofWorkParams</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>Cancel</code></td><td><code>bool</code></td><td>Set to <code>true</code> to abort the current operation. Only honoured by Pre-events.</td></tr>
+            <tr><td><code>EventAction</code></td><td><code>EventAction</code></td><td>Identifies which lifecycle step is firing.</td></tr>
+            <tr><td><code>Record</code></td><td><code>object</code></td><td>The entity involved. Cast to <code>T</code> when needed.</td></tr>
+            <tr><td><code>EntityName</code></td><td><code>string</code></td><td>Name of the entity type.</td></tr>
+            <tr><td><code>PropertyName</code></td><td><code>string</code></td><td>Set for <code>PostEdit</code> events — name of the changed property.</td></tr>
+            <tr><td><code>PropertyValue</code></td><td><code>string</code></td><td>Set for <code>PostEdit</code> events — new value as string.</td></tr>
+            <tr><td><code>Messege</code></td><td><code>string</code></td><td>Optional cancellation or info message.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>EventAction enum values</h3>
+        <table class="ref-table">
+          <thead><tr><th>Value</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>PreCreate</code></td><td>Before a new entity is added to <code>Units</code>.</td></tr>
+            <tr><td><code>PostCreate</code></td><td>After a new entity has been added to <code>Units</code>.</td></tr>
+            <tr><td><code>PreInsert</code></td><td>Before a new entity is written to the datasource on commit.</td></tr>
+            <tr><td><code>PostInsert</code></td><td>After a new entity has been successfully written to the datasource.</td></tr>
+            <tr><td><code>PreUpdate</code></td><td>Before an entity update is applied.</td></tr>
+            <tr><td><code>PostUpdate</code></td><td>After an entity update has been applied.</td></tr>
+            <tr><td><code>PreDelete</code></td><td>Before an entity is removed from the collection / datasource.</td></tr>
+            <tr><td><code>PostDelete</code></td><td>After an entity has been removed.</td></tr>
+            <tr><td><code>PreQuery</code></td><td>Before <code>Get()</code> fetches data.</td></tr>
+            <tr><td><code>PostQuery</code></td><td>After <code>Get()</code> has loaded data into <code>Units</code>.</td></tr>
+            <tr><td><code>PreCommit</code></td><td>Before the transaction begins.</td></tr>
+            <tr><td><code>PostCommit</code></td><td>After all changes have been successfully written and <code>AcceptChanges()</code> called.</td></tr>
+            <tr><td><code>PostEdit</code></td><td>After a property change on any tracked item. Carries <code>PropertyName</code> and <code>PropertyValue</code>.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Event declarations</h3>
+        <pre><code class="language-csharp">public event EventHandler&lt;UnitofWorkParams&gt; PreCreate;
+public event EventHandler&lt;UnitofWorkParams&gt; PostCreate;
+public event EventHandler&lt;UnitofWorkParams&gt; PreInsert;
+public event EventHandler&lt;UnitofWorkParams&gt; PostInsert;
+public event EventHandler&lt;UnitofWorkParams&gt; PreUpdate;
+public event EventHandler&lt;UnitofWorkParams&gt; PostUpdate;
+public event EventHandler&lt;UnitofWorkParams&gt; PreDelete;
+public event EventHandler&lt;UnitofWorkParams&gt; PostDelete;
+public event EventHandler&lt;UnitofWorkParams&gt; PreQuery;
+public event EventHandler&lt;UnitofWorkParams&gt; PostQuery;
+public event EventHandler&lt;UnitofWorkParams&gt; PreCommit;
+public event EventHandler&lt;UnitofWorkParams&gt; PostCommit;
+public event EventHandler&lt;UnitofWorkParams&gt; PostEdit;
+public event EventHandler&lt;UnitofWorkParams&gt; OnItemReverted;</code></pre>
+
+        <h3>Subscribing to events</h3>
+        <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Customer&gt;(dme, "SalesDB", "Customers");
+
+// ── Pre-events: inspect the record and optionally cancel ────────────────────
+
+uow.PreCreate += (sender, args) =>
 {
-    Console.WriteLine("There are uncommitted changes");
-    
-    // See what entities have been modified
-    var modifiedEntities = customerUoW.GetModifiedEntities();
-    Console.WriteLine($"Modified entities count: {modifiedEntities.Count()}");
-}
-
-// Add new entity - tracked as "Added"
-customerUoW.Add(new Customer { Name = "New Customer" });
-
-// Delete entity - tracked as "Deleted"
-customerUoW.Delete(customer);
-
-// Commit all changes in a single transaction
-var result = await customerUoW.Commit();
-if (result.Flag == Errors.Ok)
-{
-    Console.WriteLine("All changes committed successfully");
-}</code></pre>
-                    </div>
-
-                    <div class="tip">
-                        <strong>ðŸ’¡ Change Detection Mechanism</strong>
-                        <p>The UnitOfWork uses <code>ObservableBindingList&lt;T&gt;</code> and property change notifications to automatically detect when entities are modified. This happens transparently without requiring explicit tracking calls.</p>
-                    </div>
-                </section>
-
-                <!-- Entity States -->
-                <section id="entity-states" class="section">
-                    <h2>ðŸ“‹ Entity State Management</h2>
-                    
-                    <p>The UnitOfWork tracks entities in different states based on their lifecycle:</p>
-
-                    <table class="property-table">
-                        <thead>
-                            <tr><th>State</th><th>Description</th><th>Commit Action</th><th>Methods</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><span class="status-badge added">Added</span></td>
-                                <td>New entities added to the collection</td>
-                                <td>INSERT into database</td>
-                                <td><code>Add(), New()</code></td>
-                            </tr>
-                            <tr>
-                                <td><span class="status-badge modified">Modified</span></td>
-                                <td>Existing entities with property changes</td>
-                                <td>UPDATE in database</td>
-                                <td>Property assignments</td>
-                            </tr>
-                            <tr>
-                                <td><span class="status-badge deleted">Deleted</span></td>
-                                <td>Entities marked for deletion</td>
-                                <td>DELETE from database</td>
-                                <td><code>Delete()</code></td>
-                            </tr>
-                            <tr>
-                                <td><span class="status-badge unchanged">Unchanged</span></td>
-                                <td>Loaded entities with no modifications</td>
-                                <td>No database operation</td>
-                                <td>Initial state after <code>Get()</code></td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <div class="code-example">
-                        <h3>Entity State Inspection</h3>
-                        <pre><code class="language-csharp">// Check entity states
-var addedEntities = customerUoW.GetAddedEntities();
-var modifiedEntities = customerUoW.GetModifiedEntities();
-var deletedEntities = customerUoW.GetDeletedEntities();
-
-Console.WriteLine($"State Summary:");
-Console.WriteLine($"  Added: {addedEntities.Count()}");
-Console.WriteLine($"  Modified: {modifiedEntities.Count()}"); 
-Console.WriteLine($"  Deleted: {deletedEntities.Count()}");
-
-// Get specific state information
-foreach (var entityIndex in addedEntities)
-{
-    var entity = customerUoW.Units[entityIndex];
-    Console.WriteLine($"  New entity: {entity.Name} (ID: {entity.CustomerID})");
-}
-
-foreach (var entityIndex in modifiedEntities)
-{
-    var entity = customerUoW.Units[entityIndex];
-    Console.WriteLine($"  Modified entity: {entity.Name} (ID: {entity.CustomerID})");
-}
-
-foreach (var entity in deletedEntities)
-{
-    Console.WriteLine($"  Deleted entity: {entity.Name} (ID: {entity.CustomerID})");
-}</code></pre>
-                    </div>
-                </section>
-
-                <!-- Lifecycle Events -->
-                <section id="lifecycle-events" class="section">
-                    <h2>âš¡ Lifecycle Events</h2>
-                    
-                    <p>UnitOfWork provides comprehensive event hooks for business logic implementation:</p>
-
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <h3>ðŸ”„ Pre-Operation Events</h3>
-                            <p>Cancellable events fired before operations</p>
-                            <ul>
-                                <li>PreCreate</li>
-                                <li>PreInsert</li>
-                                <li>PreUpdate</li>
-                                <li>PreDelete</li>
-                                <li>PreCommit</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>âœ… Post-Operation Events</h3>
-                            <p>Notification events fired after operations</p>
-                            <ul>
-                                <li>PostCreate</li>
-                                <li>PostInsert</li>
-                                <li>PostUpdate</li>
-                                <li>PostDelete</li>
-                                <li>PostCommit</li>
-                                <li>PostEdit</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Comprehensive Event Handling</h3>
-                        <pre><code class="language-csharp">var customerUoW = new UnitofWork&lt;Customer&gt;(dmeEditor, "MyDB", "Customers", "CustomerID");
-
-// Validation and business logic in pre-events
-customerUoW.PreCreate += (sender, args) => 
-{
-    var customer = sender as Customer;
-    Console.WriteLine($"About to create customer: {customer.Name}");
-    
-    // Set default values
-    customer.CreatedDate = DateTime.Now;
-    customer.Status = "Active";
-    
-    // Generate unique ID if needed
-    if (string.IsNullOrEmpty(customer.CustomerID))
-    {
-        customer.CustomerID = Guid.NewGuid().ToString();
-    }
-};
-
-customerUoW.PreUpdate += (sender, args) => 
-{
-    var customer = sender as Customer;
-    Console.WriteLine($"About to update: {customer.Name}");
-    
-    // Business rule validation
-    if (string.IsNullOrEmpty(customer.Email))
+    var c = (Customer)args.Record;
+    // Validate before the entity is added to Units
+    if (string.IsNullOrWhiteSpace(c?.Name))
     {
         args.Cancel = true;
-        args.ErrorMessage = "Email is required for customer updates";
-        return;
-    }
-    
-    // Audit fields
-    customer.ModifiedDate = DateTime.Now;
-    customer.ModifiedBy = GetCurrentUser();
-    
-    // Business rule: Premium customers can't be downgraded
-    if (customer.Status == "Standard" && args.PropertyName == "Status")
-    {
-        var original = customerUoW.Units.FirstOrDefault(c => c.CustomerID == customer.CustomerID);
-        if (original?.Status == "Premium")
-        {
-            args.Cancel = true;
-            args.ErrorMessage = "Premium customers cannot be downgraded to Standard";
-            return;
-        }
+        args.Messege = "Customer name is required.";
     }
 };
 
-customerUoW.PreDelete += (sender, args) => 
+uow.PreInsert += (sender, args) =>
 {
-    var customer = sender as Customer;
-    Console.WriteLine($"About to delete: {customer.Name}");
-    
-    // Prevent deletion of customers with orders
-    if (HasActiveOrders(customer.CustomerID))
+    var c = (Customer)args.Record;
+    Console.WriteLine($"About to insert {c.Name} into datasource…");
+    // Set args.Cancel = true to abort the INSERT to the datasource
+};
+
+uow.PreUpdate += (sender, args) =>
+{
+    var c = (Customer)args.Record;
+    // Example: block updates for archived customers
+    if (c.Status == "ARCHIVED")
     {
         args.Cancel = true;
-        args.ErrorMessage = "Cannot delete customers with active orders";
-        return;
+        args.Messege = "Archived records cannot be modified.";
     }
 };
 
-// Logging and notifications in post-events
-customerUoW.PostCreate += (sender, args) => 
+uow.PreDelete += (sender, args) =>
 {
-    var customer = sender as Customer;
-    Console.WriteLine($"Customer created: {customer.Name}");
-    
-    // Send welcome email
-    SendWelcomeEmail(customer);
-    
-    // Log to audit trail
-    LogAuditEvent("Customer Created", customer.CustomerID, customer.Name);
+    var c = (Customer)args.Record;
+    Console.WriteLine($"Pre-Delete: {c.Name} (ID={c.ID})");
+    // Example: require confirmation for premium customers
 };
 
-customerUoW.PostUpdate += (sender, args) => 
+uow.PreQuery += (sender, args) =>
 {
-    var customer = sender as Customer;
-    Console.WriteLine($"Customer updated: {customer.Name}");
-    
-    // Send update notification if email changed
-    if (args.PropertyName == "Email")
+    Console.WriteLine("Loading data…");
+    // args.Cancel = true would suppress the datasource round-trip
+};
+
+uow.PreCommit += (sender, args) =>
+{
+    // Final validation gate before any DB write
+    if (!IsNetworkAvailable())
     {
-        SendEmailChangeNotification(customer);
+        args.Cancel = true;
+        args.Messege = "No database connection.";
     }
-    
-    // Log changes
-    LogAuditEvent("Customer Updated", customer.CustomerID, $"{args.PropertyName} changed to {args.PropertyValue}");
 };
 
-customerUoW.PostCommit += (sender, args) => 
+// ── Post-events: receive completed results ──────────────────────────────────
+
+uow.PostCreate += (sender, args) =>
 {
-    Console.WriteLine("All changes committed successfully");
-    
-    // Clear caches
-    ClearCustomerCache();
-    
-    // Send batch notifications
-    SendBatchNotifications();
-    
-    // Refresh UI
-    RefreshCustomerGrid();
+    var c = (Customer)args.Record;
+    Console.WriteLine($"Entity created in memory: {c.Name}");
 };
 
-// Property-level change tracking
-customerUoW.PostEdit += (sender, args) => 
+uow.PostInsert += (sender, args) =>
 {
-    var customer = sender as Customer;
-    Console.WriteLine($"Property changed: {args.PropertyName} = {args.PropertyValue}");
-    
-    // Real-time validation
-    ValidatePropertyChange(customer, args.PropertyName, args.PropertyValue);
-    
-    // Update calculated fields
-    if (args.PropertyName == "TotalOrders" || args.PropertyName == "TotalSpent")
-    {
-        UpdateCustomerTier(customer);
-    }
+    var c = (Customer)args.Record;
+    Console.WriteLine($"Inserted to DB: {c.Name}, new PK = {c.ID}");
+};
+
+uow.PostUpdate += (sender, args) =>
+{
+    var c = (Customer)args.Record;
+    AuditLog.Record("UPDATE", c);
+};
+
+uow.PostDelete += (sender, args) =>
+{
+    var c = (Customer)args.Record;
+    Console.WriteLine($"Deleted: {c.Name}");
+};
+
+uow.PostQuery += (sender, args) =>
+{
+    // sender is the Units collection after load
+    Console.WriteLine($"Loaded {uow.Units.Count} rows.");
+};
+
+uow.PostCommit += (sender, args) =>
+{
+    Console.WriteLine("All changes committed — refreshing UI.");
+    RefreshGrid();
+};
+
+// ── Property change ─────────────────────────────────────────────────────────
+uow.PostEdit += (sender, args) =>
+{
+    Console.WriteLine($"Field '{args.PropertyName}' changed to '{args.PropertyValue}'");
+    // Useful for live audit trails or conditional UI updates
+};
+
+// ── Revert notification ─────────────────────────────────────────────────────
+uow.OnItemReverted += (sender, args) =>
+{
+    var c = (Customer)args.Record;
+    Console.WriteLine($"Item reverted: {c.Name}");
 };</code></pre>
-                    </div>
+      </section>
 
-                    <div class="warning">
-                        <strong>âš ï¸ Event Best Practices</strong>
-                        <ul>
-                            <li>Use Pre-events for validation and business rules</li>
-                            <li>Use Post-events for logging, notifications, and side effects</li>
-                            <li>Always check <code>args.Cancel</code> in pre-events before proceeding</li>
-                            <li>Set meaningful error messages when cancelling operations</li>
-                            <li>Avoid heavy operations in event handlers to prevent performance issues</li>
-                        </ul>
-                    </div>
-                </section>
+      <section id="commit">
+        <h2><i class="bi bi-database-check"></i> Commit &amp; Rollback</h2>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>Commit()</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; Commit()</code></td>
+              <td>Persists all pending changes: raises <code>PreCommit</code>, wraps datasource in a transaction, calls <code>CommitAllAsync</code> via OBL (insert→update→delete ordered by <code>CommitOrder</code>), calls <code>PostCommit</code> on success.</td>
+            </tr>
+            <tr>
+              <td><code>Commit(progress, token)</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; Commit(IProgress&lt;PassedArgs&gt;, CancellationToken)</code></td>
+              <td>Same with progress reporting and cancellation support.</td>
+            </tr>
+            <tr>
+              <td><code>CommitBatchAsync</code></td>
+              <td><code>Task&lt;CommitBatchResult&gt; CommitBatchAsync(batchSize, progress, ct)</code></td>
+              <td>Commits in fixed-size batches. Useful for very large collections to avoid single-transaction timeouts.</td>
+            </tr>
+            <tr>
+              <td><code>Rollback()</code></td>
+              <td><code>Task&lt;IErrorsInfo&gt; Rollback()</code></td>
+              <td>Calls <code>DataSource.EndTransaction()</code> then <code>Units.RejectChanges()</code>. Restores added/deleted items and original property values.</td>
+            </tr>
+          </tbody>
+        </table>
 
-                <!-- Constructor Patterns -->
-                <section id="constructors" class="section">
-                    <h2>ðŸ”§ Constructor Patterns</h2>
+        <h3>Commit internals</h3>
+        <p>
+          During <code>Commit()</code>, OBL's <code>CommitAllAsync</code> is called with three async
+          lambdas (insert, update, delete). The <code>_defaultsHelper</code> applies audit defaults
+          just before each DB call:
+        </p>
+        <pre><code class="language-csharp">// Simplified internal Commit flow:
+// 1. Raise PreCommit — abort if Cancel = true
+// 2. DataSource.BeginTransaction()
+// 3. OBL.CommitAllAsync(
+//        insertAsync: item => { ApplyInsertDefaults(item); InsertDoc(item); },
+//        updateAsync: item => { ApplyUpdateDefaults(item); UpdateDoc(item); },
+//        deleteAsync: item => { DataSource.DeleteEntity(entityName, item); },
+//        CommitOrder)
+// 4. If AllSucceeded → DataSource.Commit() → AcceptChanges per item
+//    Else            → DataSource.EndTransaction() (rollback)
+// 5. Clear InsertedKeys/UpdatedKeys/DeletedKeys
+// 6. Raise PostCommit</code></pre>
 
-                    <div class="code-example">
-                        <h3>1. Database-Connected Constructor</h3>
-                        <pre><code class="language-csharp">// Most common usage - connects to specific data source
-var customerUoW = new UnitofWork&lt;Customer&gt;(
-    dmeEditor,           // Data management editor
-    "MyDatabase",        // Data source name (must exist in DME configuration)
-    "Customers",         // Entity/table name
-    "CustomerID"         // Primary key field name
-);
+        <pre><code class="language-csharp">// Typical commit with cancellable progress
+var cts = new CancellationTokenSource();
+var progress = new Progress&lt;PassedArgs&gt;(p =>
+    Console.WriteLine($"Progress: {p.ParameterString1}"));
 
-// Load all data from database
-await customerUoW.Get();
-Console.WriteLine($"Loaded {customerUoW.Units.Count} customers from database");</code></pre>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>2. In-Memory List Constructor</h3>
-                        <pre><code class="language-csharp">// For in-memory operations only - no database connectivity
-var existingCustomers = new ObservableBindingList&lt;Customer&gt;
+var result = await uow.Commit(progress, cts.Token);
+if (result.Flag != Errors.Ok)
 {
-    new Customer { CustomerID = 1, Name = "John Doe", Email = "john@example.com" },
-    new Customer { CustomerID = 2, Name = "Jane Smith", Email = "jane@example.com" },
-    new Customer { CustomerID = 3, Name = "Bob Johnson", Email = "bob@example.com" }
-};
-
-var customerUoW = new UnitofWork&lt;Customer&gt;(
-    dmeEditor,
-    true,                // isInListMode = true (in-memory only)
-    existingCustomers,   // Initial data collection
-    "CustomerID"         // Primary key field name
-);
-
-// All operations work in-memory only
-customerUoW.Add(new Customer { CustomerID = 4, Name = "New Customer" });
-Console.WriteLine($"In-memory collection now has {customerUoW.Units.Count} customers");
-
-// Note: Changes won't persist to database automatically in list mode</code></pre>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>3. Pre-Built Entity Structure Constructor</h3>
-                        <pre><code class="language-csharp">// For performance optimization - avoids structure lookup
-EntityStructure customerStructure = dmeEditor.GetEntityStructure("Customers", "MyDatabase");
-
-// Verify structure was loaded
-if (customerStructure == null)
-{
-    throw new InvalidOperationException("Customer entity structure not found");
-}
-
-var customerUoW = new UnitofWork&lt;Customer&gt;(
-    dmeEditor,
-    "MyDatabase",
-    "Customers",
-    customerStructure,   // Pre-built structure for faster initialization
-    "CustomerID"
-);
-
-// Faster initialization since structure is already provided
-await customerUoW.Get();</code></pre>
-                    </div>
-
-                    <div class="tip">
-                        <strong>ðŸ’¡ Constructor Selection Guide</strong>
-                        <ul>
-                            <li><strong>Database-Connected:</strong> Use for normal CRUD operations with database persistence</li>
-                            <li><strong>In-Memory List:</strong> Use for temporary data manipulation, previews, or offline scenarios</li>
-                            <li><strong>Pre-Built Structure:</strong> Use when creating multiple UoW instances for the same entity type</li>
-                        </ul>
-                    </div>
-                </section>
-
-                <!-- Advanced CRUD -->
-                <section id="advanced-crud" class="section">
-                    <h2>ðŸš€ Advanced CRUD Operations</h2>
-
-                    <div class="code-example">
-                        <h3>Bulk Operations with Batch Processing</h3>
-                        <pre><code class="language-csharp">// Create multiple customers efficiently
-var newCustomers = new List&lt;Customer&gt;
-{
-    new Customer { Name = "Customer 1", Email = "customer1@example.com" },
-    new Customer { Name = "Customer 2", Email = "customer2@example.com" },
-    new Customer { Name = "Customer 3", Email = "customer3@example.com" }
-};
-
-// Add all customers to UoW (in-memory, not yet persisted)
-foreach (var customer in newCustomers)
-{
-    customerUoW.Add(customer);
-}
-
-// Single commit for all changes
-var progress = new Progress&lt;PassedArgs&gt;(args => 
-{
-    Console.WriteLine($"Progress: {args.ParameterInt1}/{args.ParameterInt2} - {args.Messege}");
-});
-
-var result = await customerUoW.Commit(progress, cancellationToken);
-if (result.Flag == Errors.Ok)
-{
-    Console.WriteLine($"Successfully inserted {newCustomers.Count} customers");
+    Console.WriteLine("Commit failed: " + result.Message);
+    await uow.Rollback();
 }</code></pre>
-                    </div>
+      </section>
 
-                    <div class="code-example">
-                        <h3>Conditional Operations with LINQ</h3>
-                        <pre><code class="language-csharp">// Load customers
-await customerUoW.Get();
+      <section id="validation">
+        <h2><i class="bi bi-patch-check"></i> Validation</h2>
+        <p>
+          Validation is powered by OBL's built-in validation framework, which combines
+          <strong>Data Annotations</strong> (<code>[Required]</code>, <code>[MaxLength]</code>, …)
+          with <strong>EntityStructure-based rules</strong> described in the schema metadata.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method / Property</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>IsAutoValidateEnabled</code></td>
+              <td>When <code>true</code>, validation runs after every property change. Default: depends on OBL init.</td>
+            </tr>
+            <tr>
+              <td><code>BlockCommitOnValidationError</code></td>
+              <td>When <code>true</code> (default), items with <code>ValidationSeverity.Error</code> failures are skipped during commit.</td>
+            </tr>
+            <tr>
+              <td><code>ValidateItem(item)</code></td>
+              <td>Validates a single item. Returns a <code>ValidationResult</code> with <code>IsValid</code>, <code>Errors</code>, <code>Warnings</code>.</td>
+            </tr>
+            <tr>
+              <td><code>ValidateAll()</code></td>
+              <td>Validates every item in <code>Units</code>. Returns an aggregate <code>ValidationResult</code>.</td>
+            </tr>
+            <tr>
+              <td><code>GetErrors(item)</code></td>
+              <td>Returns <code>List&lt;ValidationError&gt;</code> for a specific item.</td>
+            </tr>
+            <tr>
+              <td><code>GetInvalidItems()</code></td>
+              <td>Returns all items that currently have at least one validation error.</td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Enable auto-validate so grid cells show errors live
+uow.IsAutoValidateEnabled = true;
 
-// Update multiple entities based on conditions
-var inactiveCustomers = customerUoW.Units
-    .Where(c => c.LastOrderDate < DateTime.Now.AddMonths(-6))
-    .ToList();
-
-foreach (var customer in inactiveCustomers)
+// Manual validation before commit
+var result = uow.ValidateAll();
+if (!result.IsValid)
 {
-    customer.Status = "Inactive";
-    customer.ModifiedDate = DateTime.Now;
+    foreach (var error in result.Errors)
+        Console.WriteLine($"{error.FieldName}: {error.Message}");
+    return;
 }
 
-Console.WriteLine($"Marked {inactiveCustomers.Count} customers as inactive");
+// Get errors for a specific item
+var errors = uow.GetErrors(customer);
+foreach (var e in errors)
+    Console.WriteLine($"[{e.Severity}] {e.FieldName}: {e.Message}");
 
-// Delete customers with no orders (using custom business logic)
-var customersToDelete = customerUoW.Units
-    .Where(c => c.TotalOrders == 0 && c.CreatedDate < DateTime.Now.AddDays(-30))
-    .ToList();
+// Find all broken items
+var invalid = uow.GetInvalidItems();
+Console.WriteLine($"{invalid.Count} items have validation errors");</code></pre>
+      </section>
 
-foreach (var customer in customersToDelete)
+      <section id="undo-redo">
+        <h2><i class="bi bi-arrow-counterclockwise"></i> Undo / Redo</h2>
+        <p>
+          Undo/Redo records every property change, <code>Add</code>, and <code>Remove</code> on the
+          collection. It is off by default; enable it after construction.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Member</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>IsUndoEnabled</code></td><td>Enable/disable the undo stack.</td></tr>
+            <tr><td><code>MaxUndoDepth</code></td><td>Maximum number of actions to retain. Default 100. Older entries are evicted.</td></tr>
+            <tr><td><code>CanUndo</code></td><td><code>true</code> when the undo stack is non-empty.</td></tr>
+            <tr><td><code>CanRedo</code></td><td><code>true</code> when the redo stack is non-empty.</td></tr>
+            <tr><td><code>Undo()</code></td><td>Reverts the last recorded action. Returns <code>true</code> if successful.</td></tr>
+            <tr><td><code>Redo()</code></td><td>Re-applies the last undone action. Returns <code>true</code> if successful.</td></tr>
+            <tr><td><code>ClearUndoHistory()</code></td><td>Empties both undo and redo stacks.</td></tr>
+            <tr><td><code>EnableUndo(bool, int maxDepth)</code></td><td>Convenience: sets <code>IsUndoEnabled</code> and <code>MaxUndoDepth</code> in one call.</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Turn on undo at startup
+uow.IsUndoEnabled = true;
+uow.MaxUndoDepth  = 50;
+
+// Or via the convenience method
+uow.EnableUndo(true, maxDepth: 50);
+
+// Edit + undo
+uow.CurrentItem.Name = "Wrong Name";
+Console.WriteLine($"CanUndo: {uow.CanUndo}"); // true
+uow.Undo();
+Console.WriteLine($"Name restored: {uow.CurrentItem.Name}");
+
+// Redo the change
+uow.Redo();
+
+// Clear history (e.g. after a commit)
+uow.ClearUndoHistory();</code></pre>
+      </section>
+
+      <section id="computed">
+        <h2><i class="bi bi-calculator"></i> Computed Columns</h2>
+        <p>
+          Computed columns are evaluated on-demand per item. They are not persisted. Useful for
+          display-only values derived from other fields.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>RegisterComputed(name, func)</code></td><td>Registers a <code>Func&lt;T, object&gt;</code> under a display name.</td></tr>
+            <tr><td><code>UnregisterComputed(name)</code></td><td>Removes a computed column definition.</td></tr>
+            <tr><td><code>GetComputed(item, name)</code></td><td>Evaluates and returns the computed value for one item.</td></tr>
+            <tr><td><code>GetAllComputed(item)</code></td><td>Returns <code>Dictionary&lt;string, object&gt;</code> of all computed values for one item.</td></tr>
+            <tr><td><code>ComputedColumnNames</code></td><td>Read-only collection of registered computed column names.</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Register a computed full-name column
+uow.RegisterComputed("FullLabel", c => $"{c.Name} ({c.Email})");
+
+// Evaluate for a specific item
+var label = (string)uow.GetComputed(customer, "FullLabel");
+
+// Get all computed values in one call (for grid display)
+foreach (var item in uow.Units)
 {
-    customerUoW.Delete(customer);
+    var computed = uow.GetAllComputed(item);
+    Console.WriteLine(computed["FullLabel"]);
+}</code></pre>
+      </section>
+
+      <section id="bookmarks">
+        <h2><i class="bi bi-bookmark-star"></i> Bookmarks</h2>
+        <p>
+          Bookmarks save a named cursor position in the collection so you can return quickly
+          (similar to Oracle Forms or MS Access record navigation).
+        </p>
+        <pre><code class="language-csharp">// Save position before a search
+uow.SetBookmark("SearchStart");
+
+// Navigate through results…
+uow.GoToBookmark("SearchStart"); // jumps back
+
+// Remove when done
+uow.RemoveBookmark("SearchStart");
+
+// Clear all
+uow.ClearBookmarks();</code></pre>
+      </section>
+
+      <section id="thread-safety">
+        <h2><i class="bi bi-shield-lock"></i> Thread Safety, Freeze &amp; Batch Update</h2>
+        <table class="ref-table">
+          <thead><tr><th>Feature</th><th>API</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Thread-safe mode</strong></td>
+              <td><code>IsThreadSafe = true</code></td>
+              <td>All OBL mutations are wrapped in a <code>ReaderWriterLockSlim</code>. Safe for concurrent read from UI thread and write from background thread.</td>
+            </tr>
+            <tr>
+              <td><strong>Freeze</strong></td>
+              <td><code>Freeze()</code> / <code>Unfreeze()</code>, <code>IsFrozen</code></td>
+              <td>Makes the collection read-only. Mutations throw <code>InvalidOperationException</code>. Useful during UI pagination rendering.</td>
+            </tr>
+            <tr>
+              <td><strong>Batch Update</strong></td>
+              <td><code>BeginBatchUpdate()</code></td>
+              <td>Returns an <code>IDisposable</code>. While open, <code>CollectionChanged</code> notifications are suppressed. On dispose, a single reset notification is fired. Supports nested scopes.</td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Batch insert 10 000 rows without 10 000 individual UI refreshes
+using (uow.BeginBatchUpdate())
+{
+    foreach (var row in largeDataSet)
+        uow.Add(row);
+} // CollectionChanged fires once here
+
+// Thread-safe cross-thread scenario
+uow.IsThreadSafe = true;
+Task.Run(() =>
+{
+    uow.Add(new Customer { Name = "Background Insert" });
+    // Safe — writer lock acquired internally
+});</code></pre>
+      </section>
+
+      <section id="export-import">
+        <h2><i class="bi bi-file-earmark-arrow-up"></i> Export / Import</h2>
+        <p>
+          Provided by <code>UnitofWorkExportHelper&lt;T&gt;</code>, exposed as interface methods.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>ToDataTable()</code></td>
+              <td><code>DataTable ToDataTable()</code></td>
+              <td>Materialises the current collection into a <code>DataTable</code> with one column per property. Uses reflection; columns are typed correctly (unwraps <code>Nullable&lt;T&gt;</code>).</td>
+            </tr>
+            <tr>
+              <td><code>ToJsonAsync</code></td>
+              <td><code>Task ToJsonAsync(Stream, CancellationToken)</code></td>
+              <td>Serialises the collection to a JSON array using <code>System.Text.Json</code>.</td>
+            </tr>
+            <tr>
+              <td><code>ToCsvAsync</code></td>
+              <td><code>Task ToCsvAsync(Stream, char delimiter, CancellationToken)</code></td>
+              <td>Writes a header row + data rows to the stream. Values are CSV-escaped. Default delimiter is comma.</td>
+            </tr>
+            <tr>
+              <td><code>LoadFromJsonAsync</code></td>
+              <td><code>Task&lt;int&gt; LoadFromJsonAsync(Stream, bool clearFirst, CancellationToken)</code></td>
+              <td>Deserialises a JSON array into <code>Units</code>. Returns count of records loaded.</td>
+            </tr>
+            <tr>
+              <td><code>LoadFromCsvAsync</code></td>
+              <td><code>Task&lt;int&gt; LoadFromCsvAsync(Stream, char delimiter, bool clearFirst, bool hasHeaderRow, CancellationToken)</code></td>
+              <td>Parses a CSV stream into <code>Units</code>. Maps columns by header name (case-insensitive). Returns count loaded.</td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Export to file
+using var stream = File.Create("customers.json");
+await uow.ToJsonAsync(stream, cts.Token);
+
+// Export to CSV
+using var csvStream = File.Create("customers.csv");
+await uow.ToCsvAsync(csvStream, delimiter: ',', ct: cts.Token);
+
+// Export to DataTable (e.g. for a WinForms grid)
+DataTable dt = uow.ToDataTable();
+dataGridView1.DataSource = dt;
+
+// Import from JSON (clears existing data first)
+using var jsonIn = File.OpenRead("new_customers.json");
+int loaded = await uow.LoadFromJsonAsync(jsonIn, clearFirst: true);
+Console.WriteLine($"Imported {loaded} customers");
+
+// Import from CSV (append to existing)
+using var csvIn = File.OpenRead("additional.csv");
+int added = await uow.LoadFromCsvAsync(csvIn, delimiter: ',', clearFirst: false, hasHeaderRow: true);
+Console.WriteLine($"Appended {added} rows from CSV");</code></pre>
+      </section>
+
+      <section id="aggregates">
+        <h2><i class="bi bi-graph-up"></i> Aggregates</h2>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>Sum(fieldName)</code></td>
+              <td><code>decimal Sum(string numericFieldName)</code></td>
+              <td>Sums the values of the named numeric field across all items in <code>Units</code>.</td>
+            </tr>
+            <tr>
+              <td><code>Average(fieldName)</code></td>
+              <td><code>decimal Average(string numericFieldName)</code></td>
+              <td>Arithmetic mean of the named field. Returns <code>0</code> if <code>Units</code> is empty.</td>
+            </tr>
+            <tr>
+              <td><code>Count(predicate?)</code></td>
+              <td><code>int Count(Func&lt;object,bool&gt; predicate = null)</code></td>
+              <td>Total item count when predicate is null, otherwise filtered count.</td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">decimal total   = uow.Sum("OrderAmount");
+decimal average = uow.Average("OrderAmount");
+int     active  = uow.Count(item => ((Order)item).IsActive);
+
+Console.WriteLine($"Total: {total:C}  Average: {average:C}  Active: {active}");</code></pre>
+      </section>
+
+      <section id="batch">
+        <h2><i class="bi bi-stack"></i> Batch Operations</h2>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>AddRange</code></td><td><code>Task&lt;IErrorsInfo&gt; AddRange(IEnumerable&lt;T&gt;)</code></td><td>Inserts multiple entities. Notifications suppressed for performance; single refresh fired at end.</td></tr>
+            <tr><td><code>UpdateRange</code></td><td><code>Task&lt;IErrorsInfo&gt; UpdateRange(IEnumerable&lt;T&gt;)</code></td><td>Updates each entity using the standard <code>Update</code> path (includes defaults, events).</td></tr>
+            <tr><td><code>DeleteRange</code></td><td><code>Task&lt;IErrorsInfo&gt; DeleteRange(IEnumerable&lt;T&gt;)</code></td><td>Deletes each entity. List materialised first to avoid modification-during-enumeration.</td></tr>
+            <tr><td><code>CommitBatchAsync</code></td><td><code>Task&lt;CommitBatchResult&gt; CommitBatchAsync(batchSize, progress, ct)</code></td><td>Commits in fixed-size chunks. Default batch size 200.</td></tr>
+            <tr><td><code>RefreshAsync(filters, conflictMode, ct)</code></td><td><code>Task&lt;bool&gt; RefreshAsync(...)</code></td><td>Reloads data from server and merges with local changes. <code>ConflictMode.ServerWins</code> discards local, <code>MergePreferLocal</code> keeps local edits.</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Efficient bulk insert
+var newOrders = GenerateOrders(5000);
+await uow.AddRange(newOrders);
+
+// Batch commit (200 items per transaction)
+var batchResult = await uow.CommitBatchAsync(
+    batchSize: 200,
+    progress: new Progress&lt;CommitBatchProgress&gt;(p =>
+        Console.WriteLine($"Batch {p.BatchNumber}: {p.ItemsCommitted}/{p.TotalItems}")),
+    ct: cts.Token);
+
+Console.WriteLine($"All succeeded: {batchResult.AllSucceeded}");
+
+// Server refresh — discard local changes, use server data
+bool refreshed = await uow.RefreshAsync(
+    filters: null,
+    conflictMode: ConflictMode.ServerWins,
+    ct: cts.Token);</code></pre>
+      </section>
+
+      <section id="factory">
+        <h2><i class="bi bi-tools"></i> Factory &amp; Wrapper</h2>
+        <p>
+          Use the <code>UnitOfWorkFactory</code> when the entity type is only known at runtime (e.g.
+          plugin-loaded entities or reflection-driven UI). For compile-time known types, use the
+          generic constructors directly.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>CreateUnitOfWork(Type, dme, ds, entity, pk?)</code></td>
+              <td><code>IUnitOfWorkWrapper</code></td>
+              <td>Primary factory. Throws on failure.</td>
+            </tr>
+            <tr>
+              <td><code>CreateUnitOfWork(Type, dme, ds, entity, entityStructure, pk?)</code></td>
+              <td><code>IUnitOfWorkWrapper</code></td>
+              <td>Overload with pre-built <code>EntityStructure</code>.</td>
+            </tr>
+            <tr>
+              <td><code>TryCreateUnitOfWork(Type, dme, ds, entity, out wrapper, out error, pk?)</code></td>
+              <td><code>bool</code></td>
+              <td>Non-throwing version.</td>
+            </tr>
+            <tr>
+              <td><code>CreateWrapper(object uow)</code></td>
+              <td><code>IUnitOfWorkWrapper</code></td>
+              <td>Wraps an existing UnitofWork instance in a dynamic runtime wrapper.</td>
+            </tr>
+            <tr>
+              <td><code>CreateUnitOfWorkWrapper(typeName, dme, ds, entity, pk?)</code></td>
+              <td><code>IUnitOfWorkWrapper</code></td>
+              <td>Legacy string-based type name resolution.</td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Runtime type (e.g. discovered via plugin)
+Type entityType = pluginAssembly.GetType("Acme.Products.Order");
+
+if (UnitOfWorkFactory.TryCreateUnitOfWork(
+        entityType, dme, "OrdersDB", "Orders",
+        out var wrapper, out string error))
+{
+    wrapper.Get().GetAwaiter().GetResult();
+    Console.WriteLine($"Loaded {wrapper.Units.Count} orders");
 }
-
-Console.WriteLine($"Deleted {customersToDelete.Count} customers with no orders");
-
-// Commit all changes
-await customerUoW.Commit();</code></pre>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Transaction Safety with Error Handling</h3>
-                        <pre><code class="language-csharp">try
+else
 {
-    // Begin complex operation
-    var customer = customerUoW.Units.FirstOrDefault(c => c.CustomerID == "CUST001");
-    if (customer != null)
-    {
-        // Update customer
-        customer.Email = "newemail@example.com";
-        customer.Status = "Premium";
-        
-        // Add related data
-        var newOrder = new Order 
-        { 
-            CustomerID = customer.CustomerID,
-            OrderDate = DateTime.Now,
-            Total = 299.99m
-        };
-        
-        // If you have a related UoW for orders
-        orderUoW.Add(newOrder);
-        
-        // Commit both changes
-        var customerResult = await customerUoW.Commit();
-        var orderResult = await orderUoW.Commit();
-        
-        if (customerResult.Flag == Errors.Ok && orderResult.Flag == Errors.Ok)
-        {
-            Console.WriteLine("Both customer and order changes committed successfully");
-        }
-        else
-        {
-            // Rollback if either failed
-            await customerUoW.Rollback();
-            await orderUoW.Rollback();
-            Console.WriteLine("Transaction failed, rolled back all changes");
-        }
-    }
+    Console.WriteLine("Could not create UOW: " + error);
+}</code></pre>
+
+        <h3>UnitOfWorkWrapper</h3>
+        <p>
+          <code>UnitOfWorkWrapper</code> wraps a <code>dynamic</code> UnitofWork instance and provides
+          safe property access with fallback defaults (<code>GetPropertySafely</code>). It implements
+          <code>IUnitOfWorkWrapper</code> which exposes all core operations through a non-generic
+          contract — suitable for framework-level code that must work with heterogeneous entity types.
+        </p>
+      </section>
+
+      <section id="advanced">
+        <h2><i class="bi bi-cpu"></i> Advanced Features</h2>
+
+        <h3>DefaultsManager integration</h3>
+        <p>
+          When <code>DefaultsManager</code> is initialised, <code>_defaultsHelper.ApplyInsertDefaults(entity)</code>
+          is called in <code>New()</code> and <code>Add()</code>, and
+          <code>_defaultsHelper.ApplyUpdateDefaults(entity)</code> is called in <code>Update()</code>
+          and inside the <code>Commit</code> insert/update lambdas. This automatically populates
+          audit fields like <code>CreatedDate</code>, <code>CreatedBy</code>, <code>ModifiedDate</code>, etc.
+        </p>
+        <pre><code class="language-csharp">// Configure once at app startup
+DefaultsManager.Initialize(dme);
+DefaultsManager.SetColumnDefault(dme, "SalesDB", "Customers", "CreatedDate",  "NOW",      isRule: true);
+DefaultsManager.SetColumnDefault(dme, "SalesDB", "Customers", "CreatedBy",    "USERNAME", isRule: true);
+DefaultsManager.SetColumnDefault(dme, "SalesDB", "Customers", "ModifiedDate", "NOW",      isRule: true);
+DefaultsManager.SetColumnDefault(dme, "SalesDB", "Customers", "IsActive",     "true",     isRule: false);
+
+// Now New()/Add()/Update() automatically fill these fields
+uow.New();
+var c = uow.CurrentItem;
+c.Name = "Alice";
+// c.CreatedDate → DateTime.UtcNow, c.CreatedBy → Window user, c.IsActive → true</code></pre>
+
+        <h3>Change summary &amp; query history</h3>
+        <pre><code class="language-csharp">// Get a snapshot of all pending changes
+ChangeSummary summary = uow.GetChangeSummary();
+Console.WriteLine($"Inserts: {summary.InsertedCount}");
+Console.WriteLine($"Updates: {summary.UpdatedCount}");
+Console.WriteLine($"Deletes: {summary.DeletedCount}");
+
+// Query history (audit trail of all Get() calls)
+var history = uow.GetQueryHistory();
+foreach (var entry in history)
+    Console.WriteLine($"{entry.Timestamp:u} — {entry.RowCount} rows — filters: {entry.FilterSummary}");
+
+// Clear history
+uow.ClearQueryHistory();</code></pre>
+
+        <h3>Clone an item</h3>
+        <pre><code class="language-csharp">// Shallow clone
+var copy = (Customer)uow.CloneItem(customer, deep: false);
+copy.Name = "Copy of " + customer.Name;
+uow.Add(copy);</code></pre>
+
+        <h3>Soft delete workflow</h3>
+        <pre><code class="language-csharp">uow.SoftDeleteFieldName = "IsDeleted";  // marks the record instead of removing it
+uow.IncludeDeleted      = false;        // hide soft-deleted records in Get()
+
+uow.Delete(customer);      // sets customer.IsDeleted = true, does NOT remove from collection
+
+// To see all records including deleted:
+uow.IncludeDeleted = true;
+await uow.Get();</code></pre>
+
+        <h3>Optimistic concurrency</h3>
+        <pre><code class="language-csharp">uow.ConcurrencyMode      = ConcurrencyMode.ThrowOnConflict;
+uow.ConcurrencyFieldName = "RowVersion";
+
+// If the server row has been modified since the item was loaded,
+// Commit() will throw / return Errors.Failed with a concurrency violation message.
+
+try
+{
+    var result = await uow.Commit();
+    if (result.Flag != Errors.Ok)
+        Console.WriteLine("Concurrency conflict: " + result.Message);
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Error during operation: {ex.Message}");
-    await customerUoW.Rollback();
-    await orderUoW.Rollback();
+    Console.WriteLine("Concurrency: " + ex.Message);
+    await uow.Rollback();
 }</code></pre>
-                    </div>
-                </section>
+      </section>
 
-                <!-- Filtering & Paging -->
-                <section id="filtering-paging" class="section">
-                    <h2>ðŸ” Advanced Filtering & Paging</h2>
+      <section id="examples">
+        <h2><i class="bi bi-code-square"></i> Examples</h2>
 
-                    <div class="code-example">
-                        <h3>Complex Filtering Scenarios</h3>
-                        <pre><code class="language-csharp">// Multi-field filtering with various operators
-var complexFilters = new List&lt;AppFilter&gt;
+        <h3>Example 1 — Basic CRUD with events</h3>
+        <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Customer&gt;(dme, "SalesDB", "Customers");
+
+// Hook all lifecycle events
+uow.PreCreate  += (_, args) => Console.WriteLine("Creating…");
+uow.PostCreate += (_, args) => Console.WriteLine($"Created: {((Customer)args.Record).Name}");
+uow.PreInsert  += (_, args) => Console.WriteLine("Writing to DB…");
+uow.PostInsert += (_, args) => Console.WriteLine($"Inserted. New PK={((Customer)args.Record).ID}");
+uow.PreUpdate  += (_, args) => { /* validate */ };
+uow.PostUpdate += (_, args) => AuditLog.Record("UPDATE", args.Record);
+uow.PreDelete  += (_, args) =>
 {
-    // Date range filtering
-    new AppFilter {FieldName = "CreatedDate", Operator = ">=", FilterValue = "2023-01-01" },
-    new AppFilter {FieldName = "CreatedDate", Operator = "<=", FilterValue = "2023-12-31" },
-    
-    // Status filtering
-    new AppFilter {FieldName = "Status", Operator = "=", FilterValue = "Active" },
-    
-    // Exclude specific values
-    new AppFilter {FieldName = "Country", Operator = "!=", FilterValue = "Unknown" },
-    
-    // Numeric comparisons
-    new AppFilter {FieldName = "TotalOrders", Operator = ">", FilterValue = "5" },
-    new AppFilter {FieldName = "TotalSpent", Operator = ">=", FilterValue = "1000.00" },
-    
-    // Text searching (depends on database support)
-    new AppFilter {FieldName = "Name", Operator = "LIKE", FilterValue = "%Smith%" },
-    new AppFilter {FieldName = "Email", Operator = "LIKE", FilterValue = "%@gmail.com" }
+    if (((Customer)args.Record).IsVIP)
+    { args.Cancel = true; args.Messege = "VIP customers cannot be deleted."; }
 };
+uow.PostDelete += (_, args) => Console.WriteLine("Deleted.");
+uow.PostEdit   += (_, args) => Console.WriteLine($"Field '{args.PropertyName}' → '{args.PropertyValue}'");
+uow.PreCommit  += (_, args) => Console.WriteLine("Beginning transaction…");
+uow.PostCommit += (_, args) => Console.WriteLine("All changes saved.");
 
-var filteredCustomers = await customerUoW.Get(complexFilters);
-Console.WriteLine($"Found {filteredCustomers.Count} customers matching criteria");</code></pre>
-                    </div>
+// Load
+await uow.Get();
 
-                    <div class="code-example">
-                        <h3>Dynamic Filter Building</h3>
-                        <pre><code class="language-csharp">// Build filters dynamically based on user input
-public List&lt;AppFilter&gt; BuildCustomerFilters(CustomerSearchCriteria criteria)
+// Create
+uow.New();
+uow.CurrentItem.Name  = "Alice";
+uow.CurrentItem.Email = "alice@example.com";
+
+// Update first loaded record
+if (uow.Units.Count > 1)
 {
-    var filters = new List&lt;AppFilter&gt;();
-    
-    // Only add filters for non-empty criteria
-    if (!string.IsNullOrEmpty(criteria.Name))
-    {
-        filters.Add(new AppFilter 
-        { 
-           FieldName = "Name", 
-            Operator = "LIKE", 
-            FilterValue = $"%{criteria.Name}%" 
-        });
-    }
-    
-    if (!string.IsNullOrEmpty(criteria.Email))
-    {
-        filters.Add(new AppFilter 
-        { 
-           FieldName = "Email", 
-            Operator = "LIKE", 
-            FilterValue = $"%{criteria.Email}%" 
-        });
-    }
-    
-    if (criteria.Status != CustomerStatus.All)
-    {
-        filters.Add(new AppFilter 
-        { 
-           FieldName = "Status", 
-            Operator = "=", 
-            FilterValue = criteria.Status.ToString() 
-        });
-    }
-    
-    if (criteria.MinOrderCount.HasValue)
-    {
-        filters.Add(new AppFilter 
-        { 
-           FieldName = "TotalOrders", 
-            Operator = ">=", 
-            FilterValue = criteria.MinOrderCount.Value.ToString() 
-        });
-    }
-    
-    if (criteria.CreatedAfter.HasValue)
-    {
-        filters.Add(new AppFilter 
-        { 
-           FieldName = "CreatedDate", 
-            Operator = ">=", 
-            FilterValue = criteria.CreatedAfter.Value.ToString("yyyy-MM-dd") 
-        });
-    }
-    
-    return filters;
+    uow.Units[1].Name = "Updated Name";
+    uow.Update(uow.Units[1]);
 }
 
-// Usage
-var searchCriteria = new CustomerSearchCriteria
+// Delete
+uow.Delete(uow.Units.FirstOrDefault(c => c.Status == "INACTIVE"));
+
+Console.WriteLine($"Pending changes: {uow.IsDirty}");
+var result = await uow.Commit();
+Console.WriteLine($"Commit: {result.Flag} — {result.Message}");</code></pre>
+
+        <h3>Example 2 — Cancelling an operation from a Pre-event</h3>
+        <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Order&gt;(dme, "OrdersDB", "Orders");
+
+// Block deletes of confirmed orders
+uow.PreDelete += (sender, args) =>
 {
-    Name = "John",
-    Status = CustomerStatus.Active,
-    MinOrderCount = 3,
-    CreatedAfter = DateTime.Now.AddMonths(-12)
+    var order = (Order)args.Record;
+    if (order.Status == "CONFIRMED")
+    {
+        args.Cancel  = true;
+        args.Messege = $"Order #{order.ID} is confirmed and cannot be deleted.";
+    }
 };
 
-var filters = BuildCustomerFilters(searchCriteria);
-await customerUoW.Get(filters);</code></pre>
-                    </div>
+var confirmed = uow.Units.FirstOrDefault(o => o.Status == "CONFIRMED");
+var result    = uow.Delete(confirmed);
 
-                    <div class="code-example">
-                        <h3>Pagination Implementation</h3>
-                        <pre><code class="language-csharp">// Configure pagination
-customerUoW.PageSize = 25;    // 25 records per page
-customerUoW.PageIndex = 0;    // Start with first page (0-based)
+if (result.Flag != Errors.Ok)
+    MessageBox.Show(result.Message); // "Order #42 is confirmed and cannot be deleted."</code></pre>
 
-// Load first page
-var firstPageResults = await customerUoW.Get(filters);
-Console.WriteLine($"Page {customerUoW.PageIndex + 1} of {Math.Ceiling((double)customerUoW.TotalItemCount / customerUoW.PageSize)}");
-Console.WriteLine($"Showing {firstPageResults.Count} of {customerUoW.TotalItemCount} total items");
-
-// Navigate through pages
-public async Task NavigateToPage(int pageNumber)
+        <h3>Example 3 — Undo / Redo in a WinForms form</h3>
+        <pre><code class="language-csharp">public class OrderForm : Form
 {
-    customerUoW.PageIndex = pageNumber - 1; // Convert to 0-based
-    await customerUoW.Get(filters);
-    
-    Console.WriteLine($"Navigated to page {pageNumber}");
-    Console.WriteLine($"Items on this page: {customerUoW.Units.Count}");
+    private UnitofWork&lt;Order&gt; _uow;
+
+    public OrderForm(IDMEEditor dme)
+    {
+        _uow = new UnitofWork&lt;Order&gt;(dme, "OrdersDB", "Orders");
+        _uow.IsUndoEnabled = true;
+        _uow.MaxUndoDepth  = 30;
+        
+        _uow.PostEdit += (_, _) => UpdateUndoButtons();
+    }
+
+    private void UpdateUndoButtons()
+    {
+        btnUndo.Enabled = _uow.CanUndo;
+        btnRedo.Enabled = _uow.CanRedo;
+    }
+
+    private void btnUndo_Click(object sender, EventArgs e)
+    {
+        if (_uow.Undo()) UpdateUndoButtons();
+    }
+
+    private void btnRedo_Click(object sender, EventArgs e)
+    {
+        if (_uow.Redo()) UpdateUndoButtons();
+    }
+
+    private async void btnSave_Click(object sender, EventArgs e)
+    {
+        var result = await _uow.Commit();
+        if (result.Flag == Errors.Ok)
+        {
+            _uow.ClearUndoHistory();
+            UpdateUndoButtons();
+        }
+    }
+}</code></pre>
+
+        <h3>Example 4 — Export to JSON and reload</h3>
+        <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Product&gt;(dme, "CatalogDB", "Products");
+await uow.Get();
+
+// Export snapshot
+string path = Path.Combine(Path.GetTempPath(), "products_snapshot.json");
+await using (var stream = File.Create(path))
+    await uow.ToJsonAsync(stream, CancellationToken.None);
+
+Console.WriteLine($"Exported {uow.Units.Count} products to {path}");
+
+// Later — restore from snapshot
+await using (var stream = File.OpenRead(path))
+{
+    int count = await uow.LoadFromJsonAsync(stream, clearFirst: true);
+    Console.WriteLine($"Reloaded {count} products");
+}</code></pre>
+
+        <h3>Example 5 — Large batch import with progress</h3>
+        <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Transaction&gt;(dme, "LedgerDB", "Transactions");
+
+// Import from CSV
+await using var file = File.OpenRead("import_10k.csv");
+int loaded = await uow.LoadFromCsvAsync(file, delimiter: ',', clearFirst: true, hasHeaderRow: true);
+Console.WriteLine($"Loaded {loaded} rows for import");
+
+// Commit in batches of 500 with progress
+var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+var progress = new Progress&lt;CommitBatchProgress&gt;(p =>
+    Console.WriteLine($"Batch {p.BatchNumber}: {p.ItemsCommitted}/{p.TotalItems} committed"));
+
+var batchResult = await uow.CommitBatchAsync(
+    batchSize: 500,
+    progress: progress,
+    ct: cts.Token);
+
+Console.WriteLine($"Import done. Succeeded: {batchResult.AllSucceeded}, Failed: {batchResult.FailedCount}");</code></pre>
+
+        <h3>Example 6 — Validation + BlockCommit</h3>
+        <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Invoice&gt;(dme, "BillingDB", "Invoices");
+uow.IsAutoValidateEnabled      = true;
+uow.BlockCommitOnValidationError = true;  // default
+
+await uow.Get();
+
+// Introduce a bad record
+uow.New();
+uow.CurrentItem.Amount = -500; // violates [Range(0, double.MaxValue)]
+uow.CurrentItem.DueDate = DateTime.MinValue;
+
+var allResult = uow.ValidateAll();
+if (!allResult.IsValid)
+{
+    Console.WriteLine("Errors before commit:");
+    foreach (var err in allResult.Errors)
+        Console.WriteLine($"  {err.FieldName}: {err.Message}");
 }
 
-// Helper method for pagination info
-public PaginationInfo GetPaginationInfo()
-{
-    return new PaginationInfo
-    {
-        CurrentPage = customerUoW.PageIndex + 1,
-        PageSize = customerUoW.PageSize,
-        TotalItems = customerUoW.TotalItemCount,
-        TotalPages = (int)Math.Ceiling((double)customerUoW.TotalItemCount / customerUoW.PageSize),
-        HasNextPage = (customerUoW.PageIndex + 1) * customerUoW.PageSize < customerUoW.TotalItemCount,
-        HasPreviousPage = customerUoW.PageIndex > 0
-    };
-}</code></pre>
-                    </div>
-                </section>
+// Commit will skip the invalid record but commit all valid ones
+var result = await uow.Commit();
+Console.WriteLine(result.Message); // e.g. "Committed 5 of 6 items (1 skipped — validation errors)"</code></pre>
+      </section>
 
-                <!-- Navigation -->
-                <div class="nav-links">
-                    <a href="unitofwork.html"><i class="bi bi-arrow-left"></i> UnitOfWork Pattern</a>
-                    <a href="multidatasource-unitofwork.html">Multi-DataSource UnitOfWork <i class="bi bi-arrow-right"></i></a>
-                </div>
-
-                <!-- Footer -->
-                <footer class="documentation-footer">
-                    <div class="footer-content">
-                        <div class="footer-copyright">
-                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
-                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
-                        </div>
-                        <div class="footer-links">
-                            <a href="index.html">Home</a>
-                            <a href="registerbeep.html">Getting Started</a>
-                            <a href="examples.html">Examples</a>
-                        </div>
-                    </div>
-                </footer>
-            </div>
-        </main>
-    </div>
-
-    <!-- Scripts -->
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-    
-    <script>
-        // Page-specific functionality can go here
-        console.log('UnitOfWork Deep Dive documentation page loaded');
-    </script>
+    </div><!-- end content-area -->
+  </div><!-- end content-wrapper -->
+</div><!-- end main-content -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
+<script>loadNavigation('unitofwork-deep-dive');</script>
 </body>
 </html>
-

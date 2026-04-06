@@ -397,47 +397,5 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         #endregion
 
-        #region Phase 6: Master-Detail Passthroughs
-
-        /// <summary>
-        /// Registers a child list for automatic master-detail synchronization.
-        /// When the master's current position changes, the child list is auto-filtered
-        /// to show only items matching the master's current key value.
-        /// </summary>
-        /// <typeparam name="TChild">Child entity type</typeparam>
-        /// <param name="childList">The child ObservableBindingList</param>
-        /// <param name="foreignKeyProperty">Property name on TChild that references the master's key</param>
-        /// <param name="masterKeyProperty">Property name on T that is the master key</param>
-        public void RegisterDetail<TChild>(ObservableBindingList<TChild> childList,
-            string foreignKeyProperty, string masterKeyProperty)
-            where TChild : class, INotifyPropertyChanged, new()
-        {
-            Units?.RegisterDetail(childList, foreignKeyProperty, masterKeyProperty);
-        }
-
-        /// <summary>
-        /// Unregisters a child list from master-detail synchronization.
-        /// </summary>
-        public void UnregisterDetail<TChild>(ObservableBindingList<TChild> childList)
-            where TChild : class, INotifyPropertyChanged, new()
-        {
-            Units?.UnregisterDetail(childList);
-        }
-
-        /// <summary>
-        /// Unregisters all child lists from master-detail synchronization.
-        /// </summary>
-        public void UnregisterAllDetails()
-        {
-            Units?.UnregisterAllDetails();
-        }
-
-        /// <summary>
-        /// Gets the registered detail lists (read-only).
-        /// </summary>
-        public IReadOnlyList<object> DetailLists
-            => Units?.DetailLists ?? (IReadOnlyList<object>)Array.Empty<object>();
-
-        #endregion
     }
 }

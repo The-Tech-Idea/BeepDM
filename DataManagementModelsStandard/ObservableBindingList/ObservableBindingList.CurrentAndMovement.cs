@@ -98,14 +98,12 @@ namespace TheTechIdea.Beep.Editor
 
         /// <summary>
         /// Fires CurrentChanged and PropertyChanged("Current").
-        /// Also syncs master-detail relationships.
         /// </summary>
         protected virtual void OnCurrentChanged()
         {
             SuppressNotification = true;
             _isPositionChanging = true;
             CurrentChanged?.Invoke(this, EventArgs.Empty);
-            SyncDetailLists();
             _isPositionChanging = false;
             SuppressNotification = false;
         }

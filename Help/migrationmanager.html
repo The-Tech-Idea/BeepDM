@@ -1,63 +1,822 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MigrationManager - Beep Data Management Engine Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MigrationManager — BeepDM Help</title>
+  <link rel="stylesheet" href="sphinx-style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
 </head>
 <body>
-    <div class="container">
-        <aside class="sidebar" id="sidebar"></aside>
-        <main class="content">
-            <div class="content-wrapper">
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <span>MigrationManager</span>
-                </nav>
+<div id="nav-placeholder"></div>
+<div class="main-content">
+<article>
 
-                <div class="page-header">
-                    <h1>MigrationManager</h1>
-                    <p class="page-subtitle">Schema migration planning, execution, dry-run, and rollback/compensation surfaces</p>
-                </div>
+<h1><i class="bi bi-arrow-repeat"></i> MigrationManager</h1>
+<p class="lead">Schema migration orchestrator for BeepDM — plans, validates, applies, and governs database schema changes across any registered <code>IDataSource</code> provider.</p>
 
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/Editor/Migration/MigrationManager.cs</code> and partials</li>
-                        <li><code>DataManagementEngineStandard/Editor/Migration/IMigrationManager.cs</code></li>
-                    </ul>
-                </div>
+<div class="alert alert-info">
+  <i class="bi bi-info-circle-fill"></i>
+  <strong>Location:</strong> <code>TheTechIdea.Beep.Editor.Migration</code> &mdash; 17 partial files in <code>DataManagementEngineStandard/Editor/Migration/</code>.
+</div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
-                    <pre><code class="language-csharp">public partial class MigrationManager : IMigrationManager
+<!-- ==================== SECTION: overview ==================== -->
+<section id="overview">
+<h2><i class="bi bi-map"></i> Overview</h2>
+<p>
+  <code>MigrationManager</code> is a full-featured schema-migration engine. It discovers entity types from CLR assemblies,
+  compares them against the live datasource schema, generates a typed <strong>plan artifact</strong> with per-operation
+  risk classification, enforces governance policies, runs dry-run and preflight validations, executes the plan in
+  checkpointed steps, and emits structured telemetry and audit events.
+</p>
+<p>The manager is a <code>partial class</code> split into the following functional modules:</p>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+<thead><tr><th>Module</th><th>Responsibility</th></tr></thead>
+<tbody>
+  <tr><td>Core shell</td><td>Constructor, DDL evidence tracking, migration history</td></tr>
+  <tr><td>AssemblyRegistration</td><td><code>RegisterAssembly</code> / <code>GetRegisteredAssemblies</code></td></tr>
+  <tr><td>Discovery</td><td>CLR entity-type scanning across assemblies and AppDomain</td></tr>
+  <tr><td>Capabilities</td><td>Provider capability profiling (ALTER, RENAME, transactional DDL)</td></tr>
+  <tr><td>ReadinessAndExplicit</td><td>Pre-migration readiness analysis and issue reporting</td></tr>
+  <tr><td>Planning</td><td>Non-destructive plan artifact generation with risk scoring</td></tr>
+  <tr><td>DryRunAndPreflight</td><td>DDL preview and connectivity / policy / drift gating</td></tr>
+  <tr><td>Policy</td><td>Rule-based policy evaluation (protected environments, approvals)</td></tr>
+  <tr><td>ExecutionOrchestration</td><td>Checkpointed execution, dependency ordering, retry / skip</td></tr>
+  <tr><td>RollbackCompensation</td><td>Compensation plan and rollback readiness reports</td></tr>
+  <tr><td>EntityOperations</td><td><code>EnsureEntity</code> — create or update live schema</td></tr>
+  <tr><td>Observability</td><td>Diagnostics, audit events, telemetry snapshot, plan approval</td></tr>
+  <tr><td>PerformanceScale</td><td>Lock impact scoring, batch/throttle planner, window guidance</td></tr>
+  <tr><td>RolloutGovernance</td><td>KPI gates, wave eligibility, hard-stop policy</td></tr>
+  <tr><td>DevExAutomation</td><td>CI validation, plan diff, manifest serialization</td></tr>
+  <tr><td>ManifestParser</td><td>Manifest ingestion</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: quickstart ==================== -->
+<section id="quickstart">
+<h2><i class="bi bi-lightning-charge"></i> Quick Start</h2>
+<pre><code class="language-csharp">// 1. Instantiate and target a datasource
+var migration = new MigrationManager(dmeEditor);
+migration.MigrateDataSource = dmeEditor.GetDataSource("ProductsDB");
+
+// 2. Register your entity assembly (if it is not in AppDomain already)
+migration.RegisterAssembly(typeof(Product).Assembly);
+
+// 3. Build a plan (discovery-based)
+var plan = migration.BuildMigrationPlan(namespaceName: "MyApp.Entities");
+
+// 4. Inspect plan
+Console.WriteLine($"Operations planned: {plan.Operations.Count}");
+Console.WriteLine($"Blocking readiness issues: {plan.ReadinessIssues.Count(i => i.Severity == MigrationIssueSeverity.Error)}");
+
+// 5. Run preflight
+plan = await Task.Run(() => { plan.PreflightReport = migration.RunPreflightChecks(plan); return plan; });
+if (!plan.PreflightReport.CanApply)
 {
-    public IDMEEditor DMEEditor { get; }
-    public IDataSource MigrateDataSource { get; set; }
-
-    public MigrationManager(IDMEEditor editor, IDataSource dataSource = null);
-
-    public AssemblyDiscoveryEvidence GetDiscoveryEvidence();
-    public IReadOnlyList&lt;DdlOperationEvidence&gt; GetDdlEvidence();
+    foreach (var check in plan.PreflightReport.Checks)
+        Console.WriteLine($"[{check.Decision}] {check.Code}: {check.Message}");
+    return;
 }
 
-// Selected contracts from IMigrationManager ecosystem
-public class MigrationExecutionContext
+// 6. Approve (required for high-risk / protected environments)
+migration.ApproveMigrationPlan(plan, approvedBy: "deploybot");
+
+// 7. Execute
+var result = migration.ExecuteMigrationPlan(plan, new MigrationExecutionPolicy());
+Console.WriteLine($"Success: {result.Success}  Token: {result.ExecutionToken}");
+
+// 8. Snapshot telemetry
+var telemetry = migration.GetMigrationTelemetrySnapshot(result.ExecutionToken);
+Console.WriteLine($"Success rate: {telemetry.SuccessRate:P2}");</code></pre>
+</section>
+
+<!-- ==================== SECTION: core-types ==================== -->
+<section id="core-types">
+<h2><i class="bi bi-diagram-3"></i> Core Types &amp; Models</h2>
+
+<h3>MigrationSummary</h3>
+<p>Lightweight result returned by simple create/update operations.</p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>EntitiesToCreate</code></td><td><code>List&lt;string&gt;</code></td><td>Entity names that will be created</td></tr>
+  <tr><td><code>EntitiesToUpdate</code></td><td><code>List&lt;string&gt;</code></td><td>Entity names with column additions pending</td></tr>
+  <tr><td><code>EntitiesUpToDate</code></td><td><code>List&lt;string&gt;</code></td><td>Entities already in sync</td></tr>
+  <tr><td><code>Errors</code></td><td><code>List&lt;string&gt;</code></td><td>Error messages collected during migration</td></tr>
+  <tr><td><code>TotalPendingMigrations</code></td><td><code>int</code></td><td>Computed: Create count + Update count</td></tr>
+  <tr><td><code>HasPendingMigrations</code></td><td><code>bool</code></td><td><code>TotalPendingMigrations &gt; 0</code></td></tr>
+  <tr><td><code>EntityDecisions</code></td><td><code>List&lt;EntityDecisionRecord&gt;</code></td><td>Per-entity decision detail (Phase 2)</td></tr>
+  <tr><td><code>ReportHash</code></td><td><code>string</code></td><td>Stable SHA-256 hash for CI diffing (Phase 2)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>MigrationIssueSeverity</h3>
+<pre><code class="language-csharp">public enum MigrationIssueSeverity { Info, Warning, Error }</code></pre>
+
+<h3>MigrationPlanLifecycleState</h3>
+<pre><code class="language-csharp">public enum MigrationPlanLifecycleState
 {
-    public MigrationDryRunReport DryRunReport { get; set; }
-    public MigrationRollbackReadinessReport RollbackReadinessReport { get; set; }
-    public bool DryRun { get; set; }
-    public string RollbackSqlPreview { get; set; }
+    Draft, Reviewed, Approved, Applied, Verified
 }</code></pre>
-                </section>
-            </div>
-        </main>
-    </div>
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+<h3>MigrationPlanOperationKind</h3>
+<pre><code class="language-csharp">public enum MigrationPlanOperationKind
+{
+    None, CreateEntity, DropEntity, AddMissingColumns, DropColumn,
+    AlterColumn, RenameEntity, RenameColumn, TruncateEntity, UpToDate, Error
+}</code></pre>
+
+<h3>MigrationPlanRiskLevel</h3>
+<pre><code class="language-csharp">public enum MigrationPlanRiskLevel { Low, Medium, High, Critical }</code></pre>
+
+<h3>MigrationPlanOperation</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td><code>EntityName</code></td><td><code>string</code></td><td>Target entity/table</td></tr>
+  <tr><td><code>Kind</code></td><td><code>MigrationPlanOperationKind</code></td><td>DDL intent</td></tr>
+  <tr><td><code>RiskLevel</code></td><td><code>MigrationPlanRiskLevel</code></td><td>Computed risk score</td></tr>
+  <tr><td><code>IsDestructive</code></td><td><code>bool</code></td><td>Drop / truncate operations</td></tr>
+  <tr><td><code>IsTypeNarrowing</code></td><td><code>bool</code></td><td>Column type shrink (data-loss risk)</td></tr>
+  <tr><td><code>HasNullabilityTightening</code></td><td><code>bool</code></td><td>NOT NULL added to existing column</td></tr>
+  <tr><td><code>MissingColumns</code></td><td><code>List&lt;string&gt;</code></td><td>Columns to be added</td></tr>
+  <tr><td><code>FallbackTasks</code></td><td><code>List&lt;string&gt;</code></td><td>Manual steps if DDL is unavailable</td></tr>
+  <tr><td><code>ProviderAssumptions</code></td><td><code>List&lt;string&gt;</code></td><td>Provider-specific caveats</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>MigrationPlanArtifact</h3>
+<p>The central planning artifact returned by <code>BuildMigrationPlan*</code>.</p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>PlanId</code></td><td><code>string</code></td><td>Stable GUID (no dashes) identifying the plan</td></tr>
+  <tr><td><code>PlanHash</code></td><td><code>string</code></td><td>SHA-256 fingerprint of plan content</td></tr>
+  <tr><td><code>LifecycleState</code></td><td><code>MigrationPlanLifecycleState</code></td><td>Draft → Reviewed → Approved → Applied → Verified</td></tr>
+  <tr><td><code>Operations</code></td><td><code>List&lt;MigrationPlanOperation&gt;</code></td><td>Per-entity planned DDL steps</td></tr>
+  <tr><td><code>ReadinessIssues</code></td><td><code>List&lt;MigrationReadinessIssue&gt;</code></td><td>Pre-execution warnings and errors</td></tr>
+  <tr><td><code>PolicyEvaluation</code></td><td><code>MigrationPolicyEvaluation</code></td><td>Policy gate decision</td></tr>
+  <tr><td><code>ProviderCapabilities</code></td><td><code>MigrationProviderCapabilityProfile</code></td><td>Provider DDL support matrix</td></tr>
+  <tr><td><code>DryRunReport</code></td><td><code>MigrationDryRunReport</code></td><td>DDL preview with diagnostics</td></tr>
+  <tr><td><code>PreflightReport</code></td><td><code>MigrationPreflightReport</code></td><td>Connectivity + policy + drift gating result</td></tr>
+  <tr><td><code>CompensationPlan</code></td><td><code>MigrationCompensationPlan</code></td><td>Rollback/compensation actions for high-risk ops</td></tr>
+  <tr><td><code>RollbackReadinessReport</code></td><td><code>MigrationRollbackReadinessReport</code></td><td>Backup/restore evidence check</td></tr>
+  <tr><td><code>PerformancePlan</code></td><td><code>MigrationPerformancePlan</code></td><td>Lock‐impact scores, batch/throttle guidance</td></tr>
+  <tr><td><code>CiValidationReport</code></td><td><code>MigrationCiValidationReport</code></td><td>CI/CD gate results for PR/merge workflows</td></tr>
+  <tr><td><code>RolloutGovernanceReport</code></td><td><code>MigrationRolloutGovernanceReport</code></td><td>Wave/KPI governance evaluation</td></tr>
+  <tr><td><code>ExecutionCheckpoint</code></td><td><code>MigrationExecutionCheckpoint</code></td><td>Resume-aware execution state</td></tr>
+  <tr><td><code>ImpactReport</code></td><td><code>string</code></td><td>Human-readable impact summary</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: assembly-discovery ==================== -->
+<section id="assembly-discovery">
+<h2><i class="bi bi-boxes"></i> Assembly Registration &amp; Discovery</h2>
+
+<h3>Registering Assemblies</h3>
+<p>
+  <code>MigrationManager</code> scans AppDomain assemblies automatically. Use <code>RegisterAssembly</code> to
+  include assemblies that are loaded lazily or reside in external plugin folders.
+</p>
+<pre><code class="language-csharp">// Register a single assembly
+migration.RegisterAssembly(typeof(MyEntity).Assembly);
+
+// Register multiple at once
+migration.RegisterAssemblies(new[] { asmA, asmB });
+
+// Inspect what is currently registered
+IReadOnlyList&lt;Assembly&gt; registered = migration.GetRegisteredAssemblies();</code></pre>
+
+<h3>DiscoverEntityTypes</h3>
+<pre><code class="language-csharp">// All Entity-derived types in AppDomain
+List&lt;Type&gt; all = migration.DiscoverEntityTypes();
+
+// Scoped to a namespace (sub-namespaces included by default)
+List&lt;Type&gt; scoped = migration.DiscoverEntityTypes(namespaceName: "MyApp.Domain");
+
+// Scoped to a specific assembly
+List&lt;Type&gt; fromAsm = migration.DiscoverEntityTypes(assembly: typeof(Order).Assembly);</code></pre>
+
+<p>Discovery searches:</p>
+<ol>
+  <li>Manually registered assemblies (<code>RegisterAssembly</code>)</li>
+  <li>Entry assembly and its referenced assemblies</li>
+  <li>AppDomain loaded assemblies</li>
+  <li><code>DMEEditor</code>'s assembly handler (plugin directories)</li>
+</ol>
+
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  System and framework assemblies are automatically excluded from scanning.  Partial-load failures (<code>ReflectionTypeLoadException</code>) are tolerated — already-loaded types are still captured.
+</div>
+
+<h3>AssemblyDiscoveryEvidence</h3>
+<p>
+  Call <code>GetDiscoveryEvidence()</code> after any discovery-based planning call to retrieve a detailed
+  <code>AssemblyDiscoveryEvidence</code> record that maps each found entity type to its source assembly.
+  Use this for diagnostics when expected types are missing from the plan.
+</p>
+<pre><code class="language-csharp">var evidence = migration.GetDiscoveryEvidence();
+Console.WriteLine($"Scanned: {evidence.TotalAssembliesConsidered}, Skipped: {evidence.Skipped}");
+foreach (var kv in evidence.EntityTypeOriginMap)
+    Console.WriteLine($"{kv.Key} => {kv.Value}");</code></pre>
+</section>
+
+<!-- ==================== SECTION: planning ==================== -->
+<section id="planning">
+<h2><i class="bi bi-clipboard2-check"></i> Migration Planning</h2>
+
+<h3>BuildMigrationPlan — Discovery-Based</h3>
+<pre><code class="language-csharp">// Discovers all Entity-derived types, then diffs against live schema
+MigrationPlanArtifact plan = migration.BuildMigrationPlan(
+    namespaceName: "MyApp.Entities",  // optional namespace filter
+    assembly: typeof(Order).Assembly  // optional: limit to one assembly
+);</code></pre>
+
+<h3>BuildMigrationPlanForTypes — Explicit</h3>
+<pre><code class="language-csharp">// Preferred for production — no discovery noise
+var entityTypes = new[] { typeof(Order), typeof(OrderLine), typeof(Customer) };
+MigrationPlanArtifact plan = migration.BuildMigrationPlanForTypes(entityTypes);</code></pre>
+
+<h3>What the Planner Does</h3>
+<ol>
+  <li>Calls <code>BuildReadinessReport</code> — validates entity names, detects duplicates, checks provider capability.</li>
+  <li>Builds a <code>MigrationProviderCapabilityProfile</code> — probes ALTER, RENAME, transactional DDL support live.</li>
+  <li>Creates one <code>MigrationPlanOperation</code> per entity: <code>CreateEntity</code>, <code>AddMissingColumns</code>, <code>UpToDate</code>, etc.</li>
+  <li>Runs <code>EvaluateMigrationPlanPolicy</code> with default policy options.</li>
+  <li>Computes <code>PlanHash</code> (SHA-256) for drift detection and CI diffing.</li>
+  <li>Generates <code>DryRunReport</code>, <code>PreflightReport</code> (stub), <code>CompensationPlan</code>, <code>RollbackReadinessReport</code>, <code>PerformancePlan</code>, <code>CiValidationReport</code>, <code>RolloutGovernanceReport</code>, and an initial <code>ExecutionCheckpoint</code>.</li>
+  <li>Records the plan event to the audit store and migration history.</li>
+</ol>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i>
+  <strong>Non-destructive by default.</strong>  The planner never drops columns or tables unless explicitly requested.
+  Destructive operations are classified <code>High</code>/<code>Critical</code> risk and are blocked in protected environments unless an explicit override with approver metadata is provided.
+</div>
+</section>
+
+<!-- ==================== SECTION: readiness ==================== -->
+<section id="readiness">
+<h2><i class="bi bi-shield-check"></i> Readiness Analysis</h2>
+<p>
+  <code>BuildReadinessReport</code> is called automatically during planning but can also be invoked standalone
+  for pre-planning health checks.
+</p>
+<h3>MigrationReadinessReport Properties</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>DataSourceName</code></td><td><code>string</code></td><td>Target datasource identifier</td></tr>
+  <tr><td><code>UsesDiscovery</code></td><td><code>bool</code></td><td>True when auto-discovery was used</td></tr>
+  <tr><td><code>SupportsSchemaEvolution</code></td><td><code>bool</code></td><td>Provider supports DDL evolution</td></tr>
+  <tr><td><code>IsSchemaEnforced</code></td><td><code>bool</code></td><td>Provider requires strict schema match</td></tr>
+  <tr><td><code>SupportsTransactions</code></td><td><code>bool</code></td><td>Transactional DDL available</td></tr>
+  <tr><td><code>HasBlockingIssues</code></td><td><code>bool</code></td><td>Any issue with severity <code>Error</code></td></tr>
+  <tr><td><code>Issues</code></td><td><code>List&lt;MigrationReadinessIssue&gt;</code></td><td>Detailed issue list</td></tr>
+  <tr><td><code>MigrationBestPractices</code></td><td><code>List&lt;string&gt;</code></td><td>Provider-specific guidance</td></tr>
+  <tr><td><code>ReportHash</code></td><td><code>string</code></td><td>SHA-256 fingerprint for CI diffing</td></tr>
+  <tr><td><code>EntityDecisions</code></td><td><code>List&lt;EntityDecisionRecord&gt;</code></td><td>Per-entity decision metadata</td></tr>
+  <tr><td><code>PolicyEvaluation</code></td><td><code>MigrationPolicyEvaluation</code></td><td>Rolled-up policy gate result</td></tr>
+</tbody>
+</table>
+</div>
+<h3>MigrationReadinessIssue</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>Code</code></td><td><code>string</code></td><td>Stable rule identifier (e.g. <code>duplicate-entity-name</code>)</td></tr>
+  <tr><td><code>Severity</code></td><td><code>MigrationIssueSeverity</code></td><td>Info / Warning / Error</td></tr>
+  <tr><td><code>Message</code></td><td><code>string</code></td><td>What was found</td></tr>
+  <tr><td><code>Recommendation</code></td><td><code>string</code></td><td>Suggested remediation</td></tr>
+  <tr><td><code>EntityName</code></td><td><code>string</code></td><td>Affected entity (if applicable)</td></tr>
+  <tr><td><code>Channel</code></td><td><code>MigrationReportChannel</code></td><td><code>ReadinessIssue</code> / <code>BestPractice</code></td></tr>
+  <tr><td><code>RecommendationId</code></td><td><code>string</code></td><td>e.g. <code>REC-DISCOVERY-001</code></td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-csharp">// Inspect readiness issues from a plan artifact
+foreach (var issue in plan.ReadinessIssues.Where(i => i.Severity == MigrationIssueSeverity.Error))
+{
+    Console.WriteLine($"[{issue.Code}] {issue.Message}");
+    Console.WriteLine($"  Recommendation: {issue.Recommendation}");
+}</code></pre>
+</section>
+
+<!-- ==================== SECTION: provider-capabilities ==================== -->
+<section id="provider-capabilities">
+<h2><i class="bi bi-cpu"></i> Provider Capabilities</h2>
+<p>
+  <code>BuildProviderCapabilityProfile</code> live-probes the datasource helper to determine which DDL
+  operations are actually supported at runtime, not just assumed by provider type.
+</p>
+<h3>MigrationProviderCapabilityProfile</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Probe method</th></tr></thead>
+<tbody>
+  <tr><td><code>SupportsAlterColumn</code></td><td><code>bool</code></td><td><code>helper.GenerateAlterColumnSql</code></td></tr>
+  <tr><td><code>SupportsRenameEntity</code></td><td><code>bool</code></td><td><code>helper.GenerateRenameTableSql</code></td></tr>
+  <tr><td><code>SupportsRenameColumn</code></td><td><code>bool</code></td><td><code>helper.GenerateRenameColumnSql</code></td></tr>
+  <tr><td><code>SupportsTransactionalDdl</code></td><td><code>bool</code></td><td><code>helper.SupportsTransactionalDdl</code></td></tr>
+  <tr><td><code>RequiresOfflineWindowForSchemaChanges</code></td><td><code>bool</code></td><td>Derived from type + category</td></tr>
+  <tr><td><code>PortabilityWarning</code></td><td><code>string</code></td><td>Provider-specific caveat text</td></tr>
+  <tr><td><code>Constraints</code></td><td><code>List&lt;string&gt;</code></td><td>Unsupported-operation notes</td></tr>
+</tbody>
+</table>
+</div>
+<h3>Provider Notes</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Provider</th><th>Key Constraint</th></tr></thead>
+<tbody>
+  <tr><td>Oracle</td><td>Identifier length limits; maintenance windows often required for larger schemas</td></tr>
+  <tr><td>SQLite / DuckDB</td><td>ALTER/RENAME may require copy-table fallback at runtime</td></tr>
+  <tr><td>NoSQL (general)</td><td>Schema evolution semantics vary; additive-only patterns preferred</td></tr>
+  <tr><td>FILE (CSV/JSON/XML)</td><td>Schema changes are often emulated; behavior differs across engines</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: dry-run-preflight ==================== -->
+<section id="dry-run-preflight">
+<h2><i class="bi bi-eye"></i> Dry Run &amp; Preflight</h2>
+
+<h3>GenerateDryRunReport</h3>
+<p>Produces SQL previews for each planned operation without touching the database.</p>
+<pre><code class="language-csharp">MigrationDryRunReport dry = migration.GenerateDryRunReport(plan);
+foreach (var op in dry.Operations)
+{
+    Console.WriteLine($"{op.Kind} {op.EntityName} [{op.RiskLevel}]");
+    foreach (var ddl in op.DdlStatements)
+        Console.WriteLine($"  SQL: {ddl}");
+    foreach (var diag in op.Diagnostics)
+        Console.WriteLine($"  ! {diag}");
+}
+Console.WriteLine($"Has blocking issues: {dry.HasBlockingIssues}");</code></pre>
+
+<h3>RunPreflightChecks</h3>
+<p>Performs live checks before executing. Returns <code>PreflightReport.CanApply == false</code> on any block.</p>
+<pre><code class="language-csharp">MigrationPreflightReport preflight = migration.RunPreflightChecks(plan);
+if (!preflight.CanApply)
+{
+    foreach (var check in preflight.Checks.Where(c => c.Decision == MigrationPolicyDecision.Block))
+        Console.WriteLine($"BLOCKED [{check.Code}]: {check.Message}");
+}</code></pre>
+
+<p>Preflight checks run in order:</p>
+<ol>
+  <li><strong>preflight-connectivity</strong> — live probe of the datasource connection</li>
+  <li><strong>preflight-policy</strong> — re-runs policy evaluation against current options</li>
+  <li><strong>preflight-schema-drift</strong> — detects if schema changed since the plan was built</li>
+  <li><strong>preflight-operation-window</strong> — warns when heavy DDL ops exceed session-safe count</li>
+</ol>
+</section>
+
+<!-- ==================== SECTION: policy ==================== -->
+<section id="policy">
+<h2><i class="bi bi-shield-lock"></i> Policy Evaluation</h2>
+<p>
+  <code>EvaluateMigrationPlanPolicy</code> enforces organisation-defined rules over a plan.
+  It returns a <code>MigrationPolicyEvaluation</code> with a rolled-up <code>Decision</code>
+  (<code>Pass</code> / <code>Warn</code> / <code>Block</code>).
+</p>
+<pre><code class="language-csharp">var options = new MigrationPolicyOptions
+{
+    EnvironmentTier = "production",             // marks as protected
+    RequireApprovalForHighRisk = true,
+    RequireApprovalForCriticalRisk = true,
+    BlockDestructiveInProtectedEnvironments = true,
+    AllowDestructiveOverrideInProtectedEnvironments = true,
+    Approver = "jane.doe@company.com",
+    OverrideReason = "Approved in change ticket CHG-4721"
+};
+
+var eval = migration.EvaluateMigrationPlanPolicy(plan, options);
+Console.WriteLine(eval.Decision);          // Pass / Warn / Block
+Console.WriteLine(eval.RequiresManualApproval);
+
+foreach (var finding in eval.Findings)
+    Console.WriteLine($"[{finding.Decision}] {finding.RuleId}: {finding.Message}");</code></pre>
+
+<h3>Built-In Policy Rules</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Rule ID</th><th>Decision</th><th>Condition</th></tr></thead>
+<tbody>
+  <tr><td><code>policy-plan-operation-error</code></td><td>Block</td><td>Any operation in <code>Error</code> state</td></tr>
+  <tr><td><code>policy-high-risk-approval-required</code></td><td>Block</td><td>High/Critical risk op without approver metadata</td></tr>
+  <tr><td><code>policy-destructive-protected-blocked</code></td><td>Block</td><td>Destructive op in protected env (no override)</td></tr>
+  <tr><td><code>policy-destructive-protected-override</code></td><td>Warn</td><td>Destructive op allowed via explicit override</td></tr>
+  <tr><td><code>policy-type-narrowing-approval</code></td><td>Block/Warn</td><td>Type narrowing or nullability tightening without approval</td></tr>
+  <tr><td><code>policy-provider-capability</code></td><td>Warn</td><td>Operation unsupported by live provider probe</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: execution ==================== -->
+<section id="execution">
+<h2><i class="bi bi-play-circle"></i> Execution</h2>
+<p>
+  <code>ExecuteMigrationPlan</code> applies the plan in checkpointed steps. It respects a <code>MigrationExecutionPolicy</code>
+  and can be resumed from any intermediate state using an <code>executionToken</code>.
+</p>
+
+<h3>Execution Flow</h3>
+<ol>
+  <li>Creates or restores an <code>ExecutionCheckpoint</code> (keyed by <code>executionToken</code>).</li>
+  <li>Verifies high-risk ops have compensation actions.</li>
+  <li>Checks rollback readiness (backup evidence required for protected execution).</li>
+  <li>Runs <code>RunPreflightChecks</code> — blocks on any gate failure.</li>
+  <li>Iterates steps ordered by <code>Sequence</code>, honouring <code>DependsOn</code> ordering.</li>
+  <li>Returns <code>MigrationExecutionResult</code> with success flag, rollback outcome, and checkpoint snapshot.</li>
+</ol>
+
+<h3>MigrationExecutionPolicy</h3>
+<pre><code class="language-csharp">var policy = new MigrationExecutionPolicy
+{
+    ContinueOnNonCriticalFailure = false,  // stop on first step failure
+    MaxRetries = 2,
+    DryRunOnly = false                     // set true to simulate without DDL
+};</code></pre>
+
+<h3>Resuming After Failure</h3>
+<pre><code class="language-csharp">// Save the token from the first run
+string token = result.ExecutionToken;
+
+// Resume — already-Completed/Skipped steps are automatically bypassed
+var resumed = migration.ExecuteMigrationPlan(plan, policy, executionToken: token);</code></pre>
+
+<h3>MigrationExecutionResult</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>Success</code></td><td><code>bool</code></td><td>Overall execution success</td></tr>
+  <tr><td><code>ExecutionToken</code></td><td><code>string</code></td><td>Resume / telemetry correlation key</td></tr>
+  <tr><td><code>Message</code></td><td><code>string</code></td><td>Summary message or failure reason</td></tr>
+  <tr><td><code>Checkpoint</code></td><td><code>MigrationExecutionCheckpoint</code></td><td>Current execution state</td></tr>
+  <tr><td><code>RollbackOutcome</code></td><td><code>string</code></td><td>Rollback narrative (populated on failure)</td></tr>
+  <tr><td><code>CompensationOutcome</code></td><td><code>string</code></td><td>Compensation narrative (populated on failure)</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: rollback-compensation ==================== -->
+<section id="rollback-compensation">
+<h2><i class="bi bi-arrow-counterclockwise"></i> Rollback &amp; Compensation</h2>
+
+<h3>BuildCompensationPlan</h3>
+<p>
+  Iterates all high-risk operations and generates a <code>MigrationCompensationAction</code>
+  for each with rollback SQL preview, rollback mode, and a step-by-step playbook.
+</p>
+<pre><code class="language-csharp">MigrationCompensationPlan comp = migration.BuildCompensationPlan(plan);
+foreach (var action in comp.Actions)
+{
+    Console.WriteLine($"[{action.ActionId}] {action.OperationKind} on {action.EntityName}");
+    Console.WriteLine($"  Rollback mode: {action.RollbackMode}");
+    Console.WriteLine($"  Preview SQL: {action.RollbackSqlPreview}");
+    Console.WriteLine($"  Playbook: {string.Join(" | ", action.CompensationPlaybook)}");
+}</code></pre>
+
+<h3>CheckRollbackReadiness</h3>
+<p>
+  Reports whether the plan has sufficient backup evidence to safely proceed.
+  High-risk plans without backup confirmation are <strong>blocked</strong> from execution.
+</p>
+<pre><code class="language-csharp">var report = migration.CheckRollbackReadiness(
+    plan,
+    backupConfirmed: true,
+    restoreTestEvidenceProvided: true,
+    restoreTestEvidence: "Restore test completed at 2025-01-15 02:00 UTC by ops-bot");
+
+Console.WriteLine($"IsReady: {report.IsReady}");
+foreach (var check in report.Checks)
+    Console.WriteLine($"[{check.Decision}] {check.Code}: {check.Message}");</code></pre>
+</section>
+
+<!-- ==================== SECTION: entity-operations ==================== -->
+<section id="entity-operations">
+<h2><i class="bi bi-table"></i> Entity Operations</h2>
+<p>
+  For simpler migration use-cases, <code>EnsureEntity</code> provides a direct
+  create-or-update interface without building a full plan artifact.
+</p>
+
+<h3>EnsureEntity(EntityStructure)</h3>
+<pre><code class="language-csharp">var entity = new EntityStructure
+{
+    EntityName = "Orders",
+    Fields = new List&lt;EntityField&gt;
+    {
+        new EntityField { FieldName = "OrderId", Fieldtype = "System.Int32" },
+        new EntityField { FieldName = "CustomerId", Fieldtype = "System.String" },
+        new EntityField { FieldName = "Total", Fieldtype = "System.Decimal" }
+    }
+};
+
+// Creates entity if missing; adds any missing columns if it already exists
+IErrorsInfo result = migration.EnsureEntity(entity, createIfMissing: true, addMissingColumns: true);
+if (result.Flag == Errors.Ok)
+    Console.WriteLine(result.Message);
+else
+    Console.WriteLine($"Failed: {result.Message}");</code></pre>
+
+<h3>EnsureEntity(Type)</h3>
+<pre><code class="language-csharp">// Converts POCO via classCreator and delegates to EntityStructure overload
+IErrorsInfo result = migration.EnsureEntity(
+    typeof(Order),
+    createIfMissing: true,
+    addMissingColumns: true,
+    detectRelationships: true);</code></pre>
+
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <strong>Do NOT pre-map .NET types</strong> before passing an <code>EntityStructure</code> to <code>EnsureEntity</code>.
+  The datasource&#39;s <code>CreateEntityAs</code> handles all type conversion internally.
+  Pre-mapping corrupts the structure.
+</div>
+</section>
+
+<!-- ==================== SECTION: performance ==================== -->
+<section id="performance">
+<h2><i class="bi bi-speedometer2"></i> Performance &amp; Scale Planning</h2>
+<p>
+  <code>BuildPerformancePlan</code> annotates each operation with lock-impact score,
+  estimated runtime, and execution window mode, then rolls up maintenance-window guidance.
+</p>
+<pre><code class="language-csharp">MigrationPerformancePlan perf = migration.BuildPerformancePlan(plan);
+
+Console.WriteLine($"Planned window: {perf.Kpis.PlannedMigrationWindowMinutes} min");
+Console.WriteLine($"Lock timeout policy: {perf.Policy.LockTimeoutMilliseconds} ms");
+Console.WriteLine($"Throttled mode: {perf.Policy.EnableThrottledMode}");
+
+foreach (var annotation in perf.OperationAnnotations)
+    Console.WriteLine($"{annotation.EntityName}: lock={annotation.EstimatedLockImpactScore}/10, {annotation.WindowMode}");</code></pre>
+
+<h3>MigrationPerformancePolicy Defaults</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Default (low-risk)</th><th>Default (high-risk)</th></tr></thead>
+<tbody>
+  <tr><td><code>BatchSize</code></td><td>15</td><td>5</td></tr>
+  <tr><td><code>ThrottleDelayMilliseconds</code></td><td>0</td><td>250</td></tr>
+  <tr><td><code>LockTimeoutMilliseconds</code></td><td>30 000</td><td>15 000</td></tr>
+  <tr><td><code>EnableThrottledMode</code></td><td>false</td><td>true</td></tr>
+  <tr><td><code>PreferredWindowMode</code></td><td>OnlinePreferred</td><td>MaintenanceWindowRequired</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: observability ==================== -->
+<section id="observability">
+<h2><i class="bi bi-bar-chart-line"></i> Observability &amp; Telemetry</h2>
+
+<h3>Telemetry Snapshot</h3>
+<pre><code class="language-csharp">MigrationTelemetrySnapshot snap = migration.GetMigrationTelemetrySnapshot(executionToken);
+
+Console.WriteLine($"Plans run: {snap.Metrics.PlanCount}");
+Console.WriteLine($"Executions: {snap.Metrics.ExecutionCount}");
+Console.WriteLine($"Success rate: {snap.SuccessRate:P2}");
+Console.WriteLine($"Failure rate: {snap.FailureRate:P2}");
+Console.WriteLine($"Rollbacks: {snap.Metrics.RollbackCount}");
+Console.WriteLine($"Policy blocks: {snap.Metrics.PolicyBlockCount}");
+Console.WriteLine($"Avg step duration: {snap.Metrics.AverageStepDurationMilliseconds:F1} ms");</code></pre>
+
+<h3>Diagnostics</h3>
+<pre><code class="language-csharp">// All diagnostics for a run
+var diags = migration.GetMigrationDiagnostics(executionToken);
+// Filter to errors only
+var errors = migration.GetMigrationDiagnostics(
+    executionToken,
+    minimumSeverity: MigrationDiagnosticSeverity.Error);</code></pre>
+
+<h3>Audit Events</h3>
+<pre><code class="language-csharp">var audits = migration.GetMigrationAuditEvents(executionToken);
+foreach (var evt in audits)
+    Console.WriteLine($"[{evt.TimestampUtc:O}] {evt.EventType} by {evt.ExecutedBy}: {evt.Result}");</code></pre>
+
+<h3>Approving a Plan</h3>
+<pre><code class="language-csharp">// Transitions LifecycleState from Draft/Reviewed → Approved
+// and records an audit event
+plan = migration.ApproveMigrationPlan(plan, approvedBy: "alice@company.com", notes: "CHG-4721");</code></pre>
+</section>
+
+<!-- ==================== SECTION: governance ==================== -->
+<section id="governance">
+<h2><i class="bi bi-check2-all"></i> Rollout Governance</h2>
+<p>
+  <code>EvaluateRolloutGovernance</code> evaluates whether a migration plan is safe to promote
+  through a deployment wave, using live telemetry KPIs and hard-stop rules.
+</p>
+
+<h3>MigrationRolloutWave</h3>
+<pre><code class="language-csharp">public enum MigrationRolloutWave
+{
+    Wave1NonCritical,  // safe for non-critical datasources
+    Wave2Standard,     // general production
+    Wave3Critical      // critical/regulated systems
+}</code></pre>
+
+<h3>Governance Gates</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Gate</th><th>Blocks When</th></tr></thead>
+<tbody>
+  <tr><td><code>wave-eligibility</code></td><td>Critical datasource promoted in Wave 1</td></tr>
+  <tr><td><code>kpi-success-rate</code></td><td>Execution success rate below threshold (default ≥ 95%)</td></tr>
+  <tr><td><code>kpi-mean-execution-duration</code></td><td>Mean step duration exceeds configured max</td></tr>
+  <tr><td><code>kpi-rollback-invocation-rate</code></td><td>Rollback rate above threshold</td></tr>
+  <tr><td><code>kpi-policy-block-ratio</code></td><td>Too many policy-blocked executions</td></tr>
+  <tr><td><code>hard-stop</code></td><td>Any hard-stop condition triggered</td></tr>
+</tbody>
+</table>
+</div>
+
+<pre><code class="language-csharp">var request = new MigrationRolloutGovernanceRequest
+{
+    Wave = MigrationRolloutWave.Wave2Standard,
+    ReviewedBy = "platform-team",
+    Thresholds = new MigrationRolloutKpiThresholds { MinSuccessRate = 0.98 }
+};
+var gov = migration.EvaluateRolloutGovernance(plan, request);
+Console.WriteLine($"CanPromote: {gov.CanPromote}");
+foreach (var gate in gov.Gates)
+    Console.WriteLine($"[{gate.Decision}] {gate.Gate}: {gate.Observed} vs threshold {gate.Threshold}");</code></pre>
+</section>
+
+<!-- ==================== SECTION: ci-automation ==================== -->
+<section id="ci-automation">
+<h2><i class="bi bi-git"></i> CI/CD Automation</h2>
+
+<h3>ValidatePlanForCi</h3>
+<p>Runs plan lint, policy, dry-run, and portability gates. Returns <code>CanMerge</code> boolean for PR workflows.</p>
+<pre><code class="language-csharp">MigrationCiValidationReport ci = migration.ValidatePlanForCi(plan);
+if (!ci.CanMerge)
+{
+    foreach (var gate in ci.Gates.Where(g => g.Decision == MigrationPolicyDecision.Block))
+        Console.WriteLine($"BLOCKED: {gate.Gate} — {gate.Message}");
+    Environment.Exit(1);
+}</code></pre>
+
+<h3>BuildMigrationPlanDiff</h3>
+<p>Computes a textual diff of operation signatures between two plan artifacts for PR annotations.</p>
+<pre><code class="language-csharp">string diff = migration.BuildMigrationPlanDiff(previousPlan, currentPlan);
+Console.WriteLine(diff);</code></pre>
+
+<h3>CI Pipeline Example</h3>
+<pre><code class="language-csharp">// In your CI build step
+var migration = new MigrationManager(dmeEditor);
+migration.MigrateDataSource = dmeEditor.GetDataSource(connectionName);
+var plan = migration.BuildMigrationPlanForTypes(entityTypes);
+
+var ci = migration.ValidatePlanForCi(plan, new MigrationPolicyOptions
+{
+    EnvironmentTier = "staging",
+    RequireApprovalForHighRisk = false  // relax for staging
+});
+
+if (!ci.CanMerge)
+    throw new Exception("Migration plan failed CI validation gates.");
+
+// Serialize plan hash for deployment artifact tracking
+Console.WriteLine($"::set-output name=plan_hash::{plan.PlanHash}");</code></pre>
+</section>
+
+<!-- ==================== SECTION: ddl-evidence ==================== -->
+<section id="ddl-evidence">
+<h2><i class="bi bi-journal-code"></i> DDL Evidence &amp; Migration History</h2>
+<p>
+  Every executed DDL operation is recorded as a <code>DdlOperationEvidence</code> entry with
+  a SHA-256 hash of the SQL statement for tamper-detection and audit purposes.
+</p>
+<pre><code class="language-csharp">// Read the DDL evidence log
+IReadOnlyList&lt;DdlOperationEvidence&gt; evidence = migration.GetDdlEvidence();
+foreach (var entry in evidence)
+{
+    Console.WriteLine($"[{entry.TimestampUtc:O}] {entry.OperationName} on {entry.EntityName}");
+    Console.WriteLine($"  Outcome: {entry.Outcome}  SQL hash: {entry.SqlHash}");
+    Console.WriteLine($"  Reason: {entry.ReasonCode}  Helper: {entry.HelperSource}");
+}</code></pre>
+
+<h3>DdlOperationEvidence Properties</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>OperationName</code></td><td>e.g. <code>AddMissingColumns</code>, <code>CreateEntityAs</code></td></tr>
+  <tr><td><code>EntityName</code></td><td>Target table/entity</td></tr>
+  <tr><td><code>ColumnName</code></td><td>Affected column (where applicable)</td></tr>
+  <tr><td><code>IndexName</code></td><td>Affected index (where applicable)</td></tr>
+  <tr><td><code>SqlHash</code></td><td>SHA-256 of the executed SQL string</td></tr>
+  <tr><td><code>Outcome</code></td><td>Success / failure text</td></tr>
+  <tr><td><code>HelperSource</code></td><td>Which helper generated the SQL</td></tr>
+  <tr><td><code>ReasonCode</code></td><td>Why the operation was triggered</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: examples ==================== -->
+<section id="examples">
+<h2><i class="bi bi-code-slash"></i> End-to-End Examples</h2>
+
+<h3>Example 1 — Production-Safe Migration</h3>
+<pre><code class="language-csharp">var migration = new MigrationManager(dmeEditor);
+migration.MigrateDataSource = dmeEditor.GetDataSource("proddb");
+migration.RegisterAssembly(typeof(OrderLine).Assembly);
+
+// Build the plan
+var plan = migration.BuildMigrationPlanForTypes(
+    new[] { typeof(Order), typeof(OrderLine), typeof(Customer) });
+
+// Abort if readiness is blocking
+if (plan.ReadinessIssues.Any(i => i.Severity == MigrationIssueSeverity.Error))
+    throw new Exception("Readiness errors must be resolved before migration.");
+
+// Set production policy options
+var policyOptions = new MigrationPolicyOptions
+{
+    EnvironmentTier = "production",
+    RequireApprovalForHighRisk = true,
+    BlockDestructiveInProtectedEnvironments = true,
+    Approver = "john.smith",
+    OverrideReason = "CHG-9001 approved by change board"
+};
+plan.PolicyEvaluation = migration.EvaluateMigrationPlanPolicy(plan, policyOptions);
+if (plan.PolicyEvaluation.Decision == MigrationPolicyDecision.Block)
+    throw new Exception("Policy evaluation blocked the migration plan.");
+
+// Confirm rollback readiness
+plan.RollbackReadinessReport = migration.CheckRollbackReadiness(
+    plan,
+    backupConfirmed: true,
+    restoreTestEvidenceProvided: true,
+    restoreTestEvidence: "Restore test run by DBA team 2025-06-01");
+
+// Approve and execute
+migration.ApproveMigrationPlan(plan, approvedBy: "john.smith");
+var result = migration.ExecuteMigrationPlan(plan, new MigrationExecutionPolicy());
+if (!result.Success)
+    Console.Error.WriteLine($"Migration failed: {result.Message}");
+else
+    Console.WriteLine($"Migration completed. Token: {result.ExecutionToken}");</code></pre>
+
+<h3>Example 2 — Rapid Development (No Policy)</h3>
+<pre><code class="language-csharp">var migration = new MigrationManager(dmeEditor) { MigrateDataSource = devDs };
+
+// Single-call ensure — no plan artifact needed
+migration.EnsureEntity(typeof(BlogPost),
+    createIfMissing: true,
+    addMissingColumns: true,
+    detectRelationships: false);</code></pre>
+
+<h3>Example 3 — CI Validation in a Build Pipeline</h3>
+<pre><code class="language-csharp">var plan = migration.BuildMigrationPlanForTypes(entityTypes);
+var ci = migration.ValidatePlanForCi(plan);
+if (!ci.CanMerge)
+{
+    foreach (var g in ci.Gates.Where(x => x.Decision == MigrationPolicyDecision.Block))
+        Console.Error.WriteLine($"CI BLOCK — {g.Gate}: {g.Message}");
+    Environment.Exit(1);
+}
+Console.WriteLine($"CI passed. Plan hash: {plan.PlanHash}");</code></pre>
+
+<h3>Example 4 — Governance Before Promotion</h3>
+<pre><code class="language-csharp">var snap = migration.GetMigrationTelemetrySnapshot(execToken);
+var gov = migration.EvaluateRolloutGovernance(plan, new MigrationRolloutGovernanceRequest
+{
+    Wave = MigrationRolloutWave.Wave3Critical,
+    IsCriticalDataSource = true,
+    ReviewedBy = "platform-lead"
+});
+if (!gov.CanPromote)
+    throw new Exception($"Governance hard-stop: {gov.HardStopReason}");</code></pre>
+</section>
+
+</article>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
 </body>
 </html>

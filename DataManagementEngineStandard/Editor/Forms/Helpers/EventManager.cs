@@ -82,11 +82,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 unitOfWork.PreDelete += (sender, e) => HandlePreDelete(blockName, sender, e);
                 unitOfWork.PostDelete += (sender, e) => HandlePostDelete(blockName, sender, e);
 
-                // Subscribe to navigation events if available
-                if (unitOfWork.Units != null)
-                {
-                    unitOfWork.Units.CurrentChanged += (sender, e) => HandleCurrentChanged(blockName, sender, e);
-                }
+                    // Subscribe to navigation events at the UoW boundary.
+                    unitOfWork.CurrentChanged += (sender, e) => HandleCurrentChanged(blockName, sender, e);
 
                 LogOperation($"Subscribed to events for block '{blockName}'");
             }

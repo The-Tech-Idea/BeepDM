@@ -1,813 +1,763 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapping Manager - Beep Data Management Engine Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mapping Manager — BeepDM</title>
+<link rel="stylesheet" href="sphinx-style.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"/>
 </head>
-<body>
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
-        <i class="bi bi-list"></i>
-    </button>
+<body class="page-content">
+<div class="content-wrapper">
+<div class="page-header">
+  <h1><i class="bi bi-diagram-2"></i> Mapping Manager</h1>
+  <p class="lead">Entity-to-entity and object-to-object field mapping — convention-based auto-matching, confidence scoring, conversion pipelines, object-graph traversal, rule engine integration, quality scoring, drift detection, and governance versioning.</p>
+</div>
 
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-        <i class="bi bi-sun-fill" id="theme-icon"></i>
-    </button>
+<nav class="page-nav">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#quickstart">Quick Start</a></li>
+    <li><a href="#entity-map-api">Entity Map API</a></li>
+    <li><a href="#auto-matching">Auto-Matching</a></li>
+    <li><a href="#conventions">Conventions</a></li>
+    <li><a href="#conversion-pipeline">Conversion Pipeline</a></li>
+    <li><a href="#object-graph">Object Graph</a></li>
+    <li><a href="#rules">Rule Engine</a></li>
+    <li><a href="#validation-scoring">Validation &amp; Scoring</a></li>
+    <li><a href="#governance">Governance &amp; Versioning</a></li>
+    <li><a href="#performance">Performance &amp; Caching</a></li>
+    <li><a href="#autoobjmapper">AutoObjMapper</a></li>
+    <li><a href="#examples">Examples</a></li>
+  </ul>
+</nav>
 
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <!-- Navigation will be loaded dynamically -->
-        </aside>
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="overview">
+<h2><i class="bi bi-info-circle"></i> Overview</h2>
+<p>
+  <code>MappingManager</code> (namespace <code>TheTechIdea.Beep.Editor.Mapping</code>) is a <strong>static partial class</strong>
+  that manages all field-level mappings between source and destination entities. It spans 8 partial files covering
+  every phase of the mapping lifecycle:
+</p>
+<div class="architecture-box">
+<pre>
+MappingManager (static partial class)
+├── MappingManager.cs                  ← CRUD: CreateEntityMap / Load / Save / Map / Apply
+├── MappingManager.Conventions.cs      ← AutoMapByConvention, NameMatchMode, MappingDiff
+├── MappingManager.AutoMatching.cs     ← AutoMapByConventionWithScoring, confidence engine
+├── MappingManager.ConversionPipeline.cs ← Typed conversion, field transform chains, policy
+├── MappingManager.ObjectGraph.cs      ← Nested POCO / collection graph mapping
+├── MappingManager.Rules.cs            ← Rule-set validation, execution traces, priorities
+├── MappingManager.ValidationScoring.cs ← Quality score (0-100), drift detection
+└── MappingManager.Governance.cs       ← Versioning, approval state, audit trail
 
-        <!-- Main Content -->
-        <main class="content">
-            <div class="content-wrapper">
-                <!-- Breadcrumb -->
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <a href="#">Editor Classes</a>
-                    <span>&gt;</span>
-                    <span>Mapping Manager</span>
-                </nav>
+AutoObjMapper (separate class — lightweight POCO mapper)
+└── Core / Configuration / Interfaces / Extensions / Utilities
+</pre>
+</div>
 
-                <!-- Page Header -->
-                <div class="page-header">
-                    <h1>Mapping Manager</h1>
-                    <p class="page-subtitle">Advanced entity mapping and data transformation utilities for seamless data integration</p>
-                </div>
+<h3>Core data types (from Beep.Workflow)</h3>
+<table class="api-table">
+<thead><tr><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>EntityDataMap</code></td><td>Root mapping object — one per destination entity. Contains <code>MappingName</code>, <code>EntityFields</code>, and a list of <code>EntityDataMap_DTL</code> (one per source entity)</td></tr>
+<tr><td><code>EntityDataMap_DTL</code></td><td>Mapping detail for one source entity — contains <code>FieldMapping</code> list and <code>SelectedDestFields</code></td></tr>
+<tr><td><code>Mapping_rep_fields</code></td><td>Single field-level mapping — <code>FromFieldName</code>, <code>ToFieldName</code>, <code>ToFieldType</code>, <code>Rules</code></td></tr>
+</tbody>
+</table>
+</section>
 
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/Editor/Mapping/MappingManager.cs</code> and partials</li>
-                        <li><code>DataManagementEngineStandard/Editor/Mapping/Interfaces/IMappingInterfaces.cs</code></li>
-                    </ul>
-                </div>
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="quickstart">
+<h2><i class="bi bi-lightning-charge"></i> Quick Start</h2>
+<h3>Create and apply a mapping</h3>
+<pre><code class="language-csharp">// 1. Create mapping from source → destination entity
+var (errInfo, mapping) = MappingManager.CreateEntityMap(
+    dmeEditor,
+    srcEntityName:  "Contacts",
+    srcDataSourceName: "ExternalCRM",
+    destEntityName: "Customers",
+    destDataSourceName: "MainDB");
 
-                <!-- Table of Contents -->
-                <div class="toc">
-                    <h3>Table of Contents</h3>
-                    <ul>
-                        <li><a href="#overview">Overview</a></li>
-                        <li><a href="#entity-mapping">Entity Mapping Creation</a></li>
-                        <li><a href="#field-mapping">Field Mapping Operations</a></li>
-                        <li><a href="#object-transformation">Object Transformation</a></li>
-                        <li><a href="#mapping-persistence">Mapping Persistence</a></li>
-                        <li><a href="#type-conversion">Type Conversion & Validation</a></li>
-                        <li><a href="#examples">Usage Examples</a></li>
-                        <li><a href="#best-practices">Best Practices</a></li>
-                    </ul>
-                </div>
+// 2. Apply the mapping to a record
+var result = MappingManager.MapObject(dmeEditor, mapping, sourceRecord, "Customers", "MainDB");
 
-                <!-- Overview -->
-                <section id="overview" class="section">
-                    <h2>Overview</h2>
-                    <p>
-                        The <code>MappingManager</code> is a static utility class that provides comprehensive functionality 
-                        for creating, managing, and executing entity mappings between different data sources. It enables 
-                        seamless data transformation, field mapping, type conversion, and object-to-object mapping operations 
-                        essential for data integration and migration scenarios.
-                    </p>
-                    
-                    <div class="success">
-                        <strong>Core Capabilities</strong>
-                        <p>MappingManager handles complex entity relationships, automatic field mapping, type conversions, and persistent mapping configurations for robust data integration workflows.</p>
-                    </div>
+// 3. Save the mapping
+MappingManager.SaveMapping(dmeEditor, "Customers", "MainDB", mapping);</code></pre>
 
-                    <div class="code-example">
-                        <h3>Signature-Verified Snapshot (Mapping)</h3>
-                        <pre><code class="language-csharp">public static partial class MappingManager
+<h3>Auto-map with confidence scoring</h3>
+<pre><code class="language-csharp">var options = new AutoMatchOptions
 {
-    public static Tuple&lt;IErrorsInfo, EntityDataMap&gt; CreateEntityMap(
-        IDMEEditor dmeEditor, EntityStructure destent, string sourceEntityName, string sourceDataSourceName);
-    public static Tuple&lt;IErrorsInfo, EntityDataMap&gt; CreateEntityMap(
-        IDMEEditor dmeEditor, string sourceEntityName, string sourceDataSourceName, string destEntityName, string destDataSourceName);
-    public static Tuple&lt;IErrorsInfo, EntityDataMap&gt; CreateEntityMap(
-        IDMEEditor dmeEditor, string destEntityName, string destDataSourceName);
-
-    public static EntityDataMap_DTL AddEntityToMappedEntities(
-        IDMEEditor dmeEditor, string sourceDataSourceName, string sourceEntityName, EntityStructure destent);
-    public static List&lt;Mapping_rep_fields&gt; MapEntityFields(IDMEEditor dmeEditor, EntityStructure srcent, EntityDataMap_DTL datamap);
-    public static object MapObjectToAnother(IDMEEditor dmeEditor, string destentityname, EntityDataMap_DTL selectedMapping, object sourceobj);
-    public static void SaveEntityMap(IDMEEditor dmeEditor, string entityName, string dataSourceID, EntityDataMap mapping);
-}</code></pre>
-                    </div>
-
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <h3>Entity Mapping</h3>
-                            <p>Create and manage mappings between source and destination entities</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>Field Transformation</h3>
-                            <p>Advanced field-level mapping with type conversion and validation</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>Object Mapping</h3>
-                            <p>Direct object-to-object transformation with configurable rules</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <h3>Persistence</h3>
-                            <p>Save and load mapping configurations for reusability</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Entity Mapping -->
-                <section id="entity-mapping" class="section">
-                    <h2>Entity Mapping Creation</h2>
-                    
-                    <div class="api-section">
-                        <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">▶</span>
-                            <strong>Entity Map Creation Methods</strong>
-                        </div>
-                        <div class="api-content">
-                            <div class="method-signature">
-                                <code><span class="return-type">Tuple&lt;IErrorsInfo, EntityDataMap&gt;</span> CreateEntityMap(IDMEEditor dmeEditor, EntityStructure destEntity, <span class="parameter-type">string</span> sourceEntityName, <span class="parameter-type">string</span> sourceDataSourceName)</code>
-                            </div>
-                            <p>Creates an entity mapping using a destination entity structure and source entity information.</p>
-                            
-                            <div class="method-signature">
-                                <code><span class="return-type">Tuple&lt;IErrorsInfo, EntityDataMap&gt;</span> CreateEntityMap(IDMEEditor dmeEditor, <span class="parameter-type">string</span> sourceEntityName, <span class="parameter-type">string</span> sourceDataSourceName, <span class="parameter-type">string</span> destEntityName, <span class="parameter-type">string</span> destDataSourceName)</code>
-                            </div>
-                            <p>Creates an entity mapping for migration between two entities in different data sources.</p>
-                            
-                            <div class="method-signature">
-                                <code><span class="return-type">Tuple&lt;IErrorsInfo, EntityDataMap&gt;</span> CreateEntityMap(IDMEEditor dmeEditor, <span class="parameter-type">string</span> destEntityName, <span class="parameter-type">string</span> destDataSourceName)</code>
-                            </div>
-                            <p>Creates a new entity mapping for the specified destination entity.</p>
-                        </div>
-                    </div>
-
-                    <div class="tip">
-                        <strong>Mapping Creation Strategy</strong>
-                        <ul>
-                            <li>Use entity structure overload when you have pre-loaded destination metadata</li>
-                            <li>Use string-based overloads for dynamic mapping creation</li>
-                            <li>Destination-only overload is useful for creating base mapping templates</li>
-                            <li>All methods automatically handle entity structure loading and validation</li>
-                        </ul>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Entity Mapping Creation Example</h3>
-                        <pre><code class="language-csharp">// Method 1: Using entity structure (recommended for pre-loaded entities)
-var destEntityStructure = dmeEditor.GetEntityStructure("Customers", "MainDatabase");
-var mappingResult1 = MappingManager.CreateEntityMap(
-    dmeEditor, destEntityStructure, "SourceCustomers", "ExternalSystem");
-
-if (mappingResult1.Item1.Flag == Errors.Ok)
-{
-    var entityMap = mappingResult1.Item2;
-    Console.WriteLine($"Created mapping: {entityMap.MappingName}");
-}
-
-// Method 2: Migration mapping between different systems
-var mappingResult2 = MappingManager.CreateEntityMap(
-    dmeEditor, 
-    "LegacyCustomers", "LegacySystem",
-    "ModernCustomers", "ModernSystem");
-
-// Method 3: Create base mapping for destination entity
-var mappingResult3 = MappingManager.CreateEntityMap(
-    dmeEditor, "Products", "InventoryDatabase");
-
-// Check for errors in mapping creation
-if (mappingResult2.Item1.Flag != Errors.Ok)
-{
-    Console.WriteLine($"Mapping creation failed: {mappingResult2.Item1.Message}");
-}</code></pre>
-                    </div>
-                </section>
-
-                <!-- Field Mapping -->
-                <section id="field-mapping" class="section">
-                    <h2>Field Mapping Operations</h2>
-                    
-                    <div class="api-section">
-                        <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">▶</span>
-                            <strong>Field Mapping Methods</strong>
-                        </div>
-                        <div class="api-content">
-                            <div class="method-signature">
-                                <code><span class="return-type">EntityDataMap_DTL</span> AddEntityToMappedEntities(IDMEEditor dmeEditor, <span class="parameter-type">string</span> sourceDataSourceName, <span class="parameter-type">string</span> sourceEntityName, EntityStructure destEntity)</code>
-                            </div>
-                            <p>Adds a source entity to the mapped entities collection for a destination entity with automatic field mapping.</p>
-                            
-                            <div class="method-signature">
-                                <code><span class="return-type">List&lt;Mapping_rep_fields&gt;</span> MapEntityFields(IDMEEditor dmeEditor, EntityStructure sourceEntity, EntityDataMap_DTL dataMap)</code>
-                            </div>
-                            <p>Creates detailed field mappings between source and destination entities with type preservation.</p>
-                        </div>
-                    </div>
-
-                    <div class="warning">
-                        <strong>Field Mapping Considerations</strong>
-                        <ul>
-                            <li>Field mapping uses case-insensitive name matching by default</li>
-                            <li>Unmapped source fields are ignored during transformation</li>
-                            <li>Type mismatches are handled through automatic conversion where possible</li>
-                            <li>Complex types may require custom transformation logic</li>
-                        </ul>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Advanced Field Mapping Configuration</h3>
-                        <pre><code class="language-csharp">// Create entity mapping
-var mappingResult = MappingManager.CreateEntityMap(
-    dmeEditor, "SourceCustomers", "ExternalDB", "Customers", "MainDB");
-
-var entityMap = mappingResult.Item2;
-
-// Get the mapped entity detail for customization
-var mappedEntity = entityMap.MappedEntities.FirstOrDefault();
-if (mappedEntity != null)
-{
-    // Customize field mappings
-    foreach (var fieldMapping in mappedEntity.FieldMapping)
-    {
-        // Example: Handle specific field transformations
-        if (fieldMapping.FromFieldName == "CustomerName")
-        {
-            fieldMapping.ToFieldName = "FullName";
-            // Custom transformation logic can be applied here
-        }
-        
-        if (fieldMapping.FromFieldName == "PhoneNumber")
-        {
-            fieldMapping.ToFieldName = "Phone";
-            // You can add validation or formatting rules
-        }
-        
-        // Handle type conversions
-        if (fieldMapping.FromFieldType == "varchar" && fieldMapping.ToFieldType == "nvarchar")
-        {
-            // Unicode conversion may be needed
-        }
-    }
-    
-    // Add custom field mappings for computed or derived fields
-    mappedEntity.FieldMapping.Add(new Mapping_rep_fields
-    {
-        FromFieldName = "FirstName,LastName", // Composite source
-        ToFieldName = "DisplayName",
-        FromFieldType = "varchar",
-        ToFieldType = "nvarchar"
-        // Custom transformation logic would be handled in transformation functions
-    });
-    
-    // Save the customized mapping
-    dmeEditor.ConfigEditor.SaveMappingValues(
-        entityMap.EntityName, entityMap.EntityDataSource, entityMap);
-}</code></pre>
-                    </div>
-                </section>
-
-                <!-- Object Transformation -->
-                <section id="object-transformation" class="section">
-                    <h2>Object Transformation</h2>
-                    
-                    <div class="api-section">
-                        <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">▶</span>
-                            <strong>Object Mapping Methods</strong>
-                        </div>
-                        <div class="api-content">
-                            <div class="method-signature">
-                                <code><span class="return-type">object</span> MapObjectToAnother(IDMEEditor dmeEditor, <span class="parameter-type">string</span> destEntityName, EntityDataMap_DTL selectedMapping, <span class="parameter-type">object</span> sourceObject)</code>
-                            </div>
-                            <p>Transforms a source object to a destination object using the specified mapping configuration with comprehensive error handling and type conversion.</p>
-                            
-                            <div class="method-signature">
-                                <code><span class="return-type">object</span> GetEntityObject(IDMEEditor dmeEditor, <span class="parameter-type">string</span> entityName, List&lt;EntityField&gt; fields)</code>
-                            </div>
-                            <p>Creates a new object instance based on entity definition and field specifications.</p>
-                        </div>
-                    </div>
-
-                    <div class="success">
-                        <strong>Transformation Features</strong>
-                        <ul>
-                            <li><strong>Automatic Type Conversion:</strong> Handles compatible type conversions automatically</li>
-                            <li><strong>Property Reflection:</strong> Uses case-insensitive property matching</li>
-                            <li><strong>Error Isolation:</strong> Continues mapping even if individual fields fail</li>
-                            <li><strong>Null Handling:</strong> Gracefully handles null values and missing properties</li>
-                            <li><strong>Validation:</strong> Comprehensive parameter validation and error reporting</li>
-                        </ul>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Object Transformation Example</h3>
-                        <pre><code class="language-csharp">// Assume we have a mapping configuration
-var mappingResult = MappingManager.CreateEntityMap(
-    dmeEditor, "SourceCustomers", "ExternalDB", "Customers", "MainDB");
-
-var entityMap = mappingResult.Item2;
-var selectedMapping = entityMap.MappedEntities.FirstOrDefault();
-
-// Source object (could be from any data source)
-var sourceCustomer = new 
-{
-    CustomerName = "John Doe",
-    EmailAddress = "john.doe@example.com",
-    PhoneNumber = "555-0123",
-    CreationDate = DateTime.Now,
-    IsActive = true
+    AutoAcceptThreshold = 0.85,
+    EnableFuzzyDistanceMatching = true,
+    EnableSynonymMatching = true
 };
 
-try
+var (mapping, report) = MappingManager.AutoMapByConventionWithScoring(
+    dmeEditor,
+    "Contacts", "ExternalCRM",
+    "Customers", "MainDB",
+    NameMatchMode.CaseInsensitive,
+    options);
+
+Console.WriteLine($"Auto-accepted: {report.AutoAcceptedCount}");
+Console.WriteLine($"Review needed: {report.ReviewRequiredCount}");
+Console.WriteLine($"Rejected:      {report.RejectedCount}");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="entity-map-api">
+<h2><i class="bi bi-table"></i> Entity Map API</h2>
+<p>Core CRUD and application methods on <code>MappingManager</code> (static).</p>
+
+<h3>Create methods</h3>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>CreateEntityMap(editor, destEntity, srcName, srcDS)</code></td>
+  <td>Creates a mapping for an existing <code>EntityStructure</code> with a named source entity. Returns <code>Tuple&lt;IErrorsInfo, EntityDataMap&gt;</code>.</td>
+</tr>
+<tr>
+  <td><code>CreateEntityMap(editor, srcName, srcDS, destName, destDS)</code></td>
+  <td>Creates a migration mapping from four string identifiers. Resolves entity structures automatically.</td>
+</tr>
+<tr>
+  <td><code>CreateEntityMap(editor, destName, destDS)</code></td>
+  <td>Creates an empty mapping for the destination entity only — for adding source entities later.</td>
+</tr>
+<tr>
+  <td><code>AddEntityToMappedEntities(editor, srcDS, srcName, destEntity)</code></td>
+  <td>Appends a new <code>EntityDataMap_DTL</code> for an additional source entity to an existing mapping.</td>
+</tr>
+<tr>
+  <td><code>MapEntityFields(editor, srcStructure, mapDetail)</code></td>
+  <td>Matches <code>Mapping_rep_fields</code> between source entity and the destination's selected fields.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Load / Save</h3>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>LoadMapping(editor, entityName, dataSource)</code></td>
+  <td>Loads a persisted <code>EntityDataMap</code> from the config JSON store.</td>
+</tr>
+<tr>
+  <td><code>SaveMapping(editor, entityName, dataSource, mapping)</code></td>
+  <td>Persists the mapping to the config JSON store.</td>
+</tr>
+<tr>
+  <td><code>LoadOrInitializeMapping(editor, entityName, dataSource)</code></td>
+  <td>Loads existing mapping or creates a fresh empty one; never returns null.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Map / Apply</h3>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>MapObject(editor, mapping, sourceRecord, destEntity, destDS)</code></td>
+  <td>Applies the first matching <code>EntityDataMap_DTL</code> to a source object and returns a mapped destination object.</td>
+</tr>
+<tr>
+  <td><code>MapObjects(editor, mapping, sourceList, destEntity, destDS)</code></td>
+  <td>Bulk version — maps a list of source objects.</td>
+</tr>
+<tr>
+  <td><code>MapToDataRow(editor, mapping, sourceRecord, row, destEntityName)</code></td>
+  <td>Maps a source object to a <code>DataRow</code>.</td>
+</tr>
+<tr>
+  <td><code>ValidateMappingAsync(editor, mapping)</code></td>
+  <td>Returns a <code>Task&lt;MappingValidationResult&gt;</code> with errors and warnings.</td>
+</tr>
+<tr>
+  <td><code>GetMappingDiff(baseline, current)</code></td>
+  <td>Returns a <code>MappingDiff</code> — added, removed, and changed field mappings.</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="auto-matching">
+<h2><i class="bi bi-magic"></i> Intelligent Auto-Matching</h2>
+<p>
+  <code>AutoMapByConventionWithScoring</code> uses a multi-strategy scoring engine to propose field matches
+  with a confidence score (0–1). Each destination field receives a ranked list of candidates.
+</p>
+
+<h3>AutoMatchOptions</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>AutoAcceptThreshold</code></td><td><code>0.90</code></td><td>Score above which a match is auto-accepted and written to the field mapping</td></tr>
+<tr><td><code>ReviewThreshold</code></td><td><code>0.65</code></td><td>Score above which a match is flagged for review (but not assigned unless <code>AssignReviewMatches=true</code>)</td></tr>
+<tr><td><code>AmbiguityDelta</code></td><td><code>0.08</code></td><td>When top-2 candidate scores are within this delta the suggestion is marked ambiguous</td></tr>
+<tr><td><code>TopSuggestionsPerField</code></td><td><code>3</code></td><td>Maximum candidates returned per destination field</td></tr>
+<tr><td><code>EnableTokenMatching</code></td><td><code>true</code></td><td>Split camelCase / underscored names into tokens for sub-word matching</td></tr>
+<tr><td><code>EnableSynonymMatching</code></td><td><code>true</code></td><td>Use built-in synonym dictionary (id/identifier, first/given, amount/total, …)</td></tr>
+<tr><td><code>EnableFuzzyDistanceMatching</code></td><td><code>true</code></td><td>Levenshtein-style edit distance for near-matches</td></tr>
+<tr><td><code>AssignReviewMatches</code></td><td><code>false</code></td><td>Also assign review-threshold matches to field mappings (default: only auto-accept)</td></tr>
+<tr><td><code>Synonyms</code></td><td><em>built-in</em></td><td>Replaceable synonym dictionary; default covers id, first/last, name, amount, created, updated</td></tr>
+</tbody>
+</table>
+
+<h3>MatchConfidenceDecision enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Condition</th></tr></thead>
+<tbody>
+<tr><td><code>AutoAccept</code></td><td>Score ≥ <code>AutoAcceptThreshold</code></td></tr>
+<tr><td><code>ReviewRequired</code></td><td>Score ≥ <code>ReviewThreshold</code> but &lt; <code>AutoAcceptThreshold</code></td></tr>
+<tr><td><code>Reject</code></td><td>Score &lt; <code>ReviewThreshold</code></td></tr>
+</tbody>
+</table>
+
+<h3>MappingAutoMatchReport</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>GeneratedOnUtc</code></td><td>UTC timestamp</td></tr>
+<tr><td><code>SourceEntityName / DestinationEntityName</code></td><td>Entity names used in this report</td></tr>
+<tr><td><code>Mode</code></td><td><code>NameMatchMode</code> used</td></tr>
+<tr><td><code>TotalDestinationFields</code></td><td>Number of destination fields evaluated</td></tr>
+<tr><td><code>AutoAcceptedCount / ReviewRequiredCount / RejectedCount</code></td><td>Counts by decision category</td></tr>
+<tr><td><code>Suggestions</code></td><td>List of <code>FieldMatchSuggestion</code> — one per destination field</td></tr>
+</tbody>
+</table>
+
+<h3>FieldMatchSuggestion / FieldMatchCandidate</h3>
+<pre><code class="language-csharp">foreach (var suggestion in report.Suggestions)
 {
-    // Transform the object using the mapping
-    var destinationCustomer = MappingManager.MapObjectToAnother(
-        dmeEditor, "Customers", selectedMapping, sourceCustomer);
-    
-    if (destinationCustomer != null)
+    Console.WriteLine($"Dest: {suggestion.DestinationFieldName}  Ambiguous: {suggestion.IsAmbiguous}");
+    foreach (var c in suggestion.Candidates)
+        Console.WriteLine($"  Source: {c.SourceFieldName}  Score: {c.ConfidenceScore:P0}  Decision: {c.Decision}");
+}</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="conventions">
+<h2><i class="bi bi-alphabet"></i> Convention-Based Mapping</h2>
+<p>
+  <code>AutoMapByConvention</code> builds a mapping without confidence scoring — useful for
+  simple same-schema migrations or when you just need a functional starting point.
+</p>
+
+<h3>NameMatchMode enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>Exact</code></td><td>Ordinal character-for-character match only</td></tr>
+<tr><td><code>CaseInsensitive</code></td><td>(Default) Match ignoring case — <code>CustomerID</code> = <code>customerid</code></td></tr>
+<tr><td><code>FuzzyPrefix</code></td><td>Match when one name is a prefix of the other — aligns <code>CustomerID</code> ↔ <code>CustID</code></td></tr>
+</tbody>
+</table>
+
+<pre><code class="language-csharp">// Simple convention map
+var mapping = MappingManager.AutoMapByConvention(
+    dmeEditor,
+    "Contacts", "CRM",
+    "Customers", "MainDB",
+    NameMatchMode.FuzzyPrefix);
+
+// Diff two mapping versions
+var diff = MappingManager.GetMappingDiff(baselineMapping, updatedMapping);
+Console.WriteLine($"Added: {diff.Added.Count}  Removed: {diff.Removed.Count}  Changed: {diff.Changed.Count}");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="conversion-pipeline">
+<h2><i class="bi bi-funnel"></i> Conversion Pipeline</h2>
+<p>
+  Each field assignment passes through a configurable conversion pipeline:
+  policy → transform chain → type coercion. All state is stored in thread-safe
+  <code>ConcurrentDictionary</code> keyed by <code>"{destDS}::{destEntity}"</code> or
+  <code>"{destDS}::{destEntity}::{field}"</code>.
+</p>
+
+<h3>MappingConversionPolicy</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>CultureName</code></td><td><code>InvariantCulture</code></td><td>Culture used for numeric / date parsing</td></tr>
+<tr><td><code>NullHandlingMode</code></td><td><code>PreserveNull</code></td><td><code>PreserveNull</code> | <code>SubstituteDefault</code> | <code>SkipAssignment</code></td></tr>
+<tr><td><code>NullSubstituteValue</code></td><td><code>null</code></td><td>Value written when source is null and mode is <code>SubstituteDefault</code></td></tr>
+<tr><td><code>FailureMode</code></td><td><code>WarnAndContinue</code></td><td><code>WarnAndContinue</code> | <code>Reject</code> | <code>UseFallback</code></td></tr>
+<tr><td><code>FallbackValue</code></td><td><code>null</code></td><td>Value written when conversion fails and mode is <code>UseFallback</code></td></tr>
+<tr><td><code>TrimStrings</code></td><td><code>false</code></td><td>Trim whitespace from string values before writing</td></tr>
+<tr><td><code>StringCaseMode</code></td><td><code>None</code></td><td><code>None</code> | <code>Upper</code> | <code>Lower</code> — applied after trim</td></tr>
+</tbody>
+</table>
+
+<h3>Policy methods</h3>
+<pre><code class="language-csharp">// Set per-entity policy
+MappingManager.SetConversionPolicy("MainDB", "Customers", new MappingConversionPolicy
+{
+    NullHandlingMode = MappingNullHandlingMode.SubstituteDefault,
+    NullSubstituteValue = string.Empty,
+    TrimStrings = true,
+    StringCaseMode = MappingStringCaseMode.Lower,
+    FailureMode = MappingConversionFailureMode.WarnAndContinue
+});
+
+var policy = MappingManager.GetConversionPolicy("MainDB", "Customers");</code></pre>
+
+<h3>Field transform chains</h3>
+<p>
+  A <code>MappingFieldTransformChain</code> is a named sequence of <code>FieldTransformStep</code>s applied to
+  a single destination field before type coercion. Each step references a registered transform function.
+</p>
+<pre><code class="language-csharp">// Register a custom transform
+MappingManager.RegisterTransform("padleft10", (value, arg) =>
+    value?.ToString()?.PadLeft(10, '0') ?? string.Empty);
+
+// Assign a chain to a specific field
+MappingManager.SetFieldTransformChain("MainDB", "Customers", "CustomerCode",
+    new MappingFieldTransformChain
     {
-        Console.WriteLine("Object transformation successful!");
-        
-        // The destination object now has the mapped structure
-        // and can be used for database operations
-        
-        // Example: Insert into destination database
-        var dataSource = dmeEditor.GetDataSource("MainDB");
-        var result = dataSource.InsertEntity("Customers", destinationCustomer);
-        
-        if (result.Flag == Errors.Ok)
+        Steps = new List&lt;FieldTransformStep&gt;
         {
-            Console.WriteLine("Customer successfully inserted into destination database");
+            new FieldTransformStep { Name = "trim",      Argument = "" },
+            new FieldTransformStep { Name = "uppercase", Argument = "" },
+            new FieldTransformStep { Name = "padleft10", Argument = "" }
         }
-    }
-}
-catch (ArgumentNullException ex)
-{
-    Console.WriteLine($"Invalid parameters: {ex.Message}");
-}
-catch (InvalidOperationException ex)
-{
-    Console.WriteLine($"Transformation failed: {ex.Message}");
-}
-
-// Batch transformation example
-var sourceCustomers = GetSourceCustomers(); // Returns IEnumerable&lt;object&gt;
-var transformedCustomers = new List&lt;object&gt;();
-
-foreach (var customer in sourceCustomers)
-{
-    try
-    {
-        var transformed = MappingManager.MapObjectToAnother(
-            dmeEditor, "Customers", selectedMapping, customer);
-        
-        if (transformed != null)
-        {
-            transformedCustomers.Add(transformed);
-        }
-    }
-    catch (Exception ex)
-    {
-        // Log the error but continue with other records
-        Console.WriteLine($"Failed to transform customer: {ex.Message}");
-    }
-}
-
-Console.WriteLine($"Successfully transformed {transformedCustomers.Count} out of {sourceCustomers.Count()} customers");</code></pre>
-                    </div>
-                </section>
-
-                <!-- Mapping Persistence -->
-                <section id="mapping-persistence" class="section">
-                    <h2>Mapping Persistence</h2>
-                    
-                    <div class="tip">
-                        <strong>Persistence Benefits</strong>
-                        <ul>
-                            <li><strong>Reusability:</strong> Save complex mappings for repeated use</li>
-                            <li><strong>Version Control:</strong> Track mapping changes over time</li>
-                            <li><strong>Configuration Management:</strong> Centralized mapping storage</li>
-                            <li><strong>Performance:</strong> Avoid recreating mappings for each operation</li>
-                        </ul>
-                    </div>
-
-                    <div class="api-section">
-                        <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">▶</span>
-                            <strong>Persistence Operations</strong>
-                        </div>
-                        <div class="api-content">
-                            <p>Mapping persistence is handled automatically through the DMEEditor's ConfigEditor:</p>
-                            <ul>
-                                <li><strong>Automatic Saving:</strong> All <code>CreateEntityMap</code> methods automatically save mappings</li>
-                                <li><strong>Loading:</strong> Use <code>dmeEditor.ConfigEditor.LoadMappingValues()</code> to retrieve saved mappings</li>
-                                <li><strong>Manual Saving:</strong> Use <code>dmeEditor.ConfigEditor.SaveMappingValues()</code> for custom mappings</li>
-                                <li><strong>Storage Format:</strong> Mappings are stored as <code>{entityName}_Mapping.json</code> under <code>Config.MappingPath/{datasource}</code></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Mapping Persistence Example</h3>
-                        <pre><code class="language-csharp">// Create and automatically save mapping
-var mappingResult = MappingManager.CreateEntityMap(
-    dmeEditor, "Products", "InventoryDB", "CatalogItems", "CatalogDB");
-
-var entityMap = mappingResult.Item2;
-
-// Customize the mapping
-var mappedEntity = entityMap.MappedEntities.FirstOrDefault();
-if (mappedEntity != null)
-{
-    // Add custom field transformations
-    mappedEntity.FieldMapping.Add(new Mapping_rep_fields
-    {
-        FromFieldName = "ProductCode",
-        ToFieldName = "SKU",
-        FromFieldType = "varchar",
-        ToFieldType = "nvarchar"
     });
-    
-    // Manually save the updated mapping
-    dmeEditor.ConfigEditor.SaveMappingValues(
-        entityMap.EntityName, 
-        entityMap.EntityDataSource, 
-        entityMap);
+
+var chain = MappingManager.GetFieldTransformChain("MainDB", "Customers", "CustomerCode");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="object-graph">
+<h2><i class="bi bi-diagram-3"></i> Object Graph Mapping</h2>
+<p>
+  <code>MapObjectGraph</code> traverses nested POCOs and collections, respecting a configurable max depth
+  and cycle detection. Use for Domain Object → Domain Object mapping where fields may be nested paths
+  (e.g. <code>"Address.City"</code> → <code>"ShippingCity"</code>).
+</p>
+
+<h3>ObjectGraphMappingOptions</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>MaxDepth</code></td><td><code>5</code></td><td>Maximum nested object traversal depth</td></tr>
+<tr><td><code>DetectCycles</code></td><td><code>true</code></td><td>Skip already-visited objects to prevent infinite loops</td></tr>
+<tr><td><code>CollectionMode</code></td><td><code>Replace</code></td><td><code>Append</code> | <code>Replace</code> | <code>MergeByKey</code></td></tr>
+<tr><td><code>ReferenceReusePolicy</code></td><td><code>ReuseBySourceReference</code></td><td>Whether to reuse mapped destination objects for the same source reference</td></tr>
+<tr><td><code>CollectionMergeKeyPropertyName</code></td><td><code>"Id"</code></td><td>Property used as merge key when <code>CollectionMode = MergeByKey</code></td></tr>
+</tbody>
+</table>
+
+<h3>ObjectGraphMappingResult</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>Success</code></td><td><code>false</code> if any field threw an unhandled exception</td></tr>
+<tr><td><code>Assignments</code></td><td>Number of fields successfully written</td></tr>
+<tr><td><code>Skipped</code></td><td>Number of fields that were null, missing, or had no source path</td></tr>
+<tr><td><code>Warnings</code></td><td>Non-fatal issues (missing paths, assignment failures)</td></tr>
+</tbody>
+</table>
+
+<pre><code class="language-csharp">var opts = new ObjectGraphMappingOptions
+{
+    MaxDepth = 3,
+    CollectionMode = CollectionMappingMode.MergeByKey,
+    CollectionMergeKeyPropertyName = "ProductId"
+};
+
+var (destObj, result) = MappingManager.MapObjectGraph(
+    dmeEditor,
+    destinationEntityName: "OrderDto",
+    selectedMapping: mapDetail,
+    sourceObject: sourceOrder,
+    options: opts);
+
+Console.WriteLine($"Assignments: {result.Assignments}  Skipped: {result.Skipped}");
+foreach (var w in result.Warnings) Console.WriteLine($"  WARN: {w}");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="rules">
+<h2><i class="bi bi-code-slash"></i> Rule Engine Integration</h2>
+<p>
+  Each <code>Mapping_rep_fields</code> can carry a <code>Rules</code> string that is evaluated by the
+  Beep rules tokenizer at mapping time. <code>MappingManager.Rules.cs</code> handles rule-set validation
+  and execution tracing.
+</p>
+
+<h3>MappingRulePriority enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Priority</th><th>When used</th></tr></thead>
+<tbody>
+<tr><td><code>ExplicitUserRule</code></td><td>1 (highest)</td><td>Field has a non-empty <code>Rules</code> string authored by a user</td></tr>
+<tr><td><code>ConfidenceAutoMap</code></td><td>2</td><td>Field was auto-matched by the confidence engine</td></tr>
+<tr><td><code>FallbackDefault</code></td><td>3 (lowest)</td><td>No source path found — use default value</td></tr>
+</tbody>
+</table>
+
+<h3>MappingRuleDecision enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Behaviour</th></tr></thead>
+<tbody>
+<tr><td><code>Map</code></td><td>Read from source path and assign to destination</td></tr>
+<tr><td><code>Skip</code></td><td>Do not assign this field (rule said skip)</td></tr>
+<tr><td><code>UseDefault</code></td><td>No source path; write the configured default value</td></tr>
+</tbody>
+</table>
+
+<h3>Rule validation</h3>
+<pre><code class="language-csharp">// Validate all rules in a mapping
+var ruleResult = MappingManager.ValidateRuleSet(mapping);
+if (!ruleResult.IsValid)
+    foreach (var e in ruleResult.Errors)
+        Console.WriteLine($"ERROR: {e}");
+
+foreach (var w in ruleResult.Warnings)
+    Console.WriteLine($"WARN: {w}");</code></pre>
+
+<h3>MappingRuleExecutionTrace</h3>
+<p>Returned internally per field assignment — useful for troubleshooting. Properties:</p>
+<ul>
+  <li><code>Priority</code> — which rule tier fired</li>
+  <li><code>Decision</code> — Map / Skip / UseDefault</li>
+  <li><code>SourcePath / TargetPath</code> — resolved paths</li>
+  <li><code>ConditionMatched</code> — whether the rule's <code>when</code> clause evaluated to true</li>
+  <li><code>Message</code> — human-readable description of the decision</li>
+</ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="validation-scoring">
+<h2><i class="bi bi-patch-check"></i> Validation &amp; Quality Scoring</h2>
+<p>
+  <code>ValidateMappingWithScore</code> produces a 0–100 quality score and a band label,
+  plus a field-level <code>MappingDriftReport</code> comparing the mapping against the current entity structures.
+</p>
+
+<h3>MappingQualityBand enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Score range (indicative)</th></tr></thead>
+<tbody>
+<tr><td><code>Excellent</code></td><td>90–100</td></tr>
+<tr><td><code>Good</code></td><td>75–89</td></tr>
+<tr><td><code>NeedsReview</code></td><td>50–74</td></tr>
+<tr><td><code>HighRisk</code></td><td>&lt; 50</td></tr>
+</tbody>
+</table>
+
+<h3>MappingQualityReport</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>Score</code></td><td>0–100 overall quality score</td></tr>
+<tr><td><code>Band</code></td><td><code>MappingQualityBand</code> label</td></tr>
+<tr><td><code>MeetsProductionThreshold</code></td><td><code>true</code> when <code>Score &gt;= ProductionThreshold</code></td></tr>
+<tr><td><code>ProductionThreshold</code></td><td>Configurable pass mark (default: 70)</td></tr>
+<tr><td><code>Issues</code></td><td>List of <code>MappingQualityIssue</code> with severity, code, category, recommendation</td></tr>
+<tr><td><code>DriftReport</code></td><td>Embedded <code>MappingDriftReport</code> comparing stored mapping against live schemas</td></tr>
+</tbody>
+</table>
+
+<h3>MappingIssueSeverity enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>Info</code></td><td>Informational — no action required</td></tr>
+<tr><td><code>Warning</code></td><td>Suboptimal but non-blocking</td></tr>
+<tr><td><code>Error</code></td><td>Must be fixed before production use</td></tr>
+</tbody>
+</table>
+
+<pre><code class="language-csharp">var quality = MappingManager.ValidateMappingWithScore(dmeEditor, mapping, productionThreshold: 75);
+
+Console.WriteLine($"Score: {quality.Score}/100  Band: {quality.Band}  Ready: {quality.MeetsProductionThreshold}");
+
+foreach (var issue in quality.Issues.Where(i => i.Severity == MappingIssueSeverity.Error))
+    Console.WriteLine($"[ERROR] {issue.Code}: {issue.Message}  → {issue.Recommendation}");
+
+if (quality.DriftReport.DriftDetected)
+    foreach (var entry in quality.DriftReport.Entries)
+        Console.WriteLine($"Drift: {entry.ChangeType} on '{entry.FieldName}': {entry.Recommendation}");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="governance">
+<h2><i class="bi bi-shield-check"></i> Governance &amp; Versioning</h2>
+<p>
+  The governance subsystem attaches a <code>MappingGovernanceRecord</code> to each entity mapping,
+  tracking version history, approval state, and a full audit trail. All state is persisted to the
+  config store as JSON. Changes made inside a <code>BeginGovernanceScope</code> are automatically stamped
+  with the author and reason.
+</p>
+
+<h3>MappingApprovalState enum</h3>
+<table class="api-table">
+<thead><tr><th>Value</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>Draft</code></td><td>Work in progress — not ready for production</td></tr>
+<tr><td><code>Review</code></td><td>Submitted for peer review</td></tr>
+<tr><td><code>Approved</code></td><td>Reviewed and cleared for production use</td></tr>
+<tr><td><code>Deprecated</code></td><td>Superseded by a newer mapping version</td></tr>
+</tbody>
+</table>
+
+<h3>MappingGovernanceRecord</h3>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>EntityName / DataSource</code></td><td>Mapping identity</td></tr>
+<tr><td><code>CurrentVersion</code></td><td>SemVer string of the active mapping (e.g. <code>"2.1.0"</code>)</td></tr>
+<tr><td><code>CurrentApprovalState</code></td><td>Current <code>MappingApprovalState</code></td></tr>
+<tr><td><code>LastUpdatedUtc</code></td><td>UTC timestamp of last change</td></tr>
+<tr><td><code>Versions</code></td><td>Full list of <code>MappingVersionRecord</code> — each carries a field snapshot and diff summary</td></tr>
+<tr><td><code>AuditTrail</code></td><td>List of <code>MappingAuditEntry</code> — every create / update / approve / deprecate event</td></tr>
+</tbody>
+</table>
+
+<h3>Governance API</h3>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>BeginGovernanceScope(author, reason, targetState)</code></td>
+  <td>Returns an <code>IDisposable</code> scope. All mapping saves within this scope are stamped with the author and reason. Uses <code>AsyncLocal</code> — safe per async task.</td>
+</tr>
+<tr>
+  <td><code>GetMappingGovernance(editor, entity, dataSource)</code></td>
+  <td>Returns the full <code>MappingGovernanceRecord</code> for a mapping.</td>
+</tr>
+<tr>
+  <td><code>GetMappingVersionHistory(editor, entity, dataSource)</code></td>
+  <td>Returns ordered list of <code>MappingVersionRecord</code> (oldest first).</td>
+</tr>
+<tr>
+  <td><code>UpdateMappingApprovalState(editor, entity, dataSource, state, actor, reason)</code></td>
+  <td>Transitions the approval state and appends an audit entry. Returns <code>bool</code>.</td>
+</tr>
+</tbody>
+</table>
+
+<pre><code class="language-csharp">// Stamp changes with author context
+using (MappingManager.BeginGovernanceScope("alice", "Q2 schema alignment", MappingApprovalState.Review))
+{
+    var (_, mapping) = MappingManager.CreateEntityMap(dmeEditor, "Contacts", "CRM", "Customers", "MainDB");
+    MappingManager.SaveMapping(dmeEditor, "Customers", "MainDB", mapping);
 }
 
-// Later, load the saved mapping
-var savedMapping = dmeEditor.ConfigEditor.LoadMappingValues(
-    "CatalogItems", "CatalogDB");
+// Approve for production
+MappingManager.UpdateMappingApprovalState(
+    dmeEditor, "Customers", "MainDB",
+    MappingApprovalState.Approved,
+    actor: "bob", reason: "Code review passed");
 
-if (savedMapping != null)
+// Inspect history
+var history = MappingManager.GetMappingVersionHistory(dmeEditor, "Customers", "MainDB");
+foreach (var v in history)
+    Console.WriteLine($"v{v.Version}  {v.Author}  {v.ApprovalState}  {v.ChangeReason}");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="performance">
+<h2><i class="bi bi-speedometer2"></i> Performance &amp; Caching</h2>
+<p>
+  The performance partial compiles mapping plans and property accessors into delegates and caches them
+  to avoid repeated reflection. Caches are bounded to prevent unbounded growth.
+</p>
+<table class="api-table">
+<thead><tr><th>Cache</th><th>Max entries</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>CompiledPlanCache</code></td><td>512</td><td>Per-<code>(destType, destDS, destEntity)</code> compiled field assignment plan</td></tr>
+<tr><td><code>SourcePathAccessorCache</code></td><td>2048</td><td>Per-<code>(sourceType, fieldPath)</code> compiled getter delegate</td></tr>
+<tr><td><code>DestinationSetterCache</code></td><td>2048</td><td>Per-<code>(destType, fieldPath)</code> compiled setter delegate</td></tr>
+<tr><td><code>ConversionPolicies</code></td><td>unbounded</td><td>Thread-safe; keyed <code>"{destDS}::{destEntity}"</code></td></tr>
+<tr><td><code>FieldTransformChains</code></td><td>unbounded</td><td>Thread-safe; keyed <code>"{destDS}::{destEntity}::{field}"</code></td></tr>
+</tbody>
+</table>
+
+<pre><code class="language-csharp">// Invalidate compiled plans for a specific entity (e.g. after schema change)
+MappingManager.InvalidateMappingCaches("MainDB", "Customers");</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="autoobjmapper">
+<h2><i class="bi bi-arrow-left-right"></i> AutoObjMapper — POCO Mapper</h2>
+<p>
+  <code>AutoObjMapper</code> is a lightweight, expression-compiled POCO-to-POCO mapper.
+  It compiles assignment actions per <code>(TSource, TDest)</code> type pair and caches them.
+  Inspired by AutoMapper / TinyMapper but without external dependencies.
+</p>
+
+<h3>IAutoObjMapper API</h3>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>Map&lt;TSource,TDest&gt;(source)</code></td>
+  <td><code>TDest Map&lt;TSource,TDest&gt;(TSource src) where TDest : new()</code></td>
+  <td>Creates a new <code>TDest</code> and maps all matching properties</td>
+</tr>
+<tr>
+  <td><code>Map&lt;TSource,TDest&gt;(source, destination)</code></td>
+  <td><code>TDest Map&lt;TSource,TDest&gt;(TSource src, TDest dest)</code></td>
+  <td>Maps into an existing destination instance</td>
+</tr>
+<tr>
+  <td><code>Configure(action)</code></td>
+  <td><code>IMapperConfiguration Configure(Action&lt;IMapperConfiguration&gt;)</code></td>
+  <td>Configures type maps. Clears compiled cache on configuration change.</td>
+</tr>
+<tr>
+  <td><code>GetStatistics()</code></td>
+  <td><code>MappingStatistics</code></td>
+  <td>Returns cached mapper count and registered type-map count</td>
+</tr>
+<tr>
+  <td><code>ClearCache()</code></td>
+  <td><code>void</code></td>
+  <td>Clears all compiled setter delegates</td>
+</tr>
+</tbody>
+</table>
+
+<h3>ITypeMapConfiguration&lt;TSource, TDest&gt; fluent API</h3>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>Ignore(destPropertyName)</code></td><td>Exclude a destination property from mapping</td></tr>
+<tr><td><code>ForMember(destPropertyName, resolver)</code></td><td>Provide a custom <code>Func&lt;TSource, object&gt;</code> for a destination property</td></tr>
+<tr><td><code>BeforeMap(action)</code></td><td>Run an <code>Action&lt;TSource, TDest&gt;</code> before mapping begins</td></tr>
+<tr><td><code>AfterMap(action)</code></td><td>Run an <code>Action&lt;TSource, TDest&gt;</code> after mapping completes</td></tr>
+</tbody>
+</table>
+
+<pre><code class="language-csharp">var mapper = new AutoObjMapper();
+
+// Configure type-specific behavior
+mapper.Configure(cfg =>
 {
-    Console.WriteLine($"Loaded mapping: {savedMapping.MappingName}");
-    Console.WriteLine($"Mapped entities: {savedMapping.MappedEntities.Count}");
-    
-    // Use the loaded mapping for transformations
-    var selectedMappedEntity = savedMapping.MappedEntities.FirstOrDefault();
-    if (selectedMappedEntity != null)
-    {
-        // Transform objects using the loaded mapping
-        var sourceProduct = GetSourceProduct(); // Your source object
-        var transformedProduct = MappingManager.MapObjectToAnother(
-            dmeEditor, "CatalogItems", selectedMappedEntity, sourceProduct);
-    }
+    cfg.For&lt;ContactDto, CustomerEntity&gt;()
+       .Ignore("CreatedAt")
+       .ForMember("FullName", src => $"{src.FirstName} {src.LastName}")
+       .BeforeMap((src, dest) => dest.ImportedAt = DateTime.UtcNow)
+       .AfterMap((src, dest) => dest.IsActive = true);
+});
+
+// Map single object
+var customer = mapper.Map&lt;ContactDto, CustomerEntity&gt;(contactDto);
+
+// Map into existing destination
+var existing = GetExistingCustomer(id);
+mapper.Map&lt;ContactDto, CustomerEntity&gt;(contactDto, existing);
+
+// Inspect stats
+var stats = mapper.GetStatistics();
+Console.WriteLine($"Cached mappers: {stats.CachedMappersCount}");</code></pre>
+
+<h3>AutoObjMapperOptions</h3>
+<pre><code class="language-csharp">// Create mapper with custom options
+var mapper = new AutoObjMapper(new AutoObjMapperOptions
+{
+    IgnoreNullSourceValues = true,  // skip null source → don't overwrite dest
+    MapPrivateMembers = false       // default; only public properties
+});</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="examples">
+<h2><i class="bi bi-code-square"></i> Examples</h2>
+
+<h3>End-to-end: auto-match → validate → govern → apply</h3>
+<pre><code class="language-csharp">// 1. Auto-match with confidence scoring
+var (mapping, report) = MappingManager.AutoMapByConventionWithScoring(
+    dmeEditor, "Contacts", "CRM", "Customers", "MainDB",
+    NameMatchMode.CaseInsensitive,
+    new AutoMatchOptions { AutoAcceptThreshold = 0.88, EnableSynonymMatching = true });
+
+// 2. Configure conversion policy
+MappingManager.SetConversionPolicy("MainDB", "Customers", new MappingConversionPolicy
+{
+    TrimStrings = true,
+    StringCaseMode = MappingStringCaseMode.Lower,
+    FailureMode = MappingConversionFailureMode.WarnAndContinue
+});
+
+// 3. Validate quality
+var quality = MappingManager.ValidateMappingWithScore(dmeEditor, mapping, productionThreshold: 75);
+if (!quality.MeetsProductionThreshold)
+{
+    Console.WriteLine($"Score {quality.Score} below threshold — review issues:");
+    foreach (var i in quality.Issues) Console.WriteLine($"  [{i.Severity}] {i.Message}");
+    return;
 }
 
-// List all available mappings for a specific destination data source
-var dataSourceName = "CatalogDB";
-var mappingFolder = Path.Combine(dmeEditor.ConfigEditor.Config.MappingPath, dataSourceName);
+// 4. Stamp author context and save
+using (MappingManager.BeginGovernanceScope("alice", "initial CRM import mapping"))
+    MappingManager.SaveMapping(dmeEditor, "Customers", "MainDB", mapping);
 
-if (Directory.Exists(mappingFolder))
-{
-    foreach (var file in Directory.GetFiles(mappingFolder, "*_Mapping.json"))
+// 5. Approve
+MappingManager.UpdateMappingApprovalState(
+    dmeEditor, "Customers", "MainDB",
+    MappingApprovalState.Approved, "bob", "QA sign-off");
+
+// 6. Apply to records
+var result = MappingManager.MapObject(dmeEditor, mapping, sourceContact, "Customers", "MainDB");</code></pre>
+
+<h3>Custom field transforms on a specific column</h3>
+<pre><code class="language-csharp">// Register transforms once (e.g. at startup)
+MappingManager.RegisterTransform("strip_dashes", (v, _) => v?.ToString()?.Replace("-", "") ?? "");
+MappingManager.RegisterTransform("uppercase",    (v, _) => v?.ToString()?.ToUpper() ?? "");
+
+// Bind to the SKU field
+MappingManager.SetFieldTransformChain("MainDB", "Products", "SKU",
+    new MappingFieldTransformChain
     {
-        var entityName = Path.GetFileName(file).Replace("_Mapping.json", "");
-        var mapping = dmeEditor.ConfigEditor.LoadMappingValues(entityName, dataSourceName);
-        Console.WriteLine($"Available mapping: {entityName} -> {mapping?.MappingName}");
-    }
+        Steps = new List&lt;FieldTransformStep&gt;
+        {
+            new FieldTransformStep { Name = "trim" },
+            new FieldTransformStep { Name = "strip_dashes" },
+            new FieldTransformStep { Name = "uppercase" }
+        }
+    });</code></pre>
+
+<h3>AutoObjMapper with before/after hooks</h3>
+<pre><code class="language-csharp">var mapper = new AutoObjMapper();
+mapper.Configure(cfg =>
+{
+    cfg.For&lt;OrderApiDto, OrderEntity&gt;()
+       .ForMember("TotalAmount", src => src.Lines.Sum(l => l.Price * l.Qty))
+       .BeforeMap((src, dest) => dest.CreatedAt = DateTime.UtcNow)
+       .AfterMap((src, dest) => dest.Status = OrderStatus.New);
+});
+
+var orders = apiDtos.Select(dto => mapper.Map&lt;OrderApiDto, OrderEntity&gt;(dto)).ToList();</code></pre>
+
+<h3>Check mapping drift after schema update</h3>
+<pre><code class="language-csharp">var (_, updatedMapping) = MappingManager.CreateEntityMap(dmeEditor, "Contacts", "CRM", "Customers", "MainDB");
+var diff = MappingManager.GetMappingDiff(savedMapping, updatedMapping);
+
+if (diff.HasChanges)
+{
+    Console.WriteLine($"Added:   {diff.Added.Count}");
+    Console.WriteLine($"Removed: {diff.Removed.Count}");
+    Console.WriteLine($"Changed: {diff.Changed.Count}");
+    // Re-run quality check before re-approving
 }</code></pre>
-                    </div>
-                </section>
+</section>
 
-                <!-- Type Conversion -->
-                <section id="type-conversion" class="section">
-                    <h2>Type Conversion & Validation</h2>
-                    
-                    <div class="api-section">
-                        <div class="api-header" onclick="toggleSection(this)">
-                            <span class="toggle-icon">▶</span>
-                            <strong>Type Conversion Features</strong>
-                        </div>
-                        <div class="api-content">
-                            <p>The MappingManager includes sophisticated type conversion capabilities:</p>
-                            <table class="property-table">
-                                <thead>
-                                    <tr><th>Conversion Type</th><th>Support Level</th><th>Notes</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td>Primitive Types</td><td>Full</td><td>int, string, bool, DateTime, decimal, etc.</td></tr>
-                                    <tr><td>Nullable Types</td><td>Full</td><td>Automatic null handling</td></tr>
-                                    <tr><td>Enum Conversions</td><td>Partial</td><td>String-to-enum and enum-to-string</td></tr>
-                                    <tr><td>Compatible Types</td><td>Full</td><td>Assignable type conversions</td></tr>
-                                    <tr><td>String Formatting</td><td>Full</td><td>ToString() conversions with culture handling</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+<div class="page-footer-nav">
+  <a href="defaultsmanager.html">← Defaults Manager</a>
+  <a href="beepsyncmanager.html">BeepSync Manager →</a>
+</div>
 
-                    <div class="warning">
-                        <strong>Type Conversion Limitations</strong>
-                        <ul>
-                            <li>Complex object conversions are not automatically supported</li>
-                            <li>Custom types may require explicit conversion logic</li>
-                            <li>Precision loss may occur in numeric conversions</li>
-                            <li>Culture-specific formatting should be handled explicitly</li>
-                        </ul>
-                    </div>
-
-                    <div class="code-example">
-                        <h3>Custom Type Conversion Example</h3>
-                        <pre><code class="language-csharp">// Example of handling custom type conversions in mapping
-public class CustomMappingManager
-{
-    public static object MapObjectWithCustomConversions(
-        IDMEEditor dmeEditor, 
-        string destEntityName, 
-        EntityDataMap_DTL selectedMapping, 
-        object sourceObject)
-    {
-        // First, apply standard mapping
-        var mappedObject = MappingManager.MapObjectToAnother(
-            dmeEditor, destEntityName, selectedMapping, sourceObject);
-        
-        // Then apply custom conversions
-        ApplyCustomConversions(mappedObject, sourceObject, selectedMapping);
-        
-        return mappedObject;
-    }
-    
-    private static void ApplyCustomConversions(
-        object mappedObject, 
-        object sourceObject, 
-        EntityDataMap_DTL mapping)
-    {
-        var mappedType = mappedObject.GetType();
-        var sourceType = sourceObject.GetType();
-        
-        foreach (var fieldMapping in mapping.FieldMapping)
-        {
-            try
-            {
-                // Handle specific custom conversions
-                if (fieldMapping.FromFieldName == "StatusCode" && 
-                    fieldMapping.ToFieldName == "Status")
-                {
-                    // Convert numeric status code to enum
-                    var statusCode = GetPropertyValue(sourceObject, "StatusCode");
-                    if (statusCode != null && int.TryParse(statusCode.ToString(), out var code))
-                    {
-                        var statusEnum = (CustomerStatus)code;
-                        SetPropertyValue(mappedObject, "Status", statusEnum.ToString());
-                    }
-                }
-                
-                if (fieldMapping.FromFieldName == "FullName" && 
-                    fieldMapping.ToFieldName == "FirstName,LastName")
-                {
-                    // Split full name into first and last name
-                    var fullName = GetPropertyValue(sourceObject, "FullName")?.ToString();
-                    if (!string.IsNullOrEmpty(fullName))
-                    {
-                        var parts = fullName.Split(' ', 2);
-                        SetPropertyValue(mappedObject, "FirstName", parts[0]);
-                        SetPropertyValue(mappedObject, "LastName", 
-                                        parts.Length > 1 ? parts[1] : "");
-                    }
-                }
-                
-                // Handle date format conversions
-                if (fieldMapping.FromFieldType.Contains("date") && 
-                    fieldMapping.ToFieldType.Contains("string"))
-                {
-                    var dateValue = GetPropertyValue(sourceObject, fieldMapping.FromFieldName);
-                    if (dateValue is DateTime dt)
-                    {
-                        SetPropertyValue(mappedObject, fieldMapping.ToFieldName, 
-                                        dt.ToString("yyyy-MM-dd"));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log conversion errors but continue
-                Console.WriteLine($"Custom conversion failed for {fieldMapping.FromFieldName}: {ex.Message}");
-            }
-        }
-    }
-    
-    private static object GetPropertyValue(object obj, string propertyName)
-    {
-        var property = obj.GetType().GetProperty(propertyName, 
-            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-        return property?.GetValue(obj);
-    }
-    
-    private static void SetPropertyValue(object obj, string propertyName, object value)
-    {
-        var property = obj.GetType().GetProperty(propertyName, 
-            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-        if (property != null && property.CanWrite)
-        {
-            property.SetValue(obj, value);
-        }
-    }
-}
-
-// Usage example
-var customMappedObject = CustomMappingManager.MapObjectWithCustomConversions(
-    dmeEditor, "Customers", selectedMapping, sourceCustomer);</code></pre>
-                    </div>
-                </section>
-
-                <!-- Examples -->
-                <section id="examples" class="section">
-                    <h2>Usage Examples</h2>
-                    
-                    <div class="code-example">
-                        <h3>Complete Data Migration Workflow</h3>
-                        <pre><code class="language-csharp">// Complete example: Migrate customer data between systems
-public async Task&lt;bool&gt; MigrateCustomerData()
-{
-    try
-    {
-        // Step 1: Create entity mapping
-        var mappingResult = MappingManager.CreateEntityMap(
-            dmeEditor, 
-            "LegacyCustomers", "LegacySystem",
-            "Customers", "ModernSystem");
-        
-        if (mappingResult.Item1.Flag != Errors.Ok)
-        {
-            Console.WriteLine($"Failed to create mapping: {mappingResult.Item1.Message}");
-            return false;
-        }
-        
-        var entityMap = mappingResult.Item2;
-        var selectedMapping = entityMap.MappedEntities.FirstOrDefault();
-        
-        // Step 2: Customize field mappings if needed
-        CustomizeFieldMappings(selectedMapping);
-        
-        // Step 3: Get source data
-        var sourceDataSource = dmeEditor.GetDataSource("LegacySystem");
-        var sourceData = sourceDataSource.GetEntity("LegacyCustomers", null);
-        
-        // Step 4: Transform and migrate data
-        var destDataSource = dmeEditor.GetDataSource("ModernSystem");
-        var successCount = 0;
-        var totalCount = 0;
-        
-        if (sourceData is IEnumerable&lt;object&gt; customers)
-        {
-            foreach (var customer in customers)
-            {
-                totalCount++;
-                
-                try
-                {
-                    // Transform the customer object
-                    var transformedCustomer = MappingManager.MapObjectToAnother(
-                        dmeEditor, "Customers", selectedMapping, customer);
-                    
-                    if (transformedCustomer != null)
-                    {
-                        // Insert into destination
-                        var result = destDataSource.InsertEntity("Customers", transformedCustomer);
-                        
-                        if (result.Flag == Errors.Ok)
-                        {
-                            successCount++;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Failed to insert customer: {result.Message}");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to transform customer {totalCount}: {ex.Message}");
-                }
-            }
-        }
-        
-        Console.WriteLine($"Migration completed: {successCount}/{totalCount} customers migrated successfully");
-        return successCount == totalCount;
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Migration failed: {ex.Message}");
-        return false;
-    }
-}
-
-private void CustomizeFieldMappings(EntityDataMap_DTL mapping)
-{
-    if (mapping == null) return;
-    
-    // Add custom field mappings
-    foreach (var fieldMap in mapping.FieldMapping)
-    {
-        // Handle legacy field name mappings
-        if (fieldMap.FromFieldName == "CustName")
-            fieldMap.ToFieldName = "CustomerName";
-        
-        if (fieldMap.FromFieldName == "CustEmail")
-            fieldMap.ToFieldName = "EmailAddress";
-        
-        // Handle type conversions
-        if (fieldMap.FromFieldName == "StatusId" && fieldMap.ToFieldName == "Status")
-        {
-            // Will need custom transformation logic for enum conversion
-        }
-    }
-    
-    // Save the customized mapping
-    dmeEditor.ConfigEditor.SaveMappingValues(
-        mapping.EntityName, mapping.EntityDataSource, 
-        new EntityDataMap 
-        { 
-            EntityName = mapping.EntityName,
-            EntityDataSource = mapping.EntityDataSource,
-            MappedEntities = new List&lt;EntityDataMap_DTL&gt; { mapping }
-        });
-}</code></pre>
-                    </div>
-                </section>
-
-                <!-- Best Practices -->
-                <section id="best-practices" class="section">
-                    <h2>Best Practices</h2>
-                    
-                    <div class="tip">
-                        <strong>Mapping Design</strong>
-                        <ul>
-                            <li>Create reusable mappings for common entity transformations</li>
-                            <li>Use descriptive mapping names for easy identification</li>
-                            <li>Test mappings with sample data before production use</li>
-                            <li>Document complex field transformations and business rules</li>
-                        </ul>
-                    </div>
-
-                    <div class="warning">
-                        <strong>Error Handling</strong>
-                        <ul>
-                            <li>Always check the error status after creating mappings</li>
-                            <li>Implement fallback logic for failed transformations</li>
-                            <li>Log transformation errors for debugging</li>
-                            <li>Validate data types and null values before mapping</li>
-                        </ul>
-                    </div>
-
-                    <div class="success">
-                        <strong>Performance Optimization</strong>
-                        <ul>
-                            <li>Cache frequently used mappings to avoid recreation</li>
-                            <li>Use batch transformations for large datasets</li>
-                            <li>Consider memory usage for large object transformations</li>
-                            <li>Profile mapping performance for optimization opportunities</li>
-                        </ul>
-                    </div>
-                </section>
-
-                <!-- Navigation -->
-                <div class="nav-links">
-                    <a href="dataimportmanager.html"><i class="bi bi-arrow-left"></i> Data Import Manager</a>
-                    <a href="defaultsmanager.html">Defaults Manager <i class="bi bi-arrow-right"></i></a>
-                </div>
-
-                <!-- Footer -->
-                <footer class="documentation-footer">
-                    <div class="footer-content">
-                        <div class="footer-copyright">
-                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
-                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
-                        </div>
-                        <div class="footer-links">
-                            <a href="index.html">Home</a>
-                            <a href="registerbeep.html">Getting Started</a>
-                            <a href="api-reference.html">API Reference</a>
-                        </div>
-                    </div>
-                </footer>
-            </div>
-        </main>
-    </div>
-
-    <!-- Scripts -->
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-    
-    <script>
-        // Page-specific functionality can go here
-        console.log('Mapping Manager documentation page loaded');
-    </script>
+</div><!-- .content-wrapper -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
 </html>
-
-

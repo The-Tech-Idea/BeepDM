@@ -49,9 +49,20 @@
                 <div class="note">
                     <strong>Source of truth (2026)</strong>
                     <ul>
-                        <li><code>WebAPIDataSource</code> and helpers: <code>DataManagementEngineStandard/WebAPI</code>.</li>
-                        <li>Use strongly typed <code>WebAPIConnectionProperties</code> for endpoint/auth configuration.</li>
-                        <li>Prefer typed auth and header settings over ad-hoc connection string composition.</li>
+                        <li>Core partial files in <code>DataManagementEngineStandard/WebAPI/</code>:
+                            <ul>
+                                <li><code>WebAPIDataSource.cs</code> &#8212; properties, constructor, helper wiring</li>
+                                <li><code>WebAPIDataSource.Connection.cs</code> &#8212; <code>Openconnection</code> / <code>Closeconnection</code> / transactions</li>
+                                <li><code>WebAPIDataSource.Data.cs</code> &#8212; CRUD: <code>GetEntity</code>, <code>InsertEntity</code>, <code>UpdateEntity</code>, <code>DeleteEntity</code></li>
+                                <li><code>WebAPIDataSource.Http.cs</code> &#8212; <code>GetAsync</code>, <code>PostAsync</code>, <code>PutAsync</code>, <code>DeleteAsync</code> convenience methods</li>
+                                <li><code>WebAPIDataSource.Structure.cs</code> &#8212; <code>GetEntitesList</code>, <code>CheckEntityExist</code>, <code>GetEntityStructure</code></li>
+                                <li><code>WebAPIDataSource.Query.cs</code> &#8212; query execution stubs</li>
+                                <li><code>WebAPIDataSource.Scripting.cs</code> &#8212; script transactions</li>
+                            </ul>
+                        </li>
+                        <li>Helpers in <code>WebAPI/Helpers/</code>: <code>WebAPIConfigurationHelper</code>, <code>WebAPIAuthenticationHelper</code>, <code>WebAPIRequestHelper</code>, <code>WebAPIDataHelper</code>, <code>WebAPICacheHelper</code>, <code>WebAPIRateLimitHelper</code>, <code>WebAPISchemaHelper</code>, <code>WebAPIErrorHelper</code>.</li>
+                        <li>Connection model: <code>WebAPIConnectionProperties</code> / <code>WebAPIDataConnection</code>.</li>
+                        <li>Example connector: <code>BeepDataSources/Connectors/SocialMedia/Twitter/TwitterDataSource.cs</code>.</li>
                     </ul>
                 </div>
 
@@ -76,11 +87,23 @@
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#architecture">Architecture</a></li>
                         <li><a href="#configuration">Configuration</a></li>
+                        <li><a href="#http-methods">HTTP Convenience Methods</a></li>
                         <li><a href="#examples">Usage Examples</a></li>
                         <li><a href="#advanced-features">Advanced Features</a></li>
                         <li><a href="#best-practices">Best Practices</a></li>
                         <li><a href="#troubleshooting">Troubleshooting</a></li>
                         <li><a href="#api-reference">API Reference</a></li>
+                        <li><a href="#custom-connector">Building a Custom API Connector</a>
+                            <ul>
+                                <li><a href="#connector-pattern">Connector Pattern</a></li>
+                                <li><a href="#twitter-setup">Twitter: Connection Setup</a></li>
+                                <li><a href="#twitter-entities">Twitter: Entities &amp; Filters</a></li>
+                                <li><a href="#twitter-read">Twitter: Reading Data</a></li>
+                                <li><a href="#twitter-typed">Twitter: Typed Commands</a></li>
+                                <li><a href="#twitter-paging">Twitter: Cursor Pagination</a></li>
+                                <li><a href="#connector-checklist">Connector Checklist</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
 
@@ -1071,6 +1094,437 @@ webApiDS.UpdateEntity("Users", updatedUser);
 webApiDS.DeleteEntity("Users", userToDelete);</code></pre>
                     </div>
                 </section>
+
+                <!-- HTTP Convenience Methods -->
+                <section class="section" id="http-methods">
+                    <h2>HTTP Convenience Methods</h2>
+                    <p>
+                        In addition to the <code>IDataSource</code> CRUD interface, <code>WebAPIDataSource</code>
+                        exposes low-level HTTP helpers defined in <code>WebAPIDataSource.Http.cs</code>.
+                        These are the preferred way to call API-specific endpoints that don&#39;t map cleanly to
+                        entity operations, and they are the building blocks used by connector subclasses.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>GET &#8212; raw response or deserialized</h3>
+                        <pre><code class="language-csharp">// Raw HttpResponseMessage
+HttpResponseMessage resp = await ds.GetAsync(
+    "users/me",
+    query: new Dictionary&lt;string, string&gt; { ["fields"] = "id,name,email" },
+    headers: new Dictionary&lt;string, string&gt; { ["Accept-Language"] = "en" }
+);
+
+// Deserialize directly to T
+var me = await ds.GetAsync&lt;UserProfile&gt;("users/me");
+// Returns default(T) on failure — never throws</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>POST / PUT / DELETE</h3>
+                        <pre><code class="language-csharp">// POST with a body
+await ds.PostAsync("tweets", body: new { text = "Hello from Beep!" });
+
+// PUT (full replace)
+await ds.PutAsync($"users/{userId}", body: updatedUser);
+
+// DELETE
+await ds.DeleteAsync($"tweets/{tweetId}");</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Authentication and headers are applied automatically</strong>
+                        <p>
+                            All four methods call <code>_authHelper.EnsureAuthenticatedAsync()</code> and
+                            <code>_authHelper.AddAuthenticationHeaders(request)</code> before sending, and
+                            apply the default headers from <code>WebAPIConnectionProperties</code>.
+                            Retry logic is handled by <code>WebAPIRequestHelper.SendWithRetryAsync</code>.
+                        </p>
+                    </div>
+
+                    <div class="note">
+                        <strong>Absolute vs relative URLs</strong>
+                        <p>
+                            If <code>endpointOrUrl</code> starts with <code>http</code> it is used as-is.
+                            Otherwise it is combined with <code>_configHelper.BaseUrl</code> (the
+                            <code>ConnectionString</code> value).
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Custom Connector Guide -->
+                <section class="section" id="custom-connector">
+                    <h2>Building a Custom API Connector</h2>
+                    <p>
+                        The recommended way to integrate a specific REST API &#8212; Twitter, GitHub, Stripe, any social
+                        or SaaS platform &#8212; is to subclass <code>WebAPIDataSource</code> and override the methods
+                        that need API-specific URL or response handling. The <code>TwitterDataSource</code> is the
+                        canonical reference implementation.
+                    </p>
+                </section>
+
+                <!-- Connector Pattern -->
+                <section class="section" id="connector-pattern">
+                    <h2>Connector Pattern</h2>
+
+                    <div class="code-example">
+                        <h3>Minimum viable connector skeleton</h3>
+                        <pre><code class="language-csharp">// 1. Annotate with [AddinAttribute] so AssemblyHandler registers it automatically
+[AddinAttribute(
+    Category = DatasourceCategory.Connector,
+    DatasourceType = DataSourceType.Twitter  // use the correct enum value for your API
+)]
+public class MyApiDataSource : WebAPIDataSource
+{
+    // 2. Map logical entity names to API endpoint paths
+    private static readonly Dictionary&lt;string, string&gt; EntityEndpoints
+        = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["items.list"]   = "items",
+        ["items.by_id"]  = "items/{id}",
+        ["items.search"] = "items/search"
+    };
+
+    // 3. Declare which AppFilter keys are required for each entity
+    private static readonly Dictionary&lt;string, string[]&gt; RequiredFilters
+        = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["items.by_id"]  = new[] { "id" },
+        ["items.search"] = new[] { "query" }
+    };
+
+    public MyApiDataSource(
+        string datasourcename, IDMLogger logger,
+        IDMEEditor dmeEditor, DataSourceType databasetype, IErrorsInfo errorObject)
+        : base(datasourcename, logger, dmeEditor, databasetype, errorObject)
+    {
+        EntitiesNames = EntityEndpoints.Keys.ToList();
+        Entities = EntitiesNames
+            .Select(n => new EntityStructure { EntityName = n, DatasourceEntityName = n })
+            .ToList();
+    }
+
+    // 4. Override GetEntityAsync to drive URL resolution and response extraction
+    public override async Task&lt;IEnumerable&lt;object&gt;&gt; GetEntityAsync(
+        string EntityName, List&lt;AppFilter&gt; Filter)
+    {
+        if (!EntityEndpoints.TryGetValue(EntityName, out var endpoint))
+            throw new InvalidOperationException($"Unknown entity '{EntityName}'");
+
+        var q = FiltersToQuery(Filter);
+        RequireFilters(EntityName, q,
+            RequiredFilters.GetValueOrDefault(EntityName, Array.Empty&lt;string&gt;()));
+
+        var resolvedEndpoint = ResolveEndpoint(endpoint, q);
+        using var resp = await GetAsync(resolvedEndpoint, q);
+        if (resp is null || !resp.IsSuccessStatusCode) return Array.Empty&lt;object&gt;();
+
+        return ExtractArray(resp, "data");  // key in JSON root where items live
+    }
+
+    // 5. Expose sync overload
+    public override IEnumerable&lt;object&gt; GetEntity(string EntityName, List&lt;AppFilter&gt; filter)
+        =&gt; GetEntityAsync(EntityName, filter).GetAwaiter().GetResult() ?? Array.Empty&lt;object&gt;();
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Helper methods inherited from WebAPIDataSource</strong>
+                        <table>
+                            <thead><tr><th>Method</th><th>What it does</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>FiltersToQuery(filters)</code></td><td>Converts <code>List&lt;AppFilter&gt;</code> to <code>Dictionary&lt;string,string&gt;</code> query-string map</td></tr>
+                                <tr><td><code>RequireFilters(name, q, keys)</code></td><td>Throws if any mandatory keys are absent from the query map</td></tr>
+                                <tr><td><code>ResolveEndpoint(template, q)</code></td><td>Substitutes <code>{param}</code> placeholders from query map and removes consumed keys</td></tr>
+                                <tr><td><code>ExtractArray(response, key)</code></td><td>Reads the JSON body and returns <code>List&lt;object&gt;</code> from the named root key (<code>"data"</code>, <code>"results"</code>, etc.)</td></tr>
+                                <tr><td><code>BuildUrlWithQuery(endpoint, q)</code></td><td>Combines base URL, path, and remaining query-string params</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Twitter: Connection Setup -->
+                <section class="section" id="twitter-setup">
+                    <h2>Twitter: Connection Setup</h2>
+                    <p>
+                        <code>TwitterDataSource</code> targets the Twitter API v2 (<code>https://api.twitter.com/2</code>)
+                        with Bearer token auth. Set up the connection via <code>WebAPIConnectionProperties</code> or
+                        through <code>ConfigEditor.AddDataConnection</code>.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Register via ConfigEditor (recommended)</h3>
+                        <pre><code class="language-csharp">var conn = new WebAPIConnectionProperties
+{
+    ConnectionName   = "Twitter",
+    ConnectionString = "https://api.twitter.com/2",
+    DatabaseType     = DataSourceType.Twitter,
+    Category         = DatasourceCategory.Connector,
+    DriverName       = "TwitterDataSource",       // matches [AddinAttribute]
+
+    // Authentication
+    ApiKey           = "AAAA...",                 // Bearer token
+    // Store auth type in Parameters (read by WebAPIAuthenticationHelper)
+};
+// Set bearer auth type in extra Parameters
+conn.Parameters = "AuthType=Bearer";
+
+// Add a default Authorization header directly (simplest approach)
+conn.Headers.Add(new WebApiHeader
+{
+    Key   = "Authorization",
+    Value = $"Bearer {bearerToken}"
+});
+
+dmeEditor.ConfigEditor.AddDataConnection(conn);
+
+// Get the data source (AssemblyHandler resolves TwitterDataSource via [AddinAttribute])
+var twitter = (TwitterDataSource)dmeEditor.GetDataSource("Twitter");
+twitter.Openconnection();</code></pre>
+                    </div>
+
+                    <div class="warning">
+                        <strong>Do not hardcode secrets</strong>
+                        <p>Load your Bearer token from environment variables or a secrets manager.
+                        Never commit tokens to version control.</p>
+                    </div>
+                </section>
+
+                <!-- Twitter: Entities & Filters -->
+                <section class="section" id="twitter-entities">
+                    <h2>Twitter: Entities &amp; Filters</h2>
+                    <p>
+                        <code>TwitterDataSource</code> registers 10 logical entity names that map to Twitter API v2
+                        endpoints. Each entity declares which <code>AppFilter.FieldName</code> keys are required.
+                    </p>
+
+                    <div class="note">
+                        <strong>Entity &#8594; Endpoint mapping</strong>
+                        <table>
+                            <thead><tr><th>Entity name</th><th>Twitter API v2 path</th><th>Required filters</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>tweets.search</code></td><td><code>tweets/search/recent</code></td><td><code>query</code></td></tr>
+                                <tr><td><code>tweets.by_id</code></td><td><code>tweets</code></td><td><code>ids</code></td></tr>
+                                <tr><td><code>users.by_username</code></td><td><code>users/by</code></td><td><code>usernames</code></td></tr>
+                                <tr><td><code>users.by_id</code></td><td><code>users</code></td><td><code>ids</code></td></tr>
+                                <tr><td><code>users.tweets</code></td><td><code>users/{id}/tweets</code></td><td><code>id</code></td></tr>
+                                <tr><td><code>users.followers</code></td><td><code>users/{id}/followers</code></td><td><code>id</code></td></tr>
+                                <tr><td><code>users.following</code></td><td><code>users/{id}/following</code></td><td><code>id</code></td></tr>
+                                <tr><td><code>lists.by_user</code></td><td><code>users/{id}/owned_lists</code></td><td><code>id</code></td></tr>
+                                <tr><td><code>lists.tweets</code></td><td><code>lists/{id}/tweets</code></td><td><code>id</code></td></tr>
+                                <tr><td><code>spaces.search</code></td><td><code>spaces/search</code></td><td><code>query</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="note">
+                        <strong>AppFilter &#8594; query-string mapping</strong>
+                        <p>
+                            <code>FiltersToQuery</code> converts each <code>AppFilter</code> to a
+                            <code>key=value</code> query-string entry using <code>AppFilter.FieldName</code>
+                            as the key and <code>AppFilter.FilterValue</code> as the value.
+                            Endpoint path parameters (e.g., <code>{id}</code>) are consumed by
+                            <code>ResolveEndpoint</code> and removed from the query string.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Twitter: Reading Data -->
+                <section class="section" id="twitter-read">
+                    <h2>Twitter: Reading Data</h2>
+
+                    <div class="code-example">
+                        <h3>Search recent tweets (IDataSource style)</h3>
+                        <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "query",       FilterValue = "BeepDM",  Operator = "=" },
+    new AppFilter { FieldName = "max_results", FilterValue = "20",      Operator = "=" }
+};
+
+var raw = twitter.GetEntity("tweets.search", filters);
+// Returns IEnumerable&lt;object&gt; (each item is a deserialized JSON object)</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Get user&#39;s followers</h3>
+                        <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "id", FilterValue = "12345678", Operator = "=" }
+};
+
+var followers = twitter.GetEntity("users.followers", filters);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Get tweets for a list</h3>
+                        <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "id", FilterValue = "listId123", Operator = "=" },
+    new AppFilter { FieldName = "max_results", FilterValue = "50", Operator = "=" }
+};
+
+var tweets = twitter.GetEntity("lists.tweets", filters);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Twitter: Typed Commands -->
+                <section class="section" id="twitter-typed">
+                    <h2>Twitter: Typed <code>[CommandAttribute]</code> Methods</h2>
+                    <p>
+                        <code>TwitterDataSource</code> exposes strongly-typed methods decorated with
+                        <code>[CommandAttribute]</code>. These are discovered by the Beep UI and tooling
+                        to build call panels automatically.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Search tweets &#8212; typed</h3>
+                        <pre><code class="language-csharp">// Returns IEnumerable&lt;TwitterTweet&gt; (from Models.cs)
+IEnumerable&lt;TwitterTweet&gt; tweets = await twitter.GetTweets(
+    query: "#dotnet lang:en",
+    maxResults: 25
+);
+
+foreach (var tweet in tweets)
+{
+    Console.WriteLine($"{tweet.CreatedAt:s}  @{tweet.AuthorId}");
+    Console.WriteLine($"  {tweet.Text}");
+    Console.WriteLine($"  Likes: {tweet.PublicMetrics?.LikeCount}  " +
+                      $"RT: {tweet.PublicMetrics?.RetweetCount}");
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>User timeline</h3>
+                        <pre><code class="language-csharp">var timeline = await twitter.GetUserTimeline(
+    userId: "12345678",
+    maxResults: 50
+);
+
+var popular = timeline
+    .OrderByDescending(t => t.PublicMetrics?.LikeCount ?? 0)
+    .Take(5);
+
+foreach (var t in popular)
+    Console.WriteLine($"{t.PublicMetrics?.LikeCount,6} likes &#8212; {t.Text[..50]}");</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>User lookup</h3>
+                        <pre><code class="language-csharp">// By username
+var users = await twitter.GetUserByUsername("beep_dm");
+var user  = users.FirstOrDefault();
+Console.WriteLine($"{user?.Name} &#8212; {user?.PublicMetrics?.FollowersCount} followers");
+
+// By ID
+var byId = await twitter.GetUserById("12345678");</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Available typed methods</strong>
+                        <table>
+                            <thead><tr><th>Method</th><th>Returns</th><th>Required params</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>GetTweets(query, maxResults, nextToken?)</code></td><td><code>IEnumerable&lt;TwitterTweet&gt;</code></td><td><code>query</code></td></tr>
+                                <tr><td><code>GetUserTimeline(userId, maxResults, nextToken?)</code></td><td><code>IEnumerable&lt;TwitterTweet&gt;</code></td><td><code>userId</code></td></tr>
+                                <tr><td><code>GetUserByUsername(username)</code></td><td><code>IEnumerable&lt;TwitterUser&gt;</code></td><td><code>username</code></td></tr>
+                                <tr><td><code>GetUserById(userId)</code></td><td><code>IEnumerable&lt;TwitterUser&gt;</code></td><td><code>userId</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Twitter: Cursor Pagination -->
+                <section class="section" id="twitter-paging">
+                    <h2>Twitter: Cursor Pagination</h2>
+                    <p>
+                        Twitter API v2 uses cursor-based pagination via <code>meta.next_token</code>.
+                        <code>TwitterDataSource.GetEntity(name, filter, pageNumber, pageSize)</code> emulates
+                        page-number semantics by walking the cursor chain up to <code>pageNumber</code> pages,
+                        then returns the requested page.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Paged retrieval (IDataSource PagedResult)</h3>
+                        <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "query", FilterValue = "#csharp", Operator = "=" }
+};
+
+// Page 1 (first 20 results)
+PagedResult page1 = twitter.GetEntity("tweets.search", filters, pageNumber: 1, pageSize: 20);
+Console.WriteLine($"Page 1: {page1.Data.Count} items");
+Console.WriteLine($"Has next: {page1.HasNextPage}");
+
+// Page 2
+PagedResult page2 = twitter.GetEntity("tweets.search", filters, pageNumber: 2, pageSize: 20);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Explicit cursor pass-through (typed method)</h3>
+                        <pre><code class="language-csharp">string? cursor = null;
+do
+{
+    var batch = await twitter.GetTweets("#dotnet", maxResults: 100, nextToken: cursor);
+    ProcessBatch(batch);
+
+    // Extract next_token from the last raw page for the next call
+    // (use typed method overload or inspect PagedResult.TotalPages instead)
+    cursor = GetNextCursor(batch); // your own helper to read meta.next_token
+}
+while (cursor != null);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Rate limits</strong>
+                        <p>
+                            Twitter API v2 Free tier: 500,000 tweet reads / month; 1 app / 1 user.
+                            Basic tier: 10,000 tweet reads / month with higher rate ceilings.
+                            Use <code>WebAPIConnectionProperties.EnableRateLimit = true</code> and
+                            <code>RateLimitRequestsPerMinute</code> to throttle automatically.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Connector Checklist -->
+                <section class="section" id="connector-checklist">
+                    <h2>Connector Checklist</h2>
+                    <p>Follow these steps when building any new <code>WebAPIDataSource</code> subclass:</p>
+
+                    <div class="note">
+                        <ol>
+                            <li>Add <code>[AddinAttribute(Category = DatasourceCategory.Connector, DatasourceType = DataSourceType.YourType)]</code>.</li>
+                            <li>Define <code>EntityEndpoints</code> (entity name &#8594; URL template dictionary).</li>
+                            <li>Define <code>RequiredFilters</code> (entity name &#8594; required <code>AppFilter.FieldName</code> array).</li>
+                            <li>Populate <code>EntitiesNames</code> and <code>Entities</code> in the constructor.</li>
+                            <li>Override <code>GetEntityAsync</code>: call <code>FiltersToQuery</code> &#8594; <code>RequireFilters</code> &#8594; <code>ResolveEndpoint</code> &#8594; <code>GetAsync</code> &#8594; <code>ExtractArray</code>.</li>
+                            <li>Add sync <code>GetEntity</code> override that delegates to <code>GetEntityAsync(...).GetAwaiter().GetResult()</code>.</li>
+                            <li>Optionally override <code>GetEntity</code> (paged) for cursor or offset pagination.</li>
+                            <li>Add typed <code>[CommandAttribute]</code> methods for Beep tooling discoverability.</li>
+                            <li>Create a <code>Models.cs</code> with JSON-annotated POCOs for response deserialization.</li>
+                            <li>Store the connector in <code>BeepDataSources/Connectors/&lt;Category&gt;/&lt;Name&gt;/</code>.</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="creating-custom-datasources.html"><i class="bi bi-arrow-left"></i> Creating Custom DataSources</a>
+                    <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="creating-custom-datasources.html">Custom DataSources</a>
+                        </div>
+                    </div>
+                </footer>
 
             </div>
         </div>

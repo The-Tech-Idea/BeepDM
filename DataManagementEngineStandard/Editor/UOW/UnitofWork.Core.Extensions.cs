@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
@@ -693,6 +694,125 @@ namespace TheTechIdea.Beep.Editor.UOW
         
         /// <summary>Event fired after property changes</summary>
         public event EventHandler<UnitofWorkParams> PostEdit;
+
+        #endregion
+
+        #region "Phase 2 — Item Utilities (2-C, 2-H, 2-I, 2-J)"
+
+        // ── Revert (2-C) ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Reverts <paramref name="item"/> to its original values, undoing any pending
+        /// inserts, modifications or deletes for that item.
+        /// </summary>
+        /// <returns><c>true</c> if the item was reverted; <c>false</c> if the item was not tracked.</returns>
+        public bool RevertItem(T item)
+        {
+            if (Units == null || item == null) return false;
+
+            var tracking = Units.GetTrackingItem(item);
+            if (tracking == null) return false;
+
+            Units.RejectChanges(item);
+
+            OnItemReverted?.Invoke(this, new UnitofWorkParams
+            {
+                EventAction = EventAction.PostEdit,
+                Record      = item,
+                EntityName  = EntityName
+            });
+
+            return true;
+        }
+
+        /// <summary>Asynchronous wrapper for <see cref="RevertItem"/>.</summary>
+        public Task<bool> RevertItemAsync(T item, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return Task.FromResult(RevertItem(item));
+        }
+
+        // ── Find (2-H) ────────────────────────────────────────────────────────────────
+
+        /// <summary>Returns the first item matching <paramref name="predicate"/>, or <c>default</c>.</summary>
+        public Task<T> FindAsync(Func<T, bool> predicate, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (Units == null || predicate == null) return Task.FromResult(default(T));
+            return Task.FromResult(Units.FirstOrDefault(predicate));
+        }
+
+        /// <summary>Returns all items matching <paramref name="predicate"/>.</summary>
+        public Task<List<T>> FindManyAsync(Func<T, bool> predicate, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (Units == null || predicate == null) return Task.FromResult(new List<T>());
+            return Task.FromResult(Units.Where(predicate).ToList());
+        }
+
+        // ── Clone (2-H) ──────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates a copy of <paramref name="item"/>.
+        /// When <paramref name="deepCopy"/> is <c>true</c>, a JSON round-trip is used to produce
+        /// a fully independent clone; otherwise a shallow property copy is performed.
+        /// </summary>
+        public T CloneItem(T item, bool deepCopy = false)
+        {
+            if (item == null) return default;
+
+            if (deepCopy)
+            {
+                var json   = System.Text.Json.JsonSerializer.Serialize(item);
+                return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+            }
+
+            // Shallow copy via reflection
+            var clone = new T();
+            foreach (var prop in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (prop.CanWrite)
+                    prop.SetValue(clone, prop.GetValue(item));
+            }
+            return clone;
+        }
+
+        // ── Count predicate (2-I) ─────────────────────────────────────────────────────
+
+        /// <summary>Returns the number of items matching <paramref name="predicate"/>.</summary>
+        public int Count(Func<T, bool> predicate)
+            => Units == null ? 0 : Units.Count(predicate);
+
+        // ── Undo helpers (2-J) ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Configures the undo/redo system.
+        /// </summary>
+        /// <param name="enable">When <c>true</c>, undo recording is enabled.</param>
+        /// <param name="maxDepth">Maximum number of undo steps to retain. Default is 100.</param>
+        public void EnableUndo(bool enable, int maxDepth = 100)
+        {
+            IsUndoEnabled = enable;
+            MaxUndoDepth  = maxDepth;
+        }
+
+        /// <summary>Performs an undo operation. Alias for <see cref="Undo"/>.</summary>
+        public bool UndoLastAction() => Undo();
+
+        /// <summary>Performs a redo operation. Alias for <see cref="Redo"/>.</summary>
+        public bool RedoLastAction() => Redo();
+
+        #endregion
+
+        #region Aggregates (IAggregatable)
+
+        /// <summary>Count items matching an untyped predicate (IAggregatable explicit implementation).</summary>
+        int IAggregatable.Count(Func<object, bool> predicate)
+        {
+            if (Units == null) return 0;
+            if (predicate == null) return Units.Count;
+            return Units.Cast<object>().Count(predicate);
+        }
 
         #endregion
     }

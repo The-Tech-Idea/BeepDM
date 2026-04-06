@@ -60,12 +60,69 @@ namespace TheTechIdea.Beep.StreamandEvents
         /// <summary>Tenant-scoped topic prefix applied by <c>TenantAwareBrokerAdapter</c>.</summary>
         public const string TenantTopicPrefix = "x-tenant-topic-prefix";
 
+        // ── Geo-Replication (Phase 7) ────────────────────────────────────────
+        /// <summary>Cluster ID where the event was originally produced. Used for loop detection in active-active.</summary>
+        public const string OriginCluster = "x-origin-cluster";
+
+        /// <summary>Region of the originating cluster (e.g. <c>us-east-1</c>).</summary>
+        public const string OriginRegion = "x-origin-region";
+
+        /// <summary>Number of replication hops this event has traversed (prevents infinite loops).</summary>
+        public const string ReplicationHop = "x-replication-hop";
+
+        /// <summary>Name of the replication policy that replicated this event.</summary>
+        public const string ReplicationPolicy = "x-replication-policy";
+
         // ── Claim-check (Phase N) ────────────────────────────────────────────
         /// <summary>JSON-serialised <c>ClaimTicket</c> replacing an oversized payload.</summary>
         public const string ClaimTicket = "x-claim-ticket";
 
         /// <summary>Original payload size in bytes, set by the claim-check producer interceptor.</summary>
         public const string PayloadSizeBytes = "x-payload-size-bytes";
+
+        // ── Key-Value / Object Store (Phase 8) ──────────────────────────────
+        /// <summary>Logical key for KV store operations.</summary>
+        public const string KvKey = "x-kv-key";
+
+        /// <summary>Monotonically increasing revision number per key.</summary>
+        public const string KvRevision = "x-kv-revision";
+
+        /// <summary>KV operation type: Put, Delete, Purge.</summary>
+        public const string KvOperation = "x-kv-operation";
+
+        /// <summary>Object store chunk index (0-based) for multi-part uploads.</summary>
+        public const string ObjChunkIndex = "x-obj-chunk-index";
+
+        /// <summary>Total number of chunks for a multi-part object.</summary>
+        public const string ObjChunkCount = "x-obj-chunk-count";
+
+        /// <summary>SHA-256 checksum of the complete object.</summary>
+        public const string ObjChecksum = "x-obj-checksum";
+
+        // ── Rate Limiting (R3-P5-02 G-3) ────────────────────────────────────
+
+        /// <summary>Remaining rate-limit tokens after the current request was allowed.</summary>
+        public const string RateLimitRemaining = "x-ratelimit-remaining";
+
+        /// <summary>Milliseconds the caller should wait before retrying after a rate-limit deny.</summary>
+        public const string RateLimitRetryAfterMs = "x-ratelimit-retry-after-ms";
+
+        // ── Retry Routing (R3-P5-05 G-3) ────────────────────────────────────
+
+        /// <summary>Retry level suffix (e.g. "retry-1") stamped by <c>RetryTopicRouter</c>.</summary>
+        public const string RetryLevel = "x-retry-level";
+
+        /// <summary>Retry delay in milliseconds stamped by <c>RetryTopicRouter</c>.</summary>
+        public const string RetryAfterMs = "x-retry-after-ms";
+
+        /// <summary>Original topic from which a message was routed to a retry or DLQ topic.</summary>
+        public const string OriginalTopic = "x-original-topic";
+
+        /// <summary>Exception type or human-readable reason for a retry or DLQ routing.</summary>
+        public const string FailureReason = "x-failure-reason";
+
+        /// <summary>Original broker offset of a message before retry/DLQ routing.</summary>
+        public const string OriginalOffset = "x-original-offset";
     }
 
     // ── StreamContext (parsed W3C + Beep correlation) ─────────────────────────

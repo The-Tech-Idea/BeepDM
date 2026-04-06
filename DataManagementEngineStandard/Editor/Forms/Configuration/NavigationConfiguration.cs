@@ -22,5 +22,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
         
         /// <summary>Gets or sets whether to enable fast navigation mode</summary>
         public bool EnableFastNavigation { get; set; } = false;
+        
+        /// <summary>Gets or sets whether to validate the current record before navigating away</summary>
+        public bool ValidateBeforeNavigation { get; set; } = false;
     }
 }

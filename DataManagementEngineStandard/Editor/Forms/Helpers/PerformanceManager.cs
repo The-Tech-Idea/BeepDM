@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Utilities;
@@ -21,6 +22,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly IDMEEditor _dmeEditor;
         private readonly ConcurrentDictionary<string, CachedBlockInfo> _blockCache = new();
         private readonly ConcurrentDictionary<string, PerformanceMetric> _performanceMetrics = new();
+        private readonly ConcurrentDictionary<string, TimeSpan> _blockTtl = new();  // Phase 7: per-block TTL
+        private long _evictionCount;                                                  // Phase 7: LRU eviction counter
         private readonly Timer _cacheCleanupTimer;
         private readonly ReaderWriterLockSlim _cacheLock = new(LockRecursionPolicy.SupportsRecursion);
         private readonly PerformanceStatistics _statistics = new();
@@ -150,8 +153,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             {
                 if (_blockCache.TryGetValue(blockName, out var cachedInfo))
                 {
+                    // Phase 7: use per-block TTL if configured, otherwise global
+                    var ttl = _blockTtl.TryGetValue(blockName, out var perBlock)
+                        ? perBlock
+                        : CacheExpirationTime;
+
                     // Check if cache entry is still valid
-                    if (DateTime.UtcNow.Subtract(cachedInfo.CacheTime) <= CacheExpirationTime)
+                    if (DateTime.UtcNow.Subtract(cachedInfo.CacheTime) <= ttl)
                     {
                         // Update access statistics
                         cachedInfo.AccessCount++;
@@ -171,6 +179,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                         // Remove expired entry
                         _blockCache.TryRemove(blockName, out _);
                         _statistics.CacheExpired++;
+                        Interlocked.Increment(ref _evictionCount);
                     }
                 }
 
@@ -332,6 +341,88 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #endregion
 
+        #region Phase 7 — Cache Improvements
+
+        /// <summary>
+        /// Removes a single block from the cache (external-change invalidation).
+        /// </summary>
+        public void InvalidateBlockCache(string blockName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+            if (_blockCache.TryRemove(blockName, out _))
+            {
+                Interlocked.Increment(ref _evictionCount);
+                LogOperation($"Cache invalidated for block '{blockName}'");
+            }
+        }
+
+        /// <summary>
+        /// Sets a per-block TTL override. Use <see cref="TimeSpan.Zero"/> to remove the override.
+        /// </summary>
+        public void SetBlockCacheTtl(string blockName, TimeSpan ttl)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+            if (ttl == TimeSpan.Zero)
+                _blockTtl.TryRemove(blockName, out _);
+            else
+                _blockTtl[blockName] = ttl;
+        }
+
+        /// <summary>
+        /// Returns a lightweight cache stats snapshot (hit/miss/eviction/size).
+        /// </summary>
+        public CacheStats GetCacheStats()
+        {
+            var stats = GetPerformanceStatistics();
+            return new CacheStats
+            {
+                Hits               = stats.CacheHits,
+                Misses             = stats.CacheMisses,
+                Evictions          = Interlocked.Read(ref _evictionCount) + stats.CacheExpired,
+                CurrentSize        = _blockCache.Count,
+                EstimatedMemoryBytes = _blockCache.Count * 256L
+            };
+        }
+
+        /// <summary>
+        /// Checks estimated managed memory against <paramref name="thresholdBytes"/>.
+        /// If exceeded, evicts the least-recently-used half of the cache.
+        /// </summary>
+        public void CheckMemoryPressure(long thresholdBytes = 256 * 1024 * 1024)
+        {
+            var usedBytes = GC.GetTotalMemory(false);
+            if (usedBytes < thresholdBytes) return;
+
+            LogOperation($"Memory pressure detected ({usedBytes / (1024 * 1024)} MB). Evicting LRU cache entries.");
+
+            if (!_cacheLock.TryEnterWriteLock(TimeSpan.FromSeconds(3))) return;
+            try
+            {
+                var half = _blockCache.Count / 2;
+                if (half <= 0) return;
+
+                var lruKeys = _blockCache
+                    .OrderBy(kvp => kvp.Value.LastAccessed)
+                    .Take(half)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+
+                foreach (var key in lruKeys)
+                {
+                    _blockCache.TryRemove(key, out _);
+                    Interlocked.Increment(ref _evictionCount);
+                }
+
+                LogOperation($"LRU eviction removed {lruKeys.Count} entries due to memory pressure.");
+            }
+            finally
+            {
+                _cacheLock.ExitWriteLock();
+            }
+        }
+
+        #endregion
+
         #region Private Helper Methods
 
         private void CleanupExpiredCache(object state)
@@ -367,6 +458,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 if (expiredKeys.Count > 0)
                 {
                     LogOperation($"Cleaned up {expiredKeys.Count} expired cache entries");
+                }
+
+                // Phase 7: log hit/miss ratio periodically
+                var total = _statistics.CacheHits + _statistics.CacheMisses;
+                if (total > 0)
+                {
+                    var hitRate = (double)_statistics.CacheHits / total * 100.0;
+                    LogOperation($"Cache stats — hits: {_statistics.CacheHits}, misses: {_statistics.CacheMisses}, hit rate: {hitRate:F1}%, size: {_blockCache.Count}");
                 }
             }
             finally
@@ -405,9 +504,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             foreach (var key in oldestEntries)
             {
                 _blockCache.TryRemove(key, out _);
+                Interlocked.Increment(ref _evictionCount);
             }
 
-            LogOperation($"Removed {oldestEntries.Count} oldest cache entries to maintain size limit");
+            LogOperation($"LRU: removed {oldestEntries.Count} oldest cache entries to maintain size limit");
         }
 
         private void RecordPerformanceMetric(string operationName, TimeSpan duration)

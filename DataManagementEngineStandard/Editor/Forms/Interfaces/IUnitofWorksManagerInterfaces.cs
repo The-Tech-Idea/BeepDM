@@ -7,6 +7,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Editor.UOWManager.Configuration;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
 
@@ -42,6 +43,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         
         /// <summary>Gets the trigger manager</summary>
         ITriggerManager Triggers { get; }
+
+        /// <summary>Gets the savepoint manager</summary>
+        ISavepointManager Savepoints { get; }
+
+        /// <summary>Gets the record locking manager</summary>
+        ILockManager Locking { get; }
+
+        /// <summary>Gets the query builder manager</summary>
+        IQueryBuilderManager QueryBuilder { get; }
+
+        /// <summary>Gets the per-block error log</summary>
+        IBlockErrorLog ErrorLog { get; }
+
+        /// <summary>Gets the message queue manager</summary>
+        IMessageQueueManager Messages { get; }
+
+        /// <summary>Gets the block factory</summary>
+        IBlockFactory BlockFactory { get; }
         #endregion
 
         #region Block Management
@@ -82,11 +101,145 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         bool ValidateBlock(string blockName);
         bool ValidateForm();
         #endregion
+
+        #region Undo / Redo
+
+        /// <summary>Enable or disable undo tracking for a block.</summary>
+        void SetBlockUndoEnabled(string blockName, bool enable, int maxDepth = 50);
+
+        /// <summary>Undo the last action in a block's OBL undo stack.</summary>
+        bool UndoBlock(string blockName);
+
+        /// <summary>Redo the last undone action in a block's OBL undo stack.</summary>
+        bool RedoBlock(string blockName);
+
+        bool CanUndoBlock(string blockName);
+        bool CanRedoBlock(string blockName);
+
+        #endregion
+
+        #region Change Summaries
+
+        TheTechIdea.Beep.Editor.UOW.Models.ChangeSummary GetBlockChangeSummary(string blockName);
+
+        /// <summary>Returns one ChangeSummary per registered block.</summary>
+        IReadOnlyDictionary<string, TheTechIdea.Beep.Editor.UOW.Models.ChangeSummary> GetFormChangeSummary();
+
+        #endregion
+
+        #region Block Data Operations
+
+        /// <summary>Reload block data from the data source, merging with current edits.</summary>
+        Task<bool> RefreshBlockAsync(
+            string blockName,
+            System.Collections.Generic.List<TheTechIdea.Beep.Report.AppFilter> filters = null,
+            ConflictMode conflictMode = ConflictMode.ServerWins,
+            System.Threading.CancellationToken ct = default);
+
+        /// <summary>Revert the current record to its original field values.</summary>
+        bool RevertCurrentRecord(string blockName);
+
+        /// <summary>Revert the record at a specific index.</summary>
+        bool RevertRecord(string blockName, int recordIndex);
+
+        #endregion
+
+        #region Query History
+
+        IReadOnlyList<TheTechIdea.Beep.Editor.UOW.Models.QueryHistoryEntry> GetBlockQueryHistory(string blockName);
+        void ClearBlockQueryHistory(string blockName);
+
+        #endregion
+
+        #region Block Aggregates
+
+        /// <summary>Sum a numeric field across all loaded records in the block.</summary>
+        decimal GetBlockSum(string blockName, string fieldName);
+
+        /// <summary>Average of a numeric field.</summary>
+        decimal GetBlockAverage(string blockName, string fieldName);
+
+        /// <summary>Count of records matching optional predicate.</summary>
+        int GetBlockCount(string blockName, Func<object, bool> predicate = null);
+
+        #endregion
+
+        #region Batch Commit
+
+        /// <summary>Commit all dirty blocks in batches across the whole form.</summary>
+        Task<TheTechIdea.Beep.Editor.UOW.Models.CommitBatchResult> CommitFormBatchAsync(
+            int batchSize = 200,
+            IProgress<TheTechIdea.Beep.Editor.UOW.Models.CommitBatchProgress> progress = null,
+            System.Threading.CancellationToken ct = default);
+
+        /// <summary>Commit a single block in batches.</summary>
+        Task<TheTechIdea.Beep.Editor.UOW.Models.CommitBatchResult> CommitBlockBatchAsync(
+            string blockName,
+            int batchSize = 200,
+            IProgress<TheTechIdea.Beep.Editor.UOW.Models.CommitBatchProgress> progress = null,
+            System.Threading.CancellationToken ct = default);
+
+        #endregion
+
+        #region Block Export / Import
+
+        Task ExportBlockToJsonAsync(string blockName, System.IO.Stream stream,
+            System.Threading.CancellationToken ct = default);
+        Task ExportBlockToCsvAsync(string blockName, System.IO.Stream stream,
+            char delimiter = ',', System.Threading.CancellationToken ct = default);
+        System.Data.DataTable GetBlockAsDataTable(string blockName);
+
+        Task<int> ImportBlockFromJsonAsync(string blockName, System.IO.Stream stream,
+            bool clearFirst = true, System.Threading.CancellationToken ct = default);
+        Task<int> ImportBlockFromCsvAsync(string blockName, System.IO.Stream stream,
+            char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true,
+            System.Threading.CancellationToken ct = default);
+
+        #endregion
+
+        #region Block Grouping
+
+        /// <summary>Returns grouped view of the block's current data set.</summary>
+        IReadOnlyList<ItemGroup<object>> GetBlockGroups(string blockName, string fieldName);
+
+        #endregion
+
+        #region Phase 4 – Form State, Cross-Block Validation, Navigation History, Clone, Change Feed
+
+        // Form State Persistence
+        FormStateSnapshot SaveFormState();
+        Task<bool> RestoreFormStateAsync(FormStateSnapshot snapshot, System.Threading.CancellationToken ct = default);
+
+        // Cross-Block Validation
+        void RegisterCrossBlockRule(CrossBlockValidationRule rule);
+        bool UnregisterCrossBlockRule(string ruleName);
+        IReadOnlyList<string> ValidateCrossBlock();
+
+        // Navigation History
+        Task<bool> NavigateBackAsync(string blockName);
+        Task<bool> NavigateForwardAsync(string blockName);
+        bool CanNavigateBack(string blockName);
+        bool CanNavigateForward(string blockName);
+        IReadOnlyList<NavigationHistoryEntry> GetNavigationHistory(string blockName);
+        void ClearNavigationHistory(string blockName);
+
+        // Block Clone
+        Task<bool> CloneBlockDataAsync(string sourceBlockName, string destBlockName,
+            System.Threading.CancellationToken ct = default);
+        Task<bool> DuplicateCurrentRecordAsync(string blockName,
+            System.Threading.CancellationToken ct = default);
+
+        // Block Change Feed
+        event EventHandler<BlockFieldChangedEventArgs> OnBlockFieldChanged;
+
+        #endregion
     }
 
     /// <summary>
-    /// Interface for relationship management functionality
+    /// Deprecated legacy helper for the old FormsManager-owned relationship engine.
+    /// Master/detail orchestration now belongs to IUnitofWork and the FormsManager master/detail facade methods.
     /// </summary>
+    [Obsolete("IRelationshipManager is deprecated. Use IUnitofWork master/detail APIs and FormsManager master/detail methods instead.")]
     public interface IRelationshipManager
     {
         void CreateMasterDetailRelation(string masterBlockName, string detailBlockName, 
@@ -147,6 +300,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         DataBlockInfo GetCachedBlockInfo(string blockName);
         void ClearCache();
         PerformanceStatistics GetPerformanceStatistics();
+
+        // Phase 7 — cache improvements
+        /// <summary>Removes a single block's entry from the cache (invalidation).</summary>
+        void InvalidateBlockCache(string blockName);
+
+        /// <summary>Sets a per-block cache TTL, overriding the global <see cref="CacheExpirationTime"/>.</summary>
+        void SetBlockCacheTtl(string blockName, TimeSpan ttl);
+
+        /// <summary>Returns a lightweight cache hit/miss/eviction snapshot.</summary>
+        CacheStats GetCacheStats();
+
+        /// <summary>
+        /// Checks estimated managed memory against <paramref name="thresholdBytes"/>;
+        /// if exceeded, evicts the least-recently-used half of the cache.
+        /// </summary>
+        void CheckMemoryPressure(long thresholdBytes = 256 * 1024 * 1024);
     }
 
     /// <summary>
@@ -276,6 +445,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void Reset();
         
         #endregion
+
+        #region Per-Block Snapshot (Phase 8)
+
+        /// <summary>
+        /// Update per-block variables with a full block snapshot captured by FormsManager.
+        /// Stores the snapshot so BeepDataBlock can read it back via GetBlockVariables.
+        /// </summary>
+        void UpdateBlockVariables(
+            string blockName,
+            string masterBlockName,
+            string mode,
+            int cursorRecord,
+            int lastRecord,
+            int recordsDisplayed,
+            bool isQueryMode,
+            bool isDirty,
+            string triggerItem = null,
+            TriggerType? activeTrigger = null);
+
+        /// <summary>
+        /// Retrieve the per-block variable snapshot last written by UpdateBlockVariables.
+        /// Returns a fresh empty instance when no snapshot exists for the block.
+        /// </summary>
+        SystemVariables GetBlockVariables(string blockName);
+
+        #endregion
     }
     
     #endregion
@@ -301,6 +496,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// </summary>
         /// <param name="rules">Collection of validation rules to register</param>
         void RegisterRules(IEnumerable<ValidationRule> rules);
+
+        /// <summary>
+        /// Start a fluent validation rule builder for a specific block+field.
+        /// Usage: manager.ForField("Block", "Field").Required().MinLength(3).Register();
+        /// </summary>
+        ValidationRuleBuilder ForField(string blockName, string fieldName);
         
         /// <summary>
         /// Unregister a validation rule by name
@@ -1231,7 +1432,771 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         event EventHandler<TriggerChainCompletedEventArgs> TriggerChainCompleted;
         
         #endregion
+
+        #region Statistics & Scope Helpers
+
+        /// <summary>Get aggregate execution statistics for a block's triggers</summary>
+        TriggerStatisticsInfo GetTriggerStatistics(string blockName);
+
+        /// <summary>Get only form-scope triggers registered for a block</summary>
+        IReadOnlyList<TriggerDefinition> GetFormLevelTriggers(string blockName);
+
+        /// <summary>Get only block-scope triggers registered for a block</summary>
+        IReadOnlyList<TriggerDefinition> GetBlockLevelTriggers(string blockName);
+
+        /// <summary>Get only record-scope triggers registered for a block</summary>
+        IReadOnlyList<TriggerDefinition> GetRecordLevelTriggers(string blockName);
+
+        /// <summary>Get only item-scope triggers registered for a block</summary>
+        IReadOnlyList<TriggerDefinition> GetItemLevelTriggers(string blockName);
+
+        #endregion
     }
     
+    #endregion
+
+    #region Savepoint Manager Interface
+
+    /// <summary>
+    /// Manages named savepoints for block state snapshots and rollback.
+    /// Platform-agnostic — no UI dependencies.
+    /// </summary>
+    public interface ISavepointManager
+    {
+        /// <summary>Create a named savepoint; auto-generates name if null passed</summary>
+        string CreateSavepoint(string blockName, string savepointName = null);
+
+        /// <summary>Create a savepoint with full state detail and optional record snapshot</summary>
+        string CreateSavepoint(string blockName, string savepointName, int recordIndex, int recordCount, bool isDirty, Dictionary<string, object> snapshot = null);
+
+        /// <summary>Roll back to a named savepoint; removes later savepoints</summary>
+        Task<bool> RollbackToSavepointAsync(string blockName, string savepointName, CancellationToken ct = default);
+
+        /// <summary>Release (forget) a named savepoint</summary>
+        bool ReleaseSavepoint(string blockName, string savepointName);
+
+        /// <summary>Release all savepoints for a block</summary>
+        void ReleaseAllSavepoints(string blockName);
+
+        /// <summary>List all savepoints for a block, ordered by creation time</summary>
+        IReadOnlyList<SavepointInfo> ListSavepoints(string blockName);
+
+        /// <summary>Check whether a named savepoint exists</summary>
+        bool SavepointExists(string blockName, string savepointName);
+    }
+
+    #endregion
+
+    #region Lock Manager Interface
+
+    /// <summary>
+    /// Provides client-side record locking for data blocks.
+    /// Platform-agnostic — no UI dependencies.
+    /// </summary>
+    public interface ILockManager
+    {
+        LockMode GetLockMode(string blockName);
+        void SetLockMode(string blockName, LockMode mode);
+        bool GetLockOnEdit(string blockName);
+        void SetLockOnEdit(string blockName, bool value);
+
+        /// <summary>Set the current record index for a block (called on navigation).</summary>
+        void SetCurrentRecordIndex(string blockName, int index);
+
+        Task<bool> LockCurrentRecordAsync(string blockName, CancellationToken ct = default);
+        bool UnlockCurrentRecord(string blockName);
+        void UnlockAllRecords(string blockName);
+        bool IsRecordLocked(string blockName, int recordIndex);
+        bool IsCurrentRecordLocked(string blockName);
+        RecordLockInfo GetLockInfo(string blockName, int recordIndex);
+        int GetLockedRecordCount(string blockName);
+        IReadOnlyList<RecordLockInfo> GetAllLocks(string blockName);
+
+        /// <summary>Lock automatically if LockOnEdit is true and mode is Automatic</summary>
+        Task<bool> AutoLockIfNeededAsync(string blockName, CancellationToken ct = default);
+    }
+
+    #endregion
+
+    #region Query Builder Manager Interface
+
+    /// <summary>
+    /// Builds AppFilter lists from field-value dictionaries and manages query templates.
+    /// Pure logic — no UI dependencies.
+    /// </summary>
+    public interface IQueryBuilderManager
+    {
+        // Per-block per-field operator registry
+        void SetQueryOperator(string blockName, string fieldName, QueryOperator op);
+        QueryOperator GetQueryOperator(string blockName, string fieldName);
+        void ClearQueryOperators(string blockName);
+
+        // Build AppFilter list from a value dictionary (key = fieldName)
+        List<AppFilter> BuildFilters(string blockName, Dictionary<string, object> fieldValues);
+
+        // WHERE / OrderBy clause helpers (string to AppFilter)
+        List<AppFilter> ParseWhereClause(string whereClause);
+        List<AppFilter> ParseOrderByClause(string orderByClause);
+        List<AppFilter> CombineFiltersAnd(List<AppFilter> a, List<AppFilter> b);
+
+        // Query template CRUD
+        void SaveQueryTemplate(string blockName, string templateName, List<AppFilter> filters);
+        QueryTemplateInfo LoadQueryTemplate(string blockName, string templateName);
+        IReadOnlyList<QueryTemplateInfo> GetQueryTemplates(string blockName);
+        bool DeleteQueryTemplate(string blockName, string templateName);
+        void ClearAllTemplates(string blockName);
+    }
+
+    #endregion
+
+    #region Block Error Log Interface
+
+    /// <summary>
+    /// Per-block error log with FIFO eviction and platform-agnostic events.
+    /// </summary>
+    public interface IBlockErrorLog
+    {
+        bool SuppressErrorEvents { get; set; }
+        int MaxLogSize { get; set; }
+
+        event EventHandler<BlockErrorEventArgs> OnError;
+        event EventHandler<BlockErrorEventArgs> OnWarning;
+
+        void LogError(string blockName, Exception ex, string context, ErrorSeverity severity = ErrorSeverity.Error);
+        void LogWarning(string blockName, string message, string context);
+
+        void ClearErrorLog(string blockName);
+        void ClearAllLogs();
+
+        IReadOnlyList<BlockErrorInfo> GetErrorLog(string blockName);
+        IReadOnlyList<BlockErrorInfo> GetErrorsForContext(string blockName, string context);
+        IReadOnlyList<BlockErrorInfo> GetErrorsBySeverity(string blockName, ErrorSeverity severity);
+        int GetErrorCount(string blockName);
+        bool HasErrors(string blockName);
+    }
+
+    #endregion
+
+    #region Message Queue Manager Interface
+
+    /// <summary>
+    /// Platform-agnostic message queue for data blocks.
+    /// UI layers subscribe to OnMessage/OnMessageCleared to display messages.
+    /// </summary>
+    public interface IMessageQueueManager
+    {
+        int MessageDisplayDurationMs { get; set; }
+        bool AutoAdvanceMessages { get; set; }
+
+        event EventHandler<BlockMessageEventArgs> OnMessage;
+        event EventHandler<BlockMessageEventArgs> OnMessageCleared;
+
+        void SetMessage(string blockName, string text, MessageLevel level = MessageLevel.Info);
+        void ClearMessage(string blockName);
+        void AdvanceMessage(string blockName);
+
+        void ShowInfoMessage(string blockName, string text);
+        void ShowSuccessMessage(string blockName, string text);
+        void ShowWarningMessage(string blockName, string text);
+        void ShowErrorMessage(string blockName, string text);
+
+        string GetCurrentMessage(string blockName);
+        MessageLevel GetCurrentMessageLevel(string blockName);
+        int GetQueuedMessageCount(string blockName);
+    }
+
+    #endregion
+
+    #region Block Factory Interface
+
+    /// <summary>
+    /// Resolves IUnitofWork + IEntityStructure from connection name and entity name via IDMEEditor.
+    /// </summary>
+    public interface IBlockFactory
+    {
+        /// <summary>Create a UoW + EntityStructure pair from a connection and entity name</summary>
+        Task<(IUnitofWork UoW, IEntityStructure Structure)> CreateBlockAsync(
+            string connectionName, string entityName, CancellationToken ct = default);
+
+        /// <summary>Validate that the connection + entity pair resolves correctly</summary>
+        Task<bool> ValidateBlockSourceAsync(
+            string connectionName, string entityName, CancellationToken ct = default);
+    }
+
+    #endregion
+
+    #region Block Property Manager Interface
+
+    /// <summary>
+    /// Sets and gets Oracle Forms-equivalent block properties on registered blocks.
+    /// Corresponds to Oracle Forms SET_BLOCK_PROPERTY / GET_BLOCK_PROPERTY built-ins.
+    /// </summary>
+    public interface IBlockPropertyManager
+    {
+        /// <summary>Set a property on the named block</summary>
+        void SetBlockProperty(string blockName, Forms.Models.BlockProperty property, object value);
+
+        /// <summary>Get a property value from the named block</summary>
+        object GetBlockProperty(string blockName, Forms.Models.BlockProperty property);
+
+        /// <summary>Typed convenience overload for GetBlockProperty</summary>
+        T GetBlockProperty<T>(string blockName, Forms.Models.BlockProperty property);
+    }
+
+    #endregion
+
+    #region Alert Provider Interface
+
+    /// <summary>
+    /// Pluggable UI provider for modal alert dialogs.
+    /// Inject an implementation from the UI layer; the default no-op implementation
+    /// logs to Status and returns AlertResult.Button1.
+    /// </summary>
+    public interface IAlertProvider
+    {
+        /// <summary>
+        /// Display an alert dialog and return the button the user pressed.
+        /// Corresponds to Oracle Forms SHOW_ALERT built-in.
+        /// </summary>
+        Task<Forms.Models.AlertResult> ShowAlertAsync(
+            string title,
+            string message,
+            Forms.Models.AlertStyle style = Forms.Models.AlertStyle.None,
+            string button1Text = "OK",
+            string button2Text = null,
+            string button3Text = null,
+            CancellationToken ct = default);
+    }
+
+    #endregion
+
+    #region Sequence Provider Interface
+
+    /// <summary>
+    /// Provides named auto-increment sequences.
+    /// Corresponds to Oracle Forms :SEQUENCE.NEXTVAL usage.
+    /// </summary>
+    public interface ISequenceProvider
+    {
+        /// <summary>Increment and return the next value for the named sequence</summary>
+        long GetNextSequence(string sequenceName);
+
+        /// <summary>Peek at the next value without incrementing</summary>
+        long PeekNextSequence(string sequenceName);
+
+        /// <summary>Reset a sequence to a starting value (default 1)</summary>
+        void ResetSequence(string sequenceName, long startValue = 1);
+
+        /// <summary>Whether the named sequence has been created</summary>
+        bool SequenceExists(string sequenceName);
+
+        /// <summary>Create a new named sequence with the given starting value</summary>
+        void CreateSequence(string sequenceName, long startValue = 1, long incrementBy = 1);
+    }
+
+    #endregion
+
+    #region Timer Manager Interface
+
+    /// <summary>
+    /// Manages named form-level timers that fire WHEN-TIMER-EXPIRED triggers.
+    /// Corresponds to Oracle Forms CREATE_TIMER / DELETE_TIMER / GET_TIMER built-ins.
+    /// </summary>
+    public interface ITimerManager : IDisposable
+    {
+        /// <summary>
+        /// Create and start a named timer.
+        /// Corresponds to Oracle Forms CREATE_TIMER.
+        /// </summary>
+        Forms.Models.TimerDefinition CreateTimer(string timerName, TimeSpan interval, bool repeating = false);
+
+        /// <summary>
+        /// Stop and remove a named timer.
+        /// Corresponds to Oracle Forms DELETE_TIMER.
+        /// Returns false if the timer was not found.
+        /// </summary>
+        bool DeleteTimer(string timerName);
+
+        /// <summary>
+        /// Get the definition/state of a named timer.
+        /// Corresponds to Oracle Forms GET_TIMER.
+        /// </summary>
+        Forms.Models.TimerDefinition GetTimer(string timerName);
+
+        /// <summary>Returns all currently registered timers (running and paused)</summary>
+        IReadOnlyList<Forms.Models.TimerDefinition> GetAllTimers();
+
+        /// <summary>Whether a timer with the given name exists</summary>
+        bool TimerExists(string timerName);
+
+        /// <summary>
+        /// Event raised when a timer fires.
+        /// Handlers should fire TriggerType.WhenTimerExpired for their block/form.
+        /// </summary>
+        event EventHandler<TimerFiredEventArgs> TimerFired;
+    }
+
+    /// <summary>
+    /// Event arguments for the ITimerManager.TimerFired event.
+    /// </summary>
+    public class TimerFiredEventArgs : EventArgs
+    {
+        public string TimerName { get; init; }
+        public int FireCount { get; init; }
+        public DateTime FiredAt { get; init; } = DateTime.Now;
+    }
+
+    #endregion
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Phase 3 — Multi-Form & Cross-Form Communication
+    // ──────────────────────────────────────────────────────────────────────────
+
+    #region IFormRegistry
+
+    /// <summary>
+    /// Shared registry of all active form managers.
+    /// Pass a single instance to every FormsManager so forms can discover each other.
+    /// Equivalent to Oracle Forms' :GLOBAL scope and CALL_FORM / OPEN_FORM / NEW_FORM built-ins.
+    /// </summary>
+    public interface IFormRegistry
+    {
+        /// <summary>Name of the currently active (focused) form, or null.</summary>
+        string ActiveFormName { get; }
+
+        /// <summary>Register a form manager under a logical form name.</summary>
+        void RegisterForm(string formName, IUnitofWorksManager form);
+
+        /// <summary>Remove a form from the registry. Returns false if not found.</summary>
+        bool UnregisterForm(string formName);
+
+        /// <summary>Retrieve a registered form manager by name, or null.</summary>
+        IUnitofWorksManager GetForm(string formName);
+
+        /// <summary>Get all currently registered form names.</summary>
+        IReadOnlyList<string> GetActiveFormNames();
+
+        /// <summary>Returns true when a form with the given name is registered.</summary>
+        bool FormExists(string formName);
+
+        /// <summary>Mark a form as the currently active/focused form.</summary>
+        void SetActiveForm(string formName);
+
+        /// <summary>Set or overwrite a global variable (:GLOBAL.name).</summary>
+        void SetGlobal(string name, object value);
+
+        /// <summary>Read a global variable. Returns null if not set.</summary>
+        object GetGlobal(string name);
+
+        /// <summary>Returns true if a global variable with the given name exists.</summary>
+        bool GlobalExists(string name);
+
+        /// <summary>Raised whenever a form is registered, unregistered, activated or deactivated.</summary>
+        event EventHandler<FormLifecycleEventArgs> FormLifecycleChanged;
+    }
+
+    #endregion
+
+    #region IFormMessageBus
+
+    /// <summary>
+    /// Pub/sub message bus for inter-form communication.
+    /// Equivalent to Oracle Forms' DO_KEY / SYNCHRONIZE and custom messaging patterns.
+    /// </summary>
+    public interface IFormMessageBus
+    {
+        /// <summary>
+        /// Send a typed message payload to a specific form.
+        /// Any subscribers registered for (targetForm, messageType) are invoked synchronously.
+        /// </summary>
+        void PostMessage(string targetForm, string messageType, object payload, string senderForm = null);
+
+        /// <summary>Broadcast a message to all forms subscribed to the given messageType.</summary>
+        void Broadcast(string messageType, object payload, string senderForm = null);
+
+        /// <summary>Subscribe a form to receive messages of a given type.</summary>
+        void Subscribe(string formName, string messageType, Action<FormMessage> handler);
+
+        /// <summary>Unsubscribe a form from a specific message type.</summary>
+        void Unsubscribe(string formName, string messageType);
+
+        /// <summary>Remove all subscriptions registered by a form (call during cleanup).</summary>
+        void UnsubscribeAll(string formName);
+
+        /// <summary>Raised for every message posted or broadcast (global observer hook).</summary>
+        event EventHandler<FormMessageEventArgs> OnFormMessage;
+    }
+
+    #endregion
+
+    #region ISharedBlockManager
+
+    /// <summary>
+    /// Manages IUnitofWork data blocks that are shared across multiple form managers.
+    /// Provides optimistic lock coordination so only one form modifies a shared block at a time.
+    /// </summary>
+    public interface ISharedBlockManager
+    {
+        /// <summary>Publish a block UoW so other forms can access it. Returns false if already exists.</summary>
+        bool CreateSharedBlock(string blockName, IUnitofWork uow);
+
+        /// <summary>Retrieve a shared block UoW by name, or null.</summary>
+        IUnitofWork GetSharedBlock(string blockName);
+
+        /// <summary>Returns true when the named shared block exists.</summary>
+        bool SharedBlockExists(string blockName);
+
+        /// <summary>Remove a shared block (releases any outstanding lock).</summary>
+        bool RemoveSharedBlock(string blockName);
+
+        /// <summary>
+        /// Attempt to acquire an exclusive write lock on a shared block.
+        /// Returns true when the lock is obtained within the timeout.
+        /// </summary>
+        bool TryLockSharedBlock(string blockName, string lockedBy, TimeSpan timeout);
+
+        /// <summary>Release a write lock held by the named caller. No-op if not locked by that caller.</summary>
+        void ReleaseSharedBlockLock(string blockName, string lockedBy);
+
+        /// <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
+        event EventHandler<SharedBlockChangedEventArgs> SharedBlockChanged;
+    }
+
+    #endregion
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Phase 4 — Advanced Trigger System
+    // ──────────────────────────────────────────────────────────────────────────
+
+    #region TriggerExecutionLogEntry
+
+    /// <summary>
+    /// One recorded execution of a trigger (timing + outcome).
+    /// Stored by <see cref="ITriggerExecutionLog"/>.
+    /// </summary>
+    public class TriggerExecutionLogEntry
+    {
+        public string TriggerId    { get; set; }
+        public string TriggerName  { get; set; }
+        public TriggerType TriggerType { get; set; }
+        public string BlockName    { get; set; }
+        public string ItemName     { get; set; }
+        public TriggerResult Result { get; set; }
+        public long ElapsedMs      { get; set; }
+        public DateTime ExecutedAt { get; set; } = DateTime.Now;
+        public string ErrorMessage { get; set; }
+    }
+
+    #endregion
+
+    #region ITriggerExecutionLog
+
+    /// <summary>
+    /// In-memory ring-buffer log of recent trigger executions with timing.
+    /// </summary>
+    public interface ITriggerExecutionLog
+    {
+        /// <summary>Maximum number of entries to retain (oldest are dropped).</summary>
+        int Capacity { get; set; }
+
+        /// <summary>Append an entry.</summary>
+        void Record(TriggerExecutionLogEntry entry);
+
+        /// <summary>All retained entries, newest last.</summary>
+        IReadOnlyList<TriggerExecutionLogEntry> GetAll();
+
+        /// <summary>Entries for a specific block.</summary>
+        IReadOnlyList<TriggerExecutionLogEntry> GetByBlock(string blockName);
+
+        /// <summary>Entries for a specific trigger type.</summary>
+        IReadOnlyList<TriggerExecutionLogEntry> GetByType(TriggerType type);
+
+        /// <summary>Remove all retained entries.</summary>
+        void Clear();
+    }
+
+    #endregion
+
+    #region ITriggerDependencyManager
+
+    /// <summary>
+    /// Builds a dependency graph over <see cref="TriggerDefinition.DependsOn"/> lists,
+    /// detects cycles, and returns an execution-ordered list for a set of triggers.
+    /// </summary>
+    public interface ITriggerDependencyManager
+    {
+        /// <summary>
+        /// Returns the triggers in dependency order (topological sort).
+        /// Throws <see cref="InvalidOperationException"/> if a cycle is detected.
+        /// </summary>
+        IReadOnlyList<TriggerDefinition> OrderByDependency(IReadOnlyList<TriggerDefinition> triggers);
+
+        /// <summary>
+        /// Returns true when the supplied list contains a circular dependency.
+        /// </summary>
+        bool HasCircularDependency(IReadOnlyList<TriggerDefinition> triggers);
+
+        /// <summary>
+        /// Returns the names of all triggers involved in a cycle, or empty list when no cycle exists.
+        /// </summary>
+        IReadOnlyList<string> FindCycle(IReadOnlyList<TriggerDefinition> triggers);
+    }
+
+    #endregion
+
+    // ── Phase 5: Audit Trail ────────────────────────────────────────────────
+
+    #region IAuditStore
+
+    /// <summary>Pluggable persistence back-end for audit entries.</summary>
+    public interface IAuditStore
+    {
+        /// <summary>Persist a single audit entry.</summary>
+        void Save(AuditEntry entry);
+
+        /// <summary>Query audit entries with optional filters.</summary>
+        IReadOnlyList<AuditEntry> Query(
+            string blockName         = null,
+            AuditOperation? operation = null,
+            DateTime? from           = null,
+            DateTime? to             = null);
+
+        /// <summary>Remove entries older than <paramref name="olderThanDays"/> days.</summary>
+        void Purge(int olderThanDays);
+
+        /// <summary>Remove all entries.</summary>
+        void Clear();
+    }
+
+    #endregion
+
+    #region IAuditManager
+
+    /// <summary>
+    /// Manages field-level and commit-level audit recording for the forms engine.
+    /// Accumulates pending field changes and flushes them as <see cref="AuditEntry"/>
+    /// objects to the configured <see cref="IAuditStore"/> on each commit.
+    /// </summary>
+    public interface IAuditManager
+    {
+        /// <summary>Current audit configuration.</summary>
+        AuditConfiguration Configuration { get; }
+
+        /// <summary>Name of the currently logged-in user stamped on each audit entry.</summary>
+        string CurrentUser { get; }
+
+        /// <summary>The underlying store (injectable for testing or external persistence).</summary>
+        IAuditStore Store { get; }
+
+        // ── Configuration ────────────────────────────────────────────────────
+
+        /// <summary>Sets the user name stamped on every subsequent audit entry.</summary>
+        void SetAuditUser(string userName);
+
+        /// <summary>Applies configuration changes via a delegate.</summary>
+        void Configure(Action<AuditConfiguration> configure);
+
+        // ── Accumulation ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Records a single field change in the pending buffer.
+        /// Called for every <see cref="BlockFieldChangedEventArgs"/> while audit is enabled.
+        /// </summary>
+        void RecordFieldChange(
+            string blockName,
+            string fieldName,
+            object oldValue,
+            object newValue,
+            int recordIndex);
+
+        /// <summary>
+        /// Flushes all pending field changes as committed audit entries.
+        /// Should be called after a successful <c>CommitFormAsync</c>.
+        /// </summary>
+        void FlushPendingToStore(string formName, AuditOperation operation);
+
+        /// <summary>
+        /// Discards all pending (uncommitted) field changes.
+        /// Should be called after a rollback.
+        /// </summary>
+        void DiscardPending();
+
+        // ── Query ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns audit entries from the store, with optional block/operation/date filters.
+        /// </summary>
+        IReadOnlyList<AuditEntry> GetAuditLog(
+            string blockName         = null,
+            AuditOperation? operation = null,
+            DateTime? from           = null,
+            DateTime? to             = null);
+
+        /// <summary>
+        /// Returns the history of changes to a specific field within a record.
+        /// <paramref name="recordKey"/> is the string form of the row index or PK.
+        /// </summary>
+        IReadOnlyList<AuditFieldChange> GetFieldHistory(
+            string blockName,
+            string recordKey,
+            string fieldName);
+
+        // ── Export ────────────────────────────────────────────────────────────
+
+        /// <summary>Writes all (or block-filtered) audit entries to a CSV file.</summary>
+        System.Threading.Tasks.Task ExportToCsvAsync(string filePath, string blockName = null);
+
+        /// <summary>Writes all (or block-filtered) audit entries to a JSON file.</summary>
+        System.Threading.Tasks.Task ExportToJsonAsync(string filePath, string blockName = null);
+
+        // ── Maintenance ───────────────────────────────────────────────────────
+
+        /// <summary>Purges entries older than <paramref name="olderThanDays"/> days.</summary>
+        void Purge(int olderThanDays);
+
+        /// <summary>Clears all audit data from the store.</summary>
+        void Clear();
+    }
+
+    #endregion
+
+    // ── Phase 6: Security & Authorization ──────────────────────────────────
+
+    #region IFieldMaskProvider
+
+    /// <summary>Applies a mask pattern to a raw field value for display purposes.</summary>
+    public interface IFieldMaskProvider
+    {
+        /// <summary>
+        /// Returns a masked representation of <paramref name="rawValue"/> using
+        /// <paramref name="pattern"/>.  The single character "*" means "hide everything".
+        /// Other patterns use '#' as a digit placeholder and '*' for any char.
+        /// </summary>
+        string Mask(object rawValue, string pattern);
+    }
+
+    #endregion
+
+    #region ISecurityManager
+
+    /// <summary>
+    /// Controls block- and field-level security for the forms engine.
+    /// Integrates with <see cref="IBlockPropertyManager"/> and <see cref="IItemPropertyManager"/>
+    /// to enforce permissions at runtime.
+    /// </summary>
+    public interface ISecurityManager
+    {
+        /// <summary>Raised whenever a security violation is detected.</summary>
+        event EventHandler<SecurityViolationEventArgs> OnSecurityViolation;
+
+        /// <summary>The currently active security context (user + roles).</summary>
+        SecurityContext CurrentContext { get; }
+
+        // ── Context ──────────────────────────────────────────────────────────
+
+        /// <summary>Sets the current security context and re-evaluates all block/field permissions.</summary>
+        void SetSecurityContext(SecurityContext context);
+
+        // ── Block Security ───────────────────────────────────────────────────
+
+        /// <summary>Registers or replaces block-level security for <paramref name="blockName"/>.</summary>
+        void SetBlockSecurity(string blockName, BlockSecurity security);
+
+        /// <summary>Returns the registered security rules for a block, or null if none.</summary>
+        BlockSecurity GetBlockSecurity(string blockName);
+
+        /// <summary>
+        /// Returns true when the current user/roles may perform <paramref name="permission"/> on the block.
+        /// Also applies to a specific permission flag when <c>ISecurityManager</c> is used standalone.
+        /// </summary>
+        bool IsBlockAllowed(string blockName, SecurityPermission permission);
+
+        /// <summary>
+        /// Evaluates all registered block securities against the current context and updates
+        /// <c>DataBlockInfo.InsertAllowed</c> / <c>UpdateAllowed</c> / <c>DeleteAllowed</c> / <c>QueryAllowed</c>
+        /// via the supplied <paramref name="applyBlockFlags"/> callback.
+        /// </summary>
+        void ApplyBlockSecurityFlags(Action<string, bool, bool, bool, bool> applyBlockFlags);
+
+        /// <summary>
+        /// Returns the effective row-filter WHERE clause for a block (or empty string if none).
+        /// </summary>
+        string GetBlockRowFilter(string blockName);
+
+        // ── Field Security ───────────────────────────────────────────────────
+
+        /// <summary>Registers or replaces field-level security for a specific item.</summary>
+        void SetFieldSecurity(string blockName, string fieldName, FieldSecurity security);
+
+        /// <summary>Returns registered field security or null.</summary>
+        FieldSecurity GetFieldSecurity(string blockName, string fieldName);
+
+        /// <summary>
+        /// Evaluates all registered field securities against the current context and applies
+        /// Enabled / Visible flags via the supplied callbacks (delegates into ItemPropertyManager).
+        /// </summary>
+        void ApplyFieldSecurityFlags(
+            Action<string, string, bool> setEnabled,
+            Action<string, string, bool> setVisible);
+
+        /// <summary>
+        /// Returns a masked / display-safe value for a field, applying the registered mask pattern
+        /// if field security has <c>Masked = true</c>.  Returns the raw value unchanged otherwise.
+        /// </summary>
+        object GetMaskedValue(string blockName, string fieldName, object rawValue);
+
+        // ── Logging ──────────────────────────────────────────────────────────
+
+        /// <summary>Records a security violation without throwing.</summary>
+        void RaiseViolation(string blockName, string fieldName, SecurityPermission permission, string message);
+
+        /// <summary>Returns all recorded violations for the current session.</summary>
+        IReadOnlyList<SecurityViolationEventArgs> GetViolationLog();
+    }
+
+    #endregion
+
+    #region IPagingManager
+
+    /// <summary>
+    /// Manages per-block paging state for virtual scrolling / paged data loading.
+    /// </summary>
+    public interface IPagingManager
+    {
+        /// <summary>Sets the page size for a block (records per page).</summary>
+        void SetPageSize(string blockName, int pageSize);
+
+        /// <summary>Gets the current page size for a block (default 50).</summary>
+        int GetPageSize(string blockName);
+
+        /// <summary>
+        /// Returns a <see cref="PageInfo"/> snapshot for the current page of the block.
+        /// </summary>
+        PageInfo GetCurrentPage(string blockName);
+
+        /// <summary>
+        /// Advances the paging state to the specified page number and returns the resulting
+        /// <see cref="PageInfo"/>.  Does NOT load data — callers must re-execute the query.
+        /// </summary>
+        PageInfo SetCurrentPage(string blockName, int pageNumber);
+
+        /// <summary>Stores the total record count for a block (from a COUNT query or post-load).</summary>
+        void SetTotalRecordCount(string blockName, long count);
+
+        /// <summary>Returns the stored total record count for a block.</summary>
+        long GetTotalRecordCount(string blockName);
+
+        /// <summary>
+        /// Sets the number of pages to pre-fetch ahead of the current page (0 = disabled).
+        /// </summary>
+        void SetFetchAheadDepth(string blockName, int depth);
+
+        /// <summary>Returns the configured fetch-ahead depth for a block.</summary>
+        int GetFetchAheadDepth(string blockName);
+
+        /// <summary>Resets all paging state for a block to defaults.</summary>
+        void ResetPaging(string blockName);
+    }
+
     #endregion
 }

@@ -111,6 +111,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 RegisterRule(rule);
             }
         }
+
+        /// <inheritdoc />
+        public ValidationRuleBuilder ForField(string blockName, string fieldName)
+            => new ValidationRuleBuilder(this, blockName, fieldName);
         
         /// <inheritdoc />
         public bool UnregisterRule(string ruleName)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.UOWManager
@@ -87,12 +88,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Perform the navigation
-                var success = PerformRecordNavigation(blockInfo, recordIndex);
+                SuppressSync(blockName);
+                bool success;
+                try
+                {
+                    success = PerformRecordNavigation(blockInfo, recordIndex);
+                }
+                finally { ResumeSync(blockName); }
                 
                 if (success)
                 {
+                    // Phase 4-D: push previous index onto nav history before moving
+                    var prevIndex = blockInfo.UnitOfWork?.Units?.CurrentIndex ?? 0;
+                    if (prevIndex != recordIndex)
+                        _navHistoryManager.Push(blockName, prevIndex);
+
                     // Synchronize detail blocks
-                    await _relationshipManager.SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName);
                     
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
@@ -150,6 +162,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Set new current block
                 var previousBlock = _currentBlockName;
                 _currentBlockName = blockName;
+
+                // Fire WHEN-NEW-BLOCK-INSTANCE trigger (Oracle Forms equivalent)
+                await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.WhenNewBlockInstance, blockName,
+                    TriggerContext.ForBlock(TriggerType.WhenNewBlockInstance, blockName, null, _dmeEditor));
 
                 // Trigger block enter for new block
                 _eventManager.TriggerBlockEnter(blockName);
@@ -226,6 +243,103 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #endregion
 
+        #region Oracle Forms Navigation Built-ins
+
+        /// <summary>
+        /// Switch focus to a named block.
+        /// Corresponds to Oracle Forms GO_BLOCK built-in.
+        /// </summary>
+        public Task<bool> GoBlockAsync(string blockName) => SwitchToBlockAsync(blockName);
+
+        /// <summary>
+        /// Navigate to a specific record by index within a block.
+        /// Corresponds to Oracle Forms GO_RECORD built-in.
+        /// </summary>
+        public Task<bool> GoRecordAsync(string blockName, int recordIndex)
+            => NavigateToRecordAsync(blockName, recordIndex);
+
+        /// <summary>
+        /// Set the current item (field) within the current block.
+        /// Fires KEY-NEXT-ITEM or a generic navigation trigger.
+        /// Corresponds to Oracle Forms GO_ITEM built-in.
+        /// </summary>
+        public async Task<bool> GoItemAsync(string blockName, string itemName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName) || string.IsNullOrWhiteSpace(itemName))
+                return false;
+
+            var ctx = TriggerContext.ForItem(
+                TriggerType.KeyNextItem, blockName, itemName, null, null, _dmeEditor);
+            await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyNextItem, blockName, ctx);
+
+            LogOperation($"GoItem: block='{blockName}', item='{itemName}'", blockName);
+            return true;
+        }
+
+        /// <summary>
+        /// Move focus to the next item in the current block's tabbing order.
+        /// Corresponds to Oracle Forms NEXT_ITEM / KEY-NEXT-ITEM built-in.
+        /// </summary>
+        public async Task<bool> NextItemAsync(string blockName, string currentItemName = null)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return false;
+
+            var ctx = TriggerContext.ForItem(
+                TriggerType.KeyNextItem, blockName, currentItemName ?? string.Empty, null, null, _dmeEditor);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyNextItem, blockName, ctx);
+            return result != TriggerResult.Cancelled;
+        }
+
+        /// <summary>
+        /// Move focus to the previous item in the current block's tabbing order.
+        /// Corresponds to Oracle Forms PREVIOUS_ITEM / KEY-PREV-ITEM built-in.
+        /// </summary>
+        public async Task<bool> PreviousItemAsync(string blockName, string currentItemName = null)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return false;
+
+            var ctx = TriggerContext.ForItem(
+                TriggerType.KeyPreviousItem, blockName, currentItemName ?? string.Empty, null, null, _dmeEditor);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyPreviousItem, blockName, ctx);
+            return result != TriggerResult.Cancelled;
+        }
+
+        /// <summary>
+        /// Switch focus to the next registered block after the current one.
+        /// Corresponds to Oracle Forms NEXT_BLOCK built-in.
+        /// </summary>
+        public Task<bool> NextBlockAsync()
+        {
+            var keys = new List<string>(_blocks.Keys);
+            if (keys.Count == 0) return Task.FromResult(false);
+
+            var idx = string.IsNullOrEmpty(_currentBlockName)
+                ? 0
+                : keys.IndexOf(_currentBlockName);
+
+            var nextIdx = (idx + 1) % keys.Count;
+            return SwitchToBlockAsync(keys[nextIdx]);
+        }
+
+        /// <summary>
+        /// Switch focus to the previous registered block before the current one.
+        /// Corresponds to Oracle Forms PREVIOUS_BLOCK built-in.
+        /// </summary>
+        public Task<bool> PreviousBlockAsync()
+        {
+            var keys = new List<string>(_blocks.Keys);
+            if (keys.Count == 0) return Task.FromResult(false);
+
+            var idx = string.IsNullOrEmpty(_currentBlockName)
+                ? 0
+                : keys.IndexOf(_currentBlockName);
+
+            var prevIdx = (idx - 1 + keys.Count) % keys.Count;
+            return SwitchToBlockAsync(keys[prevIdx]);
+        }
+
+        #endregion
+
         #region Private Navigation Helper Methods
 
         private async Task<bool> NavigateWithValidationAsync(string blockName, NavigationType navigationType)
@@ -235,6 +349,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             try
             {
+                // Validate current record before navigation if configured
+                if (Configuration?.Navigation?.ValidateBeforeNavigation == true)
+                {
+                    if (!ValidateBlock(blockName))
+                    {
+                        LogOperation($"Navigation blocked: validation failed in block '{blockName}'", blockName);
+                        return false;
+                    }
+                }
+
                 // Check for unsaved changes before navigation
                 if (!await CheckAndHandleUnsavedChangesAsync(blockName))
                 {
@@ -273,12 +397,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Perform the navigation
-                var success = PerformNavigation(blockInfo, navigationType);
+                SuppressSync(blockName);
+                bool success;
+                try
+                {
+                    success = PerformNavigation(blockInfo, navigationType);
+                }
+                finally { ResumeSync(blockName); }
                 
                 if (success)
                 {
                     // Synchronize detail blocks
-                    await _relationshipManager.SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName);
                     
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);

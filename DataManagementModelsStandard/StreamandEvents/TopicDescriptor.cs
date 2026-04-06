@@ -63,6 +63,18 @@ namespace TheTechIdea.Beep.StreamandEvents
         /// enabled for AtLeastOnce/ExactlyOnce, disabled for AtMostOnce.
         /// </summary>
         public DuplicateEventPolicy DuplicatePolicy { get; init; }
+
+        /// <summary>
+        /// Subscription type (ConsumerGroup, Exclusive, Shared, Failover, KeyShared).
+        /// Defaults to ConsumerGroup for backward compatibility.
+        /// </summary>
+        public SubscriptionType SubscriptionType { get; init; } = SubscriptionType.ConsumerGroup;
+
+        /// <summary>Logical name for the subscription (used with non-ConsumerGroup types).</summary>
+        public string SubscriptionName { get; init; }
+
+        /// <summary>Number of hash buckets for KeyShared subscriptions (default 256).</summary>
+        public int KeySharedBuckets { get; init; } = 256;
     }
 
     /// <summary>Consumer group configuration.</summary>

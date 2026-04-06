@@ -1,3 +1,7 @@
+---
+name: defaults
+description: Reference for the BeepDM Defaults system that automatically fills entity fields with computed or literal values before a record is saved.
+---
 # Defaults System — Skill Reference
 
 ## Purpose

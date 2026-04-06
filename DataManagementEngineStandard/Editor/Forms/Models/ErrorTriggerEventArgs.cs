@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TheTechIdea.Beep.Editor.Forms.Models;
 
 namespace TheTechIdea.Beep.Editor.UOWManager.Models
 {
@@ -64,24 +65,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         }
     }
     
-    /// <summary>
-    /// Error severity levels
-    /// </summary>
-    public enum ErrorSeverity
-    {
-        /// <summary>Informational message</summary>
-        Info,
-        
-        /// <summary>Warning message</summary>
-        Warning,
-        
-        /// <summary>Error message</summary>
-        Error,
-        
-        /// <summary>Critical error message</summary>
-        Critical,
-        
-        /// <summary>Fatal error message</summary>
-        Fatal
-    }
+    /// <summary>Error severity levels — canonical definition is in BlockErrorInfo.cs (TheTechIdea.Beep.Editor.Forms.Models).</summary>
+    // ErrorSeverity enum removed from this file to avoid CS0104 ambiguity.
+    // Use TheTechIdea.Beep.Editor.Forms.Models.ErrorSeverity instead.
 }

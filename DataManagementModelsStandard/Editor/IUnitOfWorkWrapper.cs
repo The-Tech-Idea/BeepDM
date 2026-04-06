@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Utilities;
-using TheTechIdea.Beep.Report;
-using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.UOW.Models;
+using TheTechIdea.Beep.Report;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
@@ -123,10 +127,6 @@ namespace TheTechIdea.Beep.Editor.UOW
         Task PrefetchAdjacentPagesAsync();
         void InvalidatePageCache();
 
-        // Master-Detail (Phase 6)
-        void UnregisterAllDetails();
-        IReadOnlyList<object> DetailLists { get; }
-
         // Computed Columns (Phase 7)
         void RegisterComputed(string name, Func<dynamic, object> computation);
         void UnregisterComputed(string name);
@@ -160,5 +160,42 @@ namespace TheTechIdea.Beep.Editor.UOW
         bool IsAtEOF { get; }
         bool IsEmpty { get; }
         bool MoveToItem(dynamic item);
+
+        // Batch Commit (Phase 2)
+        Task<CommitBatchResult> CommitBatchAsync(int batchSize = 100, IProgress<CommitBatchProgress> progress = null, CancellationToken ct = default);
+
+        // Revert (Phase 3)
+        bool RevertItem(dynamic item);
+        Task<bool> RevertItemAsync(dynamic item, CancellationToken ct = default);
+
+        // Refresh / Merge (Phase 3)
+        Task<IErrorsInfo> RefreshAsync(List<AppFilter> filters = null, ConflictMode conflictMode = ConflictMode.ServerWins, CancellationToken ct = default);
+
+        // History / Audit (Phase 3)
+        ChangeSummary GetChangeSummary();
+        IReadOnlyList<QueryHistoryEntry> GetQueryHistory();
+        void ClearQueryHistory();
+        List<ChangeRecord> GetChangeLog();
+
+        // Clone (Phase 3)
+        dynamic CloneItem(dynamic item, bool deepCopy = false);
+
+        // Export (Phase 3)
+        DataTable ToDataTable();
+        Task ToJsonAsync(Stream stream, CancellationToken ct = default);
+        Task ToCsvAsync(Stream stream, char delimiter = ',', CancellationToken ct = default);
+
+        // Import (Phase 3)
+        Task<int> LoadFromJsonAsync(Stream stream, bool clearFirst = true, CancellationToken ct = default);
+        Task<int> LoadFromCsvAsync(Stream stream, char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true, CancellationToken ct = default);
+
+        // Aggregate extras (Phase 10)
+        decimal SumWhere(string propertyName, Func<dynamic, bool> predicate);
+        decimal AverageWhere(string propertyName, Func<dynamic, bool> predicate);
+        Dictionary<object, List<dynamic>> GroupBy(string propertyName);
+
+        // Events
+        /// <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        event EventHandler CurrentChanged;
     }
 }

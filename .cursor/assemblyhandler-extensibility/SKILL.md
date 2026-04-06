@@ -1,3 +1,7 @@
+---
+name: assemblyhandler-extensibility
+description: Step-by-step checklist for making any BeepDM subsystem discoverable as a plugin via AssemblyHandler.
+---
 # AssemblyHandler Extensibility — Skill
 
 ## Purpose

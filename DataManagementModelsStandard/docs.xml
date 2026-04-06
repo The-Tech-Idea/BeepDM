@@ -3517,6 +3517,30 @@
             Provides strongly-typed access to dynamic UnitOfWork functionality
             </summary>
         </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOW.IUnitOfWorkWrapper.CurrentChanged">
+            <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Models.ChangeSummary">
+            <summary>Lightweight summary of pending changes in a UnitofWork.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Models.CommitBatchProgress">
+            <summary>Progress report issued by CommitBatchAsync.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.Models.CommitBatchProgress.CurrentOperation">
+            <summary>"Insert" | "Update" | "Delete"</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Models.CommitBatchResult">
+            <summary>Final result of a CommitBatchAsync call.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOW.Models.QueryHistoryEntry">
+            <summary>Records a single query execution for audit/debug purposes.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.IUnitofWork`1.CurrentChanged">
+            <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.IUnitofWork`1.ItemChanged">
+            <summary>Fires when a field changes on a tracked item.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.ConcurrencyMode">
             <summary>
             Concurrency mode for optimistic concurrency control
@@ -3535,6 +3559,12 @@
             <summary>
             Represents a single change record for audit trail purposes
             </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.IUnitofWork.CurrentChanged">
+            <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.IUnitofWork.ItemChanged">
+            <summary>Fires when a field changes on a tracked item.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Sum(System.String)">
             <summary>
@@ -3644,6 +3674,41 @@
             that are now out of range.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetChangedFields(`0)">
+            <summary>
+            Returns the list of field names that have changed since the original snapshot was taken.
+            Returns an empty list when the item is not tracked or has no snapshot.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetFieldDelta(`0,System.String)">
+            <summary>
+            Returns the (Original, Current) value pair for a specific field.
+            Returns (null, null) when no snapshot exists or field is not tracked.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.HasFieldChanges(`0)">
+            <summary>
+            Returns true when at least one field on the item differs from its original snapshot.
+            Returns false when the item is not tracked or has no snapshot.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetInserted">
+            <summary>Returns all items that have been inserted (state == Added).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetUpdated">
+            <summary>Returns all items that have been modified (state == Modified).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetDeleted">
+            <summary>Returns all items that have been deleted (in DeletedList).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetDirty">
+            <summary>Returns all dirty items — union of Inserted and Updated.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetChangeSetSummary">
+            <summary>
+            Returns a lightweight summary of pending changes without allocating item lists.
+            </summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._computedColumns">
             <summary>
             Registered computed column definitions.
@@ -3727,6 +3792,18 @@
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RemoveAll(System.Func{`0,System.Boolean})">
             <summary>
             Removes all items matching the predicate with a single notification event.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.LoadBatch(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Loads items in bulk with notification suppression, marking all as Unchanged.
+            Fires a single Reset event at the end.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.LoadBatchAsync(System.Collections.Generic.IEnumerable{`0},System.Int32,System.IProgress{System.Int32},System.Threading.CancellationToken)">
+            <summary>
+            Loads items asynchronously in chunks of <paramref name="batchSize"/>,
+            reporting progress and supporting cancellation. All loaded items are Unchanged.
             </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._propertyInfoCache">
@@ -3883,7 +3960,6 @@
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.OnCurrentChanged">
             <summary>
             Fires CurrentChanged and PropertyChanged("Current").
-            Also syncs master-detail relationships.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MoveNext">
@@ -4000,6 +4076,15 @@
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Find(System.String,System.Object)">
             <summary>Finds the first item where the named property equals the given value.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetGroups``1(System.Func{`0,``0},System.Boolean)">
+            <summary>
+            Groups the current working set by <paramref name="keySelector"/> and returns
+            groups in key order.  Does NOT modify the underlying list.
+            </summary>
+            <typeparam name="TKey">The type of the grouping key.</typeparam>
+            <param name="keySelector">Function that extracts the key from an item.</param>
+            <param name="ascending">True to sort groups ascending (default); false for descending.</param>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.OnListChanged(System.ComponentModel.ListChangedEventArgs)">
             <summary>Handles list change notifications. Suppressed during position changes.</summary>
         </member>
@@ -4018,64 +4103,19 @@
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.OnCollectionChanged(System.Collections.Specialized.NotifyCollectionChangedEventArgs)">
             <summary>Raises the CollectionChanged event.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration">
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Merge(System.Collections.Generic.IEnumerable{`0},TheTechIdea.Beep.Editor.ConflictMode,System.String)">
             <summary>
-            Internal record that describes a registered detail relationship.
+            Merges <paramref name="serverItems"/> into the local list.
+            Items are matched by <paramref name="primaryKeyField"/> (reflection).
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.ChildList">
-            <summary>The child list (stored as object because TChild varies).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.ForeignKeyProperty">
-            <summary>PropertyInfo on the child type for the foreign key (e.g. "ParentId").</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.MasterKeyProperty">
-            <summary>PropertyInfo on T for the master key (e.g. "Id").</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.ApplyFilterAction">
-            <summary>Action that applies the filter on the child list given the master key value.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailRegistration.RemoveFilterAction">
-            <summary>Action that removes the filter on the child list.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._detailRegistrations">
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.MergeAsync(System.Collections.Generic.IEnumerable{`0},TheTechIdea.Beep.Editor.ConflictMode,System.String,System.Threading.CancellationToken)">
             <summary>
-            All registered detail relationships.
+            Async overload — performs the merge on a Task so it doesn't block the UI thread.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.DetailLists">
-            <summary>
-            Public read-only list of registered child list references.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RegisterDetail``1(TheTechIdea.Beep.Editor.ObservableBindingList{``0},System.String,System.String)">
-            <summary>
-            Registers a child list as a detail of this (master) list.
-            When the current item on this list changes, the child list is automatically
-            filtered to show only items whose foreignKeyProp matches the master's masterKeyProp.
-            </summary>
-            <typeparam name="TChild">The entity type of the child list.</typeparam>
-            <param name="childList">The child ObservableBindingList to auto-filter.</param>
-            <param name="foreignKeyProp">Property name on TChild that holds the FK value (e.g. "ParentId").</param>
-            <param name="masterKeyProp">Property name on T that holds the master key value (e.g. "Id").</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.UnregisterDetail``1(TheTechIdea.Beep.Editor.ObservableBindingList{``0})">
-            <summary>
-            Unregisters a child list from the master-detail relationship.
-            Removes any active filter that was applied by the relationship.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.UnregisterAllDetails">
-            <summary>
-            Unregisters all detail lists.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SyncDetailLists">
-            <summary>
-            Called internally when the current position changes.
-            Iterates all registered detail lists and re-applies their FK filter
-            based on the new master key value.
-            </summary>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ApplyValues(`0,`0)">
+            <summary>Copies all readable+writable property values from <paramref name="source"/> into <paramref name="target"/>.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchByProperties(System.Collections.Generic.Dictionary{System.String,System.Object},System.String)">
             <summary>
@@ -4120,6 +4160,18 @@
             </summary>
             <param name="predicate">Search predicate function</param>
             <returns>Number of items found</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchAsync(System.Func{`0,System.Boolean},System.Threading.CancellationToken)">
+            <summary>
+            Searches the list asynchronously on a background thread — safe to call from UI.
+            Returns all items matching <paramref name="predicate"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.SearchStreamAsync(System.Func{`0,System.Boolean},System.Threading.CancellationToken)">
+            <summary>
+            Streams matching items asynchronously, yielding each chunk back to the caller.
+            Useful for large lists where results should appear incrementally.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.SupportsSortingCore">
             <summary>Indicates that sorting is supported.</summary>
@@ -4628,6 +4680,51 @@
             Evicts oldest pages from cache when it exceeds PageCacheSize.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.ItemGroup`1">
+            <summary>
+            Represents a group of items sharing the same key value.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ItemGroup`1.Key">
+            <summary>The group key value.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ItemGroup`1.KeyDisplay">
+            <summary>String representation of the key (Key.ToString() by default).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ItemGroup`1.Items">
+            <summary>Items belonging to this group.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ItemGroup`1.Count">
+            <summary>Number of items in the group.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ConflictMode">
+            <summary>
+            Determines how conflicts are resolved when local edits overlap with server updates.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConflictMode.ClientWins">
+            <summary>Keep local edits; discard conflicting server values.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConflictMode.ServerWins">
+            <summary>Overwrite local edits with incoming server values.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConflictMode.KeepBoth">
+            <summary>Mark the item as Conflicted and let the application resolve manually.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.ConflictMode.ThrowOnConflict">
+            <summary>Throw a <see cref="T:TheTechIdea.Beep.Editor.MergeConflictException"/> listing the conflicting fields.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.MergeResult`1">
+            <summary>
+            Summary of a merge operation result.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.MergeConflictException">
+            <summary>
+            Thrown by <see cref="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Merge(System.Collections.Generic.IEnumerable{`0},TheTechIdea.Beep.Editor.ConflictMode,System.String)"/> when mode is
+            <see cref="F:TheTechIdea.Beep.Editor.ConflictMode.ThrowOnConflict"/> and at least one conflict is found.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.CurrentChangingEventArgs">
             <summary>
             Fired BEFORE the current position changes. Set Cancel = true to prevent navigation.
@@ -4683,6 +4780,26 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.ObservableChanges`1.TotalCount">
             <summary>Total count of all pending changes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.ChangeSetSummary">
+            <summary>
+            Lightweight summary of pending changes — counts only, no item allocations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ChangeSetSummary.InsertCount">
+            <summary>Number of items with Added state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ChangeSetSummary.UpdateCount">
+            <summary>Number of items with Modified state.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ChangeSetSummary.DeleteCount">
+            <summary>Number of items pending deletion.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ChangeSetSummary.IsDirty">
+            <summary>True when any pending changes exist.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.ChangeSetSummary.TotalCount">
+            <summary>Total count of all changes.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Tracking">
             <summary>
@@ -9182,6 +9299,15 @@
             The engine references only this interface; broker details stay in adapter assemblies.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.BrokerSubscribeRequest.SubscriptionType">
+            <summary>Subscription type controlling message delivery semantics. Default: ConsumerGroup.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.BrokerSubscribeRequest.SubscriptionName">
+            <summary>Subscription name for tracking (required for Exclusive/Shared/Failover/KeyShared).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.BrokerSubscribeRequest.KeySharedBuckets">
+            <summary>For KeyShared: number of hash buckets. Default 256.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.ConsumerGroupSummary">
             <summary>Brief summary of a consumer group visible from the broker.</summary>
         </member>
@@ -11172,11 +11298,32 @@
         <member name="P:TheTechIdea.Beep.StreamandEvents.TopicStorageConfig.MaxSizeBytes">
             <summary>Maximum total size in bytes before retention kicks in. Null = unlimited.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.TopicStorageConfig.MaxMessageCount">
+            <summary>Maximum number of messages to keep per partition. Null = unlimited.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.StreamandEvents.TopicStorageConfig.IsCompacted">
             <summary>If true, only the latest message per key is kept (log compaction).</summary>
         </member>
         <member name="P:TheTechIdea.Beep.StreamandEvents.TopicStorageConfig.ReplicationFactor">
             <summary>Replication factor — how many nodes should hold a copy.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.TopicStorageConfig.CleanupMode">
+            <summary>What to do with expired data.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.TopicStorageConfig.HasRetentionPolicy">
+            <summary>Returns true when any retention constraint is configured.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.StreamandEvents.RetentionCleanupMode">
+            <summary>Determines how expired messages are handled.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.RetentionCleanupMode.Delete">
+            <summary>Permanently delete expired messages.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.RetentionCleanupMode.Compact">
+            <summary>Key-based log compaction.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.RetentionCleanupMode.Tiered">
+            <summary>Move to cold/tiered storage (Phase 2).</summary>
         </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.StoredTopicMetadata">
             <summary>Metadata snapshot for a stored topic.</summary>
@@ -11707,11 +11854,62 @@
         <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.TenantTopicPrefix">
             <summary>Tenant-scoped topic prefix applied by <c>TenantAwareBrokerAdapter</c>.</summary>
         </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.OriginCluster">
+            <summary>Cluster ID where the event was originally produced. Used for loop detection in active-active.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.OriginRegion">
+            <summary>Region of the originating cluster (e.g. <c>us-east-1</c>).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.ReplicationHop">
+            <summary>Number of replication hops this event has traversed (prevents infinite loops).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.ReplicationPolicy">
+            <summary>Name of the replication policy that replicated this event.</summary>
+        </member>
         <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.ClaimTicket">
             <summary>JSON-serialised <c>ClaimTicket</c> replacing an oversized payload.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.PayloadSizeBytes">
             <summary>Original payload size in bytes, set by the claim-check producer interceptor.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.KvKey">
+            <summary>Logical key for KV store operations.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.KvRevision">
+            <summary>Monotonically increasing revision number per key.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.KvOperation">
+            <summary>KV operation type: Put, Delete, Purge.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.ObjChunkIndex">
+            <summary>Object store chunk index (0-based) for multi-part uploads.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.ObjChunkCount">
+            <summary>Total number of chunks for a multi-part object.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.ObjChecksum">
+            <summary>SHA-256 checksum of the complete object.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.RateLimitRemaining">
+            <summary>Remaining rate-limit tokens after the current request was allowed.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.RateLimitRetryAfterMs">
+            <summary>Milliseconds the caller should wait before retrying after a rate-limit deny.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.RetryLevel">
+            <summary>Retry level suffix (e.g. "retry-1") stamped by <c>RetryTopicRouter</c>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.RetryAfterMs">
+            <summary>Retry delay in milliseconds stamped by <c>RetryTopicRouter</c>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.OriginalTopic">
+            <summary>Original topic from which a message was routed to a retry or DLQ topic.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.FailureReason">
+            <summary>Exception type or human-readable reason for a retry or DLQ routing.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.StreamHeaderNames.OriginalOffset">
+            <summary>Original broker offset of a message before retry/DLQ routing.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.StreamContext">
             <summary>
@@ -11905,6 +12103,43 @@
         <member name="M:TheTechIdea.Beep.StreamandEvents.IWindowedStore`2.ExpireOldWindowsAsync(System.DateTimeOffset,System.Threading.CancellationToken)">
             <summary>Removes all windows that started before <paramref name="before"/>.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.StreamandEvents.SubscriptionType">
+            <summary>
+            Defines the subscription model that controls how messages are delivered to consumers.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.SubscriptionType.ConsumerGroup">
+            <summary>
+            Kafka-style consumer group: partitions assigned to consumers, at-most-one consumer per partition.
+            Default behavior — backward compatible with existing code.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.SubscriptionType.Exclusive">
+            <summary>
+            Exactly one consumer per subscription. A second consumer attempt fails immediately.
+            Use case: ordered processing, singleton workers.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.SubscriptionType.Shared">
+            <summary>
+            Round-robin dispatch across all consumers — no partition affinity.
+            Use case: stateless work distribution, high fan-out.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.SubscriptionType.Failover">
+            <summary>
+            Active-standby: one active consumer, ordered standby list.
+            On active failure, the next standby is promoted.
+            Use case: HA with minimal rebalance.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.StreamandEvents.SubscriptionType.KeyShared">
+            <summary>
+            Hash-based sticky routing: messages with the same key always go to the same consumer.
+            More flexible than partitions — buckets can be redistributed independently.
+            Use case: per-key processing, session affinity.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.TenantStreamContext">
             <summary>Runtime context for a registered tenant in the multi-tenant stream isolation layer.</summary>
         </member>
@@ -12048,6 +12283,18 @@
             Duplicate-event handling policy. When null, defaults are derived from <see cref="P:TheTechIdea.Beep.StreamandEvents.SubscriptionDescriptor.DeliverySemantics"/>:
             enabled for AtLeastOnce/ExactlyOnce, disabled for AtMostOnce.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.SubscriptionDescriptor.SubscriptionType">
+            <summary>
+            Subscription type (ConsumerGroup, Exclusive, Shared, Failover, KeyShared).
+            Defaults to ConsumerGroup for backward compatibility.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.SubscriptionDescriptor.SubscriptionName">
+            <summary>Logical name for the subscription (used with non-ConsumerGroup types).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.StreamandEvents.SubscriptionDescriptor.KeySharedBuckets">
+            <summary>Number of hash buckets for KeyShared subscriptions (default 256).</summary>
         </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.ConsumerGroupPolicy">
             <summary>Consumer group configuration.</summary>

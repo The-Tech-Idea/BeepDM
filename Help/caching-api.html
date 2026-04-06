@@ -1,75 +1,714 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caching API - Beep Data Management Engine Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CacheManager — BeepDM Documentation</title>
+<link rel="stylesheet" href="sphinx-style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
-    <div class="container">
-        <aside class="sidebar" id="sidebar"></aside>
-        <main class="content">
-            <div class="content-wrapper">
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <span>Caching API</span>
-                </nav>
+<div id="nav-placeholder"></div>
+<div class="main-content">
 
-                <div class="page-header">
-                    <h1>ICacheProvider + CacheManager</h1>
-                    <p class="page-subtitle">Signature-verified cache contracts and manager APIs</p>
-                </div>
+<!-- ═══════════════════════ HEADER -->
+<div class="content-header">
+  <div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <i class="bi bi-chevron-right"></i>
+    <span>Advanced Topics</span>
+    <i class="bi bi-chevron-right"></i>
+    <span>CacheManager</span>
+  </div>
+  <h1 class="page-title"><i class="bi bi-lightning-fill"></i> CacheManager &amp; ICacheProvider</h1>
+  <p class="page-subtitle">
+    Pluggable multi-backend caching subsystem with stale-while-revalidate, scoped caches,
+    tag-based invalidation, batch operations, and SLO-ready statistics.
+  </p>
+</div>
 
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/Caching/ICacheProvider.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Caching/CacheManager.cs</code></li>
-                    </ul>
-                </div>
+<!-- ═══════════════════════ TOC -->
+<div class="toc-container">
+  <h3><i class="bi bi-list-ul"></i> On This Page</h3>
+  <ul class="toc-list">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#providers">Cache Providers</a></li>
+    <li><a href="#configuration">CacheConfiguration</a></li>
+    <li><a href="#icacheprovider">ICacheProvider Interface</a></li>
+    <li><a href="#cachemanager-init">CacheManager — Initialization</a></li>
+    <li><a href="#cachemanager-core">CacheManager — Core Operations</a></li>
+    <li><a href="#swr">Stale-While-Revalidate</a></li>
+    <li><a href="#extensions">Extension Operations</a></li>
+    <li><a href="#cachescope">CacheScope</a></li>
+    <li><a href="#statistics">Statistics &amp; Diagnostics</a></li>
+    <li><a href="#examples">Usage Examples</a></li>
+  </ul>
+</div>
 
-                <section class="section">
-                    <h2>ICacheProvider</h2>
-                    <pre><code class="language-csharp">public interface ICacheProvider : IDisposable
-{
-    string Name { get; }
-    bool IsAvailable { get; }
-    CacheStatistics Statistics { get; }
+<!-- ═══════════════════════ OVERVIEW -->
+<section id="overview">
+  <h2><i class="bi bi-info-circle-fill"></i> Overview</h2>
+  <p>
+    The BeepDM caching subsystem is built around two complementary surfaces:
+  </p>
+  <ul>
+    <li>
+      <strong><code>CacheManager</code></strong> — a static, globally-shared cache with pluggable primary + fallback
+      providers, stale-while-revalidate (SWR), batch operations, tag groups, and centralized statistics.
+    </li>
+    <li>
+      <strong><code>CacheScope</code></strong> — an isolated, per-component instance cache obtained via
+      <code>CacheManager.CreateScope()</code>. Each scope owns its own provider, statistics, and key namespace.
+      Used by <code>ProxyDataSource</code> for per-datasource caches.
+    </li>
+  </ul>
 
-    Task&lt;T&gt; GetAsync&lt;T&gt;(string key, CancellationToken cancellationToken = default);
-    Task&lt;bool&gt; SetAsync&lt;T&gt;(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
-    Task&lt;bool&gt; RemoveAsync(string key, CancellationToken cancellationToken = default);
-    Task&lt;bool&gt; ExistsAsync(string key, CancellationToken cancellationToken = default);
-    Task&lt;long&gt; ClearAsync(string pattern = null, CancellationToken cancellationToken = default);
-}</code></pre>
-                </section>
-
-                <section class="section">
-                    <h2>CacheManager</h2>
-                    <pre><code class="language-csharp">public static partial class CacheManager
-{
-    public static void Initialize(
-        CacheConfiguration configuration = null,
-        CacheProviderType primaryProviderType = CacheProviderType.InMemory,
-        CacheProviderType? fallbackProviderType = null);
-
-    public static void SetProvider(ICacheProvider provider, ICacheProvider fallbackProvider = null);
-
-    public static Task&lt;T&gt; GetOrCreateAsync&lt;T&gt;(string key, Func&lt;Task&lt;T&gt;&gt; factory,
-        TimeSpan? expiry = null, CancellationToken cancellationToken = default);
-
-    public static Task&lt;T&gt; GetOrCreateWithStaleAsync&lt;T&gt;(string key, Func&lt;Task&lt;T&gt;&gt; factory,
-        TimeSpan softTtl, TimeSpan hardTtl, CancellationToken cancellationToken = default);
-}</code></pre>
-                </section>
-            </div>
-        </main>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <i class="bi bi-plug-fill text-primary"></i>
+      <h4>Pluggable Providers</h4>
+      <p>Five built-in providers: SimpleCacheProvider, InMemoryCacheProvider (LRU), MemoryCacheProvider (IMemoryCache), RedisCacheProvider, HybridCacheProvider (L1+L2+L3). Set any custom <code>ICacheProvider</code> implementation.</p>
     </div>
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <div class="feature-card">
+      <i class="bi bi-arrow-repeat text-warning"></i>
+      <h4>Stale-While-Revalidate</h4>
+      <p>Dual-TTL pattern: entries are served immediately (even stale) while a background task refreshes them. One stampede-guard per key prevents multiple parallel refreshes.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-layers-fill text-success"></i>
+      <h4>Scoped Caches</h4>
+      <p><code>CacheScope</code> gives each component (e.g., a ProxyDataSource) an isolated provider with its own statistics and namespaced keys.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-tags-fill text-info"></i>
+      <h4>Tag Invalidation</h4>
+      <p>Group cache entries under string tags at write time; invalidate the entire group with a single <code>RemoveByTagAsync("tag")</code> call.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-collection-fill text-primary"></i>
+      <h4>Batch Operations</h4>
+      <p><code>GetManyAsync</code> and <code>SetManyAsync</code> fetch or store dictionaries of key-value pairs in one call, minimising round-trips on distributed backends.</p>
+    </div>
+    <div class="feature-card">
+      <i class="bi bi-bar-chart-fill text-danger"></i>
+      <h4>SLO-Ready Statistics</h4>
+      <p>Per-provider hit/miss, hit ratio, item count, memory usage, expired/evicted counters. Combined stats available via <code>CacheManagerStatistics</code>.</p>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <i class="bi bi-info-circle"></i>
+    <div>
+      <strong>Null / zero / false are valid cached values.</strong> All operations use
+      <code>ExistsAsync</code> for hit detection, so <code>null</code>, <code>0</code>,
+      <code>false</code>, and empty collections are stored and returned correctly — they are
+      never treated as cache misses.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ PROVIDERS -->
+<section id="providers">
+  <h2><i class="bi bi-grid-fill"></i> Cache Providers</h2>
+  <p>All providers implement <code>ICacheProvider</code> and are located in <code>Caching/Providers/</code>.</p>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th><code>CacheProviderType</code></th>
+          <th>Backing store</th>
+          <th>Best for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>SimpleCacheProvider</code></td>
+          <td><code>Simple</code></td>
+          <td><code>ConcurrentDictionary</code></td>
+          <td>Unit tests, light workloads, default fallback</td>
+        </tr>
+        <tr>
+          <td><code>InMemoryCacheProvider</code></td>
+          <td><code>InMemory</code></td>
+          <td><code>ConcurrentDictionary</code> + <code>LinkedList</code> (LRU)</td>
+          <td>High-throughput single-process caching; O(1) access and LRU eviction; optional compression</td>
+        </tr>
+        <tr>
+          <td><code>MemoryCacheProvider</code></td>
+          <td><code>MemoryCache</code></td>
+          <td><code>Microsoft.Extensions.Caching.Memory.IMemoryCache</code></td>
+          <td>ASP.NET Core / IHost environments that already run MemoryCache; size-limited via <code>SizeLimit</code></td>
+        </tr>
+        <tr>
+          <td><code>RedisCacheProvider</code></td>
+          <td><code>Redis</code></td>
+          <td>Redis (standalone, Sentinel, or Cluster)</td>
+          <td>Multi-instance / distributed caching; persistence; cross-process invalidation</td>
+        </tr>
+        <tr>
+          <td><code>HybridCacheProvider</code></td>
+          <td><code>Hybrid</code></td>
+          <td>L1 (InMemory) + L2 (Redis/MemoryCache) + optional L3 (persistent)</td>
+          <td>Maximum performance with shared consistency; automatic promotion / demotion across tiers</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Provider selection guide</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Scenario</th><th>Recommended provider</th></tr></thead>
+      <tbody>
+        <tr><td>Single-process desktop or CLI app</td><td><code>InMemory</code></td></tr>
+        <tr><td>ASP.NET Core app with existing MemoryCache</td><td><code>MemoryCache</code></td></tr>
+        <tr><td>Load-balanced web app (shared cache)</td><td><code>Redis</code></td></tr>
+        <tr><td>Hot local reads + shared invalidation</td><td><code>Hybrid</code> (L1=InMemory, L2=Redis)</td></tr>
+        <tr><td>Tests / minimal setup</td><td><code>Simple</code> (default)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Custom provider</h3>
+  <pre><code class="language-csharp">public class MyCustomProvider : ICacheProvider
+{
+    public string Name => "MyCustom";
+    public bool IsAvailable => true;
+    public CacheStatistics Statistics { get; } = new CacheStatistics();
+
+    // Implement GetAsync, SetAsync, RemoveAsync, ExistsAsync, ClearAsync,
+    // GetManyAsync, SetManyAsync, RefreshAsync, Dispose ...
+}
+
+// Register globally
+CacheManager.SetProvider(new MyCustomProvider());</code></pre>
+</section>
+
+<!-- ═══════════════════════ CONFIGURATION -->
+<section id="configuration">
+  <h2><i class="bi bi-gear-fill"></i> CacheConfiguration</h2>
+  <p>Passed to <code>CacheManager.Initialize()</code> or <code>CacheManager.CreateScope()</code>.</p>
+
+  <h3>Top-level properties</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>DefaultExpiry</code></td><td><code>10 min</code></td><td>Fallback TTL used when no per-call expiry is supplied</td></tr>
+        <tr><td><code>MaxItems</code></td><td><code>10 000</code></td><td>Item cap for in-memory providers; triggers LRU eviction when reached</td></tr>
+        <tr><td><code>CleanupInterval</code></td><td><code>5 min</code></td><td>How often the cleanup timer scans for and removes expired entries</td></tr>
+        <tr><td><code>EnableStatistics</code></td><td><code>true</code></td><td>Toggle hit/miss/memory counters; disable for minimal overhead</td></tr>
+        <tr><td><code>KeyPrefix</code></td><td><code>"beep:"</code></td><td>String prepended to every key — prevents collisions across components</td></tr>
+        <tr><td><code>EnableCompression</code></td><td><code>false</code></td><td>Compress values exceeding <code>CompressionThreshold</code></td></tr>
+        <tr><td><code>CompressionThreshold</code></td><td><code>1 024 bytes</code></td><td>Minimum value size (bytes) before compression is applied</td></tr>
+        <tr><td><code>SerializationFormat</code></td><td><code>Json</code></td><td>Serialization format for stored values: <code>Json</code>, <code>MessagePack</code>, <code>Binary</code></td></tr>
+        <tr><td><code>Redis</code></td><td>—</td><td>Redis-specific sub-configuration (see below)</td></tr>
+        <tr><td><code>MemoryCache</code></td><td>—</td><td>IMemoryCache-specific sub-configuration (see below)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>RedisConfiguration</code></h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>ConnectionString</code></td><td><code>"localhost:6379"</code></td><td>Redis endpoint (StackExchange.Redis format)</td></tr>
+        <tr><td><code>Database</code></td><td><code>0</code></td><td>Redis logical database index</td></tr>
+        <tr><td><code>ConnectTimeout</code></td><td><code>5 s</code></td><td>Maximum connection establishment time</td></tr>
+        <tr><td><code>UseConnectionMultiplexing</code></td><td><code>true</code></td><td>Reuse a single multiplexed connection for all calls</td></tr>
+        <tr><td><code>RetryPolicy</code></td><td>3 retries, 100 ms base, 5 s max, exponential</td><td>Retry policy applied on transient Redis errors</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>MemoryCacheConfiguration</code></h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>SizeLimit</code></td><td><code>100 MB</code></td><td>Hard memory ceiling for <code>IMemoryCache</code></td></tr>
+        <tr><td><code>CompactionPercentage</code></td><td><code>5 %</code></td><td>Fraction of entries removed when <code>SizeLimit</code> is reached</td></tr>
+        <tr><td><code>ExpirationScanFrequency</code></td><td><code>1 min</code></td><td>How often <code>IMemoryCache</code> scans for expired entries</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <pre><code class="language-csharp">var config = new CacheConfiguration
+{
+    DefaultExpiry        = TimeSpan.FromMinutes(30),
+    MaxItems             = 5_000,
+    CleanupInterval      = TimeSpan.FromMinutes(2),
+    KeyPrefix            = "myapp:",
+    EnableCompression    = true,
+    CompressionThreshold = 1_024,
+    Redis = new RedisConfiguration
+    {
+        ConnectionString = "redis-host:6379,password=secret",
+        Database         = 1,
+        RetryPolicy      = new RetryPolicyConfiguration { MaxRetries = 5 }
+    }
+};</code></pre>
+</section>
+
+<!-- ═══════════════════════ ICACHEPROVIDER -->
+<section id="icacheprovider">
+  <h2><i class="bi bi-puzzle-fill"></i> ICacheProvider Interface</h2>
+  <p>
+    All providers implement <code>ICacheProvider : IDisposable</code>.
+    The interface is fully async to avoid blocking on I/O-bound operations.
+  </p>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Method / Property</th><th>Signature</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Name</code></td><td><code>string</code></td><td>Provider display name</td></tr>
+        <tr><td><code>IsAvailable</code></td><td><code>bool</code></td><td>Current health — <code>false</code> triggers fallback</td></tr>
+        <tr><td><code>Statistics</code></td><td><code>CacheStatistics</code></td><td>Live counters for this provider instance</td></tr>
+        <tr><td><code>GetAsync&lt;T&gt;</code></td><td><code>Task&lt;T&gt;(key, ct)</code></td><td>Fetch a value; returns <code>default(T)</code> on miss (use <code>ExistsAsync</code> to distinguish miss from cached default)</td></tr>
+        <tr><td><code>SetAsync&lt;T&gt;</code></td><td><code>Task&lt;bool&gt;(key, value, expiry?, ct)</code></td><td>Store a value with optional TTL override</td></tr>
+        <tr><td><code>ExistsAsync</code></td><td><code>Task&lt;bool&gt;(key, ct)</code></td><td>Presence check — does not return the value</td></tr>
+        <tr><td><code>RemoveAsync</code></td><td><code>Task&lt;bool&gt;(key, ct)</code></td><td>Delete a single entry; returns <code>true</code> if found</td></tr>
+        <tr><td><code>ClearAsync</code></td><td><code>Task&lt;long&gt;(pattern?, ct)</code></td><td>Remove all entries, or only those whose key matches <code>pattern</code>; returns removed count</td></tr>
+        <tr><td><code>GetManyAsync&lt;T&gt;</code></td><td><code>Task&lt;Dictionary&lt;string,T&gt;&gt;(keys, ct)</code></td><td>Fetch multiple keys in one call; missing keys are omitted from result</td></tr>
+        <tr><td><code>SetManyAsync&lt;T&gt;</code></td><td><code>Task&lt;long&gt;(dict, expiry?, ct)</code></td><td>Store multiple entries; returns count of successfully stored items</td></tr>
+        <tr><td><code>RefreshAsync</code></td><td><code>Task&lt;bool&gt;(key, expiry, ct)</code></td><td>Extend the TTL of an existing entry without changing its value</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CACHEMANAGER INIT -->
+<section id="cachemanager-init">
+  <h2><i class="bi bi-play-fill"></i> CacheManager — Initialization</h2>
+  <p>
+    <code>CacheManager</code> is a static class. It must be initialised once before use.
+    Subsequent calls to <code>Initialize</code> are no-ops (idempotent).
+  </p>
+
+  <h3><code>Initialize</code></h3>
+  <pre><code class="language-csharp">public static void Initialize(
+    CacheConfiguration configuration  = null,
+    CacheProviderType  primaryProvider = CacheProviderType.InMemory,
+    CacheProviderType? fallbackProvider = null)</code></pre>
+  <p>
+    Registers the primary provider and an optional explicit fallback. If <code>fallbackProvider</code>
+    is <code>null</code>, a <code>SimpleCacheProvider</code> is used as the automatic fallback so
+    cache operations always succeed even when the primary is unavailable.
+  </p>
+
+  <h3><code>SetProvider</code></h3>
+  <pre><code class="language-csharp">public static void SetProvider(ICacheProvider provider, ICacheProvider fallbackProvider = null)</code></pre>
+  <p>
+    Replace the primary (and optionally the fallback) provider at runtime.
+    The replaced provider is disposed. Useful for tests or to swap from in-memory to Redis after startup.
+  </p>
+
+  <h3>Quick-start examples</h3>
+  <pre><code class="language-csharp">// Default — SimpleCacheProvider (no config needed)
+CacheManager.Initialize();
+
+// InMemory primary, default Simple fallback
+CacheManager.Initialize(
+    new CacheConfiguration { MaxItems = 5_000, DefaultExpiry = TimeSpan.FromMinutes(30) },
+    CacheProviderType.InMemory);
+
+// Redis primary + InMemory fallback
+CacheManager.Initialize(
+    new CacheConfiguration { Redis = new RedisConfiguration { ConnectionString = "redis:6379" } },
+    primaryProvider  : CacheProviderType.Redis,
+    fallbackProvider : CacheProviderType.InMemory);
+
+// Inject a custom provider
+CacheManager.SetProvider(new MyCustomProvider());</code></pre>
+</section>
+
+<!-- ═══════════════════════ CACHEMANAGER CORE -->
+<section id="cachemanager-core">
+  <h2><i class="bi bi-code-slash"></i> CacheManager — Core Operations</h2>
+
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>GetAsync&lt;T&gt;(key, ct)</code></td><td>Fetch by key. Tries primary, falls back automatically on unavailability.</td></tr>
+        <tr><td><code>SetAsync&lt;T&gt;(key, value, expiry?, ct)</code></td><td>Store a value. Returns <code>true</code> on success.</td></tr>
+        <tr><td><code>ExistsAsync(key, ct)</code></td><td>Presence check — the canonical way to distinguish a cached <code>null</code> from a miss.</td></tr>
+        <tr><td><code>RemoveAsync(key, ct)</code></td><td>Delete one entry.</td></tr>
+        <tr><td><code>ClearAsync(pattern?, ct)</code></td><td>Remove all entries, or only those matching a glob-style pattern (provider-dependent).</td></tr>
+        <tr><td><code>GetManyAsync&lt;T&gt;(keys, ct)</code></td><td>Batch fetch — returns only keys that exist.</td></tr>
+        <tr><td><code>SetManyAsync&lt;T&gt;(dict, expiry?, ct)</code></td><td>Batch store.</td></tr>
+        <tr><td><code>RefreshAsync(key, expiry, ct)</code></td><td>Extend TTL without touching the value.</td></tr>
+        <tr><td><code>GetOrCreate&lt;T&gt;(key, factory, expiry?)</code></td><td>Synchronous fetch-or-create.</td></tr>
+        <tr><td><code>GetOrCreateAsync&lt;T&gt;(key, factory, expiry?, ct)</code></td><td>Async fetch-or-create (miss = invoke factory, store, return).</td></tr>
+        <tr><td><code>GetOrCreateWithStaleAsync&lt;T&gt;(key, factory, softTtl, hardTtl, ct)</code></td><td>Stale-while-revalidate fetch-or-create (see below).</td></tr>
+        <tr><td><code>GetStatistics()</code></td><td>Returns a <code>CacheManagerStatistics</code> snapshot for both providers.</td></tr>
+        <tr><td><code>CreateScope(providerType, config)</code></td><td>Create an isolated <code>CacheScope</code> with its own provider.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Fallback behaviour</h3>
+  <p>
+    On every read (<code>GetAsync</code>, <code>ExistsAsync</code>, <code>GetManyAsync</code>)
+    the manager tries the primary first. If the primary's <code>IsAvailable</code> is <code>false</code>
+    or the call throws, the operation is retried transparently against the fallback provider.
+    Writes go to the primary only; the fallback is read-only when the primary is down.
+  </p>
+</section>
+
+<!-- ═══════════════════════ SWR -->
+<section id="swr">
+  <h2><i class="bi bi-arrow-clockwise"></i> Stale-While-Revalidate</h2>
+  <p>
+    The <em>stale-while-revalidate</em> (SWR) pattern uses two TTLs per entry to decouple
+    <em>freshness</em> from <em>availability</em>:
+  </p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>TTL</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Soft TTL</strong></td><td>How long a value is considered fresh. Within this window every read returns the cached value without any background work.</td></tr>
+        <tr><td><strong>Hard TTL</strong></td><td>Absolute lifetime in the cache store. Once soft TTL expires but hard TTL has not, the stale value is served immediately while the cache is silently refreshed in the background. After the hard TTL the entry is gone and the next caller blocks on the factory.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <pre><code class="language-none"> time ─────────────────────────────────────────────────────────────────────►
+       │◄──── soft TTL ────►│◄──── stale window (hard−soft) ────►│ expired │
+       │   return cached   │  return stale + trigger background  │ block   │</code></pre>
+
+  <p><strong>Stampede guard:</strong> A <code>ConcurrentDictionary&lt;string,int&gt;</code> (<code>_swrInFlight</code>)
+  ensures only one background refresh fires per key at a time. Additional callers during an in-flight
+  refresh all receive the stale value immediately.</p>
+
+  <h3><code>CacheManager.GetOrCreateWithStaleAsync</code></h3>
+  <pre><code class="language-csharp">var data = await CacheManager.GetOrCreateWithStaleAsync(
+    key      : "report:weekly",
+    factory  : () => ReportService.GenerateAsync(),
+    softTtl  : TimeSpan.FromMinutes(5),
+    hardTtl  : TimeSpan.FromMinutes(60));
+// Callers within 5 min → instant
+// Callers 5-60 min later → instant (stale) + silent background refresh
+// After 60 min → blocks once to regenerate</code></pre>
+
+  <h3><code>CacheScope.GetOrCreateAsync</code> (scoped SWR)</h3>
+  <pre><code class="language-csharp">using var scope = CacheManager.CreateScope(CacheProviderType.InMemory, config);
+
+var rows = await scope.GetOrCreateAsync(
+    key     : "orders:open",
+    factory : () => db.GetOpenOrdersAsync(),
+    softTtl : TimeSpan.FromSeconds(30),
+    hardTtl : TimeSpan.FromMinutes(5));
+</code></pre>
+</section>
+
+<!-- ═══════════════════════ EXTENSIONS -->
+<section id="extensions">
+  <h2><i class="bi bi-tools"></i> Extension Operations</h2>
+  <p>Additional static methods on <code>CacheManager</code> from <code>CacheManager.Extensions.cs</code>.</p>
+
+  <h3>Tagged cache entries</h3>
+  <p>Group related entries under one or more string tags to mass-invalidate them together.</p>
+  <pre><code class="language-csharp">// Store with tags
+await CacheManager.SetWithTagsAsync(
+    key   : "user:123:profile",
+    value : userProfile,
+    tags  : new[] { "user:123", "profiles" },
+    expiry: TimeSpan.FromHours(1));
+
+await CacheManager.SetWithTagsAsync(
+    key   : "user:123:orders",
+    value : orderList,
+    tags  : new[] { "user:123", "orders" });
+
+// Invalidate everything tagged "user:123" (removes both entries above)
+long removed = await CacheManager.RemoveByTagAsync("user:123");
+Console.WriteLine($"Removed {removed} entries");</code></pre>
+
+  <div class="info-box">
+    <i class="bi bi-info-circle"></i>
+    <div>
+      Tag index entries are stored with a 30-day TTL in the same provider. Each tag entry is a
+      <code>HashSet&lt;string&gt;</code> of all keys associated with that tag. The tag index itself
+      is cleaned up by <code>RemoveByTagAsync</code> after the grouped keys are removed.
+    </div>
+  </div>
+
+  <h3>Conditional writes</h3>
+  <pre><code class="language-csharp">// Store only if the key does not already exist
+bool didSet = await CacheManager.SetIfNotExistsAsync("lock:export-job", true, TimeSpan.FromMinutes(5));
+if (!didSet)
+    Console.WriteLine("Job already running — skip duplicate"); </code></pre>
+
+  <h3>Full extension method list</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>SetWithTagsAsync&lt;T&gt;(key, value, tags, expiry?, ct)</code></td><td>Store a value and associate it with one or more tags</td></tr>
+        <tr><td><code>RemoveByTagAsync(tag, ct)</code></td><td>Remove all entries belonging to the specified tag</td></tr>
+        <tr><td><code>SetIfNotExistsAsync&lt;T&gt;(key, value, expiry?, ct)</code></td><td>Conditional set — only writes if the key is absent (useful for distributed locks)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CACHESCOPE -->
+<section id="cachescope">
+  <h2><i class="bi bi-box-fill"></i> CacheScope</h2>
+  <p>
+    A <code>CacheScope</code> is a disposable, instance-based cache backed by its own
+    <code>ICacheProvider</code>. It is the recommended way to give a component or service
+    its own isolated cache without polluting the global <code>CacheManager</code> state.
+  </p>
+
+  <h3>Creating a scope</h3>
+  <pre><code class="language-csharp">// Factory on CacheManager
+CacheScope scope = CacheManager.CreateScope(
+    CacheProviderType.InMemory,
+    new CacheConfiguration
+    {
+        MaxItems   = 200,
+        DefaultExpiry = TimeSpan.FromMinutes(10),
+        KeyPrefix  = "proxy:orders-db:"
+    });
+</code></pre>
+
+  <h3><code>CacheScope</code> API</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Member</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Statistics</code></td><td>Live <code>CacheStatistics</code> from the underlying provider</td></tr>
+        <tr><td><code>IsAvailable</code></td><td><code>true</code> when the provider is healthy and the scope has not been disposed</td></tr>
+        <tr><td><code>GetAsync&lt;T&gt;(key, ct)</code></td><td>Fetch from this scope's provider</td></tr>
+        <tr><td><code>SetAsync&lt;T&gt;(key, value, expiry?, ct)</code></td><td>Store in this scope's provider</td></tr>
+        <tr><td><code>ExistsAsync(key, ct)</code></td><td>Presence check</td></tr>
+        <tr><td><code>RemoveAsync(key, ct)</code></td><td>Delete one entry</td></tr>
+        <tr><td><code>ClearAsync(pattern?, ct)</code></td><td>Remove all (or pattern-matched) entries</td></tr>
+        <tr><td><code>GetOrCreateAsync&lt;T&gt;(key, factory, softTtl, hardTtl, ct)</code></td><td>SWR fetch-or-create</td></tr>
+        <tr><td><code>Dispose()</code></td><td>Disposes the underlying provider; subsequent calls throw <code>ObjectDisposedException</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="warning-box">
+    <i class="bi bi-exclamation-triangle"></i>
+    <div>
+      Always dispose a <code>CacheScope</code> when the owning component is torn down.
+      The underlying provider holds a background cleanup timer and (for Redis) a network
+      connection that must be released.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ STATISTICS -->
+<section id="statistics">
+  <h2><i class="bi bi-bar-chart-fill"></i> Statistics &amp; Diagnostics</h2>
+
+  <h3><code>CacheStatistics</code> (per provider)</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>Hits</code></td><td><code>long</code></td><td>Number of successful cache lookups</td></tr>
+        <tr><td><code>Misses</code></td><td><code>long</code></td><td>Number of lookups that returned no entry</td></tr>
+        <tr><td><code>HitRatio</code></td><td><code>double</code></td><td>Hits / (Hits + Misses) × 100</td></tr>
+        <tr><td><code>ItemCount</code></td><td><code>long</code></td><td>Current number of entries in the provider</td></tr>
+        <tr><td><code>MemoryUsage</code></td><td><code>long</code></td><td>Estimated memory consumption (bytes)</td></tr>
+        <tr><td><code>ExpiredItems</code></td><td><code>long</code></td><td>Entries removed by TTL expiration</td></tr>
+        <tr><td><code>EvictedItems</code></td><td><code>long</code></td><td>Entries removed by LRU or memory-pressure eviction</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>CacheManagerStatistics</code> (combined)</h3>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Property</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>PrimaryProvider</code></td><td><code>CacheStatistics</code> for the primary</td></tr>
+        <tr><td><code>FallbackProvider</code></td><td><code>CacheStatistics</code> for the fallback</td></tr>
+        <tr><td><code>PrimaryProviderName</code></td><td>Display name (e.g. "InMemory", "Redis")</td></tr>
+        <tr><td><code>PrimaryProviderAvailable</code></td><td><code>true</code> when primary is reachable</td></tr>
+        <tr><td><code>CombinedHitRatio</code></td><td>Hits / (Hits + Misses) across both providers</td></tr>
+        <tr><td><code>TotalItemCount</code></td><td>Sum of item counts across both providers</td></tr>
+        <tr><td><code>TotalMemoryUsage</code></td><td>Sum of memory usage across both providers</td></tr>
+        <tr><td><code>TotalExpiredItems</code></td><td>Sum of expired entries across both providers</td></tr>
+        <tr><td><code>TotalEvictedItems</code></td><td>Sum of evicted entries across both providers</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Inspecting statistics</h3>
+  <pre><code class="language-csharp">var stats = CacheManager.GetStatistics();
+
+Console.WriteLine($"Primary: {stats.PrimaryProviderName}  available={stats.PrimaryProviderAvailable}");
+Console.WriteLine($"  Hits:    {stats.PrimaryProvider?.Hits}");
+Console.WriteLine($"  Misses:  {stats.PrimaryProvider?.Misses}");
+Console.WriteLine($"  HitRatio:{stats.PrimaryProvider?.HitRatio:F2}%");
+Console.WriteLine($"  Items:   {stats.TotalItemCount}");
+Console.WriteLine($"  Memory:  {stats.TotalMemoryUsage / 1024.0:F1} KB");
+Console.WriteLine($"  Combined hit ratio: {stats.CombinedHitRatio:F2}%");</code></pre>
+</section>
+
+<!-- ═══════════════════════ EXAMPLES -->
+<section id="examples">
+  <h2><i class="bi bi-code-slash"></i> Usage Examples</h2>
+
+  <h3>Example 1 — Basic store and retrieve</h3>
+  <pre><code class="language-csharp">CacheManager.Initialize();   // SimpleCacheProvider by default
+
+await CacheManager.SetAsync("user:123", new UserDto { Name = "Alice", Age = 30 });
+await CacheManager.SetAsync("product:456", new ProductDto { Name = "Widget", Price = 9.99m },
+    expiry: TimeSpan.FromMinutes(5));
+
+if (await CacheManager.ExistsAsync("user:123"))
+{
+    var user = await CacheManager.GetAsync&lt;UserDto&gt;("user:123");
+    Console.WriteLine(user.Name);
+}
+
+await CacheManager.RemoveAsync("user:123");</code></pre>
+
+  <h3>Example 2 — GetOrCreate pattern</h3>
+  <pre><code class="language-csharp">// Async factory is called only on a cache miss
+var report = await CacheManager.GetOrCreateAsync(
+    key    : "report:monthly",
+    factory: async () => await ReportService.GenerateMonthlyAsync(),
+    expiry : TimeSpan.FromHours(1));
+
+// Synchronous overload
+var config = CacheManager.GetOrCreate("app:config", () => ConfigLoader.Load());</code></pre>
+
+  <h3>Example 3 — Stale-while-revalidate</h3>
+  <pre><code class="language-csharp">// Callers never wait longer than a millisecond after the first population.
+// Background refresh ensures data stays fresh without blocking.
+var dashboard = await CacheManager.GetOrCreateWithStaleAsync(
+    key     : "dashboard:stats",
+    factory : async () => await StatsService.ComputeAsync(),
+    softTtl : TimeSpan.FromMinutes(2),
+    hardTtl : TimeSpan.FromMinutes(30));</code></pre>
+
+  <h3>Example 4 — Batch operations</h3>
+  <pre><code class="language-csharp">// Set 1 000 items in one call
+var batch = Enumerable.Range(1, 1_000)
+    .ToDictionary(i =&gt; $"item:{i}", i =&gt; new ItemDto { Id = i });
+
+long stored = await CacheManager.SetManyAsync(batch, TimeSpan.FromMinutes(15));
+Console.WriteLine($"Stored {stored} items");
+
+// Retrieve a subset
+var keys = new[] { "item:1", "item:42", "item:999" };
+var found = await CacheManager.GetManyAsync&lt;ItemDto&gt;(keys);
+Console.WriteLine($"Found {found.Count} / {keys.Length}");</code></pre>
+
+  <h3>Example 5 — Tag-based invalidation</h3>
+  <pre><code class="language-csharp">// Populate user-scoped entries
+await CacheManager.SetWithTagsAsync("user:7:profile", profile,  tags: new[] { "user:7" });
+await CacheManager.SetWithTagsAsync("user:7:orders",  orders,   tags: new[] { "user:7", "orders" });
+await CacheManager.SetWithTagsAsync("user:7:prefs",   prefs,    tags: new[] { "user:7" });
+
+// User logs out / account deleted — invalidate everything for user 7
+long cleared = await CacheManager.RemoveByTagAsync("user:7");
+Console.WriteLine($"Cleared {cleared} entries for user 7");</code></pre>
+
+  <h3>Example 6 — Redis primary with InMemory fallback</h3>
+  <pre><code class="language-csharp">CacheManager.Initialize(
+    new CacheConfiguration
+    {
+        DefaultExpiry = TimeSpan.FromMinutes(20),
+        KeyPrefix     = "orders:",
+        Redis         = new RedisConfiguration
+        {
+            ConnectionString = "redis-prod:6379,password=s3cr3t",
+            ConnectTimeout   = TimeSpan.FromSeconds(3),
+            RetryPolicy      = new RetryPolicyConfiguration { MaxRetries = 3 }
+        }
+    },
+    primaryProvider  : CacheProviderType.Redis,
+    fallbackProvider : CacheProviderType.InMemory);
+
+// If Redis is down, the InMemory fallback is used automatically
+var order = await CacheManager.GetOrCreateAsync("order:88", () => db.GetOrderAsync(88));</code></pre>
+
+  <h3>Example 7 — Scoped cache for a component</h3>
+  <pre><code class="language-csharp">public class OrderRepository : IDisposable
+{
+    private readonly IDatabase   _db;
+    private readonly CacheScope  _cache;
+
+    public OrderRepository(IDatabase db)
+    {
+        _db    = db;
+        _cache = CacheManager.CreateScope(
+            CacheProviderType.InMemory,
+            new CacheConfiguration { MaxItems = 500, KeyPrefix = "orders:" });
+    }
+
+    public async Task&lt;IReadOnlyList&lt;Order&gt;&gt; GetOpenOrdersAsync()
+        =&gt; await _cache.GetOrCreateAsync(
+               key     : "open",
+               factory : () =&gt; _db.QueryAsync&lt;Order&gt;("SELECT * FROM Orders WHERE Status='Open'"),
+               softTtl : TimeSpan.FromSeconds(30),
+               hardTtl : TimeSpan.FromMinutes(5));
+
+    public async Task InvalidateAsync() =&gt; await _cache.ClearAsync();
+
+    public void Dispose() =&gt; _cache.Dispose();
+}</code></pre>
+
+  <h3>Example 8 — Monitoring statistics</h3>
+  <pre><code class="language-csharp">// Periodic health check
+var stats = CacheManager.GetStatistics();
+
+if (stats.PrimaryProvider?.HitRatio &lt; 50)
+    Console.WriteLine("Warning: cache hit ratio below 50% — consider increasing MaxItems");
+
+if (!stats.PrimaryProviderAvailable)
+    Console.WriteLine("Warning: primary cache provider is down — running on fallback");
+
+Console.WriteLine($"Total memory: {stats.TotalMemoryUsage / 1024:F0} KB");
+Console.WriteLine($"Evictions:    {stats.TotalEvictedItems}");</code></pre>
+
+  <h3>Example 9 — Custom provider injection</h3>
+  <pre><code class="language-csharp">// Use a custom provider (e.g. Garnet, Memcached, Cosmos DB cache)
+var provider = new MemcachedCacheProvider("memcached-host:11211");
+CacheManager.SetProvider(provider, fallbackProvider: new SimpleCacheProvider());
+
+// Or replace just for one component via scope
+using var scope = new CacheScope(provider);</code></pre>
+
+</section>
+
+</div><!-- .main-content -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof loadNavigation === 'function') loadNavigation('caching-api');
+});
+</script>
+
+<style>
+.feature-grid      { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; margin: 1.5rem 0; }
+.feature-card      { background: var(--card-bg,#f8f9fa); border: 1px solid var(--border-color,#dee2e6); border-radius: .5rem; padding: 1rem; }
+.feature-card h4   { margin: .5rem 0 .3rem; font-size: .95rem; }
+.feature-card p    { margin: 0; font-size: .85rem; color: var(--text-muted,#6c757d); }
+.text-primary { color:#0d6efd; }
+.text-success { color:#198754; }
+.text-warning { color:#ffc107; }
+.text-info    { color:#0dcaf0; }
+.text-danger  { color:#dc3545; }
+</style>
 </body>
 </html>

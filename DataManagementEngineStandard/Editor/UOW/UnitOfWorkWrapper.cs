@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -10,6 +12,9 @@ using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.UOW.Models;
+using System.Data;
+using System.IO;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
@@ -17,14 +22,29 @@ namespace TheTechIdea.Beep.Editor.UOW
     /// Enhanced wrapper around dynamic UnitOfWork providing strongly-typed interface
     /// with improved error handling, validation, and Oracle Forms compatibility
     /// </summary>
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
+        private readonly object _masterDetailLock = new object();
+        private readonly List<DetailRegistration> _detailRegistrations = new List<DetailRegistration>();
+        private IUnitofWork _masterUnitOfWork;
+        private string _masterKeyField = string.Empty;
+        private string _foreignKeyField = string.Empty;
+        private Delegate _itemChangedForwarder;
+        private EventInfo _itemChangedEventInfo;
+
+        private sealed class DetailRegistration
+        {
+            public IUnitofWork DetailUnitOfWork { get; init; }
+            public string MasterKeyField { get; init; }
+            public string DetailForeignKeyField { get; init; }
+        }
 
         public UnitOfWorkWrapper(object unitOfWork)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            AttachUnderlyingItemChangedForwarder();
         }
 
         #region Properties with Enhanced Error Handling
@@ -123,6 +143,38 @@ namespace TheTechIdea.Beep.Editor.UOW
             set => SetPropertySafely(() => _unitOfWork.IsIdentity = value);
         }
 
+        public bool IsLogging
+        {
+            get => GetPropertySafely(() => _unitOfWork.IsLogging, false);
+            set => SetPropertySafely(() => _unitOfWork.IsLogging = value);
+        }
+
+        public int PageIndex
+        {
+            get => GetPropertySafely(() => _unitOfWork.PageIndex, 0);
+            set => SetPropertySafely(() => _unitOfWork.PageIndex = value);
+        }
+
+        public int PageSize
+        {
+            get => GetPropertySafely(() => _unitOfWork.PageSize, 10);
+            set => SetPropertySafely(() => _unitOfWork.PageSize = value);
+        }
+
+        public int TotalItemCount => GetPropertySafely(() => _unitOfWork.TotalItemCount, Count);
+
+        public Dictionary<DateTime, EntityUpdateInsertLog> UpdateLog
+        {
+            get => GetPropertySafely(() => _unitOfWork.UpdateLog, new Dictionary<DateTime, EntityUpdateInsertLog>());
+            set => SetPropertySafely(() => _unitOfWork.UpdateLog = value);
+        }
+
+        public CommitOrder CommitOrder
+        {
+            get => GetPropertySafely(() => _unitOfWork.CommitOrder, CommitOrder.DeletesFirst);
+            set => SetPropertySafely(() => _unitOfWork.CommitOrder = value);
+        }
+
         #endregion
 
         #region Enhanced Properties for Oracle Forms Compatibility
@@ -135,12 +187,134 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>
         /// Gets the current index (current record position) - Oracle Forms equivalent
         /// </summary>
-        public int CurrentIndex => GetPropertySafely(() => _unitOfWork.CurrentIndex, -1);
+        public int CurrentIndex => GetPropertySafely(() => Units?.CurrentIndex ?? -1, -1);
 
         /// <summary>
         /// Gets the total count of records - Oracle Forms equivalent
         /// </summary>
-        public int Count => GetPropertySafely(() => _unitOfWork.Count, 0);
+        public int Count => GetPropertySafely(() => Units?.Count ?? 0, 0);
+
+        /// <summary>Fires when the current record changes (current-record pointer moved). Forwarded from the underlying UoW via reflection.</summary>
+        public event EventHandler CurrentChanged
+        {
+            add
+            {
+                try
+                {
+                    ((object)_unitOfWork).GetType()
+                        .GetEvent("CurrentChanged")
+                        ?.AddEventHandler(_unitOfWork, value);
+                }
+                catch { }
+            }
+            remove
+            {
+                try
+                {
+                    ((object)_unitOfWork).GetType()
+                        .GetEvent("CurrentChanged")
+                        ?.RemoveEventHandler(_unitOfWork, value);
+                }
+                catch { }
+            }
+        }
+
+        public event EventHandler<ItemChangedEventArgs<Entity>> ItemChanged;
+
+        public event EventHandler<UnitofWorkParams> PreDelete
+        {
+            add => AddOrRemoveUowEvent(nameof(PreDelete), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PreDelete), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PreInsert
+        {
+            add => AddOrRemoveUowEvent(nameof(PreInsert), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PreInsert), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PreCreate
+        {
+            add => AddOrRemoveUowEvent(nameof(PreCreate), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PreCreate), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PreUpdate
+        {
+            add => AddOrRemoveUowEvent(nameof(PreUpdate), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PreUpdate), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PreQuery
+        {
+            add => AddOrRemoveUowEvent(nameof(PreQuery), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PreQuery), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostQuery
+        {
+            add => AddOrRemoveUowEvent(nameof(PostQuery), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostQuery), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostInsert
+        {
+            add => AddOrRemoveUowEvent(nameof(PostInsert), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostInsert), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostCreate
+        {
+            add => AddOrRemoveUowEvent(nameof(PostCreate), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostCreate), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostUpdate
+        {
+            add => AddOrRemoveUowEvent(nameof(PostUpdate), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostUpdate), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostEdit
+        {
+            add => AddOrRemoveUowEvent(nameof(PostEdit), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostEdit), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostDelete
+        {
+            add => AddOrRemoveUowEvent(nameof(PostDelete), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostDelete), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PostCommit
+        {
+            add => AddOrRemoveUowEvent(nameof(PostCommit), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PostCommit), value, false);
+        }
+
+        public event EventHandler<UnitofWorkParams> PreCommit
+        {
+            add => AddOrRemoveUowEvent(nameof(PreCommit), value, true);
+            remove => AddOrRemoveUowEvent(nameof(PreCommit), value, false);
+        }
+
+        public IReadOnlyList<IUnitofWork> DetailUnitOfWorks
+        {
+            get
+            {
+                lock (_masterDetailLock)
+                {
+                    return _detailRegistrations.Select(x => x.DetailUnitOfWork).ToList();
+                }
+            }
+        }
+
+        public IUnitofWork MasterUnitOfWork => _masterUnitOfWork;
+
+        public string MasterKeyField => _masterKeyField;
+
+        public string ForeignKeyField => _foreignKeyField;
 
         #endregion
 
@@ -194,6 +368,45 @@ namespace TheTechIdea.Beep.Editor.UOW
         public dynamic Get(string PrimaryKeyid) => 
             ExecuteSafely(() => _unitOfWork.Get(PrimaryKeyid), null);
 
+        public dynamic Read(Func<dynamic, bool> predicate)
+        {
+            ValidateNotDisposed();
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            return ExecuteSafely(
+                () => Units == null
+                    ? null
+                    : ((System.Collections.IEnumerable)Units).Cast<object>().FirstOrDefault(item => predicate(item)),
+                null);
+        }
+
+        public async Task<dynamic> MultiRead(Func<dynamic, bool> predicate)
+        {
+            ValidateNotDisposed();
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            return await ExecuteSafelyAsync(
+                async () =>
+                {
+                    var units = await Get();
+                    return units == null
+                        ? null
+                        : ((System.Collections.IEnumerable)units).Cast<object>().Where(item => predicate(item)).ToList();
+                },
+                null);
+        }
+
+        public dynamic GetItemFromCurrentList(int index) =>
+            ExecuteSafely(() => Units != null && index >= 0 && index < Units.Count ? Units[index] : null, null);
+
+        public Tracking GetTrackingItem(dynamic item) =>
+            ExecuteSafely(() => _unitOfWork.GetTrackingItem(item), default(Tracking));
+
+        public bool SaveLog(string pathandname) =>
+            ExecuteSafely(() => _unitOfWork.SaveLog(pathandname), false);
+
         #endregion
 
         #region Transaction Operations with Enhanced Error Handling
@@ -228,6 +441,13 @@ namespace TheTechIdea.Beep.Editor.UOW
         #endregion
 
         #region CRUD Operations with Enhanced Error Handling
+
+        public void Add(dynamic entity)
+        {
+            ValidateNotDisposed();
+            ValidateDocument(entity, nameof(entity));
+            ExecuteSafely(() => _unitOfWork.Add(entity));
+        }
 
         // Async CRUD operations (preferred)
         public async Task<IErrorsInfo> UpdateAsync(dynamic doc)
@@ -321,6 +541,13 @@ namespace TheTechIdea.Beep.Editor.UOW
                 new ErrorsInfo { Flag = Errors.Failed, Message = "Delete operation failed" });
         }
 
+        public ErrorsInfo Delete()
+        {
+            ValidateNotDisposed();
+            return ExecuteSafely(() => _unitOfWork.Delete(),
+                new ErrorsInfo { Flag = Errors.Failed, Message = "Delete operation failed" });
+        }
+
         public ErrorsInfo Delete(dynamic doc)
         {
             ValidateNotDisposed();
@@ -346,6 +573,31 @@ namespace TheTechIdea.Beep.Editor.UOW
 
             return ExecuteSafely(() => _unitOfWork.Update(id, entity),
                 new ErrorsInfo { Flag = Errors.Failed, Message = "Update operation failed" });
+        }
+
+        public ErrorsInfo Update(Func<dynamic, bool> predicate, dynamic updatedEntity)
+        {
+            ValidateNotDisposed();
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            ValidateDocument(updatedEntity, nameof(updatedEntity));
+
+            var existing = Read(predicate);
+            return existing == null
+                ? new ErrorsInfo { Flag = Errors.Failed, Message = "No matching record found" }
+                : Update(updatedEntity);
+        }
+
+        public ErrorsInfo Delete(Func<dynamic, bool> predicate)
+        {
+            ValidateNotDisposed();
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            var existing = Read(predicate);
+            return existing == null
+                ? new ErrorsInfo { Flag = Errors.Failed, Message = "No matching record found" }
+                : Delete(existing);
         }
 
         #endregion
@@ -457,6 +709,135 @@ namespace TheTechIdea.Beep.Editor.UOW
         #endregion
 
         #region Helper Methods for Safe Dynamic Operations
+
+        private void AddOrRemoveUowEvent(string eventName, Delegate handler, bool add)
+        {
+            try
+            {
+                var eventInfo = ((object)_unitOfWork).GetType().GetEvent(eventName);
+                if (eventInfo == null)
+                    return;
+
+                if (add)
+                    eventInfo.AddEventHandler(_unitOfWork, handler);
+                else
+                    eventInfo.RemoveEventHandler(_unitOfWork, handler);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error forwarding event '{eventName}': {ex.Message}");
+            }
+        }
+
+        private void AttachUnderlyingItemChangedForwarder()
+        {
+            try
+            {
+                var eventInfo = ((object)_unitOfWork).GetType().GetEvent("ItemChanged");
+                if (eventInfo == null || _itemChangedForwarder != null)
+                    return;
+
+                var handlerType = eventInfo.EventHandlerType;
+                var eventArgsType = handlerType?.GetGenericArguments().FirstOrDefault();
+                var itemType = eventArgsType?.GetGenericArguments().FirstOrDefault();
+                if (itemType == null)
+                    return;
+
+                var method = GetType()
+                    .GetMethod(nameof(ForwardUnderlyingItemChanged), BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?.MakeGenericMethod(itemType);
+                if (method == null)
+                    return;
+
+                _itemChangedForwarder = Delegate.CreateDelegate(handlerType, this, method);
+                eventInfo.AddEventHandler(_unitOfWork, _itemChangedForwarder);
+                _itemChangedEventInfo = eventInfo;
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error attaching item-changed forwarder: {ex.Message}");
+            }
+        }
+
+        private void DetachUnderlyingItemChangedForwarder()
+        {
+            try
+            {
+                if (_itemChangedEventInfo != null && _itemChangedForwarder != null && _unitOfWork != null)
+                {
+                    _itemChangedEventInfo.RemoveEventHandler(_unitOfWork, _itemChangedForwarder);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error detaching item-changed forwarder: {ex.Message}");
+            }
+            finally
+            {
+                _itemChangedForwarder = null;
+                _itemChangedEventInfo = null;
+            }
+        }
+
+        private void ForwardUnderlyingItemChanged<TItem>(object sender, ItemChangedEventArgs<TItem> e)
+        {
+            if (e != null && e.Item is Entity entity)
+            {
+                ItemChanged?.Invoke(this, new ItemChangedEventArgs<Entity>(entity, e.PropertyName));
+            }
+        }
+
+        private void SetMasterRelation(IUnitofWork masterUnitOfWork, string masterKeyField, string foreignKeyField)
+        {
+            _masterUnitOfWork = masterUnitOfWork;
+            _masterKeyField = masterKeyField ?? string.Empty;
+            _foreignKeyField = foreignKeyField ?? string.Empty;
+        }
+
+        private void ClearMasterRelation()
+        {
+            _masterUnitOfWork = null;
+            _masterKeyField = string.Empty;
+            _foreignKeyField = string.Empty;
+        }
+
+        private static object GetPropertyValue(object target, string propertyName)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(propertyName))
+                return null;
+
+            var property = target.GetType().GetProperty(
+                propertyName,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            return property?.GetValue(target);
+        }
+
+        private static bool TrySetPropertyValue(object target, string propertyName, object value)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(propertyName))
+                return false;
+
+            var property = target.GetType().GetProperty(
+                propertyName,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (property == null || !property.CanWrite)
+                return false;
+
+            var targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            var converted = value;
+            if (converted != null && !targetType.IsInstanceOfType(converted))
+            {
+                converted = Convert.ChangeType(converted, targetType);
+            }
+
+            property.SetValue(target, converted);
+            return true;
+        }
+
+        private static bool IsNullOrEmpty(object value)
+        {
+            return value == null || value == DBNull.Value || (value is string text && string.IsNullOrWhiteSpace(text));
+        }
 
         private T GetPropertySafely<T>(Func<T> getter, T defaultValue)
         {
@@ -591,6 +972,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public bool CanUndo => GetPropertySafely(() => _unitOfWork.CanUndo, false);
         public bool CanRedo => GetPropertySafely(() => _unitOfWork.CanRedo, false);
         public bool Undo() => ExecuteSafely(() => _unitOfWork.Undo(), false);
+        public void UndoLastChange() => ExecuteSafely(() => _unitOfWork.UndoLastChange());
         public bool Redo() => ExecuteSafely(() => _unitOfWork.Redo(), false);
         public void ClearUndoHistory() => ExecuteSafely(() => _unitOfWork.ClearUndoHistory());
 
@@ -621,13 +1003,6 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         public void InvalidatePageCache() =>
             ExecuteSafely(() => _unitOfWork.InvalidatePageCache());
-
-        // Master-Detail (Phase 6)
-        public void UnregisterAllDetails() =>
-            ExecuteSafely(() => _unitOfWork.UnregisterAllDetails());
-
-        public IReadOnlyList<object> DetailLists =>
-            GetPropertySafely(() => _unitOfWork.DetailLists, (IReadOnlyList<object>)Array.Empty<object>());
 
         // Computed Columns (Phase 7)
         public void RegisterComputed(string name, Func<dynamic, object> computation) =>
@@ -680,6 +1055,278 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         #endregion
 
+        #region Phase 2/3 — Batch Commit, Revert, Refresh, History, Clone, Export/Import
+
+        // Batch Commit (Phase 2)
+        public async Task<CommitBatchResult> CommitBatchAsync(
+            int batchSize = 100,
+            IProgress<CommitBatchProgress> progress = null,
+            CancellationToken ct = default)
+        {
+            ValidateNotDisposed();
+            return await ExecuteSafelyAsync(
+                async () => await _unitOfWork.CommitBatchAsync(batchSize, progress, ct),
+                new CommitBatchResult { Success = false, Errors = new System.Collections.Generic.List<string> { "CommitBatchAsync failed" } }
+            );
+        }
+
+        // Revert (Phase 3)
+        public bool RevertItem(dynamic item) =>
+            ExecuteSafely(() => _unitOfWork.RevertItem(item), false);
+
+        public async Task<bool> RevertItemAsync(dynamic item, CancellationToken ct = default) =>
+            await ExecuteSafelyAsync(async () => await _unitOfWork.RevertItemAsync(item, ct), false);
+
+        // Refresh / Merge (Phase 3)
+        public async Task<IErrorsInfo> RefreshAsync(
+            List<AppFilter> filters = null,
+            ConflictMode conflictMode = ConflictMode.ServerWins,
+            CancellationToken ct = default)
+        {
+            ValidateNotDisposed();
+            return await ExecuteSafelyAsync(
+                async () => await _unitOfWork.RefreshAsync(filters, conflictMode, ct),
+                new ErrorsInfo { Flag = Errors.Failed, Message = "RefreshAsync failed" }
+            );
+        }
+
+        // History / Audit (Phase 3)
+        public ChangeSummary GetChangeSummary() =>
+            ExecuteSafely(() => _unitOfWork.GetChangeSummary(), new ChangeSummary());
+
+        public IReadOnlyList<QueryHistoryEntry> GetQueryHistory() =>
+            ExecuteSafely(
+                () => (IReadOnlyList<QueryHistoryEntry>)_unitOfWork.GetQueryHistory(),
+                System.Array.Empty<QueryHistoryEntry>()
+            );
+
+        public void ClearQueryHistory() =>
+            ExecuteSafely(() => _unitOfWork.ClearQueryHistory());
+
+        public List<ChangeRecord> GetChangeLog() =>
+            ExecuteSafely(() => _unitOfWork.GetChangeLog(), new List<ChangeRecord>());
+
+        // Clone (Phase 3)
+        public dynamic CloneItem(dynamic item, bool deepCopy = false) =>
+            ExecuteSafely(() => _unitOfWork.CloneItem(item, deepCopy), (object)null);
+
+        // Export (Phase 3)
+        public DataTable ToDataTable() =>
+            ExecuteSafely(() => _unitOfWork.ToDataTable(), new DataTable());
+
+        public async Task ToJsonAsync(Stream stream, CancellationToken ct = default) =>
+            await ExecuteSafelyAsync(
+                async () => { await _unitOfWork.ToJsonAsync(stream, ct); return true; }, false);
+
+        public async Task ToCsvAsync(Stream stream, char delimiter = ',', CancellationToken ct = default) =>
+            await ExecuteSafelyAsync(
+                async () => { await _unitOfWork.ToCsvAsync(stream, delimiter, ct); return true; }, false);
+
+        // Import (Phase 3)
+        public async Task<int> LoadFromJsonAsync(Stream stream, bool clearFirst = true, CancellationToken ct = default) =>
+            await ExecuteSafelyAsync(
+                async () => await _unitOfWork.LoadFromJsonAsync(stream, clearFirst, ct), 0);
+
+        public async Task<int> LoadFromCsvAsync(
+            Stream stream, char delimiter = ',', bool clearFirst = true,
+            bool hasHeaderRow = true, CancellationToken ct = default) =>
+            await ExecuteSafelyAsync(
+                async () => await _unitOfWork.LoadFromCsvAsync(stream, delimiter, clearFirst, hasHeaderRow, ct), 0);
+
+        // Aggregate extras (Phase 10)
+        public decimal SumWhere(string propertyName, Func<dynamic, bool> predicate) =>
+            ExecuteSafely(() => _unitOfWork.SumWhere(propertyName, predicate), 0m);
+
+        public decimal AverageWhere(string propertyName, Func<dynamic, bool> predicate) =>
+            ExecuteSafely(() => _unitOfWork.AverageWhere(propertyName, predicate), 0m);
+
+        public Dictionary<object, List<dynamic>> GroupBy(string propertyName) =>
+            ExecuteSafely(
+                () => _unitOfWork.GroupBy(propertyName),
+                new Dictionary<object, List<dynamic>>()
+            );
+
+        public async Task<IErrorsInfo> AddRange(IEnumerable<dynamic> entities)
+        {
+            ValidateNotDisposed();
+            if (entities == null)
+                throw new ArgumentNullException(nameof(entities));
+
+            var results = new List<IErrorsInfo>();
+            foreach (var entity in entities)
+            {
+                Add(entity);
+                results.Add(new ErrorsInfo { Flag = Errors.Ok });
+            }
+
+            return await Task.FromResult(results.Any(r => r.Flag != Errors.Ok)
+                ? results.First(r => r.Flag != Errors.Ok)
+                : new ErrorsInfo { Flag = Errors.Ok });
+        }
+
+        public async Task<IErrorsInfo> UpdateRange(IEnumerable<dynamic> entities)
+        {
+            ValidateNotDisposed();
+            if (entities == null)
+                throw new ArgumentNullException(nameof(entities));
+
+            var results = new List<IErrorsInfo>();
+            foreach (var entity in entities)
+            {
+                results.Add(Update(entity));
+            }
+
+            return await Task.FromResult(results.Any(r => r.Flag != Errors.Ok)
+                ? results.First(r => r.Flag != Errors.Ok)
+                : new ErrorsInfo { Flag = Errors.Ok });
+        }
+
+        public async Task<IErrorsInfo> DeleteRange(IEnumerable<dynamic> entities)
+        {
+            ValidateNotDisposed();
+            if (entities == null)
+                throw new ArgumentNullException(nameof(entities));
+
+            var results = new List<IErrorsInfo>();
+            foreach (var entity in entities)
+            {
+                results.Add(Delete(entity));
+            }
+
+            return await Task.FromResult(results.Any(r => r.Flag != Errors.Ok)
+                ? results.First(r => r.Flag != Errors.Ok)
+                : new ErrorsInfo { Flag = Errors.Ok });
+        }
+
+        public void RegisterDetail(IUnitofWork detailUnitOfWork, string masterKeyField, string detailForeignKeyField)
+        {
+            ValidateNotDisposed();
+            if (detailUnitOfWork == null)
+                throw new ArgumentNullException(nameof(detailUnitOfWork));
+            if (string.IsNullOrWhiteSpace(masterKeyField))
+                throw new ArgumentException("Master key field is required", nameof(masterKeyField));
+            if (string.IsNullOrWhiteSpace(detailForeignKeyField))
+                throw new ArgumentException("Detail foreign key field is required", nameof(detailForeignKeyField));
+
+            lock (_masterDetailLock)
+            {
+                var existing = _detailRegistrations.FirstOrDefault(x => ReferenceEquals(x.DetailUnitOfWork, detailUnitOfWork));
+                if (existing != null)
+                {
+                    _detailRegistrations.Remove(existing);
+                }
+
+                _detailRegistrations.Add(new DetailRegistration
+                {
+                    DetailUnitOfWork = detailUnitOfWork,
+                    MasterKeyField = masterKeyField,
+                    DetailForeignKeyField = detailForeignKeyField
+                });
+            }
+
+            if (detailUnitOfWork is UnitOfWorkWrapper detailWrapper)
+            {
+                detailWrapper.SetMasterRelation(this, masterKeyField, detailForeignKeyField);
+            }
+        }
+
+        public void UnregisterDetail(IUnitofWork detailUnitOfWork)
+        {
+            if (detailUnitOfWork == null)
+                return;
+
+            lock (_masterDetailLock)
+            {
+                var existing = _detailRegistrations.FirstOrDefault(x => ReferenceEquals(x.DetailUnitOfWork, detailUnitOfWork));
+                if (existing != null)
+                {
+                    _detailRegistrations.Remove(existing);
+                }
+            }
+
+            if (detailUnitOfWork is UnitOfWorkWrapper detailWrapper && ReferenceEquals(detailWrapper.MasterUnitOfWork, this))
+            {
+                detailWrapper.ClearMasterRelation();
+            }
+        }
+
+        public void UnregisterAllDetails()
+        {
+            List<IUnitofWork> details;
+            lock (_masterDetailLock)
+            {
+                details = _detailRegistrations.Select(x => x.DetailUnitOfWork).ToList();
+                _detailRegistrations.Clear();
+            }
+
+            foreach (var detail in details)
+            {
+                if (detail is UnitOfWorkWrapper detailWrapper && ReferenceEquals(detailWrapper.MasterUnitOfWork, this))
+                {
+                    detailWrapper.ClearMasterRelation();
+                }
+            }
+        }
+
+        public async Task SynchronizeDetailsAsync()
+        {
+            ValidateNotDisposed();
+
+            List<DetailRegistration> details;
+            lock (_masterDetailLock)
+            {
+                details = _detailRegistrations.ToList();
+            }
+
+            if (!details.Any())
+                return;
+
+            var currentItem = CurrentItem;
+            if (currentItem == null)
+            {
+                foreach (var detail in details)
+                {
+                    detail.DetailUnitOfWork.Clear();
+                }
+                return;
+            }
+
+            foreach (var detail in details)
+            {
+                var masterValue = GetPropertyValue(currentItem, detail.MasterKeyField);
+                if (IsNullOrEmpty(masterValue))
+                {
+                    detail.DetailUnitOfWork.Clear();
+                    continue;
+                }
+
+                await detail.DetailUnitOfWork.Get(new List<AppFilter>
+                {
+                    new AppFilter
+                    {
+                        FieldName = detail.DetailForeignKeyField,
+                        Operator = "=",
+                        FilterValue = masterValue.ToString()
+                    }
+                });
+            }
+        }
+
+        public bool ApplyMasterValueToCurrentItem()
+        {
+            ValidateNotDisposed();
+            if (_masterUnitOfWork?.CurrentItem == null || CurrentItem == null)
+                return false;
+
+            var masterValue = GetPropertyValue(_masterUnitOfWork.CurrentItem, _masterKeyField);
+            if (IsNullOrEmpty(masterValue))
+                return false;
+
+            return TrySetPropertyValue(CurrentItem, _foreignKeyField, masterValue);
+        }
+
+        #endregion
+
         #region IDisposable Implementation
 
         public void Dispose()
@@ -694,6 +1341,8 @@ namespace TheTechIdea.Beep.Editor.UOW
             {
                 try
                 {
+                    DetachUnderlyingItemChangedForwarder();
+
                     // Dispose the wrapped unit of work if it implements IDisposable
                     if (_unitOfWork is IDisposable disposableUnitOfWork)
                     {

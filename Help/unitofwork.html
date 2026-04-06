@@ -72,6 +72,13 @@
                         <li><a href="#events">Events</a></li>
                         <li><a href="#undo-redo">Undo/Redo</a></li>
                         <li><a href="#logging">Logging</a></li>
+                        <li><a href="#capability-interfaces">Capability Interfaces</a></li>
+                        <li><a href="#batch-commit">Batch Commit</a></li>
+                        <li><a href="#obl-change-inspection">OBL Change Inspection</a></li>
+                        <li><a href="#revert-merge">Revert &amp; Merge</a></li>
+                        <li><a href="#change-history">Change History &amp; Audit</a></li>
+                        <li><a href="#export-import">Export &amp; Import</a></li>
+                        <li><a href="#advanced-aggregates">Advanced Aggregates</a></li>
                         <li><a href="#best-practices">Best Practices</a></li>
                     </ul>
                 </div>
@@ -86,13 +93,19 @@
                     </p>
 
                     <div class="success">
-                        <strong>ðŸŽ¯ Key Features</strong>
+                        <strong>&#127919; Key Features</strong>
                         <ul>
                             <li>Generic implementation for any Entity type</li>
                             <li>Automatic change tracking and state management</li>
                             <li>Observable collections with property change notifications</li>
+                            <li>Field-level change inspection via OBL (Phase 1)</li>
                             <li>Filtering and pagination support</li>
-                            <li>Undo/Redo functionality</li>
+                            <li>Full Undo/Redo stack (<code>IUndoable</code>)</li>
+                            <li>Batch commit with chunked progress (<code>IBatchCommittable</code>)</li>
+                            <li>Per-item revert &amp; server-merge (<code>IRevertable</code> / <code>IMergeable</code>)</li>
+                            <li>JSON / CSV export and import (<code>IExportable</code> / <code>IImportable</code>)</li>
+                            <li>Change history &amp; query audit log (<code>IUnitofWorkHistory</code>)</li>
+                            <li>Advanced in-memory aggregates: SumWhere, GroupBy, etc. (<code>IAggregatable</code>)</li>
                             <li>Async CRUD operations</li>
                             <li>Event-driven architecture with lifecycle hooks</li>
                             <li>Validation and error handling</li>
@@ -101,7 +114,11 @@
 
                     <div class="code-example">
                         <h3>Signature-Verified Snapshot</h3>
-                        <pre><code class="language-csharp">public partial class UnitofWork&lt;T&gt; : IUnitofWork&lt;T&gt;, INotifyPropertyChanged where T : Entity, new()
+                        <pre><code class="language-csharp">public partial class UnitofWork&lt;T&gt;
+    : IUnitofWork&lt;T&gt;, INotifyPropertyChanged,
+      IRevertable, IBatchCommittable, IExportable, IImportable,
+      IAggregatable, IUndoable, IMergeable, IUnitofWorkHistory
+    where T : Entity, new()
 {
     public UnitofWork();
     public UnitofWork(IDMEEditor dMEEditor, string datasourceName, string entityName);
@@ -737,6 +754,281 @@ if (success)
                     </div>
                 </section>
 
+                <!-- Capability Interfaces -->
+                <section id="capability-interfaces" class="section">
+                    <h2>Capability Interfaces (Phase 3)</h2>
+                    <p>Since <code>UnitofWork&lt;T&gt;</code> implements eight marker interfaces you can detect capabilities at runtime without casting to the concrete type:</p>
+
+                    <table class="property-table">
+                        <thead><tr><th>Interface</th><th>Capability</th><th>Key Members</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>IRevertable</code></td><td>Per-item server revert</td><td><code>RevertItem</code>, <code>RevertItemAsync</code></td></tr>
+                            <tr><td><code>IBatchCommittable</code></td><td>Chunked batch commit</td><td><code>CommitBatchAsync</code></td></tr>
+                            <tr><td><code>IExportable</code></td><td>Data export</td><td><code>ToDataTable</code>, <code>ToJsonAsync</code>, <code>ToCsvAsync</code></td></tr>
+                            <tr><td><code>IImportable</code></td><td>Data import</td><td><code>LoadFromJsonAsync</code>, <code>LoadFromCsvAsync</code></td></tr>
+                            <tr><td><code>IAggregatable</code></td><td>Aggregate calculations</td><td><code>Sum</code>, <code>Average</code>, <code>Count</code></td></tr>
+                            <tr><td><code>IUndoable</code></td><td>Undo/Redo stack</td><td><code>UndoLastAction</code>, <code>RedoLastAction</code>, <code>EnableUndo</code></td></tr>
+                            <tr><td><code>IMergeable</code></td><td>Server-merge refresh</td><td><code>RefreshAsync</code></td></tr>
+                            <tr><td><code>IUnitofWorkHistory</code></td><td>Query history &amp; change audit</td><td><code>GetChangeSummary</code>, <code>GetQueryHistory</code>, <code>CloneItem</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Runtime Capability Detection</h3>
+                        <pre><code class="language-csharp">IUnitofWork uow = GetUnitOfWork(blockName); // returns non-generic IUnitofWork
+
+// Detect and use capabilities safely
+if (uow is IBatchCommittable batchable)
+{
+    var result = await batchable.CommitBatchAsync(batchSize: 50);
+    Console.WriteLine($"Committed {result.TotalCommitted} records.");
+}
+
+if (uow is IExportable exportable)
+{
+    using var stream = File.Create("export.json");
+    await exportable.ToJsonAsync(stream);
+}
+
+if (uow is IUnitofWorkHistory hist)
+{
+    var summary = hist.GetChangeSummary();
+    Console.WriteLine($"Inserted: {summary.InsertedCount}, Updated: {summary.UpdatedCount}, Deleted: {summary.DeletedCount}");
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Batch Commit -->
+                <section id="batch-commit" class="section">
+                    <h2>Batch Commit (IBatchCommittable)</h2>
+                    <p>Commit large sets of changes in configurable chunks, with progress reporting and cancellation support. Implements <code>IBatchCommittable</code>.</p>
+
+                    <div class="code-example">
+                        <h3>Signature</h3>
+                        <pre><code class="language-csharp">Task&lt;CommitBatchResult&gt; CommitBatchAsync(
+    int batchSize = 200,
+    IProgress&lt;CommitBatchProgress&gt; progress = null,
+    CancellationToken ct = default);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>CommitBatchResult Properties</h3>
+                        <pre><code class="language-csharp">public class CommitBatchResult
+{
+    public bool Success { get; set; }         // Overall success flag
+    public int TotalCommitted { get; set; }   // Records persisted
+    public List&lt;string&gt; Errors { get; set; } // Per-batch error messages
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Example — Import 10,000 Records in Batches of 200</h3>
+                        <pre><code class="language-csharp">// Add a large number of entities
+for (int i = 0; i &lt; 10_000; i++)
+    uow.Add(new Product { Name = $"Product {i}", Price = i * 1.5m });
+
+var progress = new Progress&lt;CommitBatchProgress&gt;(p =&gt;
+    Console.WriteLine($"Batch {p.BatchNumber}/{p.TotalBatches} — {p.Committed} committed"));
+
+var result = await uow.CommitBatchAsync(batchSize: 200, progress, CancellationToken.None);
+
+if (result.Success)
+    Console.WriteLine($"Done — {result.TotalCommitted} records saved.");
+else
+    foreach (var err in result.Errors)
+        Console.Error.WriteLine(err);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>&#128161; When to use CommitBatchAsync vs Commit</strong>
+                        <p>Use <code>CommitBatchAsync</code> when inserting or updating thousands of records to avoid database time-outs and to give UI progress feedback. Use <code>Commit()</code> for normal form-save operations with a small number of changes.</p>
+                    </div>
+                </section>
+
+                <!-- OBL Change Inspection -->
+                <section id="obl-change-inspection" class="section">
+                    <h2>OBL Change Inspection (Phase 1)</h2>
+                    <p>The underlying <code>ObservableBindingList&lt;T&gt;</code> exposes rich field-level change inspection methods added in Phase 1:</p>
+
+                    <table class="property-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetChangedFields(item)</code></td><td><code>IReadOnlyList&lt;string&gt;</code></td><td>Field names modified since the item was loaded</td></tr>
+                            <tr><td><code>GetFieldDelta(item, field)</code></td><td><code>FieldDelta</code></td><td>Original and current value pair for a field</td></tr>
+                            <tr><td><code>HasFieldChanges(item)</code></td><td><code>bool</code></td><td>Whether the item has any field-level changes</td></tr>
+                            <tr><td><code>GetInserted()</code></td><td><code>IReadOnlyList&lt;T&gt;</code></td><td>All newly inserted items not yet committed</td></tr>
+                            <tr><td><code>GetUpdated()</code></td><td><code>IReadOnlyList&lt;T&gt;</code></td><td>All modified items</td></tr>
+                            <tr><td><code>GetDeleted()</code></td><td><code>IReadOnlyList&lt;T&gt;</code></td><td>Soft-deleted items still in the list</td></tr>
+                            <tr><td><code>GetDirty()</code></td><td><code>IReadOnlyList&lt;T&gt;</code></td><td>All items in a non-Unchanged state</td></tr>
+                            <tr><td><code>GetChangeSetSummary()</code></td><td><code>ChangeSetSummary</code></td><td>Counts of inserted / updated / deleted items</td></tr>
+                            <tr><td><code>GetOriginalValue(item, field)</code></td><td><code>object</code></td><td>Snapshot value captured at first modification</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Example — Per-Item Delta Report</h3>
+                        <pre><code class="language-csharp">await customerUoW.Get();
+
+var customer = customerUoW.Units.First();
+customer.Name   = "Updated Name";
+customer.Status = "Premium";
+
+// Field-level inspection
+var changedFields = customerUoW.Units.GetChangedFields(customer);
+foreach (var field in changedFields)
+{
+    var delta = customerUoW.Units.GetFieldDelta(customer, field);
+    Console.WriteLine($"{field}: '{delta.OriginalValue}' → '{delta.CurrentValue}'");
+}
+
+// Summary
+var summary = customerUoW.Units.GetChangeSetSummary();
+Console.WriteLine($"Inserted={summary.InsertedCount}, Updated={summary.UpdatedCount}, Deleted={summary.DeletedCount}");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Revert & Merge -->
+                <section id="revert-merge" class="section">
+                    <h2>Revert &amp; Merge (IRevertable / IMergeable)</h2>
+
+                    <h3>IRevertable — Discard Changes for a Single Item</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Strongly typed (compile-time)
+bool ok = customerUoW.RevertItem(customer);
+await customerUoW.RevertItemAsync(customer);
+
+// Via non-generic IUnitofWork (runtime cast)
+if (uow is IRevertable r)
+    r.RevertItem(customer); // object overload</code></pre>
+                    </div>
+
+                    <h3>IMergeable — Re-fetch from Server &amp; Resolve Conflicts</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">// Re-fetch and merge with conflict resolution
+var result = await customerUoW.RefreshAsync(
+    filters: null,
+    conflictMode: ConflictMode.ServerWins,  // or ClientWins / KeepBoth / ThrowOnConflict
+    ct: CancellationToken.None);
+
+if (result.Flag == Errors.Ok)
+    Console.WriteLine("Data refreshed — server values applied to conflicting records.");</code></pre>
+                    </div>
+
+                    <table class="property-table">
+                        <thead><tr><th>ConflictMode</th><th>Behaviour</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ServerWins</code></td><td>Server value replaces local change</td></tr>
+                            <tr><td><code>ClientWins</code></td><td>Local change is kept</td></tr>
+                            <tr><td><code>KeepBoth</code></td><td>Both rows retained (new server row appended)</td></tr>
+                            <tr><td><code>ThrowOnConflict</code></td><td>Throws <code>MergeConflictException</code> on first conflict</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Change History & Audit -->
+                <section id="change-history" class="section">
+                    <h2>Change History &amp; Audit (IUnitofWorkHistory)</h2>
+
+                    <table class="property-table">
+                        <thead><tr><th>Member</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetChangeSummary()</code></td><td><code>ChangeSummary</code></td><td>Counts of inserted / updated / deleted items in current session</td></tr>
+                            <tr><td><code>GetQueryHistory()</code></td><td><code>IReadOnlyList&lt;QueryHistoryEntry&gt;</code></td><td>Log of all Get / GetQuery calls with timestamps and filter snapshots</td></tr>
+                            <tr><td><code>ClearQueryHistory()</code></td><td>void</td><td>Resets the query history log</td></tr>
+                            <tr><td><code>CloneItem(item, deep)</code></td><td><code>T</code></td><td>Deep-copy or shallow-copy of an entity (deep uses binary / JSON serialization)</td></tr>
+                            <tr><td><code>GetChangeLog()</code></td><td><code>List&lt;ChangeRecord&gt;</code></td><td>Full per-property change audit log (requires <code>IsLogging = true</code>)</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Example — Audit Dashboard</h3>
+                        <pre><code class="language-csharp">// Summary stats
+var summary = customerUoW.GetChangeSummary();
+Console.WriteLine($"Session changes: +{summary.InsertedCount} / ~{summary.UpdatedCount} / -{summary.DeletedCount}");
+
+// Query history
+foreach (var entry in customerUoW.GetQueryHistory())
+    Console.WriteLine($"[{entry.ExecutedAt:HH:mm:ss}] {entry.QueryText}");
+
+// Clone before editing (non-destructive preview)
+var original = customerUoW.CloneItem(customerUoW.CurrentItem, deep: true);
+customerUoW.CurrentItem.Status = "Suspended";
+// cancel? restore original
+// customerUoW.Units[idx] = original;
+</code></pre>
+                    </div>
+                </section>
+
+                <!-- Export & Import -->
+                <section id="export-import" class="section">
+                    <h2>Export &amp; Import (IExportable / IImportable)</h2>
+
+                    <div class="code-example">
+                        <h3>Export API</h3>
+                        <pre><code class="language-csharp">DataTable dt  = customerUoW.ToDataTable();
+
+using var js  = File.Create("customers.json");
+await customerUoW.ToJsonAsync(js);
+
+using var csv = File.Create("customers.csv");
+await customerUoW.ToCsvAsync(csv, delimiter: ',');</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Import API</h3>
+                        <pre><code class="language-csharp">// Import from JSON
+using var js = File.OpenRead("customers.json");
+int imported = await customerUoW.LoadFromJsonAsync(js, clearFirst: true);
+Console.WriteLine($"{imported} records imported from JSON");
+
+// Import from CSV
+using var csv = File.OpenRead("customers.csv");
+imported = await customerUoW.LoadFromCsvAsync(
+    csv, delimiter: ',', clearFirst: false, hasHeaderRow: true);
+Console.WriteLine($"{imported} records appended from CSV");</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>&#128203; Note</strong>
+                        <p>Import methods populate the in-memory <code>Units</code> collection and mark all loaded items as <em>Added</em>. Call <code>Commit()</code> to persist them to the database, or keep in list mode as an in-memory dataset.</p>
+                    </div>
+                </section>
+
+                <!-- Advanced Aggregates -->
+                <section id="advanced-aggregates" class="section">
+                    <h2>Advanced Aggregates (IAggregatable)</h2>
+
+                    <table class="property-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Sum(field)</code></td><td><code>decimal</code></td><td>Sum of all values for a numeric field</td></tr>
+                            <tr><td><code>SumWhere(field, predicate)</code></td><td><code>decimal</code></td><td>Conditional sum</td></tr>
+                            <tr><td><code>Average(field)</code></td><td><code>decimal</code></td><td>Average of all values</td></tr>
+                            <tr><td><code>AverageWhere(field, predicate)</code></td><td><code>decimal</code></td><td>Conditional average</td></tr>
+                            <tr><td><code>Min(field)</code></td><td><code>object</code></td><td>Minimum value (boxed)</td></tr>
+                            <tr><td><code>Max(field)</code></td><td><code>object</code></td><td>Maximum value (boxed)</td></tr>
+                            <tr><td><code>CountWhere(predicate)</code></td><td><code>int</code></td><td>Count matching a predicate</td></tr>
+                            <tr><td><code>GroupBy(field)</code></td><td><code>Dictionary&lt;object, List&lt;T&gt;&gt;</code></td><td>In-memory grouping by field value</td></tr>
+                            <tr><td><code>DistinctValues(field)</code></td><td><code>List&lt;object&gt;</code></td><td>Unique values for a field</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Example — Order Summary Statistics</h3>
+                        <pre><code class="language-csharp">await orderUoW.Get();
+
+decimal totalRevenue    = orderUoW.Sum("Total");
+decimal avgOrder        = orderUoW.Average("Total");
+decimal bigOrderRevenue = orderUoW.SumWhere("Total", o =&gt; o.Total &gt; 500m);
+int     bigOrderCount   = orderUoW.CountWhere(o =&gt; o.Total &gt; 500m);
+var     byCountry       = orderUoW.GroupBy("ShipCountry");
+
+Console.WriteLine($"Revenue: {totalRevenue:C}  Avg: {avgOrder:C}  Big orders: {bigOrderCount}");
+foreach (var (country, orders) in byCountry)
+    Console.WriteLine($"  {country}: {orders.Count} orders");</code></pre>
+                    </div>
+                </section>
+
                 <!-- Best Practices -->
                 <section id="best-practices" class="section">
                     <h2>Best Practices</h2>
@@ -795,8 +1087,8 @@ if (success)
                 <footer class="documentation-footer">
                     <div class="footer-content">
                         <div class="footer-copyright">
-                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
-                            <p>Supporting .NET 6, 7, 8, and 9 | Multi-Platform Data Management</p>
+                        <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
                         </div>
                         <div class="footer-links">
                             <a href="index.html">Home</a>

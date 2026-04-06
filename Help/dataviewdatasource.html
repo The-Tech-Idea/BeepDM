@@ -1,61 +1,836 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataViewDataSource - Beep Data Management Engine Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DataViewDataSource — BeepDM Documentation</title>
+<link rel="stylesheet" href="sphinx-style.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 </head>
 <body>
-    <div class="container">
-        <aside class="sidebar" id="sidebar"></aside>
-        <main class="content">
-            <div class="content-wrapper">
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <span>DataViewDataSource</span>
-                </nav>
-
-                <div class="page-header">
-                    <h1>DataViewDataSource</h1>
-                    <p class="page-subtitle">Signature-verified API reference for federated DataView operations</p>
-                </div>
-
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/DataView/DataViewDataSource.cs</code></li>
-                        <li><code>DataManagementEngineStandard/DataView/DataViewDataSource.*.cs</code> partials</li>
-                    </ul>
-                </div>
-
-                <section class="section">
-                    <h2>Verified Signature Snapshot</h2>
-                    <pre><code class="language-csharp">public partial class DataViewDataSource : IDataSource, IDataViewOperations, IDisposable
-{
-    public event EventHandler&lt;PassedArgs&gt; PassEvent;
-
-    public DataSourceType DatasourceType { get; set; }
-    public DatasourceCategory Category { get; set; }
-    public IDataConnection Dataconnection { get; set; }
-    public string DatasourceName { get; set; }
-    public IDMEEditor DMEEditor { get; set; }
-    public IDMDataView DataView { get; set; } = new DMDataView();
-
-    // Federation-related current members
-    public bool CacheEnabled { get; set; }
-    public FederationExecutionMode ExecutionMode { get; set; }
-    public List&lt;FederatedJoinDefinition&gt; JoinDefinitions { get; set; }
-    public string LocalEngineConnectionName { get; set; }
-}</code></pre>
-                </section>
-            </div>
-        </main>
+<div id="navigation-placeholder"></div>
+<div class="main-content">
+  <div class="content-wrapper">
+    <div class="toc-container">
+      <div class="toc-title">On this page</div>
+      <ul class="toc-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#connection">DataViewConnection</a></li>
+        <li><a href="#core-properties">Core Properties</a></li>
+        <li><a href="#constructor">Constructor</a></li>
+        <li><a href="#entity-data">Data Retrieval</a></li>
+        <li><a href="#entity-lifecycle">Entity Lifecycle</a></li>
+        <li><a href="#field-management">Field Management</a></li>
+        <li><a href="#filters">Filter Management</a></li>
+        <li><a href="#join-graph">Join Graph</a></li>
+        <li><a href="#execution">Query Execution</a></li>
+        <li><a href="#validation">Validation &amp; Health</a></li>
+        <li><a href="#view-utilities">View Utilities</a></li>
+        <li><a href="#examples">Examples</a></li>
+      </ul>
     </div>
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <div class="content-area">
+
+      <section id="overview">
+        <h1><i class="bi bi-layers"></i> DataViewDataSource</h1>
+        <p>
+          <code>DataViewDataSource</code> is a <strong>federated virtual data source</strong> that unifies entities
+          from multiple underlying datasources into a single logical view. It implements <code>IDataSource</code>,
+          <code>IDataViewOperations</code>, and <code>IDisposable</code>, and persists its definition as a
+          JSON file via <code>DMDataView</code>.
+        </p>
+        <p>
+          The view can operate in two execution modes: <strong>Cached</strong> (data is materialised into a
+          local in-memory engine and refreshed on a TTL) or <strong>DirectQuery</strong> (always fetched live
+          from the backing sources). Cross-source joins are expressed as
+          <code>FederatedJoinDefinition</code> records and are either detected automatically from
+          foreign-key metadata or defined manually.
+        </p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-database-gear"></i></div>
+            <div class="feature-title">Federated Queries</div>
+            <div class="feature-desc">Merge entities from heterogeneous sources — SQL, file, REST — into one query surface.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-diagram-3"></i></div>
+            <div class="feature-title">Join Graph Intelligence</div>
+            <div class="feature-desc">Auto-detect FK joins, BFS shortest-path finder, and adjacency-list export.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-clock-history"></i></div>
+            <div class="feature-title">Cache &amp; TTL Control</div>
+            <div class="feature-desc">Materialise to an in-memory engine with configurable TTL, or run DirectQuery for always-live data.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-puzzle"></i></div>
+            <div class="feature-title">Partial-Class Design</div>
+            <div class="feature-desc">Split across 8 focused partials: lifecycle, fields, filters, joins, execution, validation, utilities.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="feature-title">Health &amp; Validation</div>
+            <div class="feature-desc">Built-in schema-drift detection, broken-entity discovery, and unconnected-node checks.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="bi bi-copy"></i></div>
+            <div class="feature-title">Clone &amp; Merge</div>
+            <div class="feature-desc">Deep-clone a view to a new name, or merge another view's entities and joins in.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2><i class="bi bi-diagram-2"></i> Architecture</h2>
+        <p>
+          A <code>DataViewDataSource</code> instance owns one <code>IDMDataView</code> (concrete type
+          <code>DMDataView</code>). The view holds the list of <code>EntityStructure</code> objects (each
+          referring back to a real datasource via <code>DataSourceID</code>) and a list of
+          <code>FederatedJoinDefinition</code> records describing how entities are joined cross-source.
+        </p>
+        <pre><code class="language-text">DataViewDataSource (IDataSource + IDataViewOperations)
+├── IDMDataView (DMDataView) — persisted as JSON
+│   ├── List&lt;EntityStructure&gt;       — entities from 1..N datasources
+│   ├── List&lt;FederatedJoinDefinition&gt; — cross-source joins
+│   ├── ExecutionMode               — Cached | DirectQuery
+│   ├── CacheTTLSeconds             — default 300 s
+│   ├── LocalEngineConnectionName   — in-memory engine name
+│   └── ViewName / ViewID / VID
+│
+├── DataViewConnection (IDataConnection, IsLogical=true)
+│   └── No physical file; OpenConnection() always returns Open
+│
+└── Partial classes
+    ├── DataViewDataSource.EntityLifecycle.cs
+    ├── DataViewDataSource.FieldManagement.cs
+    ├── DataViewDataSource.Filters.cs
+    ├── DataViewDataSource.JoinGraph.cs
+    ├── DataViewDataSource.QueryExecution.cs
+    ├── DataViewDataSource.Validation.cs
+    └── DataViewDataSource.ViewUtilities.cs</code></pre>
+
+        <h3>Execution flow — Cached mode</h3>
+        <ol>
+          <li><code>GetEntity()</code> detects cross-source entities (multiple distinct <code>DataSourceID</code> values).</li>
+          <li><code>RefreshCacheIfExpired()</code> checks <code>CacheLastRefresh + CacheTTLSeconds</code>.</li>
+          <li>If stale, <code>PrepareMergedQueryDB()</code> materialises all entities into the <code>LocalEngineConnectionName</code> in-memory store.</li>
+          <li>The local engine then satisfies the query — including joins — as a native SQL operation.</li>
+        </ol>
+
+        <h3>Execution flow — DirectQuery mode / single-source</h3>
+        <ol>
+          <li>Single-source entities are delegated directly to the backing <code>IDataSource</code>.</li>
+          <li>File, URL, and query view types are passed through unchanged.</li>
+        </ol>
+
+        <h3>Key types</h3>
+        <table class="ref-table">
+          <thead><tr><th>Type</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td><code>DMDataView</code></td><td>Concrete <code>IDMDataView</code> — JSON-persisted view definition</td></tr>
+            <tr><td><code>FederatedJoinDefinition</code></td><td>Describes a cross-source join: left/right entity+column+datasource, join type</td></tr>
+            <tr><td><code>FederatedJoinType</code></td><td>Enum: <code>Inner</code>, <code>Left</code>, <code>Right</code>, <code>Full</code></td></tr>
+            <tr><td><code>FederationExecutionMode</code></td><td>Enum: <code>Cached</code>, <code>DirectQuery</code></td></tr>
+            <tr><td><code>ViewType</code></td><td>Enum: <code>Table</code>, <code>File</code>, <code>Url</code>, <code>Query</code></td></tr>
+            <tr><td><code>ViewSummary</code></td><td>Snapshot of entity/join counts, validation errors, cache status, broken/unconnected lists</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="connection">
+        <h2><i class="bi bi-plug"></i> DataViewConnection</h2>
+        <p>
+          <code>DataViewConnection</code> implements <code>IDataConnection</code> for view-oriented sources.
+          Because views are logical constructs, <code>IsLogical = true</code> means
+          <code>OpenConnection()</code> immediately returns <code>Open</code> without touching the
+          filesystem.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>InMemory</code></td><td><code>bool</code></td><td>When true the view is backed only by in-memory data. Default <code>false</code>.</td></tr>
+            <tr><td><code>IsLogical</code></td><td><code>bool</code></td><td>When true, <code>OpenConnection()</code> always succeeds without filesystem I/O. Set to <code>true</code> by the constructor.</td></tr>
+            <tr><td><code>ConnectionProp</code></td><td><code>IConnectionProperties</code></td><td>Standard connection properties (FileName, FilePath, DriverName, …).</td></tr>
+            <tr><td><code>ConnectionStatus</code></td><td><code>ConnectionState</code></td><td>Tracks current state (<code>Open</code> / <code>Closed</code>).</td></tr>
+            <tr><td><code>DbConn</code></td><td><code>IDbConnection</code></td><td>Unused for logical connections; reserved for future use.</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// DataViewConnection.OpenConnection()
+public ConnectionState OpenConnection()
+{
+    return OpenConn(); // fast-path when IsLogical=true → sets status=Open immediately
+}</code></pre>
+      </section>
+
+      <section id="core-properties">
+        <h2><i class="bi bi-card-list"></i> Core Properties</h2>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>DatasourceName</code></td><td><code>string</code></td><td>The view file name (e.g. <code>MyView.json</code>).</td></tr>
+            <tr><td><code>DatasourceType</code></td><td><code>DataSourceType</code></td><td>Always <code>DataSourceType.Text</code>.</td></tr>
+            <tr><td><code>Category</code></td><td><code>DatasourceCategory</code></td><td>Always <code>DatasourceCategory.VIEWS</code>.</td></tr>
+            <tr><td><code>DataView</code></td><td><code>IDMDataView</code></td><td>The underlying view model. Entities and JoinDefinitions are exposed through it.</td></tr>
+            <tr><td><code>Entities</code></td><td><code>List&lt;EntityStructure&gt;</code></td><td>Proxied from <code>DataView.Entities</code>.</td></tr>
+            <tr><td><code>JoinDefinitions</code></td><td><code>List&lt;FederatedJoinDefinition&gt;</code></td><td>Cross-source join declarations.</td></tr>
+            <tr><td><code>ExecutionMode</code></td><td><code>FederationExecutionMode</code></td><td><code>Cached</code> (default) or <code>DirectQuery</code>.</td></tr>
+            <tr><td><code>CacheEnabled</code></td><td><code>bool</code></td><td>Set to <code>false</code> to force always-live DirectQuery mode. Default <code>true</code>.</td></tr>
+            <tr><td><code>CacheTTLSeconds</code></td><td><code>int</code></td><td>Seconds before cached data is considered stale. Default <code>300</code>.</td></tr>
+            <tr><td><code>CacheLastRefresh</code></td><td><code>DateTime</code></td><td>Timestamp of the latest successful materialise.</td></tr>
+            <tr><td><code>LocalEngineConnectionName</code></td><td><code>string</code></td><td>Name of the registered in-memory engine used for federated SQL evaluation.</td></tr>
+            <tr><td><code>ViewName</code></td><td><code>string</code></td><td>Human-readable view name.</td></tr>
+            <tr><td><code>ViewID</code></td><td><code>int</code></td><td>Numeric identifier proxied from <code>DataView.ViewID</code>.</td></tr>
+            <tr><td><code>VID</code></td><td><code>string</code></td><td>GUID vendor/view identifier.</td></tr>
+            <tr><td><code>Viewtype</code></td><td><code>ViewType</code></td><td>Proxied from the DataView model (<code>Table</code> by default).</td></tr>
+            <tr><td><code>Description</code></td><td><code>string</code></td><td>Optional human-readable description for UI display.</td></tr>
+            <tr><td><code>FileLoaded</code></td><td><code>bool</code></td><td>True once <code>LoadView()</code> has populated the view from the JSON file.</td></tr>
+            <tr><td><code>ColumnDelimiter</code></td><td><code>string</code></td><td>Default <code>''</code>.</td></tr>
+            <tr><td><code>ParameterDelimiter</code></td><td><code>string</code></td><td>Default <code>:</code>.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="constructor">
+        <h2><i class="bi bi-hammer"></i> Constructor</h2>
+        <pre><code class="language-csharp">public DataViewDataSource(
+    string        datasourcename,
+    IDMLogger     logger,
+    IDMEEditor    pDMEEditor,
+    DataSourceType pDatasourceType,
+    IErrorsInfo   per);</code></pre>
+        <p>
+          The constructor performs the following steps:
+        </p>
+        <ol>
+          <li>Assigns <code>Logger</code>, <code>ErrorObject</code>, <code>DMEEditor</code>.</li>
+          <li>Sets <code>DatasourceType = DataSourceType.Text</code>, <code>Category = DatasourceCategory.VIEWS</code>.</li>
+          <li>Creates a <code>DataViewConnection</code> with <code>IsLogical = true</code>.</li>
+          <li>Resolves the file path from the configured <code>FolderFileTypes.DataView</code> folder, or from the path embedded in <code>datasourcename</code>.</li>
+          <li>Looks up an existing <code>ConnectionProperties</code> entry for the file name. If none exists, creates a new entry with <code>DriverName = "DataViewReader"</code> and saves the connections config.</li>
+          <li>Sets <code>DataViewFile</code> to the full absolute path of the JSON view definition.</li>
+        </ol>
+        <div class="info-box">
+          <strong>Note:</strong> The view JSON is <em>not</em> loaded in the constructor.
+          It is loaded lazily on first access via <code>LoadView()</code>, which is triggered by
+          <code>GetEntitesList()</code> and other data methods when <code>DataView.Entities.Count &lt;= 2</code>.
+        </div>
+      </section>
+
+      <section id="entity-data">
+        <h2><i class="bi bi-table"></i> Data Retrieval</h2>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>GetEntitesList</code></td>
+              <td><code>IEnumerable&lt;string&gt; GetEntitesList()</code></td>
+              <td>Returns entity captions (or names if caption is empty). Triggers lazy load if needed.</td>
+            </tr>
+            <tr>
+              <td><code>GetEntity</code></td>
+              <td><code>IEnumerable&lt;object&gt; GetEntity(string EntityName, List&lt;AppFilter&gt; filter)</code></td>
+              <td>
+                Smart routing: if entities span multiple datasources (cross-source), materialises cache
+                and delegates to the local federated engine. Otherwise delegates directly to the
+                backing datasource.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetEntity (paged)</code></td>
+              <td><code>PagedResult GetEntity(string EntityName, List&lt;AppFilter&gt; filter, int pageNumber, int pageSize)</code></td>
+              <td>Paged read — delegates to the originating datasource.</td>
+            </tr>
+            <tr>
+              <td><code>GetScalar</code></td>
+              <td><code>double GetScalar(string query)</code></td>
+              <td>Executes an aggregate query through the federated local engine (supports cross-source COUNT, SUM, AVG).</td>
+            </tr>
+            <tr>
+              <td><code>GetScalarAsync</code></td>
+              <td><code>Task&lt;double&gt; GetScalarAsync(string query)</code></td>
+              <td>Async wrapper over <code>GetScalar</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Smart routing in <code>GetEntity</code></h3>
+        <pre><code class="language-csharp">// Cross-source path (entities have different DataSourceIDs at root level)
+bool isCrossSource = DataView.Entities
+    .Where(e => e.ParentId == 0)
+    .Select(e => e.DataSourceID)
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .Count() > 1;
+
+if (isCrossSource && ent.Viewtype == ViewType.Table)
+{
+    RefreshCacheIfExpired();
+    var db = PrepareMergedQueryDB();
+    return db?.GetEntity(EntityName, filter);
+}
+
+// Single-source fallback
+IDataSource srcDs = GetDataSourceObject(EntityName);
+return srcDs?.GetEntity(EntityName, filter);</code></pre>
+      </section>
+
+      <section id="entity-lifecycle">
+        <h2><i class="bi bi-arrow-repeat"></i> Entity Lifecycle</h2>
+        <p>
+          Defined in <code>DataViewDataSource.EntityLifecycle.cs</code>. All mutating methods call
+          <code>InvalidateCache()</code> automatically.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>MoveEntity</code></td>
+              <td><code>IErrorsInfo MoveEntity(int entityId, int newParentId, bool updateJoins = true)</code></td>
+              <td>
+                Re-parents an entity. When <code>updateJoins = true</code>, removes auto-generated
+                joins between the old parent and the entity.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetAutoJoinsToParent</code></td>
+              <td><code>List&lt;FederatedJoinDefinition&gt; GetAutoJoinsToParent(int entityId)</code></td>
+              <td>Returns the automatically-detected joins that link an entity to its current parent.</td>
+            </tr>
+            <tr>
+              <td><code>RenameEntity</code></td>
+              <td><code>IErrorsInfo RenameEntity(int entityId, string newName)</code></td>
+              <td>
+                Renames an entity and patches all <code>FederatedJoinDefinition</code> references
+                (<code>LeftEntityName</code>, <code>RightEntityName</code>) to match the new name.
+                Caption is also updated when it matched the old name.
+              </td>
+            </tr>
+            <tr>
+              <td><code>DuplicateEntity</code></td>
+              <td><code>EntityStructure DuplicateEntity(int entityId, string newName, int newParentId = 0)</code></td>
+              <td>Deep-clones an <code>EntityStructure</code> via JSON round-trip. Assigns a new <code>Id</code>.</td>
+            </tr>
+            <tr>
+              <td><code>ReorderEntities</code></td>
+              <td><code>IErrorsInfo ReorderEntities(List&lt;int&gt; orderedEntityIds)</code></td>
+              <td>
+                Reorders the internal <code>Entities</code> list to match the supplied ID sequence.
+                Entities not in the list are appended at the end.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetEntityStructure</code></td>
+              <td><code>EntityStructure GetEntityStructure(string entityName)</code></td>
+              <td>Case-insensitive lookup of an entity by name within the view.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info-box">
+          <strong>Join integrity:</strong> <code>RenameEntity</code> patches join references atomically within the same operation — all join definitions referencing the old name are updated before <code>InvalidateCache()</code> is called.
+        </div>
+      </section>
+
+      <section id="field-management">
+        <h2><i class="bi bi-columns-gap"></i> Field Management</h2>
+        <p>
+          Defined in <code>DataViewDataSource.FieldManagement.cs</code>.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>GetEntityFields</code></td>
+              <td><code>List&lt;EntityField&gt; GetEntityFields(string entityName)</code></td>
+              <td>Returns the field list for a named entity. Returns empty list if entity not found.</td>
+            </tr>
+            <tr>
+              <td><code>AddFieldToEntity</code></td>
+              <td><code>IErrorsInfo AddFieldToEntity(string entityName, EntityField field)</code></td>
+              <td>
+                Adds a field to an entity. Fails gracefully (logged, not thrown) if entity not found
+                or field already exists (case-insensitive duplicate check).
+              </td>
+            </tr>
+            <tr>
+              <td><code>RemoveFieldFromEntity</code></td>
+              <td><code>IErrorsInfo RemoveFieldFromEntity(string entityName, string fieldName)</code></td>
+              <td>Removes a field by name. Logs a warning if the field is not found.</td>
+            </tr>
+            <tr>
+              <td><code>RefreshEntitySchema</code></td>
+              <td><code>List&lt;string&gt; RefreshEntitySchema(string entityName)</code></td>
+              <td>
+                Calls <code>DetectSchemaChanges</code> first to surface drift, then pulls the live
+                schema from the backing datasource via <code>GetEntityStructure(name, true)</code>
+                and overwrites the stored field list.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Add a computed/virtual field to a view entity
+var field = new EntityField
+{
+    FieldName  = "FullName",
+    fieldtype  = "System.String",
+    IsKey      = false,
+    CustomField = true
+};
+var result = view.AddFieldToEntity("CUSTOMERS", field);
+
+// Sync schema from live source after upstream changes
+var changes = view.RefreshEntitySchema("ORDERS");
+if (changes.Any())
+    Console.WriteLine("Schema drift: " + string.Join(", ", changes));</code></pre>
+      </section>
+
+      <section id="filters">
+        <h2><i class="bi bi-funnel"></i> Filter Management</h2>
+        <p>
+          Defined in <code>DataViewDataSource.Filters.cs</code>. Filters are stored in
+          <code>EntityStructure.CustomBuildQuery</code> property (a WHERE-clause expression per entity).
+          Setting or clearing a filter automatically calls <code>InvalidateCache()</code>.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>SetEntityFilter</code></td>
+              <td><code>IErrorsInfo SetEntityFilter(string entityName, string filterExpression)</code></td>
+              <td>Sets a WHERE-clause expression for a specific entity. Invalidates cache.</td>
+            </tr>
+            <tr>
+              <td><code>GetEntityFilter</code></td>
+              <td><code>string GetEntityFilter(string entityName)</code></td>
+              <td>Returns the current filter expression for a named entity, or <code>null</code> if none is set.</td>
+            </tr>
+            <tr>
+              <td><code>ClearEntityFilter</code></td>
+              <td><code>IErrorsInfo ClearEntityFilter(string entityName)</code></td>
+              <td>Removes the filter for a specific entity (calls <code>SetEntityFilter(name, null)</code>).</td>
+            </tr>
+            <tr>
+              <td><code>ClearAllFilters</code></td>
+              <td><code>void ClearAllFilters()</code></td>
+              <td>Resets <code>CustomBuildQuery</code> on every entity. Invalidates cache once.</td>
+            </tr>
+          </tbody>
+        </table>
+        <pre><code class="language-csharp">// Apply a WHERE filter to one entity in the view
+view.SetEntityFilter("ORDERS", "Status = 'ACTIVE' AND Amount > 1000");
+
+// Read it back
+string expr = view.GetEntityFilter("ORDERS");
+
+// Remove just that entity's filter
+view.ClearEntityFilter("ORDERS");
+
+// Wipe all filters in one call
+view.ClearAllFilters();</code></pre>
+      </section>
+
+      <section id="join-graph">
+        <h2><i class="bi bi-diagram-3-fill"></i> Join Graph Intelligence</h2>
+        <p>
+          Defined in <code>DataViewDataSource.JoinGraph.cs</code>. Provides automatic FK-based join
+          detection, BFS path-finding, and a graph adjacency export.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>AutoDetectJoins</code></td>
+              <td><code>IErrorsInfo AutoDetectJoins()</code></td>
+              <td>
+                Iterates all entities, opens their backing datasource, reads
+                <code>EntityStructure.Relations</code>, and adds matching
+                <code>FederatedJoinDefinition</code> records for any FK relationships where both
+                entities are present in the view. Skips duplicates and manually-defined joins.
+                Calls <code>InvalidateCache()</code> on success.
+              </td>
+            </tr>
+            <tr>
+              <td><code>FindJoinPath</code></td>
+              <td><code>List&lt;string&gt; FindJoinPath(string fromEntityName, string toEntityName)</code></td>
+              <td>
+                BFS over the undirected join graph. Returns the shortest sequence of entity
+                names connecting <code>from</code> to <code>to</code>, or <code>null</code> if no
+                path exists.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetJoinGraph</code></td>
+              <td><code>Dictionary&lt;string, List&lt;string&gt;&gt; GetJoinGraph()</code></td>
+              <td>
+                Returns an adjacency list (undirected) keyed by uppercase entity name. All entities
+                appear even if they have no edges (isolated nodes).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>FederatedJoinDefinition properties</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>GuidID</code></td><td><code>string</code></td><td>Unique identifier for this join definition.</td></tr>
+            <tr><td><code>LeftEntityName</code></td><td><code>string</code></td><td>Name of the left (source) entity.</td></tr>
+            <tr><td><code>LeftColumn</code></td><td><code>string</code></td><td>Join column on the left entity.</td></tr>
+            <tr><td><code>LeftDataSourceID</code></td><td><code>string</code></td><td>Registered datasource for the left entity.</td></tr>
+            <tr><td><code>RightEntityName</code></td><td><code>string</code></td><td>Name of the right (target) entity.</td></tr>
+            <tr><td><code>RightColumn</code></td><td><code>string</code></td><td>Join column on the right entity.</td></tr>
+            <tr><td><code>RightDataSourceID</code></td><td><code>string</code></td><td>Registered datasource for the right entity.</td></tr>
+            <tr><td><code>JoinType</code></td><td><code>FederatedJoinType</code></td><td><code>Inner</code>, <code>Left</code>, <code>Right</code>, or <code>Full</code>.</td></tr>
+            <tr><td><code>IsManuallyDefined</code></td><td><code>bool</code></td><td>When <code>true</code>, this join is exempt from auto-removal on entity moves.</td></tr>
+            <tr><td><code>Description</code></td><td><code>string</code></td><td>Human-readable description (auto-populated for detected joins).</td></tr>
+          </tbody>
+        </table>
+
+        <pre><code class="language-csharp">// Auto-detect joins from FK metadata
+view.AutoDetectJoins();
+
+// Find shortest join path between two entities
+var path = view.FindJoinPath("CUSTOMERS", "ORDERITEMS");
+// → ["CUSTOMERS", "ORDERS", "ORDERITEMS"]
+
+// Inspect the graph
+var graph = view.GetJoinGraph();
+foreach (var kvp in graph)
+    Console.WriteLine($"{kvp.Key} → [{string.Join(", ", kvp.Value)}]");
+
+// Manually define a cross-source join
+view.JoinDefinitions.Add(new FederatedJoinDefinition
+{
+    GuidID            = Guid.NewGuid().ToString(),
+    LeftEntityName    = "CUSTOMERS",
+    LeftColumn        = "CustomerID",
+    LeftDataSourceID  = "SqliteDB",
+    RightEntityName   = "CRMENTRIES",
+    RightColumn       = "CustID",
+    RightDataSourceID = "CrmRestApi",
+    JoinType          = FederatedJoinType.Left,
+    IsManuallyDefined = true
+});</code></pre>
+      </section>
+
+      <section id="execution">
+        <h2><i class="bi bi-play-circle"></i> Query Execution &amp; Cache</h2>
+        <p>
+          Defined in <code>DataViewDataSource.QueryExecution.cs</code>.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>GetEntityPreview</code></td>
+              <td><code>IEnumerable&lt;object&gt; GetEntityPreview(string entityName, int maxRows = 100)</code></td>
+              <td>Fetches up to <code>maxRows</code> rows directly from the backing datasource for one entity. Useful for design-time preview without triggering federaton.</td>
+            </tr>
+            <tr>
+              <td><code>GetViewPreview</code></td>
+              <td><code>IEnumerable&lt;object&gt; GetViewPreview(int maxRows = 100)</code></td>
+              <td>
+                If a <code>LocalEngineConnectionName</code> is configured, queries the first entity via
+                the local engine. Otherwise falls back to <code>GetEntityPreview</code> for the first entity.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetCacheStatus</code></td>
+              <td><code>(bool IsExpired, int RowCount, DateTime LastRefresh, int SecondsTTLRemaining) GetCacheStatus()</code></td>
+              <td>Returns a value tuple describing the current cache state without triggering a refresh.</td>
+            </tr>
+            <tr>
+              <td><code>MaterializeAsync</code></td>
+              <td><code>Task MaterializeAsync(CancellationToken ct = default)</code></td>
+              <td>Forces an immediate cache invalidation and re-materialise on a background thread.</td>
+            </tr>
+            <tr>
+              <td><code>GetExecutionPlan</code></td>
+              <td><code>string GetExecutionPlan()</code></td>
+              <td>
+                Returns a human-readable pseudo-SQL description of how the view would be executed:
+                anchor entity, JOIN clauses built from <code>JoinDefinitions</code>, execution mode,
+                entity/join counts.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <pre><code class="language-csharp">// Check cache state before deciding whether to force refresh
+var (isExpired, _, lastRefresh, remaining) = view.GetCacheStatus();
+Console.WriteLine($"Cache expires in {remaining}s (last: {lastRefresh})");
+
+// Force async re-materialise (e.g. after a batch ETL)
+await view.MaterializeAsync(cts.Token);
+
+// Print the execution plan for debugging
+Console.WriteLine(view.GetExecutionPlan());
+// -- DataView: SalesView
+// -- Execution Mode: Cached
+// -- Entities: 3, Joins: 2
+// SELECT * FROM [CUSTOMERS]
+// INNER JOIN [ORDERS] ON [CUSTOMERS].[CustomerID] = [ORDERS].[CustomerID]
+// INNER JOIN [ORDERITEMS] ON [ORDERS].[OrderID] = [ORDERITEMS].[OrderID]</code></pre>
+
+        <h3>Cache invalidation</h3>
+        <p>
+          <code>InvalidateCache()</code> is called automatically by any mutation that changes the
+          view structure: adding/removing entities, changing filters, moving entities, and modifying
+          joins. It resets <code>CacheLastRefresh</code> to <code>DateTime.MinValue</code> so that
+          the next <code>GetEntity()</code> call triggers a fresh materialise.
+        </p>
+      </section>
+
+      <section id="validation">
+        <h2><i class="bi bi-shield-check"></i> Validation &amp; Health</h2>
+        <p>
+          Defined in <code>DataViewDataSource.Validation.cs</code>. All methods are non-destructive —
+          they open connections only to test reachability, never modify data.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>ValidateView</code></td>
+              <td><code>List&lt;string&gt;</code></td>
+              <td>Top-level check: runs <code>ValidateEntities</code> + <code>ValidateJoins</code> and returns all error messages.</td>
+            </tr>
+            <tr>
+              <td><code>ValidateEntities</code></td>
+              <td><code>List&lt;string&gt;</code></td>
+              <td>
+                For each entity: checks <code>DataSourceID</code> is non-empty, datasource is registered,
+                and connection can be opened.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetBrokenEntities</code></td>
+              <td><code>List&lt;string&gt;</code></td>
+              <td>Returns names of entities whose backing datasource cannot be opened.</td>
+            </tr>
+            <tr>
+              <td><code>GetUnconnectedEntities</code></td>
+              <td><code>List&lt;string&gt;</code></td>
+              <td>
+                Returns entity names that are isolated in the join graph — no join edge to any other
+                entity in the view.
+              </td>
+            </tr>
+            <tr>
+              <td><code>DetectSchemaChanges</code></td>
+              <td><code>List&lt;string&gt;</code></td>
+              <td>
+                Compares the stored <code>EntityStructure.Fields</code> against the live schema from
+                the backing datasource. Returns a list of change descriptions
+                (added / removed / type-changed fields).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <pre><code class="language-csharp">// Full view validation
+var errors = view.ValidateView();
+if (errors.Any())
+{
+    foreach (var e in errors) Console.WriteLine("ERROR: " + e);
+}
+
+// Identify entities that can't be reached
+var broken = view.GetBrokenEntities();
+Console.WriteLine($"Broken: {string.Join(", ", broken)}");
+
+// Find isolated entities (no joins to rest of the graph)
+var lone = view.GetUnconnectedEntities();
+Console.WriteLine($"Unconnected: {string.Join(", ", lone)}");
+
+// Check for upstream schema drift on one entity
+var drift = view.DetectSchemaChanges("PRODUCTS");
+if (drift.Any())
+    Console.WriteLine("Schema changed: " + string.Join("; ", drift));</code></pre>
+      </section>
+
+      <section id="view-utilities">
+        <h2><i class="bi bi-tools"></i> View Utilities</h2>
+        <p>
+          Defined in <code>DataViewDataSource.ViewUtilities.cs</code>.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>CloneView</code></td>
+              <td><code>IDMDataView</code></td>
+              <td>
+                Deep-clones the entire view (JSON round-trip). The clone receives a new <code>GuidID</code>,
+                <code>VID</code>, and <code>ViewName</code>; all join definitions also get fresh GUIDs
+                to prevent collisions. Returns <code>null</code> on failure.
+              </td>
+            </tr>
+            <tr>
+              <td><code>MergeView</code></td>
+              <td><code>IErrorsInfo</code></td>
+              <td>
+                Merges another <code>IDMDataView</code> into the current one. Entities are merged
+                by <code>EntityName</code> (skips duplicates). Joins are merged by <code>GuidID</code>
+                (new GUID assigned on import). Invalidates cache.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GetAllDataSourceIDs</code></td>
+              <td><code>List&lt;string&gt;</code></td>
+              <td>Returns the distinct set of <code>DataSourceID</code> values referenced by all entities.</td>
+            </tr>
+            <tr>
+              <td><code>GetViewSummary</code></td>
+              <td><code>ViewSummary</code></td>
+              <td>
+                Returns a snapshot record with entity/join/datasource counts, validation errors,
+                broken and unconnected entity lists, cache state, and a computed <code>IsValid</code> flag.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>ViewSummary properties</h3>
+        <table class="ref-table">
+          <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>EntityCount</code></td><td><code>int</code></td><td>Total entities in the view.</td></tr>
+            <tr><td><code>JoinCount</code></td><td><code>int</code></td><td>Total join definitions.</td></tr>
+            <tr><td><code>ManualJoinCount</code></td><td><code>int</code></td><td>Joins where <code>IsManuallyDefined = true</code>.</td></tr>
+            <tr><td><code>DataSourceCount</code></td><td><code>int</code></td><td>Distinct datasource IDs referenced.</td></tr>
+            <tr><td><code>IsValid</code></td><td><code>bool</code></td><td>True when <code>Warnings.Count == 0</code>.</td></tr>
+            <tr><td><code>Warnings</code></td><td><code>List&lt;string&gt;</code></td><td>Validation error messages.</td></tr>
+            <tr><td><code>BrokenEntities</code></td><td><code>List&lt;string&gt;</code></td><td>Entities whose datasource cannot be opened.</td></tr>
+            <tr><td><code>UnconnectedEntities</code></td><td><code>List&lt;string&gt;</code></td><td>Isolated entities with no join edges.</td></tr>
+            <tr><td><code>CacheLastRefresh</code></td><td><code>DateTime</code></td><td>Timestamp of the last materialise.</td></tr>
+          </tbody>
+        </table>
+
+        <pre><code class="language-csharp">// Get a full health snapshot
+var summary = view.GetViewSummary();
+Console.WriteLine($"Valid: {summary.IsValid}");
+Console.WriteLine($"Entities: {summary.EntityCount}, Joins: {summary.JoinCount}");
+Console.WriteLine($"Sources: {summary.DataSourceCount}");
+Console.WriteLine($"Cache age: {(DateTime.UtcNow - summary.CacheLastRefresh).TotalSeconds:F0}s");
+
+// Clone for dev/test environment
+var devView = (DMDataView)view.CloneView("SalesView_DEV");
+
+// Merge a partner team's view definition
+var partnerView = JsonSerializer.Deserialize&lt;DMDataView&gt;(File.ReadAllText("partner.json"));
+view.MergeView(partnerView);</code></pre>
+      </section>
+
+      <section id="examples">
+        <h2><i class="bi bi-code-square"></i> Examples</h2>
+
+        <h3>Example 1 — Create a federated view from two sources</h3>
+        <pre><code class="language-csharp">// 1. Resolve the DataViewDataSource from DMEEditor
+var view = (DataViewDataSource)dme.GetDataSource("SalesView.json");
+
+// 2. Load the view definition
+view.GetEntitesList();
+
+// 3. Verify entities and auto-detect joins from FK metadata
+view.AssignDataSourceToEntities(); // ensure DataSourceIDs are set
+view.AutoDetectJoins();
+
+// 4. Show the execution plan
+Console.WriteLine(view.GetExecutionPlan());
+
+// 5. Execute a cross-source query
+var orders = view.GetEntity("ORDERS", new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "OPEN" }
+});</code></pre>
+
+        <h3>Example 2 — Apply filters and check cache</h3>
+        <pre><code class="language-csharp">// Narrow each participating entity before materialising
+view.SetEntityFilter("ORDERS",    "OrderDate > '2025-01-01'");
+view.SetEntityFilter("CUSTOMERS", "Region = 'EMEA'");
+
+// Cache was just invalidated. Force async materialise.
+await view.MaterializeAsync();
+
+// Check that the cache is now warm
+var (expired, _, refreshed, ttlLeft) = view.GetCacheStatus();
+Console.WriteLine($"Cache fresh — {ttlLeft}s remaining (refreshed {refreshed:u})");
+
+// Query now routes through the local engine
+var rows = view.GetEntity("ORDERS", null);
+Console.WriteLine($"Rows: {rows?.Count()}");</code></pre>
+
+        <h3>Example 3 — View health check and schema sync</h3>
+        <pre><code class="language-csharp">var summary = view.GetViewSummary();
+
+if (!summary.IsValid)
+{
+    Console.WriteLine("Validation errors:");
+    summary.Warnings.ForEach(w => Console.WriteLine("  " + w));
+}
+
+if (summary.BrokenEntities.Any())
+{
+    Console.WriteLine("Broken entities (check datasource connections):");
+    summary.BrokenEntities.ForEach(b => Console.WriteLine("  " + b));
+}
+
+if (summary.UnconnectedEntities.Any())
+{
+    Console.WriteLine("Isolated entities (no join path):");
+    summary.UnconnectedEntities.ForEach(u => Console.WriteLine("  " + u));
+}
+
+// Sync schema for any entity whose upstream definition may have changed
+foreach (string entityName in view.EntitiesNames)
+{
+    var drift = view.DetectSchemaChanges(entityName);
+    if (drift.Any())
+    {
+        Console.WriteLine($"Schema drift on {entityName} — refreshing...");
+        var changes = view.RefreshEntitySchema(entityName);
+        changes.ForEach(c => Console.WriteLine("  Applied: " + c));
+    }
+}</code></pre>
+
+        <h3>Example 4 — Clone and merge views</h3>
+        <pre><code class="language-csharp">// Create a test copy of the production view
+var devView = view.CloneView("SalesView_Test");
+// devView is a fully independent DMDataView — saving it will not affect the original
+
+// Merge a partner view (e.g. Inventory entities) into the current view
+var inventoryDef = JsonSerializer.Deserialize&lt;DMDataView&gt;(
+    File.ReadAllText("InventoryView.json"));
+
+view.MergeView(inventoryDef);
+
+// Add a manual cross-datasource join for the newly merged entities
+view.JoinDefinitions.Add(new FederatedJoinDefinition
+{
+    GuidID            = Guid.NewGuid().ToString(),
+    LeftEntityName    = "ORDERS",
+    LeftColumn        = "ProductID",
+    LeftDataSourceID  = "SalesDB",
+    RightEntityName   = "PRODUCTS",
+    RightColumn       = "ProductID",
+    RightDataSourceID = "InventoryDB",
+    JoinType          = FederatedJoinType.Left,
+    IsManuallyDefined = true,
+    Description       = "Sales ↔ Inventory product link"
+});
+
+Console.WriteLine($"View now has {view.JoinDefinitions.Count} joins across {view.GetAllDataSourceIDs().Count} sources.");</code></pre>
+      </section>
+
+    </div><!-- end content-area -->
+  </div><!-- end content-wrapper -->
+</div><!-- end main-content -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
+<script>loadNavigation('dataviewdatasource');</script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helpers Runtime Reference - Beep DME Documentation</title>
+    <title>Connection Helpers Reference - Beep DME Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
@@ -15,55 +15,2180 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>Helpers Runtime Reference</span>
+                    <span>Connection Helpers Reference</span>
                 </nav>
 
                 <div class="page-header">
-                    <h1>Helpers Runtime Reference</h1>
-                    <p class="page-subtitle">Connection, RDBMS, universal datasource, and utility helper surfaces used by the engine</p>
+                    <h1>Connection Helpers Reference</h1>
+                    <p class="page-subtitle">ConnectionHelper facade, driver linking, connection-string processing, validation, security, category config factories, and liveness probing</p>
+                </div>
+
+                <div class="toc-container">
+                    <h3>Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview &amp; File Structure</a></li>
+                        <li><a href="#driver-linking">Driver Linking</a></li>
+                        <li><a href="#string-processing">Connection String Processing</a></li>
+                        <li><a href="#string-validation">Connection String Validation</a></li>
+                        <li><a href="#string-security">Connection String Security</a></li>
+                        <li><a href="#string-params">Parameter Utilities</a></li>
+                        <li><a href="#category-factories">Category Config Factories</a>
+                            <ul>
+                                <li><a href="#factory-rdbms">RDBMS</a></li>
+                                <li><a href="#factory-nosql">NoSQL</a></li>
+                                <li><a href="#factory-vector">Vector DB</a></li>
+                                <li><a href="#factory-file">File</a></li>
+                                <li><a href="#factory-cloud">Cloud</a></li>
+                                <li><a href="#factory-streaming">Streaming</a></li>
+                                <li><a href="#factory-inmemory">In-Memory / Cache</a></li>
+                                <li><a href="#factory-webapi">Web API</a></li>
+                                <li><a href="#factory-connectors">Connector Categories</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="#liveness">Liveness &amp; Test Connection</a></li>
+                        <li><a href="#datatypes-overview">DataTypesHelpers Overview</a></li>
+                        <li><a href="#datatypes-helper">DataTypesHelper (IDataTypesHelper)</a></li>
+                        <li><a href="#datatypes-basic">DataTypeBasicOperations</a></li>
+                        <li><a href="#datatypes-lookup">DataTypeMappingLookup</a></li>
+                        <li><a href="#datatypes-repository">DataTypeMappingRepository</a></li>
+                        <li><a href="#datatypes-field-mapping">DataTypeFieldMappingHelper</a></li>
+                        <li><a href="#datatypes-db-repos">Per-Database Mapping Repositories</a></li>
+                        <li><a href="#typehelper">TypeHelper</a></li>
+                        <li><a href="#rdbms-overview">RDBMSHelpers Overview</a></li>
+                        <li><a href="#rdbms-feature-helper">DatabaseFeatureHelper</a></li>
+                        <li><a href="#rdbms-schema-queries">Schema &amp; Metadata Queries</a></li>
+                        <li><a href="#rdbms-ddl">DDL Generation</a></li>
+                        <li><a href="#rdbms-query-repo">Query Repository</a></li>
+                        <li><a href="#rdbms-dml">DML Helpers</a></li>
+                        <li><a href="#rdbms-entity">Entity Helpers</a></li>
+                        <li><a href="#udsh-overview">UniversalDataSourceHelpers Overview</a></li>
+                        <li><a href="#udsh-interface">IDataSourceHelper Interface</a></li>
+                        <li><a href="#udsh-factory">DataSourceHelperFactory</a></li>
+                        <li><a href="#udsh-capabilities">DataSourceCapabilityMatrix</a></li>
+                        <li><a href="#udsh-nosql">NoSQL Helpers</a></li>
+                        <li><a href="#udsh-specialized">Specialized Store Helpers</a></li>
+                        <li><a href="#udsh-analysis">Analysis Helpers</a></li>
+                        <li><a href="#udsh-poco">POCO-to-Entity Conversion</a></li>
+                    </ul>
                 </div>
 
                 <div class="note">
                     <strong>Source of truth (2026)</strong>
                     <ul>
-                        <li><code>DataManagementEngineStandard/Helpers/ConnectionHelpers/*.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Helpers/RDBMSHelpers/**/*.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Helpers/UniversalDataSourceHelpers/**/*.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Helpers/DataTypesHelpers/*.cs</code></li>
+                        <li>Facade: <code>DataManagementEngineStandard/Helpers/ConnectionHelpers/ConnectionHelper.cs</code> (delegates to sub-helpers)</li>
+                        <li>Driver linking: <code>ConnectionDriverLinkingHelper.cs</code></li>
+                        <li>String processing: <code>ConnectionStringProcessingHelper.cs</code></li>
+                        <li>Validation: <code>ConnectionStringValidationHelper.cs</code></li>
+                        <li>Security: <code>ConnectionStringSecurityHelper.cs</code></li>
+                        <li>Parameter utils: <code>ConnectionHelper_GetParameterList.cs</code></li>
+                        <li>Category factories (partial classes): <code>ConnectionHelper_RDBMS.cs</code>, <code>ConnectionHelper_NoSQL.cs</code>, <code>ConnectionHelper_VectorDB.cs</code>, <code>ConnectionHelper_File.cs</code>, <code>ConnectionHelper_Cloud.cs</code>, <code>ConnectionHelper_Streaming.cs</code>, <code>ConnectionHelper_InMemory.cs</code>, <code>ConnectionHelper_Cache.cs</code>, <code>ConnectionHelper_WebAPI.cs</code>, <code>ConnectionHelper_CRM.cs</code>, <code>ConnectionHelper_Marketing.cs</code>, <code>ConnectionHelper_ECommerce.cs</code>, <code>ConnectionHelper_ProjectManagement.cs</code>, <code>ConnectionHelper_Communication.cs</code>, <code>ConnectionHelper_Blockchain.cs</code>, <code>ConnectionHelper_Proxy.cs</code>, <code>ConnectionHelper_File_Misc.cs</code></li>
+                        <li>Liveness: <code>ProxyLivenessHelper.cs</code>, <code>TestConnectionHelper.cs</code></li>
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
-                    <pre><code class="language-csharp">public static class ConnectionHelper
-{
-    // Connection discovery and binding surfaces live in partials:
-    // ConnectionHelper.cs, ConnectionHelper_File.cs, ConnectionHelper_Cloud.cs,
-    // ConnectionHelper_NoSQL.cs, ConnectionHelper_InMemory.cs, ...
-}
+                <!-- Overview -->
+                <section class="section" id="overview">
+                    <h2>Overview &amp; File Structure</h2>
+                    <p>
+                        <code>ConnectionHelper</code> (namespace <code>TheTechIdea.Beep.Helpers</code>) is a
+                        <strong>static facade</strong> split across many partial classes. It bundles four orthogonal
+                        concerns — driver discovery, connection-string building, validation, security — together with
+                        a library of per-category <code>ConnectionDriversConfig</code> factory methods that pre-populate
+                        every field a driver needs (class names, NuGet package, connection-string template, icon, etc.).
+                    </p>
 
-public static class RDBMSHelper
-{
-    // Facade to RDBMS helper suites for schema, DDL, DML, and capability checks
-}
-
-public class DataSourceHelperFactory
-{
-    public DataSourceHelperFactory(IDMEEditor editor);
-    public IDataSourceHelper CreateHelper(DataSourceType datasourceType);
-    public void RegisterHelper(DataSourceType datasourceType, Func&lt;IDMEEditor, IDataSourceHelper&gt; helperFactory);
-}
-
-public class GeneralDataSourceHelper : IDataSourceHelper
-{
-    // Delegates operations to datasource-specific helper implementation
-}</code></pre>
+                    <div class="note">
+                        <strong>Partial file inventory</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Namespace</th><th>Responsibility</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>ConnectionHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Public facade — re-exports every sub-helper method under one type</td></tr>
+                                <tr><td><code>ConnectionDriverLinkingHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Match connection properties to registered drivers</td></tr>
+                                <tr><td><code>ConnectionStringProcessingHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Placeholder substitution, path normalisation</td></tr>
+                                <tr><td><code>ConnectionStringValidationHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Per-driver connection-string validation rules</td></tr>
+                                <tr><td><code>ConnectionStringSecurityHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Mask passwords, API keys, tokens for logging</td></tr>
+                                <tr><td><code>ConnectionHelper_GetParameterList.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Parse / mutate individual connection-string parameters</td></tr>
+                                <tr><td><code>ConnectionHelper_RDBMS.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: SQL Server, MySQL, PostgreSQL, Oracle, SQLite, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_NoSQL.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: MongoDB, Redis, Cassandra, Elasticsearch, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_VectorDB.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_File.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: CSV, JSON, XML, Excel, Parquet, Avro, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_File_Misc.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: DICOM, LAS, HDF5, Markdown, INI, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_Cloud.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: AWS (S3, Redshift, Athena), Azure, GCP (BigQuery)</td></tr>
+                                <tr><td><code>ConnectionHelper_Streaming.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Kafka, RabbitMQ, Pulsar, Azure Service Bus, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_InMemory.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: SQLite Memory, DuckDB Memory, Hazelcast, Ignite</td></tr>
+                                <tr><td><code>ConnectionHelper_Cache.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: InMemoryCache, Redis Cache, NCache, Hazelcast Cache, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_WebAPI.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: REST, GraphQL, gRPC, SOAP, OData, WebSocket, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_CRM.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Salesforce, HubSpot, Dynamics 365, Zoho, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_Marketing.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Mailchimp, Marketo, Klaviyo, SendGrid, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_ECommerce.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Shopify, WooCommerce, Magento, BigCommerce, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_ProjectManagement.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Jira, Asana, Monday.com, ClickUp, Trello, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_Communication.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Slack, Teams, Discord, Zoom, Telegram, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_Blockchain.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Ethereum, Hyperledger, Solana, Polkadot, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_Proxy.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: HTTP proxy, SOCKS, reverse proxy configs</td></tr>
+                                <tr><td><code>ProxyLivenessHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Category-aware liveness probe for a live <code>IDataSource</code></td></tr>
+                                <tr><td><code>TestConnectionHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Async setup-time and runtime connection tests</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </section>
+
+                <!-- Driver Linking -->
+                <section class="section" id="driver-linking">
+                    <h2>Driver Linking</h2>
+                    <p>
+                        <code>ConnectionDriverLinkingHelper</code> matches an <code>IConnectionProperties</code>
+                        instance to the best available <code>ConnectionDriversConfig</code> registered in
+                        <code>IConfigEditor.DataDriversClasses</code>. The lookup chain is:
+                    </p>
+                    <ol>
+                        <li>Exact <code>DriverName</code> + <code>DriverVersion</code></li>
+                        <li><code>DriverName</code> only (latest available version)</li>
+                        <li><code>DatabaseType</code> enum match</li>
+                        <li>File extension match (for <code>Category == FILE</code>)</li>
+                    </ol>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// In ConnectionHelper (facade) and ConnectionDriverLinkingHelper (implementation)
+public static ConnectionDriversConfig LinkConnection2Drivers(
+    IConnectionProperties cn, IConfigEditor configEditor);
+
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForDataSourceType(
+    DataSourceType dataSourceType, IConfigEditor configEditor);
+
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForFileExtension(
+    string fileExtension, IConfigEditor configEditor);
+
+public static ConnectionDriversConfig GetBestMatchingDriver(
+    IConnectionProperties connectionProperties, IConfigEditor configEditor);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Resolve the driver config for an existing connection
+var driver = ConnectionHelper.LinkConnection2Drivers(myConn, dmeEditor.ConfigEditor);
+if (driver != null)
+    Console.WriteLine($"Driver: {driver.PackageName} v{driver.version}");
+
+// Find all drivers that handle SQLite
+var sqliteDrivers = ConnectionHelper.GetDriversForDataSourceType(
+    DataSourceType.SqlLite, dmeEditor.ConfigEditor);
+
+// Resolve by file extension (e.g. "csv")
+var csvDrivers = ConnectionHelper.GetDriversForFileExtension("csv", dmeEditor.ConfigEditor);
+
+// Automatic best-match (tries all strategies)
+var best = ConnectionHelper.GetBestMatchingDriver(myConn, dmeEditor.ConfigEditor);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Connection String Processing -->
+                <section class="section" id="string-processing">
+                    <h2>Connection String Processing</h2>
+                    <p>
+                        <code>ConnectionStringProcessingHelper</code> fills placeholder tokens
+                        (<code>{Host}</code>, <code>{Database}</code>, <code>{UserID}</code>, <code>{Password}</code>, etc.)
+                        in a driver&#39;s connection-string template at connection-open time.
+                        It also normalises relative paths (<code>./</code>, <code>../</code>) to absolute paths relative to
+                        <code>IConfigEditor.ExePath</code>.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// Fills all {placeholders} in the driver's ConnectionString template
+public static string ReplaceValueFromConnectionString(
+    ConnectionDriversConfig DataSourceDriver,
+    IConnectionProperties ConnectionProp,
+    IDMEEditor DMEEditor);
+
+// Converts a relative path to an absolute path under basePath
+public static string NormalizePath(string relativePath, string basePath);
+
+// Normalizes FilePath in-place on the connection properties object
+public static void NormalizeFilePath(IConnectionProperties connectionProp, string basePath);
+
+// Returns a list of {placeholder} names that have no matching value
+public static List&lt;string&gt; ValidateRequiredPlaceholders(
+    string connectionStringTemplate, IConnectionProperties connectionProp);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>How placeholder substitution works</h3>
+                        <pre><code class="language-csharp">// Template in driver config:
+// "Server={Host};Database={Database};User Id={UserID};Password={Password}"
+
+var conn = new ConnectionProperties
+{
+    Host     = "db.example.com",
+    DataBase = "sales",
+    UserID   = "app",
+    Password = "s3cr3t"
+};
+
+var driver = ConnectionHelper.LinkConnection2Drivers(conn, dmeEditor.ConfigEditor);
+string cs = ConnectionHelper.ReplaceValueFromConnectionString(driver, conn, dmeEditor);
+// "Server=db.example.com;Database=sales;User Id=app;Password=s3cr3t"
+
+// Validate nothing is missing before opening
+var missing = ConnectionHelper.ValidateRequiredPlaceholders(driver.ConnectionString, conn);
+if (missing.Any())
+    throw new InvalidOperationException($"Missing fields: {string.Join(", ", missing)}");</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Priority order for input string</strong>
+                        <p>
+                            The helper resolves the base string in this order:
+                            <code>ConnectionString</code> &rarr; <code>Url</code> &rarr; <code>FilePath + FileName</code>.
+                            Relative paths that start with <code>./</code> are automatically expanded to absolute paths.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Connection String Validation -->
+                <section class="section" id="string-validation">
+                    <h2>Connection String Validation</h2>
+                    <p>
+                        <code>ConnectionStringValidationHelper</code> performs lightweight structural/keyword checks
+                        on a connection string <em>before</em> attempting to open a connection. It covers the most common
+                        RDBMS and NoSQL drivers; unknown types fall back to a generic structure check.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// Dispatch to the correct per-driver validator based on DataSourceType
+public static bool IsConnectionStringValid(string connectionString, DataSourceType dataSourceType);
+
+// DB-specific validators (also called directly)
+public static bool ValidateSqlServerConnectionString(string connectionString);
+public static bool ValidateMySqlConnectionString(string connectionString);
+public static bool ValidateSQLiteConnectionString(string connectionString);
+public static bool ValidateOracleConnectionString(string connectionString);
+// ...and more: PostgreSQL, MongoDB, Redis, OleDB, ODBC
+
+// Human-readable description of what the driver requires
+public static string GetValidationRequirements(DataSourceType dataSourceType);
+
+// Generic key=value pair structure check (no driver-specific rules)
+public static bool ValidateConnectionStringStructure(string connectionString);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">string cs = "Server=localhost;Database=northwind;Trusted_Connection=True";
+
+// Generic dispatch
+bool ok = ConnectionHelper.IsConnectionStringValid(cs, DataSourceType.SqlServer);
+
+// Get human-readable requirements when validation fails
+if (!ok)
+{
+    string reqs = ConnectionHelper.GetValidationRequirements(DataSourceType.SqlServer);
+    Console.WriteLine($"Required: {reqs}");
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Supported DataSourceType validators</strong>
+                        <table>
+                            <thead><tr><th>DataSourceType</th><th>Required keyword(s)</th></tr></thead>
+                            <tbody>
+                                <tr><td>SqlServer</td><td><code>Server</code> / <code>Data Source</code> / <code>Address</code></td></tr>
+                                <tr><td>Mysql</td><td><code>Server</code> / <code>Host</code> / <code>Data Source</code></td></tr>
+                                <tr><td>SqlLite</td><td><code>Data Source</code> / <code>DataSource</code></td></tr>
+                                <tr><td>Oracle</td><td><code>Data Source</code> or <code>Server</code> / <code>Host</code></td></tr>
+                                <tr><td>Postgre</td><td><code>Host</code> / <code>Server</code></td></tr>
+                                <tr><td>MongoDB</td><td><code>mongodb://</code> prefix</td></tr>
+                                <tr><td>Redis</td><td>host:port pattern</td></tr>
+                                <tr><td>OLEDB / ODBC</td><td><code>Provider=</code> / <code>DSN=</code> or <code>Driver=</code></td></tr>
+                                <tr><td>Everything else</td><td>Generic: at least one <code>key=value</code> pair</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Connection String Security -->
+                <section class="section" id="string-security">
+                    <h2>Connection String Security</h2>
+                    <p>
+                        <code>ConnectionStringSecurityHelper</code> masks secret values before connection strings
+                        are logged, displayed in UIs, or transmitted in error reports. It uses regex to locate and
+                        replace well-known secret keywords.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// Replace passwords, API keys, access keys, tokens, and secrets with ********
+public static string SecureConnectionString(string connectionString);
+
+// Returns true if the string contains any of the masked keyword patterns
+public static bool ContainsSensitiveInformation(string connectionString);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">string raw = "Server=db;Database=sales;User Id=app;Password=MyP@ss!;ApiKey=key-abc123";
+
+string safe = ConnectionHelper.SecureConnectionString(raw);
+// "Server=db;Database=sales;User Id=app;Password=********;ApiKey=********"
+
+// Guard before logging
+if (ConnectionHelper.ContainsSensitiveInformation(raw))
+    logger.WriteLog(ConnectionHelper.SecureConnectionString(raw));
+else
+    logger.WriteLog(raw);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Masked keyword categories</strong>
+                        <table>
+                            <thead><tr><th>Category</th><th>Matched keywords (case-insensitive)</th></tr></thead>
+                            <tbody>
+                                <tr><td>Passwords</td><td><code>Password</code>, <code>Pwd</code>, <code>Pass</code>, <code>UserPassword</code>, <code>AuthPassword</code></td></tr>
+                                <tr><td>API keys</td><td><code>ApiKey</code>, <code>ApplicationKey</code>, <code>ClientKey</code>, <code>SubscriptionKey</code></td></tr>
+                                <tr><td>Access keys</td><td><code>AccessKey</code>, <code>SecretKey</code>, <code>AwsAccessKey</code>, <code>AwsSecretKey</code></td></tr>
+                                <tr><td>Tokens</td><td><code>Token</code>, <code>BearerToken</code>, <code>AccessToken</code>, <code>RefreshToken</code></td></tr>
+                                <tr><td>Secrets</td><td><code>Secret</code>, <code>ClientSecret</code>, <code>AppSecret</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Parameter Utilities -->
+                <section class="section" id="string-params">
+                    <h2>Parameter Utilities</h2>
+                    <p>
+                        Defined in <code>ConnectionHelper_GetParameterList.cs</code> (partial class of <code>ConnectionHelper</code>).
+                        These methods parse semi-colon delimited connection strings as key=value dictionaries without
+                        opening any database connection.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// Returns all parameter names (keys only)
+public static List&lt;string&gt; GetParameterList(string connectionString);
+
+// Returns all parameters as Dictionary&lt;key, value&gt;
+public static Dictionary&lt;string, string&gt; GetAllParameters(string connectionString);
+
+// Returns the value of a single named parameter (null if absent)
+public static string GetParameterValue(string connectionString, string parameterName);
+
+// Replaces an existing key's value, or appends a new key=value pair
+public static string SetParameterValue(string connectionString, string parameterName, string parameterValue);
+
+// Removes a key=value pair (returns the remaining string)
+public static string RemoveParameter(string connectionString, string parameterName);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">string cs = "Server=localhost;Database=Northwind;User Id=sa;Password=P@ssw0rd";
+
+// Inspect
+var keys = ConnectionHelper.GetParameterList(cs);
+// ["Server", "Database", "User Id", "Password"]
+
+string db = ConnectionHelper.GetParameterValue(cs, "Database");
+// "Northwind"
+
+// Switch database without rebuilding the whole string
+cs = ConnectionHelper.SetParameterValue(cs, "Database", "Sales");
+
+// Add a new key
+cs = ConnectionHelper.SetParameterValue(cs, "Encrypt", "True");
+
+// Remove a key
+cs = ConnectionHelper.RemoveParameter(cs, "Password");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Category Config Factories -->
+                <section class="section" id="category-factories">
+                    <h2>Category Config Factories</h2>
+                    <p>
+                        Each partial class file exposes a <code>Get*Configs()</code> method that returns a
+                        <code>List&lt;ConnectionDriversConfig&gt;</code> pre-populated with all known drivers for that
+                        category. Individual <code>Create*Config()</code> factory methods produce a single
+                        <code>ConnectionDriversConfig</code> with every field set (GUID, package name, DLL name, class
+                        handler, connection-string template, icon, flags, NuGet metadata).
+                        <br/><br/>
+                        These factories are used at startup to seed <code>IConfigEditor.DataDriversClasses</code> so
+                        that drivers are available for <code>LinkConnection2Drivers</code> even before NuGet packages
+                        are installed.
+                    </p>
+                </section>
+
+                <!-- RDBMS -->
+                <section class="section" id="factory-rdbms">
+                    <h2>RDBMS Config Factory</h2>
+                    <p>File: <code>ConnectionHelper_RDBMS.cs</code></p>
+
+                    <div class="code-example">
+                        <h3>Get all RDBMS configs</h3>
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; rdbms = ConnectionHelper.GetRDBMSConfigs();</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Individual factory methods and connection-string templates</strong>
+                        <table>
+                            <thead><tr><th>Method</th><th>DataSourceType</th><th>Template</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>CreateSqlServerConfig()</code></td><td>SqlServer</td><td><code>Server={Host};Database={Database};User Id={UserID};Password={Password}</code></td></tr>
+                                <tr><td><code>CreateMySqlConfig()</code></td><td>Mysql</td><td><code>Server={Host};Database={Database};Uid={UserID};Pwd={Password}</code></td></tr>
+                                <tr><td><code>CreatePostgreConfig()</code></td><td>Postgre</td><td><code>Host={Host};Database={Database};Username={UserID};Password={Password}</code></td></tr>
+                                <tr><td><code>CreateOracleConfig()</code></td><td>Oracle</td><td><code>Data Source={Host}:{Port}/{Database};User Id={UserID};Password={Password}</code></td></tr>
+                                <tr><td><code>CreateSQLiteConfig()</code></td><td>SqlLite</td><td><code>Data Source={FileName}</code></td></tr>
+                                <tr><td><code>CreateDuckDBConfig()</code></td><td>DuckDB</td><td><code>Data Source={FileName}</code></td></tr>
+                                <tr><td><code>CreateFirebirdConfig()</code></td><td>Firebird</td><td><code>DataSource={Host};Database={FileName};User={UserID};Password={Password}</code></td></tr>
+                                <tr><td><code>CreateSnowFlakeConfig()</code></td><td>SnowFlake</td><td><code>account={Host};user={UserID};password={Password};db={Database}</code></td></tr>
+                                <tr><td><code>CreateAzureSQLConfig()</code></td><td>AzureSql</td><td>Azure SQL connection string template</td></tr>
+                                <tr><td><code>CreateAWSRDSConfig()</code></td><td>AWSRds</td><td>AWS RDS connection string template</td></tr>
+                                <tr><td><code>CreateHanaConfig()</code></td><td>Hana</td><td>SAP HANA connection string template</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Example: create and register an SQLite driver at runtime</h3>
+                        <pre><code class="language-csharp">var sqliteDrv = ConnectionHelper.CreateSQLiteConfig();
+// sqliteDrv.ConnectionString == "Data Source={FileName}"
+// sqliteDrv.classHandler     == "SQLiteDataSource"
+// sqliteDrv.DatasourceType   == DataSourceType.SqlLite
+
+// Seed it into ConfigEditor if not already there
+if (!dmeEditor.ConfigEditor.DataDriversClasses
+        .Any(d => d.DatasourceType == DataSourceType.SqlLite))
+{
+    dmeEditor.ConfigEditor.DataDriversClasses.Add(sqliteDrv);
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- NoSQL -->
+                <section class="section" id="factory-nosql">
+                    <h2>NoSQL Config Factory</h2>
+                    <p>File: <code>ConnectionHelper_NoSQL.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; nosql = ConnectionHelper.GetNoSQLConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>Drivers produced</strong>
+                        <table>
+                            <thead><tr><th>Method</th><th>Technology</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>CreateMongoDBConfig()</code></td><td>MongoDB &#8212; <code>mongodb://{UserID}:{Password}@{Host}:{Port}/{Database}</code></td></tr>
+                                <tr><td><code>CreateRedisConfig()</code></td><td>Redis &#8212; <code>{Host}:{Port},password={Password}</code></td></tr>
+                                <tr><td><code>CreateCassandraConfig()</code></td><td>Cassandra &#8212; <code>Contact Points={Host};Default Keyspace={Database}</code></td></tr>
+                                <tr><td><code>CreateElasticsearchConfig()</code></td><td>Elasticsearch &#8212; <code>http://{Host}:{Port}/{Database}</code></td></tr>
+                                <tr><td><code>CreateDynamoDBConfig()</code></td><td>AWS DynamoDB</td></tr>
+                                <tr><td><code>CreateCouchDBConfig()</code></td><td>CouchDB</td></tr>
+                                <tr><td><code>CreateNeo4jConfig()</code></td><td>Neo4j (graph)</td></tr>
+                                <tr><td><code>CreateInfluxDBConfig()</code></td><td>InfluxDB (time series)</td></tr>
+                                <tr><td><code>CreateClickHouseConfig()</code></td><td>ClickHouse</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Vector DB -->
+                <section class="section" id="factory-vector">
+                    <h2>Vector DB Config Factory</h2>
+                    <p>File: <code>ConnectionHelper_VectorDB.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; vdbs = ConnectionHelper.GetVectorDBConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>Drivers produced</strong>: ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, Zilliz, Redis Vector, Vespa, ShapVector.
+                        All have <code>DatasourceCategory = DatasourceCategory.VectorDB</code> and include collection-name, dimension, metric-type placeholders in their templates.
+                    </div>
+                </section>
+
+                <!-- File -->
+                <section class="section" id="factory-file">
+                    <h2>File Config Factory</h2>
+                    <p>Files: <code>ConnectionHelper_File.cs</code>, <code>ConnectionHelper_File_Misc.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; files = ConnectionHelper.GetFileConfigs();
+List&lt;ConnectionDriversConfig&gt; misc  = ConnectionHelper.GetFileMiscConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>Structured formats (GetFileConfigs)</strong>: CSV, JSON, XML, YAML, Excel (XLS/XLSX), Parquet, Avro, ORC, Feather, HDF5, DICOM, LAS, LibSVM, GraphML.
+                        <br/><br/>
+                        <strong>Misc formats (GetFileMiscConfigs)</strong>: INI, Markdown (.md), text logs, BSON, CBOR, YAML alternatives.
+                        <br/><br/>
+                        All file configs have <code>DatasourceCategory = DatasourceCategory.FILE</code>,
+                        <code>CreateLocal = true</code>, and supply an <code>iconname</code> for UI display.
+                    </div>
+                </section>
+
+                <!-- Cloud -->
+                <section class="section" id="factory-cloud">
+                    <h2>Cloud Config Factory</h2>
+                    <p>File: <code>ConnectionHelper_Cloud.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; cloud = ConnectionHelper.GetCloudConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>Drivers produced</strong>:
+                        AWS (S3, Redshift, Athena, Glue, Step Functions, IoT Core),
+                        Azure (Azure SQL, Synapse, Data Factory, Blob Storage),
+                        GCP (BigQuery, Cloud Storage),
+                        Multi-cloud (Databricks, Supabase, Firebolt).
+                        All have <code>DatasourceCategory = DatasourceCategory.CLOUD</code>.
+                    </div>
+                </section>
+
+                <!-- Streaming -->
+                <section class="section" id="factory-streaming">
+                    <h2>Streaming Config Factory</h2>
+                    <p>File: <code>ConnectionHelper_Streaming.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; streams = ConnectionHelper.GetStreamingConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>Drivers produced</strong>: Kafka, RabbitMQ, ActiveMQ, Pulsar, NATS, ZeroMQ, MassTransit, AWS (SQS, SNS, Kinesis), Azure (Service Bus, Event Hubs), Apache (Flink, Storm, Spark Streaming).
+                        All have <code>DatasourceCategory = DatasourceCategory.STREAM</code>.
+                    </div>
+                </section>
+
+                <!-- In-Memory / Cache -->
+                <section class="section" id="factory-inmemory">
+                    <h2>In-Memory &amp; Cache Config Factories</h2>
+                    <p>Files: <code>ConnectionHelper_InMemory.cs</code>, <code>ConnectionHelper_Cache.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; inmem  = ConnectionHelper.GetInMemoryConfigs();
+List&lt;ConnectionDriversConfig&gt; caches = ConnectionHelper.GetCacheConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>In-memory drivers</strong> (GetInMemoryConfigs): SQLite in-memory, DuckDB in-memory, H2, Apache Ignite, Hazelcast.
+                        All have <code>InMemory = true</code> and <code>CreateLocal = true</code>.
+                        <br/><br/>
+                        <strong>Cache drivers</strong> (GetCacheConfigs): InMemoryCache, CachedMemory, DistributedCache, HybridCache, L1/L2 Cache, MemoryCache, RedisCache, NCache, CouchbaseCache, HazelcastCache, ApacheIgniteCache, Infinispan, EhCache, CaffeineCache.
+                        Template: <code>CacheName={Database};MaxItems={MaxItems};ExpiryMinutes={ExpiryMinutes}</code>.
+                    </div>
+                    <div class="code-example">
+                        <h3>Example: create and use an InMemoryCache connection</h3>
+                        <pre><code class="language-csharp">// Get the pre-built config
+var cacheConfig = ConnectionHelper.CreateInMemoryCacheConfig();
+
+// Register a connection using this driver
+dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "MyCache",
+    DatabaseType   = DataSourceType.InMemoryCache,
+    DriverName     = cacheConfig.PackageName,
+    Database       = "SessionCache",
+    ExtraParameters = "MaxItems=5000;ExpiryMinutes=30"
+});
+
+var cache = dmeEditor.GetDataSource("MyCache");
+cache.Openconnection();</code></pre>
+                    </div>
+                </section>
+
+                <!-- WebAPI -->
+                <section class="section" id="factory-webapi">
+                    <h2>Web API Config Factory</h2>
+                    <p>File: <code>ConnectionHelper_WebAPI.cs</code></p>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">List&lt;ConnectionDriversConfig&gt; webapis = ConnectionHelper.GetWebAPIConfigs();</code></pre>
+                    </div>
+                    <div class="note">
+                        <strong>Drivers produced</strong>: Generic REST, OData, GraphQL, gRPC, SOAP, XML-RPC, JSON-RPC, WebSocket, Server-Sent Events, OPC, ODBC, OLEDB, ADO.
+                        All have <code>DatasourceCategory = DatasourceCategory.WEBAPI</code> or <code>RDBMS</code> (for ADO/ODBC).
+                    </div>
+                </section>
+
+                <!-- Connectors -->
+                <section class="section" id="factory-connectors">
+                    <h2>Connector Category Factories</h2>
+                    <p>
+                        These partial classes produce drivers for SaaS platforms. All have
+                        <code>DatasourceCategory = DatasourceCategory.Connector</code>.
+                    </p>
+                    <div class="note">
+                        <table>
+                            <thead><tr><th>Method</th><th>File</th><th>Platforms included</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>GetCRMConfigs()</code></td><td><code>ConnectionHelper_CRM.cs</code></td><td>Salesforce, HubSpot, Dynamics 365, Zoho, Pipedrive, Freshsales, SugarCRM, Oracle CRM, SAP CRM</td></tr>
+                                <tr><td><code>GetMarketingConfigs()</code></td><td><code>ConnectionHelper_Marketing.cs</code></td><td>Mailchimp, Marketo, ActiveCampaign, Klaviyo, Sendinblue, SendGrid, Mailgun, Google Ads, Hootsuite</td></tr>
+                                <tr><td><code>GetECommerceConfigs()</code></td><td><code>ConnectionHelper_ECommerce.cs</code></td><td>Shopify, WooCommerce, Magento, BigCommerce, Squarespace, Etsy, OpenCart, PrestaShop</td></tr>
+                                <tr><td><code>GetProjectManagementConfigs()</code></td><td><code>ConnectionHelper_ProjectManagement.cs</code></td><td>Jira, Azure Boards, Trello, Asana, Monday.com, ClickUp, Notion, Wrike, Smartsheet</td></tr>
+                                <tr><td><code>GetCommunicationConfigs()</code></td><td><code>ConnectionHelper_Communication.cs</code></td><td>Slack, Microsoft Teams, Discord, Zoom, Telegram, WhatsApp Business, Mattermost, Rocket.Chat</td></tr>
+                                <tr><td><code>GetBlockchainConfigs()</code></td><td><code>ConnectionHelper_Blockchain.cs</code></td><td>Ethereum, Hyperledger Fabric, Solana, Polkadot, Algorand, Cardano, Tezos</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Example: register a Slack connector</h3>
+                        <pre><code class="language-csharp">// Get a pre-built Slack driver config
+var slackConfigs = ConnectionHelper.GetCommunicationConfigs();
+var slackDriver  = slackConfigs.First(c => c.DatasourceType == DataSourceType.Slack);
+
+// Register a Slack connection
+dmeEditor.ConfigEditor.AddDataConnection(new ConnectionProperties
+{
+    ConnectionName = "SlackWorkspace",
+    DatabaseType   = DataSourceType.Slack,
+    DriverName     = slackDriver.PackageName,
+    ApiKey         = Environment.GetEnvironmentVariable("SLACK_BOT_TOKEN")
+});
+
+var slack = dmeEditor.GetDataSource("SlackWorkspace");
+slack.Openconnection();</code></pre>
+                    </div>
+                </section>
+
+                <!-- Liveness -->
+                <section class="section" id="liveness">
+                    <h2>Liveness &amp; Test Connection</h2>
+                    <p>
+                        Two classes handle connection health checks at different lifecycle stages:
+                    </p>
+                    <ul>
+                        <li><strong><code>ProxyLivenessHelper</code></strong> &#8212; tests a <em>live, already-open</em> <code>IDataSource</code>
+                            using the cheapest strategy for its category (ping query, metadata call, or connection-state check).
+                            Used by the proxy/watchdog subsystem.</li>
+                        <li><strong><code>TestConnectionHelper</code></strong> &#8212; async setup-time test against a
+                            <code>ConnectionDriversConfig</code> object before a connection is registered
+                            (e.g., during the connection wizard UI).</li>
+                    </ul>
+
+                    <div class="code-example">
+                        <h3>Probe strategy by category</h3>
+                        <pre><code class="language-csharp">// ProxyLivenessHelper — called by proxy and watchdog internally
+bool alive = ProxyLivenessHelper.IsAlive(ds, timeoutMs: 3_000);
+// Strategy selected by ds.Category:
+//  RDBMS      → cheapest engine-specific ping query (SELECT 1, etc.)
+//  NoSQL      → GetEntitesList (metadata)
+//  FILE       → GetEntitesList
+//  WEBAPI     → GetEntitesList (HEAD request equivalent)
+//  CLOUD      → GetEntitesList
+//  VectorDB   → GetEntitesList
+//  IoT/Stream/Queue/Blockchain/Connector → ConnectionState signal
+//  INMEMORY   → alive unless ConnectionState == Broken
+//  default    → ConnectionState signal</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>TestConnectionHelper — async liveness via IDataSource</h3>
+                        <pre><code class="language-csharp">// Tests a live DMEEditor-managed datasource
+var ds = dmeEditor.GetDataSource("MyDb");
+ds.Openconnection();
+
+var (ok, msg) = await TestConnectionHelper.TestConnectionAsync(ds);
+Console.WriteLine($"{ok}: {msg}");
+// "True: MyDb (RDBMS) is alive"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>TestConnectionHelper — setup-time config test</h3>
+                        <pre><code class="language-csharp">// Test a NEW connection config before registering it
+var config = new ConnectionDriversConfig
+{
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType     = DataSourceType.SqlServer,
+    ConnectionString   = "Server=localhost;Database=test;Trusted_Connection=True"
+};
+
+var (ok, msg) = await TestConnectionHelper.TestConnectionAsync(config, timeout: 10);
+if (!ok)
+    MessageBox.Show($"Cannot connect: {msg}");
+else
+    dmeEditor.ConfigEditor.AddDataConnection(myConnectionProps);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Never throws</strong>
+                        <p>
+                            Both helpers catch all exceptions internally and map them to
+                            <code>(false, message)</code>. It is safe to call them without a try-catch.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- DataTypesHelpers Overview -->
+                <section class="section" id="datatypes-overview">
+                    <h2>DataTypesHelpers Overview</h2>
+                    <p>
+                        The <code>DataTypesHelpers</code> subsystem (namespace <code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code>)
+                        handles all bidirectional mapping between database-native type names and .NET <code>System.*</code> types.
+                        It was refactored from a 2,000-line monolith into a layered set of helpers:
+                    </p>
+
+                    <div class="note">
+                        <strong>Source of truth (2026)</strong>
+                        <ul>
+                            <li>Facade: <code>DataTypesHelpers/DataTypeFieldMappingHelper.cs</code> — delegates to all sub-helpers</li>
+                            <li>Service class: <code>DataTypesHelpers/DataTypesHelper.cs</code> — injectable <code>IDataTypesHelper</code></li>
+                            <li>Basic ops: <code>DataTypesHelpers/DataTypeBasicOperations.cs</code></li>
+                            <li>Lookup logic: <code>DataTypesHelpers/DataTypeMappingLookup.cs</code></li>
+                            <li>Repository: <code>DataTypesHelpers/DataTypeMappingRepository.cs</code></li>
+                            <li>Reflection util: <code>DataTypesHelpers/TypeHelper.cs</code></li>
+                            <li>Per-DB mappings: <code>DataTypesHelpers/DatabaseTypeMappingRepositories/*.cs</code> (26 files)</li>
+                        </ul>
+                    </div>
+
+                    <div class="note">
+                        <strong>Class inventory</strong>
+                        <table>
+                            <thead><tr><th>Class</th><th>Type</th><th>Role</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>DataTypeFieldMappingHelper</code></td><td><code>static partial</code></td><td>Public facade — every method delegates to a specialist</td></tr>
+                                <tr><td><code>DataTypesHelper</code></td><td><code>class : IDataTypesHelper</code></td><td>Injectable service with <code>ConcurrentDictionary</code> caches; registered by DI</td></tr>
+                                <tr><td><code>DataTypeBasicOperations</code></td><td><code>static</code></td><td>.NET type constant strings, <code>GetNetDataTypes</code>, custom converter, field validation</td></tr>
+                                <tr><td><code>DataTypeMappingLookup</code></td><td><code>static</code></td><td>Core resolution: net-type &rarr; db-type and db-type &rarr; net-type; internal caches + regex</td></tr>
+                                <tr><td><code>DataTypeMappingRepository</code></td><td><code>static</code></td><td>Reads <code>DataTypesMap</code> from ConfigEditor; resolves by DS name or <code>DataSourceType</code></td></tr>
+                                <tr><td><code>DatabaseTypeMappingRepository</code></td><td><code>static partial</code></td><td>26 partial files — one per DB family — each with a <code>Generate*DataTypesMapping()</code> method</td></tr>
+                                <tr><td><code>TypeHelper</code></td><td><code>static</code></td><td>Extension methods for constructor-based reflection instantiation (1-, 2-, 3-arg overloads)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- DataTypesHelper service -->
+                <section class="section" id="datatypes-helper">
+                    <h2>DataTypesHelper (IDataTypesHelper)</h2>
+                    <p>
+                        <code>DataTypesHelper</code> is the injectable service class registered with the DI container.
+                        It wraps the static helpers with <code>ConcurrentDictionary</code> caches and pre-loads
+                        mappings for the most common databases on first use.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Constructor &amp; properties</h3>
+                        <pre><code class="language-csharp">// Namespace: TheTechIdea.Beep.Helpers
+public class DataTypesHelper : IDataTypesHelper
+{
+    public DataTypesHelper(IDMEEditor pDMEEditor);
+
+    public IDMEEditor DMEEditor         { get; set; }
+    public List&lt;DatatypeMapping&gt; mapping { get; set; }
+    public int DefaultStringSize        { get; set; }  // default 250
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Resolving types via the service</h3>
+                        <pre><code class="language-csharp">// Obtain via DI or DMEEditor
+var dt = dmeEditor.GetService&lt;IDataTypesHelper&gt;();
+// or: new DataTypesHelper(dmeEditor)
+
+// Look up the .NET type for a SQL Server "nvarchar" column
+string netType = DataTypeFieldMappingHelper.GetDataType(
+    "Northwind",            // DS connection name
+    "nvarchar",             // provider type string
+    dmeEditor
+);
+// =&gt; "System.String"
+
+// Look up using an EntityField (reads fld.fieldtype)
+string netType2 = DataTypeFieldMappingHelper.GetDataType(
+    "Northwind", myField, dmeEditor
+);</code></pre>
+                    </div>
+                </section>
+
+                <!-- DataTypeBasicOperations -->
+                <section class="section" id="datatypes-basic">
+                    <h2>DataTypeBasicOperations</h2>
+                    <p>Provides constant .NET type name collections, a custom-converter hook, and field-mapping validation.</p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// Short alias names: "byte, sbyte, int, uint, short, ..."
+public static string[] GetNetDataTypes();
+
+// Fully qualified names: "System.Byte[], System.Int32, ..."
+public static string[] GetNetDataTypes2();
+
+// Apply a custom converter on top of the resolved .NET type
+public static string GetCustomDataType(
+    string DSname, EntityField fld, IDMEEditor DMEEditor,
+    Func&lt;string, string&gt; customTypeConverter);
+
+// Returns true when a mapping entry exists for (DSname, fld)
+public static bool IsValidFieldMapping(
+    string DSname, EntityField fld, IDMEEditor DMEEditor);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Example: populate a type picker</h3>
+                        <pre><code class="language-csharp">// Short names for UI dropdowns
+string[] shortNames = DataTypeFieldMappingHelper.GetNetDataTypes();
+// ["bool", "byte", "char", "DateTime", "decimal", ...]
+
+// Fully qualified for reflection / IL emission
+string[] fullNames = DataTypeFieldMappingHelper.GetNetDataTypes2();
+// ["System.Boolean", "System.Byte", ...]
+
+// Custom mapping — e.g. map System.Decimal to "money" for display
+string displayType = DataTypeFieldMappingHelper.GetCustomDataType(
+    "Northwind", amountField, dmeEditor,
+    netType =&gt; netType == "System.Decimal" ? "money" : netType
+);</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>.NET type constants</strong>
+                        <table>
+                            <thead><tr><th>GetNetDataTypes()</th><th>GetNetDataTypes2()</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>byte, sbyte, int, uint</code></td><td><code>System.Byte, System.SByte, System.Int32, System.UInt32</code></td></tr>
+                                <tr><td><code>short, ushort, long, ulong</code></td><td><code>System.Int16, System.UInt16, System.Int64, System.UInt64</code></td></tr>
+                                <tr><td><code>float, double, decimal</code></td><td><code>System.Single, System.Double, System.Decimal</code></td></tr>
+                                <tr><td><code>char, bool, object, string</code></td><td><code>System.Char, System.Boolean, System.Object, System.String</code></td></tr>
+                                <tr><td><code>DateTime</code></td><td><code>System.DateTime, System.TimeSpan, System.DateTimeOffset, System.Guid, System.Xml</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- DataTypeMappingLookup -->
+                <section class="section" id="datatypes-lookup">
+                    <h2>DataTypeMappingLookup</h2>
+                    <p>
+                        Core resolution engine with thread-safe <code>ConcurrentDictionary</code> caches and compiled
+                        <code>Regex</code> patterns for stripping length/precision tokens
+                        (<code>(N)</code>, <code>(P,S)</code>) before matching.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Key signatures</h3>
+                        <pre><code class="language-csharp">// Resolve DB provider type name -&gt; .NET type string
+public static string GetDataType(
+    string DSname, string providerfldtype, IDMEEditor DMEEditor);
+
+// Resolve via EntityField (uses fld.fieldtype)
+public static string GetDataType(
+    string DSname, EntityField fld, IDMEEditor DMEEditor);
+
+// Resolve using the class handler name instead of DS connection name
+public static string GetDataTypeFromDataSourceClassName(
+    string className, EntityField fld, IDMEEditor DMEEditor);
+
+// Full DatatypeMapping record (includes Fav flag, size placeholders)
+public static DatatypeMapping GetDataTypeMappingForString(
+    string className, string Fieldtype, EntityField fld, IDMEEditor DMEEditor);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Resolution details</h3>
+                        <pre><code class="language-csharp">// Provider type with precision stripped before lookup
+// e.g. "decimal(18,4)" -&gt; matches "decimal" mapping -&gt; "System.Decimal"
+string t = DataTypeMappingLookup.GetDataType(
+    "Northwind", "decimal(18,4)", dmeEditor);
+// =&gt; "System.Decimal"
+
+// Full mapping record (useful when you need DbType, size placeholders, Fav flag)
+var mapping = DataTypeMappingLookup.GetDataTypeMappingForString(
+    "SQLServerDataSource", "System.String", nameField, dmeEditor);
+Console.WriteLine(mapping?.DataType);   // e.g. "nvarchar"
+Console.WriteLine(mapping?.Fav);        // preferred mapping = true</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Lookup cache keys</strong>
+                        <p>Cache key format: <code>"{className}|{Fieldtype}|{fld.Size1}"</code>.
+                        The cache is static and process-wide — entries are never evicted,
+                        making repeated lookups essentially free.</p>
+                    </div>
+                </section>
+
+                <!-- DataTypeMappingRepository -->
+                <section class="section" id="datatypes-repository">
+                    <h2>DataTypeMappingRepository</h2>
+                    <p>
+                        Reads the <code>DataTypesMap</code> list from <code>IConfigEditor</code>
+                        (loaded from <code>DataTypeMapping.json</code> at startup) and filters it by
+                        data-source name or <code>DataSourceType</code> enum.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// By connection name (resolves classHandler via DMEEditor)
+public static List&lt;DatatypeMapping&gt; GetDataTypes(
+    string DSname, IDMEEditor DMEEditor);
+
+// By DataSourceType enum (looks up classHandler in DataDriversClasses)
+public static List&lt;DatatypeMapping&gt; GetDataTypes(
+    DataSourceType DSname, IDMEEditor DMEEditor);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// All mappings for a live connection
+var mappings = DataTypeMappingRepository.GetDataTypes("Northwind", dmeEditor);
+
+// All mappings for SQL Server (by enum, no connection needed)
+var sqlMappings = DataTypeMappingRepository.GetDataTypes(
+    DataSourceType.SqlServer, dmeEditor);
+
+foreach (var m in sqlMappings)
+    Console.WriteLine($"{m.DataType,20} -&gt; {m.NetDataType}");</code></pre>
+                    </div>
+                </section>
+
+                <!-- DataTypeFieldMappingHelper facade -->
+                <section class="section" id="datatypes-field-mapping">
+                    <h2>DataTypeFieldMappingHelper (Facade)</h2>
+                    <p>
+                        <code>DataTypeFieldMappingHelper</code> is the recommended entry point for all
+                        type-mapping calls. It simply re-exports every method from the three sub-helpers
+                        so callers don&#39;t need to know which specialist class handles a given operation.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Full public API</h3>
+                        <pre><code class="language-csharp">// ── .NET types ──────────────────────────────────────────────────────
+string[] DataTypeFieldMappingHelper.GetNetDataTypes();          // short aliases
+string[] DataTypeFieldMappingHelper.GetNetDataTypes2();         // fully qualified
+
+// ── DB provider type -&gt; .NET type ───────────────────────────────────
+string GetDataType(string DSname, string providerType, IDMEEditor dme);
+string GetDataType(string DSname, EntityField fld, IDMEEditor dme);
+string GetDataTypeFromDataSourceClassName(string className, EntityField fld, IDMEEditor dme);
+
+// ── Full DatatypeMapping record ──────────────────────────────────────
+DatatypeMapping GetDataTypeMappingForString(
+    string className, string Fieldtype, EntityField fld, IDMEEditor dme);
+
+// ── Repository queries ───────────────────────────────────────────────
+List&lt;DatatypeMapping&gt; GetDataTypes(string DSname, IDMEEditor dme);
+List&lt;DatatypeMapping&gt; GetDataTypes(DataSourceType DSname, IDMEEditor dme);
+
+// ── Utilities ────────────────────────────────────────────────────────
+string GetFieldTypeNoConversion(string DSname, EntityField fld, IDMEEditor dme);
+string GetCustomDataType(string DSname, EntityField fld, IDMEEditor dme,
+    Func&lt;string, string&gt; customTypeConverter);
+bool   IsValidFieldMapping(string DSname, EntityField fld, IDMEEditor dme);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Per-DB repos -->
+                <section class="section" id="datatypes-db-repos">
+                    <h2>Per-Database Mapping Repositories</h2>
+                    <p>
+                        Each file in <code>DatabaseTypeMappingRepositories/</code> is a partial class of
+                        <code>DatabaseTypeMappingRepository</code> that exposes a single
+                        <code>Generate*DataTypesMapping()</code> method returning
+                        <code>List&lt;DatatypeMapping&gt;</code>. These lists are merged into
+                        <code>DataTypeMapping.json</code> at build time.
+                    </p>
+
+                    <div class="note">
+                        <strong>Mapping file inventory</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Databases covered</th><th>Method</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>...SqlServer.cs</code></td><td>SQL Server (<code>SQLServerDataSource</code>)</td><td><code>GenerateSqlServerDataTypesMapping()</code></td></tr>
+                                <tr><td><code>...Common.cs</code></td><td>SQLite, SQL Compact, DuckDB</td><td><code>GenerateSQLiteDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...PostgreMySQL.cs</code></td><td>PostgreSQL, MySQL</td><td><code>GeneratePostgreSQLDataTypesMapping()</code>, <code>GenerateMySQLDataTypesMapping()</code></td></tr>
+                                <tr><td><code>...Oracle.cs</code></td><td>Oracle</td><td><code>GenerateOracleDataTypesMapping()</code></td></tr>
+                                <tr><td><code>...FirebirdLiteDB.cs</code></td><td>Firebird, LiteDB</td><td><code>GenerateFirebirdDataTypesMapping()</code>, <code>GenerateLiteDBDataTypesMapping()</code></td></tr>
+                                <tr><td><code>...NoSQL.cs</code></td><td>MongoDB, Cassandra, Redis</td><td><code>GenerateMongoDBDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Enterprise.cs</code></td><td>DB2, DynamoDB, InfluxDB, Sybase, HBase, CockroachDB</td><td><code>GenerateDB2DataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Cloud.cs</code></td><td>Snowflake, Azure Cosmos DB, Vertica, Teradata, ArangoDB, BerkeleyDB</td><td><code>GenerateSnowflakeDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Services.cs</code></td><td>Firebase, Supabase, CouchDB, Couchbase</td><td><code>GenerateFirebaseDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Vector.cs</code></td><td>Pinecone, Qdrant, ShapVector, Weaviate, Milvus, RedisVector, Zilliz, Vespa, ChromaDB</td><td><code>GeneratePineconeDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Modern.cs</code></td><td>ClickHouse, Neo4j, TimescaleDB, Elasticsearch</td><td><code>GenerateClickHouseDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...BigData.cs</code></td><td>Hadoop/Hive, Spark, Presto, Trino, Delta Lake</td><td><code>GenerateHiveDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Analytics.cs</code></td><td>Redshift, BigQuery, Azure Synapse, Databricks</td><td><code>GenerateRedshiftDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...CloudPlatforms.cs</code></td><td>AWS Athena, Azure Data Lake, GCP Spanner</td><td><code>GenerateAthenaDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...FileFormats.cs</code></td><td>CSV, JSON, Parquet, Avro, ORC, Excel</td><td><code>GenerateCSVDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Graph.cs</code></td><td>Neo4j, TigerGraph, JanusGraph</td><td><code>GenerateNeo4jDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Streaming.cs</code></td><td>Kafka, Kinesis, Pulsar</td><td><code>GenerateKafkaDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...IoT.cs</code></td><td>InfluxDB IoT, TimescaleDB IoT, AWS IoT</td><td><code>GenerateInfluxDBIoTDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...MachineLearning.cs</code></td><td>ONNX, TensorFlow Serving, MLflow</td><td><code>GenerateONNXDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Search.cs</code></td><td>Elasticsearch, Solr, OpenSearch</td><td><code>GenerateElasticsearchDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...CRM.cs</code></td><td>Salesforce, HubSpot, Dynamics 365</td><td><code>GenerateSalesforceDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...SocialMedia.cs</code></td><td>Twitter, LinkedIn, Facebook Graph</td><td><code>GenerateTwitterDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...PaymentGateways.cs</code></td><td>Stripe, PayPal, Braintree</td><td><code>GenerateStripeDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Accounting.cs</code></td><td>QuickBooks, Xero, Sage</td><td><code>GenerateQuickBooksDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...Protocols.cs</code></td><td>ODBC, OLE DB, ADO, gRPC, GraphQL</td><td><code>GenerateODBCDataTypesMapping()</code>, etc.</td></tr>
+                                <tr><td><code>...WorkflowIoT.cs</code></td><td>Azure Logic Apps, AWS Step Functions, Node-RED</td><td><code>GenerateLogicAppsDataTypesMapping()</code>, etc.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>How mappings get into DataTypeMapping.json</h3>
+                        <pre><code class="language-csharp">// At build/seed time — collect all partial-class mappings
+var allMappings = new List&lt;DatatypeMapping&gt;();
+allMappings.AddRange(DatabaseTypeMappingRepository.GenerateSqlServerDataTypesMapping());
+allMappings.AddRange(DatabaseTypeMappingRepository.GeneratePostgreSQLDataTypesMapping());
+allMappings.AddRange(DatabaseTypeMappingRepository.GenerateMySQLDataTypesMapping());
+// ... repeat for every Generate* method ...
+
+// Persist to the config file
+var json = System.Text.Json.JsonSerializer.Serialize(allMappings);
+File.WriteAllText(Path.Combine(configPath, "DataTypeMapping.json"), json);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>SQL Server type map sample</h3>
+                        <pre><code class="language-csharp">// From DatabaseTypeMappingRepository.SqlServer.cs
+// DataSourceName must exactly match the classHandler value in ConnectionDriversConfig
+new DatatypeMapping { DataType="bigint",    DataSourceName="SQLServerDataSource", NetDataType="System.Int64"   },
+new DatatypeMapping { DataType="bit",       DataSourceName="SQLServerDataSource", NetDataType="System.Boolean" },
+new DatatypeMapping { DataType="decimal",   DataSourceName="SQLServerDataSource", NetDataType="System.Decimal" },
+new DatatypeMapping { DataType="nvarchar",  DataSourceName="SQLServerDataSource", NetDataType="System.String",  Fav=false },
+new DatatypeMapping { DataType="datetime2", DataSourceName="SQLServerDataSource", NetDataType="System.DateTime" },
+new DatatypeMapping { DataType="uniqueidentifier", DataSourceName="SQLServerDataSource", NetDataType="System.Guid" },</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Adding a new database</strong>
+                        <ol>
+                            <li>Create <code>DatabaseTypeMappingRepository.YourDB.cs</code> as a partial class.</li>
+                            <li>Add a <code>GenerateYourDBDataTypesMapping()</code> method returning <code>List&lt;DatatypeMapping&gt;</code>.</li>
+                            <li>Set <code>DataSourceName</code> to the <code>classHandler</code> value from the driver&#39;s <code>ConnectionDriversConfig</code>.</li>
+                            <li>Run the seed step (or add the method call to the existing seed loop) to regenerate <code>DataTypeMapping.json</code>.</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- TypeHelper -->
+                <section class="section" id="typehelper">
+                    <h2>TypeHelper</h2>
+                    <p>
+                        Extension methods on <code>System.Type</code> for creating instances via
+                        compiled expression trees — much faster than <code>Activator.CreateInstance</code>
+                        for hot paths (entity deserialization, driver instantiation).
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Signatures</h3>
+                        <pre><code class="language-csharp">// No-arg constructor
+object GetInstance(this Type type);
+
+// Single-arg constructor
+object GetInstance&lt;TArg&gt;(this Type type, TArg argument);
+
+// Two-arg constructor
+object GetInstance&lt;TArg1, TArg2&gt;(this Type type, TArg1 arg1, TArg2 arg2);
+
+// Three-arg constructor
+object GetInstance&lt;TArg1, TArg2, TArg3&gt;(
+    this Type type, TArg1 arg1, TArg2 arg2, TArg3 arg3);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Create a data source instance by type (used by AssemblyHandler)
+Type dsType = loadedAssembly.GetType("TheTechIdea.Beep.SQLite.SQLiteDataSource");
+var ds = (IDataSource)dsType.GetInstance(
+    "myConnection",    // string datasourcename
+    logger,            // IDMLogger
+    dmeEditor          // IDMEEditor
+);
+
+// Equivalent to:
+// new SQLiteDataSource("myConnection", logger, dmeEditor)</code></pre>
+                    </div>
+                </section>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     SECTION GROUP 3 — RDBMSHelpers
+                ═══════════════════════════════════════════════════════════ -->
+
+                <!-- ─── 26. RDBMSHelpers Overview ─── -->
+                <section id="rdbms-overview">
+                    <h2>RDBMSHelpers Overview</h2>
+                    <p>
+                        The <strong>RDBMSHelpers</strong> group provides a comprehensive toolkit for interacting with
+                        relational databases across more than twenty database platforms. All public API surfaces are
+                        exposed through two static facade classes — <code>RDBMSHelper</code> and
+                        <code>DatabaseDMLHelper</code> — which delegate to focused, single-responsibility helpers.
+                    </p>
+
+                    <div class="note">
+                        <strong>Source location</strong>
+                        <code>DataManagementEngineStandard/Helpers/RDBMSHelpers/</code>
+                    </div>
+
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>File</th><th>Class</th><th>Responsibility</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>RDBMSHelper.cs</td><td><code>RDBMSHelper</code></td><td>Top-level facade — schema, metadata, DDL</td></tr>
+                            <tr><td>DatabaseFeatureHelper.cs</td><td><code>DatabaseFeatureHelper</code></td><td>Feature flags, sequence / identity queries</td></tr>
+                            <tr><td>DatabaseSchemaQueryHelper.cs</td><td><code>DatabaseSchemaQueryHelper</code></td><td>Per-RDBMS schema discovery SQL</td></tr>
+                            <tr><td>DatabaseObjectCreationHelper.cs</td><td><code>DatabaseObjectCreationHelper</code></td><td>CREATE TABLE, PK, INDEX, DROP DDL</td></tr>
+                            <tr><td>DatabaseQueryRepositoryHelper.cs</td><td><code>DatabaseQueryRepositoryHelper</code></td><td>Cached pre-built query repository</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLHelper.cs</td><td><code>DatabaseDMLHelper</code></td><td>DML facade — INSERT, UPDATE, DELETE, SELECT</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLBasicOperations.cs</td><td><code>DatabaseDMLBasicOperations</code></td><td>Basic INSERT / UPDATE / DELETE</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLBulkOperations.cs</td><td><code>DatabaseDMLBulkOperations</code></td><td>Bulk insert, upsert, bulk delete</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLAdvancedQueryGenerator.cs</td><td><code>DatabaseDMLAdvancedQueryGenerator</code></td><td>SELECT, JOIN, aggregation, window functions</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLParameterizedQueries.cs</td><td><code>DatabaseDMLParameterizedQueries</code></td><td>Parameterized INSERT / UPDATE / DELETE</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLSpecificHelpers.cs</td><td><code>DatabaseDMLSpecificHelpers</code></td><td>Engine-specific SQL quirks</td></tr>
+                            <tr><td>DMLHelpers/DatabaseDMLUtilities.cs</td><td><code>DatabaseDMLUtilities</code></td><td>Formatting, quoting, escaping utilities</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntityHelper.cs</td><td><code>DatabaseEntityHelper</code></td><td>Entity facade — SQL gen, validation, analysis</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntitySqlGenerator.cs</td><td><code>DatabaseEntitySqlGenerator</code></td><td>SQL generation from EntityStructure</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntityValidator.cs</td><td><code>DatabaseEntityValidator</code></td><td>Entity structural validation</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntityNamingValidator.cs</td><td><code>DatabaseEntityNamingValidator</code></td><td>Identifier naming rules per RDBMS</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntityReservedKeywordChecker.cs</td><td><code>DatabaseEntityReservedKeywordChecker</code></td><td>Reserved keyword detection</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntityAnalyzer.cs</td><td><code>DatabaseEntityAnalyzer</code></td><td>Compatibility info, improvement suggestions</td></tr>
+                            <tr><td>EntityHelpers/DatabaseEntityTypeHelper.cs</td><td><code>DatabaseEntityTypeHelper</code></td><td>EntityField factory helpers</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ─── 27. DatabaseFeatureHelper ─── -->
+                <section id="rdbms-feature-helper">
+                    <h2>DatabaseFeatureHelper</h2>
+                    <p>
+                        Provides enumerations for optional database capabilities and utility methods for
+                        generating engine-specific sequence / identity SQL.
+                    </p>
+
+                    <h3>Enumerations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Enum</th><th>Members</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>DatabaseFeature</code></td>
+                                <td><code>WindowFunctions</code>, <code>Json</code>, <code>Xml</code>, <code>TemporalTables</code>,
+                                    <code>FullTextSearch</code>, <code>Partitioning</code>, <code>ColumnStore</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>TransactionOperation</code></td>
+                                <td><code>Begin</code>, <code>Commit</code>, <code>Rollback</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Sequence Queries</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateFetchNextSequenceValueQuery(DataSourceType, string&nbsp;sequenceName)</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns engine-specific SQL to fetch the next sequence value
+                                    (<code>SELECT NEXT VALUE FOR</code>, <code>SELECT nextval(…)</code>,
+                                    <code>SELECT seq.NEXTVAL FROM dual</code>, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateFetchLastIdentityQuery(DataSourceType, string&nbsp;sequenceName&nbsp;=&nbsp;"")</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns engine-specific last-inserted identity SQL
+                                    (<code>SCOPE_IDENTITY()</code>, <code>LAST_INSERT_ID()</code>,
+                                    <code>LASTVAL()</code>, <code>currval(…)</code>, etc.)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Per-Engine Reference</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Engine</th><th>Next Sequence Value</th><th>Last Identity</th></tr></thead>
+                        <tbody>
+                            <tr><td>SQL&nbsp;Server</td><td><code>SELECT NEXT VALUE FOR {seq}</code></td><td><code>SELECT SCOPE_IDENTITY()</code></td></tr>
+                            <tr><td>MySQL</td><td>—</td><td><code>SELECT LAST_INSERT_ID()</code></td></tr>
+                            <tr><td>PostgreSQL</td><td><code>SELECT nextval('{seq}')</code></td><td><code>SELECT LASTVAL()</code></td></tr>
+                            <tr><td>Oracle</td><td><code>SELECT {seq}.NEXTVAL FROM dual</code></td><td><code>SELECT {seq}.currval FROM dual</code></td></tr>
+                            <tr><td>Firebird</td><td><code>SELECT NEXT VALUE FOR {seq} FROM RDB$DATABASE</code></td><td><code>SELECT GEN_ID({gen},0) FROM RDB$DATABASE</code></td></tr>
+                            <tr><td>DB2</td><td><code>SELECT NEXTVAL FOR {seq} FROM sysibm.sysdummy1</code></td><td><code>SELECT IDENTITY_VAL_LOCAL() FROM sysibm.sysdummy1</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Get next sequence value for PostgreSQL
+string sql = DatabaseFeatureHelper.GenerateFetchNextSequenceValueQuery(
+    DataSourceType.Postgre, "order_id_seq");
+// → "SELECT nextval('order_id_seq')"
+
+// Get last identity value for SQL Server
+string idSql = DatabaseFeatureHelper.GenerateFetchLastIdentityQuery(
+    DataSourceType.SqlServer);
+// → "SELECT SCOPE_IDENTITY()"</code></pre>
+                </section>
+
+                <!-- ─── 28. Schema & Metadata Queries ─── -->
+                <section id="rdbms-schema-queries">
+                    <h2>Schema &amp; Metadata Queries</h2>
+                    <p>
+                        <code>DatabaseSchemaQueryHelper</code> and the corresponding methods on <code>RDBMSHelper</code>
+                        generate engine-specific SQL for discovering schemas/databases and inspecting table structure.
+                    </p>
+
+                    <h3>Facade Methods (RDBMSHelper)</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GetSchemasorDatabases(DataSourceType, string&nbsp;userName)</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns the raw SQL to list accessible schemas/databases for the given user.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetSchemasorDatabasesSafe(DataSourceType, string&nbsp;userName, bool&nbsp;throwOnError)</code></td>
+                                <td><code>(string&nbsp;Query, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Safe wrapper — returns a result tuple; never throws unless <code>throwOnError</code> is <code>true</code>.</td>
+                            </tr>
+                            <tr>
+                                <td><code>ValidateSchemaQuery(DataSourceType, string&nbsp;userName, string&nbsp;query)</code></td>
+                                <td><code>QueryValidationResult</code></td>
+                                <td>Validates a schema query against the known pattern for the specified engine.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetTableExistsQuery(DataSourceType, string&nbsp;tableName, string&nbsp;schemaName)</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns SQL that returns a row if the named table exists (used for pre-flight checks).</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetColumnInfoQuery(DataSourceType, string&nbsp;tableName, string&nbsp;schemaName)</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns SQL that lists columns and their metadata for the specified table.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Schema Discovery SQL — Per Engine</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Engine</th><th>Generated SQL</th></tr></thead>
+                        <tbody>
+                            <tr><td>SQL&nbsp;Server / AzureSQL / AWSRDS</td><td><code>SELECT name FROM sys.databases WHERE HAS_DBACCESS(name)=1 ORDER BY name</code></td></tr>
+                            <tr><td>MySQL</td><td><code>SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN (SELECT DISTINCT TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLE_PRIVILEGES WHERE GRANTEE='&lsquo;{user}&rsquo;')</code></td></tr>
+                            <tr><td>PostgreSQL</td><td><code>SELECT datname FROM pg_database WHERE datistemplate=false AND has_database_privilege('{user}',datname,'CONNECT')</code></td></tr>
+                            <tr><td>Oracle</td><td><code>SELECT DISTINCT OWNER FROM DBA_TAB_PRIVS WHERE GRANTEE='{user}'</code></td></tr>
+                            <tr><td>DB2</td><td><code>SELECT DISTINCT SCHEMANAME FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE='{user}'</code></td></tr>
+                            <tr><td>SQLite</td><td><code>PRAGMA database_list;</code></td></tr>
+                            <tr><td>Firebird</td><td><code>SELECT RDB$DATABASE_NAME FROM RDB$DATABASE</code></td></tr>
+                            <tr><td>Snowflake</td><td><code>SHOW DATABASES</code></td></tr>
+                            <tr><td>SAP HANA</td><td><code>SELECT SCHEMA_NAME FROM SCHEMAS WHERE HAS_PRIVILEGES_ON_SCHEMA(…)='TRUE'</code></td></tr>
+                            <tr><td>BigQuery</td><td><code>SELECT schema_name FROM INFORMATION_SCHEMA.SCHEMATA</code></td></tr>
+                            <tr><td>Redshift</td><td><code>SELECT DISTINCT schemaname FROM pg_tables</code></td></tr>
+                            <tr><td>Athena</td><td><code>SHOW DATABASES</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Safe version — no exception on unsupported engine
+var (sql, ok, err) = RDBMSHelper.GetSchemasorDatabasesSafe(
+    DataSourceType.Postgre, "appuser");
+if (ok)
+    await connection.ExecuteAsync(sql);
+
+// Quick table-exists check
+string existsQuery = RDBMSHelper.GetTableExistsQuery(
+    DataSourceType.SqlServer, "Orders", "dbo");</code></pre>
+                </section>
+
+                <!-- ─── 29. DDL Generation ─── -->
+                <section id="rdbms-ddl">
+                    <h2>DDL Generation</h2>
+                    <p>
+                        <code>DatabaseObjectCreationHelper</code> generates data-definition SQL
+                        (CREATE TABLE, primary keys, indexes, DROP) from <code>EntityStructure</code> instances
+                        or explicit parameters.
+                    </p>
+
+                    <h3>Table Creation</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateCreateTableSQL(EntityStructure)</code></td>
+                                <td><code>(string&nbsp;Sql, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Builds a full CREATE TABLE statement from the entity's fields, types, and constraints.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Primary Key</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GeneratePrimaryKeyQuery(DataSourceType, string&nbsp;tableName, string&nbsp;primaryKey, string&nbsp;type)</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns an<code>ALTER TABLE … ADD … PRIMARY KEY</code> statement with the engine-correct auto-increment syntax
+                                    (<code>IDENTITY</code>, <code>AUTO_INCREMENT</code>, <code>GENERATED ALWAYS AS IDENTITY</code>, <code>AUTOINCREMENT</code>).</td>
+                            </tr>
+                            <tr>
+                                <td><code>GeneratePrimaryKeyFromEntity(EntityStructure)</code></td>
+                                <td><code>(string&nbsp;Sql, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Iterates all key fields on the entity and combines primary key ALTER statements into one string.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Indexes</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateCreateIndexQuery(DataSourceType, string&nbsp;tableName, string&nbsp;indexName, string[]&nbsp;columns, Dictionary&lt;string,object&gt;&nbsp;options)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates <code>CREATE [UNIQUE] INDEX</code> SQL. Pass <code>{"unique",true}</code> in options for uniqueness.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateUniqueIndexFromEntity(EntityStructure)</code></td>
+                                <td><code>(string&nbsp;Sql, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Generates unique-index SQL for every field with <code>IsUnique = true</code> in the entity.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// CREATE TABLE from an EntityStructure
+var (createSql, ok, err) = DatabaseObjectCreationHelper.GenerateCreateTableSQL(entity);
+if (!ok) Console.WriteLine(err);
+
+// ADD PRIMARY KEY — SQL Server style
+string pkSql = DatabaseObjectCreationHelper.GeneratePrimaryKeyQuery(
+    DataSourceType.SqlServer, "Orders", "OrderId", "INT");
+// → "ALTER TABLE Orders ADD OrderId INT PRIMARY KEY IDENTITY"
+
+// ADD PRIMARY KEY from entity (multi-key aware)
+var (pkFromEntity, success, msg) =
+    DatabaseObjectCreationHelper.GeneratePrimaryKeyFromEntity(entity);
+
+// CREATE UNIQUE INDEX
+string idxSql = DatabaseObjectCreationHelper.GenerateCreateIndexQuery(
+    DataSourceType.Postgre, "Orders", "idx_orders_customer",
+    new[] { "CustomerId", "OrderDate" });</code></pre>
+                </section>
+
+                <!-- ─── 30. Query Repository ─── -->
+                <section id="rdbms-query-repo">
+                    <h2>Query Repository</h2>
+                    <p>
+                        <code>DatabaseQueryRepositoryHelper</code> provides a static, lazily-initialized cache of
+                        pre-built SQL queries keyed by <code>(DataSourceType, Sqlcommandtype)</code>.
+                        The cache is populated at class-initialisation time from <code>CreateQuerySqlRepos()</code>.
+                    </p>
+
+                    <h3>API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GetQuery(DataSourceType, Sqlcommandtype)</code></td>
+                                <td><code>string</code></td>
+                                <td>Returns the cached SQL for the specified DB + command type, or <code>string.Empty</code> if absent.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetQueriesForDatabase(DataSourceType)</code></td>
+                                <td><code>Dictionary&lt;Sqlcommandtype,&nbsp;string&gt;</code></td>
+                                <td>Returns all pre-built queries available for one database type.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetDatabasesForQueryType(Sqlcommandtype)</code></td>
+                                <td><code>List&lt;DataSourceType&gt;</code></td>
+                                <td>Lists every database type that has a pre-built query of the specified command type.</td>
+                            </tr>
+                            <tr>
+                                <td><code>QueryExists(DataSourceType, Sqlcommandtype)</code></td>
+                                <td><code>bool</code></td>
+                                <td>Fast lookup — returns <code>true</code> if the (DB, type) combination has a cached query.</td>
+                            </tr>
+                            <tr>
+                                <td><code>IsSqlStatementValid(string)</code></td>
+                                <td><code>bool</code></td>
+                                <td>Checks whether a string contains at least one recognised SQL keyword
+                                    (SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, SHOW, PRAGMA, etc.).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Check if a pre-built query exists, then fetch it
+if (DatabaseQueryRepositoryHelper.QueryExists(
+        DataSourceType.SqlServer, Sqlcommandtype.getTable))
+{
+    string sql = DatabaseQueryRepositoryHelper.GetQuery(
+        DataSourceType.SqlServer, Sqlcommandtype.getTable);
+}
+
+// Get all pre-built queries for MySQL
+var mysqlQueries = DatabaseQueryRepositoryHelper.GetQueriesForDatabase(
+    DataSourceType.Mysql);
+
+// Basic validation guard before executing user-supplied SQL
+bool valid = DatabaseQueryRepositoryHelper.IsSqlStatementValid(userInputSql);</code></pre>
+                </section>
+
+                <!-- ─── 31. DML Helpers ─── -->
+                <section id="rdbms-dml">
+                    <h2>DML Helpers</h2>
+                    <p>
+                        <code>DatabaseDMLHelper</code> is the top-level DML facade. It exposes all data-manipulation
+                        query generators without requiring callers to know which specialised sub-class to use.
+                        All methods are <code>static</code>.
+                    </p>
+
+                    <h3>Basic Operations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateInsertQuery(DataSourceType, string&nbsp;tableName, Dictionary&lt;string,object&gt;&nbsp;data)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates an INSERT statement with inline values for the specified engine.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateUpdateQuery(DataSourceType, string&nbsp;tableName, Dictionary&lt;string,object&gt;&nbsp;data, Dictionary&lt;string,object&gt;&nbsp;conditions)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates an UPDATE … SET … WHERE statement.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateDeleteQuery(DataSourceType, string&nbsp;tableName, Dictionary&lt;string,object&gt;&nbsp;conditions)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates a DELETE FROM … WHERE statement.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Bulk Operations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateBulkInsertQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;columns, int&nbsp;batchSize&nbsp;=&nbsp;1000)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates optimised bulk-insert SQL; uses engine-specific multi-row INSERT syntax where available.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateUpsertQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;keyColumns, IEnumerable&lt;string&gt;&nbsp;updateColumns, IEnumerable&lt;string&gt;&nbsp;insertColumns)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates a MERGE / INSERT ON CONFLICT / INSERT OR REPLACE statement depending on the engine.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateBulkDeleteQuery(DataSourceType, string&nbsp;tableName, string&nbsp;keyColumn, int&nbsp;batchSize&nbsp;=&nbsp;1000)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates a batched DELETE using an IN-clause with the specified batch size.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Advanced Query Generation</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateSelectQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;columns, string&nbsp;whereClause, string&nbsp;orderBy, int?&nbsp;pageNumber, int?&nbsp;pageSize)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates a SELECT with optional filtering, ordering, and offset-based pagination.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateJoinQuery(DataSourceType, JoinSpecification)</code></td>
+                                <td><code>string</code></td>
+                                <td>Builds a multi-table JOIN query from a <code>JoinSpecification</code> descriptor.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateAggregationQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;selectColumns, IEnumerable&lt;string&gt;&nbsp;groupByColumns, string&nbsp;havingClause, string&nbsp;whereClause)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates a GROUP BY / HAVING aggregation query.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateWindowFunctionQuery(DataSourceType, string&nbsp;tableName, WindowFunctionSpec)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates OVER (PARTITION BY … ORDER BY …) window-function SQL for supporting engines.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateConditionalInsertQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;columns, IEnumerable&lt;string&gt;&nbsp;values, IEnumerable&lt;string&gt;&nbsp;conflictColumns)</code></td>
+                                <td><code>string</code></td>
+                                <td>INSERT IF NOT EXISTS — uses engine-specific conditional insert syntax.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateExistsQuery(DataSourceType, string&nbsp;mainTable, string&nbsp;subqueryTable, string&nbsp;joinCondition)</code></td>
+                                <td><code>string</code></td>
+                                <td>Generates an optimised EXISTS subquery, preferred over IN for large datasets.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Parameterized Queries</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateParameterizedInsertQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;columns)</code></td>
+                                <td><code>string</code></td>
+                                <td>INSERT with engine-correct parameter placeholders (<code>@param</code>, <code>:param</code>, <code>?</code>).</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateParameterizedUpdateQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;updateColumns, IEnumerable&lt;string&gt;&nbsp;whereColumns)</code></td>
+                                <td><code>string</code></td>
+                                <td>UPDATE … SET with parameterized SET and WHERE clauses.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateParameterizedDeleteQuery(DataSourceType, string&nbsp;tableName, IEnumerable&lt;string&gt;&nbsp;whereColumns)</code></td>
+                                <td><code>string</code></td>
+                                <td>DELETE FROM with parameterized WHERE clause.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Basic INSERT
+string insertSql = DatabaseDMLHelper.GenerateInsertQuery(
+    DataSourceType.Mysql, "Orders",
+    new Dictionary&lt;string, object&gt; { ["CustomerId"] = 42, ["Total"] = 99.99 });
+
+// Paginated SELECT
+string pageSql = DatabaseDMLHelper.GenerateSelectQuery(
+    DataSourceType.Postgre, "Orders",
+    columns: new[] { "Id", "CustomerId", "Total" },
+    whereClause: "Total &gt; 50",
+    orderBy: "Id",
+    pageNumber: 2, pageSize: 25);
+
+// Parameterized INSERT — safe against SQL injection
+string paramSql = DatabaseDMLHelper.GenerateParameterizedInsertQuery(
+    DataSourceType.SqlServer, "Orders",
+    new[] { "CustomerId", "Total", "CreatedAt" });
+// SQL Server → INSERT INTO Orders (CustomerId, Total, CreatedAt)
+//              VALUES (@CustomerId, @Total, @CreatedAt)
+
+// UPSERT
+string upsertSql = DatabaseDMLHelper.GenerateUpsertQuery(
+    DataSourceType.Postgre, "Products",
+    keyColumns:    new[] { "Id" },
+    updateColumns: new[] { "Name", "Price" },
+    insertColumns: new[] { "Id", "Name", "Price" });</code></pre>
+                </section>
+
+                <!-- ─── 32. Entity Helpers ─── -->
+                <section id="rdbms-entity">
+                    <h2>Entity Helpers</h2>
+                    <p>
+                        <code>DatabaseEntityHelper</code> is the facade for all entity-oriented operations —
+                        SQL generation from <code>EntityStructure</code>, structural validation, quality analysis, and
+                        field-factory helpers. It delegates to specialised sub-classes.
+                    </p>
+
+                    <h3>SQL Generation (via DatabaseEntitySqlGenerator)</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GenerateInsertWithValues(EntityStructure, Dictionary&lt;string,object&gt;&nbsp;values)</code></td>
+                                <td><code>(string&nbsp;Sql, Dictionary&lt;string,object&gt;&nbsp;Parameters, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Generates a parameterized INSERT and returns both the SQL and the parameter dictionary, ready for execution.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateUpdateEntityWithValues(EntityStructure, Dictionary&lt;string,object&gt;&nbsp;values, Dictionary&lt;string,object&gt;&nbsp;conditions)</code></td>
+                                <td><code>(string&nbsp;Sql, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Generates an UPDATE statement using the entity's field metadata and the supplied values and conditions.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GenerateDeleteEntityWithValues(EntityStructure, Dictionary&lt;string,object&gt;&nbsp;values)</code></td>
+                                <td><code>(string&nbsp;Sql, bool&nbsp;Success, string&nbsp;ErrorMessage)</code></td>
+                                <td>Generates a DELETE statement driven by the entity schema and the provided key values.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Validation (via DatabaseEntityValidator)</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>ValidateEntityStructure(EntityStructure)</code></td>
+                                <td><code>(bool&nbsp;IsValid, List&lt;string&gt;&nbsp;ValidationErrors)</code></td>
+                                <td>Checks entity name, field definitions, primary keys, data types, and nullability rules.
+                                    Returns a structured error list so callers can surface specific problems.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Analysis (via DatabaseEntityAnalyzer)</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GetEntityCompatibilityInfo(EntityStructure)</code></td>
+                                <td><code>Dictionary&lt;string,object&gt;</code></td>
+                                <td>Returns a dictionary of compatibility flags per database engine (e.g. which engines support all types used in the entity).</td>
+                            </tr>
+                            <tr>
+                                <td><code>SuggestEntityImprovements(EntityStructure)</code></td>
+                                <td><code>List&lt;string&gt;</code></td>
+                                <td>Analyses the entity and returns a list of human-readable improvement suggestions
+                                    (missing primary key, over-long strings, no index on FK columns, etc.).</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetEntityStatistics(EntityStructure)</code></td>
+                                <td><code>Dictionary&lt;string,object&gt;</code></td>
+                                <td>Returns field count, key count, nullable count, unique-field count, and other structural statistics.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Field Factory (via DatabaseEntityTypeHelper)</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>CreateBasicField(string&nbsp;FieldName, string&nbsp;Fieldtype, bool&nbsp;allowNull&nbsp;=&nbsp;true, bool&nbsp;isKey&nbsp;=&nbsp;false)</code></td>
+                                <td><code>EntityField</code></td>
+                                <td>Creates an <code>EntityField</code> with sensible defaults. Use when programmatically building entity structures.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Validate before persisting schema changes
+var (isValid, errors) = DatabaseEntityHelper.ValidateEntityStructure(entity);
+if (!isValid)
+    foreach (var e in errors) Console.WriteLine(e);
+
+// Generate a parameterized INSERT and execute it
+var (sql, parameters, ok, err) = DatabaseEntityHelper.GenerateInsertWithValues(
+    entity,
+    new Dictionary&lt;string, object&gt;
+    {
+        ["CustomerId"] = 42,
+        ["OrderDate"] = DateTime.UtcNow,
+        ["Total"] = 199.99
+    });
+if (ok)
+    await connection.ExecuteAsync(sql, parameters);
+
+// Get improvement suggestions for a schema review
+var suggestions = DatabaseEntityHelper.SuggestEntityImprovements(entity);
+foreach (var suggestion in suggestions)
+    Console.WriteLine(suggestion);
+
+// Build a field programmatically
+var pk = DatabaseEntityHelper.CreateBasicField("OrderId", "INT", allowNull: false, isKey: true);
+entity.Fields.Add(pk);</code></pre>
+                </section>
+
+                <!-- ═══════════════════════════════════════════════════════════════════
+                     SECTION GROUP 4 — UniversalDataSourceHelpers
+                ═══════════════════════════════════════════════════════════════════ -->
+
+                <!-- ─── 33. UniversalDataSourceHelpers Overview ─── -->
+                <section id="udsh-overview">
+                    <h2>UniversalDataSourceHelpers Overview</h2>
+                    <p>
+                        The <strong>UniversalDataSourceHelpers</strong> framework is the next-generation abstraction
+                        layer for BeepDM, replacing the RDBMS-only legacy helpers with a datasource-agnostic pattern
+                        that covers 40+ datasource types through a single consistent interface.
+                    </p>
+
+                    <div class="note">
+                        <strong>Source location</strong>
+                        <code>DataManagementEngineStandard/Helpers/UniversalDataSourceHelpers/</code>
+                    </div>
+
+                    <h3>Folder Map</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Folder / File</th><th>Class(es)</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td>Core/DataSourceHelperFactory.cs</td><td><code>DataSourceHelperFactory</code></td><td>Creates the correct <code>IDataSourceHelper</code> for any <code>DataSourceType</code></td></tr>
+                            <tr><td>Core/GeneralDataSourceHelper.cs</td><td><code>GeneralDataSourceHelper</code></td><td>Runtime delegate wrapper — picks the right helper and forwards all calls</td></tr>
+                            <tr><td>Core/DefaultDataSourceHelper.cs</td><td><code>DefaultDataSourceHelper</code></td><td>Fallback helper for unknown / unregistered datasource types</td></tr>
+                            <tr><td>RdbmsHelpers/RdbmsHelper.cs</td><td><code>RdbmsHelper</code></td><td>Unified RDBMS helper (SQL Server, MySQL, PostgreSQL, Oracle, SQLite, …)</td></tr>
+                            <tr><td>MongoDBHelpers/MongoDBHelper.cs</td><td><code>MongoDBHelper</code></td><td>MongoDB, CouchDB, RavenDB, Couchbase, ArangoDB, Firebase, DynamoDB</td></tr>
+                            <tr><td>RedisHelpers/RedisHelper.cs</td><td><code>RedisHelper</code></td><td>Redis, Memcached, Hazelcast, GridGain, ApacheIgnite, in-memory caches</td></tr>
+                            <tr><td>CassandraHelpers/CassandraHelper.cs</td><td><code>CassandraHelper</code></td><td>Cassandra, ClickHouse (column-family)</td></tr>
+                            <tr><td>GraphHelpers/GraphDbHelper.cs</td><td><code>GraphDbHelper</code></td><td>Neo4j, TigerGraph, JanusGraph</td></tr>
+                            <tr><td>SearchHelpers/SearchEngineHelper.cs</td><td><code>SearchEngineHelper</code></td><td>Elasticsearch, Solr</td></tr>
+                            <tr><td>TimeSeriesHelpers/TimeSeriesHelper.cs</td><td><code>TimeSeriesHelper</code></td><td>InfluxDB, TimeScale</td></tr>
+                            <tr><td>VectorHelpers/VectorDbHelper.cs</td><td><code>VectorDbHelper</code></td><td>Pinecone, Qdrant, Weaviate, Milvus, Zilliz, Vespa, RedisVector, …</td></tr>
+                            <tr><td>StreamingHelpers/StreamingHelper.cs</td><td><code>StreamingHelper</code></td><td>Kafka, Kinesis, EventHub, Pulsar, RabbitMQ</td></tr>
+                            <tr><td>FileHelpers/FileFormatHelper.cs</td><td><code>FileFormatHelper</code></td><td>CSV, JSON, XML, Parquet, Avro, ORC, Excel file-based sources</td></tr>
+                            <tr><td>Analysis/RelationshipInferencer.cs</td><td><code>RelationshipInferencer</code></td><td>Infers One-to-One / One-to-Many / Many-to-Many from POCO type graphs</td></tr>
+                            <tr><td>Analysis/NavigationPropertyDetector.cs</td><td><code>NavigationPropertyDetector</code></td><td>Detects collection vs. single-reference navigation properties</td></tr>
+                            <tr><td>Conversion/PocoToEntityConverter.cs</td><td><code>PocoToEntityConverter</code></td><td>Converts C# POCO classes → <code>EntityStructure</code> with DataAnnotations support</td></tr>
+                            <tr><td>Mapping/RelationshipToEntityMapper.cs</td><td><code>RelationshipToEntityMapper</code></td><td>Maps inferred relationships onto <code>EntityStructure</code> relation fields</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ─── 34. IDataSourceHelper Interface ─── -->
+                <section id="udsh-interface">
+                    <h2>IDataSourceHelper Interface</h2>
+                    <p>
+                        Every datasource helper implements <code>IDataSourceHelper</code>. Callers code against this
+                        interface and never need to reference a specific helper class directly.
+                    </p>
+
+                    <h3>Identity &amp; Capabilities</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Member</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SupportedType</code></td><td><code>DataSourceType</code></td><td>The datasource type this helper is configured for.</td></tr>
+                            <tr><td><code>Name</code></td><td><code>string</code></td><td>Human-readable name (e.g. <code>"MongoDB"</code>, <code>"Redis"</code>).</td></tr>
+                            <tr><td><code>Capabilities</code></td><td><code>DataSourceCapabilities</code></td><td>Capability flags for this datasource (from <code>DataSourceCapabilityMatrix</code>).</td></tr>
+                            <tr><td><code>SupportsCapability(CapabilityType)</code></td><td><code>bool</code></td><td>Fast runtime capability check.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Schema Operations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetSchemaQuery(string userName)</code></td><td><code>(string Query, bool Success)</code></td><td>Returns the datasource-specific command to list schemas / collections / keyspaces.</td></tr>
+                            <tr><td><code>GetTableExistsQuery(string tableName)</code></td><td><code>(string Query, bool Success)</code></td><td>Returns a command that resolves to a row if the table/collection exists.</td></tr>
+                            <tr><td><code>GetColumnInfoQuery(string tableName)</code></td><td><code>(string Query, bool Success)</code></td><td>Returns a command that lists column/field metadata for the named table.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>DDL Operations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GenerateCreateTableSql(EntityStructure, schemaName?, dataSourceType?)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>CREATE TABLE / collection from an <code>EntityStructure</code>.</td></tr>
+                            <tr><td><code>GenerateDropTableSql(tableName, schemaName?)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>DROP TABLE / collection.</td></tr>
+                            <tr><td><code>GenerateTruncateTableSql(tableName, schemaName?)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>TRUNCATE / delete all documents.</td></tr>
+                            <tr><td><code>GenerateCreateIndexSql(tableName, indexName, string[], options?)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>CREATE INDEX with optional engine-specific options dictionary.</td></tr>
+                            <tr><td><code>GenerateAddColumnSql(tableName, EntityField)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>ALTER TABLE ADD COLUMN / equivalent for schema-less stores.</td></tr>
+                            <tr><td><code>GenerateAlterColumnSql(tableName, columnName, EntityField)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>ALTER COLUMN type or nullability.</td></tr>
+                            <tr><td><code>GenerateDropColumnSql(tableName, columnName)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>DROP COLUMN.</td></tr>
+                            <tr><td><code>GenerateRenameTableSql(oldName, newName)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>RENAME TABLE / collection.</td></tr>
+                            <tr><td><code>GenerateRenameColumnSql(tableName, oldName, newName)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>RENAME COLUMN.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Constraint Operations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GenerateAddPrimaryKeySql(tableName, params string[] columns)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>Adds a primary key constraint.</td></tr>
+                            <tr><td><code>GenerateAddForeignKeySql(tableName, columns[], refTable, refColumns[])</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>Adds a foreign key constraint.</td></tr>
+                            <tr><td><code>GenerateAddConstraintSql(tableName, constraintName, definition)</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>Adds any custom constraint.</td></tr>
+                            <tr><td><code>GetPrimaryKeyQuery(tableName)</code></td><td><code>(Query, Success, ErrorMessage)</code></td><td>Returns SQL to retrieve primary key column names.</td></tr>
+                            <tr><td><code>GetForeignKeysQuery(tableName)</code></td><td><code>(Query, Success, ErrorMessage)</code></td><td>Returns SQL to retrieve foreign key definitions.</td></tr>
+                            <tr><td><code>GetConstraintsQuery(tableName)</code></td><td><code>(Query, Success, ErrorMessage)</code></td><td>Returns SQL to list all constraints on a table.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Transaction Control</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GenerateBeginTransactionSql()</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>BEGIN / START TRANSACTION statement.</td></tr>
+                            <tr><td><code>GenerateCommitSql()</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>COMMIT statement.</td></tr>
+                            <tr><td><code>GenerateRollbackSql()</code></td><td><code>(Sql, Success, ErrorMessage)</code></td><td>ROLLBACK statement.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>DML Operations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GenerateInsertSql(tableName, Dictionary&lt;string,object&gt; data)</code></td><td><code>(Sql, Parameters, Success, ErrorMessage)</code></td><td>Parameterised INSERT — returns both SQL and the parameter dictionary.</td></tr>
+                            <tr><td><code>GenerateUpdateSql(tableName, data, conditions)</code></td><td><code>(Sql, Parameters, Success, ErrorMessage)</code></td><td>Parameterised UPDATE … SET … WHERE.</td></tr>
+                            <tr><td><code>GenerateDeleteSql(tableName, conditions)</code></td><td><code>(Sql, Parameters, Success, ErrorMessage)</code></td><td>Parameterised DELETE … WHERE.</td></tr>
+                            <tr><td><code>GenerateSelectSql(tableName, columns?, conditions?, orderBy?, skip?, take?)</code></td><td><code>(Sql, Parameters, Success, ErrorMessage)</code></td><td>SELECT with optional column list, WHERE, ORDER BY, and pagination.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Utility Methods</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>QuoteIdentifier(string)</code></td><td><code>string</code></td><td>Wraps an identifier in engine-correct quotes (<code>[]</code>, <code>""</code>, <code>``</code>).</td></tr>
+                            <tr><td><code>MapClrTypeToDatasourceType(Type, size?, precision?, scale?)</code></td><td><code>string</code></td><td>Maps a .NET CLR type to the engine's native type name.</td></tr>
+                            <tr><td><code>MapDatasourceTypeToClrType(string)</code></td><td><code>Type</code></td><td>Reverse mapping — engine type name → .NET <code>Type</code>.</td></tr>
+                            <tr><td><code>ValidateEntity(EntityStructure)</code></td><td><code>(bool IsValid, List&lt;string&gt; Errors)</code></td><td>Validates an entity against the engine's naming and type rules.</td></tr>
+                            <tr><td><code>GetMaxStringSize()</code></td><td><code>int</code></td><td>Maximum allowed string/varchar length for this engine.</td></tr>
+                            <tr><td><code>GetMaxNumericPrecision()</code></td><td><code>int</code></td><td>Maximum numeric precision supported by this engine.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ─── 35. DataSourceHelperFactory ─── -->
+                <section id="udsh-factory">
+                    <h2>DataSourceHelperFactory</h2>
+                    <p>
+                        Instantiates and returns the correct <code>IDataSourceHelper</code> for any
+                        <code>DataSourceType</code>. The factory covers 60+ registered datasource types across
+                        RDBMS, NoSQL, Key-Value, Column-Family, Graph, Search, Time-Series, Vector, Streaming,
+                        Big-Data, and File categories.
+                    </p>
+
+                    <h3>Direct Usage</h3>
+                    <pre><code class="language-csharp">// Inject IDMEEditor via DI, then create the factory
+var factory = new DataSourceHelperFactory(dmeEditor);
+IDataSourceHelper helper = factory.CreateHelper(DataSourceType.MongoDB);
+
+// All operations go through IDataSourceHelper
+var (sql, ok) = helper.GetSchemaQuery(userName: null);
+var (insertSql, parms, success, err) = helper.GenerateInsertSql(
+    "Orders",
+    new Dictionary&lt;string, object&gt; { ["CustomerId"] = 42, ["Total"] = 99.99 });
+</code></pre>
+
+                    <h3>GeneralDataSourceHelper — Runtime Delegate</h3>
+                    <p>
+                        <code>GeneralDataSourceHelper</code> wraps the factory: it accepts a
+                        <code>DataSourceType</code> in its constructor, resolves the correct helper internally, and
+                        forwards every <code>IDataSourceHelper</code> call to it. Use this when the datasource type
+                        is only known at runtime.
+                    </p>
+                    <pre><code class="language-csharp">// Type resolved at runtime
+var helper = new GeneralDataSourceHelper(DataSourceType.Redis, dmeEditor);
+string quoteChar = helper.QuoteIdentifier("myKey"); // uses RedisHelper internally
+</code></pre>
+
+                    <h3>Helper-to-Engine Mapping</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Helper Class</th><th>Engines Covered</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RdbmsHelper</code></td><td>SQL Server, MySQL, PostgreSQL, Oracle, SQLite, DB2, Firebird, HANA, Teradata, Vertica, AzureSQL, AWSRDS, Snowflake, CockroachDB, Spanner, DuckDB, MariaDB, Hadoop, BigQuery, Redshift, Athena, DataBricks, …</td></tr>
+                            <tr><td><code>MongoDBHelper</code></td><td>MongoDB, CouchDB, RavenDB, Couchbase, ArangoDB, OrientDB, LiteDB, Firebase, DynamoDB</td></tr>
+                            <tr><td><code>RedisHelper</code></td><td>Redis, Memcached, Hazelcast, GridGain, ApacheIgnite, ChronicleMap, RealIM, InMemoryCache, CachedMemory</td></tr>
+                            <tr><td><code>CassandraHelper</code></td><td>Cassandra, ClickHouse</td></tr>
+                            <tr><td><code>GraphDbHelper</code></td><td>Neo4j, TigerGraph, JanusGraph</td></tr>
+                            <tr><td><code>SearchEngineHelper</code></td><td>Elasticsearch, Solr</td></tr>
+                            <tr><td><code>TimeSeriesHelper</code></td><td>InfluxDB, TimeScale</td></tr>
+                            <tr><td><code>VectorDbHelper</code></td><td>Pinecone, Qdrant, Weaviate, Milvus, Zilliz, Vespa, ShapVector, RedisVector</td></tr>
+                            <tr><td><code>StreamingHelper</code></td><td>Kafka, Kinesis, EventHub, Pulsar, RabbitMQ</td></tr>
+                            <tr><td><code>FileFormatHelper</code></td><td>CSV, JSON, XML, Parquet, Avro, ORC, Feather, Excel</td></tr>
+                            <tr><td><code>DefaultDataSourceHelper</code></td><td>Fallback for any unregistered type</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- ─── 36. DataSourceCapabilityMatrix ─── -->
+                <section id="udsh-capabilities">
+                    <h2>DataSourceCapabilityMatrix</h2>
+                    <p>
+                        A <strong>static matrix</strong> that maps every registered <code>DataSourceType</code> to its
+                        <code>DataSourceCapabilities</code> flags. Use it to check at runtime whether a feature is
+                        available before attempting to generate SQL that relies on it.
+                    </p>
+
+                    <h3>API</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DataSourceCapabilityMatrix.Supports(DataSourceType, string capabilityName)</code></td><td><code>bool</code></td><td>Returns <code>true</code> if the datasource supports the named capability.</td></tr>
+                            <tr><td><code>DataSourceCapabilityMatrix.GetCapabilities(DataSourceType)</code></td><td><code>DataSourceCapabilities</code></td><td>Returns the full capabilities object for the specified datasource type.</td></tr>
+                            <tr><td><code>DataSourceCapabilityMatrix.GetDatasourcesSupportingCapability(string capabilityName)</code></td><td><code>List&lt;DataSourceType&gt;</code></td><td>Lists every datasource type that supports the named capability.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Selected Capability Names</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Capability</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SupportsTransactions</code></td><td>ACID multi-statement transaction support</td></tr>
+                            <tr><td><code>SupportsJoins</code></td><td>SQL-style JOIN operations</td></tr>
+                            <tr><td><code>SupportsFullTextSearch</code></td><td>Native full-text / semantic search</td></tr>
+                            <tr><td><code>IsSchemaEnforced</code></td><td>Requires a defined schema before writes</td></tr>
+                            <tr><td><code>SupportsTTL</code></td><td>Time-To-Live on records / keys</td></tr>
+                            <tr><td><code>SupportsAggregations</code></td><td>GROUP BY / aggregation pipeline</td></tr>
+                            <tr><td><code>SupportsWindowFunctions</code></td><td>SQL OVER () window functions</td></tr>
+                            <tr><td><code>SupportsVectorSearch</code></td><td>Approximate nearest-neighbour search</td></tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Check before generating JOIN SQL
+bool canJoin = DataSourceCapabilityMatrix.Supports(
+    DataSourceType.Cassandra, "SupportsJoins"); // false
+
+// Get all FTS-capable datasources
+var ftsSources = DataSourceCapabilityMatrix
+    .GetDatasourcesSupportingCapability("SupportsFullTextSearch");
+// → [ElasticSearch, Solr, MongoDB, PostgreSQL, ClickHouse, …]
+
+// Graceful degradation
+var caps = DataSourceCapabilityMatrix.GetCapabilities(type);
+string query = caps.SupportsJoins
+    ? GenerateJoinSql()
+    : GenerateDenormalizedSql();
+</code></pre>
+                </section>
+
+                <!-- ─── 37. NoSQL Helpers ─── -->
+                <section id="udsh-nosql">
+                    <h2>NoSQL Helpers</h2>
+                    <p>
+                        The document, key-value, and column-family helpers all implement
+                        <code>IDataSourceHelper</code> but translate every call into the native command
+                        syntax of their engine rather than SQL.
+                    </p>
+
+                    <h3>MongoDBHelper</h3>
+                    <p>Covers MongoDB, CouchDB, RavenDB, Couchbase, ArangoDB, LiteDB, Firebase, DynamoDB.</p>
+                    <table class="api-table">
+                        <thead><tr><th>IDataSourceHelper method</th><th>MongoDB equivalent</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetSchemaQuery()</code></td><td><code>{ "listCollections": 1 }</code></td></tr>
+                            <tr><td><code>GetTableExistsQuery(name)</code></td><td><code>{ "listCollections": 1, "filter": { "name": "…" } }</code></td></tr>
+                            <tr><td><code>GenerateInsertSql(collection, data)</code></td><td>Returns JSON document + parameter map for <code>insertOne</code>/<code>insertMany</code></td></tr>
+                            <tr><td><code>GenerateUpdateSql(collection, data, conditions)</code></td><td>Returns <code>{ $set: {…} }</code> update document</td></tr>
+                            <tr><td><code>GenerateSelectSql(collection, …)</code></td><td>Returns MQL filter document with optional projection and sort</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>RedisHelper</h3>
+                    <p>Covers Redis, Memcached, Hazelcast, GridGain, ApacheIgnite, in-memory caches.</p>
+                    <table class="api-table">
+                        <thead><tr><th>IDataSourceHelper method</th><th>Redis command</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetSchemaQuery()</code></td><td><code>KEYS *</code></td></tr>
+                            <tr><td><code>GetTableExistsQuery(key)</code></td><td><code>EXISTS &lt;key&gt;</code></td></tr>
+                            <tr><td><code>GenerateInsertSql(key, data)</code></td><td><code>HMSET &lt;key&gt; &lt;field&gt; &lt;value&gt; …</code> or <code>SET</code> for scalar values</td></tr>
+                            <tr><td><code>GenerateSelectSql(key, …)</code></td><td><code>HGETALL &lt;key&gt;</code> or <code>GET &lt;key&gt;</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>CassandraHelper</h3>
+                    <p>Covers Cassandra and ClickHouse.</p>
+                    <table class="api-table">
+                        <thead><tr><th>Note</th><th>Detail</th></tr></thead>
+                        <tbody>
+                            <tr><td>Query language</td><td>CQL (Cassandra Query Language) — SQL-like with partition key requirements</td></tr>
+                            <tr><td>No JOINs</td><td><code>SupportsJoins = false</code>; denormalize data or use wide rows</td></tr>
+                            <tr><td>Partition key</td><td>Must include partition key in every WHERE clause</td></tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// MongoDB via the universal interface
+IDataSourceHelper mongo = factory.CreateHelper(DataSourceType.MongoDB);
+var (insertCmd, parms, ok, err) = mongo.GenerateInsertSql(
+    "Orders",
+    new Dictionary&lt;string, object&gt; { ["customerId"] = 42, ["total"] = 99.99 });
+// insertCmd → JSON document for insertOne
+
+// Redis — check exists, then SET
+IDataSourceHelper redis = factory.CreateHelper(DataSourceType.Redis);
+var (existsCmd, _) = redis.GetTableExistsQuery("session:abc123");
+// existsCmd → "EXISTS session:abc123"
+</code></pre>
+                </section>
+
+                <!-- ─── 38. Specialized Store Helpers ─── -->
+                <section id="udsh-specialized">
+                    <h2>Specialized Store Helpers</h2>
+                    <p>
+                        Helpers for graph databases, search engines, time-series databases, vector databases,
+                        and streaming platforms. These stores have fundamentally different semantics from RDBMS;
+                        the helpers reflect that by returning engine-native query fragments or indicating
+                        that DDL is managed by the engine itself.
+                    </p>
+
+                    <table class="api-table">
+                        <thead><tr><th>Helper</th><th>Engines</th><th>Key Characteristics</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>GraphDbHelper</code></td>
+                                <td>Neo4j, TigerGraph, JanusGraph</td>
+                                <td>Schemas are flexible; DDL methods return empty SQL with explanatory messages.
+                                    <code>GenerateAddColumnSql</code> produces engine-specific constraint or Gremlin syntax.</td>
+                            </tr>
+                            <tr>
+                                <td><code>SearchEngineHelper</code></td>
+                                <td>Elasticsearch, Solr</td>
+                                <td>Indexes are created implicitly. <code>GenerateAddColumnSql</code> generates
+                                    Elasticsearch mapping PUT or Solr schema API JSON for adding a new field.</td>
+                            </tr>
+                            <tr>
+                                <td><code>TimeSeriesHelper</code></td>
+                                <td>InfluxDB, TimeScale</td>
+                                <td>Optimised for time-ordered writes. DDL maps to measurement/bucket creation.
+                                    SELECT includes time-range predicates automatically when <code>skip</code>/<code>take</code> are used.</td>
+                            </tr>
+                            <tr>
+                                <td><code>VectorDbHelper</code></td>
+                                <td>Pinecone, Qdrant, Weaviate, Milvus, Zilliz, Vespa, RedisVector</td>
+                                <td>Collections are created implicitly. <code>GenerateAddColumnSql</code> produces
+                                    engine-specific payload schema or Weaviate property JSON.
+                                    INSERT returns a vector upsert command. SELECT returns an ANN search command.</td>
+                            </tr>
+                            <tr>
+                                <td><code>StreamingHelper</code></td>
+                                <td>Kafka, Kinesis, EventHub, Pulsar, RabbitMQ</td>
+                                <td>INSERT maps to publish; SELECT maps to consume/peek. No DDL beyond topic creation.</td>
+                            </tr>
+                            <tr>
+                                <td><code>FileFormatHelper</code></td>
+                                <td>CSV, JSON, XML, Parquet, Avro, ORC, Feather, Excel</td>
+                                <td>Generates file-specific read/write expressions. DDL is not applicable.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <pre><code class="language-csharp">// Graph — Neo4j via Cypher (CREATE CONSTRAINT)
+IDataSourceHelper graph = factory.CreateHelper(DataSourceType.Neo4j);
+var (cypher, ok, err) = graph.GenerateAddColumnSql("Person", ageField);
+// cypher → "CREATE CONSTRAINT ON (n:Person) ASSERT n.Age IS NOT NULL"
+
+// Vector — Weaviate property add
+IDataSourceHelper vector = factory.CreateHelper(DataSourceType.Weaviate);
+var (json, ok2, err2) = vector.GenerateAddColumnSql("Product", descField);
+// json → Weaviate PUT /v1/schema/Product/properties JSON
+
+// Check capability before generating time-series query
+bool hasTTL = DataSourceCapabilityMatrix.Supports(
+    DataSourceType.InfluxDB, "SupportsTTL"); // true
+</code></pre>
+                </section>
+
+                <!-- ─── 39. Analysis Helpers ─── -->
+                <section id="udsh-analysis">
+                    <h2>Analysis Helpers</h2>
+                    <p>
+                        The <code>Analysis/</code> sub-folder contains two static helpers for inspecting POCO type
+                        graphs and inferring relational structure — a prerequisite when converting C# object models
+                        to <code>EntityStructure</code> instances.
+                    </p>
+
+                    <h3>NavigationPropertyDetector</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>IsCollectionNavigation(PropertyInfo)</code></td>
+                                <td><code>bool</code></td>
+                                <td>Returns <code>true</code> if the property is <code>ICollection&lt;T&gt;</code>,
+                                    <code>IEnumerable&lt;T&gt;</code>, <code>List&lt;T&gt;</code>, etc.</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetNavigationPropertyType(PropertyInfo)</code></td>
+                                <td><code>NavigationPropertyType</code></td>
+                                <td>Classifies as <code>Collection</code>, <code>SingleReference</code>, or <code>Unknown</code>.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>RelationshipInferencer</h3>
+                    <p>
+                        Determines <code>RelationshipCardinality</code> from POCO property graphs using a four-tier
+                        priority: explicit attributes → naming conventions → type analysis → bidirectional detection.
+                    </p>
+                    <table class="api-table">
+                        <thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>InferCardinality(PropertyInfo sourceNavProperty, Type sourceType, Type targetType)</code></td>
+                                <td><code>RelationshipCardinality</code></td>
+                                <td>Infers the cardinality between source and target types via the given navigation property.
+                                    Returns: <code>OneToOne</code>, <code>OneToMany</code>, <code>ManyToOne</code>,
+                                    <code>ManyToMany</code>, <code>SelfReference</code>, or <code>Unknown</code>.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Inference Priority</h3>
+                    <ol>
+                        <li><strong>Explicit attributes</strong> — <code>[ForeignKey]</code>, <code>[InverseProperty]</code></li>
+                        <li><strong>Naming conventions</strong> — properties ending in <code>Id</code> / <code>ID</code></li>
+                        <li><strong>Type analysis</strong> — <code>ICollection&lt;T&gt;</code> on one side implies One-to-Many</li>
+                        <li><strong>Bidirectional detection</strong> — matching navigation property on the target type</li>
+                    </ol>
+
+                    <pre><code class="language-csharp">// Check whether Order.Customer is a collection or single ref
+var prop = typeof(Order).GetProperty("Customer");
+bool isCollection = NavigationPropertyDetector.IsCollectionNavigation(prop);
+// false — single reference
+
+// Infer cardinality between Order and Customer
+var card = RelationshipInferencer.InferCardinality(
+    typeof(Order).GetProperty("Customer"),
+    typeof(Order),
+    typeof(Customer));
+// → RelationshipCardinality.ManyToOne
+</code></pre>
+                </section>
+
+                <!-- ─── 40. POCO-to-Entity Conversion ─── -->
+                <section id="udsh-poco">
+                    <h2>POCO-to-Entity Conversion</h2>
+                    <p>
+                        <code>PocoToEntityConverter</code> (in <code>Conversion/</code>) uses reflection and
+                        DataAnnotations to automatically build a fully-configured <code>EntityStructure</code>
+                        from any C# class — eliminating the need to hand-craft entity definitions.
+                    </p>
+
+                    <h3>Key Detection Strategy</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Strategy</th><th>Behaviour</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>AttributeOnly</code></td><td>Only properties decorated with <code>[Key]</code> are treated as primary keys.</td></tr>
+                            <tr><td><code>ConventionOnly</code></td><td>Properties named <code>Id</code> or <code>{ClassName}Id</code> are auto-detected as keys.</td></tr>
+                            <tr><td><code>AttributeThenConvention</code> (default)</td><td>Tries <code>[Key]</code> first; falls back to naming convention if no attribute is found.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Supported DataAnnotations</h3>
+                    <table class="api-table">
+                        <thead><tr><th>Attribute</th><th>Effect on EntityField</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>[Key]</code></td><td>Sets <code>IsKey = true</code></td></tr>
+                            <tr><td><code>[Required]</code></td><td>Sets <code>AllowDBNull = false</code></td></tr>
+                            <tr><td><code>[StringLength(n)]</code></td><td>Sets <code>FieldSize = n</code></td></tr>
+                            <tr><td><code>[MaxLength(n)]</code></td><td>Sets <code>FieldSize = n</code></td></tr>
+                            <tr><td><code>[Range(min, max)]</code></td><td>Stores range metadata on the field</td></tr>
+                            <tr><td><code>[Column(name)]</code></td><td>Overrides the field name to the column alias</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Circular Reference Guard</h3>
+                    <p>
+                        The converter tracks visited types and halts recursion when a cycle is detected,
+                        preventing infinite loops in deeply nested object graphs.
+                    </p>
+
+                    <pre><code class="language-csharp">public class Product
+{
+    [Key]
+    public int ProductId { get; set; }
+
+    [Required, StringLength(100)]
+    public string Name { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal Price { get; set; }
+
+    public string Description { get; set; }
+}
+
+// Convert to EntityStructure in one call
+EntityStructure entity = PocoToEntityConverter.ConvertPocoToEntity&lt;Product&gt;(
+    strategy: PocoToEntityConverter.KeyDetectionStrategy.AttributeThenConvention,
+    entityName: "Products");
+
+// entity.EntityName  → "Products"
+// entity.Fields[0]   → ProductId  (IsKey=true, AllowDBNull=false)
+// entity.Fields[1]   → Name       (AllowDBNull=false, FieldSize=100)
+// entity.Fields[2]   → Price      (range metadata attached)
+// entity.Fields[3]   → Description (nullable)
+
+// Then feed directly into any helper
+IDataSourceHelper helper = new GeneralDataSourceHelper(
+    DataSourceType.Postgre, dmeEditor);
+var (createSql, ok, err) = helper.GenerateCreateTableSql(entity);
+</code></pre>
+                </section>
+
+                <!-- Navigation -->
+                <div class="nav-links">
+                    <a href="creating-custom-datasources.html"><i class="bi bi-arrow-left"></i> Creating Custom DataSources</a>
+                    <a href="advanced-tools-utilities.html">Advanced Tools &amp; Utilities <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Footer -->
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="registerbeep.html">Getting Started</a>
+                            <a href="advanced-tools-utilities.html">Advanced Tools</a>
+                        </div>
+                    </div>
+                </footer>
+
             </div>
         </main>
     </div>
     <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNavigation();
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
 </body>
 </html>

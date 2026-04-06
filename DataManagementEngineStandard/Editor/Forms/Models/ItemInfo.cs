@@ -120,6 +120,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         public object CurrentValue { get; set; }
         
         /// <summary>
+        /// Whether item currently has focus
+        /// </summary>
+        public bool HasFocus { get; set; }
+        
+        /// <summary>
         /// Whether item has validation error
         /// </summary>
         public bool HasError { get; set; }

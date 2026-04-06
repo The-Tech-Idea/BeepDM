@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOW;
@@ -33,10 +34,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #region Fields
         private readonly IDMEEditor _dmeEditor;
         private readonly ConcurrentDictionary<string, DataBlockInfo> _blocks = new();
-        private readonly ConcurrentDictionary<string, List<DataBlockRelationship>> _relationships = new();
         
         // Helper managers
-        private readonly IRelationshipManager _relationshipManager;
         private readonly IDirtyStateManager _dirtyStateManager;
         private readonly IEventManager _eventManager;
         private readonly IFormsSimulationHelper _formsSimulationHelper;
@@ -47,11 +46,51 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly ILOVManager _lovManager;
         private readonly IItemPropertyManager _itemPropertyManager;
         private readonly ITriggerManager _triggerManager;
+        private readonly ISavepointManager _savepointManager;
+        private readonly ILockManager _lockManager;
+        private readonly IQueryBuilderManager _queryBuilderManager;
+        private readonly IBlockErrorLog _errorLog;
+        private readonly IMessageQueueManager _messageManager;
+        private readonly IBlockFactory _blockFactory;
+        private readonly IBlockPropertyManager _blockPropertyManager;
+        private readonly IAlertProvider _alertProvider;
+        private readonly ISequenceProvider _sequenceProvider;
+        private readonly ITimerManager _timerManager;
+
+        // Phase 3 — multi-form
+        private readonly IFormRegistry _formRegistry;
+        private readonly IFormMessageBus _messageBus;
+        private readonly ISharedBlockManager _sharedBlockManager;
+        private readonly Stack<FormCallStackEntry> _callStack = new Stack<FormCallStackEntry>();
+        private readonly ConcurrentDictionary<string, object> _formParameters = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         
         private readonly object _lockObject = new object();
         private bool _disposed;
         private string _currentFormName;
         private string _currentBlockName;
+
+        // Phase 4 helpers
+        private readonly CrossBlockValidationManager _crossBlockValidation;
+        private readonly NavigationHistoryManager _navHistoryManager = new();
+        private readonly ConcurrentDictionary<string, EventHandler<ItemChangedEventArgs<Entity>>> _itemChangedHandlers = new();
+
+        // Master-detail: current-record change hook (Phase 7.6)
+        private readonly ConcurrentDictionary<string, EventHandler> _mdCurrentChangedHandlers = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, int> _syncSuppressCount = new(StringComparer.OrdinalIgnoreCase);
+
+        // Phase 5 — audit
+        private IAuditManager _auditManager;
+
+        // Phase 6 — security
+        private ISecurityManager _securityManager;
+
+        // Phase 7 — paging
+        private IPagingManager _pagingManager;
+        #endregion
+
+        #region Phase 4-F – Block Change Feed
+        /// <inheritdoc/>
+        public event EventHandler<BlockFieldChangedEventArgs> OnBlockFieldChanged;
         #endregion
 
         #region Properties
@@ -84,9 +123,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Gets the count of registered blocks</summary>
         public int BlockCount => _blocks.Count;
 
-        /// <summary>Gets the relationship manager</summary>
-        public IRelationshipManager RelationshipManager => _relationshipManager;
-
         /// <summary>Gets the dirty state manager</summary>
         public IDirtyStateManager DirtyStateManager => _dirtyStateManager;
 
@@ -108,6 +144,45 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Gets the trigger manager</summary>
         public ITriggerManager Triggers => _triggerManager;
 
+        /// <summary>Gets the savepoint manager</summary>
+        public ISavepointManager Savepoints => _savepointManager;
+
+        /// <summary>Gets the record locking manager</summary>
+        public ILockManager Locking => _lockManager;
+
+        /// <summary>Gets the query builder manager</summary>
+        public IQueryBuilderManager QueryBuilder => _queryBuilderManager;
+
+        /// <summary>Gets the per-block error log</summary>
+        public IBlockErrorLog ErrorLog => _errorLog;
+
+        /// <summary>Gets the message queue manager</summary>
+        public IMessageQueueManager Messages => _messageManager;
+
+        /// <summary>Gets the block factory</summary>
+        public IBlockFactory BlockFactory => _blockFactory;
+
+        /// <summary>Gets the block property manager (SET/GET_BLOCK_PROPERTY)</summary>
+        public IBlockPropertyManager BlockProperties => _blockPropertyManager;
+
+        /// <summary>Gets the alert provider for SHOW_ALERT-style dialogs</summary>
+        public IAlertProvider AlertProvider => _alertProvider;
+
+        /// <summary>Gets the sequence provider for auto-increment sequences</summary>
+        public ISequenceProvider Sequences => _sequenceProvider;
+
+        /// <summary>Gets the timer manager for CREATE/DELETE_TIMER built-ins</summary>
+        public ITimerManager Timers => _timerManager;
+
+        /// <summary>Gets the form registry for multi-form navigation (CALL_FORM / OPEN_FORM / NEW_FORM)</summary>
+        public IFormRegistry Registry => _formRegistry;
+
+        /// <summary>Gets the inter-form message bus</summary>
+        public IFormMessageBus MessageBus => _messageBus;
+
+        /// <summary>Gets the shared data block manager</summary>
+        public ISharedBlockManager SharedBlocks => _sharedBlockManager;
+
         /// <summary>Gets the configuration</summary>
         public UnitofWorksManagerConfiguration Configuration => _configurationManager?.Configuration;
         #endregion
@@ -119,7 +194,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public FormsManager(
             IDMEEditor dmeEditor,
-            IRelationshipManager relationshipManager = null,
             IDirtyStateManager dirtyStateManager = null,
             IEventManager eventManager = null,
             IFormsSimulationHelper formsSimulationHelper = null,
@@ -129,12 +203,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             IValidationManager validationManager = null,
             ILOVManager lovManager = null,
             IItemPropertyManager itemPropertyManager = null,
-            ITriggerManager triggerManager = null)
+            ITriggerManager triggerManager = null,
+            ISavepointManager savepointManager = null,
+            ILockManager lockManager = null,
+            IQueryBuilderManager queryBuilderManager = null,
+            IBlockErrorLog errorLog = null,
+            IMessageQueueManager messageManager = null,
+            IBlockFactory blockFactory = null,
+            IBlockPropertyManager blockPropertyManager = null,
+            IAlertProvider alertProvider = null,
+            ISequenceProvider sequenceProvider = null,
+            ITimerManager timerManager = null,
+            IFormRegistry formRegistry = null,
+            IFormMessageBus messageBus = null,
+            ISharedBlockManager sharedBlockManager = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             
             // Initialize helper managers with defaults if not provided
-            _relationshipManager = relationshipManager ?? new RelationshipManager(_dmeEditor, _blocks, _relationships);
             _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(_dmeEditor, _blocks, GetDetailBlocks, GetBlock);
             _eventManager = eventManager ?? new EventManager(_dmeEditor);
             _formsSimulationHelper = formsSimulationHelper ?? new FormsSimulationHelper(_dmeEditor, _blocks);
@@ -145,15 +231,34 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _lovManager = lovManager ?? new LOVManager(_dmeEditor, _blocks);
             _itemPropertyManager = itemPropertyManager ?? new ItemPropertyManager(_dmeEditor);
             _triggerManager = triggerManager ?? new TriggerManager(_dmeEditor, _blocks);
+            _savepointManager = savepointManager ?? new SavepointManager();
+            _lockManager = lockManager ?? new LockManager();
+            _queryBuilderManager = queryBuilderManager ?? new QueryBuilderManager();
+            _errorLog = errorLog ?? new BlockErrorLog();
+            _messageManager = messageManager ?? new MessageQueueManager();
+            _blockFactory = blockFactory ?? new BlockFactory(_dmeEditor);
+            _blockPropertyManager = blockPropertyManager ?? new Forms.Helpers.BlockPropertyManager(_blocks);
+            _alertProvider = alertProvider ?? new Forms.Helpers.DefaultAlertProvider();
+            _sequenceProvider = sequenceProvider ?? new Forms.Helpers.SequenceProvider();
+            _timerManager = timerManager ?? new Forms.Helpers.TimerManager();
+            _timerManager.TimerFired += OnTimerManagerFired;
+            _formRegistry = formRegistry ?? new Forms.Helpers.FormRegistry();
+            _messageBus = messageBus ?? new Forms.Helpers.FormMessageBus();
+            _securityManager = new Forms.Helpers.SecurityManager();
+            _pagingManager   = new Forms.Helpers.PagingManager();
 
             InitializeManager();
+            InitializeTriggerChaining();
+            InitializeAudit();
+            InitializeSecurity();
+            InitializePerformance();
         }
 
         /// <summary>
         /// Simple constructor for backward compatibility
         /// </summary>
         public FormsManager(IDMEEditor dmeEditor) 
-            : this(dmeEditor, null, null, null, null, null, null, null, null, null, null, null)
+            : this(dmeEditor, null)
         {
         }
         #endregion
@@ -182,6 +287,50 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (unitOfWork != null)
                 {
                     _eventManager.SubscribeToUnitOfWorkEvents(unitOfWork, blockName);
+
+                    EventHandler<ItemChangedEventArgs<Entity>> handler = (s, e) =>
+                    {
+                        var idx = unitOfWork.Units != null
+                            ? unitOfWork.Units.IndexOf(e.Item)
+                            : -1;
+                        var newVal = e.Item != null
+                            ? typeof(Entity).GetProperty(e.PropertyName
+                                ?? string.Empty,
+                                System.Reflection.BindingFlags.Public |
+                                System.Reflection.BindingFlags.Instance
+                                | System.Reflection.BindingFlags.IgnoreCase)
+                                ?.GetValue(e.Item)
+                            : null;
+
+                        OnBlockFieldChanged?.Invoke(this, new BlockFieldChangedEventArgs
+                        {
+                            BlockName   = blockName,
+                            FieldName   = e.PropertyName,
+                            NewValue    = newVal,
+                            RecordIndex = idx
+                        });
+
+                        if (!string.IsNullOrWhiteSpace(e.PropertyName))
+                        {
+                            _validationManager.ValidateItem(blockName, e.PropertyName, newVal, ValidationTiming.OnChange);
+
+                            if (_lovManager.HasLOV(blockName, e.PropertyName))
+                            {
+                                _ = _lovManager.ValidateLOVValueAsync(blockName, e.PropertyName, newVal);
+                            }
+                        }
+                    };
+                    unitOfWork.ItemChanged += handler;
+                    _itemChangedHandlers[blockName] = handler;
+
+                    // Form-level coordination uses the UoW-owned master/detail state.
+                    EventHandler mdHandler = async (s, e) =>
+                    {
+                        if (!IsSyncSuppressed(blockName) && GetDetailBlocks(blockName).Any())
+                            await SynchronizeDetailBlocksAsync(blockName);
+                    };
+                    unitOfWork.CurrentChanged += mdHandler;
+                    _mdCurrentChangedHandlers[blockName] = mdHandler;
                 }
 
                 // Apply configuration defaults
@@ -203,6 +352,76 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
+        /// Registers a block by resolving UoW + EntityStructure from connection name and entity name.
+        /// Uses BlockFactory to create the block, then delegates to RegisterBlock.
+        /// </summary>
+        public async Task<bool> RegisterBlockFromSourceAsync(
+            string blockName, string connectionName, string entityName,
+            bool isMasterBlock = false, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(blockName) ||
+                string.IsNullOrWhiteSpace(connectionName) ||
+                string.IsNullOrWhiteSpace(entityName))
+                return false;
+
+            try
+            {
+                var (uow, structure) = await _blockFactory
+                    .CreateBlockAsync(connectionName, entityName, ct)
+                    .ConfigureAwait(false);
+
+                if (uow == null || structure == null)
+                {
+                    Status = $"Block '{blockName}': could not resolve '{connectionName}.{entityName}'";
+                    return false;
+                }
+
+                RegisterBlock(blockName, uow, structure, connectionName, isMasterBlock);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogError($"RegisterBlockFromSourceAsync failed for '{blockName}'", ex, blockName);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Creates a named savepoint for the specified block capturing current record index.
+        /// Convenience wrapper around Savepoints.CreateSavepoint (Phase 6).
+        /// </summary>
+        public string CreateBlockSavepoint(string blockName, string savepointName = null)
+        {
+            var block = GetBlock(blockName);
+            if (block?.UnitOfWork == null)
+                return null;
+
+            bool isDirty = block.UnitOfWork.IsDirty;
+            int recordCount = block.UnitOfWork.TotalItemCount;
+            int recordIndex = 0;
+            try
+            {
+                var current = block.UnitOfWork.CurrentItem;
+                if (current != null && block.UnitOfWork.Units != null)
+                    recordIndex = block.UnitOfWork.Units.IndexOf(current);
+            }
+            catch { /* Units may be null before first query */ }
+
+            return _savepointManager.CreateSavepoint(
+                blockName, savepointName, recordIndex, recordCount, isDirty);
+        }
+
+        /// <summary>
+        /// Rolls back a block to a previously created savepoint (Phase 6).
+        /// </summary>
+        public async Task<bool> RollbackToSavepointAsync(string blockName, string savepointName,
+            CancellationToken ct = default)
+        {
+            return await _savepointManager.RollbackToSavepointAsync(blockName, savepointName, ct)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Unregisters a data block from the manager
         /// </summary>
         public bool UnregisterBlock(string blockName)
@@ -219,7 +438,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 _eventManager.TriggerBlockLeave(blockName);
 
                 // Remove relationships involving this block
-                _relationshipManager.RemoveBlockRelationships(blockName);
+                RemoveBlockRelationships(blockName);
 
                 // Unsubscribe from events
                 if (blockInfo.UnitOfWork != null)
@@ -229,6 +448,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Remove from collections
                 _blocks.TryRemove(blockName, out _);
+                _navHistoryManager.RemoveBlock(blockName);
+                if (_itemChangedHandlers.TryRemove(blockName, out var itemChangedHandler) && blockInfo.UnitOfWork != null)
+                    blockInfo.UnitOfWork.ItemChanged -= itemChangedHandler;
+                if (_mdCurrentChangedHandlers.TryRemove(blockName, out var mdH) && blockInfo.UnitOfWork != null)
+                    blockInfo.UnitOfWork.CurrentChanged -= mdH;
+                _syncSuppressCount.TryRemove(blockName, out _);
 
                 Status = $"Block '{blockName}' unregistered successfully";
                 LogOperation($"Block '{blockName}' unregistered", blockName);
@@ -294,16 +519,35 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public void CreateMasterDetailRelation(string masterBlockName, string detailBlockName, 
             string masterKeyField, string detailForeignKeyField, RelationshipType relationshipType = RelationshipType.OneToMany)
         {
-            _relationshipManager.CreateMasterDetailRelation(masterBlockName, detailBlockName, 
-                masterKeyField, detailForeignKeyField, relationshipType);
+            var masterBlock = GetBlock(masterBlockName)
+                ?? throw new InvalidOperationException($"Master block '{masterBlockName}' is not registered");
+            var detailBlock = GetBlock(detailBlockName)
+                ?? throw new InvalidOperationException($"Detail block '{detailBlockName}' is not registered");
+
+            masterBlock.UnitOfWork.RegisterDetail(detailBlock.UnitOfWork, masterKeyField, detailForeignKeyField);
+
+            detailBlock.MasterBlockName = masterBlockName;
+            detailBlock.MasterKeyField = masterKeyField;
+            detailBlock.ForeignKeyField = detailForeignKeyField;
+            detailBlock.IsMasterBlock = false;
         }
 
         /// <summary>
-        /// Synchronizes detail blocks when master record changes
+        /// Synchronizes detail blocks when master record changes.
+        /// Fires ON-POPULATE-DETAILS trigger before delegating to the relationship manager.
         /// </summary>
         public async Task SynchronizeDetailBlocksAsync(string masterBlockName)
         {
-            await _relationshipManager.SynchronizeDetailBlocksAsync(masterBlockName);
+            // Fire ON-POPULATE-DETAILS to allow triggers to intervene
+            await _triggerManager.FireBlockTriggerAsync(
+                TriggerType.OnPopulateDetails, masterBlockName,
+                TriggerContext.ForBlock(TriggerType.OnPopulateDetails, masterBlockName, null, _dmeEditor));
+
+            var masterBlock = GetBlock(masterBlockName);
+            if (masterBlock?.UnitOfWork != null)
+            {
+                await masterBlock.UnitOfWork.SynchronizeDetailsAsync();
+            }
         }
 
         /// <summary>
@@ -311,7 +555,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public List<string> GetDetailBlocks(string masterBlockName)
         {
-            return _relationshipManager.GetDetailBlocks(masterBlockName);
+            return _blocks.Values
+                .Where(block => string.Equals(block.MasterBlockName, masterBlockName, StringComparison.OrdinalIgnoreCase))
+                .Select(block => block.BlockName)
+                .ToList();
         }
 
         /// <summary>
@@ -319,10 +566,43 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public string GetMasterBlock(string detailBlockName)
         {
-            return _relationshipManager.GetMasterBlock(detailBlockName);
+            return GetBlock(detailBlockName)?.MasterBlockName;
         }
 
         #endregion
+
+        private void RemoveBlockRelationships(string blockName)
+        {
+            var blockInfo = GetBlock(blockName);
+            if (blockInfo?.UnitOfWork == null)
+                return;
+
+            // If this block is a master, detach all registered detail UoWs and clear their block metadata.
+            foreach (var detailBlockName in GetDetailBlocks(blockName))
+            {
+                var detailBlock = GetBlock(detailBlockName);
+                if (detailBlock?.UnitOfWork != null)
+                {
+                    blockInfo.UnitOfWork.UnregisterDetail(detailBlock.UnitOfWork);
+                    detailBlock.MasterBlockName = null;
+                    detailBlock.MasterKeyField = null;
+                    detailBlock.ForeignKeyField = null;
+                }
+            }
+
+            // If this block is a detail, detach it from its master and clear its own metadata.
+            var masterBlockName = blockInfo.MasterBlockName;
+            if (!string.IsNullOrWhiteSpace(masterBlockName))
+            {
+                var masterBlock = GetBlock(masterBlockName);
+                masterBlock?.UnitOfWork?.UnregisterDetail(blockInfo.UnitOfWork);
+                blockInfo.MasterBlockName = null;
+                blockInfo.MasterKeyField = null;
+                blockInfo.ForeignKeyField = null;
+            }
+
+            blockInfo.UnitOfWork.UnregisterAllDetails();
+        }
 
         #region Dirty State Management (Delegated)
 
@@ -363,9 +643,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 var result = await InsertRecordEnhancedAsync(blockName, record);
-                Status = result.Flag == Errors.Ok ? 
-                    $"Record inserted successfully in block '{blockName}'" : 
-                    $"Error inserting record: {result.Message}";
+                if (result.Flag == Errors.Ok)
+                {
+                    Status = $"Record inserted successfully in block '{blockName}'";
+                    _messageManager?.ShowSuccessMessage(blockName, Status);
+                }
+                else
+                {
+                    Status = $"Error inserting record: {result.Message}";
+                    _messageManager?.ShowErrorMessage(blockName, Status);
+                }
                 return result.Flag == Errors.Ok;
             }
             catch (Exception ex)
@@ -391,6 +678,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
+                // CRUD flag guard (Phase 2)
+                if (!blockInfo.DeleteAllowed)
+                {
+                    Status = $"Delete not allowed for block '{blockName}'";
+                    _messageManager?.ShowErrorMessage(blockName, Status);
+                    return false;
+                }
+
+                // Phase 6: security check
+                if (!EnforceBlockSecurity(blockName, SecurityPermission.Delete))
+                {
+                    Status = $"Security: delete not permitted on block '{blockName}'";
+                    return false;
+                }
+
                 // Check for unsaved changes in detail blocks
                 var detailBlocks = GetDetailBlocks(blockName);
                 foreach (var detailBlockName in detailBlocks)
@@ -400,10 +702,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Get current record
-                var currentRecord = blockInfo.UnitOfWork.CurrentItem;
+                object currentRecord = blockInfo.UnitOfWork.CurrentItem;
                 if (currentRecord == null)
                 {
                     Status = $"No current record to delete in block '{blockName}'";
+                    return false;
+                }
+
+                // Auto-lock if needed (Phase 7)
+                await _lockManager.AutoLockIfNeededAsync(blockName);
+
+                // Fire WHEN-REMOVE-RECORD trigger (before the record is removed)
+                var whenRemoveCtx = TriggerContext.ForBlock(TriggerType.WhenRemoveRecord, blockName, currentRecord, _dmeEditor);
+                var whenRemoveResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenRemoveRecord, blockName, whenRemoveCtx);
+                if (whenRemoveResult == TriggerResult.Cancelled)
+                {
+                    Status = $"Delete cancelled by WHEN-REMOVE-RECORD trigger in block '{blockName}'";
+                    return false;
+                }
+
+                // Fire PRE-DELETE trigger
+                var preDeleteCtx = TriggerContext.ForBlock(TriggerType.PreDelete, blockName, currentRecord, _dmeEditor);
+                var preDeleteResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.PreDelete, blockName, preDeleteCtx);
+                if (preDeleteResult == TriggerResult.Cancelled)
+                {
+                    Status = $"Delete cancelled by PRE-DELETE trigger in block '{blockName}'";
                     return false;
                 }
 
@@ -411,18 +734,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var deleteMethod = blockInfo.UnitOfWork.GetType().GetMethod("DeleteAsync");
                 if (deleteMethod != null)
                 {
-                    var task = (Task<IErrorsInfo>)deleteMethod.Invoke(blockInfo.UnitOfWork, new object[] { currentRecord });
-                    var result = await task;
-                    
+                    SuppressSync(blockName);
+                    IErrorsInfo result;
+                    try
+                    {
+                        var task = (Task<IErrorsInfo>)deleteMethod.Invoke(blockInfo.UnitOfWork, new object[] { currentRecord });
+                        result = await task;
+                    }
+                    finally { ResumeSync(blockName); }
+
                     if (result.Flag == Errors.Ok)
                     {
                         Status = $"Record deleted successfully in block '{blockName}'";
+                        _messageManager?.ShowWarningMessage(blockName, Status);
+
+                        // Fire POST-DELETE trigger after successful delete
+                        await _triggerManager.FireBlockTriggerAsync(
+                            TriggerType.PostDelete, blockName,
+                            TriggerContext.ForBlock(TriggerType.PostDelete, blockName, currentRecord, _dmeEditor));
+
                         await SynchronizeDetailBlocksAsync(blockName);
                         return true;
                     }
                     else
                     {
                         Status = $"Error deleting record: {result.Message}";
+                        _messageManager?.ShowErrorMessage(blockName, Status);
                         return false;
                     }
                 }
@@ -465,17 +802,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Executes query for a block - equivalent to Oracle Forms EXECUTE_QUERY
-        /// Basic implementation - use ExecuteQueryEnhancedAsync for better functionality
+        /// Executes query for a block - equivalent to Oracle Forms EXECUTE_QUERY.
+        /// Merges block-level default WHERE clause with caller-supplied filters via QueryBuilder.
         /// </summary>
         public async Task<bool> ExecuteQueryAsync(string blockName, List<AppFilter> filters = null)
         {
             try
             {
-                var result = await ExecuteQueryEnhancedAsync(blockName, filters);
-                Status = result.Flag == Errors.Ok ? 
-                    $"Query executed successfully for block '{blockName}'" : 
-                    $"Error executing query: {result.Message}";
+                var block = GetBlock(blockName);
+                if (block != null && !block.QueryAllowed)
+                {
+                    Status = $"Query not allowed for block '{blockName}'";
+                    return false;
+                }
+
+                // Phase 6: security check
+                if (!EnforceBlockSecurity(blockName, SecurityPermission.Query))
+                {
+                    Status = $"Security: query not permitted on block '{blockName}'";
+                    return false;
+                }
+
+                // Merge default WHERE clause from block metadata
+                var finalFilters = filters;
+                if (block != null && !string.IsNullOrWhiteSpace(block.DefaultWhereClause))
+                {
+                    var defaultFilters = _queryBuilderManager.ParseWhereClause(block.DefaultWhereClause);
+                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
+                        finalFilters ?? new List<AppFilter>(), defaultFilters);
+                }
+
+                var result = await ExecuteQueryEnhancedAsync(blockName, finalFilters);
+                if (result.Flag == Errors.Ok)
+                {
+                    Status = $"Query executed successfully for block '{blockName}'";
+                    _messageManager?.ShowInfoMessage(blockName, Status);
+                }
+                else
+                {
+                    Status = $"Error executing query: {result.Message}";
+                    _messageManager?.ShowErrorMessage(blockName, Status);
+                }
                 return result.Flag == Errors.Ok;
             }
             catch (Exception ex)
@@ -492,13 +859,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #region Validation (Required by Interface)
 
         /// <summary>
-        /// Validates a specific field in a block
+        /// Validates a specific field in a block. Routes through both the event manager and
+        /// ValidationManager so that registered validation rules are also evaluated.
         /// </summary>
         public bool ValidateField(string blockName, string FieldName, object value)
         {
             try
             {
-                return _eventManager.TriggerFieldValidation(blockName, FieldName, value);
+                // Fire event-based validation (existing behaviour)
+                bool eventValid = _eventManager.TriggerFieldValidation(blockName, FieldName, value);
+
+                // Also run registered validation rules via ValidationManager
+                var ruleResult = _validationManager.ValidateItem(blockName, FieldName, value, ValidationTiming.OnChange);
+                bool rulesValid = ruleResult?.IsValid != false;
+
+                return eventValid && rulesValid;
             }
             catch (Exception ex)
             {
@@ -509,7 +884,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Validates all records in a block
+        /// Validates all records in a block. Routes through both the event manager and
+        /// ValidationManager so that registered validation rules are also evaluated.
         /// </summary>
         public bool ValidateBlock(string blockName)
         {
@@ -519,9 +895,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (blockInfo?.UnitOfWork == null)
                     return true; // No block to validate
 
-                // Get current record if available
-                var currentRecord = blockInfo.UnitOfWork.CurrentItem;
-                return _eventManager.TriggerRecordValidation(blockName, currentRecord);
+                object currentRecord = blockInfo.UnitOfWork.CurrentItem;
+
+                // Fire event-based validation (existing behaviour)
+                bool eventValid = _eventManager.TriggerRecordValidation(blockName, currentRecord);
+
+                // Build a flat dictionary from current record for ValidationManager
+                bool rulesValid = true;
+                if (currentRecord != null)
+                {
+                    var recordDict = currentRecord is IDictionary<string, object> dict
+                        ? dict
+                        : currentRecord.GetType()
+                            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                            .ToDictionary(p => p.Name, p => p.GetValue(currentRecord) as object, StringComparer.OrdinalIgnoreCase);
+
+                    var ruleResult = _validationManager.ValidateRecord(blockName, recordDict, ValidationTiming.Manual);
+                    rulesValid = ruleResult?.IsValid != false;
+                }
+
+                return eventValid && rulesValid;
             }
             catch (Exception ex)
             {
@@ -588,9 +981,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 
                 // Dispose helper managers
                 _performanceManager?.Dispose();
+                _timerManager?.TimerFired -= OnTimerManagerFired;
+                _timerManager?.Dispose();
                 
                 _blocks.Clear();
-                _relationships.Clear();
                 
                 LogOperation("UnitofWorksManager disposed");
             }
@@ -624,6 +1018,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 LogError("Error initializing UnitofWorksManager", ex);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Handles timer fire events from TimerManager by firing the
+        /// WHEN-TIMER-EXPIRED trigger on the current form.
+        /// </summary>
+        private void OnTimerManagerFired(object sender, TimerFiredEventArgs e)
+        {
+            try
+            {
+                var ctx = Forms.Models.TriggerContext.ForForm(
+                    Forms.Models.TriggerType.WhenTimerExpired, _currentFormName ?? string.Empty, _dmeEditor);
+                ctx.Parameters["TimerName"] = e.TimerName;
+                ctx.Parameters["FireCount"] = e.FireCount;
+                _ = _triggerManager.FireFormTriggerAsync(
+                    Forms.Models.TriggerType.WhenTimerExpired, _currentFormName ?? string.Empty, ctx);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error handling timer fired for '{e.TimerName}'", ex);
             }
         }
 
@@ -683,7 +1098,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             var fullMessage = blockName != null ? $"[{blockName}] {message}" : message;
             _dmeEditor?.AddLogMessage("UnitofWorksManager", fullMessage, DateTime.Now, -1, null, Errors.Failed);
+
+            if (!string.IsNullOrEmpty(blockName))
+                _errorLog?.LogError(blockName, ex ?? new InvalidOperationException(message), message);
         }
+
+        private void SuppressSync(string blockName) =>
+            _syncSuppressCount.AddOrUpdate(blockName, 1, (_, v) => v + 1);
+        private void ResumeSync(string blockName) =>
+            _syncSuppressCount.AddOrUpdate(blockName, 0, (_, v) => Math.Max(0, v - 1));
+        private bool IsSyncSuppressed(string blockName) =>
+            _syncSuppressCount.TryGetValue(blockName, out var cnt) && cnt > 0;
 
         #endregion
     }

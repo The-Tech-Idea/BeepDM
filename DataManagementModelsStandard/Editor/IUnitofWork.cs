@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -9,6 +11,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.UOW.Models;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 
@@ -159,15 +162,6 @@ namespace TheTechIdea.Beep.Editor
         Task PrefetchAdjacentPagesAsync();
         void InvalidatePageCache();
 
-        // Master-Detail (Phase 6)
-        void RegisterDetail<TChild>(ObservableBindingList<TChild> childList,
-            string foreignKeyProperty, string masterKeyProperty)
-            where TChild : class, INotifyPropertyChanged, new();
-        void UnregisterDetail<TChild>(ObservableBindingList<TChild> childList)
-            where TChild : class, INotifyPropertyChanged, new();
-        void UnregisterAllDetails();
-        IReadOnlyList<object> DetailLists { get; }
-
         // Utility / Tracking
         [Obsolete("Use Undo() instead")]
         void UndoLastChange();
@@ -193,7 +187,50 @@ namespace TheTechIdea.Beep.Editor
         // Change audit
         List<ChangeRecord> GetChangeLog();
 
+        // Phase 2 — Change Summary (2-A)
+        ChangeSummary GetChangeSummary();
+        IReadOnlyList<T> GetInsertedItems();
+        IReadOnlyList<T> GetUpdatedItems();
+        IReadOnlyList<T> GetDeletedItems();
+
+        // Phase 2 — Refresh / Batch Commit (2-B, 2-D)
+        Task<IErrorsInfo> RefreshAsync(List<AppFilter> filters = null, ConflictMode conflictMode = ConflictMode.ServerWins, CancellationToken ct = default);
+        Task<CommitBatchResult> CommitBatchAsync(int batchSize = 100, IProgress<CommitBatchProgress> progress = null, CancellationToken ct = default);
+
+        // Phase 2 — Revert (2-C)
+        bool RevertItem(T item);
+        Task<bool> RevertItemAsync(T item, CancellationToken ct = default);
+
+        // Phase 2 — Query History (2-E)
+        IReadOnlyList<QueryHistoryEntry> QueryHistory { get; }
+        void ClearQueryHistory();
+        int MaxQueryHistorySize { get; set; }
+
+        // Phase 2 — Export / Import (2-F, 2-G)
+        DataTable ToDataTable();
+        Task ToJsonAsync(Stream stream, CancellationToken ct = default);
+        Task ToCsvAsync(Stream stream, char delimiter = ',', CancellationToken ct = default);
+        Task<int> LoadFromJsonAsync(Stream stream, bool clearFirst = true, CancellationToken ct = default);
+        Task<int> LoadFromCsvAsync(Stream stream, char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true, CancellationToken ct = default);
+
+        // Phase 2 — Find / Clone (2-H)
+        Task<T> FindAsync(Func<T, bool> predicate, CancellationToken ct = default);
+        Task<List<T>> FindManyAsync(Func<T, bool> predicate, CancellationToken ct = default);
+        T CloneItem(T item, bool deepCopy = false);
+
+        // Phase 2 — Count predicate (2-I)
+        int Count(Func<T, bool> predicate);
+
+        // Phase 2 — Undo helpers (2-J)
+        void EnableUndo(bool enable, int maxDepth = 100);
+        bool UndoLastAction();
+        bool RedoLastAction();
+
         // Events
+        /// <summary>Fires when the current record changes (current-record pointer moved).</summary>
+        event EventHandler CurrentChanged;
+        /// <summary>Fires when a field changes on a tracked item.</summary>
+        event EventHandler<ItemChangedEventArgs<T>> ItemChanged;
         event EventHandler<UnitofWorkParams> PreDelete;
         event EventHandler<UnitofWorkParams> PreInsert;
         event EventHandler<UnitofWorkParams> PreCreate;
@@ -208,6 +245,7 @@ namespace TheTechIdea.Beep.Editor
         event EventHandler<UnitofWorkParams> PostDelete;
         event EventHandler<UnitofWorkParams> PostCommit;
         event EventHandler<UnitofWorkParams> PreCommit;
+        event EventHandler<UnitofWorkParams> OnItemReverted;
     }
 
     public class UnitofWorkParams : PassedArgs

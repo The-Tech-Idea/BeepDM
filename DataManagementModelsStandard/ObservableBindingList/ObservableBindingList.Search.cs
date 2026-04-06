@@ -280,6 +280,60 @@ namespace TheTechIdea.Beep.Editor
             return results.Count;
         }
 
+        #region "Async Search (1-D)"
+
+        /// <summary>
+        /// Searches the list asynchronously on a background thread — safe to call from UI.
+        /// Returns all items matching <paramref name="predicate"/>.
+        /// </summary>
+        public System.Threading.Tasks.Task<IReadOnlyList<T>> SearchAsync(
+            Func<T, bool> predicate,
+            System.Threading.CancellationToken ct = default)
+        {
+            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
+            // Capture snapshot to avoid cross-thread list mutation
+            var snapshot = originalList.ToList();
+            return System.Threading.Tasks.Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                var results = new List<T>();
+                foreach (var item in snapshot)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (predicate(item)) results.Add(item);
+                }
+                return (IReadOnlyList<T>)results;
+            }, ct);
+        }
+
+        /// <summary>
+        /// Streams matching items asynchronously, yielding each chunk back to the caller.
+        /// Useful for large lists where results should appear incrementally.
+        /// </summary>
+        public async IAsyncEnumerable<T> SearchStreamAsync(
+            Func<T, bool> predicate,
+            [System.Runtime.CompilerServices.EnumeratorCancellation]
+            System.Threading.CancellationToken ct = default)
+        {
+            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
+            var snapshot = originalList.ToList();
+            const int chunkSize = 100;
+
+            for (int i = 0; i < snapshot.Count; i += chunkSize)
+            {
+                ct.ThrowIfCancellationRequested();
+                int end = Math.Min(i + chunkSize, snapshot.Count);
+                for (int j = i; j < end; j++)
+                {
+                    if (predicate(snapshot[j]))
+                        yield return snapshot[j];
+                }
+                await System.Threading.Tasks.Task.Yield();
+            }
+        }
+
+        #endregion "Async Search (1-D)"
+
         #endregion
     }
 }

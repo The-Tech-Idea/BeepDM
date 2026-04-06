@@ -71,6 +71,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// Full name of the item that caused the trigger to fire
         /// </summary>
         public string TRIGGER_ITEM { get; set; }
+
+        /// <summary>
+        /// Oracle Forms: :SYSTEM.TRIGGER_FIELD
+        /// Field name that caused the trigger to fire (alias for TRIGGER_ITEM)
+        /// </summary>
+        public string TRIGGER_FIELD { get; set; }
         
         /// <summary>
         /// Oracle Forms: :SYSTEM.CURRENT_ITEM
@@ -242,6 +248,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
             RECORD_STATUS = "NEW";
             CURSOR_ITEM = null;
             TRIGGER_ITEM = null;
+            TRIGGER_FIELD = null;
             CURRENT_ITEM = null;
             CURSOR_VALUE = null;
             MODE = "NORMAL";

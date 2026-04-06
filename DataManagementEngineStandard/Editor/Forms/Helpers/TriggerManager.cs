@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 
@@ -1148,6 +1149,30 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             });
         }
         
+        #endregion
+
+        #region Statistics & Scope Helpers
+
+        /// <inheritdoc />
+        public TriggerStatisticsInfo GetTriggerStatistics(string blockName)
+            => TriggerLibrary.GetTriggerStatistics(blockName, this);
+
+        /// <inheritdoc />
+        public IReadOnlyList<TriggerDefinition> GetFormLevelTriggers(string blockName)
+            => TriggerLibrary.GetFormLevelTriggers(blockName, this);
+
+        /// <inheritdoc />
+        public IReadOnlyList<TriggerDefinition> GetBlockLevelTriggers(string blockName)
+            => TriggerLibrary.GetBlockLevelTriggers(blockName, this);
+
+        /// <inheritdoc />
+        public IReadOnlyList<TriggerDefinition> GetRecordLevelTriggers(string blockName)
+            => TriggerLibrary.GetRecordLevelTriggers(blockName, this);
+
+        /// <inheritdoc />
+        public IReadOnlyList<TriggerDefinition> GetItemLevelTriggers(string blockName)
+            => TriggerLibrary.GetItemLevelTriggers(blockName, this);
+
         #endregion
         
         #region IDisposable

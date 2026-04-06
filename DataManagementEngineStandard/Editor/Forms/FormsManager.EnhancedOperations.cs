@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
@@ -47,44 +48,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Since GetEntityType is not available, use a different approach
                 Type entityType = null;
                 
-                // Try to get type from entity structure name
-                if (!string.IsNullOrEmpty(blockInfo.EntityStructure.EntityName))
+                // Try to get type: prefer BlockInfo.EntityType (set via RegisterBlock<T>) before
+                // falling back to a runtime string lookup or ExpandoObject.
+                if (blockInfo.EntityType != null)
                 {
-                    // Try using DMTypeBuilder or reflection to create/find the type
-                    try
-                    {
-                        // First, try to find existing type by name
-                        entityType = Type.GetType(blockInfo.EntityStructure.EntityName);
-                        
-                        // If not found, try creating a dynamic type using available fields
-                        if (entityType == null && blockInfo.EntityStructure.Fields?.Count > 0)
-                        {
-                            // Create a simple dynamic object or use existing generic approach
-                            // For now, create a basic object and add properties through FormsSimulationHelper
-                            var newRecord = new System.Dynamic.ExpandoObject();
-                            
-                            // Apply audit defaults
-                            _formsSimulationHelper.SetAuditDefaults(newRecord, Environment.UserName);
-                            
-                            LogOperation($"New dynamic record created for block '{blockName}'", blockName);
-                            return newRecord;
-                        }
-                    }
+                    entityType = blockInfo.EntityType;
+                }
+                else if (!string.IsNullOrEmpty(blockInfo.EntityStructure.EntityName))
+                {
+                    try { entityType = Type.GetType(blockInfo.EntityStructure.EntityName); }
                     catch (Exception ex)
                     {
-                        LogError($"Error creating type for entity '{blockInfo.EntityStructure.EntityName}'", ex, blockName);
+                        LogError($"Error resolving type for entity '{blockInfo.EntityStructure.EntityName}'", ex, blockName);
                     }
                 }
 
                 if (entityType != null)
                 {
                     var newRecord = Activator.CreateInstance(entityType);
-                    
-                    // Apply audit defaults
                     _formsSimulationHelper.SetAuditDefaults(newRecord, Environment.UserName);
-                    
+
+                    // Fire WHEN-CREATE-RECORD trigger after the instance is created
+                    _triggerManager.FireBlockTrigger(
+                        TriggerType.WhenCreateRecord, blockName,
+                        TriggerContext.ForBlock(TriggerType.WhenCreateRecord, blockName, newRecord, _dmeEditor));
+
                     LogOperation($"New record created for block '{blockName}'", blockName);
                     return newRecord;
+                }
+
+                // Last resort: ExpandoObject for anonymous/unknown entities
+                if (blockInfo.EntityStructure.Fields?.Count > 0)
+                {
+                    var dynRecord = new System.Dynamic.ExpandoObject();
+                    _formsSimulationHelper.SetAuditDefaults(dynRecord, Environment.UserName);
+
+                    _triggerManager.FireBlockTrigger(
+                        TriggerType.WhenCreateRecord, blockName,
+                        TriggerContext.ForBlock(TriggerType.WhenCreateRecord, blockName, dynRecord, _dmeEditor));
+
+                    LogOperation($"New dynamic record created for block '{blockName}'", blockName);
+                    return dynRecord;
                 }
 
                 Status = $"Cannot create entity type for block '{blockName}'";
@@ -112,6 +116,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     result.Flag = Errors.Failed;
                     result.Message = $"Block '{blockName}' not found or has no unit of work";
+                    return result;
+                }
+
+                // CRUD flag guard (Phase 2)
+                if (!blockInfo.InsertAllowed)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Insert not allowed for block '{blockName}'";
+                    _messageManager?.ShowErrorMessage(blockName, result.Message);
+                    return result;
+                }
+
+                // Phase 6: security check
+                if (!EnforceBlockSecurity(blockName, SecurityPermission.Insert))
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Security: insert not permitted on block '{blockName}'";
                     return result;
                 }
 
@@ -157,17 +178,40 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Fire PRE-INSERT trigger — abort if cancelled
+                var preInsertResult = await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.PreInsert, blockName,
+                    TriggerContext.ForBlock(TriggerType.PreInsert, blockName, record, _dmeEditor));
+                if (preInsertResult == TriggerResult.Cancelled)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Insert cancelled by PRE-INSERT trigger in block '{blockName}'";
+                    return result;
+                }
+
                 // Use the unit of work's insert method with better method resolution
                 var unitOfWorkType = blockInfo.UnitOfWork.GetType();
                 var insertMethod = FindBestInsertMethod(unitOfWorkType, record.GetType());
 
                 if (insertMethod != null)
                 {
-                    var task = (Task<IErrorsInfo>)insertMethod.Invoke(blockInfo.UnitOfWork, new object[] { record });
-                    var insertResult = await task;
-                    
+                    SuppressSync(blockName);
+                    Task<IErrorsInfo> insertTask;
+                    IErrorsInfo insertResult;
+                    try
+                    {
+                        insertTask = (Task<IErrorsInfo>)insertMethod.Invoke(blockInfo.UnitOfWork, new object[] { record });
+                        insertResult = await insertTask;
+                    }
+                    finally { ResumeSync(blockName); }
+
                     if (insertResult.Flag == Errors.Ok)
                     {
+                        // Fire POST-INSERT trigger after successful insert
+                        await _triggerManager.FireBlockTriggerAsync(
+                            TriggerType.PostInsert, blockName,
+                            TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
+
                         await SynchronizeDetailBlocksAsync(blockName);
                         result.Message = "Record inserted successfully";
                         Status = $"Record inserted successfully in block '{blockName}'";
@@ -218,6 +262,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // CRUD flag guard (Phase 2)
+                if (!blockInfo.UpdateAllowed)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Update not allowed for block '{blockName}'";
+                    _messageManager?.ShowErrorMessage(blockName, result.Message);
+                    return result;
+                }
+
+                // Phase 6: security check
+                if (!EnforceBlockSecurity(blockName, SecurityPermission.Update))
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Security: update not permitted on block '{blockName}'";
+                    return result;
+                }
+
                 // CRITICAL: Must be in CRUD mode to update
                 if (blockInfo.Mode != DataBlockMode.CRUD)
                 {
@@ -234,6 +295,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Auto-lock if needed (Phase 7)
+                await _lockManager.AutoLockIfNeededAsync(blockName);
+
                 // Validate record before update
                 if (!ValidateRecordForOperation(blockName, currentRecord, "UPDATE"))
                 {
@@ -246,6 +310,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 _formsSimulationHelper.SetFieldValue(currentRecord, "ModifiedDate", DateTime.Now);
                 _formsSimulationHelper.SetFieldValue(currentRecord, "ModifiedBy", Environment.UserName);
 
+                // Fire PRE-UPDATE trigger — abort if cancelled
+                var preUpdateResult = await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.PreUpdate, blockName,
+                    TriggerContext.ForBlock(TriggerType.PreUpdate, blockName, currentRecord, _dmeEditor));
+                if (preUpdateResult == TriggerResult.Cancelled)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Update cancelled by PRE-UPDATE trigger in block '{blockName}'";
+                    return result;
+                }
+
                 // Use unit of work's update method with better method resolution
                 var unitOfWorkType = blockInfo.UnitOfWork.GetType();
                 var updateMethod = FindBestUpdateMethod(unitOfWorkType, currentRecord.GetType());
@@ -257,6 +332,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     
                     if (updateResult.Flag == Errors.Ok)
                     {
+                        // Fire POST-UPDATE trigger after successful update
+                        await _triggerManager.FireBlockTriggerAsync(
+                            TriggerType.PostUpdate, blockName,
+                            TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor));
+
                         await SynchronizeDetailBlocksAsync(blockName);
                         result.Message = "Record updated successfully";
                         Status = $"Record updated successfully in block '{blockName}'";
@@ -323,6 +403,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
                 }
 
+                // Fire PRE-QUERY trigger — abort if cancelled
+                var preQueryResult = await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.PreQuery, blockName,
+                    TriggerContext.ForBlock(TriggerType.PreQuery, blockName, null, _dmeEditor));
+                if (preQueryResult == TriggerResult.Cancelled)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Query cancelled by PRE-QUERY trigger in block '{blockName}'";
+                    return result;
+                }
+
                 var unitOfWorkType = blockInfo.UnitOfWork.GetType();
                 
                 // Execute query with proper method resolution
@@ -360,6 +451,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // CRITICAL: After successful query execution, transition to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
                 blockInfo.LastModeChange = DateTime.Now;
+
+                // Fire POST-QUERY trigger (before returning to caller)
+                await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.PostQuery, blockName,
+                    TriggerContext.ForBlock(TriggerType.PostQuery, blockName, null, _dmeEditor));
 
                 var recordCount = GetRecordCount(blockName);
                 

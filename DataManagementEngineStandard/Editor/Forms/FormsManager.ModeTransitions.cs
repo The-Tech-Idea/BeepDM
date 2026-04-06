@@ -594,9 +594,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             try
             {
-                // This would use the relationship manager to set foreign key values
-                // For now, just log the operation
-                LogOperation($"Setting foreign key values from master '{masterBlockName}' to detail '{detailBlockName}'", detailBlockName);
+                var detailBlockInfo = GetBlock(detailBlockName);
+                if (detailBlockInfo?.UnitOfWork == null)
+                {
+                    return;
+                }
+
+                if (!detailBlockInfo.UnitOfWork.ApplyMasterValueToCurrentItem())
+                {
+                    LogOperation($"No master value applied from '{masterBlockName}' to '{detailBlockName}'", detailBlockName);
+                }
                 await Task.CompletedTask;
             }
             catch (Exception ex)

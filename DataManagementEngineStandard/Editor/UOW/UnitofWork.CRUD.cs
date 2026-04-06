@@ -12,6 +12,8 @@ using TheTechIdea.Beep.Helpers.RDBMSHelpers;
 using System.Collections.ObjectModel;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
+using System.Threading;
+using TheTechIdea.Beep.Editor.UOW.Models;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
@@ -885,6 +887,132 @@ namespace TheTechIdea.Beep.Editor.UOW
                 DMEEditor.ErrorObject.Message = "Missing Entity Datasource";
             }
             return retval;
+        }
+
+        #endregion
+
+        #region "Phase 2 — Refresh & Batch Commit (2-B, 2-D)"
+
+        /// <summary>
+        /// Reloads data from the data source and merges the results into the current
+        /// <see cref="Units"/> collection using the specified <paramref name="conflictMode"/>.
+        /// </summary>
+        public async Task<IErrorsInfo> RefreshAsync(
+            List<AppFilter> filters = null,
+            ConflictMode conflictMode = ConflictMode.ServerWins,
+            CancellationToken ct = default)
+        {
+            var result = new ErrorsInfo { Flag = Errors.Ok };
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                ObservableBindingList<T> fresh = filters != null && filters.Count > 0
+                    ? await Get(filters)
+                    : await Get();
+
+                if (fresh == null)
+                {
+                    result.Flag    = Errors.Failed;
+                    result.Message = "Refresh returned no data.";
+                    return result;
+                }
+
+                Units.Merge(fresh, conflictMode, _primarykey);
+                result.Message = $"Refreshed {fresh.Count} record(s).";
+            }
+            catch (OperationCanceledException)
+            {
+                result.Flag    = Errors.Failed;
+                result.Message = "Refresh cancelled.";
+            }
+            catch (Exception ex)
+            {
+                result.Flag    = Errors.Failed;
+                result.Message = ex.Message;
+                result.Ex      = ex;
+                DMEEditor.AddLogMessage("UnitofWork", $"RefreshAsync error: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Commits all pending inserts, updates and deletes in batches of
+        /// <paramref name="batchSize"/> records, reporting progress via
+        /// <paramref name="progress"/>.
+        /// </summary>
+        public async Task<CommitBatchResult> CommitBatchAsync(
+            int batchSize = 100,
+            IProgress<CommitBatchProgress> progress = null,
+            CancellationToken ct = default)
+        {
+            var final = new CommitBatchResult { Success = true };
+            try
+            {
+                int size = Math.Max(1, batchSize);
+                var inserted = GetInsertedItems();
+                var updated  = GetUpdatedItems();
+                var deleted  = GetDeletedItems();
+
+                var ops = new (string OpName, IReadOnlyList<T> Items)[]
+                {
+                    ("Insert", inserted),
+                    ("Update", updated),
+                    ("Delete", deleted)
+                };
+
+                int totalBatches = ops.Sum(o => (int)Math.Ceiling(o.Items.Count / (double)size));
+                int batchNum     = 0;
+
+                await Task.Run(() =>
+                {
+                    foreach (var (opName, items) in ops)
+                    {
+                        for (int i = 0; i < items.Count; i += size)
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            progress?.Report(new CommitBatchProgress
+                            {
+                                TotalBatches     = totalBatches,
+                                CurrentBatch     = ++batchNum,
+                                RecordsCommitted = final.TotalCommitted,
+                                CurrentOperation = opName
+                            });
+
+                            int end = Math.Min(i + size, items.Count);
+                            for (int j = i; j < end; j++)
+                            {
+                                IErrorsInfo r = opName switch
+                                {
+                                    "Insert" => InsertDoc(items[j]),
+                                    "Update" => UpdateDoc(items[j]),
+                                    _        => DeleteDoc(items[j])
+                                };
+
+                                if (r.Flag == Errors.Ok)
+                                    final.TotalCommitted++;
+                                else
+                                    final.Errors.Add(r.Message ?? $"{opName} failed.");
+                            }
+                        }
+                    }
+                }, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                final.Success = false;
+                final.Errors.Add("Operation cancelled.");
+            }
+            catch (Exception ex)
+            {
+                final.Success = false;
+                final.Errors.Add(ex.Message);
+                DMEEditor.AddLogMessage("UnitofWork", $"CommitBatchAsync error: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+            }
+
+            if (final.Errors.Count > 0) final.Success = false;
+            return final;
         }
 
         #endregion

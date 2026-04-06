@@ -1,74 +1,649 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Services Registration & Lifetimes - Beep DME Documentation</title>
-    <link rel="stylesheet" href="sphinx-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Services Registration &amp; Lifetimes — BeepDM Help</title>
+  <link rel="stylesheet" href="sphinx-style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
 </head>
 <body>
-    <div class="container">
-        <aside class="sidebar" id="sidebar"></aside>
-        <main class="content">
-            <div class="content-wrapper">
-                <nav class="breadcrumb-nav">
-                    <a href="index.html">Home</a>
-                    <span>&gt;</span>
-                    <span>Services Registration & Lifetimes</span>
-                </nav>
+<div id="nav-placeholder"></div>
+<div class="main-content">
+<article>
 
-                <div class="page-header">
-                    <h1>Services Registration & Lifetimes</h1>
-                    <p class="page-subtitle">DI registration entrypoints, fluent builders, and desktop/web/blazor lifetime patterns</p>
-                </div>
+<h1><i class="bi bi-box-seam"></i> Services Registration &amp; Lifetimes</h1>
+<p class="lead">How to configure and register <code>BeepService</code> with Microsoft Dependency Injection for desktop, web, Blazor, and CLI applications.</p>
 
-                <div class="note">
-                    <strong>Source of truth (2026)</strong>
-                    <ul>
-                        <li><code>DataManagementEngineStandard/Services/RegisterBeepinServiceCollection.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepService.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.Desktop.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.Web.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.Blazor.cs</code></li>
-                    </ul>
-                </div>
+<div class="alert alert-info">
+  <i class="bi bi-info-circle-fill"></i>
+  <strong>Location:</strong> <code>TheTechIdea.Beep.Container.Services</code> &mdash; <code>DataManagementEngineStandard/Services/</code>.
+</div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
-                    <pre><code class="language-csharp">public interface IBeepServiceBuilder
+<!-- ==================== SECTION: overview ==================== -->
+<section id="overview">
+<h2><i class="bi bi-map"></i> Overview</h2>
+<p>
+  <code>BeepService</code> is the top-level container that wires together all core BeepDM components
+  (<code>IDMEEditor</code>, <code>IConfigEditor</code>, <code>IAssemblyHandler</code>, etc.) and exposes them
+  through a single <code>IBeepService</code> interface suitable for dependency injection.
+</p>
+<p>The services layer provides three registration styles:</p>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+<thead><tr><th>Style</th><th>API</th><th>Best for</th></tr></thead>
+<tbody>
+  <tr><td>Platform shortcuts</td><td><code>AddBeepForDesktop</code>, <code>AddBeepForWeb</code>, <code>AddBeepForBlazorServer</code>, <code>AddBeepForBlazorWasm</code></td><td>Most applications — sensible platform defaults</td></tr>
+  <tr><td>Options pattern</td><td><code>AddBeepServices(Action&lt;BeepServiceOptions&gt;)</code></td><td>Fine-grained cross-platform control</td></tr>
+  <tr><td>Fluent builder</td><td><code>AddBeepServices().WithDirectory(…).AsSingleton().Build()</code></td><td>IntelliSense-driven, method-chained setup</td></tr>
+  <tr><td>Legacy simple</td><td><code>Register(services, path, name, configType)</code></td><td>Backward compatibility only</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Files in this module</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>File</th><th>Purpose</th></tr></thead>
+<tbody>
+  <tr><td><code>BeepService.cs</code></td><td>Core <code>IBeepService</code> implementation</td></tr>
+  <tr><td><code>RegisterBeepinServiceCollection.cs</code></td><td>Core DI registration, fluent builder, options, validation exceptions</td></tr>
+  <tr><td><code>BeepServiceExtensions.Desktop.cs</code></td><td>Desktop-optimised extension (<code>DesktopBeepOptions</code>)</td></tr>
+  <tr><td><code>BeepServiceExtensions.Web.cs</code></td><td>ASP.NET Core extension (<code>WebBeepOptions</code>)</td></tr>
+  <tr><td><code>BeepServiceExtensions.Blazor.cs</code></td><td>Blazor Server / WASM extensions (<code>BlazorBeepOptions</code>)</td></tr>
+  <tr><td><code>EnvironmentService.cs</code></td><td>Platform folder creation and mapping helpers</td></tr>
+  <tr><td><code>ServiceCollectionExtensions.cs</code></td><td>Low-level <code>JsonLoader</code> / <code>DMEEditor</code> registrations</td></tr>
+  <tr><td><code>ServiceHelper.cs</code></td><td>Static service-locator helper (use sparingly)</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: beep-service ==================== -->
+<section id="beep-service">
+<h2><i class="bi bi-layers"></i> BeepService</h2>
+<p>
+  <code>BeepService</code> implements <code>IBeepService</code> and <code>IDisposable</code>.
+  It creates and owns all core BeepDM component instances during <code>Configure()</code>.
+</p>
+
+<h3>Properties</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>DMEEditor</code></td><td><code>IDMEEditor</code></td><td>Central data management orchestrator</td></tr>
+  <tr><td><code>Config_editor</code></td><td><code>IConfigEditor</code></td><td>Connection and mapping configuration</td></tr>
+  <tr><td><code>lg</code></td><td><code>IDMLogger</code></td><td>Logger instance</td></tr>
+  <tr><td><code>util</code></td><td><code>IUtil</code></td><td>Utility helpers</td></tr>
+  <tr><td><code>Erinfo</code></td><td><code>IErrorsInfo</code></td><td>Error tracking object</td></tr>
+  <tr><td><code>jsonLoader</code></td><td><code>IJsonLoader</code></td><td>JSON serialisation service</td></tr>
+  <tr><td><code>LLoader</code></td><td><code>IAssemblyHandler</code></td><td>Plugin / assembly loader</td></tr>
+  <tr><td><code>Services</code></td><td><code>IServiceCollection</code></td><td>DI container (null if instantiated directly)</td></tr>
+  <tr><td><code>AppRepoName</code></td><td><code>string</code></td><td>Container / application repository name</td></tr>
+  <tr><td><code>ConfigureationType</code></td><td><code>BeepConfigType</code></td><td>Active configuration mode</td></tr>
+  <tr><td><code>BeepDirectory</code></td><td><code>string</code></td><td>Root directory for Beep data files</td></tr>
+  <tr><td><code>Containername</code></td><td><code>string</code></td><td><span class="badge bg-warning text-dark">Obsolete</span> Use <code>AppRepoName</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Configure()</h3>
+<p>Initialises all components. Called automatically by the DI registration helpers or manually for direct instantiation.</p>
+<pre><code class="language-csharp">// Direct instantiation (no DI):
+var beep = new BeepService();
+beep.Configure(
+    directorypath: AppContext.BaseDirectory,
+    containername: "MyApp",
+    configType: BeepConfigType.DataConnector,
+    AddasSingleton: false
+);</code></pre>
+
+<p>Initialisation order inside <code>Configure()</code>:</p>
+<ol>
+  <li>Sets <code>AppRepoName</code>, <code>ConfigureationType</code>, <code>BeepDirectory</code></li>
+  <li>Creates <code>ErrorsInfo</code>, <code>DMLogger</code>, <code>JsonLoader</code></li>
+  <li>Creates <code>ConfigEditor</code> (reads JSON configs from <code>{BeepDirectory}/Beep</code>)</li>
+  <li>Creates <code>Util</code>, <code>AssemblyHandler</code>, <code>DMEEditor</code></li>
+  <li>Optionally registers all instances into <code>IServiceCollection</code> (singleton or scoped)</li>
+  <li>Calls <code>LoadConfigurations()</code> — loads data-source configs, mappings</li>
+</ol>
+
+<h3>LoadServicesScoped() / LoadServicesSingleton()</h3>
+<pre><code class="language-csharp">// Called automatically by Configure(); exposed for advanced scenarios
+beep.LoadServicesSingleton();  // registers IDMLogger, IConfigEditor, IDMEEditor, IUtil, IJsonLoader, IAssemblyHandler
+beep.LoadServicesScoped();     // registers same interfaces using AddKeyedScoped</code></pre>
+</section>
+
+<!-- ==================== SECTION: service-options ==================== -->
+<section id="service-options">
+<h2><i class="bi bi-gear"></i> BeepServiceOptions</h2>
+<p>The canonical options object used by all registration helpers.</p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>DirectoryPath</code></td><td><code>string</code></td><td><code>AppContext.BaseDirectory</code></td><td>Root directory for Beep data storage</td></tr>
+  <tr><td><code>AppRepoName</code></td><td><code>string</code></td><td><code>"BeepApp"</code></td><td>Logical application / container name</td></tr>
+  <tr><td><code>ConfigType</code></td><td><code>BeepConfigType</code></td><td><code>Application</code></td><td>Configuration storage mode</td></tr>
+  <tr><td><code>ServiceLifetime</code></td><td><code>ServiceLifetime</code></td><td><code>Singleton</code></td><td>DI lifetime (overridden by platform helpers)</td></tr>
+  <tr><td><code>EnableAutoMapping</code></td><td><code>bool</code></td><td><code>true</code></td><td>Creates type mappings at startup</td></tr>
+  <tr><td><code>EnableAssemblyLoading</code></td><td><code>bool</code></td><td><code>true</code></td><td>Scans and loads driver/addin assemblies</td></tr>
+  <tr><td><code>InitializationTimeout</code></td><td><code>TimeSpan</code></td><td>5 min</td><td>Maximum wait for async initialization</td></tr>
+  <tr><td><code>EnableConfigurationValidation</code></td><td><code>bool</code></td><td><code>true</code></td><td>Validates options before startup</td></tr>
+  <tr><td><code>AdditionalProperties</code></td><td><code>Dictionary&lt;string,object&gt;</code></td><td>empty</td><td>Platform-specific extension values</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Validation Exceptions</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Exception</th><th>When thrown</th><th>Key properties</th></tr></thead>
+<tbody>
+  <tr><td><code>BeepServiceValidationException</code></td><td>Configuration validation fails</td><td><code>PropertyName</code>, <code>InvalidValue</code></td></tr>
+  <tr><td><code>BeepServiceStateException</code></td><td>Runtime state is invalid</td><td><code>ComponentName</code></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: desktop-registration ==================== -->
+<section id="desktop-registration">
+<h2><i class="bi bi-window-desktop"></i> Desktop Registration</h2>
+<p>
+  Use <code>AddBeepForDesktop</code> for WinForms, WPF, and any long-running desktop process.
+  Always registers as <strong>Singleton</strong>.
+</p>
+
+<h3>DesktopBeepOptions</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>DirectoryPath</code></td><td><code>AppContext.BaseDirectory</code></td><td>Root data directory</td></tr>
+  <tr><td><code>AppRepoName</code></td><td><code>"DesktopApp"</code></td><td>Container name</td></tr>
+  <tr><td><code>ConfigType</code></td><td><code>Application</code></td><td>Config mode</td></tr>
+  <tr><td><code>EnableAutoMapping</code></td><td><code>true</code></td><td>Maps at startup</td></tr>
+  <tr><td><code>EnableAssemblyLoading</code></td><td><code>true</code></td><td>Scans plugins</td></tr>
+  <tr><td><code>EnableProgressReporting</code></td><td><code>true</code></td><td>Enables UI progress hooks</td></tr>
+  <tr><td><code>EnableDesignTimeSupport</code></td><td><code>true</code></td><td>Supports VS designers</td></tr>
+  <tr><td><code>AutoInitializeForms</code></td><td><code>false</code></td><td>Auto-init forms on startup</td></tr>
+  <tr><td><code>InitializationTimeout</code></td><td>5 min</td><td>Max startup wait</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Registration</h3>
+<pre><code class="language-csharp">// In Program.cs (WinForms / WPF with IHost):
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((context, services) =>
+    {
+        services.AddBeepForDesktop(opts =>
+        {
+            opts.DirectoryPath = AppContext.BaseDirectory;
+            opts.AppRepoName = "MyDesktopApp";
+            opts.EnableProgressReporting = true;
+            opts.EnableAutoMapping = true;
+            opts.EnableAssemblyLoading = true;
+        });
+    })
+    .Build();
+
+// Resolve after host is built:
+var beepService = host.Services.GetRequiredService&lt;IBeepService&gt;();</code></pre>
+
+<h3>With Progress Reporting</h3>
+<pre><code class="language-csharp">var progress = new Progress&lt;PassedArgs&gt;(args =>
 {
-    IBeepServiceBuilder WithDirectory(string directoryPath);
-    IBeepServiceBuilder WithAppRepo(string appRepoName);
-    IBeepServiceBuilder WithConfigType(BeepConfigType configType);
-    IBeepServiceBuilder AsSingleton();
-    IBeepServiceBuilder AsScoped();
-    IBeepServiceBuilder AsTransient();
-    IBeepService Build();
-}
+    Console.WriteLine($"[{args.EventType}] {args.Messege}");
+});
 
-public static class BeepServiceRegistration
-{
-    public static IBeepServiceBuilder AddBeepServices(this IServiceCollection services);
-    public static IBeepService AddBeepServices(this IServiceCollection services, Action&lt;BeepServiceOptions&gt; configure);
-    public static IBeepService Register(this IServiceCollection services, string directoryPath, string containerName, BeepConfigType configType, bool addAsSingleton = true);
-}
+// If your desktop extension surfaces a UseBeepForDesktop method:
+var beepService = host.UseBeepForDesktop(progress);</code></pre>
 
-public static class DesktopBeepServiceExtensions
-{
-    public static IBeepService AddBeepForDesktop(this IServiceCollection services, Action&lt;DesktopBeepOptions&gt; configure = null);
-}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i>
+  Desktop always forces <code>ServiceLifetime.Singleton</code> — the lifetime in <code>BeepServiceOptions</code>
+  is overridden automatically by <code>DesktopBeepOptions.ToBeepServiceOptions()</code>.
+</div>
+</section>
 
-public static class WebBeepServiceExtensions
+<!-- ==================== SECTION: web-registration ==================== -->
+<section id="web-registration">
+<h2><i class="bi bi-cloud"></i> Web / ASP.NET Core Registration</h2>
+<p>
+  Use <code>AddBeepForWeb</code> for ASP.NET Core Web API and MVC applications.
+  Always registers as <strong>Scoped</strong> (one instance per HTTP request).
+</p>
+
+<h3>WebBeepOptions</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>DirectoryPath</code></td><td><code>{BaseDir}/Beep</code></td><td>Root data directory</td></tr>
+  <tr><td><code>AppRepoName</code></td><td><code>"WebApp"</code></td><td>Container name</td></tr>
+  <tr><td><code>EnableAutoMapping</code></td><td><code>true</code></td><td>Maps at startup</td></tr>
+  <tr><td><code>EnableAssemblyLoading</code></td><td><code>true</code></td><td>Scans plugins</td></tr>
+  <tr><td><code>EnableRequestIsolation</code></td><td><code>true</code></td><td>Isolates state per HTTP request</td></tr>
+  <tr><td><code>EnableConnectionPooling</code></td><td><code>true</code></td><td>Reuses connections across requests</td></tr>
+  <tr><td><code>EnableApiDiscovery</code></td><td><code>false</code></td><td>Auto-discovers BeepService API endpoints</td></tr>
+  <tr><td><code>InitializationTimeout</code></td><td>5 min</td><td>Max startup wait</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Registration &amp; Middleware</h3>
+<pre><code class="language-csharp">// Program.cs — options pattern
+builder.Services.AddBeepForWeb(opts =>
 {
-    public static IServiceCollection AddBeepForWeb(this IServiceCollection services, Action&lt;WebBeepOptions&gt; configure = null);
+    opts.DirectoryPath = Path.Combine(builder.Environment.ContentRootPath, "Beep");
+    opts.AppRepoName = "MyWebApi";
+    opts.EnableConnectionPooling = true;
+    opts.EnableRequestIsolation = true;
+});
+
+var app = builder.Build();
+app.UseBeepForWeb();   // Registers connection cleanup middleware
+app.MapControllers();
+app.Run();</code></pre>
+
+<h3>Fluent Builder (Web)</h3>
+<pre><code class="language-csharp">builder.Services.AddBeepForWeb()
+    .InDirectory(Path.Combine(basePath, "Beep"))
+    .WithAppRepo("MyWebApi")
+    .WithConnectionPooling()
+    .WithRequestIsolation()
+    .WithApiDiscovery()
+    .WithMapping()
+    .Build();</code></pre>
+
+<h3>Controller Injection Example</h3>
+<pre><code class="language-csharp">[ApiController]
+[Route("api/[controller]")]
+public class DataSourceController : ControllerBase
+{
+    private readonly IBeepService _beep;
+    public DataSourceController(IBeepService beep) => _beep = beep;
+
+    [HttpGet("list")]
+    public IActionResult GetDataSources()
+    {
+        var sources = _beep.DMEEditor.DataSources
+            .Select(ds => new { ds.DatasourceName, Type = ds.DatasourceType.ToString() });
+        return Ok(sources);
+    }
 }</code></pre>
-                </section>
-            </div>
-        </main>
-    </div>
-    <script src="navigation.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</section>
+
+<!-- ==================== SECTION: blazor-registration ==================== -->
+<section id="blazor-registration">
+<h2><i class="bi bi-lightning"></i> Blazor Registration</h2>
+<p>
+  Two separate extension methods cover the two Blazor hosting models.
+</p>
+
+<h3>BlazorBeepOptions</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>DirectoryPath</code></td><td><code>{BaseDir}/Beep</code></td><td>Root data directory</td></tr>
+  <tr><td><code>AppRepoName</code></td><td><code>"BlazorApp"</code></td><td>Container name</td></tr>
+  <tr><td><code>ServiceLifetime</code></td><td><em>Set per method</em></td><td>Scoped (Server) or Singleton (WASM)</td></tr>
+  <tr><td><code>EnableSignalRProgress</code></td><td><code>false</code></td><td>Real-time progress via SignalR (Server)</td></tr>
+  <tr><td><code>UseBrowserStorage</code></td><td><code>false</code></td><td>Browser localStorage/sessionStorage (WASM)</td></tr>
+  <tr><td><code>EnableCircuitHandlers</code></td><td><code>false</code></td><td>Circuit lifecycle hooks (Server)</td></tr>
+  <tr><td><code>EnableAutoMapping</code></td><td><code>true</code></td><td>Maps at startup</td></tr>
+  <tr><td><code>EnableAssemblyLoading</code></td><td><code>true</code></td><td>Scans plugins</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Blazor Server</h3>
+<pre><code class="language-csharp">// Program.cs — Blazor Server
+builder.Services.AddBeepForBlazorServer(opts =>
+{
+    opts.DirectoryPath = Path.Combine(builder.Environment.ContentRootPath, "Beep");
+    opts.AppRepoName = "MyBlazorServerApp";
+    opts.EnableSignalRProgress = true;    // real-time progress via SignalR
+    opts.EnableCircuitHandlers = true;    // cleanup on circuit disconnect
+});
+// Lifetime = Scoped (one per Blazor circuit)</code></pre>
+
+<h3>Blazor WebAssembly</h3>
+<pre><code class="language-csharp">// Program.cs — Blazor WASM
+builder.Services.AddBeepForBlazorWasm(opts =>
+{
+    opts.DirectoryPath = "Beep";          // browser virtual path
+    opts.AppRepoName = "MyBlazorWasmApp";
+    opts.UseBrowserStorage = true;        // persist config in localStorage
+});
+// Lifetime = Singleton (WASM has single user per process)</code></pre>
+
+<h3>Blazor Component Usage</h3>
+<pre><code class="language-csharp">@inject IBeepService BeepService
+@inject IJSRuntime JSRuntime
+
+@code {
+    private List&lt;string&gt; dataSources = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ds = BeepService.DMEEditor.GetDataSource("mydb");
+        if (ds != null)
+        {
+            var entities = await Task.Run(() => ds.GetEntities("", new List&lt;ReportFilter&gt;()));
+            dataSources = entities.Select(e =&gt; e.EntityName).ToList();
+        }
+    }
+}</code></pre>
+</section>
+
+<!-- ==================== SECTION: fluent-builder ==================== -->
+<section id="fluent-builder">
+<h2><i class="bi bi-link-45deg"></i> Fluent Builder API</h2>
+<p>
+  <code>AddBeepServices()</code> (no arguments) returns an <code>IBeepServiceBuilder</code> for method-chained configuration.
+  This provides the best IntelliSense experience and is platform-agnostic.
+</p>
+
+<h3>IBeepServiceBuilder Methods</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+  <tr><td><code>WithDirectory(path)</code></td><td>Sets <code>DirectoryPath</code></td></tr>
+  <tr><td><code>WithAppRepo(name)</code></td><td>Sets <code>AppRepoName</code></td></tr>
+  <tr><td><code>WithConfigType(type)</code></td><td>Sets <code>ConfigType</code></td></tr>
+  <tr><td><code>WithMapping(enable)</code></td><td>Enables/disables auto mapping</td></tr>
+  <tr><td><code>WithAssemblyLoading(enable)</code></td><td>Enables/disables plugin scanning</td></tr>
+  <tr><td><code>WithTimeout(timeSpan)</code></td><td>Sets initialization timeout</td></tr>
+  <tr><td><code>WithValidation(enable)</code></td><td>Enables/disables startup validation</td></tr>
+  <tr><td><code>WithProperty(key, value)</code></td><td>Adds an entry to <code>AdditionalProperties</code></td></tr>
+  <tr><td><code>AsSingleton()</code></td><td>Registers as Singleton lifecycle</td></tr>
+  <tr><td><code>AsScoped()</code></td><td>Registers as Scoped lifecycle</td></tr>
+  <tr><td><code>AsTransient()</code></td><td>Registers as Transient lifecycle</td></tr>
+  <tr><td><code>Build()</code></td><td>Completes registration and returns <code>IBeepService</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Usage</h3>
+<pre><code class="language-csharp">// Desktop (singleton)
+services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyApp")
+    .WithConfigType(BeepConfigType.Application)
+    .WithMapping()
+    .WithAssemblyLoading()
+    .AsSingleton()
+    .Build();
+
+// Web (scoped)
+services.AddBeepServices()
+    .WithDirectory(Path.Combine(basePath, "Beep"))
+    .WithAppRepo("MyWebApi")
+    .WithProperty("EnableConnectionPooling", true)
+    .AsScoped()
+    .Build();</code></pre>
+
+<h3>Options Pattern (alternative)</h3>
+<pre><code class="language-csharp">IBeepService beep = services.AddBeepServices(opts =>
+{
+    opts.DirectoryPath = AppContext.BaseDirectory;
+    opts.AppRepoName = "MyApp";
+    opts.ConfigType = BeepConfigType.DataConnector;
+    opts.ServiceLifetime = ServiceLifetime.Singleton;
+    opts.EnableAutoMapping = true;
+    opts.EnableAssemblyLoading = true;
+});</code></pre>
+</section>
+
+<!-- ==================== SECTION: legacy-api ==================== -->
+<section id="legacy-api">
+<h2><i class="bi bi-clock-history"></i> Legacy Registration API</h2>
+<p>
+  <code>Register()</code> is preserved for backward compatibility. Prefer the platform-specific helpers for new code.
+</p>
+<pre><code class="language-csharp">// Backward-compatible simple registration
+IBeepService beep = services.Register(
+    directoryPath: AppContext.BaseDirectory,
+    containerName: "MyApp",
+    configType: BeepConfigType.DataConnector,
+    addAsSingleton: true
+);</code></pre>
+</section>
+
+<!-- ==================== SECTION: environment-service ==================== -->
+<section id="environment-service">
+<h2><i class="bi bi-folder2-open"></i> EnvironmentService</h2>
+<p>
+  <code>EnvironmentService</code> is a static helper that resolves platform-appropriate data folder paths
+  and populates BeepDM mapping configurations. It is called internally by <code>BeepService.Configure()</code>
+  but can also be used directly.
+</p>
+
+<h3>Folder Creation</h3>
+<pre><code class="language-csharp">// Create the root Beep folder in a platform-appropriate location:
+// Windows: %APPDATA%\TheTechIdea\Beep  (or AppContext.BaseDirectory\TheTechIdea\Beep)
+// Linux/macOS: ~/.local/share/TheTechIdea/Beep
+string mainFolder = EnvironmentService.CreateMainFolder();
+
+// Create a named application repository sub-folder:
+string appFolder = EnvironmentService.CreateAppRepofolder("MyApp");
+
+// Extension form — callable on an IDMEEditor instance:
+string path = dmeEditor.CreateMainFolder();</code></pre>
+
+<h3>Beep Mapping Setup</h3>
+<pre><code class="language-csharp">// Registers all connection configs, datasource mappings, and query configs for an editor:
+dmeEditor.CreateBeepMapping();</code></pre>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i>
+  <code>EnvironmentService.BeepDataPath</code> and <code>AppRepoDataPath</code> are static read-only properties
+  that cache the last created folder paths. Useful for diagnostics.
+</div>
+</section>
+
+<!-- ==================== SECTION: service-collection-extensions ==================== -->
+<section id="service-collection-extensions">
+<h2><i class="bi bi-puzzle"></i> ServiceCollectionExtensions</h2>
+<p>Low-level <code>IServiceCollection</code> extensions for registering individual BeepDM components.</p>
+
+<h3>JsonLoader</h3>
+<pre><code class="language-csharp">// Singleton (default for long-lived apps)
+services.AddJsonLoader();
+
+// Scoped (per-request in web apps)
+services.AddJsonLoaderScoped();
+
+// Transient (new instance each time)
+services.AddJsonLoaderTransient();</code></pre>
+
+<h3>DMEEditor</h3>
+<pre><code class="language-csharp">// Register as singleton with existing handler + logger instances
+services.AddDMEEditor(assemblyHandler, logger);</code></pre>
+
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  Prefer <code>AddBeepForDesktop</code> / <code>AddBeepForWeb</code> over these low-level methods.
+  These extensions are intended for scenarios where you need granular control of individual component lifetimes.
+</div>
+</section>
+
+<!-- ==================== SECTION: service-helper ==================== -->
+<section id="service-helper">
+<h2><i class="bi bi-wrench"></i> ServiceHelper</h2>
+<p>
+  <code>ServiceHelper</code> is a static service-locator that wraps a cached <code>IServiceProvider</code>.
+  Use it sparingly — prefer constructor injection wherever possible.
+</p>
+<pre><code class="language-csharp">// Typically called once in Program.cs / App.xaml.cs after building the host:
+ServiceHelper.Initialize(host.Services);
+
+// Resolve a service anywhere, without constructor injection:
+var beep = ServiceHelper.GetService&lt;IBeepService&gt;();
+var editor = ServiceHelper.GetService&lt;IDMEEditor&gt;();</code></pre>
+
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <strong>Do not call <code>GetService</code> before <code>Initialize</code></strong> — it will throw a
+  <code>NullReferenceException</code>. Initialize as early as possible in the application lifecycle.
+</div>
+</section>
+
+<!-- ==================== SECTION: lifetimes-guidance ==================== -->
+<section id="lifetimes-guidance">
+<h2><i class="bi bi-diagram-2"></i> Lifetime Selection Guide</h2>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+<thead><tr><th>Application type</th><th>Recommended lifetime</th><th>Registration method</th></tr></thead>
+<tbody>
+  <tr><td>WinForms / WPF desktop</td><td><strong>Singleton</strong></td><td><code>AddBeepForDesktop</code></td></tr>
+  <tr><td>Console / CLI</td><td><strong>Singleton</strong></td><td><code>AddBeepServices().AsSingleton().Build()</code></td></tr>
+  <tr><td>ASP.NET Core Web API / MVC</td><td><strong>Scoped</strong></td><td><code>AddBeepForWeb</code></td></tr>
+  <tr><td>Blazor Server</td><td><strong>Scoped</strong></td><td><code>AddBeepForBlazorServer</code></td></tr>
+  <tr><td>Blazor WebAssembly</td><td><strong>Singleton</strong></td><td><code>AddBeepForBlazorWasm</code></td></tr>
+  <tr><td>Azure Functions (isolated)</td><td><strong>Scoped</strong></td><td><code>AddBeepServices().AsScoped().Build()</code></td></tr>
+  <tr><td>Background / Worker services</td><td><strong>Singleton</strong></td><td><code>AddBeepServices().AsSingleton().Build()</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="alert alert-danger">
+  <i class="bi bi-exclamation-octagon-fill"></i>
+  <strong>Never inject a Scoped <code>IBeepService</code> into a Singleton</strong> — this creates a captive dependency.
+  If a singleton component needs BeepService, register BeepService as Singleton or use <code>IServiceScopeFactory</code>.
+</div>
+
+<h3>BeepConfigType Values</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Value</th><th>Typical use</th></tr></thead>
+<tbody>
+  <tr><td><code>Application</code></td><td>Full application with UI, forms, and complete driver set</td></tr>
+  <tr><td><code>DataConnector</code></td><td>Data-only mode — connections and mappings, no UI components</td></tr>
+  <tr><td><code>Server</code></td><td>Headless server or service host scenario</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ==================== SECTION: examples ==================== -->
+<section id="examples">
+<h2><i class="bi bi-code-slash"></i> End-to-End Examples</h2>
+
+<h3>Example 1 — WinForms with IHost</h3>
+<pre><code class="language-csharp">// Program.cs
+[STAThread]
+static void Main()
+{
+    var host = Host.CreateDefaultBuilder()
+        .ConfigureServices((ctx, services) =>
+        {
+            services.AddBeepForDesktop(opts =>
+            {
+                opts.DirectoryPath = AppContext.BaseDirectory;
+                opts.AppRepoName = "MyDesktopApp";
+                opts.EnableProgressReporting = true;
+            });
+            services.AddSingleton&lt;MainForm&gt;();
+        })
+        .Build();
+
+    ServiceHelper.Initialize(host.Services);
+    var beepService = host.Services.GetRequiredService&lt;IBeepService&gt;();
+
+    Application.Run(host.Services.GetRequiredService&lt;MainForm&gt;());
+}</code></pre>
+
+<h3>Example 2 — ASP.NET Core Web API</h3>
+<pre><code class="language-csharp">// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddBeepForWeb(opts =>
+{
+    opts.DirectoryPath = Path.Combine(builder.Environment.ContentRootPath, "Beep");
+    opts.AppRepoName = "MyWebApi";
+    opts.EnableConnectionPooling = true;
+});
+
+builder.Services.AddControllers();
+
+var app = builder.Build();
+app.UseBeepForWeb();
+app.MapControllers();
+app.Run();</code></pre>
+
+<h3>Example 3 — Blazor Server</h3>
+<pre><code class="language-csharp">// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddBeepForBlazorServer(opts =>
+{
+    opts.AppRepoName = "MyBlazorApp";
+    opts.EnableSignalRProgress = true;
+    opts.EnableCircuitHandlers = true;
+});
+
+var app = builder.Build();
+app.MapRazorComponents&lt;App&gt;().AddInteractiveServerRenderMode();
+app.Run();</code></pre>
+
+<h3>Example 4 — Blazor WebAssembly</h3>
+<pre><code class="language-csharp">// Program.cs
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add&lt;App&gt;("#app");
+
+builder.Services.AddBeepForBlazorWasm(opts =>
+{
+    opts.AppRepoName = "MyBlazorWasmApp";
+    opts.UseBrowserStorage = true;
+});
+
+await builder.Build().RunAsync();</code></pre>
+
+<h3>Example 5 — Direct Instantiation (No DI)</h3>
+<pre><code class="language-csharp">// Useful for unit tests, console scripts, or legacy code
+var beep = new BeepService();
+beep.Configure(
+    directorypath: Path.Combine(Path.GetTempPath(), "BeepTest"),
+    containername: "TestContainer",
+    configType: BeepConfigType.DataConnector,
+    AddasSingleton: false
+);
+
+var ds = beep.DMEEditor.GetDataSource("northwind");
+ds.Openconnection();</code></pre>
+
+<h3>Example 6 — Fluent Builder (Generic / CLI)</h3>
+<pre><code class="language-csharp">var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((ctx, services) =>
+    {
+        services.AddBeepServices()
+            .WithDirectory(AppContext.BaseDirectory)
+            .WithAppRepo("BeepShell")
+            .WithConfigType(BeepConfigType.Application)
+            .WithAssemblyLoading()
+            .WithMapping()
+            .AsSingleton()
+            .Build();
+    })
+    .Build();
+
+var beep = host.Services.GetRequiredService&lt;IBeepService&gt;();</code></pre>
+</section>
+
+</article>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
 </body>
 </html>
