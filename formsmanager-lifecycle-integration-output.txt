@@ -1,0 +1,24 @@
+  Determining projects to restore...
+  Skipping project "C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\Assembly_helpers.csproj" because it was not found.
+  Skipping project "C:\Users\f_ald\source\repos\The-Tech-Idea\Beep.Nugget\Beep.Nugget.Logic\Beep.Nugget.Logic.csproj" because it was not found.
+  Skipping project "C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\Assembly_helpers.csproj" because it was not found.
+  Skipping project "C:\Users\f_ald\source\repos\The-Tech-Idea\Beep.Nugget\Beep.Nugget.Logic\Beep.Nugget.Logic.csproj" because it was not found.
+  All projects are up-to-date for restore.
+  DataManagementModels -> C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementModelsStandard\bin\Debug\net9.0\DataManagementModels.dll
+  DataManagementEngine -> C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\bin\Debug\net9.0\DataManagementEngine.dll
+C:\Program Files\dotnet\sdk\10.0.201\Microsoft.Common.CurrentVersion.targets(2203,5): warning MSB9008: The referenced project ..\..\Assembly_helpers.csproj does not exist. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\MasterDetailKeyResolverTests.cs(151,65): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\MasterDetailKeyResolverTests.cs(174,39): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\MasterDetailKeyResolverTests.cs(175,48): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\MasterDetailKeyResolverTests.cs(176,35): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\IntegrationTests.cs(108,62): warning CS8604: Possible null reference argument for parameter 'sourceArchiveFileName' in 'void ZipFile.ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName)'. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\IntegrationTests.cs(118,30): warning CS8602: Dereference of a possibly null reference. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\IntegrationTests.cs(119,53): warning CS8604: Possible null reference argument for parameter 'type' in 'object? Activator.CreateInstance(Type type)'. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\IntegrationTests.cs(120,26): warning CS8602: Dereference of a possibly null reference. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\IntegrationTests.cs(147,48): warning CS8604: Possible null reference argument for parameter 'type' in 'object? Activator.CreateInstance(Type type)'. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\IntegrationTests.cs(217,39): warning CS8604: Possible null reference argument for parameter 'path1' in 'string Path.Combine(string path1, string path2)'. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\Assembly_helpers.IntegrationTests.csproj]
+  Assembly_helpers.IntegrationTests -> C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\bin\Debug\net9.0\Assembly_helpers.IntegrationTests.dll
+Test run for C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\IntegrationTests\bin\Debug\net9.0\Assembly_helpers.IntegrationTests.dll (.NETCoreApp,Version=v9.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 422 ms - Assembly_helpers.IntegrationTests.dll (net9.0)

@@ -15,11 +15,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly ConcurrentDictionary<string, CrossBlockValidationRule> _rules = new();
         private readonly Func<string, IUnitofWork> _uowResolver;
 
+        /// <summary>
+        /// Creates a validation manager that resolves block units of work by block name.
+        /// </summary>
+        /// <param name="uowResolver">Resolver used to load the unit of work for a given block.</param>
         public CrossBlockValidationManager(Func<string, IUnitofWork> uowResolver)
         {
             _uowResolver = uowResolver ?? throw new ArgumentNullException(nameof(uowResolver));
         }
 
+        /// <summary>
+        /// Registers or replaces a cross-block validation rule.
+        /// </summary>
         public void Register(CrossBlockValidationRule rule)
         {
             if (rule == null) throw new ArgumentNullException(nameof(rule));
@@ -28,6 +35,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             _rules[rule.RuleName] = rule;
         }
 
+        /// <summary>
+        /// Removes a registered cross-block validation rule by name.
+        /// </summary>
         public bool Unregister(string ruleName) => _rules.TryRemove(ruleName, out _);
 
         /// <summary>
@@ -56,6 +66,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return failures;
         }
 
+        /// <summary>
+        /// Returns whether the provided validation failures include any rule configured with error or critical severity.
+        /// </summary>
         public bool HasErrorSeverityFailures(IReadOnlyList<string> failures) =>
             failures != null && failures.Count > 0 &&
             _rules.Values

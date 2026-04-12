@@ -17,10 +17,18 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class PluginLoadContext : AssemblyLoadContext
     {
+        /// <summary>Gets the logical plugin identifier associated with this load context.</summary>
         public string PluginId { get; }
+        /// <summary>Gets the path of the entry assembly loaded into this context.</summary>
         public string AssemblyPath { get; }
+        /// <summary>Gets when the load context was created.</summary>
         public DateTime LoadedAt { get; }
 
+        /// <summary>
+        /// Initializes a collectible load context for a specific plugin assembly.
+        /// </summary>
+        /// <param name="pluginId">Logical plugin identifier for diagnostics and tracking.</param>
+        /// <param name="assemblyPath">Path of the entry assembly loaded into the context.</param>
         public PluginLoadContext(string pluginId, string assemblyPath) 
             : base(pluginId, isCollectible: true)
         {
@@ -29,6 +37,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             LoadedAt = DateTime.UtcNow;
         }
 
+        /// <summary>
+        /// Defers dependency resolution to the default load context for shared framework assemblies.
+        /// </summary>
+        /// <param name="assemblyName">Assembly requested by the runtime.</param>
+        /// <returns><see langword="null"/> so normal fallback resolution can continue.</returns>
         protected override Assembly Load(AssemblyName assemblyName)
         {
             // Return null to let the default load context handle system assemblies
@@ -48,6 +61,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly IDMLogger _logger;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes an isolation manager that loads plugins into collectible assembly contexts.
+        /// </summary>
+        /// <param name="logger">Logger used for isolation diagnostics.</param>
         public PluginIsolationManager(IDMLogger logger)
         {
             _logger = logger;
@@ -253,6 +270,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
+        /// <summary>
+        /// Unloads every tracked plugin context and releases manager state.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

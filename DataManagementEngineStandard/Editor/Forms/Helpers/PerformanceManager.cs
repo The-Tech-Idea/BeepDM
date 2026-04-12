@@ -31,13 +31,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the current number of cached blocks.
+        /// </summary>
         public int CacheSize => _blockCache.Count;
+
+        /// <summary>
+        /// Gets or sets the default cache expiration window applied to cached block entries.
+        /// </summary>
         public TimeSpan CacheExpirationTime { get; set; } = TimeSpan.FromMinutes(30);
+
+        /// <summary>
+        /// Gets or sets the maximum number of cached blocks retained before eviction runs.
+        /// </summary>
         public int MaxCacheSize { get; set; } = 1000;
+
+        /// <summary>
+        /// Gets or sets whether detailed performance metrics should be collected.
+        /// </summary>
         public bool EnableDetailedMetrics { get; set; } = true;
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates a performance manager for FormsManager caching and runtime metrics.
+        /// </summary>
+        /// <param name="dmeEditor">Editor used for logging.</param>
         public PerformanceManager(IDMEEditor dmeEditor)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
@@ -554,6 +573,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region IDisposable Implementation
 
+        /// <summary>
+        /// Releases cache cleanup resources and clears cached state.
+        /// </summary>
         public void Dispose()
         {
             if (_disposed) return;

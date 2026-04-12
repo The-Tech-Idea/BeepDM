@@ -277,12 +277,25 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// </summary>
     public class LOVColumnInfo
     {
+        /// <summary>Gets or sets the source field name.</summary>
         public string FieldName { get; set; }
+
+        /// <summary>Gets or sets the display caption.</summary>
         public string DisplayName { get; set; }
+
+        /// <summary>Gets or sets the preferred column width.</summary>
         public int Width { get; set; } = 100;
+
+        /// <summary>Gets or sets whether the column is visible.</summary>
         public bool Visible { get; set; } = true;
+
+        /// <summary>Gets or sets whether the column can participate in search.</summary>
         public bool Searchable { get; set; } = true;
+
+        /// <summary>Gets or sets the optional display format string.</summary>
         public string Format { get; set; }
+
+        /// <summary>Gets or sets the column alignment. 0=Left, 1=Center, 2=Right.</summary>
         public int Alignment { get; set; } // 0=Left, 1=Center, 2=Right
     }
 }

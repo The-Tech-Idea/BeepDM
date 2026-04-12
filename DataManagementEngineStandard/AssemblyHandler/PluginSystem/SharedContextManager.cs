@@ -20,9 +20,13 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class AssemblyResolvedEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the assembly name requested by the resolver.</summary>
         public AssemblyName AssemblyName { get; set; }
+        /// <summary>Gets or sets the assembly instance that satisfied the request.</summary>
         public Assembly ResolvedAssembly { get; set; }
+        /// <summary>Gets or sets the path or source that provided the resolved assembly.</summary>
         public string ResolvedFrom { get; set; }
+        /// <summary>Gets or sets the load-context identifier that resolved the assembly.</summary>
         public string ContextId { get; set; }
     }
 
@@ -434,10 +438,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     public event EventHandler<NuggetEventArgs> NuggetLoaded;
     /// <summary>Raised after a nugget is unloaded from the shared context.</summary>
     public event EventHandler<NuggetEventArgs> NuggetUnloaded;
+#pragma warning disable CS0067
     /// <summary>Raised when a plugin (type with plugin traits) has been registered as loaded.</summary>
     public event EventHandler<PluginEventArgs> PluginLoaded;
     /// <summary>Raised when a plugin is unloaded or removed.</summary>
     public event EventHandler<PluginEventArgs> PluginUnloaded;
+#pragma warning restore CS0067
         #endregion
 
         #region Properties

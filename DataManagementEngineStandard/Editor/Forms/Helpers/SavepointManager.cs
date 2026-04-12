@@ -23,11 +23,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Create
 
+        /// <summary>
+        /// Creates a named savepoint for a block using default record metadata.
+        /// </summary>
         public string CreateSavepoint(string blockName, string savepointName = null)
         {
             return CreateSavepoint(blockName, savepointName, 0, 0, false, null);
         }
 
+        /// <summary>
+        /// Creates a named savepoint for a block with the supplied record metadata and optional snapshot values.
+        /// </summary>
         public string CreateSavepoint(
             string blockName,
             string savepointName,
@@ -65,6 +71,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Rollback
 
+        /// <summary>
+        /// Rolls back the savepoint stack for a block to the specified savepoint.
+        /// </summary>
         public Task<bool> RollbackToSavepointAsync(
             string blockName,
             string savepointName,
@@ -93,6 +102,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Release
 
+        /// <summary>
+        /// Releases a single named savepoint for a block.
+        /// </summary>
         public bool ReleaseSavepoint(string blockName, string savepointName)
         {
             if (_store.TryGetValue(blockName, out var block))
@@ -100,6 +112,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return false;
         }
 
+        /// <summary>
+        /// Releases all savepoints recorded for a block.
+        /// </summary>
         public void ReleaseAllSavepoints(string blockName)
         {
             if (_store.ContainsKey(blockName))
@@ -110,6 +125,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Query
 
+        /// <summary>
+        /// Lists the savepoints recorded for a block in timestamp order.
+        /// </summary>
         public IReadOnlyList<SavepointInfo> ListSavepoints(string blockName)
         {
             if (_store.TryGetValue(blockName, out var block))
@@ -117,6 +135,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return Array.Empty<SavepointInfo>();
         }
 
+        /// <summary>
+        /// Returns whether a named savepoint exists for a block.
+        /// </summary>
         public bool SavepointExists(string blockName, string savepointName)
         {
             return _store.TryGetValue(blockName, out var block) &&

@@ -17,6 +17,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// </summary>
     public class DefaultFieldMaskProvider : IFieldMaskProvider
     {
+        /// <summary>Masks a raw field value using the supplied pattern.</summary>
         public string Mask(object rawValue, string pattern)
         {
             if (rawValue == null) return string.Empty;
@@ -74,10 +75,15 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         #endregion
 
         #region Events
+        /// <summary>Raised when a security violation is recorded.</summary>
         public event EventHandler<SecurityViolationEventArgs> OnSecurityViolation;
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates a security manager with the supplied mask provider.
+        /// </summary>
+        /// <param name="maskProvider">Optional field-mask provider override.</param>
         public SecurityManager(IFieldMaskProvider maskProvider = null)
         {
             _maskProvider = maskProvider ?? new DefaultFieldMaskProvider();
@@ -87,10 +93,12 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         #region ISecurityManager
 
+        /// <summary>Gets the current security context.</summary>
         public SecurityContext CurrentContext { get; private set; }
 
         // ── Context ──────────────────────────────────────────────────────────
 
+        /// <summary>Sets the active security context.</summary>
         public void SetSecurityContext(SecurityContext context)
         {
             CurrentContext = context ?? new SecurityContext();
@@ -98,6 +106,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── Block Security ───────────────────────────────────────────────────
 
+        /// <summary>Registers block-level security rules for a block.</summary>
         public void SetBlockSecurity(string blockName, BlockSecurity security)
         {
             if (string.IsNullOrEmpty(blockName) || security == null) return;
@@ -105,9 +114,11 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             _blockSecurities[blockName] = security;
         }
 
+        /// <summary>Returns block-level security rules for a block.</summary>
         public BlockSecurity GetBlockSecurity(string blockName)
             => _blockSecurities.TryGetValue(blockName ?? string.Empty, out var bs) ? bs : null;
 
+        /// <summary>Returns whether a block operation is allowed in the current context.</summary>
         public bool IsBlockAllowed(string blockName, SecurityPermission permission)
         {
             if (CurrentContext.IsAdmin) return true;
@@ -133,6 +144,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             };
         }
 
+        /// <summary>Applies evaluated block security flags through the supplied callback.</summary>
         public void ApplyBlockSecurityFlags(Action<string, bool, bool, bool, bool> applyBlockFlags)
         {
             if (applyBlockFlags == null) return;
@@ -148,6 +160,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Returns the row filter clause associated with a block.</summary>
         public string GetBlockRowFilter(string blockName)
         {
             if (_blockSecurities.TryGetValue(blockName ?? string.Empty, out var bs))
@@ -157,6 +170,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── Field Security ───────────────────────────────────────────────────
 
+        /// <summary>Registers field-level security rules for a block field.</summary>
         public void SetFieldSecurity(string blockName, string fieldName, FieldSecurity security)
         {
             if (string.IsNullOrEmpty(blockName) || string.IsNullOrEmpty(fieldName) || security == null) return;
@@ -166,12 +180,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             _fieldSecurities[key] = security;
         }
 
+        /// <summary>Returns field-level security rules for a block field.</summary>
         public FieldSecurity GetFieldSecurity(string blockName, string fieldName)
         {
             var key = MakeFieldKey(blockName, fieldName);
             return _fieldSecurities.TryGetValue(key, out var fs) ? fs : null;
         }
 
+        /// <summary>Applies evaluated field security flags through the supplied callbacks.</summary>
         public void ApplyFieldSecurityFlags(
             Action<string, string, bool> setEnabled,
             Action<string, string, bool> setVisible)
@@ -191,6 +207,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Returns a masked field value when masking is enabled for the field.</summary>
         public object GetMaskedValue(string blockName, string fieldName, object rawValue)
         {
             var key = MakeFieldKey(blockName, fieldName);
@@ -202,6 +219,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── Logging ──────────────────────────────────────────────────────────
 
+        /// <summary>Records and raises a security violation.</summary>
         public void RaiseViolation(
             string blockName, string fieldName,
             SecurityPermission permission, string message)
@@ -221,6 +239,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             OnSecurityViolation?.Invoke(this, ev);
         }
 
+        /// <summary>Returns the recorded security-violation log.</summary>
         public IReadOnlyList<SecurityViolationEventArgs> GetViolationLog()
         {
             lock (_violationLock)

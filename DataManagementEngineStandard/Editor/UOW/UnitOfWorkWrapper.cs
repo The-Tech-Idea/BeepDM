@@ -26,20 +26,8 @@ namespace TheTechIdea.Beep.Editor.UOW
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
-        private readonly object _masterDetailLock = new object();
-        private readonly List<DetailRegistration> _detailRegistrations = new List<DetailRegistration>();
-        private IUnitofWork _masterUnitOfWork;
-        private string _masterKeyField = string.Empty;
-        private string _foreignKeyField = string.Empty;
         private Delegate _itemChangedForwarder;
         private EventInfo _itemChangedEventInfo;
-
-        private sealed class DetailRegistration
-        {
-            public IUnitofWork DetailUnitOfWork { get; init; }
-            public string MasterKeyField { get; init; }
-            public string DetailForeignKeyField { get; init; }
-        }
 
         public UnitOfWorkWrapper(object unitOfWork)
         {
@@ -298,23 +286,6 @@ namespace TheTechIdea.Beep.Editor.UOW
             add => AddOrRemoveUowEvent(nameof(PreCommit), value, true);
             remove => AddOrRemoveUowEvent(nameof(PreCommit), value, false);
         }
-
-        public IReadOnlyList<IUnitofWork> DetailUnitOfWorks
-        {
-            get
-            {
-                lock (_masterDetailLock)
-                {
-                    return _detailRegistrations.Select(x => x.DetailUnitOfWork).ToList();
-                }
-            }
-        }
-
-        public IUnitofWork MasterUnitOfWork => _masterUnitOfWork;
-
-        public string MasterKeyField => _masterKeyField;
-
-        public string ForeignKeyField => _foreignKeyField;
 
         #endregion
 
@@ -787,58 +758,6 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
         }
 
-        private void SetMasterRelation(IUnitofWork masterUnitOfWork, string masterKeyField, string foreignKeyField)
-        {
-            _masterUnitOfWork = masterUnitOfWork;
-            _masterKeyField = masterKeyField ?? string.Empty;
-            _foreignKeyField = foreignKeyField ?? string.Empty;
-        }
-
-        private void ClearMasterRelation()
-        {
-            _masterUnitOfWork = null;
-            _masterKeyField = string.Empty;
-            _foreignKeyField = string.Empty;
-        }
-
-        private static object GetPropertyValue(object target, string propertyName)
-        {
-            if (target == null || string.IsNullOrWhiteSpace(propertyName))
-                return null;
-
-            var property = target.GetType().GetProperty(
-                propertyName,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            return property?.GetValue(target);
-        }
-
-        private static bool TrySetPropertyValue(object target, string propertyName, object value)
-        {
-            if (target == null || string.IsNullOrWhiteSpace(propertyName))
-                return false;
-
-            var property = target.GetType().GetProperty(
-                propertyName,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (property == null || !property.CanWrite)
-                return false;
-
-            var targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            var converted = value;
-            if (converted != null && !targetType.IsInstanceOfType(converted))
-            {
-                converted = Convert.ChangeType(converted, targetType);
-            }
-
-            property.SetValue(target, converted);
-            return true;
-        }
-
-        private static bool IsNullOrEmpty(object value)
-        {
-            return value == null || value == DBNull.Value || (value is string text && string.IsNullOrWhiteSpace(text));
-        }
-
         private T GetPropertySafely<T>(Func<T> getter, T defaultValue)
         {
             try
@@ -1196,133 +1115,6 @@ namespace TheTechIdea.Beep.Editor.UOW
             return await Task.FromResult(results.Any(r => r.Flag != Errors.Ok)
                 ? results.First(r => r.Flag != Errors.Ok)
                 : new ErrorsInfo { Flag = Errors.Ok });
-        }
-
-        public void RegisterDetail(IUnitofWork detailUnitOfWork, string masterKeyField, string detailForeignKeyField)
-        {
-            ValidateNotDisposed();
-            if (detailUnitOfWork == null)
-                throw new ArgumentNullException(nameof(detailUnitOfWork));
-            if (string.IsNullOrWhiteSpace(masterKeyField))
-                throw new ArgumentException("Master key field is required", nameof(masterKeyField));
-            if (string.IsNullOrWhiteSpace(detailForeignKeyField))
-                throw new ArgumentException("Detail foreign key field is required", nameof(detailForeignKeyField));
-
-            lock (_masterDetailLock)
-            {
-                var existing = _detailRegistrations.FirstOrDefault(x => ReferenceEquals(x.DetailUnitOfWork, detailUnitOfWork));
-                if (existing != null)
-                {
-                    _detailRegistrations.Remove(existing);
-                }
-
-                _detailRegistrations.Add(new DetailRegistration
-                {
-                    DetailUnitOfWork = detailUnitOfWork,
-                    MasterKeyField = masterKeyField,
-                    DetailForeignKeyField = detailForeignKeyField
-                });
-            }
-
-            if (detailUnitOfWork is UnitOfWorkWrapper detailWrapper)
-            {
-                detailWrapper.SetMasterRelation(this, masterKeyField, detailForeignKeyField);
-            }
-        }
-
-        public void UnregisterDetail(IUnitofWork detailUnitOfWork)
-        {
-            if (detailUnitOfWork == null)
-                return;
-
-            lock (_masterDetailLock)
-            {
-                var existing = _detailRegistrations.FirstOrDefault(x => ReferenceEquals(x.DetailUnitOfWork, detailUnitOfWork));
-                if (existing != null)
-                {
-                    _detailRegistrations.Remove(existing);
-                }
-            }
-
-            if (detailUnitOfWork is UnitOfWorkWrapper detailWrapper && ReferenceEquals(detailWrapper.MasterUnitOfWork, this))
-            {
-                detailWrapper.ClearMasterRelation();
-            }
-        }
-
-        public void UnregisterAllDetails()
-        {
-            List<IUnitofWork> details;
-            lock (_masterDetailLock)
-            {
-                details = _detailRegistrations.Select(x => x.DetailUnitOfWork).ToList();
-                _detailRegistrations.Clear();
-            }
-
-            foreach (var detail in details)
-            {
-                if (detail is UnitOfWorkWrapper detailWrapper && ReferenceEquals(detailWrapper.MasterUnitOfWork, this))
-                {
-                    detailWrapper.ClearMasterRelation();
-                }
-            }
-        }
-
-        public async Task SynchronizeDetailsAsync()
-        {
-            ValidateNotDisposed();
-
-            List<DetailRegistration> details;
-            lock (_masterDetailLock)
-            {
-                details = _detailRegistrations.ToList();
-            }
-
-            if (!details.Any())
-                return;
-
-            var currentItem = CurrentItem;
-            if (currentItem == null)
-            {
-                foreach (var detail in details)
-                {
-                    detail.DetailUnitOfWork.Clear();
-                }
-                return;
-            }
-
-            foreach (var detail in details)
-            {
-                var masterValue = GetPropertyValue(currentItem, detail.MasterKeyField);
-                if (IsNullOrEmpty(masterValue))
-                {
-                    detail.DetailUnitOfWork.Clear();
-                    continue;
-                }
-
-                await detail.DetailUnitOfWork.Get(new List<AppFilter>
-                {
-                    new AppFilter
-                    {
-                        FieldName = detail.DetailForeignKeyField,
-                        Operator = "=",
-                        FilterValue = masterValue.ToString()
-                    }
-                });
-            }
-        }
-
-        public bool ApplyMasterValueToCurrentItem()
-        {
-            ValidateNotDisposed();
-            if (_masterUnitOfWork?.CurrentItem == null || CurrentItem == null)
-                return false;
-
-            var masterValue = GetPropertyValue(_masterUnitOfWork.CurrentItem, _masterKeyField);
-            if (IsNullOrEmpty(masterValue))
-                return false;
-
-            return TrySetPropertyValue(CurrentItem, _foreignKeyField, masterValue);
         }
 
         #endregion

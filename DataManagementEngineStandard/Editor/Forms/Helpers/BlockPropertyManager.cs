@@ -15,6 +15,10 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     {
         private readonly IDictionary<string, DataBlockInfo> _blocks;
 
+        /// <summary>
+        /// Creates a block-property adapter over the supplied block dictionary.
+        /// </summary>
+        /// <param name="blocks">Registered block metadata keyed by block name.</param>
         public BlockPropertyManager(IDictionary<string, DataBlockInfo> blocks)
         {
             _blocks = blocks ?? throw new ArgumentNullException(nameof(blocks));

@@ -20,6 +20,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #region Generic Block Registration (Phase 1.1)
 
         /// <summary>
+        /// Registers a typed data block using the entity metadata already carried by the unit of work.
+        /// </summary>
+        public void RegisterBlock<T>(
+            string blockName,
+            IUnitofWork unitOfWork,
+            string dataSourceName = null,
+            bool isMasterBlock = false)
+        {
+            RegisterBlock(blockName, unitOfWork, null, dataSourceName, isMasterBlock);
+
+            if (_blocks.TryGetValue(blockName, out var info))
+                info.EntityType = typeof(T);
+        }
+
+        /// <summary>
         /// Registers a typed data block. The CLR type <typeparamref name="T"/> is stored on
         /// <see cref="DataBlockInfo.EntityType"/> so that <c>CreateNewRecord</c> can instantiate
         /// the correct concrete type instead of falling back to <c>ExpandoObject</c>.
@@ -118,7 +133,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     if (currentRecord != null && relatedValues != null)
                     {
                         foreach (var kv in relatedValues)
-                            SetFieldValue(currentRecord, kv.Key, kv.Value);
+                        {
+                            var targetField = string.Equals(kv.Key, "__RETURN_VALUE__", StringComparison.Ordinal)
+                                ? fieldName
+                                : kv.Key;
+                            SetFieldValue(currentRecord, targetField, kv.Value);
+                        }
                     }
                 }
             }

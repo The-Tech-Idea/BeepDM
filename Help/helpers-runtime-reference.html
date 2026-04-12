@@ -108,7 +108,7 @@
                                 <tr><td><code>ConnectionStringValidationHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Per-driver connection-string validation rules</td></tr>
                                 <tr><td><code>ConnectionStringSecurityHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Mask passwords, API keys, tokens for logging</td></tr>
                                 <tr><td><code>ConnectionHelper_GetParameterList.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Parse / mutate individual connection-string parameters</td></tr>
-                                <tr><td><code>ConnectionHelper_RDBMS.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: SQL Server, MySQL, PostgreSQL, Oracle, SQLite, &hellip;</td></tr>
+                                <tr><td><code>ConnectionHelper_RDBMS.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: SQL Server, MySQL, PostgreSQL, SQLite, Firebird, &hellip;</td></tr>
                                 <tr><td><code>ConnectionHelper_NoSQL.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: MongoDB, Redis, Cassandra, Elasticsearch, &hellip;</td></tr>
                                 <tr><td><code>ConnectionHelper_VectorDB.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, &hellip;</td></tr>
                                 <tr><td><code>ConnectionHelper_File.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: CSV, JSON, XML, Excel, Parquet, Avro, &hellip;</td></tr>
@@ -263,7 +263,6 @@ public static bool IsConnectionStringValid(string connectionString, DataSourceTy
 public static bool ValidateSqlServerConnectionString(string connectionString);
 public static bool ValidateMySqlConnectionString(string connectionString);
 public static bool ValidateSQLiteConnectionString(string connectionString);
-public static bool ValidateOracleConnectionString(string connectionString);
 // ...and more: PostgreSQL, MongoDB, Redis, OleDB, ODBC
 
 // Human-readable description of what the driver requires
@@ -296,7 +295,6 @@ if (!ok)
                                 <tr><td>SqlServer</td><td><code>Server</code> / <code>Data Source</code> / <code>Address</code></td></tr>
                                 <tr><td>Mysql</td><td><code>Server</code> / <code>Host</code> / <code>Data Source</code></td></tr>
                                 <tr><td>SqlLite</td><td><code>Data Source</code> / <code>DataSource</code></td></tr>
-                                <tr><td>Oracle</td><td><code>Data Source</code> or <code>Server</code> / <code>Host</code></td></tr>
                                 <tr><td>Postgre</td><td><code>Host</code> / <code>Server</code></td></tr>
                                 <tr><td>MongoDB</td><td><code>mongodb://</code> prefix</td></tr>
                                 <tr><td>Redis</td><td>host:port pattern</td></tr>
@@ -437,7 +435,6 @@ cs = ConnectionHelper.RemoveParameter(cs, "Password");</code></pre>
                                 <tr><td><code>CreateSqlServerConfig()</code></td><td>SqlServer</td><td><code>Server={Host};Database={Database};User Id={UserID};Password={Password}</code></td></tr>
                                 <tr><td><code>CreateMySqlConfig()</code></td><td>Mysql</td><td><code>Server={Host};Database={Database};Uid={UserID};Pwd={Password}</code></td></tr>
                                 <tr><td><code>CreatePostgreConfig()</code></td><td>Postgre</td><td><code>Host={Host};Database={Database};Username={UserID};Password={Password}</code></td></tr>
-                                <tr><td><code>CreateOracleConfig()</code></td><td>Oracle</td><td><code>Data Source={Host}:{Port}/{Database};User Id={UserID};Password={Password}</code></td></tr>
                                 <tr><td><code>CreateSQLiteConfig()</code></td><td>SqlLite</td><td><code>Data Source={FileName}</code></td></tr>
                                 <tr><td><code>CreateDuckDBConfig()</code></td><td>DuckDB</td><td><code>Data Source={FileName}</code></td></tr>
                                 <tr><td><code>CreateFirebirdConfig()</code></td><td>Firebird</td><td><code>DataSource={Host};Database={FileName};User={UserID};Password={Password}</code></td></tr>
@@ -611,7 +608,7 @@ cache.Openconnection();</code></pre>
                         <table>
                             <thead><tr><th>Method</th><th>File</th><th>Platforms included</th></tr></thead>
                             <tbody>
-                                <tr><td><code>GetCRMConfigs()</code></td><td><code>ConnectionHelper_CRM.cs</code></td><td>Salesforce, HubSpot, Dynamics 365, Zoho, Pipedrive, Freshsales, SugarCRM, Oracle CRM, SAP CRM</td></tr>
+                                <tr><td><code>GetCRMConfigs()</code></td><td><code>ConnectionHelper_CRM.cs</code></td><td>Salesforce, HubSpot, Dynamics 365, Zoho, Pipedrive, Freshsales, SugarCRM, SAP CRM</td></tr>
                                 <tr><td><code>GetMarketingConfigs()</code></td><td><code>ConnectionHelper_Marketing.cs</code></td><td>Mailchimp, Marketo, ActiveCampaign, Klaviyo, Sendinblue, SendGrid, Mailgun, Google Ads, Hootsuite</td></tr>
                                 <tr><td><code>GetECommerceConfigs()</code></td><td><code>ConnectionHelper_ECommerce.cs</code></td><td>Shopify, WooCommerce, Magento, BigCommerce, Squarespace, Etsy, OpenCart, PrestaShop</td></tr>
                                 <tr><td><code>GetProjectManagementConfigs()</code></td><td><code>ConnectionHelper_ProjectManagement.cs</code></td><td>Jira, Azure Boards, Trello, Asana, Monday.com, ClickUp, Notion, Wrike, Smartsheet</td></tr>
@@ -986,7 +983,6 @@ bool   IsValidFieldMapping(string DSname, EntityField fld, IDMEEditor dme);</cod
                                 <tr><td><code>...SqlServer.cs</code></td><td>SQL Server (<code>SQLServerDataSource</code>)</td><td><code>GenerateSqlServerDataTypesMapping()</code></td></tr>
                                 <tr><td><code>...Common.cs</code></td><td>SQLite, SQL Compact, DuckDB</td><td><code>GenerateSQLiteDataTypesMapping()</code>, etc.</td></tr>
                                 <tr><td><code>...PostgreMySQL.cs</code></td><td>PostgreSQL, MySQL</td><td><code>GeneratePostgreSQLDataTypesMapping()</code>, <code>GenerateMySQLDataTypesMapping()</code></td></tr>
-                                <tr><td><code>...Oracle.cs</code></td><td>Oracle</td><td><code>GenerateOracleDataTypesMapping()</code></td></tr>
                                 <tr><td><code>...FirebirdLiteDB.cs</code></td><td>Firebird, LiteDB</td><td><code>GenerateFirebirdDataTypesMapping()</code>, <code>GenerateLiteDBDataTypesMapping()</code></td></tr>
                                 <tr><td><code>...NoSQL.cs</code></td><td>MongoDB, Cassandra, Redis</td><td><code>GenerateMongoDBDataTypesMapping()</code>, etc.</td></tr>
                                 <tr><td><code>...Enterprise.cs</code></td><td>DB2, DynamoDB, InfluxDB, Sybase, HBase, CockroachDB</td><td><code>GenerateDB2DataTypesMapping()</code>, etc.</td></tr>
@@ -1189,7 +1185,6 @@ var ds = (IDataSource)dsType.GetInstance(
                             <tr><td>SQL&nbsp;Server</td><td><code>SELECT NEXT VALUE FOR {seq}</code></td><td><code>SELECT SCOPE_IDENTITY()</code></td></tr>
                             <tr><td>MySQL</td><td>—</td><td><code>SELECT LAST_INSERT_ID()</code></td></tr>
                             <tr><td>PostgreSQL</td><td><code>SELECT nextval('{seq}')</code></td><td><code>SELECT LASTVAL()</code></td></tr>
-                            <tr><td>Oracle</td><td><code>SELECT {seq}.NEXTVAL FROM dual</code></td><td><code>SELECT {seq}.currval FROM dual</code></td></tr>
                             <tr><td>Firebird</td><td><code>SELECT NEXT VALUE FOR {seq} FROM RDB$DATABASE</code></td><td><code>SELECT GEN_ID({gen},0) FROM RDB$DATABASE</code></td></tr>
                             <tr><td>DB2</td><td><code>SELECT NEXTVAL FOR {seq} FROM sysibm.sysdummy1</code></td><td><code>SELECT IDENTITY_VAL_LOCAL() FROM sysibm.sysdummy1</code></td></tr>
                         </tbody>
@@ -1253,7 +1248,6 @@ string idSql = DatabaseFeatureHelper.GenerateFetchLastIdentityQuery(
                             <tr><td>SQL&nbsp;Server / AzureSQL / AWSRDS</td><td><code>SELECT name FROM sys.databases WHERE HAS_DBACCESS(name)=1 ORDER BY name</code></td></tr>
                             <tr><td>MySQL</td><td><code>SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN (SELECT DISTINCT TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLE_PRIVILEGES WHERE GRANTEE='&lsquo;{user}&rsquo;')</code></td></tr>
                             <tr><td>PostgreSQL</td><td><code>SELECT datname FROM pg_database WHERE datistemplate=false AND has_database_privilege('{user}',datname,'CONNECT')</code></td></tr>
-                            <tr><td>Oracle</td><td><code>SELECT DISTINCT OWNER FROM DBA_TAB_PRIVS WHERE GRANTEE='{user}'</code></td></tr>
                             <tr><td>DB2</td><td><code>SELECT DISTINCT SCHEMANAME FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE='{user}'</code></td></tr>
                             <tr><td>SQLite</td><td><code>PRAGMA database_list;</code></td></tr>
                             <tr><td>Firebird</td><td><code>SELECT RDB$DATABASE_NAME FROM RDB$DATABASE</code></td></tr>
@@ -1680,7 +1674,7 @@ entity.Fields.Add(pk);</code></pre>
                             <tr><td>Core/DataSourceHelperFactory.cs</td><td><code>DataSourceHelperFactory</code></td><td>Creates the correct <code>IDataSourceHelper</code> for any <code>DataSourceType</code></td></tr>
                             <tr><td>Core/GeneralDataSourceHelper.cs</td><td><code>GeneralDataSourceHelper</code></td><td>Runtime delegate wrapper — picks the right helper and forwards all calls</td></tr>
                             <tr><td>Core/DefaultDataSourceHelper.cs</td><td><code>DefaultDataSourceHelper</code></td><td>Fallback helper for unknown / unregistered datasource types</td></tr>
-                            <tr><td>RdbmsHelpers/RdbmsHelper.cs</td><td><code>RdbmsHelper</code></td><td>Unified RDBMS helper (SQL Server, MySQL, PostgreSQL, Oracle, SQLite, …)</td></tr>
+                            <tr><td>RdbmsHelpers/RdbmsHelper.cs</td><td><code>RdbmsHelper</code></td><td>Unified RDBMS helper (SQL Server, MySQL, PostgreSQL, SQLite, Firebird, …)</td></tr>
                             <tr><td>MongoDBHelpers/MongoDBHelper.cs</td><td><code>MongoDBHelper</code></td><td>MongoDB, CouchDB, RavenDB, Couchbase, ArangoDB, Firebase, DynamoDB</td></tr>
                             <tr><td>RedisHelpers/RedisHelper.cs</td><td><code>RedisHelper</code></td><td>Redis, Memcached, Hazelcast, GridGain, ApacheIgnite, in-memory caches</td></tr>
                             <tr><td>CassandraHelpers/CassandraHelper.cs</td><td><code>CassandraHelper</code></td><td>Cassandra, ClickHouse (column-family)</td></tr>
@@ -1829,7 +1823,7 @@ string quoteChar = helper.QuoteIdentifier("myKey"); // uses RedisHelper internal
                     <table class="api-table">
                         <thead><tr><th>Helper Class</th><th>Engines Covered</th></tr></thead>
                         <tbody>
-                            <tr><td><code>RdbmsHelper</code></td><td>SQL Server, MySQL, PostgreSQL, Oracle, SQLite, DB2, Firebird, HANA, Teradata, Vertica, AzureSQL, AWSRDS, Snowflake, CockroachDB, Spanner, DuckDB, MariaDB, Hadoop, BigQuery, Redshift, Athena, DataBricks, …</td></tr>
+                            <tr><td><code>RdbmsHelper</code></td><td>SQL Server, MySQL, PostgreSQL, SQLite, DB2, Firebird, HANA, Teradata, Vertica, AzureSQL, AWSRDS, Snowflake, CockroachDB, Spanner, DuckDB, MariaDB, Hadoop, BigQuery, Redshift, Athena, DataBricks, …</td></tr>
                             <tr><td><code>MongoDBHelper</code></td><td>MongoDB, CouchDB, RavenDB, Couchbase, ArangoDB, OrientDB, LiteDB, Firebase, DynamoDB</td></tr>
                             <tr><td><code>RedisHelper</code></td><td>Redis, Memcached, Hazelcast, GridGain, ApacheIgnite, ChronicleMap, RealIM, InMemoryCache, CachedMemory</td></tr>
                             <tr><td><code>CassandraHelper</code></td><td>Cassandra, ClickHouse</td></tr>

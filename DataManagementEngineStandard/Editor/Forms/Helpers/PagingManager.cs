@@ -28,21 +28,25 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── IPagingManager ───────────────────────────────────────────────────
 
+        /// <summary>Sets the page size for a block.</summary>
         public void SetPageSize(string blockName, int pageSize)
         {
             if (string.IsNullOrWhiteSpace(blockName) || pageSize <= 0) return;
             GetOrCreate(blockName).PageSize = pageSize;
         }
 
+        /// <summary>Returns the configured page size for a block.</summary>
         public int GetPageSize(string blockName)
             => string.IsNullOrWhiteSpace(blockName) ? 50 : GetOrCreate(blockName).PageSize;
 
+        /// <summary>Returns current paging information for a block.</summary>
         public PageInfo GetCurrentPage(string blockName)
         {
             var state = GetOrCreate(blockName ?? string.Empty);
             return BuildPageInfo(state);
         }
 
+        /// <summary>Sets the current page number for a block and returns the updated page info.</summary>
         public PageInfo SetCurrentPage(string blockName, int pageNumber)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return new PageInfo();
@@ -54,24 +58,29 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             return BuildPageInfo(state);
         }
 
+        /// <summary>Sets the total record count for a block.</summary>
         public void SetTotalRecordCount(string blockName, long count)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return;
             GetOrCreate(blockName).TotalRecords = Math.Max(0, count);
         }
 
+        /// <summary>Returns the total record count for a block.</summary>
         public long GetTotalRecordCount(string blockName)
             => string.IsNullOrWhiteSpace(blockName) ? 0 : GetOrCreate(blockName).TotalRecords;
 
+        /// <summary>Sets the fetch-ahead depth for a block.</summary>
         public void SetFetchAheadDepth(string blockName, int depth)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return;
             GetOrCreate(blockName).FetchAheadDepth = Math.Max(0, depth);
         }
 
+        /// <summary>Returns the fetch-ahead depth for a block.</summary>
         public int GetFetchAheadDepth(string blockName)
             => string.IsNullOrWhiteSpace(blockName) ? 1 : GetOrCreate(blockName).FetchAheadDepth;
 
+        /// <summary>Clears paging state for a block.</summary>
         public void ResetPaging(string blockName)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return;

@@ -301,7 +301,6 @@ namespace TheTechIdea.Beep.Tools
                 outputpath, nameSpacestring, generateCSharpCodeFiles);
         }
         /// <summary>
-        /// <summary>
         /// Creates an Entity class that inherits from Entity base class (modern method)
         /// </summary>
         public string CreateEntityClass(EntityStructure entity, string usingHeader, string extraCode, 

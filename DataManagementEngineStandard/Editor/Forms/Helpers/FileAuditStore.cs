@@ -26,6 +26,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             _filePath = filePath;
         }
 
+        /// <summary>Saves an audit entry to the file-backed store.</summary>
         public void Save(AuditEntry entry)
         {
             if (entry == null) return;
@@ -37,6 +38,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Queries audit entries using the supplied filters.</summary>
         public IReadOnlyList<AuditEntry> Query(
             string blockName         = null,
             AuditOperation? operation = null,
@@ -64,6 +66,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Purges entries older than the supplied number of days.</summary>
         public void Purge(int olderThanDays)
         {
             var cutoff = DateTime.UtcNow.AddDays(-Math.Abs(olderThanDays));
@@ -77,6 +80,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Clears all entries from the store.</summary>
         public void Clear()
         {
             lock (_lock)

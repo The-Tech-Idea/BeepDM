@@ -15,7 +15,7 @@
 
 <body>
     <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()" title="Toggle navigation" aria-label="Toggle navigation">
         <i class="bi bi-list"></i>
     </button>
 
@@ -793,7 +793,7 @@ if (productToDelete != null)
         await _multiUoW.AddUnitOfWorkAsync&lt;OrderDetail&gt;("Orders_MongoDB", "OrderDetails", "DetailID");
         await _multiUoW.AddUnitOfWorkAsync&lt;Product&gt;("Inventory_PostgreSQL", "Products", "ProductID");
         await _multiUoW.AddUnitOfWorkAsync&lt;Address&gt;("CRM_SqlServer", "Addresses", "AddressID");
-        await _multiUoW.AddUnitOfWorkAsync&lt;Payment&gt;("Payments_Oracle", "Payments", "PaymentID");
+        await _multiUoW.AddUnitOfWorkAsync&lt;Payment&gt;("Payments_Firebird", "Payments", "PaymentID");
         
         // Define business relationships
         _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID",
@@ -818,7 +818,7 @@ if (productToDelete != null)
         Console.WriteLine("   ðŸ“Š SQL Server: Customers, Addresses");
         Console.WriteLine("   ðŸ“Š MongoDB: Orders, OrderDetails");
         Console.WriteLine("   ðŸ“Š PostgreSQL: Products");
-        Console.WriteLine("   ðŸ“Š Oracle: Payments");
+        Console.WriteLine("   ðŸ“Š Firebird: Payments");
     }
     
     private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs e)

@@ -13,10 +13,10 @@ using TheTechIdea.Beep.Utilities;
 namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 {
     /// <summary>
-    /// Deprecated legacy helper for the old FormsManager-owned relationship engine.
-    /// Active master/detail orchestration now lives in IUnitofWork implementations and is consumed through FormsManager.
+    /// Deprecated legacy helper for the old standalone relationship engine.
+    /// Active master/detail orchestration now lives directly in FormsManager core methods.
     /// </summary>
-    [Obsolete("RelationshipManager is deprecated. Master/detail orchestration now belongs to IUnitofWork and FormsManager master/detail methods.")]
+    [Obsolete("RelationshipManager is deprecated. Use FormsManager master/detail methods instead.")]
     public class RelationshipManager : IRelationshipManager
     {
         #region Fields
@@ -27,6 +27,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates the deprecated relationship manager wrapper over the shared FormsManager block and relationship collections.
+        /// </summary>
+        /// <param name="dmeEditor">Editor used for logging and datasource access.</param>
+        /// <param name="blocks">Registered block metadata keyed by block name.</param>
+        /// <param name="relationships">Relationship collections keyed by master block name.</param>
         public RelationshipManager(
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks,

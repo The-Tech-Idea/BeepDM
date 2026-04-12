@@ -29,7 +29,7 @@ namespace TheTechIdea.Beep.Caching.Providers
     /// - Authentication and SSL/TLS security integration
     /// - Multi-database support within Redis instances
     /// 
-    /// **Scalability & Performance:**
+    /// **Scalability &amp; Performance:**
     /// - Horizontal scaling across multiple Redis nodes
     /// - Connection pooling with configurable pool sizes
     /// - Pipelining support for batch operations
@@ -45,7 +45,7 @@ namespace TheTechIdea.Beep.Caching.Providers
     /// - Global applications with geographically distributed deployments
     /// - Session state management across load-balanced environments
     /// 
-    /// **Reliability & Availability:**
+    /// **Reliability &amp; Availability:**
     /// - Automatic connection recovery and retry mechanisms
     /// - Circuit breaker patterns for fault tolerance
     /// - Fallback strategies when Redis is unavailable
@@ -67,14 +67,14 @@ namespace TheTechIdea.Beep.Caching.Providers
     /// - Secure connection string handling
     /// - Integration with enterprise security frameworks
     /// 
-    /// **Monitoring & Diagnostics:**
+    /// **Monitoring &amp; Diagnostics:**
     /// - Redis server statistics integration
     /// - Network latency and throughput monitoring
     /// - Connection health and status tracking
     /// - Detailed error reporting and diagnostics
     /// - Integration with Redis monitoring tools (Redis Insights, etc.)
     /// 
-    /// **Configuration & Management:**
+    /// **Configuration &amp; Management:**
     /// - Flexible Redis configuration options
     /// - Support for multiple Redis endpoints
     /// - Database selection and namespace management
@@ -118,8 +118,11 @@ namespace TheTechIdea.Beep.Caching.Providers
         #endregion
 
         #region ICacheProvider Implementation
+        /// <inheritdoc />
         public string Name => "Redis";
+        /// <inheritdoc />
         public bool IsAvailable => !_disposed && _isConnected;
+        /// <inheritdoc />
         public CacheStatistics Statistics 
         {
             get
@@ -136,6 +139,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || !_isConnected)
@@ -175,6 +179,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || !_isConnected || value == null)
@@ -213,6 +218,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || !_isConnected)
@@ -248,6 +254,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || !_isConnected)
@@ -270,6 +277,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<long> ClearAsync(string pattern = null, CancellationToken cancellationToken = default)
         {
             if (_disposed || !_isConnected)
@@ -321,6 +329,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<Dictionary<string, T>> GetManyAsync<T>(IEnumerable<string> keys, CancellationToken cancellationToken = default)
         {
             var result = new Dictionary<string, T>();
@@ -355,6 +364,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<long> SetManyAsync<T>(Dictionary<string, T> values, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
         {
             if (values == null || _disposed || !_isConnected)
@@ -397,6 +407,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> RefreshAsync(string key, TimeSpan expiry, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || !_isConnected)
@@ -483,6 +494,7 @@ namespace TheTechIdea.Beep.Caching.Providers
         #endregion
 
         #region IDisposable Implementation
+        /// <inheritdoc />
         public void Dispose()
         {
             if (!_disposed)

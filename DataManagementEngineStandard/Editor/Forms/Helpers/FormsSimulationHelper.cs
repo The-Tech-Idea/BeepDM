@@ -30,6 +30,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates a Forms-simulation helper for the supplied editor and block registry.
+        /// </summary>
+        /// <param name="dmeEditor">Editor used for logging and datasource access.</param>
+        /// <param name="blocks">Registered block metadata keyed by block name.</param>
         public FormsSimulationHelper(
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks)

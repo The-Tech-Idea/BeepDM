@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <RestoreSuccess Condition=" '$(RestoreSuccess)' == '' ">True</RestoreSuccess>
+    <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
+    <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
+    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\f_ald\.nuget\packages\;C:\Users\f_ald\AppData\Roaming\Godot\mono\GodotNuGetFallbackFolder;C:\Program Files\DevExpress 23.1\Components\Offline Packages;C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages;C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\19.4.0.38\ToolboxNuGetPackages</NuGetPackageFolders>
+    <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">7.0.0</NuGetToolVersion>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <SourceRoot Include="C:\Users\f_ald\.nuget\packages\" />
+    <SourceRoot Include="C:\Users\f_ald\AppData\Roaming\Godot\mono\GodotNuGetFallbackFolder\" />
+    <SourceRoot Include="C:\Program Files\DevExpress 23.1\Components\Offline Packages\" />
+    <SourceRoot Include="C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages\" />
+    <SourceRoot Include="C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\19.4.0.38\ToolboxNuGetPackages\" />
+  </ItemGroup>
+  <ImportGroup Condition=" '$(TargetFramework)' == 'net10.0' AND '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)microsoft.codeanalysis.analyzers\5.3.0-2.25625.1\buildTransitive\Microsoft.CodeAnalysis.Analyzers.props" Condition="Exists('$(NuGetPackageRoot)microsoft.codeanalysis.analyzers\5.3.0-2.25625.1\buildTransitive\Microsoft.CodeAnalysis.Analyzers.props')" />
+  </ImportGroup>
+  <ImportGroup Condition=" '$(TargetFramework)' == 'net8.0' AND '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\10.0.5\buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.props" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\10.0.5\buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.props')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.codeanalysis.analyzers\5.3.0-2.25625.1\buildTransitive\Microsoft.CodeAnalysis.Analyzers.props" Condition="Exists('$(NuGetPackageRoot)microsoft.codeanalysis.analyzers\5.3.0-2.25625.1\buildTransitive\Microsoft.CodeAnalysis.Analyzers.props')" />
+  </ImportGroup>
+  <ImportGroup Condition=" '$(TargetFramework)' == 'net9.0' AND '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\10.0.5\buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.props" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\10.0.5\buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.props')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.codeanalysis.analyzers\5.3.0-2.25625.1\buildTransitive\Microsoft.CodeAnalysis.Analyzers.props" Condition="Exists('$(NuGetPackageRoot)microsoft.codeanalysis.analyzers\5.3.0-2.25625.1\buildTransitive\Microsoft.CodeAnalysis.Analyzers.props')" />
+  </ImportGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net10.0' AND '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgMicrosoft_CodeAnalysis_Analyzers Condition=" '$(PkgMicrosoft_CodeAnalysis_Analyzers)' == '' ">C:\Users\f_ald\.nuget\packages\microsoft.codeanalysis.analyzers\5.3.0-2.25625.1</PkgMicrosoft_CodeAnalysis_Analyzers>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net8.0' AND '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgMicrosoft_CodeAnalysis_Analyzers Condition=" '$(PkgMicrosoft_CodeAnalysis_Analyzers)' == '' ">C:\Users\f_ald\.nuget\packages\microsoft.codeanalysis.analyzers\5.3.0-2.25625.1</PkgMicrosoft_CodeAnalysis_Analyzers>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0' AND '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgMicrosoft_CodeAnalysis_Analyzers Condition=" '$(PkgMicrosoft_CodeAnalysis_Analyzers)' == '' ">C:\Users\f_ald\.nuget\packages\microsoft.codeanalysis.analyzers\5.3.0-2.25625.1</PkgMicrosoft_CodeAnalysis_Analyzers>
+  </PropertyGroup>
+</Project>

@@ -20,6 +20,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly IDMLogger _logger;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes a plugin message bus.
+        /// </summary>
+        /// <param name="logger">Logger used for channel and delivery diagnostics.</param>
         public PluginMessageBus(IDMLogger logger)
         {
             _logger = logger;
@@ -336,6 +340,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
+        /// <summary>
+        /// Completes all channels, disposes handlers, and clears message-bus state.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
@@ -373,20 +380,38 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     }
 
     // Helper interfaces and classes
+    /// <summary>
+    /// Represents a disposable handler that can receive raw messages from a plugin channel.
+    /// </summary>
     public interface IMessageHandler : IDisposable
     {
+        /// <summary>
+        /// Handles a raw message delivered by the channel.
+        /// </summary>
+        /// <param name="message">Message payload to process.</param>
         void Handle(object message);
     }
 
+    /// <summary>
+    /// Adapts a strongly typed delegate into an <see cref="IMessageHandler"/>.
+    /// </summary>
     public class MessageHandler<T> : IMessageHandler
     {
         private readonly Action<T> _handler;
 
+        /// <summary>
+        /// Initializes a typed message handler.
+        /// </summary>
+        /// <param name="handler">Delegate invoked when a message of type <typeparamref name="T"/> is received.</param>
         public MessageHandler(Action<T> handler)
         {
             _handler = handler;
         }
 
+        /// <summary>
+        /// Delivers a message to the typed delegate when the payload is compatible with <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="message">Message payload to inspect and dispatch.</param>
         public void Handle(object message)
         {
             if (message is T typedMessage)
@@ -395,25 +420,42 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
+        /// <summary>
+        /// Releases handler resources.
+        /// </summary>
         public void Dispose()
         {
             // Nothing to dispose for action delegates
         }
     }
 
+    /// <summary>
+    /// Represents a request message that expects a response on a channel.
+    /// </summary>
     public class PluginRequest<T>
     {
+        /// <summary>Gets or sets the request payload.</summary>
         public T Data { get; set; }
+        /// <summary>Gets or sets the response channel name.</summary>
         public string ResponseChannel { get; set; }
+        /// <summary>Gets or sets the unique request identifier.</summary>
         public string RequestId { get; set; }
+        /// <summary>Gets or sets when the request was created.</summary>
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Snapshot of channel activity and subscriber counts.
+    /// </summary>
     public class ChannelStats
     {
+        /// <summary>Gets or sets the logical channel name.</summary>
         public string ChannelName { get; set; }
+        /// <summary>Gets or sets the number of active subscribers.</summary>
         public int SubscriberCount { get; set; }
+        /// <summary>Gets or sets whether the channel is currently active.</summary>
         public bool IsActive { get; set; }
+        /// <summary>Gets or sets the timestamp of the last observed activity.</summary>
         public DateTime LastActivity { get; set; }
     }
 }

@@ -7,9 +7,16 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
     /// </summary>
     public enum ErrorSeverity
     {
+        /// <summary>Informational entry.</summary>
         Info,
+
+        /// <summary>Warning entry.</summary>
         Warning,
+
+        /// <summary>Error entry.</summary>
         Error,
+
+        /// <summary>Critical entry.</summary>
         Critical
     }
 

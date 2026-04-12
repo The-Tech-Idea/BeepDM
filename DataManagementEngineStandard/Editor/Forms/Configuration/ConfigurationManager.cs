@@ -16,10 +16,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets or sets the currently loaded FormsManager configuration instance.
+        /// </summary>
         public UnitofWorksManagerConfiguration Configuration { get; set; }
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates a configuration manager that loads from the supplied file path or the default application-data path.
+        /// </summary>
+        /// <param name="configFilePath">Optional explicit configuration file path.</param>
         public ConfigurationManager(string configFilePath = null)
         {
             _configFilePath = configFilePath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), DefaultConfigFileName);
@@ -29,6 +36,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
 
         #region Public Methods
 
+        /// <summary>
+        /// Loads configuration from disk, falling back to defaults when no file exists or deserialization fails.
+        /// </summary>
         public void LoadConfiguration()
         {
             try
@@ -51,6 +61,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
             }
         }
 
+        /// <summary>
+        /// Persists the current configuration to disk.
+        /// </summary>
         public void SaveConfiguration()
         {
             try
@@ -69,12 +82,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
             }
         }
 
+        /// <summary>
+        /// Resets the in-memory configuration to defaults and immediately saves it.
+        /// </summary>
         public void ResetToDefaults()
         {
             Configuration = UnitofWorksManagerConfiguration.Default;
             SaveConfiguration();
         }
 
+        /// <summary>
+        /// Validates that the required top-level configuration sections are present.
+        /// </summary>
+        /// <returns><c>true</c> when the current configuration contains the required sections; otherwise <c>false</c>.</returns>
         public bool ValidateConfiguration()
         {
             return Configuration != null &&

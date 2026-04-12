@@ -59,7 +59,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
         {
             return BlockConfigurations.TryGetValue(blockName, out var config) ? config : new BlockConfiguration();
         }
+
+        /// <summary>
+        /// Gets or sets the default maximum number of records a block should keep loaded at once.
+        /// </summary>
         public int MaxRecordsPerBlock { get; set; } = 1000;
+
         /// <summary>Gets the configuration for a specific form</summary>
         /// <param name="formName">The name of the form</param>
         /// <returns>Form configuration or default if not found</returns>

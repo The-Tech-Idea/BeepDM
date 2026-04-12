@@ -26,10 +26,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #endregion
 
         #region Events
+        /// <summary>
+        /// Raised when an operation encounters unsaved changes and needs a caller decision.
+        /// </summary>
         public event EventHandler<UnsavedChangesEventArgs> OnUnsavedChanges;
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates a dirty-state manager for the registered blocks owned by a FormsManager instance.
+        /// </summary>
+        /// <param name="dmeEditor">Editor used for logging and datasource access.</param>
+        /// <param name="blocks">Registered block metadata keyed by block name.</param>
+        /// <param name="getDetailBlocksFunc">Resolver for child blocks of a given master block.</param>
+        /// <param name="getBlockFunc">Resolver for a block metadata record by name.</param>
         public DirtyStateManager(
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks,

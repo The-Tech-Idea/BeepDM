@@ -32,23 +32,35 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Mode Configuration
 
+        /// <summary>
+        /// Returns the configured lock mode for a block.
+        /// </summary>
         public LockMode GetLockMode(string blockName)
         {
             _modes.TryGetValue(blockName, out var mode);
             return mode; // defaults to LockMode.None (0)
         }
 
+        /// <summary>
+        /// Sets the lock mode for a block.
+        /// </summary>
         public void SetLockMode(string blockName, LockMode mode)
         {
             _modes[blockName] = mode;
         }
 
+        /// <summary>
+        /// Returns whether automatic lock-on-edit is enabled for a block.
+        /// </summary>
         public bool GetLockOnEdit(string blockName)
         {
             _lockOnEdit.TryGetValue(blockName, out var value);
             return value;
         }
 
+        /// <summary>
+        /// Sets whether a block should automatically lock the current record when editing begins.
+        /// </summary>
         public void SetLockOnEdit(string blockName, bool value)
         {
             _lockOnEdit[blockName] = value;
@@ -77,6 +89,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Lock / Unlock
 
+        /// <summary>
+        /// Locks the current record for a block when locking is enabled.
+        /// </summary>
         public Task<bool> LockCurrentRecordAsync(string blockName, CancellationToken ct = default)
         {
             if (GetLockMode(blockName) == LockMode.None)
@@ -99,6 +114,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return Task.FromResult(true);
         }
 
+        /// <summary>
+        /// Unlocks the current record for a block.
+        /// </summary>
         public bool UnlockCurrentRecord(string blockName)
         {
             var idx = GetCurrentRecordIndex(blockName);
@@ -107,6 +125,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return false;
         }
 
+        /// <summary>
+        /// Unlocks all tracked records for a block.
+        /// </summary>
         public void UnlockAllRecords(string blockName)
         {
             if (_locks.ContainsKey(blockName))
@@ -117,17 +138,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Query
 
+        /// <summary>
+        /// Returns whether a specific record is currently locked.
+        /// </summary>
         public bool IsRecordLocked(string blockName, int recordIndex)
         {
             return _locks.TryGetValue(blockName, out var block) &&
                    block.ContainsKey(recordIndex);
         }
 
+        /// <summary>
+        /// Returns whether the current record for a block is currently locked.
+        /// </summary>
         public bool IsCurrentRecordLocked(string blockName)
         {
             return IsRecordLocked(blockName, GetCurrentRecordIndex(blockName));
         }
 
+        /// <summary>
+        /// Returns lock metadata for a specific record.
+        /// </summary>
         public RecordLockInfo GetLockInfo(string blockName, int recordIndex)
         {
             if (_locks.TryGetValue(blockName, out var block) &&
@@ -136,11 +166,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return null;
         }
 
+        /// <summary>
+        /// Returns the number of tracked locked records for a block.
+        /// </summary>
         public int GetLockedRecordCount(string blockName)
         {
             return _locks.TryGetValue(blockName, out var block) ? block.Count : 0;
         }
 
+        /// <summary>
+        /// Returns all tracked locks for a block.
+        /// </summary>
         public IReadOnlyList<RecordLockInfo> GetAllLocks(string blockName)
         {
             if (_locks.TryGetValue(blockName, out var block))
@@ -152,6 +188,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Auto-Lock
 
+        /// <summary>
+        /// Locks the current record when the block is configured for automatic lock-on-edit behavior.
+        /// </summary>
         public async Task<bool> AutoLockIfNeededAsync(string blockName, CancellationToken ct = default)
         {
             if (!GetLockOnEdit(blockName))

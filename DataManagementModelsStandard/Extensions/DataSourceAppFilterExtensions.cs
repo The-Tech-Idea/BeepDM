@@ -75,6 +75,8 @@ namespace TheTechIdea.Beep.Extensions
             ["not in"] = "not in",
 
             ["between"] = "between",
+            ["notbetween"] = "not between",
+            ["not between"] = "not between",
 
             ["isnull"] = "is null",
             ["null"] = "is null",
@@ -285,10 +287,11 @@ namespace TheTechIdea.Beep.Extensions
                         break;
 
                     case "between":
+                    case "not between":
                     {
                         var p0 = parameterBase;
                         var p1 = parameterBase + "_1";
-                        clauses.Add($"{quotedField} BETWEEN {parameterPrefix}{p0} AND {parameterPrefix}{p1}");
+                        clauses.Add($"{quotedField} {(op == "between" ? "BETWEEN" : "NOT BETWEEN")} {parameterPrefix}{p0} AND {parameterPrefix}{p1}");
                         parameters[p0] = ConvertFilterValue(filter.FilterValue, filter.valueType, filter.FieldType);
                         parameters[p1] = ConvertFilterValue(filter.FilterValue1, filter.valueType, filter.FieldType);
                         break;
@@ -370,10 +373,11 @@ namespace TheTechIdea.Beep.Extensions
                         break;
 
                     case "between":
+                    case "not between":
                     {
                         var p0 = parameterBase;
                         var p1 = parameterBase + "_1";
-                        clauses.Add($"{quotedField} BETWEEN {parameterPrefix}{p0} AND {parameterPrefix}{p1}");
+                        clauses.Add($"{quotedField} {(op == "between" ? "BETWEEN" : "NOT BETWEEN")} {parameterPrefix}{p0} AND {parameterPrefix}{p1}");
                         parameters[p0] = ConvertFilterValue(filter.FilterValue, filter.valueType, filter.FieldType);
                         parameters[p1] = ConvertFilterValue(filter.FilterValue1, filter.valueType, filter.FieldType);
                         break;

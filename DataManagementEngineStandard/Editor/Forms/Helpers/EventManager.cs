@@ -20,39 +20,108 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #endregion
 
         #region Events
+    #pragma warning disable CS0067
         // Block-level triggers
+        /// <summary>
+        /// Raised when a block is entered.
+        /// </summary>
         public event EventHandler<BlockTriggerEventArgs> OnBlockEnter;
+        /// <summary>
+        /// Raised when a block is left.
+        /// </summary>
         public event EventHandler<BlockTriggerEventArgs> OnBlockLeave;
+        /// <summary>
+        /// Raised when a block clear operation is triggered.
+        /// </summary>
         public event EventHandler<BlockTriggerEventArgs> OnBlockClear;
+        /// <summary>
+        /// Raised when block-level validation is triggered.
+        /// </summary>
         public event EventHandler<BlockTriggerEventArgs> OnBlockValidate;
 
         // Record-level triggers  
+        /// <summary>
+        /// Raised when a record is entered.
+        /// </summary>
         public event EventHandler<RecordTriggerEventArgs> OnRecordEnter;
+        /// <summary>
+        /// Raised when a record is left.
+        /// </summary>
         public event EventHandler<RecordTriggerEventArgs> OnRecordLeave;
+        /// <summary>
+        /// Raised when record-level validation is triggered.
+        /// </summary>
         public event EventHandler<RecordTriggerEventArgs> OnRecordValidate;
 
         // DML triggers
+        /// <summary>
+        /// Raised before a query operation executes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPreQuery;
+        /// <summary>
+        /// Raised after a query operation completes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPostQuery;
+        /// <summary>
+        /// Raised before an insert operation executes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPreInsert;
+        /// <summary>
+        /// Raised after an insert operation completes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPostInsert;
+        /// <summary>
+        /// Raised before an update operation executes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPreUpdate;
+        /// <summary>
+        /// Raised after an update operation completes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPostUpdate;
+        /// <summary>
+        /// Raised before a delete operation executes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPreDelete;
+        /// <summary>
+        /// Raised after a delete operation completes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPostDelete;
+        /// <summary>
+        /// Raised before a commit operation executes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPreCommit;
+        /// <summary>
+        /// Raised after a commit operation completes.
+        /// </summary>
         public event EventHandler<DMLTriggerEventArgs> OnPostCommit;
 
         // Validation triggers
+        /// <summary>
+        /// Raised when field-level validation is requested.
+        /// </summary>
         public event EventHandler<ValidationTriggerEventArgs> OnValidateField;
+        /// <summary>
+        /// Raised when record-level validation is requested.
+        /// </summary>
         public event EventHandler<ValidationTriggerEventArgs> OnValidateRecord;
+        /// <summary>
+        /// Raised when form-level validation is requested.
+        /// </summary>
         public event EventHandler<ValidationTriggerEventArgs> OnValidateForm;
 
         // Error handling
+        /// <summary>
+        /// Raised when an error is surfaced through the Forms event pipeline.
+        /// </summary>
         public event EventHandler<ErrorTriggerEventArgs> OnError;
+    #pragma warning restore CS0067
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates an event manager that records activity through the supplied editor.
+        /// </summary>
+        /// <param name="dmeEditor">Editor used for logging and integration callbacks.</param>
         public EventManager(IDMEEditor dmeEditor)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));

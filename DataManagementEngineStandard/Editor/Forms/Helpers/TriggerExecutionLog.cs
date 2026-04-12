@@ -14,13 +14,19 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private readonly object _lock = new object();
         private readonly LinkedList<TriggerExecutionLogEntry> _entries = new LinkedList<TriggerExecutionLogEntry>();
 
+        /// <summary>Gets or sets the maximum retained log capacity.</summary>
         public int Capacity { get; set; }
 
+        /// <summary>
+        /// Creates a trigger execution log with the supplied capacity.
+        /// </summary>
+        /// <param name="capacity">Maximum retained execution entries.</param>
         public TriggerExecutionLog(int capacity = 500)
         {
             Capacity = capacity;
         }
 
+        /// <summary>Records a trigger execution entry.</summary>
         public void Record(TriggerExecutionLogEntry entry)
         {
             if (entry == null) return;
@@ -32,11 +38,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Returns all retained trigger execution entries.</summary>
         public IReadOnlyList<TriggerExecutionLogEntry> GetAll()
         {
             lock (_lock) return _entries.ToList();
         }
 
+        /// <summary>Returns retained entries for a specific block.</summary>
         public IReadOnlyList<TriggerExecutionLogEntry> GetByBlock(string blockName)
         {
             lock (_lock)
@@ -45,12 +53,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                     .ToList();
         }
 
+        /// <summary>Returns retained entries for a trigger type.</summary>
         public IReadOnlyList<TriggerExecutionLogEntry> GetByType(TriggerType type)
         {
             lock (_lock)
                 return _entries.Where(e => e.TriggerType == type).ToList();
         }
 
+        /// <summary>Clears all retained trigger execution entries.</summary>
         public void Clear()
         {
             lock (_lock) _entries.Clear();

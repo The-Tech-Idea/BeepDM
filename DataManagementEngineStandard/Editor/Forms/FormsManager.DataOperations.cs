@@ -19,18 +19,33 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     {
         #region Undo / Redo
 
+        /// <summary>
+        /// Enables or disables undo tracking for a block when the backing unit of work supports <see cref="IUndoable"/>.
+        /// </summary>
         public void SetBlockUndoEnabled(string blockName, bool enable, int maxDepth = 50)
             => (GetUnitOfWork(blockName) as IUndoable)?.EnableUndo(enable, maxDepth);
 
+        /// <summary>
+        /// Undoes the most recent tracked action in the specified block.
+        /// </summary>
         public bool UndoBlock(string blockName)
             => (GetUnitOfWork(blockName) as IUndoable)?.UndoLastAction() ?? false;
 
+        /// <summary>
+        /// Redoes the most recently undone action in the specified block.
+        /// </summary>
         public bool RedoBlock(string blockName)
             => (GetUnitOfWork(blockName) as IUndoable)?.RedoLastAction() ?? false;
 
+        /// <summary>
+        /// Returns whether the specified block currently has an undo step available.
+        /// </summary>
         public bool CanUndoBlock(string blockName)
             => (GetUnitOfWork(blockName) as IUndoable)?.CanUndo ?? false;
 
+        /// <summary>
+        /// Returns whether the specified block currently has a redo step available.
+        /// </summary>
         public bool CanRedoBlock(string blockName)
             => (GetUnitOfWork(blockName) as IUndoable)?.CanRedo ?? false;
 
@@ -38,12 +53,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Change Summaries
 
+        /// <summary>
+        /// Returns the unit-of-work change summary for a single block.
+        /// </summary>
         public ChangeSummary GetBlockChangeSummary(string blockName)
         {
             var uow = GetUnitOfWork(blockName) as IUnitofWorkHistory;
             return uow?.GetChangeSummary() ?? new ChangeSummary();
         }
 
+        /// <summary>
+        /// Returns change summaries for all currently registered blocks.
+        /// </summary>
         public IReadOnlyDictionary<string, ChangeSummary> GetFormChangeSummary()
         {
             var result = new Dictionary<string, ChangeSummary>();
@@ -56,6 +77,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Block Data Operations
 
+        /// <summary>
+        /// Reloads a block from its datasource when the backing unit of work supports merge-aware refresh.
+        /// </summary>
         public async Task<bool> RefreshBlockAsync(
             string blockName,
             List<AppFilter> filters = null,
@@ -68,6 +92,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return false;
         }
 
+        /// <summary>
+        /// Reverts the current record in a block to its original field values when the backing unit of work supports <see cref="IRevertable"/>.
+        /// </summary>
         public bool RevertCurrentRecord(string blockName)
         {
             var block = GetBlock(blockName);
@@ -80,6 +107,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return false;
         }
 
+        /// <summary>
+        /// Reverts a specific record in a block to its original field values when the backing unit of work supports <see cref="IRevertable"/>.
+        /// </summary>
         public bool RevertRecord(string blockName, int recordIndex)
         {
             var uow = GetUnitOfWork(blockName);
@@ -96,12 +126,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Query History
 
+        /// <summary>
+        /// Returns the query-history entries recorded for a block.
+        /// </summary>
         public IReadOnlyList<QueryHistoryEntry> GetBlockQueryHistory(string blockName)
         {
             var uow = GetUnitOfWork(blockName) as IUnitofWorkHistory;
             return uow?.GetQueryHistory() ?? Array.Empty<QueryHistoryEntry>();
         }
 
+        /// <summary>
+        /// Clears the recorded query history for a block.
+        /// </summary>
         public void ClearBlockQueryHistory(string blockName)
             => (GetUnitOfWork(blockName) as IUnitofWorkHistory)?.ClearQueryHistory();
 
@@ -109,12 +145,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Block Aggregates
 
+        /// <summary>
+        /// Returns the sum of a numeric field across the loaded records in a block.
+        /// </summary>
         public decimal GetBlockSum(string blockName, string fieldName)
             => (GetUnitOfWork(blockName) as IAggregatable)?.Sum(fieldName) ?? 0m;
 
+        /// <summary>
+        /// Returns the average of a numeric field across the loaded records in a block.
+        /// </summary>
         public decimal GetBlockAverage(string blockName, string fieldName)
             => (GetUnitOfWork(blockName) as IAggregatable)?.Average(fieldName) ?? 0m;
 
+        /// <summary>
+        /// Returns the record count for a block, optionally restricted by a predicate.
+        /// </summary>
         public int GetBlockCount(string blockName, Func<object, bool> predicate = null)
             => (GetUnitOfWork(blockName) as IAggregatable)?.Count(predicate) ?? 0;
 
@@ -122,6 +167,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Batch Commit
 
+        /// <summary>
+        /// Commits all registered blocks in batches when their unit-of-work implementations support <see cref="IBatchCommittable"/>.
+        /// </summary>
         public async Task<CommitBatchResult> CommitFormBatchAsync(
             int batchSize = 200,
             IProgress<CommitBatchProgress> progress = null,
@@ -139,6 +187,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return combined;
         }
 
+        /// <summary>
+        /// Commits a single block in batches when its unit of work supports <see cref="IBatchCommittable"/>.
+        /// </summary>
         public async Task<CommitBatchResult> CommitBlockBatchAsync(
             string blockName,
             int batchSize = 200,
@@ -156,6 +207,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Block Export / Import
 
+        /// <summary>
+        /// Exports a block to JSON when its unit of work exposes <see cref="IExportable"/>.
+        /// </summary>
         public async Task ExportBlockToJsonAsync(string blockName, Stream stream,
             CancellationToken ct = default)
         {
@@ -163,6 +217,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 await exp.ToJsonAsync(stream, ct);
         }
 
+        /// <summary>
+        /// Exports a block to CSV when its unit of work exposes <see cref="IExportable"/>.
+        /// </summary>
         public async Task ExportBlockToCsvAsync(string blockName, Stream stream,
             char delimiter = ',', CancellationToken ct = default)
         {
@@ -170,9 +227,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 await exp.ToCsvAsync(stream, delimiter, ct);
         }
 
+        /// <summary>
+        /// Materializes a block as a <see cref="DataTable"/> when its unit of work exposes <see cref="IExportable"/>.
+        /// </summary>
         public DataTable GetBlockAsDataTable(string blockName)
             => (GetUnitOfWork(blockName) as IExportable)?.ToDataTable() ?? new DataTable(blockName);
 
+        /// <summary>
+        /// Imports JSON records into a block when its unit of work exposes <see cref="IImportable"/>.
+        /// </summary>
         public async Task<int> ImportBlockFromJsonAsync(string blockName, Stream stream,
             bool clearFirst = true, CancellationToken ct = default)
         {
@@ -181,6 +244,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return 0;
         }
 
+        /// <summary>
+        /// Imports CSV records into a block when its unit of work exposes <see cref="IImportable"/>.
+        /// </summary>
         public async Task<int> ImportBlockFromCsvAsync(string blockName, Stream stream,
             char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true,
             CancellationToken ct = default)
@@ -194,6 +260,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Block Grouping
 
+        /// <summary>
+        /// Groups the currently loaded records in a block by the specified field.
+        /// </summary>
         public IReadOnlyList<ItemGroup<object>> GetBlockGroups(string blockName, string fieldName)
         {
             var uow = GetUnitOfWork(blockName);
@@ -224,6 +293,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Phase 4-B – Form State Persistence
 
+        /// <summary>
+        /// Captures the current form, block, cursor, and dirty-state snapshot for all registered blocks.
+        /// </summary>
         public FormStateSnapshot SaveFormState()
         {
             var snap = new FormStateSnapshot
@@ -247,6 +319,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return snap;
         }
 
+        /// <summary>
+        /// Restores a previously captured form-state snapshot by reselecting the current block and record positions.
+        /// </summary>
         public async Task<bool> RestoreFormStateAsync(FormStateSnapshot snapshot,
             CancellationToken ct = default)
         {
@@ -275,12 +350,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Phase 4-C – Cross-Block Validation
 
+        /// <summary>
+        /// Registers a cross-block validation rule evaluated by form-level commit flows.
+        /// </summary>
         public void RegisterCrossBlockRule(CrossBlockValidationRule rule)
             => _crossBlockValidation.Register(rule);
 
+        /// <summary>
+        /// Removes a previously registered cross-block validation rule by name.
+        /// </summary>
         public bool UnregisterCrossBlockRule(string ruleName)
             => _crossBlockValidation.Unregister(ruleName);
 
+        /// <summary>
+        /// Executes all registered cross-block validation rules and returns their validation messages.
+        /// </summary>
         public IReadOnlyList<string> ValidateCrossBlock()
             => _crossBlockValidation.Validate();
 
@@ -288,6 +372,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Phase 4-D – Navigation History
 
+        /// <summary>
+        /// Navigates to the previous recorded cursor position for a block.
+        /// </summary>
         public async Task<bool> NavigateBackAsync(string blockName)
         {
             var uow = GetUnitOfWork(blockName);
@@ -295,10 +382,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var current = uow.Units?.CurrentIndex ?? 0;
             var target  = _navHistoryManager.Back(blockName, current);
             if (target < 0) return false;
-            await NavigateToRecordAsync(blockName, target);
-            return true;
+            return await NavigateToRecordInternalAsync(blockName, target, recordHistory: false);
         }
 
+        /// <summary>
+        /// Navigates to the next recorded cursor position for a block.
+        /// </summary>
         public async Task<bool> NavigateForwardAsync(string blockName)
         {
             var uow = GetUnitOfWork(blockName);
@@ -306,16 +395,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var current = uow.Units?.CurrentIndex ?? 0;
             var target  = _navHistoryManager.Forward(blockName, current);
             if (target < 0) return false;
-            await NavigateToRecordAsync(blockName, target);
-            return true;
+            return await NavigateToRecordInternalAsync(blockName, target, recordHistory: false);
         }
 
+        /// <summary>
+        /// Returns whether a block currently has a previous history entry.
+        /// </summary>
         public bool CanNavigateBack(string blockName)    => _navHistoryManager.CanGoBack(blockName);
+        /// <summary>
+        /// Returns whether a block currently has a forward history entry.
+        /// </summary>
         public bool CanNavigateForward(string blockName) => _navHistoryManager.CanGoForward(blockName);
 
+        /// <summary>
+        /// Returns the navigation history entries recorded for a block.
+        /// </summary>
         public IReadOnlyList<NavigationHistoryEntry> GetNavigationHistory(string blockName)
             => _navHistoryManager.GetHistory(blockName);
 
+        /// <summary>
+        /// Clears the recorded navigation history for a block.
+        /// </summary>
         public void ClearNavigationHistory(string blockName)
             => _navHistoryManager.Clear(blockName);
 
@@ -323,6 +423,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Phase 4-E – Block Clone / Duplicate
 
+        /// <summary>
+        /// Clones all records from one block into another block using the source unit-of-work history clone mechanism.
+        /// </summary>
         public async Task<bool> CloneBlockDataAsync(string sourceBlockName, string destBlockName,
             CancellationToken ct = default)
         {
@@ -348,6 +451,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             catch { return false; }
         }
 
+        /// <summary>
+        /// Duplicates the current record in a block and inserts the clone back into the same block.
+        /// </summary>
         public async Task<bool> DuplicateCurrentRecordAsync(string blockName,
             CancellationToken ct = default)
         {

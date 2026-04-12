@@ -6,10 +6,23 @@
     <title>FormsManager - Beep Data Management Engine Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()" title="Toggle navigation" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
+
         <main class="content">
             <div class="content-wrapper">
                 <nav class="breadcrumb-nav">
@@ -20,20 +33,132 @@
 
                 <div class="page-header">
                     <h1>FormsManager</h1>
-                    <p class="page-subtitle">Oracle Forms-style multi-block orchestration over UnitOfWork blocks</p>
+                    <p class="page-subtitle">Current runtime reference for form orchestration, helper-manager composition, and UnitOfWork integration</p>
                 </div>
 
                 <div class="note">
-                    <strong>Source of truth (2026)</strong>
+                    <strong>Source of truth (audited 2026-04-09)</strong>
                     <ul>
                         <li><code>DataManagementEngineStandard/Editor/Forms/FormsManager.cs</code> and partials</li>
-                        <li><code>DataManagementEngineStandard/Editor/Forms/Interfaces/IUnitofWorksManagerInterfaces.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/Forms/Interfaces</code> runtime interface contracts</li>
+                        <li><code>DataManagementEngineStandard/Editor/Forms/README.md</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/Forms/MIGRATION-GUIDE.md</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/Forms/.plans</code> mapping document</li>
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
-                    <pre><code class="language-csharp">public partial class FormsManager : IUnitofWorksManager
+                <div class="success">
+                    <strong>Documentation status</strong>
+                    <ul>
+                        <li>This page reflects the audited FormsManager runtime surface and current public naming.</li>
+                        <li>FormsManager is the orchestration runtime; <code>IUnitofWork</code> remains the persistence and dirty-state authority.</li>
+                        <li>Built-in runtime operations, triggers, LOV orchestration, audit, security, paging, and multi-form flows are implemented in code.</li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    <strong>Boundary reminder</strong>
+                    <p>
+                        FormsManager owns runtime orchestration and state semantics. Canvases, tab pages, cursor movement,
+                        LOV dialog rendering, and message-area rendering remain host-UI responsibilities.
+                    </p>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#ownership">Runtime Ownership</a></li>
+                        <li><a href="#signature">Signature Snapshot</a></li>
+                        <li><a href="#partials">Partial-Class Topology</a></li>
+                        <li><a href="#helpers">Helper Manager Surface</a></li>
+                        <li><a href="#lifecycle">Form Lifecycle and Mode Transitions</a></li>
+                        <li><a href="#registration">Block Registration and CRUD Flow</a></li>
+                        <li><a href="#keys">Key Generation and Record Creation</a></li>
+                        <li><a href="#builtins">Built-in Runtime Operations</a></li>
+                        <li><a href="#multiform">Multi-Form, Globals, and Messaging</a></li>
+                        <li><a href="#triggers">Triggers, Validation, and LOVs</a></li>
+                        <li><a href="#audit-security-performance">Audit, Security, and Performance</a></li>
+                        <li><a href="#parity">Coverage Snapshot</a></li>
+                        <li><a href="#boundaries">Known Boundaries and Hardening Areas</a></li>
+                        <li><a href="#related">Related Documentation</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>
+                        <code>FormsManager</code> is the BeepDM form-orchestration runtime in the
+                        <code>TheTechIdea.Beep.Editor.UOWManager</code> namespace. It coordinates block registration,
+                        current-block state, navigation, query-mode and CRUD-mode transitions, master/detail synchronization,
+                        triggers, LOV application, savepoints, locks, audit capture, security enforcement, paging, cache control,
+                        and multi-form communication.
+                    </p>
+                    <p>
+                        The current public runtime surface is documented here under the <code>FormsManager</code> name.
+                    </p>
+
+                    <div class="success">
+                        <strong>What this page covers</strong>
+                        <ul>
+                            <li>Current public runtime surface and partial-class layout</li>
+                            <li>Caller-facing helper managers and orchestration boundaries</li>
+                            <li>Mode transitions, CRUD flows, and built-in runtime operations</li>
+                            <li>Examples for explicit keys, sequences, identity keys, defaults, audit, security, and paging</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="ownership" class="section">
+                    <h2>Runtime Ownership</h2>
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Concern</th>
+                                <th>FormsManager</th>
+                                <th>IUnitofWork</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Block orchestration</td>
+                                <td>Registers blocks, tracks current form and block, manages relationships</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td>Navigation and modes</td>
+                                <td>Owns query mode, CRUD mode, record navigation, history, and block switching</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td>Persistence</td>
+                                <td>Coordinates when to save, rollback, validate, or fire triggers</td>
+                                <td>Executes insert, update, delete, commit, rollback, and query operations</td>
+                            </tr>
+                            <tr>
+                                <td>Dirty-state truth</td>
+                                <td>Aggregates state across blocks and relationships</td>
+                                <td>Owns per-block dirty tracking</td>
+                            </tr>
+                            <tr>
+                                <td>Identity and sequence refresh</td>
+                                <td>Coordinates key strategy during create and insert flows</td>
+                                <td>Owns datasource-backed identity refresh and real sequence interaction</td>
+                            </tr>
+                            <tr>
+                                <td>UI responsibilities</td>
+                                <td>Provides runtime state and semantics</td>
+                                <td>Not applicable</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="signature" class="section">
+                    <h2>Signature Snapshot</h2>
+                    <div class="code-example">
+                        <h3>Representative public surface</h3>
+                        <pre><code class="language-csharp">public partial class FormsManager
 {
     public IDMEEditor DMEEditor { get; }
     public string CurrentFormName { get; set; }
@@ -42,28 +167,618 @@
     public bool IsDirty { get; }
     public int BlockCount { get; }
 
-    public FormsManager(IDMEEditor dmeEditor);
+    public IDirtyStateManager DirtyStateManager { get; }
+    public IPerformanceManager PerformanceManager { get; }
+    public ISystemVariablesManager SystemVariables { get; }
+    public IValidationManager Validation { get; }
+    public ILOVManager LOV { get; }
+    public IItemPropertyManager ItemProperties { get; }
+    public ITriggerManager Triggers { get; }
+    public ISavepointManager Savepoints { get; }
+    public ILockManager Locking { get; }
+    public IQueryBuilderManager QueryBuilder { get; }
+    public IMessageQueueManager Messages { get; }
+    public IBlockPropertyManager BlockProperties { get; }
+    public ISequenceProvider Sequences { get; }
+    public ITimerManager Timers { get; }
+    public IFormRegistry Registry { get; }
+    public IFormMessageBus MessageBus { get; }
+    public ISharedBlockManager SharedBlocks { get; }
+    public IAuditManager AuditManager { get; }
+    public ISecurityManager Security { get; }
+    public IPagingManager Paging { get; }
 
-    public void RegisterBlock(string blockName, IUnitofWork unitOfWork, IEntityStructure entityStructure,
-        string dataSourceName = null, bool isMasterBlock = false);
-    public bool UnregisterBlock(string blockName);
-    public DataBlockInfo GetBlock(string blockName);
+    public FormsManager(IDMEEditor dmeEditor, ...);
 
+    public void RegisterBlock&lt;T&gt;(...);
+    public DataBlockInfo GetBlock&lt;T&gt;(string blockName);
+    public Task&lt;bool&gt; InsertRecordAsync&lt;T&gt;(string blockName, T record = default);
+    public Task&lt;LOVResult&gt; ShowLOVAsync(...);
     public Task&lt;bool&gt; OpenFormAsync(string formName);
-    public Task&lt;bool&gt; CloseFormAsync();
     public Task&lt;IErrorsInfo&gt; CommitFormAsync();
     public Task&lt;IErrorsInfo&gt; RollbackFormAsync();
-
     public Task&lt;IErrorsInfo&gt; EnterQueryModeAsync(string blockName);
     public Task&lt;IErrorsInfo&gt; ExecuteQueryAndEnterCrudModeAsync(string blockName, List&lt;AppFilter&gt; filters = null);
-    public Task&lt;IErrorsInfo&gt; EnterCrudModeForNewRecordAsync(string blockName);
+    public Task&lt;bool&gt; FirstRecordAsync(string blockName);
+    public Task&lt;bool&gt; NextRecordAsync(string blockName);
+    public Task&lt;bool&gt; PreviousRecordAsync(string blockName);
+    public Task&lt;bool&gt; LastRecordAsync(string blockName);
+    public Task&lt;bool&gt; NavigateToRecordAsync(string blockName, int recordIndex);
 }</code></pre>
+                    </div>
                 </section>
+
+                <section id="partials" class="section">
+                    <h2>Partial-Class Topology</h2>
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Responsibility</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>FormsManager.cs</code></td><td>Core registration, DI wiring, properties, relationship ownership, and block metadata</td></tr>
+                            <tr><td><code>FormsManager.FormOperations.cs</code></td><td>Open, close, commit, rollback, clear-form, and clear-block orchestration</td></tr>
+                            <tr><td><code>FormsManager.Navigation.cs</code></td><td>Record navigation, block switching, history, and GO_BLOCK-style behavior</td></tr>
+                            <tr><td><code>FormsManager.ModeTransitions.cs</code></td><td><code>ENTER_QUERY</code>, <code>EXECUTE_QUERY</code>, and CRUD-mode transitions</td></tr>
+                            <tr><td><code>FormsManager.EnhancedOperations.cs</code></td><td>Insert, update, delete, audit defaults, and enhanced CRUD orchestration</td></tr>
+                            <tr><td><code>FormsManager.DataOperations.cs</code></td><td>Undo/redo, duplicate record, batch commit, export/import, aggregates, and state persistence</td></tr>
+                            <tr><td><code>FormsManager.GenericOperations.cs</code></td><td>Typed block registration, typed insert, typed block access, and <code>ShowLOVAsync</code></td></tr>
+                            <tr><td><code>FormsManager.BlockProperties.cs</code></td><td><code>SET_BLOCK_PROPERTY</code> and <code>GET_BLOCK_PROPERTY</code> wrappers</td></tr>
+                            <tr><td><code>FormsManager.Alerts.cs</code></td><td>MESSAGE, alert, confirm, and info-dialog orchestration</td></tr>
+                            <tr><td><code>FormsManager.Sequences.cs</code></td><td>Sequences, item defaults, copy-field behavior, and record-group helpers</td></tr>
+                            <tr><td><code>FormsManager.Timers.cs</code></td><td><code>CREATE_TIMER</code>, <code>DELETE_TIMER</code>, timer inspection, and trigger integration</td></tr>
+                            <tr><td><code>FormsManager.MultiFormNavigation.cs</code></td><td><code>CALL_FORM</code>, modeless <code>OPEN_FORM</code>, <code>NEW_FORM</code>, and return-to-caller</td></tr>
+                            <tr><td><code>FormsManager.InterFormComm.cs</code></td><td><code>:GLOBAL.*</code>, parameter handoff, message bus, and shared blocks</td></tr>
+                            <tr><td><code>FormsManager.KeyTriggers.cs</code></td><td>KEY-* trigger registration and default key-action helpers</td></tr>
+                            <tr><td><code>FormsManager.TriggerChaining.cs</code></td><td>Trigger dependency graph, chain mode, and execution logging</td></tr>
+                            <tr><td><code>FormsManager.DmlTriggers.cs</code></td><td><code>ON-INSERT</code>, <code>ON-UPDATE</code>, <code>ON-DELETE</code>, and programmatic trigger raising</td></tr>
+                            <tr><td><code>FormsManager.Audit.cs</code></td><td>Audit configuration, audit querying, export, and purge behavior</td></tr>
+                            <tr><td><code>FormsManager.Security.cs</code></td><td>Security context, block security, field security, and masking</td></tr>
+                            <tr><td><code>FormsManager.Performance.cs</code></td><td>Paging, fetch-ahead, cache invalidation, cache stats, and performance wiring</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="helpers" class="section">
+                    <h2>Helper Manager Surface</h2>
+                    <p>
+                        FormsManager exposes most subsystem capabilities through helper properties so callers can use low-level behavior
+                        without re-implementing orchestration. In normal application code, start with FormsManager entry points and reach
+                        for helper managers only when you need custom registration or inspection behavior.
+                    </p>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Interface</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>DirtyStateManager</code></td><td><code>IDirtyStateManager</code></td><td>Aggregates unsaved changes, related dirty blocks, and save or rollback decisions</td></tr>
+                            <tr><td><code>PerformanceManager</code></td><td><code>IPerformanceManager</code></td><td>Cache and performance metrics infrastructure</td></tr>
+                            <tr><td><code>SystemVariables</code></td><td><code>ISystemVariablesManager</code></td><td><code>:SYSTEM.*</code> runtime variables</td></tr>
+                            <tr><td><code>Validation</code></td><td><code>IValidationManager</code></td><td>Item, record, block, and form validation rules</td></tr>
+                            <tr><td><code>LOV</code></td><td><code>ILOVManager</code></td><td>LOV registration, datasource loading, caching, filtering, and value validation</td></tr>
+                            <tr><td><code>ItemProperties</code></td><td><code>IItemPropertyManager</code></td><td>Enabled, visible, read-only, tab order, and field metadata behavior</td></tr>
+                            <tr><td><code>Triggers</code></td><td><code>ITriggerManager</code></td><td>Trigger registration, ordering, scope resolution, and async execution</td></tr>
+                            <tr><td><code>Savepoints</code></td><td><code>ISavepointManager</code></td><td>Named snapshots and rollback targets</td></tr>
+                            <tr><td><code>Locking</code></td><td><code>ILockManager</code></td><td>Client-side record locking and auto-lock behavior</td></tr>
+                            <tr><td><code>QueryBuilder</code></td><td><code>IQueryBuilderManager</code></td><td>Reusable filter and query templates for blocks</td></tr>
+                            <tr><td><code>ErrorLog</code></td><td><code>IBlockErrorLog</code></td><td>Per-block runtime error tracking without UI coupling</td></tr>
+                            <tr><td><code>Messages</code></td><td><code>IMessageQueueManager</code></td><td>Status and informational message queue for host UI consumption</td></tr>
+                            <tr><td><code>BlockFactory</code></td><td><code>IBlockFactory</code></td><td>Builds UnitOfWork and entity metadata pairs from configured connections</td></tr>
+                            <tr><td><code>BlockProperties</code></td><td><code>IBlockPropertyManager</code></td><td>Backs <code>SET_BLOCK_PROPERTY</code> and <code>GET_BLOCK_PROPERTY</code></td></tr>
+                            <tr><td><code>AlertProvider</code></td><td><code>IAlertProvider</code></td><td>Host-UI alert bridge for <code>ShowAlertAsync</code>, <code>ConfirmAsync</code>, and info prompts</td></tr>
+                            <tr><td><code>Sequences</code></td><td><code>ISequenceProvider</code></td><td>In-memory sequence support and deterministic test flows</td></tr>
+                            <tr><td><code>Timers</code></td><td><code>ITimerManager</code></td><td>Named timer lifecycle and <code>WHEN-TIMER-EXPIRED</code> integration</td></tr>
+                            <tr><td><code>Registry</code></td><td><code>IFormRegistry</code></td><td>Active-form registry for modal and modeless multi-form flows</td></tr>
+                            <tr><td><code>MessageBus</code></td><td><code>IFormMessageBus</code></td><td>Publish, subscribe, and broadcast form messages</td></tr>
+                            <tr><td><code>SharedBlocks</code></td><td><code>ISharedBlockManager</code></td><td>Cross-form shared UnitOfWork-backed blocks</td></tr>
+                            <tr><td><code>AuditManager</code></td><td><code>IAuditManager</code></td><td>Audit capture, history queries, grouped flush, and storage integration</td></tr>
+                            <tr><td><code>Security</code></td><td><code>ISecurityManager</code></td><td>Block security, field security, masking, and violation logging</td></tr>
+                            <tr><td><code>Paging</code></td><td><code>IPagingManager</code></td><td>Page size, total-record count, current page, and fetch-ahead tracking</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="tip">
+                        <strong>Practical rule</strong>
+                        <p>
+                            Use FormsManager methods for orchestration entry points like commit, rollback, query, navigation, and LOV application.
+                            Use helper managers for registration, inspection, custom rule wiring, or host-specific integration.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="lifecycle" class="section">
+                    <h2>Form Lifecycle and Mode Transitions</h2>
+                    <p>
+                        The normal lifecycle is open form, register blocks, enter query mode when needed, execute a query, navigate,
+                        edit, and commit or rollback through a single form-level orchestration point.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Lifecycle example</h3>
+                        <pre><code class="language-csharp">var manager = new FormsManager(dmeEditor)
+{
+    CurrentFormName = "CUSTOMER_ORDERS"
+};
+
+await manager.OpenFormAsync("CUSTOMER_ORDERS");
+await manager.EnterQueryModeAsync("CUSTOMERS");
+
+var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" }
+};
+
+await manager.ExecuteQueryAndEnterCrudModeAsync("CUSTOMERS", filters);
+await manager.FirstRecordAsync("CUSTOMERS");
+await manager.NextRecordAsync("CUSTOMERS");
+
+var result = await manager.CommitFormAsync();
+if (result.Flag != Errors.Ok)
+{
+    await manager.RollbackFormAsync();
+}</code></pre>
+                    </div>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Operation</th>
+                                <th>Method</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Open current form runtime</td><td><code>OpenFormAsync(string formName)</code></td><td>Initializes the current form lifecycle and state</td></tr>
+                            <tr><td>Close current form</td><td><code>CloseFormAsync()</code></td><td>Performs shutdown orchestration and cleanup</td></tr>
+                            <tr><td>Enter query mode</td><td><code>EnterQueryModeAsync(string blockName)</code></td><td>Switches the target block into query mode</td></tr>
+                            <tr><td>Execute query and return to CRUD mode</td><td><code>ExecuteQueryAndEnterCrudModeAsync(...)</code></td><td>Runs filters, reloads block data, then restores normal editing mode</td></tr>
+                            <tr><td>Navigate records</td><td><code>FirstRecordAsync</code>, <code>NextRecordAsync</code>, <code>PreviousRecordAsync</code>, <code>LastRecordAsync</code>, <code>NavigateToRecordAsync</code>, <code>GoRecordAsync</code></td><td>Validation and history are part of the orchestration path</td></tr>
+                            <tr><td>Switch blocks and items</td><td><code>SwitchToBlockAsync</code>, <code>GoBlockAsync</code>, <code>NextBlockAsync</code>, <code>PreviousBlockAsync</code>, <code>GoItemAsync</code>, <code>NextItemAsync</code>, <code>PreviousItemAsync</code></td><td>Updates current block context, item focus metadata, and block-instance behavior</td></tr>
+                            <tr><td>Commit form</td><td><code>CommitFormAsync()</code></td><td>Runs validation, trigger wiring, dirty-state save, audit flush, and lock cleanup</td></tr>
+                            <tr><td>Rollback form</td><td><code>RollbackFormAsync()</code></td><td>Restores dirty blocks and clears transient state</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="registration" class="section">
+                    <h2>Block Registration and CRUD Flow</h2>
+                    <p>
+                        Prefer typed registration so FormsManager can create records with the correct CLR type, use typed accessors,
+                        and keep new-record flows compatible with validation, LOVs, audit, and key generation.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Typed block registration and master-detail wiring</h3>
+                        <pre><code class="language-csharp">manager.RegisterBlock&lt;CustomerDto&gt;(
+    blockName: "CUSTOMERS",
+    unitOfWork: customerUow,
+    entityStructure: customerEntity,
+    dataSourceName: "Northwind",
+    isMasterBlock: true);
+
+manager.RegisterBlock&lt;OrderDto&gt;(
+    blockName: "ORDERS",
+    unitOfWork: orderUow,
+    entityStructure: orderEntity,
+    dataSourceName: "Northwind");
+
+manager.CreateMasterDetailRelation(
+    masterBlockName: "CUSTOMERS",
+    detailBlockName: "ORDERS",
+    masterKeyField: "CustomerId",
+    detailForeignKeyField: "CustomerId");
+
+var orderBlock = manager.GetBlock&lt;OrderDto&gt;("ORDERS");
+await manager.InsertRecordAsync&lt;OrderDto&gt;("ORDERS", new OrderDto { Status = "Draft" });</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Duplicate, export, and import</h3>
+                        <pre><code class="language-csharp">await manager.DuplicateCurrentRecordAsync("ORDERS");
+
+using var jsonStream = new MemoryStream();
+await manager.ExportBlockToJsonAsync("ORDERS", jsonStream);
+
+jsonStream.Position = 0;
+await manager.ImportBlockFromJsonAsync("ORDERS_ARCHIVE", jsonStream, clearFirst: true);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Master/detail ownership</strong>
+                        <p>
+                            Relationship registration, key resolution, and detail synchronization are FormsManager concerns.
+                            Keep UnitOfWork focused on entity persistence rather than relationship orchestration.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="keys" class="section">
+                    <h2>Key Generation and Record Creation</h2>
+                    <p>
+                        Key handling is part of the new-record and insert pipeline. FormsManager coordinates the strategy, but the
+                        datasource-backed UnitOfWork remains the authority for persisted identities and real sequence refresh.
+                    </p>
+
+                    <ol>
+                        <li>Preserve explicit keys supplied by caller, default factory, or trigger.</li>
+                        <li>Leave datasource-managed identity keys unset until insert or commit refresh completes.</li>
+                        <li>Prefer datasource or UnitOfWork sequence generation before the in-memory FormsManager sequence provider.</li>
+                        <li>Use FormsManager sequences for deterministic tests or non-database-backed flows.</li>
+                        <li>Handle composite keys field by field.</li>
+                        <li>Do not allocate keys during query, paging, navigation, or cache prefetch.</li>
+                    </ol>
+
+                    <div class="code-example">
+                        <h3>Explicit key preserved</h3>
+                        <pre><code class="language-csharp">await manager.InsertRecordAsync&lt;CustomerDto&gt;("CUSTOMERS", new CustomerDto
+{
+    CustomerId = "ALFKI",
+    CompanyName = "Alfreds Futterkiste"
+});</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Sequence-backed key</h3>
+                        <pre><code class="language-csharp">manager.SetItemDefault("ORDERS", "Status", () =&gt; "Draft");
+
+var nextNumber = manager.GetNextSequence("ORDER_SEQ");
+
+await manager.InsertRecordAsync&lt;OrderDto&gt;("ORDERS", new OrderDto
+{
+    OrderNumber = nextNumber,
+    CustomerId = "ALFKI"
+});</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Datasource identity key</h3>
+                        <pre><code class="language-csharp">await manager.InsertRecordAsync&lt;OrderLineDto&gt;("ORDER_LINES", new OrderLineDto
+{
+    OrderId = existingOrderId,
+    ProductId = 12,
+    Quantity = 3
+    // Leave identity key unset. The datasource refresh path populates it after insert or commit.
+});</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Default-value factory</h3>
+                        <pre><code class="language-csharp">manager.SetItemDefault("ORDERS", "CreatedAt", () =&gt; DateTime.UtcNow);
+manager.SetItemDefault("ORDERS", "CreatedBy", () =&gt; Environment.UserName);
+
+await manager.InsertRecordAsync&lt;OrderDto&gt;("ORDERS", new OrderDto());</code></pre>
+                    </div>
+                </section>
+
+                <section id="builtins" class="section">
+                    <h2>Built-in Runtime Operations</h2>
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Area</th>
+                                <th>FormsManager surface</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Block properties</td><td><code>SetBlockProperty</code>, <code>GetBlockProperty</code>, <code>SetDefaultWhere</code>, <code>SetOrderBy</code>, <code>SetInsertAllowed</code>, <code>SetUpdateAllowed</code>, <code>SetDeleteAllowed</code>, <code>SetQueryAllowed</code></td><td>Backed by <code>DataBlockInfo</code> and the block-property manager</td></tr>
+                            <tr><td>Navigation</td><td><code>SwitchToBlockAsync</code>, <code>GoBlockAsync</code>, <code>NextBlockAsync</code>, <code>PreviousBlockAsync</code>, <code>GoItemAsync</code>, <code>NextItemAsync</code>, <code>PreviousItemAsync</code>, <code>GoRecordAsync</code>, <code>NavigateToRecordAsync</code>, <code>FirstRecordAsync</code>, <code>NextRecordAsync</code>, <code>PreviousRecordAsync</code>, <code>LastRecordAsync</code></td><td>Item focus metadata is runtime-owned; actual cursor rendering remains UI-owned</td></tr>
+                            <tr><td>Messages and alerts</td><td><code>SetMessage</code>, <code>ClearMessage</code>, <code>ShowAlertAsync</code>, <code>ConfirmAsync</code>, <code>ShowInfoAsync</code></td><td>Backed by injected <code>IAlertProvider</code></td></tr>
+                            <tr><td>LOV orchestration</td><td><code>ShowLOVAsync</code>, <code>LOV.RegisterLOV</code></td><td>Runtime loads and applies values; visual dialog remains UI-owned</td></tr>
+                            <tr><td>Defaults and copy</td><td><code>SetItemDefault</code>, <code>CopyFieldValue</code></td><td>Applied during new-record and field-copy flows</td></tr>
+                            <tr><td>Sequences</td><td><code>GetNextSequence</code>, <code>PeekNextSequence</code>, <code>ResetSequence</code>, <code>CreateSequence</code></td><td>Prefer datasource or UnitOfWork sequence generation first</td></tr>
+                            <tr><td>Timers</td><td><code>CreateTimer</code>, <code>DeleteTimer</code>, <code>GetTimer</code>, <code>GetAllTimers</code></td><td>Timer expiration feeds <code>WHEN-TIMER-EXPIRED</code></td></tr>
+                            <tr><td>System variables</td><td><code>SystemVariables</code></td><td>Represents <code>:SYSTEM.*</code> runtime state</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Built-in usage example</h3>
+                        <pre><code class="language-csharp">manager.SetDefaultWhere("ORDERS", "IsDeleted = 0");
+manager.SetOrderBy("ORDERS", "OrderDate desc");
+manager.SetInsertAllowed("ORDERS", true);
+
+var timer = manager.CreateTimer("REFRESH_ORDERS", TimeSpan.FromSeconds(30), repeating: true);
+var confirmed = await manager.ConfirmAsync("Commit", "Save all pending changes?");
+
+if (confirmed)
+{
+    await manager.CommitFormAsync();
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="multiform" class="section">
+                    <h2>Multi-Form, Globals, and Messaging</h2>
+                    <p>
+                        FormsManager implements modal and modeless form flows through the form registry,
+                        call stack, globals, parameter handoff, message bus, and shared block manager.
+                    </p>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Concept</th>
+                                <th>Method</th>
+                                <th>Behavior</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Current form open</td><td><code>OpenFormAsync(string formName)</code></td><td>Initializes the current form lifecycle</td></tr>
+                            <tr><td>Modal child form</td><td><code>CallFormAsync(..., FormCallMode.Modal)</code></td><td>Suspends caller until child returns</td></tr>
+                            <tr><td>Modeless child form</td><td><code>OpenFormAsync(string formName, Dictionary&lt;string, object&gt; parameters)</code></td><td>Independent child runtime tracked by the registry</td></tr>
+                            <tr><td>Replace form</td><td><code>NewFormAsync</code></td><td>Replaces the current form in the registry and call flow</td></tr>
+                            <tr><td>Return to caller</td><td><code>ReturnToCallerAsync</code></td><td>Can hand return data back to the calling form</td></tr>
+                            <tr><td>Global values</td><td><code>SetGlobalVariable</code>, <code>GetGlobalVariable</code></td><td>Represents <code>:GLOBAL.*</code></td></tr>
+                            <tr><td>Parameter handoff</td><td><code>CallFormAsync</code>, <code>OpenFormAsync</code>, <code>GetFormParameter</code></td><td>Caller passes named parameters to target form</td></tr>
+                            <tr><td>Inter-form messaging</td><td><code>PostMessage</code>, <code>SubscribeToMessage</code>, <code>UnsubscribeFromMessage</code></td><td>Publish and receive messages through the shared bus</td></tr>
+                            <tr><td>Shared UnitOfWork blocks</td><td><code>CreateSharedBlock</code>, <code>SharedBlocks</code></td><td>Expose UoW-backed blocks across form instances</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Modal form, globals, and messaging</h3>
+                        <pre><code class="language-csharp">manager.SetGlobalVariable("ACTIVE_CUSTOMER_ID", "ALFKI");
+
+manager.SubscribeToMessage("CustomerChanged", message =&gt;
+{
+    Console.WriteLine($"Received {message.MessageType} from {message.SenderForm}");
+});
+
+manager.PostMessage("ORDER_FORM", "CustomerChanged", "ALFKI");
+
+await manager.CallFormAsync(
+    "ORDER_FORM",
+    new Dictionary&lt;string, object&gt; { ["CustomerId"] = "ALFKI" },
+    FormCallMode.Modal);</code></pre>
+                    </div>
+                </section>
+
+                <section id="triggers" class="section">
+                    <h2>Triggers, Validation, and LOVs</h2>
+
+                    <h3>Trigger system</h3>
+                    <p>
+                        FormsManager wires trigger behavior across insert, update, delete, query, commit, navigation, key events,
+                        and timer expiration. Trigger chaining, dependency tracking, and execution logging are part of the runtime.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Key trigger registration</h3>
+                        <pre><code class="language-csharp">manager.RegisterKeyTrigger(
+    KeyTriggerType.KEY_COMMIT,
+    "ORDERS",
+    args =&gt;
+    {
+        Console.WriteLine("Commit key trigger fired");
+        return Task.CompletedTask;
+    });</code></pre>
+                    </div>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Capability</th>
+                                <th>Surface</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Scope-aware trigger registration</td><td><code>Triggers</code> manager</td><td>Form, block, item, and global scope</td></tr>
+                            <tr><td>Key triggers</td><td><code>RegisterKeyTrigger</code>, <code>RegisterKeyTriggerAsync</code>, <code>FireKeyTriggerAsync</code></td><td>Includes default actions like commit and navigation</td></tr>
+                            <tr><td>DML triggers</td><td><code>ON-INSERT</code>, <code>ON-UPDATE</code>, <code>ON-DELETE</code></td><td>Invoked through DML trigger partials</td></tr>
+                            <tr><td>Programmatic trigger raising</td><td><code>RaiseFormTriggerAsync</code></td><td>Use when the caller must explicitly invoke a named trigger</td></tr>
+                            <tr><td>Trigger libraries</td><td><code>TriggerLibrary</code></td><td>Provides audit stamp, auto-number, cascade delete, and field-format helpers</td></tr>
+                            <tr><td>Dependency graph and logging</td><td><code>FormsManager.TriggerChaining.cs</code></td><td>Supports ordered execution and diagnostics</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Validation</h3>
+                    <p>
+                        Validation rules can run at item, record, block, form, and cross-block scope. FormsManager integrates validation
+                        into field changes, query transitions, navigation, and commit flows.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Validation registration example</h3>
+                        <pre><code class="language-csharp">manager.Validation.RegisterItemRule("ORDERS", "Quantity", value =&gt;
+{
+    return value is int quantity &amp;&amp; quantity &gt; 0
+        ? ValidationResult.Success()
+        : ValidationResult.Failure("Quantity must be greater than zero.");
+});</code></pre>
+                    </div>
+
+                    <h3>LOV orchestration</h3>
+                    <p>
+                        Register LOV definitions through the <code>LOV</code> helper, then apply a selected row through
+                        <code>ShowLOVAsync</code>. That keeps data loading, cache reuse, and related-field population inside the
+                        FormsManager orchestration path.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>LOV registration and application</h3>
+                        <pre><code class="language-csharp">var customerLov = LOVDefinition
+    .CreateLookup("CUSTOMER_LOV", "Northwind", "Customers", "CustomerId", "CompanyName")
+    .MapField("CompanyName", "CustomerName");
+
+manager.LOV.RegisterLOV("ORDERS", "CustomerId", customerLov);
+
+var lovResult = await manager.ShowLOVAsync("ORDERS", "CustomerId", searchText: "alf");
+var selected = lovResult.Records.FirstOrDefault();
+
+if (selected != null)
+{
+    await manager.ShowLOVAsync("ORDERS", "CustomerId", selectedRecord: selected);
+}</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>LOV return-field behavior</strong>
+                        <p>
+                            <code>LOVManager</code> uses an internal <code>__RETURN_VALUE__</code> sentinel. Callers should prefer
+                            <code>FormsManager.ShowLOVAsync</code> because it translates that sentinel back to the real bound field
+                            name before applying the selected values to the current record.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="audit-security-performance" class="section">
+                    <h2>Audit, Security, and Performance</h2>
+
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Area</th>
+                                <th>Representative methods</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Audit</td><td><code>SetAuditUser</code>, <code>ConfigureAudit</code>, <code>GetAuditLog</code>, <code>GetFieldHistory</code>, <code>ExportAuditToCsvAsync</code></td><td>Field-change feed plus pluggable audit stores</td></tr>
+                            <tr><td>Security</td><td><code>SetSecurityContext</code>, <code>SetBlockSecurity</code>, <code>SetFieldSecurity</code>, <code>GetMaskedFieldValue</code></td><td>UI disabling is not the only protection; runtime CRUD checks still enforce rules</td></tr>
+                            <tr><td>Paging</td><td><code>SetBlockPageSize</code>, <code>SetTotalRecordCount</code>, <code>LoadPageAsync</code>, <code>SetFetchAheadDepth</code></td><td><code>PagingManager</code> tracks state; it does not query the datasource by itself</td></tr>
+                            <tr><td>Cache and metrics</td><td><code>InvalidateBlockCache</code>, <code>SetBlockCacheTtl</code>, <code>GetCacheStats</code>, <code>CheckCacheMemoryPressure</code></td><td>Performance manager owns cache statistics and eviction-related behavior</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Audit, security, and paging example</h3>
+                        <pre><code class="language-csharp">manager.SetAuditUser("fahad");
+manager.ConfigureAudit(config =&gt;
+{
+    config.Enabled = true;
+    config.AuditedBlocks.Add("ORDERS");
+});
+
+manager.SetSecurityContext(new SecurityContext
+{
+    UserName = "fahad",
+    Roles = new List&lt;SecurityRole&gt;
+    {
+        new SecurityRole
+        {
+            Name = "OrderClerk",
+            Permissions = SecurityPermission.Query | SecurityPermission.Update
+        }
+    }
+});
+
+manager.SetBlockPageSize("ORDERS", 50);
+manager.SetTotalRecordCount("ORDERS", 1200);
+manager.SetFetchAheadDepth("ORDERS", 2);
+
+var page = await manager.LoadPageAsync("ORDERS", 3);
+var auditEntries = manager.GetAuditLog("ORDERS");
+var cacheStats = manager.GetCacheStats();</code></pre>
+                    </div>
+                </section>
+
+                <section id="parity" class="section">
+                    <h2>Coverage Snapshot</h2>
+                    <table class="property-table">
+                        <thead>
+                            <tr>
+                                <th>Forms runtime concept</th>
+                                <th>FormsManager equivalent</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>ENTER_QUERY</code></td><td><code>EnterQueryModeAsync</code></td><td>Implemented</td></tr>
+                            <tr><td><code>EXECUTE_QUERY</code></td><td><code>ExecuteQueryAndEnterCrudModeAsync</code>, <code>ExecuteQueryAsync</code></td><td>Implemented</td></tr>
+                            <tr><td><code>COMMIT_FORM</code></td><td><code>CommitFormAsync</code></td><td>Implemented</td></tr>
+                            <tr><td><code>ROLLBACK_FORM</code></td><td><code>RollbackFormAsync</code></td><td>Implemented</td></tr>
+                            <tr><td><code>SHOW_LOV</code></td><td><code>ShowLOVAsync</code> plus <code>LOV.RegisterLOV</code></td><td>Implemented in runtime; visual chooser remains UI-owned</td></tr>
+                            <tr><td><code>SET_BLOCK_PROPERTY</code> / <code>GET_BLOCK_PROPERTY</code></td><td><code>SetBlockProperty</code>, <code>GetBlockProperty</code></td><td>Implemented</td></tr>
+                            <tr><td><code>CALL_FORM</code> / <code>OPEN_FORM</code> / <code>NEW_FORM</code></td><td><code>CallFormAsync</code>, overloads of <code>OpenFormAsync</code>, <code>NewFormAsync</code></td><td>Implemented</td></tr>
+                            <tr><td><code>:GLOBAL.*</code></td><td><code>SetGlobalVariable</code>, <code>GetGlobalVariable</code></td><td>Implemented</td></tr>
+                            <tr><td><code>MESSAGE</code> / <code>SHOW_ALERT</code></td><td><code>SetMessage</code>, <code>ClearMessage</code>, <code>ShowAlertAsync</code>, <code>ConfirmAsync</code></td><td>Implemented</td></tr>
+                            <tr><td><code>CREATE_TIMER</code> / <code>DELETE_TIMER</code></td><td><code>CreateTimer</code>, <code>DeleteTimer</code></td><td>Implemented</td></tr>
+                            <tr><td>PRE or POST triggers, DML triggers, KEY-* triggers</td><td><code>Triggers</code>, key-trigger wrappers, DML trigger partials, chaining support</td><td>Implemented</td></tr>
+                            <tr><td>Audit trail</td><td><code>AuditManager</code>, audit configuration, export, history queries</td><td>Implemented</td></tr>
+                            <tr><td>Security and masking</td><td><code>Security</code>, block and field security, masking</td><td>Implemented</td></tr>
+                            <tr><td>Paging and cache control</td><td><code>Paging</code>, <code>PerformanceManager</code>, cache invalidation helpers</td><td>Implemented</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="tip">
+                        <strong>Full mapping</strong>
+                        <p>
+                            For the more detailed concept-by-concept mapping, see the mapping document under
+                            <code>DataManagementEngineStandard/Editor/Forms/.plans</code>.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="boundaries" class="section">
+                    <h2>Known Boundaries and Hardening Areas</h2>
+
+                    <div class="warning">
+                        <strong>UI-owned boundaries</strong>
+                        <ul>
+                            <li>canvases and tab pages</li>
+                            <li>focus rendering and cursor movement between visible controls</li>
+                            <li>LOV dialog presentation and row-selection UI</li>
+                            <li>keyboard routing from host controls into key-trigger execution</li>
+                            <li>status-area and message-area rendering</li>
+                        </ul>
+                    </div>
+
+                    <div class="note">
+                        <strong>Residual hardening areas</strong>
+                        <ul>
+                            <li>Some CRUD and update seams still rely on reflection-based fallback paths rather than strongly typed UnitOfWork contracts.</li>
+                            <li>Programmatic <code>RaiseFormTriggerAsync</code> usage should continue to be reviewed where explicit trigger-raise semantics are expected.</li>
+                            <li>Remote cache invalidation remains dependent on the broader host integration and datasource notification model.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="related" class="section">
+                    <h2>Related Documentation</h2>
+                    <ul>
+                        <li><a href="unitofwork.html">UnitOfWork Pattern</a></li>
+                        <li><a href="unitofwork-deep-dive.html">UnitOfWork Deep Dive</a></li>
+                        <li><a href="helpers-runtime-reference.html">Helpers Runtime Reference</a></li>
+                        <li><a href="dmeeditor.html">DMEEditor</a></li>
+                    </ul>
+                </section>
+
+                <div class="nav-links">
+                    <a href="datasyncmanager.html"><i class="bi bi-arrow-left"></i> Previous Page</a>
+                    <a href="configeditor.html">Next Page <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 runtime surfaces</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="examples-editor-classes.html">Examples</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>
+
     <script src="navigation.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        console.log('formsmanager documentation page loaded');
+    </script>
 </body>
 </html>

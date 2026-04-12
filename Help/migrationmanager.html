@@ -343,7 +343,7 @@ foreach (var issue in plan.ReadinessIssues.Where(i => i.Severity == MigrationIss
 <table class="table table-sm table-bordered">
 <thead><tr><th>Provider</th><th>Key Constraint</th></tr></thead>
 <tbody>
-  <tr><td>Oracle</td><td>Identifier length limits; maintenance windows often required for larger schemas</td></tr>
+  <tr><td>Legacy enterprise engines</td><td>Identifier length limits; maintenance windows may be required for larger schemas</td></tr>
   <tr><td>SQLite / DuckDB</td><td>ALTER/RENAME may require copy-table fallback at runtime</td></tr>
   <tr><td>NoSQL (general)</td><td>Schema evolution semantics vary; additive-only patterns preferred</td></tr>
   <tr><td>FILE (CSV/JSON/XML)</td><td>Schema changes are often emulated; behavior differs across engines</td></tr>

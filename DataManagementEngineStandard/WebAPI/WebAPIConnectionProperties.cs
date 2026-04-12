@@ -221,7 +221,7 @@ namespace TheTechIdea.Beep.WebAPI
 
         #region Web API Specific Properties
 
-        // <summary>
+        /// <summary>
         /// API version for Instagram Graph API
         /// </summary>
         public string ApiVersion { get; set; } = "v1.0";

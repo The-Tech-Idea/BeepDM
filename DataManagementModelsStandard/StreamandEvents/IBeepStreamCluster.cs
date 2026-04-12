@@ -173,8 +173,12 @@ namespace TheTechIdea.Beep.StreamandEvents
         public int TopicCount { get; init; }
         public long TotalMessagesIn { get; init; }
         public long TotalMessagesOut { get; init; }
+        public long IngressBytes { get; init; }
+        public long EgressBytes { get; init; }
         public long PendingMessages { get; init; }
         public long StoredBytes { get; init; }
+        public long DiskCapacityBytes { get; init; }
+        public long DiskFreeBytes { get; init; }
         public int ActiveConsumerGroups { get; init; }
 
         /// <summary>Optional error message if the node is faulted.</summary>

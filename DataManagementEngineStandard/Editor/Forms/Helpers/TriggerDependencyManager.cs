@@ -12,6 +12,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// </summary>
     public class TriggerDependencyManager : ITriggerDependencyManager
     {
+        /// <summary>Orders trigger definitions according to dependency requirements.</summary>
         public IReadOnlyList<TriggerDefinition> OrderByDependency(IReadOnlyList<TriggerDefinition> triggers)
         {
             if (triggers == null || triggers.Count == 0)
@@ -39,9 +40,11 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             return result;
         }
 
+        /// <summary>Returns whether the trigger graph contains a circular dependency.</summary>
         public bool HasCircularDependency(IReadOnlyList<TriggerDefinition> triggers)
             => FindCycle(triggers).Count > 0;
 
+        /// <summary>Returns the first detected trigger dependency cycle, if any.</summary>
         public IReadOnlyList<string> FindCycle(IReadOnlyList<TriggerDefinition> triggers)
         {
             if (triggers == null || triggers.Count == 0) return Array.Empty<string>();

@@ -37,6 +37,11 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             if (string.IsNullOrEmpty(authType) || authType.Equals("none", StringComparison.OrdinalIgnoreCase))
                 return true; // No authentication required
 
+            if (authType.Equals("bearer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(GetStaticBearerToken()))
+            {
+                return true;
+            }
+
             switch (authType.ToLower())
             {
                 case "oauth2":
@@ -58,8 +63,9 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
             {
                 case "bearer":
                 case "oauth2":
-                    if (!string.IsNullOrEmpty(_accessToken))
-                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                    var bearerToken = !string.IsNullOrWhiteSpace(_accessToken) ? _accessToken : GetStaticBearerToken();
+                    if (!string.IsNullOrWhiteSpace(bearerToken))
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
                     break;
 
                 case "apikey":
@@ -180,6 +186,17 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         private string GetAuthenticationType()
         {
             return GetParameterValue("AuthType") ?? "none";
+        }
+
+        private string GetStaticBearerToken()
+        {
+            return !string.IsNullOrWhiteSpace(_connectionProps.KeyToken)
+                ? _connectionProps.KeyToken
+                : !string.IsNullOrWhiteSpace(_connectionProps.BearerToken)
+                    ? _connectionProps.BearerToken
+                    : !string.IsNullOrWhiteSpace(_connectionProps.ApiKey)
+                        ? _connectionProps.ApiKey
+                        : GetParameterValue("BearerToken");
         }
 
         private string GetParameterValue(string paramName)

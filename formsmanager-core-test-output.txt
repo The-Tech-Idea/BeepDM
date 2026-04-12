@@ -1,0 +1,10 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  DataManagementModels -> C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementModelsStandard\bin\Debug\net9.0\DataManagementModels.dll
+  DataManagementEngine -> C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\DataManagementEngineStandard\bin\Debug\net9.0\DataManagementEngine.dll
+C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\FormsManager.Core.Tests\FormsManagerCoreRegistrationTests.cs(88,62): warning CS8604: Possible null reference argument for parameter 'value' in 'IReturnsResult<IUnitofWork> IReturnsGetter<IUnitofWork, Type>.Returns(Type value)'. [C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\FormsManager.Core.Tests\FormsManager.Core.Tests.csproj]
+  FormsManager.Core.Tests -> C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\FormsManager.Core.Tests\bin\Debug\net9.0\FormsManager.Core.Tests.dll
+Test run for C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\tests\FormsManager.Core.Tests\bin\Debug\net9.0\FormsManager.Core.Tests.dll (.NETCoreApp,Version=v9.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4, Duration: 636 ms - FormsManager.Core.Tests.dll (net9.0)

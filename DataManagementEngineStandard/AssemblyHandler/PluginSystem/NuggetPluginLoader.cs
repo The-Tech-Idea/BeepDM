@@ -22,6 +22,14 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly PluginRegistry _registry;
         private readonly PluginProcessManager _processManager;
 
+        /// <summary>
+        /// Initializes a loader that downloads NuGet packages and loads them as plugins.
+        /// </summary>
+        /// <param name="downloader">Package downloader used to fetch package archives and dependencies.</param>
+        /// <param name="loaderAssistant">Assembly loader that attaches extracted assemblies to the selected runtime context.</param>
+        /// <param name="registry">Plugin registry used to persist installation metadata.</param>
+        /// <param name="logger">Logger used for load diagnostics.</param>
+        /// <param name="processManager">Optional process host manager for out-of-process plugin execution.</param>
         public NuggetPluginLoader(NuggetPackageDownloader downloader, AssemblyLoadingAssistant loaderAssistant, PluginRegistry registry, IDMLogger logger, PluginProcessManager processManager = null)
         {
             _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
@@ -35,7 +43,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// Downloads a nugget and dependencies, extracts each package and loads assemblies from the package directories
         /// using the AssemblyLoadingAssistant.
         /// </summary>
-        public async Task<List<Assembly>> LoadNuggetAsPluginAsync(string packageName, string? version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string? appInstallPath = null, bool useProcessHost = false)
+        public async Task<List<Assembly>> LoadNuggetAsPluginAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false)
         {
             var loaded = new List<Assembly>();
             if (string.IsNullOrWhiteSpace(packageName)) return loaded;

@@ -38,6 +38,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// The value that was validated
         /// </summary>
         public object Value { get; set; }
+
+        /// <summary>
+        /// Exception captured while executing the validation rule, when applicable.
+        /// </summary>
         public Exception Exception { get; internal set; }
 
         /// <summary>

@@ -123,17 +123,6 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Fires when a field changes on a tracked item.</summary>
         event EventHandler<ItemChangedEventArgs<Entity>> ItemChanged;
 
-        // Master-detail coordination owned by UoW
-        IReadOnlyList<IUnitofWork> DetailUnitOfWorks { get; }
-        IUnitofWork MasterUnitOfWork { get; }
-        string MasterKeyField { get; }
-        string ForeignKeyField { get; }
-        void RegisterDetail(IUnitofWork detailUnitOfWork, string masterKeyField, string detailForeignKeyField);
-        void UnregisterDetail(IUnitofWork detailUnitOfWork);
-        void UnregisterAllDetails();
-        Task SynchronizeDetailsAsync();
-        bool ApplyMasterValueToCurrentItem();
-
         // Validation (Phase 3)
         bool IsAutoValidateEnabled { get; set; }
         bool BlockCommitOnValidationError { get; set; }

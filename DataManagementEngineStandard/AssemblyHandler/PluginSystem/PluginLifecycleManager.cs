@@ -21,10 +21,23 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private bool _disposed = false;
 
         // Events
+        /// <summary>
+        /// Raised when a plugin changes lifecycle state.
+        /// </summary>
         public event EventHandler<PluginEventArgs> PluginStateChanged;
+        /// <summary>
+        /// Raised when a plugin's health state changes.
+        /// </summary>
         public event EventHandler<PluginEventArgs> PluginHealthChanged;
+        /// <summary>
+        /// Raised when a plugin operation reports an error.
+        /// </summary>
         public event EventHandler<PluginEventArgs> PluginError;
 
+        /// <summary>
+        /// Initializes a lifecycle manager for loaded plugins.
+        /// </summary>
+        /// <param name="logger">Logger used for lifecycle diagnostics.</param>
         public PluginLifecycleManager(IDMLogger logger)
         {
             _logger = logger;
@@ -402,6 +415,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             });
         }
 
+        /// <summary>
+        /// Stops any started plugins and releases tracked lifecycle state.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

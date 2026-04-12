@@ -45,54 +45,34 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Use class creator to create new instance based on entity structure
-                // Since GetEntityType is not available, use a different approach
-                Type entityType = null;
-                
-                // Try to get type: prefer BlockInfo.EntityType (set via RegisterBlock<T>) before
-                // falling back to a runtime string lookup or ExpandoObject.
-                if (blockInfo.EntityType != null)
+                var entityType = blockInfo.EntityType ?? ResolveBlockEntityType(blockInfo.UnitOfWork, blockInfo.EntityStructure, blockInfo.DataSourceName);
+                if (entityType != null && blockInfo.EntityType == null)
+                    blockInfo.EntityType = entityType;
+
+                if (entityType == null)
                 {
-                    entityType = blockInfo.EntityType;
-                }
-                else if (!string.IsNullOrEmpty(blockInfo.EntityStructure.EntityName))
-                {
-                    try { entityType = Type.GetType(blockInfo.EntityStructure.EntityName); }
-                    catch (Exception ex)
-                    {
-                        LogError($"Error resolving type for entity '{blockInfo.EntityStructure.EntityName}'", ex, blockName);
-                    }
+                    Status = $"Cannot create new record for block '{blockName}' because no CLR entity type is registered or discoverable";
+                    LogOperation(Status, blockName);
+                    return null;
                 }
 
-                if (entityType != null)
+                if (entityType.IsAbstract || entityType.IsInterface)
                 {
-                    var newRecord = Activator.CreateInstance(entityType);
-                    _formsSimulationHelper.SetAuditDefaults(newRecord, Environment.UserName);
-
-                    // Fire WHEN-CREATE-RECORD trigger after the instance is created
-                    _triggerManager.FireBlockTrigger(
-                        TriggerType.WhenCreateRecord, blockName,
-                        TriggerContext.ForBlock(TriggerType.WhenCreateRecord, blockName, newRecord, _dmeEditor));
-
-                    LogOperation($"New record created for block '{blockName}'", blockName);
-                    return newRecord;
+                    Status = $"Cannot create new record for block '{blockName}' because CLR entity type '{entityType.FullName}' is not instantiable";
+                    LogOperation(Status, blockName);
+                    return null;
                 }
 
-                // Last resort: ExpandoObject for anonymous/unknown entities
-                if (blockInfo.EntityStructure.Fields?.Count > 0)
-                {
-                    var dynRecord = new System.Dynamic.ExpandoObject();
-                    _formsSimulationHelper.SetAuditDefaults(dynRecord, Environment.UserName);
+                var newRecord = Activator.CreateInstance(entityType);
+                _formsSimulationHelper.SetAuditDefaults(newRecord, Environment.UserName);
 
-                    _triggerManager.FireBlockTrigger(
-                        TriggerType.WhenCreateRecord, blockName,
-                        TriggerContext.ForBlock(TriggerType.WhenCreateRecord, blockName, dynRecord, _dmeEditor));
+                // Fire WHEN-CREATE-RECORD trigger after the instance is created
+                _triggerManager.FireBlockTrigger(
+                    TriggerType.WhenCreateRecord, blockName,
+                    TriggerContext.ForBlock(TriggerType.WhenCreateRecord, blockName, newRecord, _dmeEditor));
 
-                    LogOperation($"New dynamic record created for block '{blockName}'", blockName);
-                    return dynRecord;
-                }
-
-                Status = $"Cannot create entity type for block '{blockName}'";
-                return null;
+                LogOperation($"New record created for block '{blockName}' using '{entityType.FullName}'", blockName);
+                return newRecord;
             }
             catch (Exception ex)
             {

@@ -25,6 +25,11 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Creates an audit manager with the supplied store and configuration.
+        /// </summary>
+        /// <param name="store">Store used to persist audit entries.</param>
+        /// <param name="configuration">Audit behavior configuration.</param>
         public AuditManager(IAuditStore store = null, AuditConfiguration configuration = null)
         {
             Store         = store         ?? new InMemoryAuditStore();
@@ -33,18 +38,26 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         #endregion
 
         #region IAuditManager
+        /// <summary>Gets the active audit configuration.</summary>
         public AuditConfiguration Configuration { get; }
+
+        /// <summary>Gets the current audit user name.</summary>
         public string CurrentUser { get; private set; } = string.Empty;
+
+        /// <summary>Gets the backing audit store.</summary>
         public IAuditStore Store  { get; }
 
+        /// <summary>Sets the current audit user name.</summary>
         public void SetAuditUser(string userName)
             => CurrentUser = userName ?? string.Empty;
 
+        /// <summary>Applies configuration mutations to the active audit configuration.</summary>
         public void Configure(Action<AuditConfiguration> configure)
             => configure?.Invoke(Configuration);
 
         // ── Accumulation ───────────────────────────────────────────────────
 
+        /// <summary>Records a pending field-level change for later commit flush.</summary>
         public void RecordFieldChange(
             string blockName, string fieldName,
             object oldValue, object newValue,
@@ -62,6 +75,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Flushes all pending audit changes to the configured store.</summary>
         public void FlushPendingToStore(string formName, AuditOperation operation)
         {
             if (!Configuration.Enabled) return;
@@ -109,6 +123,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 Store.Purge(Configuration.MaxRetentionDays);
         }
 
+        /// <summary>Discards all pending, unflushed audit changes.</summary>
         public void DiscardPending()
         {
             lock (_pendingLock)
@@ -117,6 +132,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── Query ──────────────────────────────────────────────────────────
 
+        /// <summary>Returns audit entries filtered by block, operation, and date range.</summary>
         public IReadOnlyList<AuditEntry> GetAuditLog(
             string blockName         = null,
             AuditOperation? operation = null,
@@ -124,6 +140,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             DateTime? to             = null)
             => Store.Query(blockName, operation, from, to);
 
+        /// <summary>Returns the audit history for a specific field in a record.</summary>
         public IReadOnlyList<AuditFieldChange> GetFieldHistory(
             string blockName, string recordKey, string fieldName)
         {
@@ -137,6 +154,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── Export ─────────────────────────────────────────────────────────
 
+        /// <summary>Exports audit entries to CSV.</summary>
         public async Task ExportToCsvAsync(string filePath, string blockName = null)
         {
             var entries = Store.Query(blockName);
@@ -167,6 +185,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             await File.WriteAllTextAsync(filePath, sb.ToString(), Encoding.UTF8);
         }
 
+        /// <summary>Exports audit entries to JSON.</summary>
         public async Task ExportToJsonAsync(string filePath, string blockName = null)
         {
             var entries = Store.Query(blockName);
@@ -177,7 +196,10 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         // ── Maintenance ────────────────────────────────────────────────────
 
+        /// <summary>Purges audit entries older than the supplied number of days.</summary>
         public void Purge(int olderThanDays) => Store.Purge(olderThanDays);
+
+        /// <summary>Clears all persisted audit entries.</summary>
         public void Clear()                  => Store.Clear();
 
         #endregion

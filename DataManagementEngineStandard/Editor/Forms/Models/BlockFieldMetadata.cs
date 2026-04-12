@@ -34,6 +34,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>Optional inline JSON settings forwarded to the platform renderer.</summary>
         public string InlineSettingsJson { get; set; } = string.Empty;
 
+        /// <summary>Returns a compact display string for diagnostics and editors.</summary>
         public override string ToString() =>
             $"{FieldName} ({(IncludeInView ? "Shown" : "Hidden")}, order={DisplayOrder})";
     }

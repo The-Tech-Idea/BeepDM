@@ -11,14 +11,23 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class UnloadAnalysis
     {
+        /// <summary>Gets or sets the logical plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the plugin display name.</summary>
         public string PluginName { get; set; }
+        /// <summary>Gets or sets the plugin version.</summary>
         public string Version { get; set; }
+        /// <summary>Gets or sets whether the plugin can be unloaded immediately without affecting dependents.</summary>
         public bool CanUnloadImmediately { get; set; }
+        /// <summary>Gets or sets the assemblies shared with other plugins.</summary>
         public List<SharedAssemblyInfo> SharedAssemblies { get; set; } = new();
+        /// <summary>Gets or sets the assemblies used only by this plugin.</summary>
         public List<SharedAssemblyInfo> UniqueAssemblies { get; set; } = new();
+        /// <summary>Gets or sets the dependent plugins that currently block unload.</summary>
         public List<string> DependentPlugins { get; set; } = new();
+        /// <summary>Gets or sets the estimated memory that could be released by unloading.</summary>
         public long EstimatedMemoryFreed { get; set; }
+        /// <summary>Gets or sets the recommended unload action.</summary>
         public UnloadRecommendation Recommendation { get; set; }
 
         /// <summary>
@@ -113,13 +122,20 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class SharedAssemblyInfo
     {
+        /// <summary>Gets or sets the assembly display name.</summary>
         public string AssemblyName { get; set; }
+        /// <summary>Gets or sets the assembly version.</summary>
         public string Version { get; set; }
+        /// <summary>Gets or sets the plugins currently using the assembly.</summary>
         public List<string> UsedByPlugins { get; set; } = new();
+        /// <summary>Gets or sets whether the assembly is unique to one plugin.</summary>
         public bool IsUnique { get; set; }
+        /// <summary>Gets or sets whether the assembly is part of the system/runtime rather than a plugin payload.</summary>
         public bool IsSystemAssembly { get; set; }
+        /// <summary>Gets or sets the assembly size in bytes when known.</summary>
         public long Size { get; set; }
 
+        /// <summary>Gets the number of plugins referencing the assembly.</summary>
         public int ReferenceCount => UsedByPlugins.Count;
     }
 
@@ -128,9 +144,13 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public enum UnloadRecommendation
     {
+        /// <summary>The plugin can be unloaded safely immediately.</summary>
         SafeToUnload,
+        /// <summary>Dependent plugins should be unloaded first.</summary>
         UnloadDependentsFirst,
+        /// <summary>A force unload is required and may affect dependents.</summary>
         ForceUnload,
+        /// <summary>The unload should be deferred until dependencies are resolved.</summary>
         ScheduleUnload
     }
 

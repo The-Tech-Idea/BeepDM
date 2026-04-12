@@ -496,9 +496,16 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
     [Flags]
     public enum KeyModifiers
     {
+        /// <summary>No modifier keys.</summary>
         None = 0,
+
+        /// <summary>Shift key.</summary>
         Shift = 1,
+
+        /// <summary>Control key.</summary>
         Control = 2,
+
+        /// <summary>Alt key.</summary>
         Alt = 4
     }
     
@@ -507,9 +514,16 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
     /// </summary>
     public enum MouseButton
     {
+        /// <summary>No mouse button.</summary>
         None = 0,
+
+        /// <summary>Left mouse button.</summary>
         Left = 1,
+
+        /// <summary>Right mouse button.</summary>
         Right = 2,
+
+        /// <summary>Middle mouse button.</summary>
         Middle = 3
     }
     

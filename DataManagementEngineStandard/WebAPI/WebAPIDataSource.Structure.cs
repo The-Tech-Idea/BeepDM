@@ -30,6 +30,13 @@ namespace TheTechIdea.Beep.WebAPI
                     return cachedList;
                 }
 
+                var configuredEntities = GetConfiguredEntities();
+                if (configuredEntities.Count > 0)
+                {
+                    _cacheHelper.Set(cacheKey, configuredEntities, TimeSpan.FromMinutes(30));
+                    return configuredEntities;
+                }
+
                 var endpointConfig = _configHelper.GetEndpointConfiguration("entities");
                 var url = _dataHelper.BuildEndpointUrl(_configHelper.BaseUrl, endpointConfig.ListEndpoint);
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -69,6 +76,32 @@ namespace TheTechIdea.Beep.WebAPI
                 ErrorObject.Message = ex.Message;
                 return new List<string>();
             }
+        }
+
+        private List<string> GetConfiguredEntities()
+        {
+            if (string.IsNullOrWhiteSpace(Dataconnection?.ConnectionProp?.Parameters))
+            {
+                return new List<string>();
+            }
+
+            var parameterMap = Dataconnection.ConnectionProp.Parameters
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Split('=', 2, StringSplitOptions.RemoveEmptyEntries))
+                .Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim(), StringComparer.OrdinalIgnoreCase);
+
+            if (!parameterMap.TryGetValue("Entities", out var entityValue) && !parameterMap.TryGetValue("EntityList", out entityValue))
+            {
+                return new List<string>();
+            }
+
+            return entityValue
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(entity => entity.Trim())
+                .Where(entity => !string.IsNullOrWhiteSpace(entity))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
         /// <summary>
         /// Checks if an entity exists in the data source
@@ -152,7 +185,7 @@ namespace TheTechIdea.Beep.WebAPI
                 else
                 {
                     _errorHelper.HandleErrorResponseAsync(response).Wait();
-                    return null;
+                    return TryInferEntityStructureFromData(EntityName, endpointConfig, refresh);
                 }
             }
             catch (Exception ex)
@@ -160,6 +193,50 @@ namespace TheTechIdea.Beep.WebAPI
                 Logger.WriteLog($"Error in GetEntityStructure: {ex.Message}");
                 ErrorObject.Flag = Errors.Failed;
                 ErrorObject.Message = ex.Message;
+                return TryInferEntityStructureFromData(EntityName, _configHelper.GetEndpointConfiguration(EntityName), refresh);
+            }
+        }
+
+        private EntityStructure TryInferEntityStructureFromData(string entityName, WebAPI.Helpers.WebAPIConfigurationHelper.EndpointConfiguration endpointConfig, bool refresh)
+        {
+            try
+            {
+                var sampleEndpoint = string.IsNullOrWhiteSpace(endpointConfig?.ListEndpoint)
+                    ? endpointConfig?.GetEndpoint
+                    : endpointConfig.ListEndpoint;
+
+                if (string.IsNullOrWhiteSpace(sampleEndpoint))
+                {
+                    return null;
+                }
+
+                var url = _dataHelper.BuildEndpointUrl(_configHelper.BaseUrl, sampleEndpoint);
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+                var headers = _configHelper.GetHeaders();
+                foreach (var header in headers)
+                {
+                    request.Headers.Add(header.Key, header.Value);
+                }
+
+                _authHelper.AddAuthenticationHeaders(request);
+
+                var response = _requestHelper.SendWithRetryAsync(request, $"InferEntityStructure-{entityName}").Result;
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                var content = response.Content.ReadAsStringAsync().Result;
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    return null;
+                }
+
+                return _schemaHelper.InferSchemaFromJsonAsync(entityName, new List<string> { content }, refresh).Result;
+            }
+            catch
+            {
                 return null;
             }
         }

@@ -3,6 +3,10 @@
 > Track progress across all enhancement phases.  
 > Update status: `[ ]` = Not started, `[~]` = In progress, `[x]` = Complete
 
+> Completion in this tracker means **implemented in code**. Audit date: **2026-04-09**. The help-page rewrite for Phase 09 was applied on the same audit date, so the roadmap is now fully complete.
+
+Detailed phase documents live under [phases/](phases) and capture implementation guidance, UoW boundaries, and primary-key handling rules for each phase.
+
 ---
 
 ## Phase 1: Core Completion & Stabilization ─ Critical
@@ -244,88 +248,90 @@
 ## Phase 8: Testing & Documentation ─ High
 
 ### 8.1 Unit Tests
-- [ ] `FormsManager.Core.Tests` — block registration
-- [ ] `FormsManager.Navigation.Tests` — record navigation
-- [ ] `FormsManager.FormOperations.Tests` — form lifecycle
-- [ ] `FormsManager.ModeTransitions.Tests` — query/CRUD modes
-- [ ] `TriggerManager.Tests` — trigger lifecycle
-- [ ] `ValidationManager.Tests` — validation rules
-- [ ] `LOVManager.Tests` — LOV operations
-- [ ] `SavepointManager.Tests` — savepoint lifecycle
-- [ ] `LockManager.Tests` — record locking
+- [x] `FormsManager.Core.Tests` — block registration
+- [x] `FormsManager.Navigation.Tests` — record navigation
+- [x] `FormsManager.FormOperations.Tests` — form lifecycle
+- [x] `FormsManager.ModeTransitions.Tests` — query/CRUD modes
+- [x] `TriggerManager.Tests` — trigger lifecycle
+- [x] `ValidationManager.Tests` — validation rules
+- [x] `LOVManager.Tests` — LOV operations
+- [x] `SavepointManager.Tests` — savepoint lifecycle
+- [x] `LockManager.Tests` — record locking
 
 ### 8.2 Integration Tests
-- [ ] Master-detail cascade operations
-- [ ] Full form lifecycle (Open → Query → Edit → Commit → Close)
-- [ ] Multi-block validation with cross-block rules
-- [ ] Concurrent block operations (thread safety)
-- [ ] LOV with real data source
-- [ ] Export → Import round-trip
+- [x] Master-detail cascade operations
+- [x] Full form lifecycle (Open → Query → Edit → Commit → Close)
+- [x] Multi-block validation with cross-block rules
+- [x] Concurrent block operations (thread safety)
+- [x] LOV with real data source
+- [x] Export → Import round-trip
 
 ### 8.3 Documentation
-- [ ] Update `README.md` with new APIs
-- [ ] Create `MIGRATION-GUIDE.md`
-- [ ] Create `ORACLE-FORMS-MAPPING.md` reference
-- [ ] Create per-helper READMEs
-- [ ] 100% XML doc coverage on public API
+- [x] Update `README.md` with new APIs
+- [x] Create `MIGRATION-GUIDE.md`
+- [x] Create `ORACLE-FORMS-MAPPING.md` reference
+- [x] Create per-helper READMEs
+- [x] 100% XML doc coverage on public API
 
-**Phase 8 Progress: 0 / 20 tasks**
+**Phase 8 Progress: 20 / 20 tasks ✓**
 
 ---
 
 ## Phase 9: Help Documentation Update — After Phase 8
 
+This phase was completed by rewriting `Help/formsmanager.html` to reflect the audited FormsManager runtime surface.
+
 **Goal:** Update `Help/formsmanager.html` once all implementation phases are complete, reflecting the full final API surface.  
 **Depends on:** Phases 1–8 complete.
 
 ### 9.1 Baseline (Full current API)
-- [ ] Rewrite `formsmanager.html` with full API (all partials, all helpers, all events)
-- [ ] Document all 18 helper managers with interface signatures + usage examples
-- [ ] Document mode transitions (ENTER_QUERY / EXECUTE_QUERY / CRUD)
-- [ ] Document form lifecycle (Open / Close / Commit / Rollback)
-- [ ] Document navigation built-ins (First/Next/Previous/Last/NavigateTo/SwitchBlock)
-- [ ] Document data operations (Undo/Redo, batch commit, export/import, aggregates)
-- [ ] Document trigger system (registration, firing, scope hierarchy)
-- [ ] Document validation system (rules, fluent builder, timing)
-- [ ] Document LOV system (register, load, cache, validate)
-- [ ] Document savepoint and lock managers
-- [ ] Add Oracle Forms → FormsManager mapping table
-- [ ] Add complete C# code examples for each section
+- [x] Rewrite `formsmanager.html` with full API (all partials, all helpers, all events)
+- [x] Document all 18 helper managers with interface signatures + usage examples
+- [x] Document mode transitions (ENTER_QUERY / EXECUTE_QUERY / CRUD)
+- [x] Document form lifecycle (Open / Close / Commit / Rollback)
+- [x] Document navigation built-ins (First/Next/Previous/Last/NavigateTo/SwitchBlock)
+- [x] Document data operations (Undo/Redo, batch commit, export/import, aggregates)
+- [x] Document trigger system (registration, firing, scope hierarchy)
+- [x] Document validation system (rules, fluent builder, timing)
+- [x] Document LOV system (register, load, cache, validate)
+- [x] Document savepoint and lock managers
+- [x] Add Oracle Forms → FormsManager mapping table
+- [x] Add complete C# code examples for each section
 
 ### 9.2 Phase 1 Additions
-- [ ] Document generic `RegisterBlock<T>()` and `InsertRecordAsync<T>()`
-- [ ] Document `GetBlock<T>()` typed accessor
-- [ ] Document auto-trigger wiring (PRE/POST insert/update/delete/query/commit)
-- [ ] Document auto-validation on field change and before commit
-- [ ] Document `ShowLOVAsync` and cascading LOV
-- [ ] Document `DuplicateCurrentRecordAsync`
+- [x] Document generic `RegisterBlock<T>()` and `InsertRecordAsync<T>()`
+- [x] Document `GetBlock<T>()` typed accessor
+- [x] Document auto-trigger wiring (PRE/POST insert/update/delete/query/commit)
+- [x] Document auto-validation on field change and before commit
+- [x] Document `ShowLOVAsync` and cascading LOV
+- [x] Document `DuplicateCurrentRecordAsync`
 
 ### 9.3 Phase 2 Additions
-- [ ] Document `SetBlockProperty` / `GetBlockProperty` built-ins
-- [ ] Document `GoBlock` / `GoItem` / `GoRecord` / `NextBlock` / `PreviousBlock`
-- [ ] Document `ShowAlertAsync` with AlertStyle / AlertResult
-- [ ] Document `GetNextSequence` and `ISequenceProvider`
-- [ ] Document Timer management (`CreateTimer`, `DeleteTimer`, `WHEN-TIMER-EXPIRED`)
+- [x] Document `SetBlockProperty` / `GetBlockProperty` built-ins
+- [x] Document `GoBlock` / `GoItem` / `GoRecord` / `NextBlock` / `PreviousBlock`
+- [x] Document `ShowAlertAsync` with AlertStyle / AlertResult
+- [x] Document `GetNextSequence` and `ISequenceProvider`
+- [x] Document Timer management (`CreateTimer`, `DeleteTimer`, `WHEN-TIMER-EXPIRED`)
 
 ### 9.4 Phase 3 Additions
-- [ ] Document `IFormRegistry` and multi-form lifecycle
-- [ ] Document `CallFormAsync` / `OpenFormAsync` / `NewFormAsync` / `ReturnToCallerAsync`
-- [ ] Document `:GLOBAL.*` variables (`SetGlobalVariable` / `GetGlobalVariable`)
-- [ ] Document `IFormMessageBus` and inter-form messaging
-- [ ] Document shared blocks
+- [x] Document `IFormRegistry` and multi-form lifecycle
+- [x] Document `CallFormAsync` / `OpenFormAsync` / `NewFormAsync` / `ReturnToCallerAsync`
+- [x] Document `:GLOBAL.*` variables (`SetGlobalVariable` / `GetGlobalVariable`)
+- [x] Document `IFormMessageBus` and inter-form messaging
+- [x] Document shared blocks
 
 ### 9.5 Phase 4 Additions
-- [ ] Document key triggers (`KeyTriggerType`, `RegisterKeyTrigger`, `FireKeyTrigger`)
-- [ ] Document DML triggers (`ON-INSERT` / `ON-UPDATE` / `ON-DELETE`)
-- [ ] Document trigger chaining and dependency graph
-- [ ] Document built-in `TriggerLibrary` entries
+- [x] Document key triggers (`KeyTriggerType`, `RegisterKeyTrigger`, `FireKeyTrigger`)
+- [x] Document DML triggers (`ON-INSERT` / `ON-UPDATE` / `ON-DELETE`)
+- [x] Document trigger chaining and dependency graph
+- [x] Document built-in `TriggerLibrary` entries
 
 ### 9.6 Phases 5–7 Additions
-- [ ] Document `IAuditManager`, `AuditEntry`, audit configuration and stores
-- [ ] Document `ISecurityManager`, `BlockSecurity`, `FieldSecurity`
-- [ ] Document `IPagingManager`, lazy loading, LRU cache settings
+- [x] Document `IAuditManager`, `AuditEntry`, audit configuration and stores
+- [x] Document `ISecurityManager`, `BlockSecurity`, `FieldSecurity`
+- [x] Document `IPagingManager`, lazy loading, LRU cache settings
 
-**Phase 9 Progress: 0 / 30 tasks**
+**Phase 9 Progress: 30 / 30 tasks ✓**
 
 ---
 
@@ -333,17 +339,17 @@
 
 | Phase | Status | Tasks Done | Total | % |
 |-------|--------|-----------|-------|---|
-| 1 — Core Completion | Not Started | 0 | 30 | 0% |
-| 2 — Oracle Built-ins | Not Started | 0 | 25 | 0% |
-| 3 — Multi-Form | Not Started | 0 | 20 | 0% |
-| 4 — Advanced Triggers | Not Started | 0 | 20 | 0% |
-| 5 — Audit Trail | Not Started | 0 | 15 | 0% |
-| 6 — Security | Not Started | 0 | 15 | 0% |
-| 7 — Performance | Not Started | 0 | 15 | 0% |
-| 8 — Testing & Docs | Not Started | 0 | 20 | 0% |
-| 9 — Help Documentation | Not Started | 0 | 30 | 0% |
-| **TOTAL** | | **0** | **190** | **0%** |
+| 1 — Core Completion | Complete | 30 | 30 | 100% |
+| 2 — Oracle Built-ins | Complete | 25 | 25 | 100% |
+| 3 — Multi-Form | Complete | 20 | 20 | 100% |
+| 4 — Advanced Triggers | Complete | 20 | 20 | 100% |
+| 5 — Audit Trail | Complete | 15 | 15 | 100% |
+| 6 — Security | Complete | 15 | 15 | 100% |
+| 7 — Performance | Complete | 15 | 15 | 100% |
+| 8 — Testing & Docs | Complete | 20 | 20 | 100% |
+| 9 — Help Documentation | Complete | 30 | 30 | 100% |
+| **TOTAL** | | **190** | **190** | **100%** |
 
 ---
 
-*Last updated: $(date)*
+*Last audited: 2026-04-09*

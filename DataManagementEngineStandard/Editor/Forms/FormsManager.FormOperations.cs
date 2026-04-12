@@ -18,10 +18,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     {
         #region Form-Level Events
         // Form-level triggers
+        /// <summary>
+        /// Raised before a form open operation is finalized.
+        /// </summary>
         public event EventHandler<FormTriggerEventArgs> OnFormOpen;
+        /// <summary>
+        /// Raised during form close processing, including unsaved-change handling.
+        /// </summary>
         public event EventHandler<FormTriggerEventArgs> OnFormClose;
+        /// <summary>
+        /// Raised around form commit processing.
+        /// </summary>
         public event EventHandler<FormTriggerEventArgs> OnFormCommit;
+        /// <summary>
+        /// Raised around form rollback processing.
+        /// </summary>
         public event EventHandler<FormTriggerEventArgs> OnFormRollback;
+        /// <summary>
+        /// Raised when form-level validation is requested.
+        /// </summary>
         public event EventHandler<FormTriggerEventArgs> OnFormValidate;
         #endregion
 
@@ -158,9 +173,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 if (args.Cancel)
                 {
+                    string cancelMessage = string.IsNullOrWhiteSpace(args.Message)
+                        ? "Commit cancelled by trigger"
+                        : args.Message;
                     result.Flag = Errors.Failed;
-                    result.Message = "Commit cancelled by trigger";
-                    LogOperation("Form commit cancelled by trigger");
+                    result.Message = cancelMessage;
+                    Status = cancelMessage;
+                    LogOperation(cancelMessage);
                     return result;
                 }
 
@@ -208,6 +227,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     result.Flag = Errors.Failed;
                     result.Message = "Commit cancelled by PRE-COMMIT trigger";
+                    Status = result.Message;
                     return result;
                 }
 
@@ -290,9 +310,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 if (args.Cancel)
                 {
+                    string cancelMessage = string.IsNullOrWhiteSpace(args.Message)
+                        ? "Rollback cancelled by trigger"
+                        : args.Message;
                     result.Flag = Errors.Failed;
-                    result.Message = "Rollback cancelled by trigger";
-                    LogOperation("Form rollback cancelled by trigger");
+                    result.Message = cancelMessage;
+                    Status = cancelMessage;
+                    LogOperation(cancelMessage);
                     return result;
                 }
 
@@ -394,6 +418,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
 
                     blockInfo.UnitOfWork.Clear();
+                    await SynchronizeDetailBlocksAsync(blockName);
                     Status = $"Block '{blockName}' cleared successfully";
                     LogOperation($"Block '{blockName}' cleared successfully");
                 }

@@ -13,7 +13,7 @@
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()" title="Toggle navigation" aria-label="Toggle navigation">
         <i class="bi bi-list"></i>
     </button>
 
@@ -191,7 +191,7 @@ public static void InitializeConnectionDrivers(IDMEEditor dmeEditor)
         }
         
         Console.WriteLine("ðŸ“Š Available driver categories:");
-        Console.WriteLine("   ðŸ¢ RDBMS: Enterprise databases (SQL Server, Oracle, PostgreSQL, MySQL, etc.)");
+        Console.WriteLine("   ðŸ¢ RDBMS: Enterprise databases (SQL Server, PostgreSQL, MySQL, DB2, etc.)");
         Console.WriteLine("   ðŸ“„ FILE: File formats (CSV, Excel, JSON, Text)");
         Console.WriteLine("   ðŸ—„ï¸ NoSQL: Document & NoSQL databases (MongoDB, CouchDB, etc.)");
         Console.WriteLine("   ðŸ§  VectorDB: AI/ML vector databases (ChromaDB, Pinecone, Qdrant, etc.)");
@@ -1657,7 +1657,7 @@ public class DataApplicationManager
                 .ToArray();
             
             Console.WriteLine("ðŸ“Š Available driver categories:");
-            Console.WriteLine("   ðŸ¢ RDBMS: Enterprise databases (SQL Server, Oracle, PostgreSQL, MySQL, etc.)");
+            Console.WriteLine("   ðŸ¢ RDBMS: Enterprise databases (SQL Server, PostgreSQL, MySQL, DB2, etc.)");
             Console.WriteLine("   ðŸ“„ FILE: File formats (CSV, Excel, JSON, Text)");
             Console.WriteLine("   ðŸ—„ï¸ NoSQL: Document & NoSQL databases (MongoDB, CouchDB, etc.)");
             Console.WriteLine("   ðŸ§  VectorDB: AI/ML vector databases (ChromaDB, Pinecone, Qdrant, etc.)");

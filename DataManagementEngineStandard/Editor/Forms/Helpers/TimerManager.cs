@@ -21,6 +21,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private bool _disposed;
 
         // ReSharper disable once InconsistentNaming
+        /// <summary>Raised when a named timer fires.</summary>
         public event EventHandler<TimerFiredEventArgs> TimerFired;
 
         private sealed class TimerEntry
@@ -111,6 +112,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             });
         }
 
+        /// <summary>Disposes all timers managed by the instance.</summary>
         public void Dispose()
         {
             if (_disposed) return;

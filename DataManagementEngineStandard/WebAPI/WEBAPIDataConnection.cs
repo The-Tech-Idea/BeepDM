@@ -92,8 +92,81 @@ namespace TheTechIdea.Beep.WebAPI
         /// <param name="connectionProperties">Connection properties to use</param>
         public WebAPIDataConnection(IConnectionProperties connectionProperties)
         {
-            ConnectionProp = connectionProperties ?? new WebAPIConnectionProperties();
+            ConnectionProp = NormalizeConnectionProperties(connectionProperties);
             ErrorObject = new ErrorsInfo();
+        }
+
+        internal static WebAPIConnectionProperties NormalizeConnectionProperties(IConnectionProperties connectionProperties)
+        {
+            if (connectionProperties is WebAPIConnectionProperties webApiProperties)
+            {
+                return webApiProperties;
+            }
+
+            if (connectionProperties is null)
+            {
+                return new WebAPIConnectionProperties();
+            }
+
+            var normalized = new WebAPIConnectionProperties
+            {
+                ID = connectionProperties.ID,
+                GuidID = connectionProperties.GuidID,
+                ConnectionName = connectionProperties.ConnectionName,
+                ConnectionString = connectionProperties.ConnectionString,
+                Database = connectionProperties.Database,
+                OracleSIDorService = connectionProperties.OracleSIDorService,
+                DatabaseType = connectionProperties.DatabaseType,
+                Category = connectionProperties.Category,
+                Host = connectionProperties.Host,
+                Password = connectionProperties.Password,
+                Port = connectionProperties.Port,
+                SchemaName = connectionProperties.SchemaName,
+                UserID = connectionProperties.UserID,
+                FilePath = connectionProperties.FilePath,
+                FileName = connectionProperties.FileName,
+                Ext = connectionProperties.Ext,
+                Drawn = connectionProperties.Drawn,
+                CertificatePath = connectionProperties.CertificatePath,
+                Url = connectionProperties.Url,
+                KeyToken = connectionProperties.KeyToken,
+                ApiKey = connectionProperties.ApiKey,
+                Databases = connectionProperties.Databases?.ToList() ?? new List<string>(),
+                Delimiter = connectionProperties.Delimiter,
+                Favourite = connectionProperties.Favourite,
+                IsLocal = connectionProperties.IsLocal,
+                IsRemote = connectionProperties.IsRemote,
+                IsWebApi = connectionProperties.IsWebApi,
+                IsFile = connectionProperties.IsFile,
+                IsDatabase = connectionProperties.IsDatabase,
+                IsComposite = connectionProperties.IsComposite,
+                IsCloud = connectionProperties.IsCloud,
+                IsFavourite = connectionProperties.IsFavourite,
+                IsDefault = connectionProperties.IsDefault,
+                IsInMemory = connectionProperties.IsInMemory,
+                Regions = connectionProperties.Regions?.ToList() ?? new List<string>()
+            };
+
+            if (connectionProperties is ConnectionProperties standardProperties)
+            {
+                normalized.DriverName = standardProperties.DriverName;
+                normalized.DriverVersion = standardProperties.DriverVersion;
+                normalized.Parameters = standardProperties.Parameters;
+                normalized.TimeoutMs = standardProperties.TimeoutMs > 0 ? standardProperties.TimeoutMs : standardProperties.Timeout;
+
+                if (!string.IsNullOrWhiteSpace(standardProperties.ApiKeyHeader))
+                {
+                    normalized.ApiKeyHeader = standardProperties.ApiKeyHeader;
+                    normalized.ParameterList["ApiKeyHeader"] = standardProperties.ApiKeyHeader;
+                }
+
+                if (!string.IsNullOrWhiteSpace(standardProperties.HttpMethod))
+                {
+                    normalized.ParameterList["HttpMethod"] = standardProperties.HttpMethod;
+                }
+            }
+
+            return normalized;
         }
 
         #endregion
@@ -113,7 +186,7 @@ namespace TheTechIdea.Beep.WebAPI
             {
                 Logger?.WriteLog($"Opening Web API connection: {connectionProperties?.ConnectionName ?? "Unknown"}");
 
-                ConnectionProp = connectionProperties ?? throw new ArgumentNullException(nameof(connectionProperties));
+                ConnectionProp = NormalizeConnectionProperties(connectionProperties ?? throw new ArgumentNullException(nameof(connectionProperties)));
 
                 // Validate required connection properties
                 if (!ValidateConnectionProperties())

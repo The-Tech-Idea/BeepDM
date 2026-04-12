@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Core
@@ -12,8 +13,66 @@ namespace TheTechIdea.Beep.Core
     /// </summary>
     public static class DataSourceCapabilityMatrix
     {
+        private sealed class CapabilityDictionary<TKey> : Dictionary<TKey, DataSourceCapabilities>
+            where TKey : notnull
+        {
+            private static readonly PropertyInfo[] CapabilityProperties = typeof(DataSourceCapabilities)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(property => property.CanRead && property.CanWrite)
+                .ToArray();
+
+            public new void Add(TKey key, DataSourceCapabilities value)
+            {
+                if (TryGetValue(key, out var existing))
+                {
+                    this[key] = Merge(existing, value);
+                    return;
+                }
+
+                base.Add(key, value);
+            }
+
+            private static DataSourceCapabilities Merge(DataSourceCapabilities existing, DataSourceCapabilities incoming)
+            {
+                if (incoming == null)
+                    return existing ?? new DataSourceCapabilities();
+
+                if (existing == null)
+                    return incoming;
+
+                foreach (var property in CapabilityProperties)
+                {
+                    if (property.PropertyType == typeof(bool))
+                    {
+                        var existingValue = (bool)(property.GetValue(existing) ?? false);
+                        var incomingValue = (bool)(property.GetValue(incoming) ?? false);
+                        property.SetValue(existing, existingValue || incomingValue);
+                        continue;
+                    }
+
+                    if (property.PropertyType == typeof(string))
+                    {
+                        var existingValue = property.GetValue(existing) as string;
+                        var incomingValue = property.GetValue(incoming) as string;
+
+                        if (string.IsNullOrWhiteSpace(existingValue))
+                        {
+                            property.SetValue(existing, incomingValue);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(incomingValue) &&
+                                 !string.Equals(existingValue, incomingValue, StringComparison.Ordinal))
+                        {
+                            property.SetValue(existing, $"{existingValue} | {incomingValue}");
+                        }
+                    }
+                }
+
+                return existing;
+            }
+        }
+
         private static readonly Dictionary<DataSourceType, DataSourceCapabilities> Matrix =
-            new Dictionary<DataSourceType, DataSourceCapabilities>
+            new CapabilityDictionary<DataSourceType>
             {
                 #region Relational Databases
 
@@ -390,6 +449,8 @@ namespace TheTechIdea.Beep.Core
                 {
                     DataSourceType.Neo4j, new DataSourceCapabilities
                     {
+                        SupportsGraphTraversal = true,
+                        SupportsCypherQuery = true,
                         SupportsTransactions = true,
                         SupportsJoins = false,
                         SupportsAggregations = true,
@@ -402,13 +463,14 @@ namespace TheTechIdea.Beep.Core
                         SupportsStoredProcedures = false,
                         SupportsBulkOperations = true,
                         SupportsFullTextSearch = true,
-                        SupportsNativeJson = false,
+                        SupportsNativeJson = true,
+                        SupportsAsyncOperations = true,
                         SupportsPartitioning = false,
                         SupportsReplication = true,
                         SupportsViews = false,
                         SupportsSchemaEvolution = true,
                         IsSchemaEnforced = false,
-                        Notes = "Graph database; Cypher query language; excellent for relationship queries"
+                        Notes = "Graph database; Cypher query language; ACID transactions; excellent for relationship queries"
                     }
                 },
                 {
@@ -906,22 +968,6 @@ namespace TheTechIdea.Beep.Core
 
                 #region Graph Databases
 
-                {
-                    DataSourceType.Neo4j, new DataSourceCapabilities
-                    {
-                        SupportsGraphTraversal = true,
-                        SupportsCypherQuery = true,
-                        SupportsTransactions = true,
-                        SupportsIndexes = true,
-                        SupportsAggregations = true,
-                        SupportsParameterization = true,
-                        SupportsBulkOperations = true,
-                        SupportsFullTextSearch = true,
-                        SupportsNativeJson = true,
-                        SupportsAsyncOperations = true,
-                        Notes = "Leading graph database; Cypher query language; ACID compliant"
-                    }
-                },
                 {
                     DataSourceType.ArangoDB, new DataSourceCapabilities
                     {
@@ -3728,7 +3774,7 @@ namespace TheTechIdea.Beep.Core
         /// Default capabilities by datasource category for fallback.
         /// </summary>
         private static readonly Dictionary<DatasourceCategory, DataSourceCapabilities> CategoryDefaults = 
-            new Dictionary<DatasourceCategory, DataSourceCapabilities>
+            new CapabilityDictionary<DatasourceCategory>
             {
                 { DatasourceCategory.Connector, DefaultConnectorCapabilities },
                 { DatasourceCategory.WEBAPI, new DataSourceCapabilities

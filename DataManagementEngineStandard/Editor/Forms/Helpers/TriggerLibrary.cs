@@ -20,6 +20,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Reflection helpers (same logic as WinForms, now in BeepDM)
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Reads a field or property value from a record using case-insensitive reflection.
+        /// </summary>
         public static object GetFieldValue(object record, string fieldName)
         {
             if (record == null || string.IsNullOrEmpty(fieldName)) return null;
@@ -32,6 +35,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             catch { return null; }
         }
 
+        /// <summary>
+        /// Sets a field or property value on a record using case-insensitive reflection.
+        /// </summary>
         public static bool SetFieldValue(object record, string fieldName, object value)
         {
             if (record == null || string.IsNullOrEmpty(fieldName)) return false;
@@ -59,6 +65,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Trigger statistics
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Builds aggregate trigger statistics for a block from the registered block triggers.
+        /// </summary>
         public static TriggerStatisticsInfo GetTriggerStatistics(string blockName, ITriggerManager triggers)
         {
             var all = triggers.GetBlockTriggers(blockName);
@@ -84,15 +93,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Scope filter helpers
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Returns the form-scope triggers registered for a block.
+        /// </summary>
         public static IReadOnlyList<TriggerDefinition> GetFormLevelTriggers(string blockName, ITriggerManager triggers)
             => triggers.GetBlockTriggers(blockName).Where(t => t.Scope == TriggerScope.Form).ToList();
 
+        /// <summary>
+        /// Returns the block-scope triggers registered for a block.
+        /// </summary>
         public static IReadOnlyList<TriggerDefinition> GetBlockLevelTriggers(string blockName, ITriggerManager triggers)
             => triggers.GetBlockTriggers(blockName).Where(t => t.Scope == TriggerScope.Block).ToList();
 
+        /// <summary>
+        /// Returns the record-scope triggers registered for a block.
+        /// </summary>
         public static IReadOnlyList<TriggerDefinition> GetRecordLevelTriggers(string blockName, ITriggerManager triggers)
             => triggers.GetBlockTriggers(blockName).Where(t => t.Scope == TriggerScope.Record).ToList();
 
+        /// <summary>
+        /// Returns the item-scope triggers registered for a block.
+        /// </summary>
         public static IReadOnlyList<TriggerDefinition> GetItemLevelTriggers(string blockName, ITriggerManager triggers)
             => triggers.GetBlockTriggers(blockName).Where(t => t.Scope == TriggerScope.Item).ToList();
 

@@ -253,7 +253,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Check if sync type is supported
-                var supportedSyncTypes = new[] { "Full", "Incremental", "Delta", "Manual" };
+                var supportedSyncTypes = new[] { "Full", "Incremental", "Upsert", "Delta", "Manual" };
                 if (!supportedSyncTypes.Contains(schema.SyncType, StringComparer.OrdinalIgnoreCase))
                     errors.Add(new ErrorsInfo { Message = $"Unsupported sync type: {schema.SyncType}" });
 

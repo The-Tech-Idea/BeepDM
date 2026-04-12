@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Creates a NuggetPackageDownloader with optional custom packages folder.
         /// </summary>
-        public NuggetPackageDownloader(string? globalPackagesFolder, IDMLogger logger)
+        public NuggetPackageDownloader(string globalPackagesFolder, IDMLogger logger)
         {
             _globalPackagesFolder = globalPackagesFolder ?? GetDefaultGlobalPackagesFolder();
             _logger = logger;
@@ -113,12 +113,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Downloads a package using NuGet SDK directly.
         /// </summary>
-        public async Task<string?> DownloadPackageAsync(string packageName, string? version = null, IEnumerable<string>? sources = null)
+        public async Task<string> DownloadPackageAsync(string packageName, string version = null, IEnumerable<string> sources = null)
         {
             try
             {
                 var sourceList = (sources ?? new[] { "https://api.nuget.org/v3/index.json" }).ToList();
-                NuGetVersion? nugetVersion = null;
+            NuGetVersion nugetVersion = null;
 
                 if (!string.IsNullOrWhiteSpace(version))
                 {
@@ -229,9 +229,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// </summary>
         public async Task<Dictionary<string, string>> DownloadPackageWithDependenciesAsync(
             string packageName,
-            string? version = null,
-            IEnumerable<string>? sources = null,
-            HashSet<string>? processedPackages = null)
+            string version = null,
+            IEnumerable<string> sources = null,
+            HashSet<string> processedPackages = null)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             processedPackages ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -301,7 +301,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Searches for available versions of a package.
         /// </summary>
-        public async Task<string[]> SearchPackageVersionsAsync(string packageName, IEnumerable<string>? sources = null)
+        public async Task<string[]> SearchPackageVersionsAsync(string packageName, IEnumerable<string> sources = null)
         {
             try
             {
@@ -321,7 +321,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Extracts a NuGet package.
         /// </summary>
-        public string? ExtractNuGetPackage(string nupkgPath)
+        public string ExtractNuGetPackage(string nupkgPath)
         {
             try
             {
@@ -353,7 +353,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Installs package files to the application directory.
         /// </summary>
-        public string? InstallPackageToAppDirectory(string packageFrameworkPath, string? appDirectory, string? pluginId = null, string? version = null, bool overwrite = false)
+        public string InstallPackageToAppDirectory(string packageFrameworkPath, string appDirectory, string pluginId = null, string version = null, bool overwrite = false)
         {
             if (string.IsNullOrWhiteSpace(packageFrameworkPath) || !Directory.Exists(packageFrameworkPath))
             {
@@ -600,9 +600,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                    packageName.StartsWith("Microsoft.Extensions", StringComparison.OrdinalIgnoreCase);
         }
 
-        private List<(string Name, string? Version)> GetPackageDependencies(string packagePath)
+        private List<(string Name, string Version)> GetPackageDependencies(string packagePath)
         {
-            var dependencies = new List<(string, string?)>();
+            var dependencies = new List<(string, string)>();
             try
             {
                 var nuspecFiles = Directory.GetFiles(packagePath, "*.nuspec", SearchOption.AllDirectories);
@@ -659,7 +659,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                                        targetFramework.Contains(f, StringComparison.OrdinalIgnoreCase));
         }
 
-        private string? FindCompatibleFrameworkFolder(string packageDirectory)
+        private string FindCompatibleFrameworkFolder(string packageDirectory)
         {
             try
             {
@@ -713,7 +713,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
-        private string? FindBestFrameworkMatch(string libFolder)
+        private string FindBestFrameworkMatch(string libFolder)
         {
             var preferredOrder = new[] { "net10.0", "net9.0", "net8.0", "net8.0-windows", "net7.0", "net6.0", "net5.0", "netcoreapp3.1", "netstandard2.1", "netstandard2.0" };
             var frameworkFolders = Directory.Exists(libFolder) ? Directory.GetDirectories(libFolder) : Array.Empty<string>();

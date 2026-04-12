@@ -17,6 +17,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly IDMLogger _logger;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes an instance-creation helper backed by the shared plugin context.
+        /// </summary>
+        /// <param name="sharedContextManager">Shared context used to resolve loaded assemblies and cached types.</param>
+        /// <param name="logger">Logger used for activation diagnostics.</param>
         public InstanceCreationAssistant(SharedContextManager sharedContextManager, IDMLogger logger)
         {
             _sharedContextManager = sharedContextManager;
@@ -261,6 +266,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
+        /// <summary>
+        /// Marks the assistant as disposed.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

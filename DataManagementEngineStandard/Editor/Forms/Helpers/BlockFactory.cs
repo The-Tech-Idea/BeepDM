@@ -19,11 +19,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
     {
         private readonly IDMEEditor _editor;
 
+        /// <summary>
+        /// Creates a block factory that resolves datasources and entities through the supplied editor instance.
+        /// </summary>
+        /// <param name="editor">Editor used to locate datasources and construct units of work.</param>
         public BlockFactory(IDMEEditor editor)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
         }
 
+        /// <summary>
+        /// Resolves and creates the unit-of-work and entity metadata pair for a block source.
+        /// </summary>
         public async Task<(IUnitofWork UoW, IEntityStructure Structure)> CreateBlockAsync(
             string connectionName,
             string entityName,
@@ -86,6 +93,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             }
         }
 
+        /// <summary>
+        /// Returns whether the supplied connection and entity can be resolved into a usable block source.
+        /// </summary>
         public async Task<bool> ValidateBlockSourceAsync(
             string connectionName,
             string entityName,

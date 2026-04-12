@@ -19,12 +19,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     public interface IUnitofWorksManager : IDisposable
     {
         #region Properties
+        /// <summary>Gets the editor instance that owns this FormsManager.</summary>
         IDMEEditor DMEEditor { get; }
+
+        /// <summary>Gets or sets the logical name of the current form.</summary>
         string CurrentFormName { get; set; }
+
+        /// <summary>Gets or sets the logical name of the current active block.</summary>
         string CurrentBlockName { get; set; }
+
+        /// <summary>Gets the registered blocks keyed by block name.</summary>
         IReadOnlyDictionary<string, DataBlockInfo> Blocks { get; }
+
+        /// <summary>Gets whether any registered block currently has unsaved changes.</summary>
         bool IsDirty { get; }
+
+        /// <summary>Gets the latest status message emitted by the manager.</summary>
         string Status { get; }
+
+        /// <summary>Gets the number of currently registered blocks.</summary>
         int BlockCount { get; }
         #endregion
 
@@ -61,44 +74,109 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Gets the block factory</summary>
         IBlockFactory BlockFactory { get; }
+
+        /// <summary>Gets the alert provider for SHOW_ALERT-style dialogs.</summary>
+        IAlertProvider AlertProvider { get; }
         #endregion
 
         #region Block Management
+        /// <summary>Registers a block and resolves its entity metadata from the unit of work when available.</summary>
+        void RegisterBlock(string blockName, IUnitofWork unitOfWork,
+            string dataSourceName = null, bool isMasterBlock = false);
+
+        /// <summary>Registers a block and its backing unit of work with the manager.</summary>
         void RegisterBlock(string blockName, IUnitofWork unitOfWork, IEntityStructure entityStructure, 
             string dataSourceName = null, bool isMasterBlock = false);
+
+        /// <summary>Unregisters a previously registered block.</summary>
         bool UnregisterBlock(string blockName);
+
+        /// <summary>Returns the registered block metadata for a block name.</summary>
         DataBlockInfo GetBlock(string blockName);
+
+        /// <summary>Returns the backing unit of work for a block name.</summary>
         IUnitofWork GetUnitOfWork(string blockName);
+
+        /// <summary>Returns whether a block is currently registered.</summary>
         bool BlockExists(string blockName);
+
+        /// <summary>Synchronizes detail blocks attached to the specified master block.</summary>
+        Task SynchronizeDetailBlocksAsync(string masterBlockName);
+
+        /// <summary>Returns the detail block names attached to a master block.</summary>
+        List<string> GetDetailBlocks(string masterBlockName);
+
+        /// <summary>Returns the master block name for a detail block.</summary>
+        string GetMasterBlock(string detailBlockName);
         #endregion
 
         #region Form Operations
+        /// <summary>Opens a form and performs form-level initialization.</summary>
         Task<bool> OpenFormAsync(string formName);
+
+        /// <summary>Closes the current form after resolving unsaved-change behavior.</summary>
         Task<bool> CloseFormAsync();
+
+        /// <summary>Commits changes across the current form.</summary>
         Task<IErrorsInfo> CommitFormAsync();
+
+        /// <summary>Rolls back changes across the current form.</summary>
         Task<IErrorsInfo> RollbackFormAsync();
+
+        /// <summary>Clears all registered blocks.</summary>
         Task ClearAllBlocksAsync();
+
+        /// <summary>Clears a single registered block.</summary>
         Task ClearBlockAsync(string blockName);
+
+        /// <summary>Loads and returns LOV data for a block/field combination.</summary>
+        Task<LOVResult> ShowLOVAsync(
+            string blockName,
+            string fieldName,
+            string searchText = null,
+            object selectedRecord = null,
+            CancellationToken ct = default);
         #endregion
 
         #region Navigation
+        /// <summary>Navigates to the first record in a block.</summary>
         Task<bool> FirstRecordAsync(string blockName);
+
+        /// <summary>Navigates to the next record in a block.</summary>
         Task<bool> NextRecordAsync(string blockName);
+
+        /// <summary>Navigates to the previous record in a block.</summary>
         Task<bool> PreviousRecordAsync(string blockName);
+
+        /// <summary>Navigates to the last record in a block.</summary>
         Task<bool> LastRecordAsync(string blockName);
         #endregion
 
         #region Data Operations
+        /// <summary>Switches the current active block.</summary>
         Task<bool> SwitchToBlockAsync(string blockName);
+
+        /// <summary>Inserts a record into a block.</summary>
         Task<bool> InsertRecordAsync(string blockName, object record = null);
+
+        /// <summary>Deletes the current record from a block.</summary>
         Task<bool> DeleteCurrentRecordAsync(string blockName);
+
+        /// <summary>Puts a block into query mode.</summary>
         Task<bool> EnterQueryAsync(string blockName);
+
+        /// <summary>Executes a query for a block using the supplied filters.</summary>
         Task<bool> ExecuteQueryAsync(string blockName, List<AppFilter> filters = null);
         #endregion
 
         #region Validation
+        /// <summary>Validates a single field value in a block.</summary>
         bool ValidateField(string blockName, string FieldName, object value);
+
+        /// <summary>Validates the current record state of a block.</summary>
         bool ValidateBlock(string blockName);
+
+        /// <summary>Validates the current form across its registered blocks.</summary>
         bool ValidateForm();
         #endregion
 
@@ -113,13 +191,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Redo the last undone action in a block's OBL undo stack.</summary>
         bool RedoBlock(string blockName);
 
+        /// <summary>Returns whether a block has an undo step available.</summary>
         bool CanUndoBlock(string blockName);
+
+        /// <summary>Returns whether a block has a redo step available.</summary>
         bool CanRedoBlock(string blockName);
 
         #endregion
 
         #region Change Summaries
 
+        /// <summary>Returns the current change summary for a block.</summary>
         TheTechIdea.Beep.Editor.UOW.Models.ChangeSummary GetBlockChangeSummary(string blockName);
 
         /// <summary>Returns one ChangeSummary per registered block.</summary>
@@ -146,7 +228,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         #region Query History
 
+        /// <summary>Returns the recorded query history for a block.</summary>
         IReadOnlyList<TheTechIdea.Beep.Editor.UOW.Models.QueryHistoryEntry> GetBlockQueryHistory(string blockName);
+
+        /// <summary>Clears the recorded query history for a block.</summary>
         void ClearBlockQueryHistory(string blockName);
 
         #endregion
@@ -183,14 +268,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         #region Block Export / Import
 
+        /// <summary>Exports a block to JSON using the provided stream.</summary>
         Task ExportBlockToJsonAsync(string blockName, System.IO.Stream stream,
             System.Threading.CancellationToken ct = default);
+
+        /// <summary>Exports a block to CSV using the provided stream.</summary>
         Task ExportBlockToCsvAsync(string blockName, System.IO.Stream stream,
             char delimiter = ',', System.Threading.CancellationToken ct = default);
+
+        /// <summary>Returns the block data as a <see cref="System.Data.DataTable"/>.</summary>
         System.Data.DataTable GetBlockAsDataTable(string blockName);
 
+        /// <summary>Imports JSON records into a block from a stream.</summary>
         Task<int> ImportBlockFromJsonAsync(string blockName, System.IO.Stream stream,
             bool clearFirst = true, System.Threading.CancellationToken ct = default);
+
+        /// <summary>Imports CSV records into a block from a stream.</summary>
         Task<int> ImportBlockFromCsvAsync(string blockName, System.IO.Stream stream,
             char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true,
             System.Threading.CancellationToken ct = default);
@@ -207,46 +300,84 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         #region Phase 4 – Form State, Cross-Block Validation, Navigation History, Clone, Change Feed
 
         // Form State Persistence
+        /// <summary>Captures the current form and block state snapshot.</summary>
         FormStateSnapshot SaveFormState();
+
+        /// <summary>Restores a previously captured form-state snapshot.</summary>
         Task<bool> RestoreFormStateAsync(FormStateSnapshot snapshot, System.Threading.CancellationToken ct = default);
 
         // Cross-Block Validation
+        /// <summary>Registers a cross-block validation rule.</summary>
         void RegisterCrossBlockRule(CrossBlockValidationRule rule);
+
+        /// <summary>Unregisters a cross-block validation rule by name.</summary>
         bool UnregisterCrossBlockRule(string ruleName);
+
+        /// <summary>Executes all registered cross-block validation rules.</summary>
         IReadOnlyList<string> ValidateCrossBlock();
 
         // Navigation History
+        /// <summary>Navigates to the previous recorded position for a block.</summary>
         Task<bool> NavigateBackAsync(string blockName);
+
+        /// <summary>Navigates to the next recorded position for a block.</summary>
         Task<bool> NavigateForwardAsync(string blockName);
+
+        /// <summary>Returns whether a block can navigate backward through history.</summary>
         bool CanNavigateBack(string blockName);
+
+        /// <summary>Returns whether a block can navigate forward through history.</summary>
         bool CanNavigateForward(string blockName);
+
+        /// <summary>Returns the recorded navigation history for a block.</summary>
         IReadOnlyList<NavigationHistoryEntry> GetNavigationHistory(string blockName);
+
+        /// <summary>Clears the navigation history for a block.</summary>
         void ClearNavigationHistory(string blockName);
 
         // Block Clone
+        /// <summary>Clones data from one block into another block.</summary>
         Task<bool> CloneBlockDataAsync(string sourceBlockName, string destBlockName,
             System.Threading.CancellationToken ct = default);
+
+        /// <summary>Duplicates the current record in a block.</summary>
         Task<bool> DuplicateCurrentRecordAsync(string blockName,
             System.Threading.CancellationToken ct = default);
 
+        /// <summary>Sets a named field or property value on a record.</summary>
+        bool SetFieldValue(object record, string FieldName, object value);
+
         // Block Change Feed
+        /// <summary>Raised when a tracked field value changes within any registered block.</summary>
         event EventHandler<BlockFieldChangedEventArgs> OnBlockFieldChanged;
+
+        /// <summary>Raised when the manager receives an inter-form message for this form.</summary>
+        event EventHandler<FormMessageEventArgs> OnFormMessage;
 
         #endregion
     }
 
     /// <summary>
-    /// Deprecated legacy helper for the old FormsManager-owned relationship engine.
-    /// Master/detail orchestration now belongs to IUnitofWork and the FormsManager master/detail facade methods.
+    /// Deprecated legacy helper for the old standalone relationship helper.
+    /// Active master/detail orchestration now lives directly in FormsManager master/detail methods.
     /// </summary>
-    [Obsolete("IRelationshipManager is deprecated. Use IUnitofWork master/detail APIs and FormsManager master/detail methods instead.")]
+    [Obsolete("IRelationshipManager is deprecated. Use FormsManager master/detail methods instead.")]
     public interface IRelationshipManager
     {
+        /// <summary>Creates a master-detail relationship between two blocks.</summary>
         void CreateMasterDetailRelation(string masterBlockName, string detailBlockName, 
             string masterKeyField, string detailForeignKeyField, RelationshipType relationshipType = RelationshipType.OneToMany);
+
+        /// <summary>Synchronizes the detail blocks attached to a master block.</summary>
         Task SynchronizeDetailBlocksAsync(string masterBlockName);
+
+        /// <summary>Returns the detail block names attached to a master block.</summary>
         List<string> GetDetailBlocks(string masterBlockName);
+
+        /// <summary>Returns the master block name for a detail block.</summary>
         string GetMasterBlock(string detailBlockName);
+
+        /// <summary>Removes all relationships involving a specific block.</summary>
         void RemoveBlockRelationships(string blockName);
     }
 
@@ -255,12 +386,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IDirtyStateManager
     {
+        /// <summary>Checks for unsaved changes affecting a block and handles the caller decision flow.</summary>
         Task<bool> CheckAndHandleUnsavedChangesAsync(string blockName);
+
+        /// <summary>Returns whether any registered block currently has unsaved changes.</summary>
         bool HasUnsavedChanges();
+
+        /// <summary>Returns the names of blocks that currently have unsaved changes.</summary>
         List<string> GetDirtyBlocks();
+
+        /// <summary>Collects dirty detail blocks related to a master block into the supplied list.</summary>
         void CollectDirtyDetailBlocks(string blockName, List<string> dirtyBlocks);
+
+        /// <summary>Saves the specified dirty blocks.</summary>
         Task<bool> SaveDirtyBlocksAsync(List<string> dirtyBlocks);
+
+        /// <summary>Rolls back the specified dirty blocks.</summary>
         Task<bool> RollbackDirtyBlocksAsync(List<string> dirtyBlocks);
+
+        /// <summary>Raised when an operation encounters unsaved changes and requires a user decision.</summary>
         event EventHandler<UnsavedChangesEventArgs> OnUnsavedChanges;
     }
 
@@ -269,12 +413,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IEventManager
     {
+        /// <summary>Subscribes the manager to unit-of-work events for a block.</summary>
         void SubscribeToUnitOfWorkEvents(IUnitofWork unitOfWork, string blockName);
+
+        /// <summary>Unsubscribes the manager from unit-of-work events for a block.</summary>
         void UnsubscribeFromUnitOfWorkEvents(IUnitofWork unitOfWork, string blockName);
+
+        /// <summary>Raises the block-enter event for a block.</summary>
         void TriggerBlockEnter(string blockName);
+
+        /// <summary>Raises the block-leave event for a block.</summary>
         void TriggerBlockLeave(string blockName);
+
+        /// <summary>Raises the error event for a block.</summary>
         void TriggerError(string blockName, Exception ex);
+
+        /// <summary>Triggers field-level validation for a block field.</summary>
         bool TriggerFieldValidation(string blockName, string FieldName, object value);
+
+        /// <summary>Triggers record-level validation for a block record.</summary>
         bool TriggerRecordValidation(string blockName, object record);
     }
 
@@ -283,10 +440,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IFormsSimulationHelper
     {
+        /// <summary>Sets common audit-field defaults on a record.</summary>
         void SetAuditDefaults(object record, string currentUser = null);
+
+        /// <summary>Sets a named field or property value on a record.</summary>
         bool SetFieldValue(object record, string FieldName, object value);
+
+        /// <summary>Gets a named field or property value from a record.</summary>
         object GetFieldValue(object record, string FieldName);
+
+        /// <summary>Executes sequence logic for a block field.</summary>
         bool ExecuteSequence(string blockName, object record, string FieldName, string sequenceName);
+
+        /// <summary>Gets a named property value from an object.</summary>
         object GetPropertyValue(object obj, string propertyName);
     }
 
@@ -295,17 +461,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IPerformanceManager : IDisposable
     {
+        /// <summary>Runs cache and block-access optimization routines.</summary>
         void OptimizeBlockAccess();
+
+        /// <summary>Caches block metadata for faster later access.</summary>
         void CacheBlockInfo(string blockName, DataBlockInfo blockInfo);
+
+        /// <summary>Returns cached block metadata for a block when present.</summary>
         DataBlockInfo GetCachedBlockInfo(string blockName);
+
+        /// <summary>Clears all cached block metadata.</summary>
         void ClearCache();
+
+        /// <summary>Returns aggregate performance statistics for the manager.</summary>
         PerformanceStatistics GetPerformanceStatistics();
 
         // Phase 7 — cache improvements
         /// <summary>Removes a single block's entry from the cache (invalidation).</summary>
         void InvalidateBlockCache(string blockName);
 
-        /// <summary>Sets a per-block cache TTL, overriding the global <see cref="CacheExpirationTime"/>.</summary>
+        /// <summary>Sets a per-block cache TTL, overriding the global cache expiration time.</summary>
         void SetBlockCacheTtl(string blockName, TimeSpan ttl);
 
         /// <summary>Returns a lightweight cache hit/miss/eviction snapshot.</summary>
@@ -323,10 +498,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IConfigurationManager
     {
+        /// <summary>Gets or sets the active FormsManager configuration instance.</summary>
         UnitofWorksManagerConfiguration Configuration { get; set; }
+
+        /// <summary>Loads configuration from its backing store.</summary>
         void LoadConfiguration();
+
+        /// <summary>Saves configuration to its backing store.</summary>
         void SaveConfiguration();
+
+        /// <summary>Resets configuration back to defaults.</summary>
         void ResetToDefaults();
+
+        /// <summary>Returns whether the active configuration is structurally valid.</summary>
         bool ValidateConfiguration();
     }
 
@@ -691,11 +875,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class ValidationFailedEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the block being validated.</summary>
         public string BlockName { get; set; }
+
+        /// <summary>Gets or sets the field being validated.</summary>
         public string ItemName { get; set; }
+
+        /// <summary>Gets or sets the value that failed validation.</summary>
         public object Value { get; set; }
+
+        /// <summary>Gets or sets the validation rule that failed.</summary>
         public ValidationRule FailedRule { get; set; }
+
+        /// <summary>Gets or sets the validation result payload.</summary>
         public ValidationRuleResult Result { get; set; }
+
+        /// <summary>Gets or sets whether downstream processing should be cancelled.</summary>
         public bool Cancel { get; set; }
     }
     
@@ -704,10 +899,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class ValidationStartingEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the block being validated.</summary>
         public string BlockName { get; set; }
+
+        /// <summary>Gets or sets the field being validated.</summary>
         public string ItemName { get; set; }
+
+        /// <summary>Gets or sets the value about to be validated.</summary>
         public object Value { get; set; }
+
+        /// <summary>Gets or sets the rules scheduled to run.</summary>
         public IReadOnlyList<ValidationRule> Rules { get; set; }
+
+        /// <summary>Gets or sets whether validation should be cancelled.</summary>
         public bool Cancel { get; set; }
     }
     
@@ -716,11 +920,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class ValidationCompletedEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the block that was validated.</summary>
         public string BlockName { get; set; }
+
+        /// <summary>Gets or sets the field that was validated.</summary>
         public string ItemName { get; set; }
+
+        /// <summary>Gets or sets whether validation completed successfully.</summary>
         public bool IsValid { get; set; }
+
+        /// <summary>Gets or sets the number of rules that were evaluated.</summary>
         public int RulesEvaluated { get; set; }
+
+        /// <summary>Gets or sets the number of rules that failed.</summary>
         public int RulesFailed { get; set; }
+
+        /// <summary>Gets or sets the total validation duration.</summary>
         public TimeSpan Duration { get; set; }
     }
     
@@ -904,11 +1119,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class LOVDataLoadedEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the block whose LOV data was loaded.</summary>
         public string BlockName { get; set; }
+
+        /// <summary>Gets or sets the field whose LOV data was loaded.</summary>
         public string FieldName { get; set; }
+
+        /// <summary>Gets or sets the LOV definition used for the load.</summary>
         public LOVDefinition LOV { get; set; }
+
+        /// <summary>Gets or sets the number of LOV records returned.</summary>
         public int RecordCount { get; set; }
+
+        /// <summary>Gets or sets whether the load was satisfied from cache.</summary>
         public bool FromCache { get; set; }
+
+        /// <summary>Gets or sets the LOV load time in milliseconds.</summary>
         public long LoadTimeMs { get; set; }
     }
     
@@ -917,10 +1143,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class LOVValidationEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the block whose LOV value was validated.</summary>
         public string BlockName { get; set; }
+
+        /// <summary>Gets or sets the field whose LOV value was validated.</summary>
         public string FieldName { get; set; }
+
+        /// <summary>Gets or sets the value being validated.</summary>
         public object Value { get; set; }
+
+        /// <summary>Gets or sets the validation error message when validation fails.</summary>
         public string ErrorMessage { get; set; }
+
+        /// <summary>Gets or sets suggested fallback values for invalid LOV input.</summary>
         public List<object> Suggestions { get; set; }
     }
     
@@ -1495,21 +1730,43 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface ILockManager
     {
+        /// <summary>Returns the configured lock mode for a block.</summary>
         LockMode GetLockMode(string blockName);
+
+        /// <summary>Sets the lock mode for a block.</summary>
         void SetLockMode(string blockName, LockMode mode);
+
+        /// <summary>Returns whether automatic lock-on-edit is enabled for a block.</summary>
         bool GetLockOnEdit(string blockName);
+
+        /// <summary>Sets whether automatic lock-on-edit is enabled for a block.</summary>
         void SetLockOnEdit(string blockName, bool value);
 
         /// <summary>Set the current record index for a block (called on navigation).</summary>
         void SetCurrentRecordIndex(string blockName, int index);
 
+        /// <summary>Locks the current record for a block.</summary>
         Task<bool> LockCurrentRecordAsync(string blockName, CancellationToken ct = default);
+
+        /// <summary>Unlocks the current record for a block.</summary>
         bool UnlockCurrentRecord(string blockName);
+
+        /// <summary>Unlocks all tracked records for a block.</summary>
         void UnlockAllRecords(string blockName);
+
+        /// <summary>Returns whether a specific record is locked.</summary>
         bool IsRecordLocked(string blockName, int recordIndex);
+
+        /// <summary>Returns whether the current record is locked.</summary>
         bool IsCurrentRecordLocked(string blockName);
+
+        /// <summary>Returns lock metadata for a specific record.</summary>
         RecordLockInfo GetLockInfo(string blockName, int recordIndex);
+
+        /// <summary>Returns the number of locked records for a block.</summary>
         int GetLockedRecordCount(string blockName);
+
+        /// <summary>Returns all tracked locks for a block.</summary>
         IReadOnlyList<RecordLockInfo> GetAllLocks(string blockName);
 
         /// <summary>Lock automatically if LockOnEdit is true and mode is Automatic</summary>
@@ -1527,23 +1784,43 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     public interface IQueryBuilderManager
     {
         // Per-block per-field operator registry
+        /// <summary>Registers the query operator for a block field.</summary>
         void SetQueryOperator(string blockName, string fieldName, QueryOperator op);
+
+        /// <summary>Returns the registered query operator for a block field.</summary>
         QueryOperator GetQueryOperator(string blockName, string fieldName);
+
+        /// <summary>Clears the registered query operators for a block.</summary>
         void ClearQueryOperators(string blockName);
 
         // Build AppFilter list from a value dictionary (key = fieldName)
+        /// <summary>Builds filters from a block field-value dictionary.</summary>
         List<AppFilter> BuildFilters(string blockName, Dictionary<string, object> fieldValues);
 
         // WHERE / OrderBy clause helpers (string to AppFilter)
+        /// <summary>Parses a WHERE clause into filters.</summary>
         List<AppFilter> ParseWhereClause(string whereClause);
+
+        /// <summary>Parses an ORDER BY clause into filters.</summary>
         List<AppFilter> ParseOrderByClause(string orderByClause);
+
+        /// <summary>Combines two filter lists using AND semantics.</summary>
         List<AppFilter> CombineFiltersAnd(List<AppFilter> a, List<AppFilter> b);
 
         // Query template CRUD
+        /// <summary>Saves a named query template for a block.</summary>
         void SaveQueryTemplate(string blockName, string templateName, List<AppFilter> filters);
+
+        /// <summary>Loads a named query template for a block.</summary>
         QueryTemplateInfo LoadQueryTemplate(string blockName, string templateName);
+
+        /// <summary>Returns all query templates saved for a block.</summary>
         IReadOnlyList<QueryTemplateInfo> GetQueryTemplates(string blockName);
+
+        /// <summary>Deletes a query template for a block.</summary>
         bool DeleteQueryTemplate(string blockName, string templateName);
+
+        /// <summary>Deletes all query templates for a block.</summary>
         void ClearAllTemplates(string blockName);
     }
 
@@ -1556,22 +1833,43 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IBlockErrorLog
     {
+        /// <summary>Gets or sets whether error events should be suppressed.</summary>
         bool SuppressErrorEvents { get; set; }
+
+        /// <summary>Gets or sets the maximum retained log size per block.</summary>
         int MaxLogSize { get; set; }
 
+        /// <summary>Raised when an error entry is logged.</summary>
         event EventHandler<BlockErrorEventArgs> OnError;
+
+        /// <summary>Raised when a warning entry is logged.</summary>
         event EventHandler<BlockErrorEventArgs> OnWarning;
 
+        /// <summary>Logs an error or warning entry for a block.</summary>
         void LogError(string blockName, Exception ex, string context, ErrorSeverity severity = ErrorSeverity.Error);
+
+        /// <summary>Logs a warning entry for a block.</summary>
         void LogWarning(string blockName, string message, string context);
 
+        /// <summary>Clears the error log for a block.</summary>
         void ClearErrorLog(string blockName);
+
+        /// <summary>Clears all block logs.</summary>
         void ClearAllLogs();
 
+        /// <summary>Returns the full retained log for a block.</summary>
         IReadOnlyList<BlockErrorInfo> GetErrorLog(string blockName);
+
+        /// <summary>Returns the retained log entries for a block and context.</summary>
         IReadOnlyList<BlockErrorInfo> GetErrorsForContext(string blockName, string context);
+
+        /// <summary>Returns the retained log entries for a block and severity.</summary>
         IReadOnlyList<BlockErrorInfo> GetErrorsBySeverity(string blockName, ErrorSeverity severity);
+
+        /// <summary>Returns the retained log entry count for a block.</summary>
         int GetErrorCount(string blockName);
+
+        /// <summary>Returns whether the block log contains at least one error-severity entry.</summary>
         bool HasErrors(string blockName);
     }
 
@@ -1585,23 +1883,46 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IMessageQueueManager
     {
+        /// <summary>Gets or sets the intended message display duration in milliseconds.</summary>
         int MessageDisplayDurationMs { get; set; }
+
+        /// <summary>Gets or sets whether the manager should auto-advance queued messages.</summary>
         bool AutoAdvanceMessages { get; set; }
 
+        /// <summary>Raised when a block message becomes current.</summary>
         event EventHandler<BlockMessageEventArgs> OnMessage;
+
+        /// <summary>Raised when a block message is cleared.</summary>
         event EventHandler<BlockMessageEventArgs> OnMessageCleared;
 
+        /// <summary>Sets the current message for a block or enqueues it.</summary>
         void SetMessage(string blockName, string text, MessageLevel level = MessageLevel.Info);
+
+        /// <summary>Clears the current message for a block.</summary>
         void ClearMessage(string blockName);
+
+        /// <summary>Advances to the next queued message for a block.</summary>
         void AdvanceMessage(string blockName);
 
+        /// <summary>Queues an informational message for a block.</summary>
         void ShowInfoMessage(string blockName, string text);
+
+        /// <summary>Queues a success message for a block.</summary>
         void ShowSuccessMessage(string blockName, string text);
+
+        /// <summary>Queues a warning message for a block.</summary>
         void ShowWarningMessage(string blockName, string text);
+
+        /// <summary>Queues an error message for a block.</summary>
         void ShowErrorMessage(string blockName, string text);
 
+        /// <summary>Returns the current message text for a block.</summary>
         string GetCurrentMessage(string blockName);
+
+        /// <summary>Returns the level of the current message for a block.</summary>
         MessageLevel GetCurrentMessageLevel(string blockName);
+
+        /// <summary>Returns the number of queued messages waiting for a block.</summary>
         int GetQueuedMessageCount(string blockName);
     }
 
@@ -1741,8 +2062,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class TimerFiredEventArgs : EventArgs
     {
+        /// <summary>Gets the logical timer name that fired.</summary>
         public string TimerName { get; init; }
+
+        /// <summary>Gets the number of times the timer has fired.</summary>
         public int FireCount { get; init; }
+
+        /// <summary>Gets the timestamp when the timer fired.</summary>
         public DateTime FiredAt { get; init; } = DateTime.Now;
     }
 
@@ -1876,14 +2202,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public class TriggerExecutionLogEntry
     {
+        /// <summary>Gets or sets the unique trigger identifier.</summary>
         public string TriggerId    { get; set; }
+
+        /// <summary>Gets or sets the trigger display name.</summary>
         public string TriggerName  { get; set; }
+
+        /// <summary>Gets or sets the trigger type that executed.</summary>
         public TriggerType TriggerType { get; set; }
+
+        /// <summary>Gets or sets the block involved in the execution.</summary>
         public string BlockName    { get; set; }
+
+        /// <summary>Gets or sets the item involved in the execution.</summary>
         public string ItemName     { get; set; }
+
+        /// <summary>Gets or sets the trigger execution result.</summary>
         public TriggerResult Result { get; set; }
+
+        /// <summary>Gets or sets the execution time in milliseconds.</summary>
         public long ElapsedMs      { get; set; }
+
+        /// <summary>Gets or sets when the trigger executed.</summary>
         public DateTime ExecutedAt { get; set; } = DateTime.Now;
+
+        /// <summary>Gets or sets the error message for failed trigger executions.</summary>
         public string ErrorMessage { get; set; }
     }
 

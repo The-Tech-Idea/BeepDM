@@ -18,6 +18,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly object _lock = new object();
         private readonly IDMLogger _logger;
 
+        /// <summary>
+        /// Initializes a tracker for shared assembly usage.
+        /// </summary>
+        /// <param name="logger">Optional logger used for usage-tracking diagnostics.</param>
         public SharedAssemblyTracker(IDMLogger logger = null)
         {
             _logger = logger;
@@ -289,11 +293,19 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class AssemblyUsageStatistics
     {
+        /// <summary>Gets or sets the total number of tracked plugins.</summary>
         public int TotalPlugins { get; set; }
+        /// <summary>Gets or sets the total number of tracked assemblies.</summary>
         public int TotalAssemblies { get; set; }
+        /// <summary>Gets or sets the number of assemblies shared by more than one plugin.</summary>
         public int SharedAssemblies { get; set; }
+        /// <summary>Gets or sets the number of assemblies used by only one plugin.</summary>
         public int UniqueAssemblies { get; set; }
 
+        /// <summary>
+        /// Returns a compact textual summary of the usage statistics.
+        /// </summary>
+        /// <returns>Human-readable usage summary.</returns>
         public override string ToString()
         {
             return $"Plugins: {TotalPlugins}, Assemblies: {TotalAssemblies} " +

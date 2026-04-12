@@ -56,12 +56,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return fwd.Pop();
         }
 
+        /// <summary>
+        /// Returns whether a block has at least one back-history entry.
+        /// </summary>
         public bool CanGoBack(string blockName)    => BackStack(blockName).Count > 0;
+
+        /// <summary>
+        /// Returns whether a block has at least one forward-history entry.
+        /// </summary>
         public bool CanGoForward(string blockName) => FwdStack(blockName).Count  > 0;
 
+        /// <summary>
+        /// Returns the recorded navigation history entries for a block.
+        /// </summary>
         public IReadOnlyList<NavigationHistoryEntry> GetHistory(string blockName)
             => History(blockName).AsReadOnly();
 
+        /// <summary>
+        /// Clears the back stack, forward stack, and history entries for a block.
+        /// </summary>
         public void Clear(string blockName)
         {
             BackStack(blockName).Clear();
@@ -69,6 +82,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             History(blockName).Clear();
         }
 
+        /// <summary>
+        /// Removes all history state associated with a block.
+        /// </summary>
         public void RemoveBlock(string blockName)
         {
             _backStacks.TryRemove(blockName, out _);

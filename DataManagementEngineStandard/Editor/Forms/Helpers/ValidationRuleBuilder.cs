@@ -17,6 +17,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly string _fieldName;
         private readonly ValidationRule _rule;
 
+        /// <summary>
+        /// Creates a fluent builder for a field-level validation rule.
+        /// </summary>
+        /// <param name="manager">Validation manager that will receive the rule on registration.</param>
+        /// <param name="blockName">Logical block name for the rule.</param>
+        /// <param name="fieldName">Field name the rule applies to.</param>
         public ValidationRuleBuilder(IValidationManager manager, string blockName, string fieldName)
         {
             _manager = manager;
@@ -30,6 +36,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             };
         }
 
+        /// <summary>
+        /// Configures the rule as a required-value check.
+        /// </summary>
         public ValidationRuleBuilder Required()
         {
             _rule.ValidationType = ValidationType.Required;
@@ -37,6 +46,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule as a minimum string-length check.
+        /// </summary>
         public ValidationRuleBuilder MinLength(int min)
         {
             _rule.ValidationType = ValidationType.MinLength;
@@ -45,6 +57,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule as a maximum string-length check.
+        /// </summary>
         public ValidationRuleBuilder MaxLength(int max)
         {
             _rule.ValidationType = ValidationType.MaxLength;
@@ -53,6 +68,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule as a minimum/maximum range check.
+        /// </summary>
         public ValidationRuleBuilder Range(object min, object max)
         {
             _rule.ValidationType = ValidationType.Range;
@@ -62,6 +80,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule as a regex-pattern check.
+        /// </summary>
         public ValidationRuleBuilder Pattern(string regex)
         {
             _rule.ValidationType = ValidationType.Pattern;
@@ -70,6 +91,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule with a custom predicate that must return a valid result.
+        /// </summary>
         public ValidationRuleBuilder MustBe(Func<object, object, Dictionary<string, object>, Task<(bool isValid, string errorMessage)>> predicate)
         {
             _rule.ValidationType = ValidationType.Custom;
@@ -77,6 +101,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule to reject a single forbidden value.
+        /// </summary>
         public ValidationRuleBuilder CannotBe(object forbiddenValue)
         {
             _rule.ValidationType = ValidationType.Custom;
@@ -86,6 +113,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Configures the rule with a custom validation callback.
+        /// </summary>
         public ValidationRuleBuilder Custom(Func<object, object, Dictionary<string, object>, Task<(bool isValid, string errorMessage)>> predicate)
         {
             _rule.ValidationType = ValidationType.Custom;
@@ -93,36 +123,54 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Overrides the validation error message.
+        /// </summary>
         public ValidationRuleBuilder WithMessage(string message)
         {
             _rule.ErrorMessage = message;
             return this;
         }
 
+        /// <summary>
+        /// Overrides the generated rule name.
+        /// </summary>
         public ValidationRuleBuilder WithName(string ruleName)
         {
             _rule.RuleName = ruleName;
             return this;
         }
 
+        /// <summary>
+        /// Sets the execution order used by the validation manager.
+        /// </summary>
         public ValidationRuleBuilder WithOrder(int order)
         {
             _rule.ExecutionOrder = order;
             return this;
         }
 
+        /// <summary>
+        /// Sets the severity reported when the rule fails.
+        /// </summary>
         public ValidationRuleBuilder WithSeverity(ValidationSeverity severity)
         {
             _rule.Severity = severity;
             return this;
         }
 
+        /// <summary>
+        /// Sets the validation timing at which the rule should execute.
+        /// </summary>
         public ValidationRuleBuilder WithTiming(ValidationTiming timing)
         {
             _rule.Timing = timing;
             return this;
         }
 
+        /// <summary>
+        /// Controls whether later rules should stop executing after this rule fails.
+        /// </summary>
         public ValidationRuleBuilder StopOnFailure(bool stop = true)
         {
             _rule.StopOnFailure = stop;

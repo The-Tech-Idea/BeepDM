@@ -48,8 +48,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
     /// </summary>
     public class StatusMessage
     {
+        /// <summary>Gets or sets the status text.</summary>
         public string Text { get; set; }
+
+        /// <summary>Gets or sets the status severity level.</summary>
         public MessageLevel Level { get; set; }
+
+        /// <summary>Gets or sets when the status message was created.</summary>
         public DateTime Timestamp { get; set; } = DateTime.Now;
     }
 }

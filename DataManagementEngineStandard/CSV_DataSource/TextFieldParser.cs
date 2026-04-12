@@ -78,6 +78,8 @@ namespace TheTechIdea.Beep.FileManager
             if (reader == null) throw new ArgumentNullException(nameof(reader));
             this.reader = reader;
         }
+
+        /// <summary>
         /// Writes a CSV file based on an EntityStructure.
         /// </summary>
         /// <param name="entity">The entity structure containing the data.</param>

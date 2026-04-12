@@ -13,7 +13,7 @@
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()" title="Toggle navigation" aria-label="Toggle navigation">
         <i class="bi bi-list"></i>
     </button>
 
@@ -740,9 +740,6 @@ fieldMappings["SqlServer"] = typesHelper.GetDataType("SqlServer", typeof(decimal
 
 fieldMappings["MySQL"] = typesHelper.GetDataType("MySQL", typeof(decimal), 18, 2);
 // Returns: "DECIMAL(18,2)"
-
-fieldMappings["Oracle"] = typesHelper.GetDataType("Oracle", typeof(decimal), 18, 2);
-// Returns: "NUMBER(18,2)"
 
 fieldMappings["PostgreSQL"] = typesHelper.GetDataType("PostgreSQL", typeof(decimal), 18, 2);
 // Returns: "NUMERIC(18,2)"

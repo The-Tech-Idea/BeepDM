@@ -24,9 +24,20 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private bool _disposed = false;
 
         // Events
+        /// <summary>
+        /// Raised when a plugin's computed health state changes.
+        /// </summary>
         public event EventHandler<PluginHealthEventArgs> HealthStatusChanged;
+        /// <summary>
+        /// Raised when a plugin exceeds one or more configured resource limits.
+        /// </summary>
         public event EventHandler<PluginResourceEventArgs> ResourceLimitExceeded;
 
+        /// <summary>
+        /// Initializes a monitor that tracks plugin health and resource usage.
+        /// </summary>
+        /// <param name="lifecycleManager">Lifecycle manager used to correlate monitored plugins with loaded plugin state.</param>
+        /// <param name="logger">Logger used for monitoring diagnostics.</param>
         public PluginHealthMonitor(PluginLifecycleManager lifecycleManager, IDMLogger logger)
         {
             _lifecycleManager = lifecycleManager;
@@ -435,6 +446,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             return min + _random.NextDouble() * (max - min);
         }
 
+        /// <summary>
+        /// Stops all monitoring timers and clears cached health and resource state.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
@@ -456,54 +470,100 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     }
 
     // Supporting classes
+    /// <summary>
+    /// Snapshot of the current monitoring state for a plugin.
+    /// </summary>
     public class PluginHealthInfo
     {
+        /// <summary>Gets or sets the plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the latest evaluated health state.</summary>
         public PluginHealth Status { get; set; } = PluginHealth.Unknown;
+        /// <summary>Gets or sets the timestamp of the last completed health check.</summary>
         public DateTime LastCheckTime { get; set; }
+        /// <summary>Gets or sets the configured interval between health checks.</summary>
         public TimeSpan CheckInterval { get; set; }
+        /// <summary>Gets or sets whether active monitoring is currently enabled.</summary>
         public bool IsMonitoring { get; set; }
+        /// <summary>Gets or sets the last status or diagnostic message captured for the plugin.</summary>
         public string LastMessage { get; set; }
+        /// <summary>Gets or sets the cumulative error count observed while monitoring the plugin.</summary>
         public int ErrorCount { get; set; }
+        /// <summary>Gets or sets the cumulative warning count observed while monitoring the plugin.</summary>
         public int WarningCount { get; set; }
     }
 
+    /// <summary>
+    /// Captures the latest measured resource usage for a plugin.
+    /// </summary>
     public class PluginResourceUsage
     {
+        /// <summary>Gets or sets the plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the current memory footprint in megabytes.</summary>
         public double MemoryMB { get; set; }
+        /// <summary>Gets or sets the current CPU usage percentage.</summary>
         public double CpuPercent { get; set; }
+        /// <summary>Gets or sets the current number of threads owned by the plugin process.</summary>
         public int ThreadCount { get; set; }
+        /// <summary>Gets or sets the current number of open file handles.</summary>
         public int FileHandles { get; set; }
+        /// <summary>Gets or sets the current number of tracked network connections.</summary>
         public int NetworkConnections { get; set; }
+        /// <summary>Gets or sets the timestamp when the usage sample was captured.</summary>
         public DateTime LastUpdated { get; set; }
     }
 
+    /// <summary>
+    /// Stores configured resource ceilings for a plugin.
+    /// </summary>
     public class PluginResourceLimits
     {
+        /// <summary>Gets or sets the plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the maximum allowed memory footprint in megabytes, or <c>-1</c> when unlimited.</summary>
         public long MaxMemoryMB { get; set; } = -1; // -1 means no limit
+        /// <summary>Gets or sets the maximum allowed CPU usage percentage, or <c>-1</c> when unlimited.</summary>
         public double MaxCpuPercent { get; set; } = -1;
+        /// <summary>Gets or sets the maximum allowed thread count, or <c>-1</c> when unlimited.</summary>
         public int MaxThreads { get; set; } = -1;
+        /// <summary>Gets or sets the maximum allowed file handle count, or <c>-1</c> when unlimited.</summary>
         public int MaxFileHandles { get; set; } = -1;
+        /// <summary>Gets or sets the maximum allowed network connection count, or <c>-1</c> when unlimited.</summary>
         public int MaxNetworkConnections { get; set; } = -1;
     }
 
+    /// <summary>
+    /// Event payload describing a plugin health-state transition.
+    /// </summary>
     public class PluginHealthEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the health state before the transition.</summary>
         public PluginHealth PreviousHealth { get; set; }
+        /// <summary>Gets or sets the health state after the transition.</summary>
         public PluginHealth CurrentHealth { get; set; }
+        /// <summary>Gets or sets the message describing the transition.</summary>
         public string Message { get; set; }
+        /// <summary>Gets or sets when the transition was observed.</summary>
         public DateTime Timestamp { get; set; }
     }
 
+    /// <summary>
+    /// Event payload describing a resource-limit violation for a plugin.
+    /// </summary>
     public class PluginResourceEventArgs : EventArgs
     {
+        /// <summary>Gets or sets the plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the list of limit violations detected for the plugin.</summary>
         public List<string> Violations { get; set; }
+        /// <summary>Gets or sets the resource usage sample that triggered the violation.</summary>
         public PluginResourceUsage Usage { get; set; }
+        /// <summary>Gets or sets the configured limits evaluated against the sample.</summary>
         public PluginResourceLimits Limits { get; set; }
+        /// <summary>Gets or sets when the violation was observed.</summary>
         public DateTime Timestamp { get; set; }
     }
 }

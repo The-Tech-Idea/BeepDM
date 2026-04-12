@@ -2,9 +2,53 @@
 
 > **Inspired by Oracle Forms** — phased roadmap to bring full Oracle Forms parity and modern data management capabilities to the Beep FormsManager system.
 
-**Current Score:** 7.5/10  
+**Current Score:** 9.5/10  
 **Target Score:** 9.5/10  
-**Namespace:** `TheTechIdea.Beep.Editor.UOWManager`
+**Audit Date:** 2026-04-09  
+**Namespace:** `TheTechIdea.Beep.Editor.UOWManager`  
+**Implementation Standard:** A phase is considered complete in this plan when the runtime capability exists in code and the corresponding help-site closeout has been applied where required.
+
+---
+
+## Phase Documents
+
+Use the detailed phase documents below when creating, enhancing, updating, or fixing FormsManager.
+The roadmap in this file stays high-level; the per-phase files capture implementation seams,
+UoW considerations, primary-key handling rules, and validation guidance.
+
+- [Phase 01 — Core Completion & Stabilization](phases/phase-01-core-completion-stabilization.md)
+- [Phase 02 — Oracle Forms Built-in Emulation](phases/phase-02-oracle-builtins-emulation.md)
+- [Phase 03 — Multi-Form & Cross-Form Communication](phases/phase-03-multi-form-cross-form.md)
+- [Phase 04 — Advanced Trigger System](phases/phase-04-advanced-trigger-system.md)
+- [Phase 05 — Audit Trail & Change Tracking](phases/phase-05-audit-trail-change-tracking.md)
+- [Phase 06 — Security & Authorization](phases/phase-06-security-authorization.md)
+- [Phase 07 — Performance & Scalability](phases/phase-07-performance-scalability.md)
+- [Phase 08 — Testing & Documentation](phases/phase-08-testing-documentation.md)
+- [Phase 09 — Help Documentation Update](phases/phase-09-help-documentation-update.md)
+
+---
+
+## Implementation Audit Snapshot
+
+- Phases 01 through 09 are now complete across the FormsManager partials, helper managers, interfaces, tests, reference docs, and help-site page.
+- `Help/formsmanager.html` was rewritten on 2026-04-09 to align the public help page with the audited runtime surface.
+- Use [todo-tracker.md](todo-tracker.md) as the operational status source of truth. The detailed phase checklists later in this file are retained as historical implementation notes and seam references.
+
+---
+
+## Cross-Cutting Rules: UoW and Primary-Key Handling
+
+- FormsManager orchestrates form behavior, but `IUnitofWork` remains the source of truth for persisted state, dirty tracking, insert/update/delete execution, commit, rollback, and datasource-backed key generation.
+- New-record flow should stay consistent: create typed instance from `DataBlockInfo.EntityType` → apply audit/default values → apply primary-key strategy → fire `WHEN-CREATE-RECORD` / pre-insert logic → insert through UoW → refresh database-generated values → synchronize dependents.
+- Primary-key strategy order:
+	1. If the caller or trigger already supplied a valid key, preserve it.
+	2. If the field is datasource-managed identity / auto-increment, leave it unset client-side and refresh it after `InsertAsync` / `CommitFormAsync`.
+	3. If the block uses a real sequence, prefer `IUnitofWork.GetSeq(...)` / datasource-backed sequencing before FormsManager's in-memory sequence provider.
+	4. Use `ISequenceProvider` for Oracle-style built-ins, deterministic tests, or non-database-backed scenarios.
+	5. For GUID or custom keys, use item defaults or triggers explicitly; do not guess.
+	6. Composite keys must be handled per field; never auto-number a composite key blindly.
+- Never consume sequence values during query, paging, navigation, or cache prefetch. Sequence/identity acquisition belongs only to create/insert flows.
+- Master/detail creation must respect key timing: preallocated sequence keys can flow into child FKs before commit, but identity keys usually require parent insert/refresh before the detail key is stable.
 
 ---
 
@@ -71,33 +115,24 @@ FormsManager (IUnitofWorksManager)
 
 ---
 
-## Gaps and Improvement Areas
+## Post-Closeout Maintenance
 
-### Critical Gaps
-1. **Type safety in CRUD** — `CreateNewRecord` falls back to `ExpandoObject`; reflection-only field access
-2. **No generic block registration** — `RegisterBlock<T>()` missing; everything goes through `object`
-3. **Incomplete trigger integration** — Triggers defined but not wired into all CRUD/navigation paths
-4. **No cross-form communication** — Forms cannot share data or trigger operations across forms
-5. **No CALL_FORM / OPEN_FORM** — Oracle Forms multi-form navigation absent
-6. **No Timer management** — Oracle Forms CREATE_TIMER / DELETE_TIMER missing
-7. **No Audit Trail** — No automatic change logging with user/timestamp  
-8. **Limited test coverage** — No unit or integration tests
+### Ongoing documentation maintenance
+1. **Planning and documentation alignment must stay synchronized** — the `.plans` files, mapping document, README guidance, migration guidance, and help page should continue to describe the same audited implementation state.
 
-### Partial Implementations
-9. LOV — registered but cascade LOVs, auto-complete, multi-column search incomplete
-10. Trigger — infrastructure solid but PRE/POST triggers not consistently fired in all operations
-11. Validation — rules registered but async cross-block validation not fully integrated
-12. Navigation — back/forward history exists but inter-form navigation absent
+### Residual runtime hardening
+2. **Reflection-heavy UoW seams still deserve cleanup** — some CRUD and update paths still rely on reflection-based fallbacks instead of strongly-typed UoW contracts.
+3. **Programmatic trigger-raise coverage needs continued audit** — `RaiseFormTriggerAsync` exists, but explicit call-site usage should continue to be reviewed where direct trigger raising is expected.
+4. **Remote cache invalidation remains a hardening area** — local cache controls exist, but external datasource change notification still depends on the surrounding performance and invalidation plumbing.
 
-### Missing Oracle Forms Features
-13. `SET_BLOCK_PROPERTY` / `GET_BLOCK_PROPERTY` built-ins
-14. `GO_BLOCK` / `GO_ITEM` / `GO_RECORD` built-ins
-15. Alert/Confirm dialogs (SHOW_ALERT)
-16. Canvas/Tab page equivalent for block grouping
-17. Key triggers (KEY-NEXT-ITEM, KEY-OTHERS, etc.)
-18. Programmatic LOV display (SHOW_LOV)
-19. Sequence/auto-number generation (GET_NEXT_SEQUENCE)
-20. Transaction isolation (FORM-level vs. DB-level)
+### Intentionally UI-owned Oracle Forms concepts
+5. **Canvases, tab pages, focus rendering, LOV dialog presentation, and message-area rendering stay outside FormsManager** — these belong to the host UI and are not blockers for FormsManager runtime parity.
+
+---
+
+## Historical Phase Backlog
+
+The detailed phase checklists below are retained as historical implementation notes and seam references. They are not the active measure of completion anymore. At the time of this audit, Phases 01 through 09 are complete.
 
 ---
 
@@ -108,10 +143,10 @@ FormsManager (IUnitofWorksManager)
 **Estimated Scope:** ~30 tasks
 
 ### 1.1 Generic Block Registration
-- [ ] Add `RegisterBlock<T>(string blockName, IUnitofWork<T> uow, IEntityStructure es, ...)` overload
-- [ ] Store `Type` reference in `DataBlockInfo` for runtime type resolution
-- [ ] Add `GetBlock<T>(string blockName)` typed accessor
-- [ ] Update `CreateNewRecord` to use stored `Type` instead of `ExpandoObject` fallback
+- [x] Add `RegisterBlock<T>(string blockName, IUnitofWork<T> uow, IEntityStructure es, ...)` overload
+- [x] Store `Type` reference in `DataBlockInfo` for runtime type resolution
+- [x] Add `GetBlock<T>(string blockName)` typed accessor
+- [x] Update `CreateNewRecord` to use stored `Type` instead of `ExpandoObject` fallback
 - [ ] Add `InsertRecordAsync<T>(string blockName, T record)` generic CRUD overload
 
 ### 1.2 Complete Trigger Wiring
@@ -127,7 +162,7 @@ FormsManager (IUnitofWorksManager)
 - [ ] Add trigger result handling: if `TriggerResult.Cancel`, abort the operation
 
 ### 1.3 Validation Integration
-- [ ] Call `ValidationManager.ValidateItem` automatically on field change (in `OnBlockFieldChanged`)
+- [x] Call `ValidationManager.ValidateItem` automatically on field change (in `OnBlockFieldChanged`)
 - [ ] Call `ValidationManager.ValidateRecord` before commit per record
 - [ ] Call `CrossBlockValidationManager.Validate` in `CommitFormAsync` before save
 - [ ] Integrate `ValidationManager.ValidateBlock` in `ExecuteQueryAndEnterCrudModeAsync` post-query
@@ -358,102 +393,59 @@ FormsManager (IUnitofWorksManager)
 **Estimated Scope:** ~20 tasks
 
 ### 8.1 Unit Tests
-- [ ] Create `FormsManager.Core.Tests` — RegisterBlock, UnregisterBlock, GetBlock, BlockExists
-- [ ] Create `FormsManager.Navigation.Tests` — First/Next/Previous/Last, boundary conditions
-- [ ] Create `FormsManager.FormOperations.Tests` — Open/Close/Commit/Rollback, unsaved changes
-- [ ] Create `FormsManager.ModeTransitions.Tests` — EnterQuery/ExecuteQuery, state validation
-- [ ] Create `TriggerManager.Tests` — Register/Fire/Chain/Suspend triggers
-- [ ] Create `ValidationManager.Tests` — Rule registration, item/record/block validation
-- [ ] Create `LOVManager.Tests` — Register/Load/Cache/Validate LOVs
-- [ ] Create `SavepointManager.Tests` — Create/Rollback/Release savepoints
-- [ ] Create `LockManager.Tests` — Lock/Unlock/AutoLock, mode transitions
+- [x] Create `FormsManager.Core.Tests` — RegisterBlock, UnregisterBlock, GetBlock, BlockExists
+- [x] Create `FormsManager.Navigation.Tests` — record history, back/forward replay, direct-record navigation, validate-before-navigation
+- [x] Create `FormsManager.FormOperations.Tests` — Open/Close/Commit no-dirty path, unsaved-change handling
+- [x] Create `FormsManager.ModeTransitions.Tests` — CRUD→Query, Query→CRUD execution, unsaved-change blocking, new-record CRUD entry
+- [x] Create `TriggerManager.Tests` — async registration/fire, priority order, failure chain behavior, suspend/resume
+- [x] Create `ValidationManager.Tests` — Rule registration, item/record/block validation
+- [x] Create `LOVManager.Tests` — register/load/cache/filter/validate LOVs and related-field mapping
+- [x] Create `SavepointManager.Tests` — metadata capture, generated names, rollback pruning, release behavior
+- [x] Create `LockManager.Tests` — mode config, current-record locking, auto-lock, unlock cleanup
 
 ### 8.2 Integration Tests
-- [ ] Master-detail cascade operations (insert master → auto-sync details)
-- [ ] Full form lifecycle: Open → RegisterBlocks → EnterQuery → ExecuteQuery → Edit → Commit → Close
-- [ ] Multi-block validation with cross-block rules
-- [ ] Concurrent block operations (thread safety verification)
-- [ ] LOV with real data source loading
-- [ ] Export → Import round-trip (JSON, CSV)
+- [x] Master-detail cascade operations (master `CurrentChanged` → relationship filter build → detail `Get(filters)` sync)
+- [x] Full form lifecycle: Open → RegisterBlocks → EnterQuery → ExecuteQuery → Edit → Commit → Close
+- [x] Multi-block validation with cross-block rules
+- [x] Concurrent block operations (overlapping block-local navigation keeps per-block record state consistent)
+- [x] LOV with real data source loading
+- [x] Export → Import round-trip (JSON, CSV)
 
 ### 8.3 Documentation
-- [ ] Update `README.md` with Phase 1-7 API additions
-- [ ] Create `MIGRATION-GUIDE.md` for upgrading from earlier versions
-- [ ] Create `ORACLE-FORMS-MAPPING.md` — side-by-side Oracle Forms ↔ FormsManager reference
-- [ ] Create per-helper `README.md` (TriggerManager, ValidationManager, LOVManager, etc.)
-- [ ] Add XML doc coverage to 100% for public API surface
+- [x] Update `README.md` with Phase 1-7 API additions
+- [x] Create `MIGRATION-GUIDE.md` for upgrading from earlier versions
+- [x] Create `ORACLE-FORMS-MAPPING.md` — side-by-side Oracle Forms ↔ FormsManager reference
+- [x] Create per-helper `README.md` (TriggerManager, ValidationManager, LOVManager, etc.)
+- [x] Add XML doc coverage to 100% for public API surface
 
 ---
 
-## Phase Summary
+## Phase Status Snapshot
 
-| Phase | Name | Priority | Tasks | Dependencies |
-|-------|------|----------|-------|-------------|
-| 1 | Core Completion & Stabilization | Critical | ~30 | None |
-| 2 | Oracle Forms Built-in Emulation | High | ~25 | Phase 1 |
-| 3 | Multi-Form & Cross-Form Communication | High | ~20 | Phase 1 |
-| 4 | Advanced Trigger System | Medium-High | ~20 | Phase 1, 2 |
-| 5 | Audit Trail & Change Tracking | Medium | ~15 | Phase 1 |
-| 6 | Security & Authorization | Medium | ~15 | Phase 1, 3 |
-| 7 | Performance & Scalability | Medium | ~15 | Phase 1 |
-| 8 | Testing & Documentation | High | ~20 | Parallel |
-| **Total** | | | **~160** | |
-
----
-
-## Oracle Forms Feature Parity Matrix
-
-| Oracle Forms Feature | FormsManager Equivalent | Status |
-|---|---|---|
-| ENTER_QUERY | `EnterQueryModeAsync` | ✅ Complete |
-| EXECUTE_QUERY | `ExecuteQueryAndEnterCrudModeAsync` | ✅ Complete |
-| COMMIT_FORM | `CommitFormAsync` | ✅ Complete |
-| ROLLBACK | `RollbackFormAsync` | ✅ Complete |
-| CLEAR_BLOCK | `ClearBlockAsync` | ✅ Complete |
-| FIRST_RECORD | `FirstRecordAsync` | ✅ Complete |
-| NEXT_RECORD | `NextRecordAsync` | ✅ Complete |
-| PREVIOUS_RECORD | `PreviousRecordAsync` | ✅ Complete |
-| LAST_RECORD | `LastRecordAsync` | ✅ Complete |
-| CREATE_RECORD | `CreateNewRecord` / `InsertRecordEnhancedAsync` | ⚠️ Needs generic |
-| DELETE_RECORD | `DeleteCurrentRecordAsync` | ⚠️ Needs trigger wiring |
-| SET_ITEM_PROPERTY | `ItemProperties.SetItemProperty` | ✅ Complete |
-| GET_ITEM_PROPERTY | `ItemProperties.GetItemProperty` | ✅ Complete |
-| SET_BLOCK_PROPERTY | — | ❌ Phase 2 |
-| GET_BLOCK_PROPERTY | — | ❌ Phase 2 |
-| GO_BLOCK | — | ❌ Phase 2 |
-| GO_ITEM | — | ❌ Phase 2 |
-| GO_RECORD | — | ❌ Phase 2 |
-| SHOW_LOV | — | ❌ Phase 1 |
-| MESSAGE | `Messages.SetMessage` | ✅ Complete |
-| SHOW_ALERT | — | ❌ Phase 2 |
-| CALL_FORM | — | ❌ Phase 3 |
-| OPEN_FORM | — | ❌ Phase 3 |
-| NEW_FORM | — | ❌ Phase 3 |
-| CREATE_TIMER | — | ❌ Phase 2 |
-| WHEN-VALIDATE-ITEM | `Validation.ValidateItem` | ⚠️ Needs auto-wiring |
-| PRE-INSERT / POST-INSERT | `TriggerType.PreInsert` / `PostInsert` | ⚠️ Needs wiring |
-| PRE-QUERY / POST-QUERY | `TriggerType.PreQuery` / `PostQuery` | ⚠️ Needs wiring |
-| ON-ERROR | `TriggerType.OnError` | ✅ Defined |
-| ON-MESSAGE | `TriggerType.OnMessage` | ✅ Defined |
-| :SYSTEM.* variables | `SystemVariables` | ✅ Complete |
-| Record Group | — | ❌ Phase 2 |
-| LOV | `LOVManager` | ⚠️ Partial |
-| Master-Detail | `RelationshipManager` | ✅ Complete |
-| Savepoint | `SavepointManager` | ✅ Complete |
-| Record Locking | `LockManager` | ✅ Complete |
-| KEY-* triggers | — | ❌ Phase 4 |
-| ON-INSERT / ON-UPDATE / ON-DELETE | — | ❌ Phase 4 |
-| :GLOBAL.* variables | — | ❌ Phase 3 |
+| Phase | Current State | Notes |
+|-------|---------------|-------|
+| 1 — Core Completion & Stabilization | Implemented in code | Typed block registration, CRUD orchestration, validation integration, and interface routing are present in the runtime. |
+| 2 — Oracle Forms Built-in Emulation | Implemented in code | Block properties, navigation built-ins, alerts, sequences, defaults, and timers exist on the FormsManager surface. |
+| 3 — Multi-Form & Cross-Form Communication | Implemented in code | Modal/modeless/replace form flows, form registry, globals, message bus, and shared blocks are present. |
+| 4 — Advanced Trigger System | Implemented in code | Key triggers, DML triggers, trigger chaining, dependency tracking, and trigger-library helpers exist. |
+| 5 — Audit Trail & Change Tracking | Implemented in code | Audit manager, audit stores, field history, and export/purge operations are implemented. |
+| 6 — Security & Authorization | Implemented in code | Security context, block security, field security, masking, and violation handling are available. |
+| 7 — Performance & Scalability | Implemented in code | Paging, fetch-ahead, lazy loading, cache controls, and performance statistics are implemented. |
+| 8 — Testing & Documentation | Implemented in code | Test projects, README updates, migration guidance, mapping docs, and helper READMEs exist in the repo. |
+| 9 — Help Documentation Update | Complete | `Help/formsmanager.html` now reflects the audited FormsManager runtime surface and Oracle Forms mapping. |
 
 ---
 
-## Recommended Implementation Order
+## Oracle Forms Coverage Summary
 
-1. **Phase 1** (Core) — Complete first, everything depends on it
-2. **Phase 8** (Testing) — Start immediately, write tests as each phase completes
-3. **Phase 2** (Built-ins) — Most user-visible improvements
-4. **Phase 3** (Multi-Form) — Needed for real applications
-5. **Phase 4** (Triggers) — Builds on Phase 1+2
-6. **Phase 5** (Audit) — Independent, can run parallel to Phase 4
-7. **Phase 6** (Security) — Depends on Phase 3 (multi-form)
-8. **Phase 7** (Performance) — Final optimization pass
+- Core lifecycle, block properties, navigation, query, CRUD, LOV orchestration, alerts, sequences, timers, multi-form navigation, inter-form messaging, audit, security, paging, savepoints, and locking are implemented in code.
+- The remaining open work is documentation closeout and targeted hardening, not broad feature invention.
+- UI-layer concerns such as canvases, visual focus management, LOV dialog rendering, and message-area rendering remain intentionally outside FormsManager.
+
+---
+
+## Post-Roadmap Follow-up
+
+1. Keep [todo-tracker.md](todo-tracker.md), [ORACLE-FORMS-MAPPING.md](ORACLE-FORMS-MAPPING.md), [formsmanager.html](../../../../Help/formsmanager.html), and this enhancement plan aligned after any runtime changes.
+2. Continue hardening reflection-heavy UoW seams, explicit programmatic trigger-raise usage, and external cache invalidation integration where needed.
+3. Archive or rewrite stale historical planning notes outside `.plans` so they no longer read as active roadmap items.

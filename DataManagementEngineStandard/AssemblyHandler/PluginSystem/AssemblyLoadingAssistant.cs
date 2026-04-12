@@ -23,6 +23,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly ConcurrentDictionary<string, string> _pathToNuggetIdMapping = new(StringComparer.OrdinalIgnoreCase);
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes a bridge that routes legacy assembly-loading calls through the shared-context plugin system.
+        /// </summary>
+        /// <param name="assemblyHandler">Legacy assembly handler exposing logger and configuration state.</param>
+        /// <param name="sharedContextManager">Shared-context manager that performs the actual isolated load and unload operations.</param>
         public AssemblyLoadingAssistant(IAssemblyHandler assemblyHandler, SharedContextManager sharedContextManager)
         {
             _assemblyHandler = assemblyHandler;
@@ -60,7 +65,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// Downloads a nugget (NuGet package) and loads it (and its dependencies) into the shared context.
         /// Returns list of loaded assemblies.
         /// </summary>
-        public async Task<List<Assembly>> LoadNuggetFromNugetAsync(string packageName, string? version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string? appInstallPath = null, bool useProcessHost = false)
+        public async Task<List<Assembly>> LoadNuggetFromNugetAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false)
         {
             var loaded = new List<Assembly>();
             if (string.IsNullOrWhiteSpace(packageName)) return loaded;
@@ -478,6 +483,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             _pathToNuggetIdMapping.Clear();
         }
 
+        /// <summary>
+        /// Unloads any assemblies managed by this assistant and releases its internal mappings.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

@@ -16,11 +16,16 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private readonly LinkedList<AuditEntry> _entries = new LinkedList<AuditEntry>();
         private readonly int _capacity;
 
+        /// <summary>
+        /// Creates an in-memory audit store with the supplied capacity.
+        /// </summary>
+        /// <param name="capacity">Maximum retained entries before older items are evicted.</param>
         public InMemoryAuditStore(int capacity = 10_000)
         {
             _capacity = capacity > 0 ? capacity : 10_000;
         }
 
+        /// <summary>Saves an audit entry to the in-memory store.</summary>
         public void Save(AuditEntry entry)
         {
             if (entry == null) return;
@@ -32,6 +37,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Queries entries using the supplied filters.</summary>
         public IReadOnlyList<AuditEntry> Query(
             string blockName         = null,
             AuditOperation? operation = null,
@@ -58,6 +64,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Purges entries older than the supplied number of days.</summary>
         public void Purge(int olderThanDays)
         {
             var cutoff = DateTime.UtcNow.AddDays(-Math.Abs(olderThanDays));
@@ -69,6 +76,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Clears all retained entries.</summary>
         public void Clear()
         {
             lock (_lock)

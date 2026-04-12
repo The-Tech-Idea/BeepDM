@@ -14,6 +14,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Format rules
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Creates an email-format validation rule for a field.
+        /// </summary>
         public static ValidationRule EmailRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Email",
@@ -23,6 +26,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be a valid email address"
         };
 
+        /// <summary>
+        /// Creates a phone-format validation rule for a field.
+        /// </summary>
         public static ValidationRule PhoneRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Phone",
@@ -33,6 +39,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be a valid phone number (e.g., (555) 123-4567)"
         };
 
+        /// <summary>
+        /// Creates a URL-format validation rule for a field.
+        /// </summary>
         public static ValidationRule URLRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_URL",
@@ -42,6 +51,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be a valid URL"
         };
 
+        /// <summary>
+        /// Creates a postal-code validation rule for a field.
+        /// </summary>
         public static ValidationRule PostalCodeRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_PostalCode",
@@ -52,6 +64,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be a valid postal code (e.g., 12345 or 12345-6789)"
         };
 
+        /// <summary>
+        /// Creates an IP-address validation rule for a field.
+        /// </summary>
         public static ValidationRule IpAddressRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_IpAddress",
@@ -66,6 +81,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Required / length rules
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Creates a required-value validation rule for a field.
+        /// </summary>
         public static ValidationRule NonEmptyRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_NonEmpty",
@@ -75,6 +93,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} is required"
         };
 
+        /// <summary>
+        /// Creates a minimum-length validation rule for a field.
+        /// </summary>
         public static ValidationRule MinLengthRule(string blockName, string fieldName, int minLength) => new()
         {
             RuleName = $"{blockName}_{fieldName}_MinLength_{minLength}",
@@ -85,6 +106,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be at least {minLength} characters"
         };
 
+        /// <summary>
+        /// Creates a maximum-length validation rule for a field.
+        /// </summary>
         public static ValidationRule MaxLengthRule(string blockName, string fieldName, int maxLength) => new()
         {
             RuleName = $"{blockName}_{fieldName}_MaxLength_{maxLength}",
@@ -99,6 +123,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Numeric / range rules
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Creates a positive-number validation rule for a field.
+        /// </summary>
         public static ValidationRule PositiveNumberRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Positive",
@@ -109,6 +136,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be a positive number"
         };
 
+        /// <summary>
+        /// Creates a percentage-range validation rule for a field.
+        /// </summary>
         public static ValidationRule PercentageRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Percentage",
@@ -120,6 +150,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be between 0 and 100"
         };
 
+        /// <summary>
+        /// Creates a generic range validation rule for a field.
+        /// </summary>
         public static ValidationRule RangeRule(string blockName, string fieldName, object min, object max) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Range_{min}_{max}",
@@ -135,6 +168,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Date rules
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Creates a future-date validation rule for a field.
+        /// </summary>
         public static ValidationRule FutureDateRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Future",
@@ -145,6 +181,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             ErrorMessage = $"{fieldName} must be today or in the future"
         };
 
+        /// <summary>
+        /// Creates a past-date validation rule for a field.
+        /// </summary>
         public static ValidationRule PastDateRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Past",
@@ -159,6 +198,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // Pattern rule (generic)
         // ---------------------------------------------------------------
 
+        /// <summary>
+        /// Creates a generic regex-pattern validation rule for a field.
+        /// </summary>
         public static ValidationRule PatternRule(string blockName, string fieldName, string pattern, string errorMessage = null) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Pattern",

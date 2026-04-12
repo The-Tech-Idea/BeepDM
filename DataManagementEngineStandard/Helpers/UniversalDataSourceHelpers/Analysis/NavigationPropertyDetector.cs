@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
     /// for advanced relationship mapping.
     /// 
     /// Navigation Properties are properties that represent relationships between entities:
-    /// - Collection properties (ICollection<T>, List<T>, IEnumerable<T>)
+    /// - Collection properties such as <c>ICollection&lt;T&gt;</c>, <c>List&lt;T&gt;</c>, and <c>IEnumerable&lt;T&gt;</c>
     /// - Single object references (Customer, Order, etc.)
     /// - Virtual properties (used by ORMs for lazy loading)
     /// 
@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
     {
         /// <summary>
         /// Detects if a property is a collection-based navigation property.
-        /// Examples: ICollection<Order>, List<Customer>, IEnumerable<Product>
+        /// Examples: <c>ICollection&lt;Order&gt;</c>, <c>List&lt;Customer&gt;</c>, <c>IEnumerable&lt;Product&gt;</c>
         /// </summary>
         /// <param name="prop">Property to analyze</param>
         /// <returns>true if property represents a collection of complex objects</returns>
@@ -74,7 +74,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
 
         /// <summary>
         /// Detects if a property uses virtual access (typical of ORM lazy loading).
-        /// Examples: virtual Customer customer, virtual ICollection<Order> Orders
+        /// Examples: <c>virtual Customer Customer</c>, <c>virtual ICollection&lt;Order&gt; Orders</c>
         /// </summary>
         /// <param name="prop">Property to analyze</param>
         /// <returns>true if property getter/setter is virtual</returns>
@@ -111,8 +111,8 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
 
         /// <summary>
         /// Gets the underlying type that a property references (for collections).
-        /// For ICollection<Order>, returns Order.
-        /// For Order, returns Order.
+        /// For <c>ICollection&lt;Order&gt;</c>, returns <c>Order</c>.
+        /// For <c>Order</c>, returns <c>Order</c>.
         /// </summary>
         /// <param name="prop">Navigation property to analyze</param>
         /// <returns>The referenced type, or null if not a valid navigation property</returns>
@@ -338,7 +338,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
         }
 
         /// <summary>
-        /// Determines if a type is nullable (Nullable<T> or reference type).
+        /// Determines if a type is nullable (<c>Nullable&lt;T&gt;</c> or reference type).
         /// </summary>
         private static bool IsNullableType(Type type)
         {
@@ -379,7 +379,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
     public enum NavigationPropertyType
     {
         /// <summary>
-        /// Collection type (ICollection<T>, List<T>): represents one-to-many or many-to-many.
+        /// Collection type such as <c>ICollection&lt;T&gt;</c> or <c>List&lt;T&gt;</c>; represents one-to-many or many-to-many.
         /// </summary>
         Collection,
 
@@ -406,7 +406,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
         public string PropertyName { get; set; }
 
         /// <summary>
-        /// C# type of the property (e.g., ICollection<Order>, Customer).
+        /// C# type of the property (for example, <c>ICollection&lt;Order&gt;</c> or <c>Customer</c>).
         /// </summary>
         public Type PropertyType { get; set; }
 
@@ -416,7 +416,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Analysis
         public NavigationPropertyType NavigationType { get; set; }
 
         /// <summary>
-        /// The type being referenced (e.g., Order for ICollection<Order> or Customer).
+        /// The type being referenced (for example, <c>Order</c> for <c>ICollection&lt;Order&gt;</c> or <c>Customer</c>).
         /// </summary>
         public Type ReferencedType { get; set; }
 

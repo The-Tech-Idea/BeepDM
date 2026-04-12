@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.Caching.Providers
     /// - Support for memory pressure callbacks
     /// - Integration with .NET garbage collection optimization
     /// 
-    /// **Monitoring & Control:**
+    /// **Monitoring &amp; Control:**
     /// - Real-time memory usage dashboards
     /// - Memory efficiency reporting and analysis
     /// - Configurable memory thresholds and alerts
@@ -112,8 +112,11 @@ namespace TheTechIdea.Beep.Caching.Providers
         #endregion
 
         #region ICacheProvider Implementation
+        /// <inheritdoc />
         public string Name => "EnhancedMemoryCache";
+        /// <inheritdoc />
         public bool IsAvailable => !_disposed;
+        /// <inheritdoc />
         public CacheStatistics Statistics 
         {
             get
@@ -130,6 +133,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -171,6 +175,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return default(T);
         }
 
+        /// <inheritdoc />
         public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || value == null)
@@ -237,6 +242,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -253,6 +259,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return false;
         }
 
+        /// <inheritdoc />
         public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -274,6 +281,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return false;
         }
 
+        /// <inheritdoc />
         public async Task<long> ClearAsync(string pattern = null, CancellationToken cancellationToken = default)
         {
             if (_disposed)
@@ -319,6 +327,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return removedCount;
         }
 
+        /// <inheritdoc />
         public async Task<Dictionary<string, T>> GetManyAsync<T>(IEnumerable<string> keys, CancellationToken cancellationToken = default)
         {
             var result = new Dictionary<string, T>();
@@ -338,6 +347,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return result;
         }
 
+        /// <inheritdoc />
         public async Task<long> SetManyAsync<T>(Dictionary<string, T> values, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
         {
             if (values == null || _disposed)
@@ -356,6 +366,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return successCount;
         }
 
+        /// <inheritdoc />
         public async Task<bool> RefreshAsync(string key, TimeSpan expiry, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -512,6 +523,7 @@ namespace TheTechIdea.Beep.Caching.Providers
         #endregion
 
         #region IDisposable Implementation
+        /// <inheritdoc />
         public void Dispose()
         {
             if (!_disposed)

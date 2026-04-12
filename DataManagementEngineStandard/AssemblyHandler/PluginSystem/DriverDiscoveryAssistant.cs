@@ -24,6 +24,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly IConfigEditor _configEditor;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes a driver discovery assistant that writes discovered ADO.NET driver metadata into shared plugin state.
+        /// </summary>
+        /// <param name="sharedContextManager">Shared plugin context that stores discovered driver definitions.</param>
+        /// <param name="configEditor">Configuration editor used to complement discovered driver metadata.</param>
+        /// <param name="logger">Logger used for discovery diagnostics.</param>
         public DriverDiscoveryAssistant(SharedContextManager sharedContextManager, IConfigEditor configEditor, IDMLogger logger)
         {
             _sharedContextManager = sharedContextManager;
@@ -335,6 +341,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             _logger?.LogWithContext("ClearDiscoveredDrivers called - individual drivers are managed by SharedContextManager during nugget unloading", null);
         }
 
+        /// <summary>
+        /// Marks the assistant as disposed.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

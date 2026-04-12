@@ -26,6 +26,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         // Removed _loaderExtensionClasses - now stored in SharedContextManager
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes a scanning assistant that records discovered plugin types into the shared context.
+        /// </summary>
+        /// <param name="sharedContextManager">Shared plugin context that stores discovered metadata.</param>
+        /// <param name="configEditor">Configuration editor used for backward-compatible workflow and rule registration.</param>
+        /// <param name="logger">Logger used for diagnostics during scanning.</param>
         public AssemblyScanningAssistant(SharedContextManager sharedContextManager, IConfigEditor configEditor, IDMLogger logger)
         {
             _sharedContextManager = sharedContextManager;
@@ -403,6 +409,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             };
         }
 
+        /// <summary>
+        /// Marks the assistant as disposed.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

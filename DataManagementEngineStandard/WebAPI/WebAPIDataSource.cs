@@ -134,7 +134,8 @@ namespace TheTechIdea.Beep.WebAPI
                 ErrorObject = ErrorObject,
                 DMEEditor = dmeEditor
             };
-            Dataconnection.ConnectionProp = dmeEditor?.ConfigEditor?.DataConnections?.FirstOrDefault(c => c.ConnectionName.Equals(datasourcename, StringComparison.InvariantCultureIgnoreCase));
+            var savedConnection = dmeEditor?.ConfigEditor?.DataConnections?.FirstOrDefault(c => c.ConnectionName.Equals(datasourcename, StringComparison.InvariantCultureIgnoreCase));
+            Dataconnection.ConnectionProp = WebAPIDataConnection.NormalizeConnectionProperties(savedConnection);
 
             _configHelper = new WebAPIConfigurationHelper(Dataconnection.ConnectionProp, Logger, DatasourceName);
             

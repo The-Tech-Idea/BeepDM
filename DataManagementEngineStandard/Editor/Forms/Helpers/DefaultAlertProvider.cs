@@ -14,6 +14,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// </summary>
     public class DefaultAlertProvider : IAlertProvider
     {
+        /// <summary>Shows a fallback alert when no UI-specific provider is available.</summary>
         public Task<AlertResult> ShowAlertAsync(
             string title,
             string message,

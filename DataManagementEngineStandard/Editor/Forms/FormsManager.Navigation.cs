@@ -15,7 +15,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     public partial class FormsManager
     {
         #region Navigation Events
+        /// <summary>
+        /// Raised before a navigation operation is performed.
+        /// </summary>
         public event EventHandler<NavigationTriggerEventArgs> OnNavigate;
+        /// <summary>
+        /// Raised after the current record changes.
+        /// </summary>
         public event EventHandler<NavigationTriggerEventArgs> OnCurrentChanged;
         #endregion
 
@@ -58,21 +64,42 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> NavigateToRecordAsync(string blockName, int recordIndex)
         {
+            return await NavigateToRecordInternalAsync(blockName, recordIndex, recordHistory: true);
+        }
+
+        private async Task<bool> NavigateToRecordInternalAsync(string blockName, int recordIndex, bool recordHistory)
+        {
             if (string.IsNullOrWhiteSpace(blockName) || recordIndex < 0)
                 return false;
 
             try
             {
-                // Check for unsaved changes before navigation
-                if (!await CheckAndHandleUnsavedChangesAsync(blockName))
-                    return false;
-
                 var blockInfo = GetBlock(blockName);
                 if (blockInfo?.UnitOfWork == null)
                 {
                     Status = $"Block '{blockName}' not found or has no unit of work";
                     return false;
                 }
+
+                var previousIndex = blockInfo.UnitOfWork.Units != null
+                    ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
+                    : -1;
+
+                if (previousIndex == recordIndex)
+                    return true;
+
+                if (Configuration?.Navigation?.ValidateBeforeNavigation == true)
+                {
+                    if (!ValidateBlock(blockName))
+                    {
+                        LogOperation($"Navigation blocked: validation failed in block '{blockName}'", blockName);
+                        return false;
+                    }
+                }
+
+                // Check for unsaved changes before navigation
+                if (!await CheckAndHandleUnsavedChangesAsync(blockName))
+                    return false;
 
                 // Trigger navigation event
                 var args = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.ToRecord)
@@ -83,6 +110,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 
                 if (args.Cancel)
                 {
+                    Status = string.IsNullOrWhiteSpace(args.Message)
+                        ? $"Navigation to record {recordIndex} cancelled by trigger in block '{blockName}'"
+                        : args.Message;
+                    _messageManager?.ShowWarningMessage(blockName, Status);
                     LogOperation($"Navigation to record {recordIndex} cancelled by trigger", blockName);
                     return false;
                 }
@@ -98,10 +129,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 
                 if (success)
                 {
-                    // Phase 4-D: push previous index onto nav history before moving
-                    var prevIndex = blockInfo.UnitOfWork?.Units?.CurrentIndex ?? 0;
-                    if (prevIndex != recordIndex)
-                        _navHistoryManager.Push(blockName, prevIndex);
+                    var currentIndex = blockInfo.UnitOfWork.Units != null
+                        ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
+                        : previousIndex;
+
+                    if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
+                        _navHistoryManager.Push(blockName, previousIndex);
 
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName);
@@ -366,7 +399,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
                 
-                return await NavigateAsync(blockName, navigationType);
+                return await NavigateAsync(blockName, navigationType, recordHistory: true);
             }
             catch (Exception ex)
             {
@@ -375,7 +408,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             }
         }
 
-        private async Task<bool> NavigateAsync(string blockName, NavigationType navigationType)
+        private async Task<bool> NavigateAsync(string blockName, NavigationType navigationType, bool recordHistory)
         {
             try
             {
@@ -386,12 +419,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
+                var previousIndex = blockInfo.UnitOfWork.Units != null
+                    ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
+                    : -1;
+
                 // Trigger navigation event
                 var args = new NavigationTriggerEventArgs(blockName, _currentFormName, navigationType);
                 OnNavigate?.Invoke(this, args);
                 
                 if (args.Cancel)
                 {
+                    Status = string.IsNullOrWhiteSpace(args.Message)
+                        ? $"Navigation {navigationType} cancelled by trigger in block '{blockName}'"
+                        : args.Message;
+                    _messageManager?.ShowWarningMessage(blockName, Status);
                     LogOperation($"Navigation {navigationType} cancelled by trigger", blockName);
                     return false;
                 }
@@ -407,6 +448,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 
                 if (success)
                 {
+                    var currentIndex = blockInfo.UnitOfWork.Units != null
+                        ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
+                        : previousIndex;
+
+                    if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
+                        _navHistoryManager.Push(blockName, previousIndex);
+
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName);
                     

@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -10,6 +12,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
+using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 {
@@ -268,6 +271,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         
         /// <inheritdoc />
         public ItemValidationResult ValidateItem(string blockName, string itemName, object value, ValidationTiming timing = ValidationTiming.Manual)
+            => ValidateItemCore(blockName, itemName, value, timing, null);
+
+        private ItemValidationResult ValidateItemCore(string blockName, string itemName, object value, ValidationTiming timing, IDictionary<string, object> record)
         {
             var result = new ItemValidationResult
             {
@@ -306,7 +312,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             
             foreach (var rule in rules.Where(r => r.IsEnabled))
             {
-                var ruleResult = ExecuteValidation(rule, value, null);
+                var ruleResult = ExecuteValidation(rule, value, record);
                 result.RuleResults.Add(ruleResult);
                 
                 if (!ruleResult.IsValid)
@@ -342,7 +348,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             
             return result;
         }
-        
+
         /// <inheritdoc />
         public RecordValidationResult ValidateRecord(string blockName, IDictionary<string, object> record, ValidationTiming timing = ValidationTiming.Manual)
         {
@@ -358,7 +364,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             
             foreach (var field in record)
             {
-                var itemResult = ValidateItem(blockName, field.Key, field.Value, timing);
+                var itemResult = ValidateItemCore(blockName, field.Key, field.Value, timing, record);
                 if (itemResult.RuleResults.Any())
                 {
                     result.ItemResults[field.Key] = itemResult;
@@ -577,7 +583,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     }
                 }
                 
-                result.IsValid = ValidateByType(rule, value);
+                result.IsValid = ValidateByType(rule, value, record);
                 
                 if (!result.IsValid)
                 {
@@ -639,7 +645,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return result;
         }
         
-        private bool ValidateByType(ValidationRule rule, object value)
+        private bool ValidateByType(ValidationRule rule, object value, IDictionary<string, object> record)
         {
             switch (rule.ValidationType)
             {
@@ -680,16 +686,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     return ValidateEqualTo(value, rule.MinValue ?? rule.MaxValue);
                     
                 case ValidationType.Lookup:
-                    return ValidateLookup(value, rule.LookupSource);
+                    return ValidateLookup(value, rule, record);
                     
                 case ValidationType.Unique:
-                    return ValidateUnique(value, rule);
+                    return ValidateUnique(value, rule, record);
                     
                 case ValidationType.Custom:
                     return ValidateCustom(value, rule);
                     
                 case ValidationType.Database:
-                    return ValidateDatabase(value, rule);
+                    return ValidateDatabase(value, rule, record);
                     
                 default:
                     return true;
@@ -846,31 +852,50 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return value.Equals(compareValue);
         }
         
-        private bool ValidateLookup(object value, string lookupSource)
-        {
-            if (value == null || string.IsNullOrWhiteSpace(lookupSource))
-                return true;
-            
-            // Lookup validation requires data source
-            if (_dataSource == null)
-                return true; // Cannot validate without data source
-            
-            // TODO: Implement lookup validation against data source
-            // This would query the lookup source to verify the value exists
-            return true;
-        }
-        
-        private bool ValidateUnique(object value, ValidationRule rule)
+        private bool ValidateLookup(object value, ValidationRule rule, IDictionary<string, object> record)
         {
             if (value == null)
                 return true;
             
-            // Unique validation requires data source
             if (_dataSource == null)
                 return true;
+
+            if (!TryResolveValidationTarget(rule, rule.ItemName, out var entityName, out var fieldName))
+                return true;
+
+            if (!TryQueryRows(entityName, CreateEqualityFilters(fieldName, value), out var rows))
+                return true;
+
+            return rows.Count > 0;
+        }
+        
+        private bool ValidateUnique(object value, ValidationRule rule, IDictionary<string, object> record)
+        {
+            if (value == null)
+                return true;
             
-            // TODO: Implement uniqueness check against data source
-            return true;
+            if (_dataSource == null)
+                return true;
+
+            var entityName = !string.IsNullOrWhiteSpace(rule.LookupSource)
+                ? ResolveEntityName(rule)
+                : rule.BlockName;
+            var fieldName = rule.ItemName;
+
+            if (string.IsNullOrWhiteSpace(entityName) || string.IsNullOrWhiteSpace(fieldName))
+                return true;
+
+            if (!TryQueryRows(entityName, CreateEqualityFilters(fieldName, value), out var rows))
+                return true;
+
+            if (rows.Count == 0)
+                return true;
+
+            var identityFields = GetCompareFieldNames(rule, record);
+            if (identityFields.Count == 0)
+                return false;
+
+            return rows.All(row => RecordMatchesIdentityFields(row, identityFields) );
         }
         
         private bool ValidateCustom(object value, ValidationRule rule)
@@ -893,17 +918,213 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             }
         }
         
-        private bool ValidateDatabase(object value, ValidationRule rule)
+        private bool ValidateDatabase(object value, ValidationRule rule, IDictionary<string, object> record)
         {
             if (value == null)
                 return true;
             
-            // Database validation requires data source
             if (_dataSource == null)
                 return true;
-            
-            // TODO: Implement database validation (e.g., foreign key check)
+
+            return ValidateLookup(value, rule, record);
+        }
+
+        private bool TryResolveValidationTarget(ValidationRule rule, string defaultFieldName, out string entityName, out string fieldName)
+        {
+            entityName = null;
+            fieldName = null;
+
+            var source = rule.LookupSource?.Trim();
+            var fallbackField = !string.IsNullOrWhiteSpace(rule.CompareFieldName)
+                ? rule.CompareFieldName.Trim()
+                : defaultFieldName?.Trim();
+
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                entityName = rule.BlockName;
+                fieldName = fallbackField;
+                return !string.IsNullOrWhiteSpace(entityName) && !string.IsNullOrWhiteSpace(fieldName);
+            }
+
+            var separatorIndex = source.IndexOfAny(new[] { '|', ':' });
+            if (separatorIndex > 0 && separatorIndex < source.Length - 1)
+            {
+                entityName = source.Substring(0, separatorIndex).Trim();
+                fieldName = source.Substring(separatorIndex + 1).Trim();
+                return !string.IsNullOrWhiteSpace(entityName) && !string.IsNullOrWhiteSpace(fieldName);
+            }
+
+            var lastDotIndex = source.LastIndexOf('.');
+            if (lastDotIndex > 0 && lastDotIndex < source.Length - 1)
+            {
+                var possibleFieldName = source.Substring(lastDotIndex + 1).Trim();
+                if (string.Equals(possibleFieldName, fallbackField, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(possibleFieldName, rule.ItemName, StringComparison.OrdinalIgnoreCase))
+                {
+                    entityName = source.Substring(0, lastDotIndex).Trim();
+                    fieldName = possibleFieldName;
+                    return !string.IsNullOrWhiteSpace(entityName) && !string.IsNullOrWhiteSpace(fieldName);
+                }
+            }
+
+            entityName = source;
+            fieldName = fallbackField;
+            return !string.IsNullOrWhiteSpace(entityName) && !string.IsNullOrWhiteSpace(fieldName);
+        }
+
+        private string ResolveEntityName(ValidationRule rule)
+        {
+            if (TryResolveValidationTarget(rule, rule.ItemName, out var entityName, out _))
+                return entityName;
+
+            return rule.BlockName;
+        }
+
+        private static List<AppFilter> CreateEqualityFilters(string fieldName, object value)
+        {
+            return new List<AppFilter>
+            {
+                new AppFilter
+                {
+                    FieldName = fieldName,
+                    Operator = "=",
+                    FilterValue = value?.ToString(),
+                    FieldType = value?.GetType(),
+                    valueType = value?.GetType().FullName
+                }
+            };
+        }
+
+        private bool TryQueryRows(string entityName, IEnumerable<AppFilter> filters, out List<object> rows)
+        {
+            rows = new List<object>();
+
+            if (_dataSource == null || string.IsNullOrWhiteSpace(entityName))
+                return false;
+
+            try
+            {
+                var data = _dataSource.GetEntity(entityName, filters?.ToList() ?? new List<AppFilter>());
+                rows = MaterializeRows(data);
+                return true;
+            }
+            catch
+            {
+                try
+                {
+                    var data = _dataSource.GetEntityAsync(entityName, filters?.ToList() ?? new List<AppFilter>()).GetAwaiter().GetResult();
+                    rows = MaterializeRows(data);
+                    return true;
+                }
+                catch
+                {
+                    rows = new List<object>();
+                    return false;
+                }
+            }
+        }
+
+        private static List<object> MaterializeRows(object data)
+        {
+            if (data == null)
+                return new List<object>();
+
+            if (data is DataTable dataTable)
+                return dataTable.Rows.Cast<DataRow>().Select(row => (object)row).ToList();
+
+            if (data is IEnumerable<object> objectEnumerable)
+                return objectEnumerable.ToList();
+
+            if (data is IEnumerable enumerable && data is not string)
+            {
+                var rows = new List<object>();
+                foreach (var item in enumerable)
+                {
+                    rows.Add(item);
+                }
+                return rows;
+            }
+
+            return new List<object> { data };
+        }
+
+        private static Dictionary<string, object> GetCompareFieldNames(ValidationRule rule, IDictionary<string, object> record)
+        {
+            var identityFields = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (record == null || string.IsNullOrWhiteSpace(rule.CompareFieldName))
+                return identityFields;
+
+            var fieldNames = rule.CompareFieldName
+                .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (var fieldName in fieldNames)
+            {
+                if (record.TryGetValue(fieldName, out var value) && value != null)
+                {
+                    identityFields[fieldName] = value;
+                }
+            }
+
+            return identityFields;
+        }
+
+        private static bool RecordMatchesIdentityFields(object row, IReadOnlyDictionary<string, object> identityFields)
+        {
+            foreach (var identityField in identityFields)
+            {
+                if (!TryGetFieldValue(row, identityField.Key, out var rowValue) || !AreEquivalentValues(rowValue, identityField.Value))
+                    return false;
+            }
+
             return true;
+        }
+
+        private static bool TryGetFieldValue(object source, string fieldName, out object value)
+        {
+            value = null;
+            if (source == null || string.IsNullOrWhiteSpace(fieldName))
+                return false;
+
+            if (source is IDictionary<string, object> dict)
+                return dict.TryGetValue(fieldName, out value);
+
+            if (source is DataRow dataRow)
+            {
+                if (!dataRow.Table.Columns.Contains(fieldName))
+                    return false;
+
+                value = dataRow[fieldName];
+                return true;
+            }
+
+            var property = source.GetType().GetProperty(fieldName,
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.IgnoreCase);
+
+            if (property == null)
+                return false;
+
+            value = property.GetValue(source);
+            return true;
+        }
+
+        private static bool AreEquivalentValues(object left, object right)
+        {
+            if (left == DBNull.Value)
+                left = null;
+            if (right == DBNull.Value)
+                right = null;
+
+            if (left == null && right == null)
+                return true;
+            if (left == null || right == null)
+                return false;
+
+            if (left.Equals(right))
+                return true;
+
+            return string.Equals(left.ToString(), right.ToString(), StringComparison.OrdinalIgnoreCase);
         }
         
         private bool CompareValues(object value1, object value2, ValidationType comparisonType)

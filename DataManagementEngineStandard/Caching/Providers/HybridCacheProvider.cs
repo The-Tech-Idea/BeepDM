@@ -36,7 +36,7 @@ namespace TheTechIdea.Beep.Caching.Providers
     /// - CPU usage optimization through tier-appropriate algorithms
     /// - Memory usage balancing across cache layers
     /// 
-    /// **Reliability & Consistency:**
+    /// **Reliability &amp; Consistency:**
     /// - Automatic failover between cache tiers
     /// - Data consistency guarantees across distributed nodes
     /// - Graceful degradation when tier providers fail
@@ -67,7 +67,7 @@ namespace TheTechIdea.Beep.Caching.Providers
     /// - Load balancing across multiple cache instances
     /// - Partition tolerance and network split handling
     /// 
-    /// **Monitoring & Analytics:**
+    /// **Monitoring &amp; Analytics:**
     /// - Comprehensive tier performance analytics
     /// - Data access pattern analysis and visualization
     /// - Cost analysis and optimization recommendations
@@ -123,8 +123,11 @@ namespace TheTechIdea.Beep.Caching.Providers
         #endregion
 
         #region ICacheProvider Implementation
+        /// <inheritdoc />
         public string Name => $"Hybrid({_l1Cache.Name}+{_l2Cache.Name})";
+        /// <inheritdoc />
         public bool IsAvailable => !_disposed && (_l1Cache.IsAvailable || _l2Cache.IsAvailable);
+        /// <inheritdoc />
         public CacheStatistics Statistics 
         {
             get
@@ -141,6 +144,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -204,6 +208,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed || value == null)
@@ -257,6 +262,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return success;
         }
 
+        /// <inheritdoc />
         public async Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -310,6 +316,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return removed;
         }
 
+        /// <inheritdoc />
         public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -333,6 +340,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<long> ClearAsync(string pattern = null, CancellationToken cancellationToken = default)
         {
             if (_disposed)
@@ -390,6 +398,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return totalRemoved;
         }
 
+        /// <inheritdoc />
         public async Task<Dictionary<string, T>> GetManyAsync<T>(IEnumerable<string> keys, CancellationToken cancellationToken = default)
         {
             var result = new Dictionary<string, T>();
@@ -450,6 +459,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             }
         }
 
+        /// <inheritdoc />
         public async Task<long> SetManyAsync<T>(Dictionary<string, T> values, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
         {
             if (values == null || _disposed)
@@ -507,6 +517,7 @@ namespace TheTechIdea.Beep.Caching.Providers
             return maxSuccess;
         }
 
+        /// <inheritdoc />
         public async Task<bool> RefreshAsync(string key, TimeSpan expiry, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(key) || _disposed)
@@ -554,6 +565,7 @@ namespace TheTechIdea.Beep.Caching.Providers
         #endregion
 
         #region IDisposable Implementation
+        /// <inheritdoc />
         public void Dispose()
         {
             if (!_disposed)

@@ -11712,9 +11712,23 @@
         </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.ICheckpointStore">
             <summary>
-            Tracks the last successfully processed offset per topic/partition/consumer-group.
-            Implementations may be in-memory, database-backed, or broker-native (e.g. Kafka auto-commit).
+            Tracks the last successfully processed offset per topic/partition/consumer-group
+            at the <b>application pipeline</b> level.
+            <para>
+            Partitions are identified by a <c>string partitionKey</c>. Each checkpoint record
+            includes the topic, consumer group, partition key, and a <see cref="T:System.DateTimeOffset"/>
+            commit timestamp (<see cref="P:TheTechIdea.Beep.StreamandEvents.CheckpointRecord.CommittedAt"/>).
+            Used by <c>StreamConsumerRuntime</c> to record the last successfully processed position
+            so processing can resume after a restart.
             Commit only after handler success to guarantee at-least-once outcomes.
+            </para>
+            <para>
+            <b>Do not confuse with <c>IConsumerOffsetStore</c>.</b>
+            <c>IConsumerOffsetStore</c> operates at the broker cluster group protocol level
+            with <c>int</c> partition indices and <c>long</c> offsets — it is used by cluster
+            infrastructure components (<c>ConsumerGroupCoordinator</c>), not by the application pipeline.
+            See <c>Docs/ConsumerPositionContracts.md</c> for the full layering diagram.
+            </para>
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.StreamandEvents.ICheckpointStore.CommitAsync(TheTechIdea.Beep.StreamandEvents.CheckpointRecord,System.Threading.CancellationToken)">

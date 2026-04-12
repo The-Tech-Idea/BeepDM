@@ -80,6 +80,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         
         /// <summary>Gets or sets extended properties for the block</summary>
         public Dictionary<string, object> ExtendedProperties { get; set; } = new Dictionary<string, object>();
+
+        /// <summary>Gets or sets when the block last changed modes.</summary>
         public  DateTime LastModeChange { get; set; } = DateTime.Now;
     }
     

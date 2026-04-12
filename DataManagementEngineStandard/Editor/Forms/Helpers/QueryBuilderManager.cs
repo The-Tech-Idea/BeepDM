@@ -24,12 +24,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Operator Registry
 
+        /// <summary>
+        /// Registers the comparison operator that should be used for a block field when building filters.
+        /// </summary>
         public void SetQueryOperator(string blockName, string fieldName, QueryOperator op)
         {
             var dict = _operators.GetOrAdd(blockName, _ => new Dictionary<string, QueryOperator>(StringComparer.OrdinalIgnoreCase));
             dict[fieldName] = op;
         }
 
+        /// <summary>
+        /// Returns the configured comparison operator for a block field.
+        /// </summary>
         public QueryOperator GetQueryOperator(string blockName, string fieldName)
         {
             if (_operators.TryGetValue(blockName, out var dict) &&
@@ -38,6 +44,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return QueryOperator.Equals; // default
         }
 
+        /// <summary>
+        /// Clears all operator registrations for a block.
+        /// </summary>
         public void ClearQueryOperators(string blockName)
         {
             _operators.TryRemove(blockName, out _);
@@ -47,6 +56,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Filter Building
 
+        /// <summary>
+        /// Builds an <see cref="AppFilter"/> list from a block-name and field-value dictionary.
+        /// </summary>
         public List<AppFilter> BuildFilters(string blockName, Dictionary<string, object> fieldValues)
         {
             var filters = new List<AppFilter>();
@@ -72,6 +84,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return filters;
         }
 
+        /// <summary>
+        /// Parses a simple SQL-like WHERE clause into <see cref="AppFilter"/> instances.
+        /// </summary>
         public List<AppFilter> ParseWhereClause(string whereClause)
         {
             var filters = new List<AppFilter>();
@@ -89,6 +104,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return filters;
         }
 
+        /// <summary>
+        /// Parses a simple ORDER BY clause into order-related <see cref="AppFilter"/> instances.
+        /// </summary>
         public List<AppFilter> ParseOrderByClause(string orderByClause)
         {
             var filters = new List<AppFilter>();
@@ -116,6 +134,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return filters;
         }
 
+        /// <summary>
+        /// Concatenates two filter lists using AND semantics.
+        /// </summary>
         public List<AppFilter> CombineFiltersAnd(List<AppFilter> a, List<AppFilter> b)
         {
             var combined = new List<AppFilter>();
@@ -128,6 +149,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Query Templates
 
+        /// <summary>
+        /// Saves a named query template for a block, including its current operator map.
+        /// </summary>
         public void SaveQueryTemplate(string blockName, string templateName, List<AppFilter> filters)
         {
             var dict = _templates.GetOrAdd(blockName, _ => new Dictionary<string, QueryTemplateInfo>(StringComparer.OrdinalIgnoreCase));
@@ -147,6 +171,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             };
         }
 
+        /// <summary>
+        /// Loads a saved query template by block and template name.
+        /// </summary>
         public QueryTemplateInfo LoadQueryTemplate(string blockName, string templateName)
         {
             if (_templates.TryGetValue(blockName, out var dict) &&
@@ -155,6 +182,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return null;
         }
 
+        /// <summary>
+        /// Returns all saved query templates for a block.
+        /// </summary>
         public IReadOnlyList<QueryTemplateInfo> GetQueryTemplates(string blockName)
         {
             if (_templates.TryGetValue(blockName, out var dict))
@@ -162,6 +192,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return Array.Empty<QueryTemplateInfo>();
         }
 
+        /// <summary>
+        /// Deletes a saved query template for a block.
+        /// </summary>
         public bool DeleteQueryTemplate(string blockName, string templateName)
         {
             if (_templates.TryGetValue(blockName, out var dict))
@@ -169,6 +202,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return false;
         }
 
+        /// <summary>
+        /// Deletes all saved query templates for a block.
+        /// </summary>
         public void ClearAllTemplates(string blockName)
         {
             _templates.TryRemove(blockName, out _);

@@ -15,17 +15,35 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class PluginContext : IPluginContext
     {
+        /// <summary>Gets the root service provider available to the plugin.</summary>
         public IServiceProvider Services { get; }
+        /// <summary>Gets the configuration editor exposed to the plugin.</summary>
         public IConfigEditor Configuration { get; }
+        /// <summary>Gets the logger exposed to the plugin.</summary>
         public IDMLogger Logger { get; }
+        /// <summary>Gets the assembly handler used by the hosting application.</summary>
         public IAssemblyHandler AssemblyHandler { get; }
+        /// <summary>Gets the plugin-scoped property bag.</summary>
         public Dictionary<string, object> Properties { get; } = new();
 
         // New unified context properties
+        /// <summary>Gets the unified plugin manager for advanced lifecycle operations.</summary>
         public IUnifiedPluginManager PluginManager { get; }
+        /// <summary>Gets the identifier of the current plugin.</summary>
         public string CurrentPluginId { get; }
+        /// <summary>Gets the plugin type classification for the current plugin.</summary>
         public UnifiedPluginType CurrentPluginType { get; }
 
+        /// <summary>
+        /// Initializes a plugin execution context.
+        /// </summary>
+        /// <param name="services">Root service provider available to the plugin.</param>
+        /// <param name="configuration">Configuration editor exposed to the plugin.</param>
+        /// <param name="logger">Logger exposed to the plugin.</param>
+        /// <param name="assemblyHandler">Assembly handler available to the plugin.</param>
+        /// <param name="pluginManager">Optional unified plugin manager for advanced operations.</param>
+        /// <param name="currentPluginId">Optional identifier of the current plugin.</param>
+        /// <param name="currentPluginType">Classification of the current plugin.</param>
         public PluginContext(IServiceProvider services, IConfigEditor configuration, 
                            IDMLogger logger, IAssemblyHandler assemblyHandler, IUnifiedPluginManager pluginManager = null, string currentPluginId = null, UnifiedPluginType currentPluginType = UnifiedPluginType.SharedAssembly)
         {
@@ -50,6 +68,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly IDMLogger _logger;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes a plugin service manager over the application's root service provider.
+        /// </summary>
+        /// <param name="globalServiceProvider">Global application service provider.</param>
+        /// <param name="logger">Logger used for service-registration diagnostics.</param>
         public PluginServiceManager(IServiceProvider globalServiceProvider, IDMLogger logger)
         {
             _globalServiceProvider = globalServiceProvider;
@@ -302,6 +325,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
+        /// <summary>
+        /// Disposes plugin-created scopes and clears service caches.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)

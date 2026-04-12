@@ -21,6 +21,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         private readonly IDMLogger _logger;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Initializes a plugin version manager used for hot-swap and rollback workflows.
+        /// </summary>
+        /// <param name="isolationManager">Isolation manager used to unload and reload plugin assemblies.</param>
+        /// <param name="lifecycleManager">Lifecycle manager used to stop and restart plugins during replacement.</param>
+        /// <param name="logger">Logger used for versioning diagnostics.</param>
         public PluginVersionManager(PluginIsolationManager isolationManager, 
                                   PluginLifecycleManager lifecycleManager, 
                                   IDMLogger logger)
@@ -334,6 +340,9 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             }
         }
 
+        /// <summary>
+        /// Deletes temporary backups and clears version-tracking state.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
@@ -363,14 +372,23 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
     /// </summary>
     public class PluginBackup
     {
+        /// <summary>Gets or sets the logical plugin identifier.</summary>
         public string PluginId { get; set; }
+        /// <summary>Gets or sets the original plugin assembly path.</summary>
         public string OriginalPath { get; set; }
+        /// <summary>Gets or sets the temporary backup path created for rollback.</summary>
         public string BackupPath { get; set; }
+        /// <summary>Gets or sets the backed-up plugin version.</summary>
         public string Version { get; set; }
+        /// <summary>Gets or sets the lifecycle state captured at backup time.</summary>
         public PluginState State { get; set; }
+        /// <summary>Gets or sets the health state captured at backup time.</summary>
         public PluginHealth Health { get; set; }
+        /// <summary>Gets or sets arbitrary metadata captured with the backup.</summary>
         public Dictionary<string, object> Metadata { get; set; } = new();
+        /// <summary>Gets or sets when the backup was created.</summary>
         public DateTime CreatedAt { get; set; }
+        /// <summary>Gets or sets the human-friendly snapshot name.</summary>
         public string SnapshotName { get; set; }
     }
 }

@@ -19,14 +19,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly Dictionary<string, Queue<BlockMessage>> _queues
             = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Gets or sets the intended display duration for a message before platform code advances it.
+        /// </summary>
         public int MessageDisplayDurationMs { get; set; } = 3000;
+
+        /// <summary>
+        /// Gets or sets whether the manager should automatically advance to the next queued message after a clear.
+        /// </summary>
         public bool AutoAdvanceMessages { get; set; } = true;
 
+        /// <summary>
+        /// Raised when a message becomes current for a block.
+        /// </summary>
         public event EventHandler<BlockMessageEventArgs> OnMessage;
+
+        /// <summary>
+        /// Raised when the current message for a block is cleared.
+        /// </summary>
         public event EventHandler<BlockMessageEventArgs> OnMessageCleared;
 
         #region Set / Clear
 
+        /// <summary>
+        /// Sets the current message for a block or queues it if another message is already being shown.
+        /// </summary>
         public void SetMessage(string blockName, string text, MessageLevel level = MessageLevel.Info)
         {
             var message = new BlockMessage
@@ -49,6 +66,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             }
         }
 
+        /// <summary>
+        /// Clears the current message for a block and optionally advances to the next queued message.
+        /// </summary>
         public void ClearMessage(string blockName)
         {
             _current[blockName] = null;
@@ -60,6 +80,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             AdvanceMessage(blockName);
         }
 
+        /// <summary>
+        /// Advances to the next queued message for a block, if any exist.
+        /// </summary>
         public void AdvanceMessage(string blockName)
         {
             if (_queues.TryGetValue(blockName, out var queue) && queue.Count > 0)
@@ -74,15 +97,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Convenience
 
+        /// <summary>
+        /// Queues an informational message for a block.
+        /// </summary>
         public void ShowInfoMessage(string blockName, string text)
             => SetMessage(blockName, text, MessageLevel.Info);
 
+        /// <summary>
+        /// Queues a success message for a block.
+        /// </summary>
         public void ShowSuccessMessage(string blockName, string text)
             => SetMessage(blockName, text, MessageLevel.Success);
 
+        /// <summary>
+        /// Queues a warning message for a block.
+        /// </summary>
         public void ShowWarningMessage(string blockName, string text)
             => SetMessage(blockName, text, MessageLevel.Warning);
 
+        /// <summary>
+        /// Queues an error message for a block.
+        /// </summary>
         public void ShowErrorMessage(string blockName, string text)
             => SetMessage(blockName, text, MessageLevel.Error);
 
@@ -90,14 +125,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Query
 
+        /// <summary>
+        /// Returns the current message text for a block.
+        /// </summary>
         public string GetCurrentMessage(string blockName)
             => _current.TryGetValue(blockName, out var m) ? m?.Text : null;
 
+        /// <summary>
+        /// Returns the level of the current message for a block.
+        /// </summary>
         public MessageLevel GetCurrentMessageLevel(string blockName)
             => _current.TryGetValue(blockName, out var m) && m != null
                ? m.Level
                : MessageLevel.Info;
 
+        /// <summary>
+        /// Returns the number of queued messages waiting behind the current message for a block.
+        /// </summary>
         public int GetQueuedMessageCount(string blockName)
             => _queues.TryGetValue(blockName, out var q) ? q.Count : 0;
 

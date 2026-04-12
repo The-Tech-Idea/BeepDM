@@ -1213,12 +1213,26 @@ namespace TheTechIdea.Beep.FileManager
             if (IsNumeric(Fieldtype))
             {
                 if (!decimal.TryParse(rawValue, out var numVal)) return false;
-                if (op == "between")
+                if (op == "in" || op == "not in" || op == "notin")
                 {
+                    var parsedValues = SplitCollectionValues(f.FilterValue)
+                        .Select(value => decimal.TryParse(value, out var parsed) ? (decimal?)parsed : null)
+                        .ToList();
+                    if (parsedValues.Any(value => value == null)) return false;
+
+                    bool matched = parsedValues.Any(value => value == numVal);
+                    return op == "in" ? matched : !matched;
+                }
+                if (op == "between" || op == "not between" || op == "notbetween")
+                {
+                    var negateRange = op == "not between" || op == "notbetween";
                     if (!string.IsNullOrWhiteSpace(f.FilterValue1))
                     {
                         if (decimal.TryParse(f.FilterValue, out var n1) && decimal.TryParse(f.FilterValue1, out var n2))
-                            return numVal >= Math.Min(n1, n2) && numVal <= Math.Max(n1, n2);
+                        {
+                            var inRange = numVal >= Math.Min(n1, n2) && numVal <= Math.Max(n1, n2);
+                            return negateRange ? !inRange : inRange;
+                        }
                         return false;
                     }
                     // legacy: FilterValue contains comma
@@ -1228,7 +1242,10 @@ namespace TheTechIdea.Beep.FileManager
                         if (parts.Length == 2 &&
                             decimal.TryParse(parts[0], out var n1) &&
                             decimal.TryParse(parts[1], out var n2))
-                            return numVal >= Math.Min(n1, n2) && numVal <= Math.Max(n1, n2);
+                        {
+                            var inRange = numVal >= Math.Min(n1, n2) && numVal <= Math.Max(n1, n2);
+                            return negateRange ? !inRange : inRange;
+                        }
                     }
                     return false;
                 }
@@ -1249,12 +1266,26 @@ namespace TheTechIdea.Beep.FileManager
             if (Fieldtype == typeof(DateTime))
             {
                 if (!DateTime.TryParse(rawValue, out var dateVal)) return false;
-                if (op == "between")
+                if (op == "in" || op == "not in" || op == "notin")
                 {
+                    var parsedValues = SplitCollectionValues(f.FilterValue)
+                        .Select(value => DateTime.TryParse(value, out var parsed) ? (DateTime?)parsed : null)
+                        .ToList();
+                    if (parsedValues.Any(value => value == null)) return false;
+
+                    bool matched = parsedValues.Any(value => value == dateVal);
+                    return op == "in" ? matched : !matched;
+                }
+                if (op == "between" || op == "not between" || op == "notbetween")
+                {
+                    var negateRange = op == "not between" || op == "notbetween";
                     if (!string.IsNullOrWhiteSpace(f.FilterValue1))
                     {
                         if (DateTime.TryParse(f.FilterValue, out var d1) && DateTime.TryParse(f.FilterValue1, out var d2))
-                            return dateVal >= (d1 < d2 ? d1 : d2) && dateVal <= (d1 > d2 ? d1 : d2);
+                        {
+                            var inRange = dateVal >= (d1 < d2 ? d1 : d2) && dateVal <= (d1 > d2 ? d1 : d2);
+                            return negateRange ? !inRange : inRange;
+                        }
                         return false;
                     }
                     if (f.FilterValue?.Contains(',') == true)
@@ -1263,7 +1294,10 @@ namespace TheTechIdea.Beep.FileManager
                         if (parts.Length == 2 &&
                             DateTime.TryParse(parts[0], out var d1) &&
                             DateTime.TryParse(parts[1], out var d2))
-                            return dateVal >= (d1 < d2 ? d1 : d2) && dateVal <= (d1 > d2 ? d1 : d2);
+                        {
+                            var inRange = dateVal >= (d1 < d2 ? d1 : d2) && dateVal <= (d1 > d2 ? d1 : d2);
+                            return negateRange ? !inRange : inRange;
+                        }
                     }
                     return false;
                 }
@@ -1308,6 +1342,19 @@ namespace TheTechIdea.Beep.FileManager
             if (s == null) return "false";
             var v = s.Trim().ToLowerInvariant();
             return (v == "1" || v == "true" || v == "yes" || v == "y") ? "true" : "false";
+        }
+
+        private static IEnumerable<string> SplitCollectionValues(string rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return rawValue
+                .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(value => value.Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value));
         }
 
         private static object ConvertString(string value, Type targetType)

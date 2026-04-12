@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -2331,6 +2332,15 @@ namespace TheTechIdea.Beep.Utils
                     return $"{filter.FieldName} = '{filter.FilterValue}'";
                 case "contains":
                     return $"{filter.FieldName} LIKE '%{filter.FilterValue}%'";
+                case "startswith":
+                    return $"{filter.FieldName} LIKE '{filter.FilterValue}%'";
+                case "endswith":
+                    return $"{filter.FieldName} LIKE '%{filter.FilterValue}'";
+                case "in":
+                    return BuildCollectionExpression(filter, negate: false);
+                case "not in":
+                case "notin":
+                    return BuildCollectionExpression(filter, negate: true);
                 case ">":
                     return $"{filter.FieldName} > '{filter.FilterValue}'";
                 case "<":
@@ -2344,6 +2354,13 @@ namespace TheTechIdea.Beep.Utils
                     return $"{filter.FieldName} <> '{filter.FilterValue}'";
                 case "between":
                     return $"{filter.FieldName} >= '{filter.FilterValue}' AND {filter.FieldName} <= '{filter.FilterValue1}'";
+                case "not between":
+                case "notbetween":
+                    return $"({filter.FieldName} < '{filter.FilterValue}' OR {filter.FieldName} > '{filter.FilterValue1}')";
+                case "is null":
+                    return $"{filter.FieldName} IS NULL";
+                case "is not null":
+                    return $"{filter.FieldName} IS NOT NULL";
                 default:
                     throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
             }
@@ -2352,6 +2369,16 @@ namespace TheTechIdea.Beep.Utils
         {
             var fieldValue = record[filter.FieldName];
 
+            if (fieldValue == DBNull.Value)
+            {
+                return filter.Operator switch
+                {
+                    "is null" => true,
+                    "is not null" => false,
+                    _ => false
+                };
+            }
+
             switch (filter.Operator)
             {
                 case "equals":
@@ -2359,6 +2386,15 @@ namespace TheTechIdea.Beep.Utils
                     return fieldValue.Equals(filter.FilterValue);
                 case "contains":
                     return fieldValue.ToString().Contains(filter.FilterValue);
+                case "startswith":
+                    return fieldValue.ToString().StartsWith(filter.FilterValue?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                case "endswith":
+                    return fieldValue.ToString().EndsWith(filter.FilterValue?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                case "in":
+                    return MatchesCollection(fieldValue, filter.FilterValue, negate: false);
+                case "not in":
+                case "notin":
+                    return MatchesCollection(fieldValue, filter.FilterValue, negate: true);
                 case ">":
                     return Comparer.Default.Compare(fieldValue, filter.FilterValue) > 0;
                 case "<":
@@ -2376,9 +2412,94 @@ namespace TheTechIdea.Beep.Utils
 
                     return Comparer.Default.Compare(fieldValue, value1) >= 0 &&
                            Comparer.Default.Compare(fieldValue, value2) <= 0;
+                case "not between":
+                case "notbetween":
+                    var notBetweenValue1 = filter.FilterValue;
+                    var notBetweenValue2 = filter.FilterValue1;
+
+                    return Comparer.Default.Compare(fieldValue, notBetweenValue1) < 0 ||
+                           Comparer.Default.Compare(fieldValue, notBetweenValue2) > 0;
+                case "is null":
+                    return false;
+                case "is not null":
+                    return true;
                 default:
                     throw new ArgumentException($"Invalid filter operator: {filter.Operator}");
             }
+        }
+
+        private static string BuildCollectionExpression(AppFilter filter, bool negate)
+        {
+            var values = SplitCollectionValues(filter.FilterValue).ToList();
+            if (values.Count == 0)
+            {
+                return "1 = 0";
+            }
+
+            string comparator = negate ? "<>" : "=";
+            string joiner = negate ? " AND " : " OR ";
+            return "(" + string.Join(joiner, values.Select(value => $"{filter.FieldName} {comparator} '{value.Replace("'", "''")}'")) + ")";
+        }
+
+        private static IEnumerable<string> SplitCollectionValues(object rawValue)
+        {
+            if (rawValue == null)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return rawValue.ToString()
+                .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(value => value.Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value));
+        }
+
+        private static bool MatchesCollection(object fieldValue, object rawFilterValue, bool negate)
+        {
+            var values = SplitCollectionValues(rawFilterValue).ToList();
+            if (values.Count == 0)
+            {
+                return false;
+            }
+
+            bool matched = values.Any(value => FilterValueMatches(fieldValue, value));
+            return negate ? !matched : matched;
+        }
+
+        private static bool FilterValueMatches(object fieldValue, string rawValue)
+        {
+            if (fieldValue == null || fieldValue == DBNull.Value)
+            {
+                return false;
+            }
+
+            Type fieldType = Nullable.GetUnderlyingType(fieldValue.GetType()) ?? fieldValue.GetType();
+            if (fieldType == typeof(DateTime))
+            {
+                return DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedDate)
+                    ? ((DateTime)fieldValue) == parsedDate
+                    : DateTime.TryParse(rawValue, out parsedDate) && ((DateTime)fieldValue) == parsedDate;
+            }
+
+            if (fieldType == typeof(bool))
+            {
+                return bool.TryParse(rawValue, out var parsedBool) && (bool)fieldValue == parsedBool;
+            }
+
+            if (IsCollectionNumericType(fieldType))
+            {
+                return decimal.TryParse(rawValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedNumber) &&
+                       Convert.ToDecimal(fieldValue, CultureInfo.InvariantCulture) == parsedNumber;
+            }
+
+            return string.Equals(fieldValue.ToString(), rawValue, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsCollectionNumericType(Type type)
+        {
+            return type == typeof(byte) || type == typeof(short) || type == typeof(int) ||
+                   type == typeof(long) || type == typeof(float) || type == typeof(double) ||
+                   type == typeof(decimal);
         }
         #endregion
     }

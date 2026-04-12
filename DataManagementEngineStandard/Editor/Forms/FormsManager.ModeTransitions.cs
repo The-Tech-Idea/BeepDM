@@ -595,12 +595,36 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 var detailBlockInfo = GetBlock(detailBlockName);
-                if (detailBlockInfo?.UnitOfWork == null)
+                var masterBlockInfo = GetBlock(masterBlockName);
+                if (detailBlockInfo?.UnitOfWork == null || masterBlockInfo?.UnitOfWork == null)
                 {
                     return;
                 }
 
-                if (!detailBlockInfo.UnitOfWork.ApplyMasterValueToCurrentItem())
+                var detailItem = detailBlockInfo.UnitOfWork.CurrentItem;
+                var masterItem = masterBlockInfo.UnitOfWork.CurrentItem;
+                var fieldMappings = GetRelationshipFieldMappings(new DataBlockRelationship
+                {
+                    MasterKeyField = detailBlockInfo.MasterKeyField,
+                    DetailForeignKeyField = detailBlockInfo.ForeignKeyField
+                });
+
+                var appliedAnyValue = false;
+                if (detailItem != null && masterItem != null)
+                {
+                    foreach (var mapping in fieldMappings)
+                    {
+                        var masterValue = GetPropertyValue(masterItem, mapping.MasterField);
+                        if (IsNullOrEmpty(masterValue) || !TrySetPropertyValue(detailItem, mapping.DetailField, masterValue))
+                        {
+                            continue;
+                        }
+
+                        appliedAnyValue = true;
+                    }
+                }
+
+                if (!appliedAnyValue)
                 {
                     LogOperation($"No master value applied from '{masterBlockName}' to '{detailBlockName}'", detailBlockName);
                 }
@@ -896,8 +920,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// </summary>
     public class ModeTransitionValidationResult
     {
+        /// <summary>
+        /// Gets or sets whether the requested mode transition is currently valid.
+        /// </summary>
         public bool IsValid { get; set; }
+        /// <summary>
+        /// Gets or sets the summary message for the validation outcome.
+        /// </summary>
         public string Message { get; set; }
+        /// <summary>
+        /// Gets or sets the individual issues detected while validating the transition.
+        /// </summary>
         public List<string> ValidationIssues { get; set; } = new List<string>();
     }
 
@@ -906,13 +939,34 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// </summary>
     public class BlockModeInfo
     {
+        /// <summary>
+        /// Gets or sets the logical block name.
+        /// </summary>
         public string BlockName { get; set; }
+        /// <summary>
+        /// Gets or sets the current runtime mode for the block.
+        /// </summary>
         public DataBlockMode CurrentMode { get; set; }
+        /// <summary>
+        /// Gets or sets the time the block last changed modes.
+        /// </summary>
         public DateTime LastModeChange { get; set; }
+        /// <summary>
+        /// Gets or sets whether the block currently has unsaved changes.
+        /// </summary>
         public bool HasUnsavedChanges { get; set; }
+        /// <summary>
+        /// Gets or sets the number of loaded records in the block.
+        /// </summary>
         public int RecordCount { get; set; }
+        /// <summary>
+        /// Gets or sets whether this block is the current active block.
+        /// </summary>
         public bool IsCurrentBlock { get; set; }
         
+        /// <summary>
+        /// Gets a compact text summary of the block mode and state.
+        /// </summary>
         public string Summary => 
             $"{BlockName}: {CurrentMode} mode, {RecordCount} records" +
             (HasUnsavedChanges ? " (unsaved changes)" : "") +

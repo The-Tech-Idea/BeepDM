@@ -177,7 +177,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         /// <summary>
         /// Generates SQL to set the transaction isolation level.
         /// Controls how transactions interact with concurrent access.
-        /// Levels: ReadUncommitted < ReadCommitted < RepeatableRead < Serializable
+        /// Levels: <c>ReadUncommitted</c> to <c>ReadCommitted</c> to <c>RepeatableRead</c> to <c>Serializable</c>
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateSetTransactionIsolationLevelSql(string isolationLevel)
         {

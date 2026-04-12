@@ -84,7 +84,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
 
         /// <summary>
         /// IDs of triggers that must complete (with Success/Continue result) before this trigger fires.
-        /// Used by <see cref="ITriggerDependencyManager"/> for ordered chain execution.
+        /// Used by the trigger dependency manager for ordered chain execution.
         /// </summary>
         public List<string> DependsOn { get; set; } = new List<string>();
 
@@ -456,6 +456,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         #region Override
         
+        /// <summary>Returns a compact display string for the trigger definition.</summary>
         public override string ToString()
         {
             return $"{QualifiedName} (Enabled={IsEnabled}, Priority={Priority})";

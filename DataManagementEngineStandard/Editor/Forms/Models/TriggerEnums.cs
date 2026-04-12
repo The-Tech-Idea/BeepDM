@@ -399,38 +399,128 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
     /// </summary>
     public enum KeyTriggerType
     {
+        /// <summary>Navigate to the next item.</summary>
         NextItem       = 100,  // KEY-NEXT-ITEM
+
+        /// <summary>Navigate to the previous item.</summary>
         PreviousItem   = 101,  // KEY-PREV-ITEM
+
+        /// <summary>Navigate up.</summary>
         Up             = 102,  // KEY-UP
+
+        /// <summary>Navigate down.</summary>
         Down           = 103,  // KEY-DOWN
+
+        /// <summary>Navigate to the next record.</summary>
         NextRecord     = 104,  // KEY-NXTREC
+
+        /// <summary>Navigate to the previous record.</summary>
         PreviousRecord = 105,  // KEY-PRVREC
+
+        /// <summary>Navigate to the next block.</summary>
         NextBlock      = 106,  // KEY-NXTBLK
+
+        /// <summary>Navigate to the previous block.</summary>
         PreviousBlock  = 107,  // KEY-PRVBLK
+
+        /// <summary>Scroll upward.</summary>
         ScrollUp       = 108,  // KEY-SCRDN
+
+        /// <summary>Scroll downward.</summary>
         ScrollDown     = 109,  // KEY-SCRUP
+
+        /// <summary>Accept the current item.</summary>
         Enter          = 110,  // KEY-ENTER
+
+        /// <summary>Leave the current context.</summary>
         Exit           = 111,  // KEY-EXIT
+
+        /// <summary>Execute the current query.</summary>
         ExecuteQuery   = 120,  // KEY-EXEQRY
+
+        /// <summary>Count matching records.</summary>
         CountRecords   = 121,  // KEY-CNTQRY
+
+        /// <summary>Commit pending changes.</summary>
         Commit         = 122,  // KEY-COMMIT
+
+        /// <summary>Rollback pending changes.</summary>
         Rollback       = 123,  // KEY-ROLLBACK
+
+        /// <summary>Create a new record.</summary>
         CreateRecord   = 124,  // KEY-CREREC
+
+        /// <summary>Delete the current record.</summary>
         DeleteRecord   = 125,  // KEY-DELREC
+
+        /// <summary>Duplicate the current record.</summary>
         DuplicateRecord= 126,  // KEY-DUPREC
+
+        /// <summary>Duplicate the current item.</summary>
         DuplicateItem  = 127,  // KEY-DUPITM
+
+        /// <summary>Clear the current block.</summary>
         ClearBlock     = 128,  // KEY-CLRBLK
+
+        /// <summary>Clear the current form.</summary>
         ClearForm      = 129,  // KEY-CLRFRM
+
+        /// <summary>Clear the current record.</summary>
         ClearRecord    = 130,  // KEY-CLRREC
+
+        /// <summary>Clear the current item.</summary>
         ClearItem      = 131,  // KEY-CLRITM
+
+        /// <summary>Show list values for the current item.</summary>
         ListValues     = 132,  // KEY-LISTVAL
+
+        /// <summary>Show help.</summary>
         Help           = 133,  // KEY-HELP
+
+        /// <summary>Print the current context.</summary>
         Print          = 134,  // KEY-PRINT
+
+        /// <summary>Edit the current context.</summary>
         Edit           = 135,  // KEY-EDIT
+
+        /// <summary>Open the menu.</summary>
         Menu           = 136,  // KEY-MENU
-        F1  = 150, F2  = 151, F3  = 152, F4  = 153,
-        F5  = 154, F6  = 155, F7  = 156, F8  = 157,
-        F9  = 158, F10 = 159, F11 = 160, F12 = 161
+
+        /// <summary>Function key F1.</summary>
+        F1  = 150,
+
+        /// <summary>Function key F2.</summary>
+        F2  = 151,
+
+        /// <summary>Function key F3.</summary>
+        F3  = 152,
+
+        /// <summary>Function key F4.</summary>
+        F4  = 153,
+
+        /// <summary>Function key F5.</summary>
+        F5  = 154,
+
+        /// <summary>Function key F6.</summary>
+        F6  = 155,
+
+        /// <summary>Function key F7.</summary>
+        F7  = 156,
+
+        /// <summary>Function key F8.</summary>
+        F8  = 157,
+
+        /// <summary>Function key F9.</summary>
+        F9  = 158,
+
+        /// <summary>Function key F10.</summary>
+        F10 = 159,
+
+        /// <summary>Function key F11.</summary>
+        F11 = 160,
+
+        /// <summary>Function key F12.</summary>
+        F12 = 161
     }
 
     #endregion

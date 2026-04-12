@@ -8,8 +8,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
     /// </summary>
     public class CrossBlockValidationRule
     {
+        /// <summary>Gets or sets the logical rule name.</summary>
         public string RuleName { get; set; }
+
+        /// <summary>Gets or sets the first block participating in the rule.</summary>
         public string BlockA   { get; set; }
+
+        /// <summary>Gets or sets the second block participating in the rule.</summary>
         public string BlockB   { get; set; }
 
         /// <summary>
@@ -17,6 +22,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// </summary>
         public Func<IUnitofWork, IUnitofWork, string> Validator { get; set; }
 
+        /// <summary>Gets or sets the severity to report when the rule fails.</summary>
         public ValidationSeverity Severity { get; set; } = ValidationSeverity.Error;
     }
 }

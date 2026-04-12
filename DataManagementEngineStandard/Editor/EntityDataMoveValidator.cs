@@ -11,17 +11,9 @@ using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep
 {
-    /// <summary>Validates if a record can be inserted into a data source for a given entity.</summary>
-    /// <param name="DMEEditor">The DMEEditor instance.</param>
-    /// <param name="DataSource">The data source.</param>
-    /// <param name="Entity">The entity structure.</param>
-    /// <param name="record">The record to be inserted.</param>
-    /// <param name="entityname">The name of the entity.</param>
-    /// <param name="datasource">The name of the data source.</param>
-    /// <returns>An EntityValidatorMesseges indicating the validation result.</returns>
-    /// <remarks>
-    /// This method checks if the DMEEditor instance is not null.
-    /// If
+    /// <summary>
+    /// Provides validation helpers for moving records between entities and data sources.
+    /// </summary>
     public static partial class EntityDataMoveValidator
     {
         /// <summary>
