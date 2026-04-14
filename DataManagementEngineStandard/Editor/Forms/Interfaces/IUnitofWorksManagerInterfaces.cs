@@ -100,6 +100,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Returns whether a block is currently registered.</summary>
         bool BlockExists(string blockName);
 
+        /// <summary>
+        /// Opens the named datasource, fetches EntityStructure, creates a UnitOfWork,
+        /// and registers the block. All datasource work happens inside FormsManager.
+        /// UI layers (BeepForms, BeepBlock) must never call IDataSource directly.
+        /// </summary>
+        Task<bool> SetupBlockAsync(
+            string blockName,
+            string connectionName,
+            string entityName,
+            bool isMasterBlock = false,
+            CancellationToken cancellationToken = default);
+
         /// <summary>Synchronizes detail blocks attached to the specified master block.</summary>
         Task SynchronizeDetailBlocksAsync(string masterBlockName);
 

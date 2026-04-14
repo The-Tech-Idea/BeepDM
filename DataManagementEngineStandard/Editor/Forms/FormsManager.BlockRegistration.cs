@@ -335,6 +335,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
+        /// Opens the named datasource if needed, fetches EntityStructure, creates a UnitOfWork,
+        /// and registers the block. This is the single-call bootstrap entry point for UI layers
+        /// (BeepForms, BeepBlock) that must never touch IDataSource directly.
+        /// Delegates to <see cref="RegisterBlockFromSourceAsync"/>.
+        /// </summary>
+        public Task<bool> SetupBlockAsync(
+            string blockName,
+            string connectionName,
+            string entityName,
+            bool isMasterBlock = false,
+            CancellationToken cancellationToken = default)
+            => RegisterBlockFromSourceAsync(blockName, connectionName, entityName, isMasterBlock, cancellationToken);
+
+        /// <summary>
         /// Unregisters a data block from the manager
         /// </summary>
         public bool UnregisterBlock(string blockName)
