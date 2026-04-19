@@ -32,6 +32,7 @@ UoW considerations, primary-key handling rules, and validation guidance.
 
 - Phases 01 through 09 are now complete across the FormsManager partials, helper managers, interfaces, tests, reference docs, and help-site page.
 - `Help/formsmanager.html` was rewritten on 2026-04-09 to align the public help page with the audited runtime surface.
+- The integrated WinForms host seam now mirrors trigger metadata and normalized block-level UoW activity through `BeepForms` / `IBeepFormsHost`, keeping `BeepBlock` on the UI side of the runtime boundary.
 - Use [todo-tracker.md](todo-tracker.md) as the operational status source of truth. The detailed phase checklists later in this file are retained as historical implementation notes and seam references.
 
 ---
@@ -124,9 +125,10 @@ FormsManager (IUnitofWorksManager)
 2. **Reflection-heavy UoW seams still deserve cleanup** — some CRUD and update paths still rely on reflection-based fallbacks instead of strongly-typed UoW contracts.
 3. **Programmatic trigger-raise coverage needs continued audit** — `RaiseFormTriggerAsync` exists, but explicit call-site usage should continue to be reviewed where direct trigger raising is expected.
 4. **Remote cache invalidation remains a hardening area** — local cache controls exist, but external datasource change notification still depends on the surrounding performance and invalidation plumbing.
+5. **Integrated trigger/UoW UI seams should stay proxy-based** — extend `BeepForms` / `IBeepFormsHost` when WinForms blocks need more runtime observability, rather than binding `BeepBlock` directly to `FormsManager` or raw block UoWs.
 
 ### Intentionally UI-owned Oracle Forms concepts
-5. **Canvases, tab pages, focus rendering, LOV dialog presentation, and message-area rendering stay outside FormsManager** — these belong to the host UI and are not blockers for FormsManager runtime parity.
+6. **Canvases, tab pages, focus rendering, LOV dialog presentation, and message-area rendering stay outside FormsManager** — these belong to the host UI and are not blockers for FormsManager runtime parity.
 
 ---
 

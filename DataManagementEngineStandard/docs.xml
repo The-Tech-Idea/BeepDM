@@ -10911,6 +10911,14 @@
             Rolls back a block to a previously created savepoint (Phase 6).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetupBlockAsync(System.String,System.String,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Opens the named datasource if needed, fetches EntityStructure, creates a UnitOfWork,
+            and registers the block. This is the single-call bootstrap entry point for UI layers
+            (BeepForms, BeepBlock) that must never touch IDataSource directly.
+            Delegates to <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlockFromSourceAsync(System.String,System.String,System.String,System.Boolean,System.Threading.CancellationToken)"/>.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.UnregisterBlock(System.String)">
             <summary>
             Unregisters a data block from the manager
@@ -13577,6 +13585,13 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.BlockExists(System.String)">
             <summary>Returns whether a block is currently registered.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetupBlockAsync(System.String,System.String,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Opens the named datasource, fetches EntityStructure, creates a UnitOfWork,
+            and registers the block. All datasource work happens inside FormsManager.
+            UI layers (BeepForms, BeepBlock) must never call IDataSource directly.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SynchronizeDetailBlocksAsync(System.String)">
             <summary>Synchronizes detail blocks attached to the specified master block.</summary>

@@ -21,6 +21,7 @@ This README replaces the older `UnitofWorksManager` naming found in earlier note
 - Oracle Forms-style built-ins such as alerts, timers, sequences, and block properties.
 - Multi-form registry/message/shared-block plumbing.
 - Integration of helper managers for validation, LOV, triggers, audit, security, paging, and caching.
+- Runtime trigger metadata and block UoW activity that host UIs may observe only through proxy layers such as `BeepForms` / `IBeepFormsHost`.
 
 ## What stays in IUnitofWork
 
@@ -29,6 +30,8 @@ This README replaces the older `UnitofWorksManager` naming found in earlier note
 - Commit and rollback semantics.
 - Datasource-backed identity refresh and sequence generation when the datasource owns key allocation.
 - Query execution and loaded-record storage.
+
+Integrated WinForms controls should not subscribe to `FormsManager.Triggers` or raw block `IUnitofWork` instances directly. If UI surfaces need trigger or CRUD/query/current-record activity, add or use a `BeepForms` host proxy so workflow ownership stays inside FormsManager.
 
 ## Key generation and ownership rules
 

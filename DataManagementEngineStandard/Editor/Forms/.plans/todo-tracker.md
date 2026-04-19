@@ -7,6 +7,10 @@
 
 Detailed phase documents live under [phases/](phases) and capture implementation guidance, UoW boundaries, and primary-key handling rules for each phase.
 
+## Post-Audit Integration Notes
+
+- [x] Integrated WinForms now proxies manager trigger metadata plus normalized block-level UoW activity through `IBeepFormsHost`, so `BeepBlock` can observe runtime workflow without calling `FormsManager` or raw `IUnitofWork` directly.
+
 ---
 
 ## Phase 1: Core Completion & Stabilization ─ Critical

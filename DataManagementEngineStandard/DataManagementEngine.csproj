@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>2.0.86</Version>
+    <Version>2.0.87</Version>
 	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -72,19 +72,19 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="NuGet.Common" Version="7.3.0" />
-    <PackageReference Include="NuGet.DependencyResolver.Core" Version="7.3.0" />
-    <PackageReference Include="NuGet.Frameworks" Version="7.3.0" />
-    <PackageReference Include="NuGet.LibraryModel" Version="7.3.0" />
-    <PackageReference Include="NuGet.Packaging" Version="7.3.0" />
-    <PackageReference Include="NuGet.Protocol" Version="7.3.0" />
-    <PackageReference Include="NuGet.Versioning" Version="7.3.0" />
+    <PackageReference Include="NuGet.Common" Version="7.3.1" />
+    <PackageReference Include="NuGet.DependencyResolver.Core" Version="7.3.1" />
+    <PackageReference Include="NuGet.Frameworks" Version="7.3.1" />
+    <PackageReference Include="NuGet.LibraryModel" Version="7.3.1" />
+    <PackageReference Include="NuGet.Packaging" Version="7.3.1" />
+    <PackageReference Include="NuGet.Protocol" Version="7.3.1" />
+    <PackageReference Include="NuGet.Versioning" Version="7.3.1" />
     <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
     <!-- Switched from NuGet to ProjectReference for local development to pick up OBL enhancements -->
     <!-- <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.125" /> -->
