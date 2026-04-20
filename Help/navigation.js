@@ -80,6 +80,10 @@ class NavigationManager {
                 activeId: 'nav-proxy-datasource',
                 openSection: 'nav-data-management'
             },
+            'distributed-datasource': {
+                activeId: 'nav-distributed-datasource',
+                openSection: 'nav-data-management'
+            },
             
             // Editor Classes
             'dmeeditor': { 
@@ -234,6 +238,7 @@ class NavigationManager {
                         <li><a href="dataviewdatasource.html" id="nav-dataviewdatasource">DataViewDataSource</a></li>
                         <li><a href="caching-api.html" id="nav-caching-api">ICacheProvider + CacheManager</a></li>
                         <li><a href="proxy-datasource.html" id="nav-proxy-datasource">IProxyDataSource</a></li>
+                        <li><a href="distributed-datasource.html" id="nav-distributed-datasource">DistributedDataSource</a></li>
                         <li><a href="examples.html" id="nav-examples">Code Examples</a></li>
                         <li><a href="examples-editor-classes.html" id="nav-examples-editor-classes">Examples: Editor Classes</a></li>
                         <li><a href="examples-runtime-surfaces.html" id="nav-examples-runtime-surfaces">Examples: Runtime Surfaces</a></li>

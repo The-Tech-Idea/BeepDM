@@ -124,21 +124,21 @@ namespace TheTechIdea.Beep.DriversConfigurations
             set { SetProperty(ref _classhandler, value); }
         }
 
-        private bool _adotype;
+        private bool _adotype=false;
         public bool ADOType
         {
             get { return _adotype; }
             set { SetProperty(ref _adotype, value); }
         }
 
-        private bool _createlocal;
+        private bool _createlocal=false;
         public bool CreateLocal
         {
             get { return _createlocal; }
             set { SetProperty(ref _createlocal, value); }
         }
 
-        private bool _inmemory;
+        private bool _inmemory=false;
         public bool InMemory
         {
             get { return _inmemory; }
@@ -153,13 +153,19 @@ namespace TheTechIdea.Beep.DriversConfigurations
             set { SetProperty(ref _extensionstohandle, value); }
         }
 
-        private bool _favourite;
+        private bool _favourite=false;
         public bool Favourite
         {
             get { return _favourite; }
             set { SetProperty(ref _favourite, value); }
         }
-
+        private bool _autoload = false;
+        public bool AutoLoad
+        {
+            get { return _autoload; }
+            set { SetProperty(ref _autoload, value); }
+        }
+       
         private DatasourceCategory _datasourcecategory;
         public DatasourceCategory DatasourceCategory
         {
@@ -173,7 +179,7 @@ namespace TheTechIdea.Beep.DriversConfigurations
             get { return _datasourcetype; }
             set { SetProperty(ref _datasourcetype, value); }
         }
-        private bool _isMissing;
+        private bool _isMissing=true;
         public bool IsMissing
         {
             get { return _isMissing; }

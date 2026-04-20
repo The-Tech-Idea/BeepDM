@@ -105,6 +105,30 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>
+        /// Returns true when the driver's IDataSource class is in DataSourcesClasses
+        /// OR the ADO.NET DLL is present in LoadedAssemblies.
+        /// </summary>
+        public bool IsDriverClassLoaded(string classHandler, string dllName = null)
+        {
+            // Check 1: Beep IDataSource implementation is scanned and registered
+            if (!string.IsNullOrEmpty(classHandler) &&
+                DataSourcesClasses?.Any(c => c.className != null &&
+                    c.className.Equals(classHandler, StringComparison.OrdinalIgnoreCase)) == true)
+                return true;
+
+            // Check 2: the ADO.NET DLL is loaded in the AppDomain
+            if (!string.IsNullOrEmpty(dllName))
+            {
+                var asmName = System.IO.Path.GetFileNameWithoutExtension(dllName);
+                if (LoadedAssemblies?.Any(a =>
+                    a.GetName().Name.Equals(asmName, StringComparison.OrdinalIgnoreCase)) == true)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Checks whether a driver class was installed from a NuGet package.
         /// </summary>
         public bool IsDriverFromNuGet(string driverClassName)

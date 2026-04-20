@@ -29,6 +29,7 @@ It is the per-node unit of work; for multi-machine deployments see
 ## Do not use this skill when
 
 - Managing a fleet of nodes across machines. Use [`proxycluster`](../proxycluster/SKILL.md).
+- You need entity-level sharding/replication/broadcast across shards. Use [`distributeddatasource`](../distributeddatasource/SKILL.md).
 - Configuring connection strings or driver resolution. Use [`connection`](../connection/SKILL.md).
 - Implementing a brand-new IDataSource driver. Use the driver template.
 - General BeepDM service registration. Use [`beepservice`](../beepservice/SKILL.md).
@@ -199,6 +200,7 @@ proxy.Dispose();
 ## Related Skills
 
 - [`proxycluster`](../proxycluster/SKILL.md) — multi-node cluster tier
+- [`distributeddatasource`](../distributeddatasource/SKILL.md) — shard-aware distributed execution tier
 - [`connection`](../connection/SKILL.md) — driver resolution and connection strings
 - [`beepdm`](../beepdm/SKILL.md) — DMEEditor and overall orchestration
 - [`configeditor`](../configeditor/SKILL.md) — registering datasources

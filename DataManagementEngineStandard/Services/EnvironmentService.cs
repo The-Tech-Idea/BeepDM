@@ -299,14 +299,24 @@ namespace TheTechIdea.Beep.Services
             {
                 editor.ConfigEditor.DataDriversClasses = new List<ConnectionDriversConfig>();
             }
-            editor.ConfigEditor.DataDriversClasses.AddRange(ConnectionHelper.GetAllConnectionConfigs());
+            if(editor.ConfigEditor.DataDriversClasses.Count == 0)
+            {
+                editor.ConfigEditor.DataDriversClasses.AddRange(ConnectionHelper.GetAllConnectionConfigs());
+            }
             connectioncreated = true;
         }
 
         public static void AddAllDataSourceMappings(this IDMEEditor editor)
         {
             if (mappingcreated) return;
-            editor.ConfigEditor.DataTypesMap.AddRange(DataTypeFieldMappingHelper.GetMappings());
+            if (editor.ConfigEditor.DataTypesMap == null)
+            {
+                editor.ConfigEditor.DataTypesMap = new List<DatatypeMapping>();
+            }
+            if (editor.ConfigEditor.DataTypesMap.Count == 0)
+            {
+                editor.ConfigEditor.DataTypesMap.AddRange(DataTypeFieldMappingHelper.GetMappings());
+            }
             mappingcreated = true;
         }
     }

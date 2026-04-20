@@ -596,6 +596,47 @@ namespace TheTechIdea.Beep.Tools
 
         #region Nugget Management
 
+        private static (string packageId, string packageVersion) InferPackageMetadataFromPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return (null, null);
+            }
+
+            var normalizedPath = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (!Directory.Exists(normalizedPath))
+            {
+                return (null, null);
+            }
+
+            var dirInfo = new DirectoryInfo(normalizedPath);
+            if (dirInfo.Parent == null)
+            {
+                return (dirInfo.Name, null);
+            }
+
+            if (dirInfo.Parent.Name.Equals("lib", StringComparison.OrdinalIgnoreCase) &&
+                dirInfo.Parent.Parent != null)
+            {
+                var packageRoot = dirInfo.Parent.Parent;
+                var versionFolder = packageRoot.Parent;
+                return (packageRoot.Name, versionFolder?.Name);
+            }
+
+            if (dirInfo.Parent.Parent != null)
+            {
+                var parentName = dirInfo.Parent.Name;
+                var grandParentName = dirInfo.Parent.Parent.Name;
+                if (grandParentName.Equals("Plugins", StringComparison.OrdinalIgnoreCase) ||
+                    grandParentName.Equals("packages", StringComparison.OrdinalIgnoreCase))
+                {
+                    return (parentName, dirInfo.Name);
+                }
+            }
+
+            return (dirInfo.Name, null);
+        }
+
         /// <summary>
         /// Load a NuGet package from specified path
         /// </summary>
@@ -603,14 +644,22 @@ namespace TheTechIdea.Beep.Tools
         {
             try
             {
+                var (packageId, packageVersion) = InferPackageMetadataFromPath(path);
+
                 // Default to shared app-visible context so all loaded assemblies can resolve each other.
-                var result = _nuggetManager.LoadNugget(path, useIsolatedContext: false);
+                var result = _nuggetManager.LoadNugget(
+                    path,
+                    useIsolatedContext: false,
+                    packageId: packageId,
+                    packageVersion: packageVersion);
                 if (!result)
                 {
                     return false;
                 }
 
-                var nuggetName = Path.GetFileNameWithoutExtension(path?.TrimEnd(Path.DirectorySeparatorChar));
+                var nuggetName = !string.IsNullOrWhiteSpace(packageId)
+                    ? packageId
+                    : Path.GetFileNameWithoutExtension(path?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                 var nuggetAssemblies = _nuggetManager.GetNuggetAssemblies(nuggetName);
                 SyncNuggetAssembliesToHandlerCollections(nuggetAssemblies, path, FolderFileTypes.OtherDLL);
                 Logger?.WriteLog($"LoadNugget: Successfully loaded and synchronized {nuggetAssemblies.Count} assembly(ies) from {path}");

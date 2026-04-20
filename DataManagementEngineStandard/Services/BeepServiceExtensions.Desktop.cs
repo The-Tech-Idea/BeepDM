@@ -1,293 +1,104 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
-using TheTechIdea.Beep.Addin;
-using TheTechIdea.Beep.Services;
-using TheTechIdea.Beep.Utilities;
+using Microsoft.Extensions.DependencyInjection;
+using TheTechIdea.Beep.Services.Audit;
+using TheTechIdea.Beep.Services.Logging;
+using TheTechIdea.Beep.Services.Telemetry;
+using TheTechIdea.Beep.Services.Telemetry.Presets;
+using TheTechIdea.Beep.Services.Telemetry.Retention;
+using TheTechIdea.Beep.Services.Telemetry.Sinks;
 
-namespace TheTechIdea.Beep.Container
+namespace TheTechIdea.Beep.Services
 {
     /// <summary>
-    /// Desktop-specific options for BeepService configuration.
-    /// Optimized for WinForms, WPF, and other desktop applications with singleton lifetime.
+    /// Desktop registration helpers (WinForms / WPF / Console / Avalonia).
+    /// They lock the v1 storage budgets from
+    /// <see cref="PlatformBudgets"/>, point file sinks at the per-user
+    /// <c>LocalApplicationData</c> path resolved by
+    /// <see cref="PlatformPaths"/>, and then defer to
+    /// <see cref="BeepServiceLoggingExtensions.AddBeepLogging"/> /
+    /// <see cref="BeepServiceAuditExtensions.AddBeepAudit"/> so every
+    /// downstream wiring (sinks, enrichers, redactors, retention,
+    /// diagnostics) keeps a single canonical entry point.
     /// </summary>
-    public class DesktopBeepOptions
+    public static class BeepServiceDesktopExtensions
     {
         /// <summary>
-        /// Gets or sets the directory path for Beep data storage.
+        /// Registers the Beep logging feature with desktop-friendly
+        /// defaults. The caller can still override every option via
+        /// <paramref name="tweak"/>; preset values are applied first
+        /// so the tweak callback always wins.
         /// </summary>
-        public string DirectoryPath { get; set; } = AppContext.BaseDirectory;
-
-        /// <summary>
-        /// Gets or sets the application repository/container name.
-        /// </summary>
-        public string AppRepoName { get; set; } = "DesktopApp";
-
-        /// <summary>
-        /// Gets or sets the configuration type.
-        /// </summary>
-        public BeepConfigType ConfigType { get; set; } = BeepConfigType.Application;
-
-        /// <summary>
-        /// Gets or sets whether to enable automatic mapping creation.
-        /// </summary>
-        public bool EnableAutoMapping { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable automatic assembly loading.
-        /// </summary>
-        public bool EnableAssemblyLoading { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable progress reporting UI elements.
-        /// </summary>
-        public bool EnableProgressReporting { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable design-time support for Visual Studio designers.
-        /// </summary>
-        public bool EnableDesignTimeSupport { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to auto-initialize forms and controls on startup.
-        /// </summary>
-        public bool AutoInitializeForms { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the initialization timeout.
-        /// </summary>
-        public TimeSpan InitializationTimeout { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Converts DesktopBeepOptions to BeepServiceOptions.
-        /// </summary>
-        internal BeepServiceOptions ToBeepServiceOptions()
+        public static IServiceCollection AddBeepLoggingForDesktop(
+            this IServiceCollection services,
+            string appName = PlatformPaths.DefaultAppName,
+            Action<BeepLoggingOptions> tweak = null)
         {
-            return new BeepServiceOptions
+            if (services is null)
             {
-                DirectoryPath = DirectoryPath,
-                AppRepoName = AppRepoName,
-                ConfigType = ConfigType,
-                ServiceLifetime = ServiceLifetime.Singleton, // Always singleton for desktop
-                EnableAutoMapping = EnableAutoMapping,
-                EnableAssemblyLoading = EnableAssemblyLoading,
-                InitializationTimeout = InitializationTimeout,
-                EnableConfigurationValidation = true,
-                AdditionalProperties = new System.Collections.Generic.Dictionary<string, object>
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            return services.AddBeepLogging(opt =>
+            {
+                opt.Enabled = true;
+                opt.MinLevel = BeepLogLevel.Information;
+                opt.QueueCapacity = PlatformBudgets.DesktopQueueCapacity;
+                opt.BackpressureMode = BackpressureMode.DropOldest;
+                opt.StorageBudgetBytes = PlatformBudgets.DesktopLogBytes;
+                opt.Budget = new StorageBudget
                 {
-                    ["EnableProgressReporting"] = EnableProgressReporting,
-                    ["EnableDesignTimeSupport"] = EnableDesignTimeSupport,
-                    ["AutoInitializeForms"] = AutoInitializeForms
-                }
-            };
-        }
-    }
+                    MaxTotalBytes = PlatformBudgets.DesktopLogBytes,
+                    OnBreach = BudgetBreachAction.DeleteOldest,
+                    CompressOnRotate = true
+                };
+                opt.EnableRetentionSweeper = true;
+                opt.Sinks.Add(new FileRollingSink(
+                    directory: PlatformPaths.LogsDir(appName),
+                    prefix: "beep",
+                    maxFileBytes: PlatformBudgets.DesktopMaxFileBytes,
+                    name: "desktop-file"));
 
-    /// <summary>
-    /// Desktop-specific extension methods for BeepService registration.
-    /// Optimized for WinForms, WPF, and other desktop application patterns.
-    /// </summary>
-    public static class DesktopBeepServiceExtensions
-    {
-        /// <summary>
-        /// Registers BeepService with desktop-optimized defaults (singleton, progress reporting, design-time support).
-        /// Use this method for WinForms, WPF, or any desktop application.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <param name="configure">Configuration action for desktop-specific options.</param>
-        /// <returns>The configured IBeepService instance.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when services or configure is null.</exception>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForDesktop(opts => 
-        /// {
-        ///     opts.DirectoryPath = AppContext.BaseDirectory;
-        ///     opts.AppRepoName = "MyDesktopApp";
-        ///     opts.EnableProgressReporting = true;
-        /// });
-        /// </code>
-        /// </example>
-        public static IBeepService AddBeepForDesktop(this IServiceCollection services, 
-            Action<DesktopBeepOptions> configure = null)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            var desktopOptions = new DesktopBeepOptions();
-            configure?.Invoke(desktopOptions);
-
-            var beepOptions = desktopOptions.ToBeepServiceOptions();
-            return BeepServiceRegistration.RegisterBeepServicesInternal(services, beepOptions);
+                tweak?.Invoke(opt);
+            });
         }
 
         /// <summary>
-        /// Registers BeepService for desktop with fluent builder API.
-        /// Returns a builder interface that supports method chaining.
+        /// Registers the Beep audit feature with desktop-friendly
+        /// defaults. Audit defaults to <see cref="BackpressureMode.Block"/>
+        /// and <see cref="BudgetBreachAction.BlockNewWrites"/> because
+        /// audit is lossless.
         /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <returns>A fluent builder interface pre-configured for desktop scenarios.</returns>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForDesktop()
-        ///     .InDirectory(AppContext.BaseDirectory)
-        ///     .WithAppRepo("MyDesktopApp")
-        ///     .WithProgressUI()
-        ///     .Build();
-        /// </code>
-        /// </example>
-        public static IDesktopBeepServiceBuilder AddBeepForDesktop(this IServiceCollection services)
+        public static IServiceCollection AddBeepAuditForDesktop(
+            this IServiceCollection services,
+            string appName = PlatformPaths.DefaultAppName,
+            Action<BeepAuditOptions> tweak = null)
         {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            return new DesktopBeepServiceBuilder(services);
-        }
-
-        /// <summary>
-        /// Configures and initializes BeepService for desktop applications in an IHost.
-        /// This method combines service registration with assembly loading and progress reporting.
-        /// </summary>
-        /// <param name="host">The configured host instance.</param>
-        /// <param name="progress">Optional progress reporter for assembly loading.</param>
-        /// <returns>The configured IBeepService instance.</returns>
-        /// <example>
-        /// <code>
-        /// var host = Host.CreateDefaultBuilder(args)
-        ///     .ConfigureServices((context, services) => 
-        ///         services.AddBeepForDesktop(opts => opts.DirectoryPath = basePath))
-        ///     .Build();
-        /// 
-        /// var beepService = host.UseBeepForDesktop();
-        /// Application.Run(mainForm);
-        /// </code>
-        /// </example>
-        public static IBeepService UseBeepForDesktop(this IHost host, Progress<PassedArgs> progress = null)
-        {
-            if (host == null)
-                throw new ArgumentNullException(nameof(host));
-
-            var beepService = host.Services.GetRequiredService<IBeepService>();
-
-            // Load assemblies if enabled
-            if (progress != null)
+            if (services is null)
             {
-                beepService.LoadAssemblies(progress);
-            }
-            else
-            {
-                beepService.LoadAssemblies();
+                throw new ArgumentNullException(nameof(services));
             }
 
-            return beepService;
-        }
-    }
+            return services.AddBeepAudit(opt =>
+            {
+                opt.Enabled = true;
+                opt.QueueCapacity = PlatformBudgets.DesktopQueueCapacity;
+                opt.BackpressureMode = BackpressureMode.Block;
+                opt.StorageBudgetBytes = PlatformBudgets.DesktopAuditBytes;
+                opt.Budget = new StorageBudget
+                {
+                    MaxTotalBytes = PlatformBudgets.DesktopAuditBytes,
+                    OnBreach = BudgetBreachAction.BlockNewWrites,
+                    CompressOnRotate = true
+                };
+                opt.HashChain = true;
+                opt.Sinks.Add(new FileRollingSink(
+                    directory: PlatformPaths.AuditDir(appName),
+                    prefix: "audit",
+                    maxFileBytes: PlatformBudgets.DesktopMaxFileBytes,
+                    name: "desktop-audit-file"));
 
-    /// <summary>
-    /// Fluent builder interface for desktop-specific BeepService configuration.
-    /// </summary>
-    public interface IDesktopBeepServiceBuilder
-    {
-        /// <summary>
-        /// Sets the directory path for Beep data storage.
-        /// </summary>
-        IDesktopBeepServiceBuilder InDirectory(string directoryPath);
-
-        /// <summary>
-        /// Sets the application repository/container name.
-        /// </summary>
-        IDesktopBeepServiceBuilder WithAppRepo(string appRepoName);
-
-        /// <summary>
-        /// Enables progress reporting UI elements during long operations.
-        /// </summary>
-        IDesktopBeepServiceBuilder WithProgressUI(bool enable = true);
-
-        /// <summary>
-        /// Enables design-time support for Visual Studio designers.
-        /// </summary>
-        IDesktopBeepServiceBuilder WithDesignTimeSupport(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic form and control initialization on startup.
-        /// </summary>
-        IDesktopBeepServiceBuilder WithAutoInitialize(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic mapping creation during initialization.
-        /// </summary>
-        IDesktopBeepServiceBuilder WithMapping(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic assembly loading during initialization.
-        /// </summary>
-        IDesktopBeepServiceBuilder WithAssemblyLoading(bool enable = true);
-
-        /// <summary>
-        /// Builds and registers the BeepService with desktop-optimized configuration.
-        /// </summary>
-        IBeepService Build();
-    }
-
-   /// <summary>
-    /// Implementation of the fluent builder for desktop-specific BeepService configuration.
-    /// </summary>
-    internal class DesktopBeepServiceBuilder : IDesktopBeepServiceBuilder
-    {
-        private readonly IServiceCollection _services;
-        private readonly DesktopBeepOptions _options;
-
-        public DesktopBeepServiceBuilder(IServiceCollection services)
-        {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
-            _options = new DesktopBeepOptions();
-        }
-
-        public IDesktopBeepServiceBuilder InDirectory(string directoryPath)
-        {
-            _options.DirectoryPath = directoryPath;
-            return this;
-        }
-
-        public IDesktopBeepServiceBuilder WithAppRepo(string appRepoName)
-        {
-            _options.AppRepoName = appRepoName;
-            return this;
-        }
-
-        public IDesktopBeepServiceBuilder WithProgressUI(bool enable = true)
-        {
-            _options.EnableProgressReporting = enable;
-            return this;
-        }
-
-        public IDesktopBeepServiceBuilder WithDesignTimeSupport(bool enable = true)
-        {
-            _options.EnableDesignTimeSupport = enable;
-            return this;
-        }
-
-        public IDesktopBeepServiceBuilder WithAutoInitialize(bool enable = true)
-        {
-            _options.AutoInitializeForms = enable;
-            return this;
-        }
-
-        public IDesktopBeepServiceBuilder WithMapping(bool enable = true)
-        {
-            _options.EnableAutoMapping = enable;
-            return this;
-        }
-
-        public IDesktopBeepServiceBuilder WithAssemblyLoading(bool enable = true)
-        {
-            _options.EnableAssemblyLoading = enable;
-            return this;
-        }
-
-        public IBeepService Build()
-        {
-            var beepOptions = _options.ToBeepServiceOptions();
-            return BeepServiceRegistration.RegisterBeepServicesInternal(_services, beepOptions);
+                tweak?.Invoke(opt);
+            });
         }
     }
 }

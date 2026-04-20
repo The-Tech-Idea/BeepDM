@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Environments;
 using TheTechIdea.Beep.JsonLoaderService;
 using TheTechIdea.Beep.Logger;
@@ -224,6 +225,7 @@ namespace TheTechIdea.Beep.Container.Services
             isassembliesloaded = true;
             LLoader.LoadAllAssembly(progress, token);
             Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
+            RestoreDriverConfigAndAutoLoad();
         }
 
         public void LoadAssemblies()
@@ -242,8 +244,59 @@ namespace TheTechIdea.Beep.Container.Services
                 if (Config_editor != null && LLoader?.Assemblies != null)
                     Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
 
+                RestoreDriverConfigAndAutoLoad();
+
                 isassembliesloaded = true;
             }
+        }
+
+        private void RestoreDriverConfigAndAutoLoad()
+        {
+            if (Config_editor == null || LLoader == null)
+                return;
+
+            Config_editor.LoadConnectionDriversConfigValues();
+
+            if (Config_editor.DataDriversClasses == null || Config_editor.DataDriversClasses.Count == 0)
+                return;
+
+            bool changed = false;
+            foreach (var driver in Config_editor.DataDriversClasses.Where(ShouldAutoLoadDriver))
+            {
+                try
+                {
+                    if (LLoader.LoadDriverFromLocalPackage(driver, out _))
+                    {
+                        changed = true;
+                        continue;
+                    }
+
+                    var hasLocalPackage = LLoader.HasLocalPackage(driver);
+                    if (driver.NuggetMissing == hasLocalPackage)
+                    {
+                        driver.NuggetMissing = !hasLocalPackage;
+                        changed = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lg?.WriteLog($"AutoLoad driver '{driver?.PackageName}' failed: {ex.Message}");
+                }
+            }
+
+            if (LLoader?.Assemblies != null)
+                Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
+
+            if (changed)
+                Config_editor.SaveConnectionDriversConfigValues();
+        }
+
+        private static bool ShouldAutoLoadDriver(ConnectionDriversConfig driver)
+        {
+            return driver != null
+                && driver.AutoLoad
+                && !string.IsNullOrWhiteSpace(driver.PackageName)
+                && (driver.IsMissing || !driver.NuggetMissing);
         }
         public Dictionary<EnvironmentType, IBeepEnvironment> Environments { get; set; }
         public void LoadEnvironments()

@@ -1,360 +1,117 @@
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using TheTechIdea.Beep.Services;
-using TheTechIdea.Beep.Utilities;
+using Microsoft.Extensions.DependencyInjection;
+using TheTechIdea.Beep.Services.Audit;
+using TheTechIdea.Beep.Services.Logging;
+using TheTechIdea.Beep.Services.Telemetry;
+using TheTechIdea.Beep.Services.Telemetry.Presets;
+using TheTechIdea.Beep.Services.Telemetry.Retention;
+using TheTechIdea.Beep.Services.Telemetry.Sinks.Platform;
 
-namespace TheTechIdea.Beep.Container
+namespace TheTechIdea.Beep.Services
 {
     /// <summary>
-    /// Blazor-specific options for BeepService configuration.
-    /// Optimized for Blazor Server and Blazor WebAssembly applications.
+    /// Blazor WebAssembly registration helpers. They use the
+    /// IndexedDB sink exclusively because the WASM sandbox cannot
+    /// write to a real filesystem. The browser quota is shared with
+    /// the page, so budgets are deliberately small (<see cref="PlatformBudgets.BlazorLogBytes"/> /
+    /// <see cref="PlatformBudgets.BlazorAuditBytes"/>).
     /// </summary>
-    public class BlazorBeepOptions
+    /// <remarks>
+    /// The host project is responsible for registering an
+    /// <see cref="IIndexedDbBridge"/> implementation (typically a
+    /// thin wrapper around <c>IJSRuntime.InvokeAsync</c>) before
+    /// calling these helpers. The helpers will resolve the bridge
+    /// from the service collection at registration time so the
+    /// pipeline can build its sink.
+    /// </remarks>
+    public static class BeepServiceBlazorExtensions
     {
         /// <summary>
-        /// Gets or sets the directory path for Beep data storage.
+        /// Registers the Beep logging feature with Blazor WASM
+        /// defaults. Requires an <see cref="IIndexedDbBridge"/>
+        /// already registered in the service collection (the host
+        /// project supplies a JS-interop implementation).
         /// </summary>
-        public string DirectoryPath { get; set; } = System.IO.Path.Combine(AppContext.BaseDirectory, "Beep");
-
-        /// <summary>
-        /// Gets or sets the application repository/container name.
-        /// </summary>
-        public string AppRepoName { get; set; } = "BlazorApp";
-
-        /// <summary>
-        /// Gets or sets the configuration type.
-        /// </summary>
-        public BeepConfigType ConfigType { get; set; } = BeepConfigType.Application;
-
-        /// <summary>
-        /// Gets or sets whether to enable automatic mapping creation.
-        /// </summary>
-        public bool EnableAutoMapping { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable automatic assembly loading.
-        /// </summary>
-        public bool EnableAssemblyLoading { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable SignalR for real-time progress reporting.
-        /// </summary>
-        public bool EnableSignalRProgress { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets whether to use browser storage for configuration (WebAssembly only).
-        /// </summary>
-        public bool UseBrowserStorage { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets whether to enable circuit handlers (Blazor Server only).
-        /// </summary>
-        public bool EnableCircuitHandlers { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the initialization timeout.
-        /// </summary>
-        public TimeSpan InitializationTimeout { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Gets or sets the service lifetime (Scoped for Server, Singleton for WebAssembly).
-        /// </summary>
-        public ServiceLifetime ServiceLifetime { get; set; } = ServiceLifetime.Scoped;
-
-        /// <summary>
-        /// Converts BlazorBeepOptions to BeepServiceOptions.
-        /// </summary>
-        internal BeepServiceOptions ToBeepServiceOptions()
+        public static IServiceCollection AddBeepLoggingForBlazor(
+            this IServiceCollection services,
+            IIndexedDbBridge bridge,
+            Action<BeepLoggingOptions> tweak = null)
         {
-            return new BeepServiceOptions
+            if (services is null)
             {
-                DirectoryPath = DirectoryPath,
-                AppRepoName = AppRepoName,
-                ConfigType = ConfigType,
-                ServiceLifetime = ServiceLifetime,
-                EnableAutoMapping = EnableAutoMapping,
-                EnableAssemblyLoading = EnableAssemblyLoading,
-                InitializationTimeout = InitializationTimeout,
-                EnableConfigurationValidation = true,
-                AdditionalProperties = new System.Collections.Generic.Dictionary<string, object>
+                throw new ArgumentNullException(nameof(services));
+            }
+            if (bridge is null)
+            {
+                throw new ArgumentNullException(nameof(bridge),
+                    "Blazor logging requires an IIndexedDbBridge supplied by the host project.");
+            }
+
+            return services.AddBeepLogging(opt =>
+            {
+                opt.Enabled = true;
+                opt.MinLevel = BeepLogLevel.Information;
+                opt.QueueCapacity = PlatformBudgets.BlazorQueueCapacity;
+                opt.BackpressureMode = BackpressureMode.DropOldest;
+                opt.StorageBudgetBytes = PlatformBudgets.BlazorLogBytes;
+                opt.Budget = new StorageBudget
                 {
-                    ["EnableSignalRProgress"] = EnableSignalRProgress,
-                    ["UseBrowserStorage"] = UseBrowserStorage,
-                    ["EnableCircuitHandlers"] = EnableCircuitHandlers
-                }
-            };
-        }
-    }
+                    MaxTotalBytes = PlatformBudgets.BlazorLogBytes,
+                    OnBreach = BudgetBreachAction.DeleteOldest,
+                    CompressOnRotate = false
+                };
+                // The IndexedDB sink prunes itself; the file-based
+                // retention sweeper is unnecessary in WASM.
+                opt.EnableRetentionSweeper = false;
+                opt.Sinks.Add(new BlazorIndexedDbSink(
+                    bridge: bridge,
+                    storageBudgetBytes: PlatformBudgets.BlazorLogBytes,
+                    name: "blazor-idb-log"));
 
-    /// <summary>
-    /// Blazor-specific extension methods for BeepService registration.
-    /// Optimized for Blazor Server and Blazor WebAssembly application patterns.
-    /// </summary>
-    public static class BlazorBeepServiceExtensions
-    {
-        /// <summary>
-        /// Registers BeepService with Blazor Server optimized defaults (scoped lifetime, SignalR progress, circuit handlers).
-        /// Use this method for Blazor Server applications.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <param name="configure">Configuration action for Blazor-specific options.</param>
-        /// <returns>The service collection for method chaining.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when services is null.</exception>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForBlazorServer(opts => 
-        /// {
-        ///     opts.DirectoryPath = Path.Combine(basePath, "Beep");
-        ///     opts.AppRepoName = "MyBlazorApp";
-        ///     opts.EnableSignalRProgress = true;
-        ///     opts.EnableCircuitHandlers = true;
-        /// });
-        /// </code>
-        /// </example>
-        public static IServiceCollection AddBeepForBlazorServer(this IServiceCollection services, 
-            Action<BlazorBeepOptions> configure = null)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            var blazorOptions = new BlazorBeepOptions 
-            { 
-                ServiceLifetime = ServiceLifetime.Scoped, // Scoped for Blazor Server
-                EnableSignalRProgress = true, // Enable by default for Server
-                EnableCircuitHandlers = true  // Enable circuit handlers
-            };
-            configure?.Invoke(blazorOptions);
-
-            var beepOptions = blazorOptions.ToBeepServiceOptions();
-            BeepServiceRegistration.RegisterBeepServicesInternal(services, beepOptions);
-
-            return services;
+                tweak?.Invoke(opt);
+            });
         }
 
         /// <summary>
-        /// Registers BeepService with Blazor WebAssembly optimized defaults (singleton lifetime, browser storage).
-        /// Use this method for Blazor WebAssembly applications.
+        /// Registers the Beep audit feature for Blazor WASM. Audit
+        /// is opt-in on this host because IDB quota is shared with
+        /// the page; callers must call this method explicitly.
         /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <param name="configure">Configuration action for Blazor-specific options.</param>
-        /// <returns>The service collection for method chaining.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when services is null.</exception>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForBlazorWasm(opts => 
-        /// {
-        ///     opts.DirectoryPath = "Beep"; // Browser path
-        ///     opts.AppRepoName = "MyBlazorWasmApp";
-        ///     opts.UseBrowserStorage = true;
-        /// });
-        /// </code>
-        /// </example>
-        public static IServiceCollection AddBeepForBlazorWasm(this IServiceCollection services, 
-            Action<BlazorBeepOptions> configure = null)
+        public static IServiceCollection AddBeepAuditForBlazor(
+            this IServiceCollection services,
+            IIndexedDbBridge bridge,
+            Action<BeepAuditOptions> tweak = null)
         {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            var blazorOptions = new BlazorBeepOptions 
-            { 
-                ServiceLifetime = ServiceLifetime.Singleton, // Singleton for Blazor WASM
-                UseBrowserStorage = true, // Use browser storage by default
-                EnableSignalRProgress = false // Can't use SignalR in WASM
-            };
-            configure?.Invoke(blazorOptions);
-
-            var beepOptions = blazorOptions.ToBeepServiceOptions();
-            BeepServiceRegistration.RegisterBeepServicesInternal(services, beepOptions);
-
-            return services;
-        }
-
-        /// <summary>
-        /// Registers BeepService for Blazor Server with fluent builder API.
-        /// Returns a builder interface that supports method chaining.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <returns>A fluent builder interface pre-configured for Blazor Server scenarios.</returns>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForBlazorServer()
-        ///     .InDirectory(basePath)
-        ///     .WithAppRepo("MyBlazorApp")
-        ///     .WithSignalR()
-        ///     .WithCircuitHandlers()
-        ///     .Build();
-        /// </code>
-        /// </example>
-        public static IBlazorBeepServiceBuilder AddBeepForBlazorServer(this IServiceCollection services)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            return new BlazorBeepServiceBuilder(services, BlazorHostingModel.Server);
-        }
-
-        /// <summary>
-        /// Registers BeepService for Blazor WebAssembly with fluent builder API.
-        /// Returns a builder interface that supports method chaining.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <returns>A fluent builder interface pre-configured for Blazor WASM scenarios.</returns>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForBlazorWasm()
-        ///     .InDirectory("Beep")
-        ///     .WithAppRepo("MyBlazorWasmApp")
-        ///     .WithBrowserStorage()
-        ///     .Build();
-        /// </code>
-        /// </example>
-        public static IBlazorBeepServiceBuilder AddBeepForBlazorWasm(this IServiceCollection services)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            return new BlazorBeepServiceBuilder(services, BlazorHostingModel.WebAssembly);
-        }
-    }
-
-    /// <summary>
-    /// Blazor hosting model enumeration.
-    /// </summary>
-    public enum BlazorHostingModel
-    {
-        /// <summary>
-        /// Blazor Server (runs on server with SignalR).
-        /// </summary>
-        Server,
-
-        /// <summary>
-        /// Blazor WebAssembly (runs in browser).
-        /// </summary>
-        WebAssembly
-    }
-
-    /// <summary>
-    /// Fluent builder interface for Blazor-specific BeepService configuration.
-    /// </summary>
-    public interface IBlazorBeepServiceBuilder
-    {
-        /// <summary>
-        /// Sets the directory path for Beep data storage.
-        /// </summary>
-        IBlazorBeepServiceBuilder InDirectory(string directoryPath);
-
-        /// <summary>
-        /// Sets the application repository/container name.
-        /// </summary>
-        IBlazorBeepServiceBuilder WithAppRepo(string appRepoName);
-
-        /// <summary>
-        /// Enables SignalR for real-time progress reporting (Blazor Server only).
-        /// </summary>
-        IBlazorBeepServiceBuilder WithSignalR(bool enable = true);
-
-        /// <summary>
-        /// Enables browser storage for configuration (Blazor WebAssembly only).
-        /// </summary>
-        IBlazorBeepServiceBuilder WithBrowserStorage(bool enable = true);
-
-        /// <summary>
-        /// Enables circuit handlers (Blazor Server only).
-        /// </summary>
-        IBlazorBeepServiceBuilder WithCircuitHandlers(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic mapping creation during initialization.
-        /// </summary>
-        IBlazorBeepServiceBuilder WithMapping(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic assembly loading during initialization.
-        /// </summary>
-        IBlazorBeepServiceBuilder WithAssemblyLoading(bool enable = true);
-
-        /// <summary>
-        /// Builds and registers the BeepService with Blazor-optimized configuration.
-        /// </summary>
-        IServiceCollection Build();
-    }
-
-    /// <summary>
-    /// Implementation of the fluent builder for Blazor-specific BeepService configuration.
-    /// </summary>
-    internal class BlazorBeepServiceBuilder : IBlazorBeepServiceBuilder
-    {
-        private readonly IServiceCollection _services;
-        private readonly BlazorBeepOptions _options;
-        private readonly BlazorHostingModel _hostingModel;
-
-        public BlazorBeepServiceBuilder(IServiceCollection services, BlazorHostingModel hostingModel)
-        {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
-            _hostingModel = hostingModel;
-            _options = new BlazorBeepOptions
+            if (services is null)
             {
-                ServiceLifetime = hostingModel == BlazorHostingModel.Server 
-                    ? ServiceLifetime.Scoped 
-                    : ServiceLifetime.Singleton
-            };
-        }
-
-        public IBlazorBeepServiceBuilder InDirectory(string directoryPath)
-        {
-            _options.DirectoryPath = directoryPath;
-            return this;
-        }
-
-        public IBlazorBeepServiceBuilder WithAppRepo(string appRepoName)
-        {
-            _options.AppRepoName = appRepoName;
-            return this;
-        }
-
-        public IBlazorBeepServiceBuilder WithSignalR(bool enable = true)
-        {
-            if (_hostingModel == BlazorHostingModel.WebAssembly && enable)
-            {
-                throw new InvalidOperationException("SignalR is not supported in Blazor WebAssembly. Use Blazor Server for SignalR support.");
+                throw new ArgumentNullException(nameof(services));
             }
-            _options.EnableSignalRProgress = enable;
-            return this;
-        }
-
-        public IBlazorBeepServiceBuilder WithBrowserStorage(bool enable = true)
-        {
-            _options.UseBrowserStorage = enable;
-            return this;
-        }
-
-        public IBlazorBeepServiceBuilder WithCircuitHandlers(bool enable = true)
-        {
-            if (_hostingModel == BlazorHostingModel.WebAssembly && enable)
+            if (bridge is null)
             {
-                throw new InvalidOperationException("Circuit handlers are not supported in Blazor WebAssembly. Use Blazor Server for circuit handler support.");
+                throw new ArgumentNullException(nameof(bridge),
+                    "Blazor audit requires an IIndexedDbBridge supplied by the host project.");
             }
-            _options.EnableCircuitHandlers = enable;
-            return this;
-        }
 
-        public IBlazorBeepServiceBuilder WithMapping(bool enable = true)
-        {
-            _options.EnableAutoMapping = enable;
-            return this;
-        }
+            return services.AddBeepAudit(opt =>
+            {
+                opt.Enabled = true;
+                opt.QueueCapacity = PlatformBudgets.BlazorQueueCapacity;
+                opt.BackpressureMode = BackpressureMode.Block;
+                opt.StorageBudgetBytes = PlatformBudgets.BlazorAuditBytes;
+                opt.Budget = new StorageBudget
+                {
+                    MaxTotalBytes = PlatformBudgets.BlazorAuditBytes,
+                    OnBreach = BudgetBreachAction.BlockNewWrites,
+                    CompressOnRotate = false
+                };
+                opt.HashChain = true;
+                opt.Sinks.Add(new BlazorIndexedDbSink(
+                    bridge: bridge,
+                    storageBudgetBytes: PlatformBudgets.BlazorAuditBytes,
+                    name: "blazor-idb-audit"));
 
-        public IBlazorBeepServiceBuilder WithAssemblyLoading(bool enable = true)
-        {
-            _options.EnableAssemblyLoading = enable;
-            return this;
-        }
-
-        public IServiceCollection Build()
-        {
-            var beepOptions = _options.ToBeepServiceOptions();
-            BeepServiceRegistration.RegisterBeepServicesInternal(_services, beepOptions);
-            return _services;
+                tweak?.Invoke(opt);
+            });
         }
     }
 }

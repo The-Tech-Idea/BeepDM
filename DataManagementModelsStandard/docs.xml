@@ -8672,6 +8672,395 @@
             Currently uses a simple major-version equality check.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Services.Audit.IBeepAudit">
+            <summary>
+            Unified, opt-in audit-trail contract for the Beep stack.
+            Audit events are lossless by policy (never sampled, never silently dropped).
+            </summary>
+            <remarks>
+            When the audit feature is disabled, <see cref="P:TheTechIdea.Beep.Services.Audit.IBeepAudit.IsEnabled"/> is <c>false</c>
+            and every method is a fast no-op (see the null implementation supplied by
+            the engine project).
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.IBeepAudit.IsEnabled">
+            <summary>
+            Returns <c>true</c> when the audit feature has been activated.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.IBeepAudit.RecordAsync(TheTechIdea.Beep.Services.Audit.Models.AuditEvent,System.Threading.CancellationToken)">
+            <summary>
+            Records a single audit event.
+            Implementations sign and sequence the event before enqueueing.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.IBeepAudit.QueryAsync(TheTechIdea.Beep.Services.Audit.Models.AuditQuery,System.Threading.CancellationToken)">
+            <summary>
+            Returns the audit events that match <paramref name="filter"/>.
+            Phase 10 implements the SQLite and file-scan engines; the Phase 01
+            null implementation returns an empty list.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.IBeepAudit.PurgeByUserAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes every audit event whose <c>UserId</c> equals
+            <paramref name="userId"/> and re-seals the affected chain segments.
+            Implemented in Phase 10.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.IBeepAudit.PurgeByEntityAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes every audit event for the supplied entity / record key pair
+            and re-seals the affected chain segments. Implemented in Phase 10.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.IBeepAudit.VerifyIntegrityAsync(System.Threading.CancellationToken)">
+            <summary>
+            Verifies the tamper-evident hash chain over every persisted audit
+            event. Returns <c>true</c> on success. Implemented in Phase 08.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.IBeepAudit.FlushAsync(System.Threading.CancellationToken)">
+            <summary>
+            Drains the in-memory queue and awaits each sink's flush.
+            Used during clean shutdown.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Audit.Models.AuditCategory">
+            <summary>
+            High-level classification used to route, filter, and retain audit
+            events. Producers must pick the most specific category; the
+            <see cref="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Custom"/> bucket is reserved for operator-defined flows
+            outside the built-in subsystems.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Unspecified">
+            <summary>Default value when no category is supplied.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.DataAccess">
+            <summary>CRUD via FormsManager / UnitofWork / IDataSource.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Auth">
+            <summary>Sign-in, sign-out, role grants/revokes.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Config">
+            <summary>Configuration changes via ConfigEditor or settings UI.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Schema">
+            <summary>DDL via MigrationManager or distributed schema service.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Distributed">
+            <summary>Resharding, plan changes, cross-shard transactions.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Custom">
+            <summary>Operator-defined event outside the built-in subsystems.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Audit.Models.AuditEvent">
+            <summary>
+            Phase 08 partial extending <see cref="T:TheTechIdea.Beep.Services.Audit.Models.AuditEvent"/> with the
+            classification, outcome, change-set, and tamper-evident chain
+            fields. Splitting these into a separate file keeps the original
+            identity surface in <c>AuditEvent.cs</c> and avoids a single
+            monolithic class definition.
+            </summary>
+            <summary>
+            Canonical audit-event envelope. This Phase 01 declaration carries only
+            the fields needed for the public surface to compile; the full schema
+            (chain fields, categories, outcomes, field changes) is layered in by
+            Phase 08 via additional partials.
+            </summary>
+            <remarks>
+            Declared as <c>partial</c> so subsequent phases can add members
+            (notably <c>ChainId</c>, <c>Sequence</c>, <c>PrevHash</c>, <c>Hash</c>,
+            <c>Category</c>, <c>Operation</c>, <c>Outcome</c>, <c>FieldChanges</c>)
+            without forcing a breaking change here.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Category">
+            <summary>
+            High-level routing/classification. Defaults to
+            <see cref="F:TheTechIdea.Beep.Services.Audit.Models.AuditCategory.Unspecified"/> so legacy producers
+            that do not set a category continue to compile.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Operation">
+            <summary>
+            Operation name (e.g. <c>Insert</c>, <c>Update</c>, <c>Delete</c>,
+            <c>Login</c>, <c>Grant</c>, <c>Migrate</c>). Free-form so
+            subsystem-specific verbs are permitted.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Outcome">
+            <summary>Result of the audited operation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Reason">
+            <summary>
+            Failure / denial reason. Optional; present only when
+            <see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Outcome"/> is not <see cref="F:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome.Success"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.FieldChanges">
+            <summary>
+            Per-column change set for CRUD-style events. Producers should
+            emit only the columns that actually changed to keep audit
+            storage bounded.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.ChainId">
+            <summary>
+            Logical chain identifier. Defaults to <c>"default"</c>;
+            operators may segment by tenant or category to keep chain
+            verification cheap when audit volumes are large.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Sequence">
+            <summary>
+            Strictly-increasing sequence within the chain, assigned by
+            the <c>HashChainSigner</c>. Defaults to <c>0</c> (genesis)
+            and is overwritten on sign.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.PrevHash">
+            <summary>
+            Hex-encoded HMAC of the prior event in the chain. Empty for
+            the genesis event of a chain. Set by the signer.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Hash">
+            <summary>
+            Hex-encoded HMAC-SHA256 over canonical payload concatenated
+            with <see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.PrevHash"/>. Set by the signer; verified by
+            <c>IntegrityVerifier</c>.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.DefaultChainId">
+            <summary>Default chain identifier when none is supplied.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.EventId">
+            <summary>Stable identifier for this event.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.TimestampUtc">
+            <summary>UTC timestamp when the event was produced.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Source">
+            <summary>Originating subsystem (for example <c>Forms.Block.HR_EMP</c>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.EntityName">
+            <summary>Logical entity name (table, block, resource).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.RecordKey">
+            <summary>Stable record identifier within the entity, if applicable.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.UserId">
+            <summary>Authenticated user identifier, if known.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.UserName">
+            <summary>Friendly user name, if known.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Tenant">
+            <summary>Tenant or container scope, if known.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.CorrelationId">
+            <summary>Correlation identifier shared with related log entries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.TraceId">
+            <summary>OpenTelemetry-compatible trace identifier, if available.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditEvent.Properties">
+            <summary>Free-form structured properties.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange">
+            <summary>
+            One per-column delta captured for an <see cref="T:TheTechIdea.Beep.Services.Audit.Models.AuditEvent"/>
+            representing a Create/Update/Delete operation. Producers should
+            only emit the columns that actually changed (not the whole row)
+            to keep audit storage bounded.
+            </summary>
+            <remarks>
+            Both <see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.OldValue"/> and <see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.NewValue"/> are stored
+            as <see cref="T:System.Object"/> so the canonical JSON serializer can keep
+            the source type intact (numeric vs string) — this matters for
+            chain hashing because <c>"42"</c> and <c>42</c> must not collide.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.Field">
+            <summary>Column / field name being changed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.OldValue">
+            <summary>Value before the change. May be <c>null</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.NewValue">
+            <summary>Value after the change. May be <c>null</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.#ctor">
+            <summary>Default constructor for serializers and object initializers.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditFieldChange.#ctor(System.String,System.Object,System.Object)">
+            <summary>Convenience constructor.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome">
+            <summary>
+            Result of the audited operation. Keeping this an enum (rather than
+            a free-form string) lets sinks index outcomes cheaply and lets
+            dashboards group failures without lossy parsing.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome.Success">
+            <summary>Operation completed successfully.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome.Failure">
+            <summary>Operation attempted but failed (system error, validation, etc.).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome.Denied">
+            <summary>Operation rejected by authorization / policy.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome.Pending">
+            <summary>Operation accepted but not yet completed (asynchronous flow).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Audit.Models.AuditOutcome.Compensated">
+            <summary>Operation was rolled back or compensated after the fact.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Audit.Models.AuditQuery">
+            <summary>
+            Phase 10 partial extending <see cref="T:TheTechIdea.Beep.Services.Audit.Models.AuditQuery"/> with the fluent
+            builder API. Filter values from Phase 01 are still respected; the
+            builder methods simply assign the same backing properties so calls
+            from older clients keep compiling unchanged.
+            </summary>
+            <remarks>
+            All builder methods return <c>this</c> so callers can chain
+            (<c>new AuditQuery().User("u123").Between(from, to).Take(100)</c>).
+            Engine-specific fields (<see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OrderByField"/>,
+            <see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OrderDescending"/>, <see cref="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.PropertyFilters"/>) live
+            on the partial so the Phase 01 contract surface stays minimal for
+            hosts that prefer the property-bag style.
+            </remarks>
+            <summary>
+            Filter description used by <c>IBeepAudit.QueryAsync</c>.
+            Phase 01 ships only the minimal fields needed for the contract;
+            the fluent builder and engine-specific filters arrive in Phase 10.
+            </summary>
+            <summary>
+            Phase 10 partial that exposes filter-evaluation helpers reused by
+            every storage engine. Centralizing the predicates here keeps the
+            SQLite, file-scan, and in-memory engines consistent and avoids
+            subtle drift between engines as new filter fields are added.
+            </summary>
+            <remarks>
+            The helpers operate on a single <see cref="T:TheTechIdea.Beep.Services.Audit.Models.AuditEvent"/> and return
+            <c>true</c> when the event is a match. Engines that can push a
+            filter into the storage layer (SQLite WHERE clauses) still use
+            <see cref="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Matches(TheTechIdea.Beep.Services.Audit.Models.AuditEvent)"/> for any predicate that cannot be expressed
+            natively (typed property values, for example).
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.CategoryFilter">
+            <summary>
+            Optional <c>category</c> filter. <c>null</c> = any category.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OperationFilter">
+            <summary>
+            Optional <c>operation</c> filter (case-insensitive equality).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OutcomeFilter">
+            <summary>
+            Optional <c>outcome</c> filter. <c>null</c> = any outcome.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.ChainIdFilter">
+            <summary>
+            Optional <c>chainId</c> filter; useful when audit volumes are
+            segmented by tenant or category.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.PropertyFilters">
+            <summary>
+            Optional property-bag predicates. Engines apply equality
+            matching using the canonical scalar form.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OrderByField">
+            <summary>
+            Field name used for ordering. Supported values: <c>"ts"</c>
+            (default), <c>"sequence"</c>, <c>"user"</c>, <c>"entity"</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OrderDescending">
+            <summary>
+            When <c>true</c> (the default) results are ordered descending
+            so the most recent records appear first.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Category(TheTechIdea.Beep.Services.Audit.Models.AuditCategory)">
+            <summary>Sets the <c>category</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Operation(System.String)">
+            <summary>Sets the <c>operation</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OutcomeFilterValue(TheTechIdea.Beep.Services.Audit.Models.AuditOutcome)">
+            <summary>Sets the <c>outcome</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.User(System.String)">
+            <summary>Sets the <c>userId</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.TenantId(System.String)">
+            <summary>Sets the <c>tenant</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Entity(System.String,System.String)">
+            <summary>Sets the entity-name (and optional record-key) filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.SourceFilter(System.String)">
+            <summary>Sets the <c>source</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Between(System.DateTime,System.DateTime)">
+            <summary>Sets the inclusive <c>[fromUtc..toUtc]</c> window.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.ChainId(System.String)">
+            <summary>Sets the <c>chainId</c> filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.WithProperty(System.String,System.Object)">
+            <summary>Adds a property predicate (equality).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.OrderBy(System.String,System.Boolean)">
+            <summary>Sets the order-by field and direction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.TakeMax(System.Int32)">
+            <summary>Sets the maximum number of records to return.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.FromUtc">
+            <summary>Optional inclusive lower bound on <c>TimestampUtc</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.ToUtc">
+            <summary>Optional inclusive upper bound on <c>TimestampUtc</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Source">
+            <summary>Optional <c>Source</c> filter.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.EntityName">
+            <summary>Optional <c>EntityName</c> filter.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.RecordKey">
+            <summary>Optional <c>RecordKey</c> filter.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.UserId">
+            <summary>Optional <c>UserId</c> filter.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Tenant">
+            <summary>Optional <c>Tenant</c> filter.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Take">
+            <summary>Maximum records to return; 0 = unbounded.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Audit.Models.AuditQuery.Matches(TheTechIdea.Beep.Services.Audit.Models.AuditEvent)">
+            <summary>
+            Evaluates every configured filter against
+            <paramref name="auditEvent"/> and returns <c>true</c> when the
+            event satisfies all of them. <c>null</c> filters are treated
+            as wildcards.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Services.IBeepService.AppRepoName">
             <summary>
             Gets the application repository/container name. This is the preferred property name.
@@ -8680,6 +9069,95 @@
         <member name="P:TheTechIdea.Beep.Services.IBeepService.Containername">
             <summary>
             Gets the container name (legacy property, use AppRepoName instead).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Logging.BeepLogLevel">
+            <summary>
+            Severity classification for <see cref="T:TheTechIdea.Beep.Services.Logging.IBeepLog"/> entries.
+            Mirrors <c>Microsoft.Extensions.Logging.LogLevel</c> so the values can be
+            projected one-to-one when bridging through the Microsoft logger provider.
+            Defined in the Models project so the contract stays free of any
+            <c>Microsoft.Extensions.Logging</c> dependency.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Trace">
+            <summary>Most detailed messages; usually disabled in production.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Debug">
+            <summary>Messages used for interactive investigation during development.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Information">
+            <summary>Tracks the general flow of the application.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Warning">
+            <summary>Highlights an abnormal or unexpected event in the application flow.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Error">
+            <summary>The application has hit a current flow stop because of a failure.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Critical">
+            <summary>An unrecoverable application or system crash, or a catastrophic failure.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.None">
+            <summary>No messages are written. Used to disable logging entirely.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Logging.IBeepLog">
+            <summary>
+            Unified, opt-in, structured logging contract for the Beep stack.
+            Implementations route entries through the shared telemetry pipeline
+            (queue, enrichers, redactors, sampler, sinks).
+            </summary>
+            <remarks>
+            When the logging feature is disabled, <see cref="P:TheTechIdea.Beep.Services.Logging.IBeepLog.IsEnabled"/> is <c>false</c>
+            and every method is a fast no-op (see the null implementation supplied by
+            the engine project).
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Logging.IBeepLog.IsEnabled">
+            <summary>
+            Returns <c>true</c> when the logging feature has been activated.
+            Callers may short-circuit expensive property bag construction when
+            this is <c>false</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Logging.IBeepLog.MinLevel">
+            <summary>
+            The minimum severity that will be processed. Entries below this
+            level are dropped before enrichment.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Log(TheTechIdea.Beep.Services.Logging.BeepLogLevel,System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Exception)">
+            <summary>
+            Records a structured log entry.
+            </summary>
+            <param name="level">Severity classification.</param>
+            <param name="category">Logical category (component or feature).</param>
+            <param name="message">Human-readable message; may be a template.</param>
+            <param name="properties">Optional structured property bag.</param>
+            <param name="exception">Optional exception to attach.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Trace(System.String,System.Object)">
+            <summary>Convenience wrapper for <see cref="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Trace"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Debug(System.String,System.Object)">
+            <summary>Convenience wrapper for <see cref="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Debug"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Info(System.String,System.Object)">
+            <summary>Convenience wrapper for <see cref="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Information"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Warn(System.String,System.Object)">
+            <summary>Convenience wrapper for <see cref="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Warning"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Error(System.String,System.Exception,System.Object)">
+            <summary>Convenience wrapper for <see cref="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Error"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.Critical(System.String,System.Exception,System.Object)">
+            <summary>Convenience wrapper for <see cref="F:TheTechIdea.Beep.Services.Logging.BeepLogLevel.Critical"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Logging.IBeepLog.FlushAsync(System.Threading.CancellationToken)">
+            <summary>
+            Drains the in-memory queue and awaits each sink's flush.
+            Used during clean shutdown.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.ClaimTicket">
@@ -12393,6 +12871,24 @@
             Downloads and loads a NuGet package with all its dependencies.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.ResolveLocalPackagePath(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig)">
+            <summary>
+            Resolves the best local filesystem path for a driver's NuGet package.
+            Returns null when the package is not available locally.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.HasLocalPackage(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig)">
+            <summary>
+            Returns true when a driver's NuGet package exists locally in an app plugin folder,
+            explicit NuggetSource path, or the user's global NuGet cache.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.LoadDriverFromLocalPackage(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,System.String@)">
+            <summary>
+            Loads a driver from a locally available package path without attempting any download.
+            Returns the resolved load path used for the attempt.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetNuGetSources">
             <summary>
             Gets all configured NuGet package sources.
@@ -12426,6 +12922,13 @@
         <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.IsDriverFromNuGet(System.String)">
             <summary>
             Checks whether a driver was installed from a NuGet package.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.IsDriverClassLoaded(System.String,System.String)">
+            <summary>
+            Returns true when the driver's IDataSource class is registered in DataSourcesClasses
+            OR the ADO.NET assembly (dllname) is present in LoadedAssemblies.
+            Use this to distinguish "downloaded" (NuggetMissing=false) from "loaded in AppDomain".
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetLoadStatistics">

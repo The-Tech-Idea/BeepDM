@@ -43,6 +43,7 @@ Use this skill when the task spans multiple BeepDM subsystems and you need the r
 - Entity copy or transformation pipelines: [`etl`](../etl/SKILL.md)
 - Schema creation and upgrade flows: [`migration`](../migration/SKILL.md)
 - Dynamic UI or master-detail forms: [`forms`](../forms/SKILL.md)
+- Sharded/replicated datasource orchestration: [`distributeddatasource`](../distributeddatasource/SKILL.md)
 
 ## Typical Workflow
 1. Decide whether the code should start from `DMEEditor` directly or from the DI/service-registration path.
@@ -140,6 +141,7 @@ editor.OpenDataSource("MyDb");
 - [`connection`](../connection/SKILL.md)
 - [`connectionproperties`](../connectionproperties/SKILL.md)
 - [`idatasource`](../idatasource/SKILL.md)
+- [`distributeddatasource`](../distributeddatasource/SKILL.md)
 - [`rules-engine`](../rules-engine/SKILL.md)
 - [`unitofwork`](../unitofwork/SKILL.md)
 

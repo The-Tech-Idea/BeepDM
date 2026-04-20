@@ -175,6 +175,10 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
             target.DatasourceCategory = source.DatasourceCategory;
             target.DatasourceType = source.DatasourceType;
             target.IsMissing = source.IsMissing;
+            target.NuggetMissing = source.NuggetMissing;
+            target.AutoLoad = source.AutoLoad;
+            target.NuggetVersion = source.NuggetVersion;
+            target.NuggetSource = source.NuggetSource;
         }
 
         /// <summary>

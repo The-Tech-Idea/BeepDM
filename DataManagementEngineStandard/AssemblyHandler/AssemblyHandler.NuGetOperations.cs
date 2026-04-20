@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Tools.PluginSystem;
 
 namespace TheTechIdea.Beep.Tools
@@ -113,6 +115,218 @@ namespace TheTechIdea.Beep.Tools
                 RecordNuGetFailure();
                 return new List<Assembly>();
             }
+        }
+
+        private IEnumerable<string> EnumerateLocalPackageCandidates(ConnectionDriversConfig driver)
+        {
+            if (driver == null || string.IsNullOrWhiteSpace(driver.PackageName))
+            {
+                yield break;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (!string.IsNullOrWhiteSpace(driver.NuggetSource))
+            {
+                var explicitPath = driver.NuggetSource.Trim();
+                if (seen.Add(explicitPath))
+                {
+                    yield return explicitPath;
+                }
+            }
+
+            var packageName = driver.PackageName.Trim();
+            var packageNameLower = packageName.ToLowerInvariant();
+            var versions = new[] { driver.NuggetVersion?.Trim(), driver.version?.Trim() }
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var pluginsRoot = Path.Combine(AppContext.BaseDirectory, "Plugins", packageName);
+            foreach (var version in versions)
+            {
+                var candidate = Path.Combine(pluginsRoot, version);
+                if (seen.Add(candidate))
+                {
+                    yield return candidate;
+                }
+            }
+
+            if (seen.Add(pluginsRoot))
+            {
+                yield return pluginsRoot;
+            }
+
+            if (Directory.Exists(pluginsRoot))
+            {
+                foreach (var dir in Directory.GetDirectories(pluginsRoot)
+                    .OrderByDescending(d => d, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (seen.Add(dir))
+                    {
+                        yield return dir;
+                    }
+                }
+            }
+
+            var globalRoot = Path.Combine(NuggetPackageDownloader.GetDefaultGlobalPackagesFolder(), packageNameLower);
+            foreach (var version in versions)
+            {
+                var candidate = Path.Combine(globalRoot, version);
+                if (seen.Add(candidate))
+                {
+                    yield return candidate;
+                }
+            }
+
+            if (seen.Add(globalRoot))
+            {
+                yield return globalRoot;
+            }
+
+            if (Directory.Exists(globalRoot))
+            {
+                foreach (var dir in Directory.GetDirectories(globalRoot)
+                    .OrderByDescending(d => d, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (seen.Add(dir))
+                    {
+                        yield return dir;
+                    }
+                }
+            }
+        }
+
+        private static bool IsLoadablePackageDirectory(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                return false;
+            }
+
+            if (Directory.GetFiles(path, "*.dll", SearchOption.TopDirectoryOnly).Any())
+            {
+                return true;
+            }
+
+            var libPath = Path.Combine(path, "lib");
+            if (!Directory.Exists(libPath))
+            {
+                return false;
+            }
+
+            return Directory.GetDirectories(libPath)
+                .Any(dir => Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).Any());
+        }
+
+        private static string NormalizeLoadablePackagePath(string path, IEnumerable<string> preferredVersions)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
+            if (File.Exists(path))
+            {
+                return path;
+            }
+
+            if (!Directory.Exists(path))
+            {
+                return null;
+            }
+
+            if (IsLoadablePackageDirectory(path))
+            {
+                return path;
+            }
+
+            var versionLookup = new HashSet<string>(
+                preferredVersions?.Where(v => !string.IsNullOrWhiteSpace(v)) ?? Enumerable.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
+
+            var childDirectories = Directory.GetDirectories(path)
+                .OrderByDescending(d => d, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var child in childDirectories)
+            {
+                if (versionLookup.Contains(Path.GetFileName(child)) && IsLoadablePackageDirectory(child))
+                {
+                    return child;
+                }
+            }
+
+            foreach (var child in childDirectories)
+            {
+                if (IsLoadablePackageDirectory(child))
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        public string ResolveLocalPackagePath(ConnectionDriversConfig driver)
+        {
+            var preferredVersions = new[] { driver?.NuggetVersion?.Trim(), driver?.version?.Trim() }
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var candidate in EnumerateLocalPackageCandidates(driver))
+            {
+                var loadablePath = NormalizeLoadablePackagePath(candidate, preferredVersions);
+                if (!string.IsNullOrWhiteSpace(loadablePath))
+                {
+                    return loadablePath;
+                }
+            }
+
+            return null;
+        }
+
+        public bool HasLocalPackage(ConnectionDriversConfig driver)
+        {
+            return !string.IsNullOrWhiteSpace(ResolveLocalPackagePath(driver));
+        }
+
+        public bool LoadDriverFromLocalPackage(ConnectionDriversConfig driver, out string loadPath)
+        {
+            loadPath = null;
+
+            if (driver == null)
+            {
+                return false;
+            }
+
+            if (IsDriverClassLoaded(driver.classHandler, driver.dllname))
+            {
+                driver.IsMissing = false;
+                driver.NuggetMissing = false;
+                return true;
+            }
+
+            loadPath = ResolveLocalPackagePath(driver);
+            if (string.IsNullOrWhiteSpace(loadPath))
+            {
+                driver.NuggetMissing = true;
+                driver.IsMissing = true;
+                return false;
+            }
+
+            driver.NuggetSource = loadPath;
+            driver.NuggetMissing = false;
+
+            if (!LoadNugget(loadPath))
+            {
+                driver.IsMissing = true;
+                return false;
+            }
+
+            driver.IsMissing = !IsDriverClassLoaded(driver.classHandler, driver.dllname);
+            return !driver.IsMissing;
         }
 
         #endregion

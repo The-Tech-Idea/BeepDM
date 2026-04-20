@@ -18,8 +18,9 @@ namespace TheTechIdea.Beep.Tools
 {
     public interface IAssemblyHandler:IDisposable
     {
-      //  List<IDM_Addin> AddIns { get; set; }
+        //  List<IDM_Addin> AddIns { get; set; }
 
+     
         List<string> NamespacestoIgnore { get; set; }
         List<assemblies_rep> Assemblies { get; set; }
         List<Assembly> LoadedAssemblies { get;  set; }
@@ -71,6 +72,24 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         Task<List<Assembly>> LoadNuggetFromNuGetAsync(string packageName, string version = null, IEnumerable<string> sources = null, bool useSingleSharedContext = true, string appInstallPath = null, bool useProcessHost = false);
 
+        /// <summary>
+        /// Resolves the best local filesystem path for a driver's NuGet package.
+        /// Returns null when the package is not available locally.
+        /// </summary>
+        string ResolveLocalPackagePath(ConnectionDriversConfig driver);
+
+        /// <summary>
+        /// Returns true when a driver's NuGet package exists locally in an app plugin folder,
+        /// explicit NuggetSource path, or the user's global NuGet cache.
+        /// </summary>
+        bool HasLocalPackage(ConnectionDriversConfig driver);
+
+        /// <summary>
+        /// Loads a driver from a locally available package path without attempting any download.
+        /// Returns the resolved load path used for the attempt.
+        /// </summary>
+        bool LoadDriverFromLocalPackage(ConnectionDriversConfig driver, out string loadPath);
+
         #endregion
 
         #region NuGet Source Management
@@ -113,6 +132,13 @@ namespace TheTechIdea.Beep.Tools
         /// Checks whether a driver was installed from a NuGet package.
         /// </summary>
         bool IsDriverFromNuGet(string driverClassName);
+
+        /// <summary>
+        /// Returns true when the driver's IDataSource class is registered in DataSourcesClasses
+        /// OR the ADO.NET assembly (dllname) is present in LoadedAssemblies.
+        /// Use this to distinguish "downloaded" (NuggetMissing=false) from "loaded in AppDomain".
+        /// </summary>
+        bool IsDriverClassLoaded(string classHandler, string dllName = null);
 
         #endregion
 

@@ -1,307 +1,146 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using TheTechIdea.Beep.Services;
-using TheTechIdea.Beep.Utilities;
+using System.IO;
+using Microsoft.Extensions.DependencyInjection;
+using TheTechIdea.Beep.Services.Audit;
+using TheTechIdea.Beep.Services.Logging;
+using TheTechIdea.Beep.Services.Telemetry;
+using TheTechIdea.Beep.Services.Telemetry.Presets;
+using TheTechIdea.Beep.Services.Telemetry.Retention;
+using TheTechIdea.Beep.Services.Telemetry.Sinks;
 
-namespace TheTechIdea.Beep.Container
+namespace TheTechIdea.Beep.Services
 {
     /// <summary>
-    /// Web-specific options for BeepService configuration.
-    /// Optimized for ASP.NET Core Web API and MVC applications with scoped lifetime.
+    /// ASP.NET Core / server-side registration helpers. They lock the
+    /// v1 web budgets from <see cref="PlatformBudgets"/>, point file
+    /// sinks at <c>{contentRoot}/logs</c> (or an explicit path the
+    /// caller supplies for read-only container deploys), and use a
+    /// larger queue capacity than the desktop preset because web
+    /// hosts typically run higher-throughput pipelines.
     /// </summary>
-    public class WebBeepOptions
+    /// <remarks>
+    /// The library deliberately does not reference
+    /// <c>Microsoft.AspNetCore.Hosting</c> so it builds against pure
+    /// netN TFMs. Callers that have an <c>IWebHostEnvironment</c>
+    /// pass <c>env.ContentRootPath</c> explicitly:
+    /// <code>
+    /// services.AddBeepLoggingForWeb(builder.Environment.ContentRootPath, "MyApp");
+    /// </code>
+    /// </remarks>
+    public static class BeepServiceWebExtensions
     {
         /// <summary>
-        /// Gets or sets the directory path for Beep data storage.
+        /// Registers the Beep logging feature with web-friendly defaults.
         /// </summary>
-        public string DirectoryPath { get; set; } = System.IO.Path.Combine(AppContext.BaseDirectory, "Beep");
-
-        /// <summary>
-        /// Gets or sets the application repository/container name.
-        /// </summary>
-        public string AppRepoName { get; set; } = "WebApp";
-
-        /// <summary>
-        /// Gets or sets the configuration type.
-        /// </summary>
-        public BeepConfigType ConfigType { get; set; } = BeepConfigType.Application;
-
-        /// <summary>
-        /// Gets or sets whether to enable automatic mapping creation.
-        /// </summary>
-        public bool EnableAutoMapping { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable automatic assembly loading.
-        /// </summary>
-        public bool EnableAssemblyLoading { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable request-level isolation (recommended for web apps).
-        /// </summary>
-        public bool EnableRequestIsolation { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable connection pooling for better performance.
-        /// </summary>
-        public bool EnableConnectionPooling { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to enable API endpoint discovery for BeepService operations.
-        /// </summary>
-        public bool EnableApiDiscovery { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the initialization timeout.
-        /// </summary>
-        public TimeSpan InitializationTimeout { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Converts WebBeepOptions to BeepServiceOptions.
-        /// </summary>
-        internal BeepServiceOptions ToBeepServiceOptions()
+        /// <param name="services">Service collection to extend.</param>
+        /// <param name="contentRootPath">
+        /// Writable per-app root (typically <c>IWebHostEnvironment.ContentRootPath</c>).
+        /// Pass <c>null</c> to fall back to <see cref="PlatformPaths.LogsDir(string,string)"/>.
+        /// </param>
+        /// <param name="appName">App name for the per-user fallback path.</param>
+        /// <param name="tweak">Optional override callback.</param>
+        public static IServiceCollection AddBeepLoggingForWeb(
+            this IServiceCollection services,
+            string contentRootPath = null,
+            string appName = PlatformPaths.DefaultAppName,
+            Action<BeepLoggingOptions> tweak = null)
         {
-            return new BeepServiceOptions
+            if (services is null)
             {
-                DirectoryPath = DirectoryPath,
-                AppRepoName = AppRepoName,
-                ConfigType = ConfigType,
-                ServiceLifetime = ServiceLifetime.Scoped, // Always scoped for web
-                EnableAutoMapping = EnableAutoMapping,
-                EnableAssemblyLoading = EnableAssemblyLoading,
-                InitializationTimeout = InitializationTimeout,
-                EnableConfigurationValidation = true,
-                AdditionalProperties = new System.Collections.Generic.Dictionary<string, object>
-                {
-                    ["EnableRequestIsolation"] = EnableRequestIsolation,
-                    ["EnableConnectionPooling"] = EnableConnectionPooling,
-                    ["EnableApiDiscovery"] = EnableApiDiscovery
-                }
-            };
-        }
-    }
-
-    /// <summary>
-    /// Web-specific extension methods for BeepService registration.
-    /// Optimized for ASP.NET Core Web API and MVC application patterns.
-    /// </summary>
-    public static class WebBeepServiceExtensions
-    {
-        /// <summary>
-        /// Registers BeepService with web-optimized defaults (scoped lifetime, request isolation, connection pooling).
-        /// Use this method for ASP.NET Core Web API or MVC applications.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <param name="configure">Configuration action for web-specific options.</param>
-        /// <returns>The service collection for method chaining.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when services is null.</exception>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForWeb(opts => 
-        /// {
-        ///     opts.DirectoryPath = Path.Combine(basePath, "Beep");
-        ///     opts.AppRepoName = "MyWebApi";
-        ///     opts.EnableConnectionPooling = true;
-        /// });
-        /// </code>
-        /// </example>
-        public static IServiceCollection AddBeepForWeb(this IServiceCollection services, 
-            Action<WebBeepOptions> configure = null)
-        {
-            if (services == null)
                 throw new ArgumentNullException(nameof(services));
+            }
 
-            var webOptions = new WebBeepOptions();
-            configure?.Invoke(webOptions);
+            string directory = ResolveDirectory(contentRootPath, appName, "logs");
 
-            var beepOptions = webOptions.ToBeepServiceOptions();
-            BeepServiceRegistration.RegisterBeepServicesInternal(services, beepOptions);
-
-            return services;
-        }
-
-        /// <summary>
-        /// Registers BeepService for web applications with fluent builder API.
-        /// Returns a builder interface that supports method chaining.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <returns>A fluent builder interface pre-configured for web scenarios.</returns>
-        /// <example>
-        /// <code>
-        /// services.AddBeepForWeb()
-        ///     .InDirectory(Path.Combine(basePath, "Beep"))
-        ///     .WithAppRepo("MyWebApi")
-        ///     .WithConnectionPooling()
-        ///     .Build();
-        /// </code>
-        /// </example>
-        public static IWebBeepServiceBuilder AddBeepForWeb(this IServiceCollection services)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            return new WebBeepServiceBuilder(services);
-        }
-
-        /// <summary>
-        /// Configures the middleware pipeline to use BeepService features.
-        /// This method adds middleware for connection cleanup, health checks, and other web-specific features.
-        /// </summary>
-        /// <param name="app">The application builder to extend.</param>
-        /// <returns>The application builder for method chaining.</returns>
-        /// <example>
-        /// <code>
-        /// app.UseBeepForWeb();
-        /// app.UseRouting();
-        /// app.UseEndpoints(endpoints => endpoints.MapControllers());
-        /// </code>
-        /// </example>
-        public static IApplicationBuilder UseBeepForWeb(this IApplicationBuilder app)
-        {
-            if (app == null)
-                throw new ArgumentNullException(nameof(app));
-
-            // Add middleware for connection cleanup at end of request
-            app.Use(async (context, next) =>
+            return services.AddBeepLogging(opt =>
             {
-                try
+                opt.Enabled = true;
+                opt.MinLevel = BeepLogLevel.Information;
+                opt.QueueCapacity = PlatformBudgets.WebQueueCapacity;
+                opt.BackpressureMode = BackpressureMode.DropOldest;
+                opt.StorageBudgetBytes = PlatformBudgets.WebLogBytes;
+                opt.Budget = new StorageBudget
                 {
-                    await next();
-                }
-                finally
-                {
-                    // Cleanup scoped BeepService connections
-                    var beepService = context.RequestServices.GetService<IBeepService>();
-                    if (beepService != null && beepService.DMEEditor != null)
-                    {
-                        // Close any open connections at end of request
-                        foreach (var ds in beepService.DMEEditor.DataSources)
-                        {
-                            try
-                            {
-                                ds.Closeconnection();
-                            }
-                            catch
-                            {
-                                // Ignore cleanup errors
-                            }
-                        }
-                    }
-                }
+                    MaxTotalBytes = PlatformBudgets.WebLogBytes,
+                    OnBreach = BudgetBreachAction.DeleteOldest,
+                    CompressOnRotate = true
+                };
+                opt.EnableRetentionSweeper = true;
+                opt.Sinks.Add(new FileRollingSink(
+                    directory: directory,
+                    prefix: "beep",
+                    maxFileBytes: PlatformBudgets.WebMaxFileBytes,
+                    name: "web-file"));
+
+                tweak?.Invoke(opt);
             });
-
-            return app;
         }
-    }
-
-    /// <summary>
-    /// Fluent builder interface for web-specific BeepService configuration.
-    /// </summary>
-    public interface IWebBeepServiceBuilder
-    {
-        /// <summary>
-        /// Sets the directory path for Beep data storage.
-        /// </summary>
-        IWebBeepServiceBuilder InDirectory(string directoryPath);
 
         /// <summary>
-        /// Sets the application repository/container name.
+        /// Registers the Beep audit feature with web-friendly defaults.
         /// </summary>
-        IWebBeepServiceBuilder WithAppRepo(string appRepoName);
-
-        /// <summary>
-        /// Enables request-level isolation (recommended for thread safety).
-        /// </summary>
-        IWebBeepServiceBuilder WithRequestIsolation(bool enable = true);
-
-        /// <summary>
-        /// Enables connection pooling for improved performance.
-        /// </summary>
-        IWebBeepServiceBuilder WithConnectionPooling(bool enable = true);
-
-        /// <summary>
-        /// Enables API endpoint discovery for BeepService operations.
-        /// </summary>
-        IWebBeepServiceBuilder WithApiDiscovery(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic mapping creation during initialization.
-        /// </summary>
-        IWebBeepServiceBuilder WithMapping(bool enable = true);
-
-        /// <summary>
-        /// Enables automatic assembly loading during initialization.
-        /// </summary>
-        IWebBeepServiceBuilder WithAssemblyLoading(bool enable = true);
-
-        /// <summary>
-        /// Builds and registers the BeepService with web-optimized configuration.
-        /// </summary>
-        IServiceCollection Build();
-    }
-
-    /// <summary>
-    /// Implementation of the fluent builder for web-specific BeepService configuration.
-    /// </summary>
-    internal class WebBeepServiceBuilder : IWebBeepServiceBuilder
-    {
-        private readonly IServiceCollection _services;
-        private readonly WebBeepOptions _options;
-
-        public WebBeepServiceBuilder(IServiceCollection services)
+        public static IServiceCollection AddBeepAuditForWeb(
+            this IServiceCollection services,
+            string contentRootPath = null,
+            string appName = PlatformPaths.DefaultAppName,
+            Action<BeepAuditOptions> tweak = null)
         {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
-            _options = new WebBeepOptions();
+            if (services is null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            string directory = ResolveDirectory(contentRootPath, appName, "audit");
+
+            return services.AddBeepAudit(opt =>
+            {
+                opt.Enabled = true;
+                opt.QueueCapacity = PlatformBudgets.WebQueueCapacity;
+                opt.BackpressureMode = BackpressureMode.Block;
+                opt.StorageBudgetBytes = PlatformBudgets.WebAuditBytes;
+                opt.Budget = new StorageBudget
+                {
+                    MaxTotalBytes = PlatformBudgets.WebAuditBytes,
+                    OnBreach = BudgetBreachAction.BlockNewWrites,
+                    CompressOnRotate = true
+                };
+                opt.HashChain = true;
+                opt.Sinks.Add(new FileRollingSink(
+                    directory: directory,
+                    prefix: "audit",
+                    maxFileBytes: PlatformBudgets.WebMaxFileBytes,
+                    name: "web-audit-file"));
+
+                tweak?.Invoke(opt);
+            });
         }
 
-        public IWebBeepServiceBuilder InDirectory(string directoryPath)
+        private static string ResolveDirectory(string contentRootPath, string appName, string subfolder)
         {
-            _options.DirectoryPath = directoryPath;
-            return this;
-        }
-
-        public IWebBeepServiceBuilder WithAppRepo(string appRepoName)
-        {
-            _options.AppRepoName = appRepoName;
-            return this;
-        }
-
-        public IWebBeepServiceBuilder WithRequestIsolation(bool enable = true)
-        {
-            _options.EnableRequestIsolation = enable;
-            return this;
-        }
-
-        public IWebBeepServiceBuilder WithConnectionPooling(bool enable = true)
-        {
-            _options.EnableConnectionPooling = enable;
-            return this;
-        }
-
-        public IWebBeepServiceBuilder WithApiDiscovery(bool enable = true)
-        {
-            _options.EnableApiDiscovery = enable;
-            return this;
-        }
-
-        public IWebBeepServiceBuilder WithMapping(bool enable = true)
-        {
-            _options.EnableAutoMapping = enable;
-            return this;
-        }
-
-        public IWebBeepServiceBuilder WithAssemblyLoading(bool enable = true)
-        {
-            _options.EnableAssemblyLoading = enable;
-            return this;
-        }
-
-        public IServiceCollection Build()
-        {
-            var beepOptions = _options.ToBeepServiceOptions();
-            BeepServiceRegistration.RegisterBeepServicesInternal(_services, beepOptions);
-            return _services;
+            if (string.IsNullOrWhiteSpace(contentRootPath))
+            {
+                return subfolder == "audit"
+                    ? PlatformPaths.AuditDir(appName)
+                    : PlatformPaths.LogsDir(appName);
+            }
+            string full = Path.Combine(contentRootPath, subfolder);
+            try
+            {
+                if (!Directory.Exists(full))
+                {
+                    Directory.CreateDirectory(full);
+                }
+            }
+            catch
+            {
+                // Container deploys may forbid creation under ContentRoot.
+                // Fall back to the per-user path so the sink can still
+                // open a writable file on first write.
+                return subfolder == "audit"
+                    ? PlatformPaths.AuditDir(appName)
+                    : PlatformPaths.LogsDir(appName);
+            }
+            return full;
         }
     }
 }

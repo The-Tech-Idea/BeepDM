@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Distributed.Partitioning;
 
 namespace TheTechIdea.Beep.Proxy
 {
@@ -99,7 +100,7 @@ namespace TheTechIdea.Beep.Proxy
             {
                 for (int v = 0; v < VirtualSlots; v++)
                 {
-                    uint slot = MurmurHash3($"{n.NodeId}:{v}");
+                    uint slot = MurmurHash3Helper.Hash($"{n.NodeId}:{v}");
                     // Collision: keep whichever slot is already there
                     newRing.TryAdd(slot, n);
                 }
@@ -113,7 +114,7 @@ namespace TheTechIdea.Beep.Proxy
             if (ring.Count == 0) return candidates[0];
 
             string key  = ctx?.CorrelationId ?? Guid.NewGuid().ToString();
-            uint   hash = MurmurHash3(key);
+            uint   hash = MurmurHash3Helper.Hash(key);
 
             // Find the first slot >= hash (clockwise walk); wrap-around if none found
             ProxyNode target = null;
@@ -141,58 +142,6 @@ namespace TheTechIdea.Beep.Proxy
 
             return target ?? candidates[0];
         }
-
-        // ── MurmurHash3 (32-bit x86) ─────────────────────────────────────
-
-        private static uint MurmurHash3(string s)
-        {
-            const uint c1   = 0xcc9e2d51u;
-            const uint c2   = 0x1b873593u;
-            const uint seed = 0u;
-
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(s);
-            int    len   = bytes.Length;
-            uint   h1    = seed;
-            int    i     = 0;
-
-            // Body — process 4-byte blocks
-            while (i + 4 <= len)
-            {
-                uint k1 = (uint)(bytes[i]
-                    | (bytes[i + 1] << 8)
-                    | (bytes[i + 2] << 16)
-                    | (bytes[i + 3] << 24));
-
-                k1 *= c1;
-                k1  = RotL(k1, 15);
-                k1 *= c2;
-
-                h1 ^= k1;
-                h1  = RotL(h1, 13);
-                h1  = h1 * 5 + 0xe6546b64u;
-
-                i += 4;
-            }
-
-            // Tail
-            uint tail = 0;
-            int  rem  = len & 3;
-            if (rem == 3) tail ^= (uint)bytes[i + 2] << 16;
-            if (rem >= 2) tail ^= (uint)bytes[i + 1] << 8;
-            if (rem >= 1) { tail ^= bytes[i]; tail *= c1; tail = RotL(tail, 15); tail *= c2; h1 ^= tail; }
-
-            // Finalize (fmix32)
-            h1 ^= (uint)len;
-            h1 ^= h1 >> 16;
-            h1 *= 0x85ebca6bu;
-            h1 ^= h1 >> 13;
-            h1 *= 0xc2b2ae35u;
-            h1 ^= h1 >> 16;
-
-            return h1;
-        }
-
-        private static uint RotL(uint x, int r) => (x << r) | (x >> (32 - r));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

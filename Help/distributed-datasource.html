@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DistributedDataSource — BeepDM Documentation</title>
+<link rel="stylesheet" href="sphinx-style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+<div id="nav-placeholder"></div>
+<div class="main-content">
+
+<div class="content-header">
+  <div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <i class="bi bi-chevron-right"></i>
+    <span>Data Management</span>
+    <i class="bi bi-chevron-right"></i>
+    <span>DistributedDataSource</span>
+  </div>
+  <h1 class="page-title"><i class="bi bi-diagram-3"></i> DistributedDataSource</h1>
+  <p class="page-subtitle">
+    Shard-aware datasource that keeps the regular <code>IDataSource</code> surface while routing reads/writes across
+    multiple <code>IProxyCluster</code> shards with resilient execution, observability, audit, security, and
+    backpressure controls.
+  </p>
+</div>
+
+<div class="toc-container">
+  <h3><i class="bi bi-list-ul"></i> On This Page</h3>
+  <ul class="toc-list">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#construction">Construction Pattern</a></li>
+    <li><a href="#options">High-Value Options</a></li>
+    <li><a href="#examples">Clear Examples</a></li>
+    <li><a href="#events">Operational Events</a></li>
+    <li><a href="#phase14">Phase 14 Capacity Controls</a></li>
+    <li><a href="#pitfalls">Common Pitfalls</a></li>
+  </ul>
+</div>
+
+<section id="overview">
+  <h2><i class="bi bi-info-circle-fill"></i> Overview</h2>
+  <p>
+    <code>DistributedDataSource</code> composes existing shard clusters (<code>IProxyCluster</code>) into one logical datasource.
+    You keep calling normal datasource methods, but distribution strategy is driven by a <code>DistributionPlan</code> and
+    runtime options.
+  </p>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Concern</th><th>Handled By</th><th>What it gives you</th></tr></thead>
+      <tbody>
+        <tr><td>Shard routing</td><td><code>DistributionPlan</code> + resolver/router</td><td>Sharded/replicated/broadcast placement decisions</td></tr>
+        <tr><td>Per-shard HA</td><td><code>IProxyCluster</code></td><td>Failover/circuit/load-balancing inside each shard</td></tr>
+        <tr><td>Cross-shard execution</td><td>Distributed executors</td><td>Scatter, replicated reads, fan-out writes</td></tr>
+        <tr><td>Observability</td><td>Metrics + events</td><td>Hot shard signals, degraded mode, operation telemetry</td></tr>
+        <tr><td>Capacity controls</td><td>Phase 14 performance block</td><td>Concurrency caps, rate limits, adaptive deadlines, backpressure</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="construction">
+  <h2><i class="bi bi-hammer"></i> Construction Pattern</h2>
+  <pre><code class="language-csharp">using TheTechIdea.Beep.Distributed;
+using TheTechIdea.Beep.Distributed.Performance;
+using TheTechIdea.Beep.Proxy;
+
+IDMEEditor editor = /* existing editor */;
+
+IReadOnlyDictionary&lt;string, IProxyCluster&gt; shards = new Dictionary&lt;string, IProxyCluster&gt;
+{
+    ["shard-a"] = shardACluster,
+    ["shard-b"] = shardBCluster,
+    ["shard-c"] = shardCCluster
+};
+
+DistributionPlan plan = /* load from plan store or build */;
+
+var options = new DistributedDataSourceOptions
+{
+    DefaultPerShardTimeoutMs = 15_000,
+    DefaultReadDeadlineMs    = 45_000,
+    MaxScatterParallelism    = 8,
+    MaxFanOutParallelism     = 6
+};
+
+var distributed = new DistributedDataSource(
+    dmeEditor: editor,
+    shards:    shards,
+    plan:      plan,
+    options:   options);
+
+distributed.Openconnection();</code></pre>
+  <div class="info-box">
+    <i class="bi bi-lightbulb"></i>
+    <div>
+      Use explicit shard IDs and keep them stable over time. Plan routing and operational logs depend on those IDs.
+    </div>
+  </div>
+</section>
+
+<section id="options">
+  <h2><i class="bi bi-sliders"></i> High-Value Options</h2>
+  <div class="table-responsive">
+    <table class="ref-table">
+      <thead><tr><th>Option</th><th>Why it matters</th><th>Typical start value</th></tr></thead>
+      <tbody>
+        <tr><td><code>DefaultPerShardTimeoutMs</code></td><td>Caps one shard leg before it stalls whole requests</td><td><code>10_000</code>–<code>30_000</code></td></tr>
+        <tr><td><code>DefaultReadDeadlineMs</code></td><td>End-to-end read budget for scatter/replicated flow</td><td><code>30_000</code>–<code>60_000</code></td></tr>
+        <tr><td><code>MaxScatterParallelism</code></td><td>Protects shard fleet from over-fanout on reads</td><td><code>min(8, shardCount)</code></td></tr>
+        <tr><td><code>MaxFanOutParallelism</code></td><td>Bounds write fan-out concurrency</td><td><code>4</code>–<code>8</code></td></tr>
+        <tr><td><code>MinimumHealthyShardRatio</code></td><td>Degraded-mode gate for scatter/broadcast</td><td><code>0.5</code></td></tr>
+        <tr><td><code>Performance</code></td><td>Phase 14 backpressure and adaptive timeout controls</td><td>Use defaults, tune gradually</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="examples">
+  <h2><i class="bi bi-code-slash"></i> Clear Examples</h2>
+
+  <h3>Example 1 — Single-key read routed to one shard</h3>
+  <pre><code class="language-csharp">// Standard IDataSource call style remains valid.
+var customer = distributed.GetEntity("Customers", new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "CustomerId", Operator = "=", FilterValue = customerId }
+});</code></pre>
+
+  <h3>Example 2 — Replicated read with fallback</h3>
+  <pre><code class="language-csharp">// For replicated placement, resolver picks an ordered replica set.
+// Executor attempts replicas according to policy and shard health.
+var product = distributed.GetEntity("Products", new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Sku", Operator = "=", FilterValue = sku }
+});</code></pre>
+
+  <h3>Example 3 — Sharded write</h3>
+  <pre><code class="language-csharp">var order = new
+{
+    OrderId = Guid.NewGuid(),
+    CustomerId = customerId, // routing key in most plans
+    Amount = 149.99m,
+    Status = "New"
+};
+
+IErrorsInfo writeResult = distributed.InsertEntity("Orders", order);
+if (writeResult.Flag != Errors.Ok)
+{
+    throw new InvalidOperationException(writeResult.Message);
+}</code></pre>
+
+  <h3>Example 4 — Backpressure-aware call path</h3>
+  <pre><code class="language-csharp">using TheTechIdea.Beep.Distributed.Performance;
+
+try
+{
+    var rows = distributed.GetEntity("Orders", null);
+}
+catch (BackpressureException bp)
+{
+    // Retry after the provided hint.
+    logger.LogWarning(
+        $"Distributed gate '{bp.GateName}' rejected call. Retry after {bp.RetryAfter.TotalMilliseconds:F0} ms.");
+}</code></pre>
+
+  <h3>Example 5 — Subscribe to operational events</h3>
+  <pre><code class="language-csharp">distributed.OnShardDown += (_, e) =>
+    logger.LogWarning($"Shard down: {e.ShardId}");
+
+distributed.OnShardRestored += (_, e) =>
+    logger.LogInformation($"Shard restored: {e.ShardId}");
+
+distributed.OnDegradedMode += (_, e) =>
+    logger.LogWarning($"Degraded mode. Healthy ratio={e.HealthyRatio:F2}");
+
+distributed.OnBackpressure += (_, e) =>
+    logger.LogWarning(
+        $"Backpressure gate={e.GateName} shard={e.ShardId ?? "-"} retry={e.RetryAfter.TotalMilliseconds:F0}ms");</code></pre>
+</section>
+
+<section id="events">
+  <h2><i class="bi bi-broadcast"></i> Operational Events</h2>
+  <p>Events to wire for observability and alerting:</p>
+  <ul>
+    <li><code>OnShardSelected</code> — routing telemetry.</li>
+    <li><code>OnPlacementViolation</code> — plan violations or invalid placement.</li>
+    <li><code>OnShardDown</code> / <code>OnShardRestored</code> — shard health transitions.</li>
+    <li><code>OnDegradedMode</code> — healthy ratio below threshold.</li>
+    <li><code>OnPartialReplicationFailure</code> / <code>OnPartialBroadcast</code> — quorum succeeded with gaps.</li>
+    <li><code>OnBackpressure</code> — Phase 14 capacity rejection events.</li>
+  </ul>
+</section>
+
+<section id="phase14">
+  <h2><i class="bi bi-speedometer2"></i> Phase 14 Capacity Controls</h2>
+  <pre><code class="language-csharp">var options = new DistributedDataSourceOptions
+{
+    Performance = new PerformanceOptions
+    {
+        EnableCapacityGates          = true,
+        MaxConcurrentDistributedCalls = 64,
+        DistributedPermitWait        = TimeSpan.FromMilliseconds(500),
+        MaxConcurrentCallsPerShard   = 16,
+        ShardPermitWait              = TimeSpan.FromMilliseconds(300),
+        ShardRateLimitPerSecond      = 120,
+        ShardRateLimitBurst          = 240,
+        AdaptiveDeadlineFactor       = 1.3,
+        MinAdaptiveDeadlineMs        = 250,
+        MaxAdaptiveDeadlineMs        = 8_000,
+        EnableHotShardReadShedding   = true
+    }
+};</code></pre>
+  <p>
+    This layer runs before cluster-tier execution, so overload is rejected early with a structured
+    <code>BackpressureException</code> instead of hidden latency growth.
+  </p>
+</section>
+
+<section id="pitfalls">
+  <h2><i class="bi bi-exclamation-triangle"></i> Common Pitfalls</h2>
+  <ul>
+    <li>Using empty or unstable shard IDs. Keep IDs deterministic and environment-consistent.</li>
+    <li>Running with a plan that doesn't match actual shard map. Validate before deployment.</li>
+    <li>Overly high fan-out/scatter parallelism. Start conservative, measure, then scale up.</li>
+    <li>Ignoring backpressure events. Wire <code>OnBackpressure</code> to metrics/alerts.</li>
+    <li>Treating distributed writes as always all-or-nothing without checking partial failure events.</li>
+  </ul>
+</section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="navigation.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof loadNavigation === 'function') loadNavigation('distributed-datasource');
+});
+</script>
+</body>
+</html>

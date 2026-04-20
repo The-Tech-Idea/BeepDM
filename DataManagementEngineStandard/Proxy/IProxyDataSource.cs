@@ -153,5 +153,27 @@ namespace TheTechIdea.Beep.Proxy
         event EventHandler<RoleChangeEventArgs>           OnNodeDemoted;
         event EventHandler<ClusterPolicyChangedEventArgs> OnClusterPolicyChanged;
         event EventHandler<AffinityRebalancedEventArgs>   OnAffinityRebalanced;
+
+        // ── Distributed transaction capability (Phase 09) ─────────────────
+
+        /// <summary>
+        /// Indicates whether every node in the cluster exposes a
+        /// two-phase-commit-capable <see cref="IDataSource"/>
+        /// (explicit prepare + commit, durable participant state on
+        /// crash). Defaults to <c>false</c> so existing cluster
+        /// implementations keep their behaviour — concrete clusters
+        /// opt-in by overriding this property once every node's
+        /// underlying driver supports the pattern.
+        /// </summary>
+        /// <remarks>
+        /// The Phase 09 <c>TransactionDecisionResolver</c> uses this
+        /// flag to pick between
+        /// <see cref="Distributed.Transactions.TransactionStrategy.TwoPhaseCommit"/>
+        /// and <see cref="Distributed.Transactions.TransactionStrategy.Saga"/>
+        /// for multi-shard work. Clusters that return <c>false</c>
+        /// force saga mode, which preserves correctness at the cost of
+        /// atomicity across shards.
+        /// </remarks>
+        bool SupportsTwoPhaseCommit => false;
     }
 }

@@ -16,6 +16,7 @@ Static HTML documentation site for DataManagementEngineStandard.
 - `dataviewdatasource.html`: signature-verified DataViewDataSource API page.
 - `caching-api.html`: signature-verified ICacheProvider and CacheManager API page.
 - `proxy-datasource.html`: signature-verified IProxyDataSource and IProxyCluster API page.
+- `distributed-datasource.html`: shard-aware DistributedDataSource guide with clear construction, routing, events, and Phase 14 backpressure/capacity examples.
 - `technical-folder-guides.html`: index page for deep, folder-level technical guides under `DataManagementEngineStandard`.
 
 ## Maintenance Guidance
