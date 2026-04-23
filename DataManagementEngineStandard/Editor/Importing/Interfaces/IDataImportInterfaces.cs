@@ -353,6 +353,8 @@ namespace TheTechIdea.Beep.Editor.Importing.Interfaces
         public int  RecordsProcessed         { get; set; }
         public int  TotalRecords             { get; set; }
         public double PercentComplete        { get; set; }
+        public int  CurrentBatch             { get; set; }
+        public int  TotalBatches             { get; set; }
         public string LastMessage            { get; set; } = string.Empty;
         public DateTime? StartedAt           { get; set; }
         public DateTime? FinishedAt          { get; set; }

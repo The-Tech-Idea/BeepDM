@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>2.0.93</Version>
+    <Version>2.0.96</Version>
 	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -37,24 +37,7 @@
 	<ItemGroup>
 	  <Compile Remove="CodeDom\CodeDomCompiler.cs" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Content Include="Editor\ETL_BK\ETLDataCopier.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLDataCopier.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\ETLEditor.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLEditor.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\ETLEntityCopyHelper.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLEntityCopyHelper.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\ETLEntityProcessor.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLEntityProcessor.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\ETLScriptBuilder.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLScriptBuilder.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\ETLScriptManager.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLScriptManager.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\ETLValidator.examples.md" />
-	  <Content Include="Editor\ETL_BK\ETLValidator.howto.readme.md" />
-	  <Content Include="Editor\ETL_BK\README.md" />
-	  <Content Include="Editor\ETL_BK\recommendation.instructions.md" />
-	</ItemGroup>
+
 
   <ItemGroup>
     <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
@@ -72,12 +55,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.6" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.6" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.6" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.6" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NuGet.Common" Version="7.3.1" />
     <PackageReference Include="NuGet.DependencyResolver.Core" Version="7.3.1" />

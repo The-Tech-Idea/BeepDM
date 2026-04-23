@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -540,11 +540,12 @@ namespace TheTechIdea.Beep.Editor.Importing
                 var optimalBatchSize = config.BatchSize > 0 ? config.BatchSize :
                     _batchHelper.CalculateOptimalBatchSize(sourceList.Count, 1024);
 
-                UpdateStatus(s => { s.TotalRecords = sourceList.Count; s.LastMessage = $"Processing {sourceList.Count} records in batches of {optimalBatchSize}"; });
-                _progressHelper.LogImport($"Processing {sourceList.Count} records in batches of {optimalBatchSize}", 0);
+                var batches = _batchHelper.SplitIntoBatches(sourceList, optimalBatchSize).ToList();
+                var totalBatches = batches.Count;
+                UpdateStatus(s => { s.TotalRecords = sourceList.Count; s.TotalBatches = totalBatches; s.LastMessage = $"Processing {sourceList.Count} records in {totalBatches} batches of {optimalBatchSize}"; });
+                _progressHelper.LogImport($"Processing {sourceList.Count} records in {totalBatches} batches of {optimalBatchSize}", 0);
 
                 var totalProcessed = 0;
-                var batches = _batchHelper.SplitIntoBatches(sourceList, optimalBatchSize);
                 var batchNumber = 0;
 
                 foreach (var batch in batches)
@@ -553,7 +554,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                     _pauseEvent.Wait(token);
                     token.ThrowIfCancellationRequested();
 
-                    UpdateStatus(s => s.LastMessage = $"Processing batch {batchNumber}...");
+                    UpdateStatus(s => { s.CurrentBatch = batchNumber; s.LastMessage = $"Processing batch {batchNumber}/{totalBatches}..."; });
                     _progressHelper.LogImport($"Processing batch {batchNumber}...", totalProcessed);
 
                     IErrorsInfo batchResult = null;
