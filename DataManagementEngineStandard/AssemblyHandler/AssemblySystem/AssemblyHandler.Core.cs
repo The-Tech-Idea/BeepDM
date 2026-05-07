@@ -8,6 +8,9 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGetManagement;
+using TheTechIdea.Beep.NuGetManagement.Models;
+using TheTechIdea.Beep.Tools.PluginSystem;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Tools
@@ -29,9 +32,10 @@ namespace TheTechIdea.Beep.Tools
         IProgress<PassedArgs> Progress;
         CancellationToken Token;
         /// <summary>
-        /// NuGet package manager for loading/unloading nuggets
+        /// Enhanced NuGet package manager with full lifecycle support.
+        /// Handles download, install, load, update, and uninstall operations.
         /// </summary>
-        private NuggetManager _nuggetManager;
+        private NuGetPackageManager _nugetPackageManager;
 
         #endregion
 
@@ -97,6 +101,25 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         public List<Assembly> LoadedAssemblies { get; set; } = new List<Assembly>();
 
+        /// <summary>
+        /// Enhanced NuGet package manager for advanced package operations.
+        /// Set this property to enable full package lifecycle management (download, install, update, etc.)
+        /// </summary>
+        public NuGetPackageManager NuGetPackageManager
+        {
+            get => _nugetPackageManager;
+            set => _nugetPackageManager = value;
+        }
+
+        /// <summary>
+        /// Legacy nugget manager for backward compatibility.
+        /// </summary>
+        public NuggetManager NuggetManager
+        {
+            get => _nuggetManager;
+            set => _nuggetManager = value;
+        }
+
         #endregion
 
         #region Constructor
@@ -117,10 +140,7 @@ namespace TheTechIdea.Beep.Tools
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-            
-            // Initialize NuggetManager
-            _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);
-
+        
             // Initialize loaded assemblies from dependency context
             InitializeLoadedAssemblies();
         }

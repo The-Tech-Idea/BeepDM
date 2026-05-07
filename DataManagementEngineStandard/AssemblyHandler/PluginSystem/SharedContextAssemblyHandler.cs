@@ -11,6 +11,8 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Tools.PluginSystem;
+using TheTechIdea.Beep.NuGetManagement;
+using TheTechIdea.Beep.NuGetManagement.Models;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.DataBase;
@@ -41,9 +43,18 @@ namespace TheTechIdea.Beep.Tools
         private readonly List<Assembly> _loadedAssemblies = new();
         
         private bool _disposed = false;
+        
+        // Configuration flag for default context dependency resolution
+        // When true (default), shared contexts will check AssemblyLoadContext.Default 
+        // for dependencies before loading duplicates from nugget folders
+        public bool PreferDefaultContextDependencies { get; set; } = true;
+        
+        // AssemblyLoad event handler reference for cleanup
+        private AssemblyLoadEventHandler _assemblyLoadHandler;
 
         // NuGet & tracking infrastructure
-        private NuggetPackageDownloader _packageDownloader;
+        private NuGetPackageManager _nugetPackageManager;
+        private NuggetPackageDownloader _packageDownloader; // Kept for backward compatibility
         private List<NuGetSourceConfig> _nugetSources;
         private string _nugetSourcesFilePath;
         private List<DriverPackageMapping> _driverPackageMappings;
@@ -144,8 +155,50 @@ namespace TheTechIdea.Beep.Tools
             _driverAssistant = new DriverDiscoveryAssistant(_sharedContextManager, ConfigEditor, Logger);
             _scanningService = new ScanningService(_sharedContextManager, ConfigEditor, Logger);
 
-            // Initialize singleton NuGet package downloader
+            // Initialize new NuGet Package Manager (enhanced)
+            _nugetPackageManager = new NuGetPackageManager(Logger, _sharedContextManager, Path.Combine(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, "Plugins"));
+            
+            // Initialize singleton NuGet package downloader (legacy - kept for backward compatibility)
             _packageDownloader = new NuggetPackageDownloader(Logger);
+
+            // CRITICAL: Explicitly register all currently loaded AppDomain assemblies
+            // This ensures project references and PackageReferences are visible to shared contexts
+            // before any nugget loading begins, preventing duplicate assembly loading
+            var appDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+                .ToList();
+            
+            foreach (var assembly in appDomainAssemblies)
+            {
+                try
+                {
+                    _sharedContextManager.RegisterExistingAssembly(assembly, "AppDomain-Explicit");
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWithContext($"Failed to register AppDomain assembly {assembly.GetName().Name}: {ex.Message}", null);
+                }
+            }
+            Logger?.LogWithContext($"Explicitly registered {appDomainAssemblies.Count} AppDomain assemblies in shared context", null);
+
+            // Hook AssemblyLoad event to auto-register future dynamically loaded assemblies
+            // This handles JIT-loaded dependencies and lazy-loaded assemblies
+            _assemblyLoadHandler = (sender, args) =>
+            {
+                try
+                {
+                    if (args.LoadedAssembly != null && !args.LoadedAssembly.IsDynamic)
+                    {
+                        _sharedContextManager.RegisterExistingAssembly(args.LoadedAssembly, "AppDomain-Dynamic");
+                        Logger?.LogWithContext($"Auto-registered dynamically loaded assembly: {args.LoadedAssembly.GetName().Name}", null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWithContext($"Failed to auto-register assembly {args.LoadedAssembly?.GetName().Name}: {ex.Message}", null);
+                }
+            };
+            AppDomain.CurrentDomain.AssemblyLoad += _assemblyLoadHandler;
 
             // Setup assembly resolver to integrate SharedContextManager with AppDomain resolution
             // This ensures that when any code requests an assembly, we check the shared context first
@@ -1302,6 +1355,295 @@ namespace TheTechIdea.Beep.Tools
 
     #endregion
 
+    #region Enhanced NuGet Package Manager (New)
+
+    /// <summary>
+    /// Gets the enhanced NuGet package manager instance
+    /// </summary>
+    public NuGetPackageManager NuGetManager => _nugetPackageManager;
+
+    /// <summary>
+    /// Installs and loads a NuGet package with all its dependencies using the enhanced manager
+    /// </summary>
+    public async Task<NuggetInfo> InstallAndLoadNuGetPackageAsync(string packageName, string version = null, bool useSharedContext = true)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            var nuggetInfo = await _nugetPackageManager.LoadAsync(packageName, version, useSharedContext);
+            
+            if (nuggetInfo?.LoadedAssemblies != null)
+            {
+                foreach (var assembly in nuggetInfo.LoadedAssemblies)
+                {
+                    if (!_loadedAssemblies.Contains(assembly))
+                        _loadedAssemblies.Add(assembly);
+                    
+                    var assemblyRep = new assemblies_rep(assembly, nuggetInfo.SourcePath, assembly.FullName, FolderFileTypes.Nugget);
+                    if (!_assemblies.Any(a => a.DllLib == assembly))
+                        _assemblies.Add(assemblyRep);
+                    
+                    _scanningService?.ScanAssembly(assembly);
+                }
+                
+                Logger?.LogWithContext($"Successfully installed and loaded NuGet package: {packageName}", nuggetInfo);
+            }
+            
+            return nuggetInfo;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error installing/loading NuGet package {packageName}", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Updates a NuGet package to the latest or specified version
+    /// </summary>
+    public async Task<PackageUpdateResult> UpdateNuGetPackageAsync(string packageName, string version = null)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            var result = await _nugetPackageManager.UpdateAsync(packageName, version);
+            
+            if (result.Success && result.WasUpdated)
+            {
+                SyncLocalAssemblyTrackingFromSharedContext();
+                Logger?.LogWithContext($"Successfully updated {packageName} to {result.NewVersion}", null);
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error updating NuGet package {packageName}", ex);
+            return new PackageUpdateResult { PackageId = packageName, Error = ex.Message };
+        }
+    }
+
+    /// <summary>
+    /// Uninstalls a NuGet package completely
+    /// </summary>
+    public async Task<bool> UninstallNuGetPackageAsync(string packageName, bool removeDependencies = false)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            var result = await _nugetPackageManager.UninstallAsync(packageName, removeDependencies);
+            
+            if (result)
+            {
+                SyncLocalAssemblyTrackingFromSharedContext();
+                Logger?.LogWithContext($"Successfully uninstalled NuGet package: {packageName}", null);
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error uninstalling NuGet package {packageName}", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets detailed metadata for a NuGet package
+    /// </summary>
+    public async Task<PackageMetadata> GetNuGetPackageMetadataAsync(string packageName, string version)
+    {
+        try
+        {
+            return await _nugetPackageManager.GetMetadataAsync(packageName, version);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error getting metadata for {packageName}", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets all installed NuGet packages
+    /// </summary>
+    public async Task<List<InstalledPackageInfo>> GetInstalledNuGetPackagesAsync()
+    {
+        try
+        {
+            return await _nugetPackageManager.GetInstalledPackagesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error getting installed packages", ex);
+            return new List<InstalledPackageInfo>();
+        }
+    }
+
+    /// <summary>
+    /// Checks if a NuGet package is installed
+    /// </summary>
+    public async Task<bool> IsNuGetPackageInstalledAsync(string packageName)
+    {
+        try
+        {
+            return await _nugetPackageManager.IsInstalledAsync(packageName);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error checking if {packageName} is installed", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Repairs a corrupted or damaged NuGet package
+    /// </summary>
+    public async Task<bool> RepairNuGetPackageAsync(string packageName)
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            var result = await _nugetPackageManager.RepairAsync(packageName);
+            
+            if (result)
+            {
+                SyncLocalAssemblyTrackingFromSharedContext();
+                Logger?.LogWithContext($"Successfully repaired NuGet package: {packageName}", null);
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext($"Error repairing NuGet package {packageName}", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets dependency tree for a NuGet package
+    /// </summary>
+    public async Task<List<PackageDependency>> GetNuGetPackageDependenciesAsync(string packageName, string version)
+    {
+        try
+        {
+            return await _nugetPackageManager.GetDependenciesAsync(packageName, version);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error getting dependencies for {packageName}", ex);
+            return new List<PackageDependency>();
+        }
+    }
+
+    /// <summary>
+    /// Adds a new NuGet source to the package manager
+    /// </summary>
+    public void AddNuGetSourceToManager(string name, string url, bool isLocal = false, string username = null, string password = null)
+    {
+        try
+        {
+            _nugetPackageManager.AddSource(name, url, true, username, password);
+            Logger?.LogWithContext($"Added NuGet source to manager: {name} ({url})", null);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error adding source {name}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Performs bulk update of all installed NuGet packages
+    /// </summary>
+    public async Task<BulkUpdateResult> UpdateAllNuGetPackagesAsync()
+    {
+        try
+        {
+            ErrorObject.Flag = Errors.Ok;
+            var result = await _nugetPackageManager.BulkUpdateAsync();
+            
+            if (result.Updated > 0)
+            {
+                SyncLocalAssemblyTrackingFromSharedContext();
+                Logger?.LogWithContext($"Bulk update completed: {result.Updated} updated, {result.AlreadyLatest} already latest, {result.Failed} failed", null);
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            ErrorObject.Flag = Errors.Failed;
+            ErrorObject.Message = ex.Message;
+            ErrorObject.Ex = ex;
+            Logger?.LogWithContext("Error during bulk update", ex);
+            return new BulkUpdateResult { Error = ex.Message };
+        }
+    }
+
+    /// <summary>
+    /// Clears the NuGet package cache
+    /// </summary>
+    public async Task ClearNuGetCacheAsync(string packageName = null, string version = null)
+    {
+        try
+        {
+            await _nugetPackageManager.ClearCacheAsync(packageName, version);
+            Logger?.LogWithContext($"Cleared NuGet cache{(packageName != null ? $" for {packageName}" : "")}", null);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext("Error clearing NuGet cache", ex);
+        }
+    }
+
+    /// <summary>
+    /// Exports installed packages to a JSON file
+    /// </summary>
+    public async Task ExportInstalledPackagesAsync(string filePath)
+    {
+        try
+        {
+            await _nugetPackageManager.ExportPackagesAsync(filePath);
+            Logger?.LogWithContext($"Exported installed packages to {filePath}", null);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error exporting packages to {filePath}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Imports packages from a JSON file
+    /// </summary>
+    public async Task ImportPackagesAsync(string filePath)
+    {
+        try
+        {
+            await _nugetPackageManager.ImportPackagesAsync(filePath);
+            SyncLocalAssemblyTrackingFromSharedContext();
+            Logger?.LogWithContext($"Imported packages from {filePath}", null);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWithContext($"Error importing packages from {filePath}", ex);
+        }
+    }
+
+    #endregion
+
     #region Inlined Scanning Logic (formerly in assistants)
     // (Duplicate helper block removed)
     #endregion
@@ -1348,6 +1690,13 @@ namespace TheTechIdea.Beep.Tools
         {
             if (!_disposed)
             {
+                // Unsubscribe from AssemblyLoad event to prevent memory leaks
+                if (_assemblyLoadHandler != null)
+                {
+                    AppDomain.CurrentDomain.AssemblyLoad -= _assemblyLoadHandler;
+                    _assemblyLoadHandler = null;
+                }
+                
                 // Dispose retained driver assistant only
                 _driverAssistant?.Dispose();
                 

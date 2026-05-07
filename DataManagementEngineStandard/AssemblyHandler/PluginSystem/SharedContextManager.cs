@@ -47,13 +47,14 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         
         private readonly AssemblyDependencyResolver _resolver;
         private readonly SharedContextManager _manager;
+        private readonly IDMLogger _logger;
         private readonly ConcurrentDictionary<string, Assembly> _resolvedDependencies = new();
 
         /// <summary>Raised when an assembly is successfully resolved by this context.</summary>
         public event EventHandler<AssemblyResolvedEventArgs> AssemblyResolved;
 
         /// <summary>Creates a new collectible load context for shared plugin loading.</summary>
-        public SharedContextLoadContext(string contextId, string sourcePath, SharedContextManager manager, bool isCollectible = true) 
+        public SharedContextLoadContext(string contextId, string sourcePath, SharedContextManager manager, IDMLogger logger, bool isCollectible = true) 
             : base(contextId, isCollectible)
         {
             ContextId = contextId;
@@ -61,6 +62,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             LoadedAt = DateTime.UtcNow;
             IsSharedContext = true;
             _manager = manager;
+            _logger = logger;
             
             // Initialize dependency resolver for the main assembly path
             // CRITICAL: Handle both single DLL files AND directories with .deps.json
@@ -179,12 +181,23 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 return null;
             }
 
-            // Use the dependency resolver to find the assembly from .deps.json
+            // PRIORITY 1: Check shared assemblies first to prevent loading duplicate copies
+            // from nugget folders when the assembly is already available in shared context
+            var sharedAssembly = _manager?.ResolveAssembly(assemblyName);
+            if (sharedAssembly != null)
+            {
+                _logger?.LogWithContext($"[DependencyResolution] Resolved '{assemblyName.Name}' from SharedContext", null);
+                return sharedAssembly;
+            }
+
+            // PRIORITY 2: Use the dependency resolver to find the assembly from .deps.json
+            // Only if not already shared - prevents loading duplicate copies
             string assemblyPath = _resolver?.ResolveAssemblyToPath(assemblyName);
             if (assemblyPath != null)
             {
                 try
                 {
+                    _logger?.LogWithContext($"[DependencyResolution] Resolved '{assemblyName.Name}' from .deps.json: {assemblyPath}", null);
                     return LoadFromAssemblyPath(assemblyPath);
                 }
                 catch
@@ -193,27 +206,38 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 }
             }
 
-            // Prefer already shared assemblies before probing file system
-            var sharedAssembly = _manager?.ResolveAssembly(assemblyName);
-            if (sharedAssembly != null)
-            {
-                return sharedAssembly;
-            }
-
+            // PRIORITY 3: Try probing paths (plugin folder, bin, runtime folders)
             var probedAssembly = TryLoadFromProbingPaths(assemblyName);
             if (probedAssembly != null)
             {
+                _logger?.LogWithContext($"[DependencyResolution] Resolved '{assemblyName.Name}' from ProbingPath", null);
                 return probedAssembly;
             }
 
+            // PRIORITY 4: Try NuGet package cache
             var nugetAssembly = TryLoadFromNuGetCache(assemblyName);
             if (nugetAssembly != null)
             {
+                _logger?.LogWithContext($"[DependencyResolution] Resolved '{assemblyName.Name}' from NuGetCache", null);
                 return nugetAssembly;
+            }
+
+            // PRIORITY 5: CRITICAL - Check AssemblyLoadContext.Default explicitly
+            // This ensures host-provided dependencies (project references, PackageReferences)
+            // are always visible to shared contexts, even if not explicitly registered
+            var defaultContextAssembly = AssemblyLoadContext.Default.Assemblies
+                .FirstOrDefault(a => string.Equals(a.GetName().Name, assemblyName.Name, StringComparison.OrdinalIgnoreCase));
+            if (defaultContextAssembly != null)
+            {
+                _logger?.LogWithContext($"[DependencyResolution] Resolved '{assemblyName.Name}' from DefaultContext", null);
+                // Register it in shared context for future lookups
+                _manager?.RegisterExistingAssembly(defaultContextAssembly, "DefaultContext-Fallback");
+                return defaultContextAssembly;
             }
 
             // Return null - allows the runtime to use the default load context
             // This provides shared assemblies from the host application
+            _logger?.LogWithContext($"[DependencyResolution] FAILED to resolve '{assemblyName.Name}' - returning null for default context fallback", null);
             return null;
         }
 
@@ -826,13 +850,13 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 {
                     // Create (once) a non-collectible global context to maximize sharing
                     var globalProbePath = ResolveGlobalContextProbePath(nuggetPath);
-                    _globalSharedContext ??= new SharedContextLoadContext("GlobalSharedContext", globalProbePath, this, isCollectible: false);
+                    _globalSharedContext ??= new SharedContextLoadContext("GlobalSharedContext", globalProbePath, this, _logger, isCollectible: false);
                     loadContext = _globalSharedContext;
                 }
                 else
                 {
                     // Per-nugget collectible context for isolation & unload
-                    loadContext = new SharedContextLoadContext(nuggetId, nuggetPath, this, isCollectible: true);
+                    loadContext = new SharedContextLoadContext(nuggetId, nuggetPath, this, _logger, isCollectible: true);
                 }
 
                 // Load assemblies based on path type

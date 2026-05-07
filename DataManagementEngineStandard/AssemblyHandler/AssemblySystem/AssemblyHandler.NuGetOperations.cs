@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.NuGetManagement;
+using TheTechIdea.Beep.NuGetManagement.Models;
 using TheTechIdea.Beep.Tools.PluginSystem;
 
 namespace TheTechIdea.Beep.Tools
