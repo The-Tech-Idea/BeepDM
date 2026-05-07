@@ -35,9 +35,10 @@
             Tracks assembly loading performance and outcomes.
             </summary>
         </member>
-        <member name="F:TheTechIdea.Beep.Tools.AssemblyHandler._nuggetManager">
+        <member name="F:TheTechIdea.Beep.Tools.AssemblyHandler._nugetPackageManager">
             <summary>
-            NuGet package manager for loading/unloading nuggets
+            Enhanced NuGet package manager with full lifecycle support.
+            Handles download, install, load, update, and uninstall operations.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.LoaderExtensionClasses">
@@ -98,6 +99,17 @@
         <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.LoadedAssemblies">
             <summary>
             List of loaded assemblies
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.NuGetPackageManager">
+            <summary>
+            Enhanced NuGet package manager for advanced package operations.
+            Set this property to enable full package lifecycle management (download, install, update, etc.)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.NuggetManager">
+            <summary>
+            Legacy nugget manager for backward compatibility.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.#ctor(TheTechIdea.Beep.ConfigUtil.IConfigEditor,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Utilities.IUtil)">

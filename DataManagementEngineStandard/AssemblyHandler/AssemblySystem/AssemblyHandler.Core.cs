@@ -36,11 +36,11 @@ namespace TheTechIdea.Beep.Tools
         /// Handles download, install, load, update, and uninstall operations.
         /// </summary>
         private NuGetPackageManager _nugetPackageManager;
-
+        private NuggetManager _nuggetManager; // Legacy nugget manager for backward compatibility
         #endregion
 
         #region Public Properties - IAssemblyHandler Implementation
-        
+
         /// <summary>
         /// List of classes that extend the loader functionality.
         /// </summary>
@@ -140,7 +140,10 @@ namespace TheTechIdea.Beep.Tools
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-        
+            
+            // Initialize legacy NuggetManager
+            _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);
+
             // Initialize loaded assemblies from dependency context
             InitializeLoadedAssemblies();
         }
