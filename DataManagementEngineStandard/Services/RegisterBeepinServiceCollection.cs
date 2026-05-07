@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,9 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Container.Services;
-
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Services;
+using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Container
@@ -61,6 +61,11 @@ namespace TheTechIdea.Beep.Container
         /// Adds a custom configuration property.
         /// </summary>
         IBeepServiceBuilder WithProperty(string key, object value);
+
+        /// <summary>
+        /// Sets the assembly handler type to use.
+        /// </summary>
+        IBeepServiceBuilder WithAssemblyHandler(AssemblyHandlerType handlerType);
 
         /// <summary>
         /// Registers BeepService as a singleton (recommended for desktop applications).
@@ -143,6 +148,12 @@ namespace TheTechIdea.Beep.Container
         public IBeepServiceBuilder WithProperty(string key, object value)
         {
             _options.AdditionalProperties[key] = value;
+            return this;
+        }
+
+        public IBeepServiceBuilder WithAssemblyHandler(AssemblyHandlerType handlerType)
+        {
+            _options.AssemblyHandlerType = handlerType;
             return this;
         }
 
@@ -597,6 +608,7 @@ namespace TheTechIdea.Beep.Container
         private static IBeepService CreateBeepServiceInstance(IServiceCollection services, BeepServiceOptions options)
         {
             var beepService = new BeepService(services);
+            beepService.AssemblyHandlerType = options.AssemblyHandlerType;
             beepService.Configure(
                 options.DirectoryPath,
                 options.AppRepoName,
@@ -697,6 +709,12 @@ namespace TheTechIdea.Beep.Container
         /// Gets or sets additional configuration properties for extensibility.
         /// </summary>
         public Dictionary<string, object> AdditionalProperties { get; set; } = new();
+
+        /// <summary>
+        /// Gets or sets the type of assembly handler to use.
+        /// Default is the standard AssemblyHandler. SharedContext enables the plugin system with enhanced isolation.
+        /// </summary>
+        public AssemblyHandlerType AssemblyHandlerType { get; set; } = AssemblyHandlerType.Default;
 
         /// <summary>
         /// Validates the configuration options and throws descriptive exceptions for invalid configurations.

@@ -10,9 +10,10 @@ using Newtonsoft.Json;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGet;
 using TheTechIdea.Beep.Tools.PluginSystem;
 using TheTechIdea.Beep.NuGetManagement;
-using TheTechIdea.Beep.NuGetManagement.Models;
+ 
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.DataBase;
@@ -156,7 +157,7 @@ namespace TheTechIdea.Beep.Tools
             _scanningService = new ScanningService(_sharedContextManager, ConfigEditor, Logger);
 
             // Initialize new NuGet Package Manager (enhanced)
-            _nugetPackageManager = new NuGetPackageManager(Logger, _sharedContextManager, Path.Combine(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, "Plugins"));
+            _nugetPackageManager = new NuGetPackageManager(Logger, this, Path.Combine(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, "Plugins"));
             
             // Initialize singleton NuGet package downloader (legacy - kept for backward compatibility)
             _packageDownloader = new NuggetPackageDownloader(Logger);
@@ -263,7 +264,7 @@ namespace TheTechIdea.Beep.Tools
                 // CRITICAL: For multi-targeted projects, resolve to framework-specific subdirectory
                 string resolvedPath = ResolveFrameworkSpecificPath(path);
                 
-                var nuggetInfo = _sharedContextManager.LoadNuggetAsync(resolvedPath, $"Nugget_{fileTypes}_{DateTime.UtcNow.Ticks}").GetAwaiter().GetResult();
+                var nuggetInfo = Task.Run(() => _sharedContextManager.LoadNuggetAsync(resolvedPath, $"Nugget_{fileTypes}_{DateTime.UtcNow.Ticks}")).GetAwaiter().GetResult();
                 
                 if (nuggetInfo != null)
                 {
@@ -812,42 +813,57 @@ namespace TheTechIdea.Beep.Tools
 
         private void ProcessExtensions()
         {
-            // Process loader extensions
-            var extensionAssemblies = _assemblies.Where(x =>
-                x.FileTypes == FolderFileTypes.LoaderExtensions).ToList();
-
-            foreach (var assembly in extensionAssemblies)
-            {
-                try
-                {
-                    ScanExtensions(assembly.DllLib);
-                }
-                catch (Exception ex)
-                {
-                    Logger?.LogWithContext($"Failed to process extensions in {assembly.DllName}", ex);
-                }
-            }
-        }
-
-        private void ScanExtensions(Assembly assembly)
-        {
-            // Use SharedContextManager for instantiation (factory cached & consistent)
+            // Get all loader extension types from shared context
             var loaderExtensions = _sharedContextManager.DiscoveredLoaderExtensions
                 .Where(le => le.type != null)
                 .Select(le => le.type)
                 .Where(t => typeof(ILoaderExtention).IsAssignableFrom(t))
                 .ToList();
 
+            if (loaderExtensions.Count == 0)
+            {
+                Logger?.LogWithContext("No loader extensions discovered, skipping extension scanning", null);
+                return;
+            }
+
+            // Scan ALL loaded assemblies with each extension (matches AssemblySystem behavior)
             foreach (var extensionType in loaderExtensions)
             {
                 try
                 {
                     var instance = _sharedContextManager.CreateInstance(extensionType.FullName, this) as ILoaderExtention;
-                    instance?.Scan(assembly);
+                    if (instance == null) continue;
+
+                    foreach (var assembly in _loadedAssemblies)
+                    {
+                        try
+                        {
+                            // Filter using namespaces to ignore
+                            bool skip = false;
+                            if (NamespacestoIgnore.Count > 0)
+                            {
+                                if (NamespacestoIgnore.Any(ns => assembly.FullName.Contains(ns)))
+                                {
+                                    skip = true;
+                                }
+                            }
+
+                            if (!assembly.FullName.StartsWith("System") &&
+                                !assembly.FullName.StartsWith("Microsoft") &&
+                                !skip)
+                            {
+                                instance.Scan(assembly);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger?.LogWithContext($"Failed to run extension scan on {assembly.FullName}", ex);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogWithContext($"Failed to run extension scan on {assembly.FullName}", ex);
+                    Logger?.LogWithContext($"Failed to create extension instance for {extensionType.FullName}", ex);
                 }
             }
         }
@@ -967,10 +983,10 @@ namespace TheTechIdea.Beep.Tools
                             {
                                 // Load via SharedContextManager to maintain proper isolation and reference sharing
                                 Logger?.LogWithContext($"Loading assembly on-demand from: {module.FullName}", null);
-                                var nugget = _sharedContextManager.LoadNuggetAsync(
+                                var nugget = Task.Run(() => _sharedContextManager.LoadNuggetAsync(
                                     module.FullName, 
                                     $"OnDemand_{simpleName}_{DateTime.UtcNow.Ticks}"
-                                ).GetAwaiter().GetResult();
+                                )).GetAwaiter().GetResult();
                                 
                                 if (nugget?.LoadedAssemblies != null && nugget.LoadedAssemblies.Count > 0)
                                 {
@@ -1134,10 +1150,10 @@ namespace TheTechIdea.Beep.Tools
                 try
                 {
                     // Load via SharedContextManager (can handle both files and directories)
-                    var nuggetInfo = _sharedContextManager.LoadNuggetAsync(
+                    var nuggetInfo = Task.Run(() => _sharedContextManager.LoadNuggetAsync(
                         dllPath, 
                         $"Folder_{folderFileType}_{Path.GetFileNameWithoutExtension(dllPath)}_{DateTime.UtcNow.Ticks}"
-                    ).GetAwaiter().GetResult();
+                    )).GetAwaiter().GetResult();
                     
                     if (nuggetInfo != null && nuggetInfo.LoadedAssemblies != null)
                     {
@@ -1201,7 +1217,7 @@ namespace TheTechIdea.Beep.Tools
             ErrorObject.Flag = Errors.Ok;
 
             var nuggetId = $"DirectNugget_{Path.GetFileNameWithoutExtension(path)}_{DateTime.UtcNow.Ticks}";
-            var nuggetInfo = _sharedContextManager.LoadNuggetAsync(path, nuggetId).GetAwaiter().GetResult();
+            var nuggetInfo = Task.Run(() => _sharedContextManager.LoadNuggetAsync(path, nuggetId)).GetAwaiter().GetResult();
             var result = nuggetInfo?.LoadedAssemblies != null && nuggetInfo.LoadedAssemblies.Count > 0;
 
             if (result && nuggetInfo != null)
@@ -1399,6 +1415,15 @@ namespace TheTechIdea.Beep.Tools
             Logger?.LogWithContext($"Error installing/loading NuGet package {packageName}", ex);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Installs and loads a NuGet package (interface implementation without useSharedContext parameter).
+    /// Defaults to using shared context.
+    /// </summary>
+    public async Task<NuggetInfo> InstallAndLoadNuGetPackageAsync(string packageName, string version = null)
+    {
+        return await InstallAndLoadNuGetPackageAsync(packageName, version, true);
     }
 
     /// <summary>
@@ -1685,7 +1710,7 @@ namespace TheTechIdea.Beep.Tools
         }
         #endregion
 
-    #region Dispose
+        #region Dispose
         public void Dispose()
         {
             if (!_disposed)
@@ -2426,6 +2451,117 @@ namespace TheTechIdea.Beep.Tools
             }
 
             return false;
+        }
+
+        #endregion
+
+        #region IAssemblyLoadContext Implementation
+
+        /// <summary>
+        /// Gets whether this load context supports shared context mode.
+        /// SharedContextAssemblyHandler supports shared context isolation.
+        /// </summary>
+        public bool SupportsSharedContext => true;
+
+        /// <summary>
+        /// Loads a package from the specified path using the shared context manager.
+        /// </summary>
+        public async Task<NuggetInfo> LoadPackageAsync(string packagePath, string packageId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(packagePath) || !Directory.Exists(packagePath))
+                {
+                    Logger?.LogWithContext($"LoadPackageAsync: Invalid path {packagePath}", null);
+                    return null;
+                }
+
+                var nuggetInfo = await _sharedContextManager.LoadNuggetAsync(packagePath, packageId);
+                
+                if (nuggetInfo?.LoadedAssemblies != null)
+                {
+                    foreach (var assembly in nuggetInfo.LoadedAssemblies)
+                    {
+                        if (!_loadedAssemblies.Contains(assembly))
+                            _loadedAssemblies.Add(assembly);
+                        
+                        var assemblyRep = new assemblies_rep(assembly, nuggetInfo.SourcePath, assembly.FullName, FolderFileTypes.Nugget);
+                        if (!_assemblies.Any(a => a.DllLib == assembly))
+                            _assemblies.Add(assemblyRep);
+                    }
+                    
+                    Logger?.LogWithContext($"LoadPackageAsync: Loaded {nuggetInfo.LoadedAssemblies.Count} assemblies from {packageId}", nuggetInfo);
+                }
+                
+                return nuggetInfo;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"LoadPackageAsync: Error loading {packageId}", ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Unloads a package by its identifier using the shared context manager.
+        /// </summary>
+        public bool UnloadPackage(string packageId)
+        {
+            try
+            {
+                var result = _sharedContextManager.UnloadNugget(packageId);
+                if (result)
+                {
+                    SyncLocalAssemblyTrackingFromSharedContext();
+                    Logger?.LogWithContext($"UnloadPackage: Successfully unloaded {packageId}", null);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWithContext($"UnloadPackage: Error unloading {packageId}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets all currently loaded assemblies from the shared context.
+        /// </summary>
+        public IEnumerable<Assembly> GetLoadedAssemblies()
+        {
+            return _sharedContextManager?.GetSharedAssemblies() ?? Enumerable.Empty<Assembly>();
+        }
+
+        /// <summary>
+        /// Checks if a package is currently loaded in the shared context.
+        /// </summary>
+        public bool IsPackageLoaded(string packageId)
+        {
+            return _sharedContextManager?.GetNugget(packageId) != null;
+        }
+
+        #endregion
+
+        #region Missing NuGet Lifecycle Methods
+
+        /// <summary>
+        /// Installs a NuGet package without loading it.
+        /// </summary>
+        public async Task<PackageInstallResult> InstallNuGetPackageAsync(string packageName, string version = null)
+        {
+            try
+            {
+                ErrorObject.Flag = Errors.Ok;
+                return await _nugetPackageManager.InstallAsync(packageName, version);
+            }
+            catch (Exception ex)
+            {
+                ErrorObject.Flag = Errors.Failed;
+                ErrorObject.Message = ex.Message;
+                ErrorObject.Ex = ex;
+                Logger?.LogWithContext($"Error installing NuGet package {packageName}", ex);
+                return new PackageInstallResult { PackageId = packageName, Error = ex.Message };
+            }
         }
 
         #endregion

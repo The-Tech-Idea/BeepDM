@@ -1,4 +1,4 @@
-﻿
+
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -55,6 +55,17 @@ namespace TheTechIdea.Beep.Container.Services
         }
         
         bool isDev = false;
+        private AssemblyHandlerType _assemblyHandlerType = AssemblyHandlerType.Default;
+
+        /// <summary>
+        /// Gets or sets the type of assembly handler to use.
+        /// Must be set before calling Configure().
+        /// </summary>
+        public AssemblyHandlerType AssemblyHandlerType
+        {
+            get => _assemblyHandlerType;
+            set => _assemblyHandlerType = value;
+        }
 
         #region "System Components"
         public IDMEEditor DMEEditor { get; set; }
@@ -138,7 +149,7 @@ namespace TheTechIdea.Beep.Container.Services
                 // Create core services
                 Config_editor = new ConfigEditor(lg, Erinfo, jsonLoader, root, containername, configType);
                 util = new Util(lg, Erinfo, Config_editor);
-                LLoader = new AssemblyHandler(Config_editor, Erinfo, lg, util);
+                LLoader = CreateAssemblyHandler(Config_editor, Erinfo, lg, util);
                 DMEEditor = new DMEEditor(lg, util, Erinfo, Config_editor, LLoader);
 
                 // Register services if collection provided
@@ -173,6 +184,19 @@ namespace TheTechIdea.Beep.Container.Services
                 Console.WriteLine($"BeepService configuration failed: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Creates the appropriate assembly handler based on the configured type.
+        /// </summary>
+        private IAssemblyHandler CreateAssemblyHandler(IConfigEditor configEditor, IErrorsInfo errorObject, IDMLogger logger, IUtil util)
+        {
+            return _assemblyHandlerType switch
+            {
+                AssemblyHandlerType.SharedContext => new SharedContextAssemblyHandler(configEditor, errorObject, logger, util),
+                _ => new AssemblyHandler(configEditor, errorObject, logger, util)
+            };
+        }
+
         public void LoadServicesScoped()
         {
             Services.AddKeyedScoped<IDMLogger, DMLogger>("Logger");
@@ -180,7 +204,10 @@ namespace TheTechIdea.Beep.Container.Services
             Services.AddKeyedScoped<IDMEEditor, DMEEditor>("Editor");
             Services.AddKeyedScoped<IUtil, Util>("Util");
             Services.AddKeyedScoped<IJsonLoader, JsonLoader>("JsonLoader");
-            Services.AddKeyedScoped<IAssemblyHandler, AssemblyHandler>("AssemblyHandler");
+            if (_assemblyHandlerType == AssemblyHandlerType.SharedContext)
+                Services.AddKeyedScoped<IAssemblyHandler, SharedContextAssemblyHandler>("AssemblyHandler");
+            else
+                Services.AddKeyedScoped<IAssemblyHandler, AssemblyHandler>("AssemblyHandler");
 
         }
         public void LoadServicesSingleton()

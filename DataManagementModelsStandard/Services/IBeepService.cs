@@ -22,6 +22,7 @@ namespace TheTechIdea.Beep.Services
         IJsonLoader jsonLoader { get; set; }
         IDMLogger lg { get; set; }
         IAssemblyHandler LLoader { get; set; }
+   
         void LoadConfigurations(string containername);
       //  IServiceCollection Services { get; }
         void LoadServicesScoped();

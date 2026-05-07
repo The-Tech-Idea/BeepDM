@@ -6,12 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGet;
 using TheTechIdea.Beep.NuGetManagement.Helpers;
-using TheTechIdea.Beep.NuGetManagement.Models;
 using TheTechIdea.Beep.NuGetManagement.Services;
 using TheTechIdea.Beep.Tools;
-using TheTechIdea.Beep.Tools.PluginSystem;
-using NuGetSourceConfig = TheTechIdea.Beep.Tools.NuGetSourceConfig;
+
 
 namespace TheTechIdea.Beep.NuGetManagement
 {
@@ -75,11 +74,11 @@ namespace TheTechIdea.Beep.NuGetManagement
         /// Initializes a new instance of the NuGetPackageManager with default configuration.
         /// </summary>
         /// <param name="logger">The logger for diagnostic output. Cannot be null.</param>
-        /// <param name="sharedContextManager">The shared context manager for assembly loading.</param>
+        /// <param name="loadContext">The assembly load context for loading packages.</param>
         /// <param name="installDirectory">Optional custom installation directory. Defaults to {BaseDirectory}/Plugins.</param>
         /// <exception cref="ArgumentNullException">Thrown when logger is null.</exception>
-        public NuGetPackageManager(IDMLogger logger, SharedContextManager sharedContextManager, string installDirectory = null)
-            : this(logger, sharedContextManager, new NuGetManagerConfig { InstallDirectory = installDirectory })
+        public NuGetPackageManager(IDMLogger logger, IAssemblyLoadContext loadContext, string installDirectory = null)
+            : this(logger, loadContext, new NuGetManagerConfig { InstallDirectory = installDirectory })
         {
         }
 
@@ -87,13 +86,14 @@ namespace TheTechIdea.Beep.NuGetManagement
         /// Initializes a new instance of the NuGetPackageManager with custom configuration.
         /// </summary>
         /// <param name="logger">The logger for diagnostic output. Cannot be null.</param>
-        /// <param name="sharedContextManager">The shared context manager for assembly loading.</param>
+        /// <param name="loadContext">The assembly load context for loading packages.</param>
         /// <param name="config">Configuration options for the manager.</param>
         /// <exception cref="ArgumentNullException">Thrown when logger or config is null.</exception>
-        public NuGetPackageManager(IDMLogger logger, SharedContextManager sharedContextManager, NuGetManagerConfig config)
+        public NuGetPackageManager(IDMLogger logger, IAssemblyLoadContext loadContext, NuGetManagerConfig config)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             if (config == null) throw new ArgumentNullException(nameof(config));
+            if (loadContext == null) throw new ArgumentNullException(nameof(loadContext));
             
             _sdkHelper = new NuGetSdkHelper(logger);
             _sourceManager = new SourceManager(logger);
@@ -106,7 +106,7 @@ namespace TheTechIdea.Beep.NuGetManagement
             
             _downloadService = new DownloadService(logger, _sdkHelper, _sourceManager);
             _installService = new InstallService(logger);
-            _loadService = new LoadService(logger, sharedContextManager);
+            _loadService = new LoadService(logger, loadContext);
             _updateService = new UpdateService(logger, _sdkHelper, _downloadService, _installService, _loadService, _sourceManager);
             _uninstallService = new UninstallService(logger, _loadService);
             _cacheManager = new CacheManager(logger, config.CachePath, config.MaxCacheSizeMB, config.AutoCleanup);

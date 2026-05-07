@@ -9,7 +9,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.NuGetManagement;
-using TheTechIdea.Beep.NuGetManagement.Models;
+ 
 using TheTechIdea.Beep.Tools.PluginSystem;
 using TheTechIdea.Beep.Utilities;
 

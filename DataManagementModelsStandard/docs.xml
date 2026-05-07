@@ -6560,6 +6560,804 @@
             Additional options specific to the messaging system.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.NuGet.AssemblyLoadStatistics">
+            <summary>
+            Statistics about assembly loading operations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.BulkInstallResult">
+            <summary>
+            Represents the result of a bulk install operation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkInstallResult.TotalRequested">
+            <summary>Total number of packages requested.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkInstallResult.Successful">
+            <summary>Number of successful installations.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkInstallResult.Failed">
+            <summary>Number of failed installations.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkInstallResult.Error">
+            <summary>Error message if the bulk operation failed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkInstallResult.Results">
+            <summary>Detailed results for each package.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.BulkUninstallResult">
+            <summary>
+            Represents the result of a bulk uninstall operation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUninstallResult.TotalRequested">
+            <summary>Total packages requested for uninstallation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUninstallResult.Successful">
+            <summary>Number of successful uninstallations.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUninstallResult.Failed">
+            <summary>Number of failed uninstallations.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUninstallResult.Errors">
+            <summary>Error messages for failed operations.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.BulkUpdateResult">
+            <summary>
+            Represents the result of a bulk update operation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUpdateResult.TotalChecked">
+            <summary>Total packages checked for updates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUpdateResult.Updated">
+            <summary>Number of packages that were updated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUpdateResult.AlreadyLatest">
+            <summary>Number of packages already at latest version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUpdateResult.Failed">
+            <summary>Number of failed update attempts.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUpdateResult.Error">
+            <summary>Error message if the bulk operation failed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.BulkUpdateResult.Results">
+            <summary>Detailed results for each package.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.CachedPackageInfo">
+            <summary>
+            Represents a single cached package entry.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CachedPackageInfo.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CachedPackageInfo.Version">
+            <summary>The cached version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CachedPackageInfo.Path">
+            <summary>The cache directory path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CachedPackageInfo.SizeBytes">
+            <summary>Package size in bytes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CachedPackageInfo.CachedDate">
+            <summary>Date the package was added to cache.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CachedPackageInfo.LastAccessed">
+            <summary>Date of last access.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.CacheInfo">
+            <summary>
+            Represents information about the NuGet cache state.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CacheInfo.CachePath">
+            <summary>The root cache directory path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CacheInfo.TotalSizeBytes">
+            <summary>Total size of all cached packages in bytes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CacheInfo.PackageCount">
+            <summary>Number of packages in cache.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CacheInfo.MaxSizeBytes">
+            <summary>Maximum allowed cache size in bytes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.CacheInfo.AutoCleanup">
+            <summary>True if automatic cleanup is enabled.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.DriverPackageMapping">
+            <summary>
+            Maps a driver class to the NuGet package that provides it
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.IAssemblyLoadContext">
+            <summary>
+            Abstracts assembly loading operations for NuGet package management.
+            Implemented by both AssemblyHandler and SharedContextAssemblyHandler
+            to allow NuGetPackageManager to work with either implementation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.IAssemblyLoadContext.LoadPackageAsync(System.String,System.String)">
+            <summary>
+            Loads a NuGet package from the specified path.
+            </summary>
+            <param name="packagePath">The directory path containing the package.</param>
+            <param name="packageId">The package identifier.</param>
+            <returns>NuggetInfo containing loaded assembly information, or null if failed.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.IAssemblyLoadContext.UnloadPackage(System.String)">
+            <summary>
+            Unloads a previously loaded package by its identifier.
+            </summary>
+            <param name="packageId">The package identifier to unload.</param>
+            <returns>True if unloaded successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.IAssemblyLoadContext.GetLoadedAssemblies">
+            <summary>
+            Gets all currently loaded assemblies.
+            </summary>
+            <returns>Collection of loaded assemblies.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.IAssemblyLoadContext.IsPackageLoaded(System.String)">
+            <summary>
+            Checks if a package is currently loaded.
+            </summary>
+            <param name="packageId">The package identifier.</param>
+            <returns>True if the package is loaded; otherwise, false.</returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.IAssemblyLoadContext.SupportsSharedContext">
+            <summary>
+            Gets whether this load context supports shared context mode.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.InstalledPackageInfo">
+            <summary>
+            Represents information about an installed package on the local system.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.Version">
+            <summary>The installed version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.InstallPath">
+            <summary>The local installation directory path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.InstalledDate">
+            <summary>Date the package was installed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.LastUpdated">
+            <summary>Date of last update, if updated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.LoadedAssemblyPaths">
+            <summary>Paths to loaded assemblies from this package.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.IsLoaded">
+            <summary>True if currently loaded in memory.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.Source">
+            <summary>The source URL or path where the package was obtained.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.SourceType">
+            <summary>The source type (NuGet, Local, etc.).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.Dependencies">
+            <summary>List of dependency package IDs.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.InstalledPackageInfo.Metadata">
+            <summary>Additional metadata key-value pairs.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.LocalPackageInfo">
+            <summary>
+            Represents a local .nupkg file found in a directory scan.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LocalPackageInfo.FilePath">
+            <summary>Full path to the .nupkg file.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LocalPackageInfo.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LocalPackageInfo.Version">
+            <summary>The package version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LocalPackageInfo.FileSize">
+            <summary>File size in bytes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LocalPackageInfo.ModifiedDate">
+            <summary>Last modified date.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.LockFileData">
+            <summary>
+            Represents a lock file for deterministic package restore.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LockFileData.GeneratedAt">
+            <summary>UTC timestamp when the lock file was generated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LockFileData.Packages">
+            <summary>List of packages with exact versions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.LockFilePackage">
+            <summary>
+            Represents a single package entry in a lock file.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LockFilePackage.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LockFilePackage.Version">
+            <summary>The exact version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LockFilePackage.Source">
+            <summary>The source URL or path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.LockFilePackage.Dependencies">
+            <summary>List of dependency package IDs.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.NuGetSearchResult">
+            <summary>
+            Represents a NuGet package search result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.NuGetSourceConfig">
+            <summary>
+            Configuration for a NuGet package source
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:TheTechIdea.Beep.NuGet.NuggetEventArgs" -->
+        <member name="T:TheTechIdea.Beep.NuGet.PluginHealthEventArgs">
+            <summary>
+            Event arguments for plugin health status changes
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginResourceEventArgs">
+            <summary>
+            Event arguments for plugin resource violations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.NuggetInfo">
+            <summary>
+            Information about a loaded nugget in shared context
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageDependency">
+            <summary>
+            Represents a dependency relationship between packages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageDependency.PackageId">
+            <summary>The dependent package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageDependency.VersionRange">
+            <summary>The version range constraint (e.g., "[1.0.0, 2.0.0)").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageDependency.TargetFramework">
+            <summary>The target framework for this dependency group.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageDependency.IsOptional">
+            <summary>True if this is an optional dependency.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageEventArgs">
+            <summary>
+            Event arguments for NuGet package lifecycle events.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageEventArgs.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageEventArgs.Version">
+            <summary>The package version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageEventArgs.Message">
+            <summary>Human-readable event message.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageEventArgs.Timestamp">
+            <summary>UTC timestamp when the event occurred.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageInstallResult">
+            <summary>
+            Represents the result of a package installation operation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.Success">
+            <summary>True if the operation succeeded.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.Version">
+            <summary>The installed or downloaded version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.InstallPath">
+            <summary>The installation directory path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.InstalledFiles">
+            <summary>List of relative paths of installed files.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.Warnings">
+            <summary>List of non-fatal warnings during installation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.Error">
+            <summary>Error message if the operation failed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.CompletedAt">
+            <summary>UTC timestamp when the operation completed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageInstallResult.DurationMs">
+            <summary>Operation duration in milliseconds.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageMetadata">
+            <summary>
+            Represents detailed metadata for a NuGet package version.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.PackageId">
+            <summary>The package identifier (e.g., "Newtonsoft.Json").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.Version">
+            <summary>The normalized version string.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.Description">
+            <summary>The package description from the nuspec.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.Authors">
+            <summary>The package authors or owners.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.IconUrl">
+            <summary>URL to the package icon.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.ProjectUrl">
+            <summary>URL to the project website.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.LicenseUrl">
+            <summary>URL to the license information.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.LicenseType">
+            <summary>The license type (e.g., MIT, Apache-2.0).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.Tags">
+            <summary>List of tags associated with the package.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.DownloadCount">
+            <summary>Total download count from NuGet.org.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.Published">
+            <summary>Date the package was published.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.IsPrerelease">
+            <summary>True if this is a prerelease version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.Dependencies">
+            <summary>List of package dependencies.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.TargetFramework">
+            <summary>The target framework for this package.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageMetadata.PackageSize">
+            <summary>The package file size in bytes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageRequest">
+            <summary>
+            Represents a package installation request for bulk operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageRequest.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageRequest.Version">
+            <summary>The desired version. If null, latest is used.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageRequest.Source">
+            <summary>Optional specific source to use.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageSearchResult">
+            <summary>
+            Represents a single search result from a NuGet query.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.Version">
+            <summary>The latest version found.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.Description">
+            <summary>The package description.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.Authors">
+            <summary>The package authors.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.DownloadCount">
+            <summary>Total download count.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.IconUrl">
+            <summary>URL to the package icon.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.ProjectUrl">
+            <summary>URL to the project website.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.Tags">
+            <summary>List of tags.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.IsPrerelease">
+            <summary>True if this is a prerelease version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageSearchResult.Source">
+            <summary>The source URL where this result was found.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageStatistics">
+            <summary>
+            Represents usage statistics for an installed package.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageStatistics.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageStatistics.TotalDownloads">
+            <summary>Total number of downloads.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageStatistics.FirstInstalled">
+            <summary>Date first installed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageStatistics.LastUsed">
+            <summary>Date last used.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageStatistics.LoadCount">
+            <summary>Number of times the package has been loaded.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageStatistics.TotalLoadTimeMs">
+            <summary>Total time spent loading in milliseconds.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PackageUpdateResult">
+            <summary>
+            Represents the result of a package update operation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.Success">
+            <summary>True if the update operation succeeded.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.PackageId">
+            <summary>The package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.OldVersion">
+            <summary>The previous installed version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.NewVersion">
+            <summary>The new installed version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.WasUpdated">
+            <summary>True if the package was actually updated (not already latest).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.Error">
+            <summary>Error message if the update failed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.PackageUpdateResult.Warnings">
+            <summary>List of non-fatal warnings during update.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginState">
+            <summary>
+            Plugin states for modern plugin lifecycle management
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginHealth">
+            <summary>
+            Plugin health status
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginResolutionStrategy">
+            <summary>
+            Plugin assembly resolution strategy
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.PluginResolutionStrategy.RegularAssembliesOnly">
+            <summary>
+            Search regular assemblies only
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.PluginResolutionStrategy.IsolatedPluginsOnly">
+            <summary>
+            Search isolated plugins only
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.PluginResolutionStrategy.RegularFirst">
+            <summary>
+            Search regular assemblies first, then plugins
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.PluginResolutionStrategy.PluginsFirst">
+            <summary>
+            Search plugins first, then regular assemblies
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.PluginResolutionStrategy.Both">
+            <summary>
+            Search both simultaneously (parallel)
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.UnifiedPluginType">
+            <summary>
+            Unified plugin type - treats everything as a plugin
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.SharedAssembly">
+            <summary>
+            Regular assembly loaded in shared context
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.IsolatedPlugin">
+            <summary>
+            Isolated plugin with unload capability
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.NuggetPackage">
+            <summary>
+            Downloaded nugget package
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.BuiltinComponent">
+            <summary>
+            Built-in system component
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.DataSourceDriver">
+            <summary>
+            Data source driver
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.ConnectionDriver">
+            <summary>
+            Connection driver
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.WorkflowComponent">
+            <summary>
+            Workflow component
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.UIComponent">
+            <summary>
+            UI component/addon
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.NuGet.UnifiedPluginType.ExtensionComponent">
+            <summary>
+            Extension/loader component
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginInfo">
+            <summary>
+            Plugin information for unified plugin system - treats everything as a plugin
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.UnifiedPlugin">
+            <summary>
+            Unified plugin container - represents any loadable component as a plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.UnifiedPlugin.CreateInstance(System.String,System.Object[])">
+            <summary>
+            Creates an instance of a type from this plugin
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.UnifiedPlugin.GetNamedInstance``1(System.String)">
+            <summary>
+            Gets an instance by name (for singleton-like behavior)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.UnifiedPlugin.SetNamedInstance(System.String,System.Object)">
+            <summary>
+            Sets a named instance
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.UnifiedPlugin.HasType(System.String)">
+            <summary>
+            Checks if the plugin contains a specific type
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.UnifiedPlugin.GetTypesImplementing``1">
+            <summary>
+            Gets all types implementing a specific interface
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.NuGet.UnifiedPlugin.ConvertToPluginInfo">
+            <summary>
+            Converts to legacy PluginInfo for compatibility
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginInstanceResult">
+            <summary>
+            Plugin instance creation result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginTypeResult">
+            <summary>
+            Plugin type search result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.IPluginContext">
+            <summary>
+            Plugin context for dependency injection and services
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginEventArgs">
+            <summary>
+            Event arguments for plugin lifecycle events
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.IModernPlugin">
+            <summary>
+            Enhanced modern plugin interface - unified approach
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.IPluginMessageBus">
+            <summary>
+            Plugin messaging system for inter-plugin communication
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.IUnifiedPluginManager">
+            <summary>
+            Unified plugin manager interface - treats everything as plugins
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.PluginDiscoveryResult">
+            <summary>
+            Plugin discovery result
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.UnifiedPluginFactory">
+            <summary>
+            Plugin factory for creating unified plugins from different sources
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.SearchOptions">
+            <summary>
+            Options for controlling NuGet package search behavior.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.SearchOptions.Skip">
+            <summary>Number of results to skip (for pagination).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.SearchOptions.Take">
+            <summary>Maximum number of results to return.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.SearchOptions.IncludePrerelease">
+            <summary>True to include prerelease versions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.SearchOptions.Source">
+            <summary>Optional specific source to search.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.SearchOptions.Framework">
+            <summary>Optional target framework filter.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.SearchOptions.ExactMatch">
+            <summary>True for exact name matching instead of substring search.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGet.VulnerabilityInfo">
+            <summary>
+            Represents a known security vulnerability in a package.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.VulnerabilityInfo.PackageId">
+            <summary>The affected package identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.VulnerabilityInfo.Version">
+            <summary>The affected version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.VulnerabilityInfo.AdvisoryUrl">
+            <summary>URL to the security advisory.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.VulnerabilityInfo.Severity">
+            <summary>Severity level (Critical, High, Moderate, Low).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.VulnerabilityInfo.Description">
+            <summary>Description of the vulnerability.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGet.VulnerabilityInfo.Published">
+            <summary>Date the vulnerability was published.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig">
+            <summary>
+            Configuration options for NuGetPackageManager behavior.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.InstallDirectory">
+            <summary>
+            Default installation directory for packages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.CachePath">
+            <summary>
+            Path to the global NuGet cache directory.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.MaxCacheSizeMB">
+            <summary>
+            Maximum cache size in megabytes.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.AutoCleanup">
+            <summary>
+            Whether to enable automatic cache cleanup.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.CacheRetentionDays">
+            <summary>
+            Number of days to keep packages in cache before cleanup.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.PreferSharedContext">
+            <summary>
+            Whether to prefer loading packages into shared context.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.IncludePrerelease">
+            <summary>
+            Whether to include prerelease versions in searches and updates.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.CheckVulnerabilities">
+            <summary>
+            Whether to check for package vulnerabilities before installation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.RequireSignedPackages">
+            <summary>
+            Whether to require signed packages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.AllowUntrustedCertificates">
+            <summary>
+            Whether to allow untrusted certificates during signature verification.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.AutoGenerateLockFile">
+            <summary>
+            Whether to generate lock files after package operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.NetworkTimeoutSeconds">
+            <summary>
+            Default timeout for network operations in seconds.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.MaxRetryAttempts">
+            <summary>
+            Number of retry attempts for failed downloads.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfig.DefaultSources">
+            <summary>
+            List of default NuGet sources.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting">
+            <summary>
+            Represents a NuGet source configuration entry.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting.Name">
+            <summary>The source name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting.Url">
+            <summary>The source URL or path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting.Enabled">
+            <summary>Whether the source is enabled.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting.Priority">
+            <summary>Source priority (lower is higher priority).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting.Username">
+            <summary>Username for authenticated feeds.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.NuGetManagement.NuGetSourceSetting.Password">
+            <summary>Password for authenticated feeds.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Pipelines.Attributes.PipelinePluginAttribute">
             <summary>
             Decorate any <c>IPipelinePlugin</c> implementation with this attribute.
@@ -12836,16 +13634,6 @@
         <member name="T:TheTechIdea.Beep.StreamandEvents.TopicLifecycleMetadata">
             <summary>Lifecycle ownership metadata for a topic.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Tools.NuGetSearchResult">
-            <summary>
-            Represents a NuGet package search result
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.NuGetSourceConfig">
-            <summary>
-            Configuration for a NuGet package source
-            </summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Tools.DriverPackageMapping">
             <summary>
             Maps a driver class to the NuGet package that provides it
@@ -12854,6 +13642,21 @@
         <member name="T:TheTechIdea.Beep.Tools.AssemblyLoadStatistics">
             <summary>
             Statistics about assembly loading operations
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Tools.AssemblyHandlerType">
+            <summary>
+            Specifies the type of assembly handler implementation to use.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.AssemblyHandlerType.Default">
+            <summary>
+            The default AssemblyHandler implementation (AssemblySystem).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.AssemblyHandlerType.SharedContext">
+            <summary>
+            The SharedContextAssemblyHandler implementation (PluginSystem) with enhanced isolation and plugin management.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.SearchNuGetPackagesAsync(System.String,System.Int32,System.Int32,System.Boolean,System.Threading.CancellationToken)">
@@ -12935,6 +13738,99 @@
             <summary>
             Gets assembly loading statistics.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.InstallAndLoadNuGetPackageAsync(System.String,System.String)">
+            <summary>
+            Installs and loads a NuGet package with all its dependencies.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <param name="version">The specific version. If null, latest is used.</param>
+            <returns>NuggetInfo containing loaded assembly information, or null if failed.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.InstallNuGetPackageAsync(System.String,System.String)">
+            <summary>
+            Installs a NuGet package without loading it.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <param name="version">The specific version. If null, latest is used.</param>
+            <returns>Installation result.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.UpdateNuGetPackageAsync(System.String,System.String)">
+            <summary>
+            Updates a NuGet package to the latest or specified version.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <param name="version">Target version. If null, updates to latest.</param>
+            <returns>Update result.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.UninstallNuGetPackageAsync(System.String,System.Boolean)">
+            <summary>
+            Uninstalls a NuGet package completely.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <param name="removeDependencies">If true, removes unused dependencies.</param>
+            <returns>True if uninstalled successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.RepairNuGetPackageAsync(System.String)">
+            <summary>
+            Repairs a corrupted or damaged NuGet package.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <returns>True if repaired successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.UpdateAllNuGetPackagesAsync">
+            <summary>
+            Performs bulk update of all installed NuGet packages.
+            </summary>
+            <returns>Bulk update result.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetNuGetPackageMetadataAsync(System.String,System.String)">
+            <summary>
+            Gets detailed metadata for a NuGet package.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <param name="version">The package version.</param>
+            <returns>Package metadata, or null if not found.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetNuGetPackageDependenciesAsync(System.String,System.String)">
+            <summary>
+            Gets dependency tree for a NuGet package.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <param name="version">The package version.</param>
+            <returns>List of package dependencies.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.GetInstalledNuGetPackagesAsync">
+            <summary>
+            Gets all installed NuGet packages.
+            </summary>
+            <returns>List of installed package information.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.IsNuGetPackageInstalledAsync(System.String)">
+            <summary>
+            Checks if a NuGet package is installed.
+            </summary>
+            <param name="packageName">The package identifier.</param>
+            <returns>True if installed; otherwise, false.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.ClearNuGetCacheAsync(System.String,System.String)">
+            <summary>
+            Clears the NuGet package cache.
+            </summary>
+            <param name="packageName">Optional specific package to clear. If null, clears all.</param>
+            <param name="version">Optional specific version to clear.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.ExportInstalledPackagesAsync(System.String)">
+            <summary>
+            Exports installed packages to a JSON file.
+            </summary>
+            <param name="filePath">The export file path.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IAssemblyHandler.ImportPackagesAsync(System.String)">
+            <summary>
+            Imports packages from a JSON file.
+            </summary>
+            <param name="filePath">The import file path.</param>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.CreateRecordClass(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.Boolean)">
             <summary>
@@ -13348,201 +14244,6 @@
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ToCamelCase(System.String)">
             <summary>
             Converts a name to camelCase
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.NuggetInfo">
-            <summary>
-            Information about a loaded nugget in shared context
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.NuggetEventArgs">
-            <summary>
-            Event arguments for nugget operations
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginHealthEventArgs">
-            <summary>
-            Event arguments for plugin health status changes
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginResourceEventArgs">
-            <summary>
-            Event arguments for plugin resource violations
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginState">
-            <summary>
-            Plugin states for modern plugin lifecycle management
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginHealth">
-            <summary>
-            Plugin health status
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginResolutionStrategy">
-            <summary>
-            Plugin assembly resolution strategy
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.RegularAssembliesOnly">
-            <summary>
-            Search regular assemblies only
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.IsolatedPluginsOnly">
-            <summary>
-            Search isolated plugins only
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.RegularFirst">
-            <summary>
-            Search regular assemblies first, then plugins
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.PluginsFirst">
-            <summary>
-            Search plugins first, then regular assemblies
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.PluginResolutionStrategy.Both">
-            <summary>
-            Search both simultaneously (parallel)
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.UnifiedPluginType">
-            <summary>
-            Unified plugin type - treats everything as a plugin
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.SharedAssembly">
-            <summary>
-            Regular assembly loaded in shared context
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.IsolatedPlugin">
-            <summary>
-            Isolated plugin with unload capability
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.NuggetPackage">
-            <summary>
-            Downloaded nugget package
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.BuiltinComponent">
-            <summary>
-            Built-in system component
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.DataSourceDriver">
-            <summary>
-            Data source driver
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.ConnectionDriver">
-            <summary>
-            Connection driver
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.WorkflowComponent">
-            <summary>
-            Workflow component
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.UIComponent">
-            <summary>
-            UI component/addon
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Tools.UnifiedPluginType.ExtensionComponent">
-            <summary>
-            Extension/loader component
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginInfo">
-            <summary>
-            Plugin information for unified plugin system - treats everything as a plugin
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.UnifiedPlugin">
-            <summary>
-            Unified plugin container - represents any loadable component as a plugin
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.CreateInstance(System.String,System.Object[])">
-            <summary>
-            Creates an instance of a type from this plugin
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.GetNamedInstance``1(System.String)">
-            <summary>
-            Gets an instance by name (for singleton-like behavior)
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.SetNamedInstance(System.String,System.Object)">
-            <summary>
-            Sets a named instance
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.HasType(System.String)">
-            <summary>
-            Checks if the plugin contains a specific type
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.GetTypesImplementing``1">
-            <summary>
-            Gets all types implementing a specific interface
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Tools.UnifiedPlugin.ConvertToPluginInfo">
-            <summary>
-            Converts to legacy PluginInfo for compatibility
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginInstanceResult">
-            <summary>
-            Plugin instance creation result
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginTypeResult">
-            <summary>
-            Plugin type search result
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.IPluginContext">
-            <summary>
-            Plugin context for dependency injection and services
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginEventArgs">
-            <summary>
-            Event arguments for plugin lifecycle events
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.IModernPlugin">
-            <summary>
-            Enhanced modern plugin interface - unified approach
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.IPluginMessageBus">
-            <summary>
-            Plugin messaging system for inter-plugin communication
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.IUnifiedPluginManager">
-            <summary>
-            Unified plugin manager interface - treats everything as plugins
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.PluginDiscoveryResult">
-            <summary>
-            Plugin discovery result
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Tools.UnifiedPluginFactory">
-            <summary>
-            Plugin factory for creating unified plugins from different sources
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">

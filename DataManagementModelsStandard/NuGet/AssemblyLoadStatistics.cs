@@ -1,25 +1,8 @@
 using System;
 using System.Collections.Generic;
-using TheTechIdea.Beep.DriversConfigurations;
-using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep.Tools
+namespace TheTechIdea.Beep.NuGet
 {
-    
-
-    /// <summary>
-    /// Maps a driver class to the NuGet package that provides it
-    /// </summary>
-    public class DriverPackageMapping
-    {
-        public string PackageId { get; set; }
-        public string Version { get; set; }
-        public string DriverClassName { get; set; }
-        public DataSourceType DataSourceType { get; set; }
-        public DateTime InstalledDate { get; set; } = DateTime.UtcNow;
-        public string InstallPath { get; set; }
-    }
-
     /// <summary>
     /// Statistics about assembly loading operations
     /// </summary>

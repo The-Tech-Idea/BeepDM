@@ -143,6 +143,7 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
             }
             if (assembly != null)
                 return assembly;
+            if (Loader.ConfigEditor.Config == null) return null;
             foreach (var moduleDir in Loader.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);

@@ -18,6 +18,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGet;
 
 namespace TheTechIdea.Beep.Tools.PluginSystem
 {

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGet;
 using TheTechIdea.Beep.Tools.PluginSystem;
 using TheTechIdea.Beep.Utilities;
 

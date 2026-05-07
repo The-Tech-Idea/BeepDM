@@ -6,9 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 
-namespace TheTechIdea.Beep.Tools
+namespace TheTechIdea.Beep.NuGet
 {
     /// <summary>
     /// Plugin states for modern plugin lifecycle management

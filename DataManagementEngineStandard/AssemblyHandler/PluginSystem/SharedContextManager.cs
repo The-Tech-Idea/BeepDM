@@ -947,7 +947,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 }
 
                 // Cache types for fast access across the shared context
-                await CacheAssemblyTypesAsync(loadedAssemblies);
+                CacheAssemblyTypes(loadedAssemblies);
 
                 // Treat as plugins - scan for plugin interfaces and register with plugin managers
                 await RegisterAsPluginsAsync(nuggetInfo);
@@ -1174,12 +1174,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         /// <summary>
         /// Caches types from assemblies for fast shared access
         /// </summary>
-        private async Task CacheAssemblyTypesAsync(IEnumerable<Assembly> assemblies)
+        private void CacheAssemblyTypes(IEnumerable<Assembly> assemblies)
         {
             try
             {
-                await Task.Run(() =>
-                {
                     foreach (var assembly in assemblies)
                     {
                         try
@@ -1242,7 +1240,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                             _logger?.LogWithContext($"Failed to cache types from assembly: {assembly.GetName().Name} - {ex.Message}", ex);
                         }
                     }
-                });
+                }
             }
             catch (Exception ex)
             {
@@ -1493,7 +1491,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 }
 
                 // Cache types from this assembly
-                CacheAssemblyTypesAsync(new[] { assembly }).Wait();
+                CacheAssemblyTypes(new[] { assembly });
                 
                 _logger?.LogWithContext($"Registered existing assembly in shared context: {assembly.GetName().Name}", null);
             }

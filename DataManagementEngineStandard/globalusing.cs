@@ -7,3 +7,6 @@ global using TheTechIdea.Beep.Utilities;
 global using TheTechIdea.Beep.Services;
 global using TheTechIdea.Beep.Vis;
 global using TheTechIdea.Beep.Report;
+global using TheTechIdea.Beep.Logger;
+global using TheTechIdea.Beep.NuGet;
+global using TheTechIdea.Beep.Tools;

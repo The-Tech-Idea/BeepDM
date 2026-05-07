@@ -5,9 +5,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGet;
 using TheTechIdea.Beep.NuGetManagement.Helpers;
-using TheTechIdea.Beep.NuGetManagement.Models;
+ 
 
 namespace TheTechIdea.Beep.NuGetManagement.Services
 {
@@ -195,7 +197,7 @@ namespace TheTechIdea.Beep.NuGetManagement.Services
                 }
 
                 // Fallback: try to read from cache
-                var cachePath = _sdkHelper.GetPackagePathInCache(packageId, NuGet.Versioning.NuGetVersion.Parse(version));
+                var cachePath = _sdkHelper.GetPackagePathInCache(packageId, NuGetVersion.Parse(version));
                 if (Directory.Exists(cachePath))
                 {
                     var nupkgFiles = Directory.GetFiles(cachePath, "*.nupkg", SearchOption.TopDirectoryOnly);

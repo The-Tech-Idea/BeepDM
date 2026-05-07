@@ -9,6 +9,8 @@ using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Vis;
+using TheTechIdea.Beep.Pipelines.Attributes;
+using TheTechIdea.Beep.Rules;
 using TypeInfo = System.Reflection.TypeInfo;
 
 namespace TheTechIdea.Beep.Tools.PluginSystem
@@ -158,9 +160,75 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 componentType = componentType,
                 type = type
             };
-            if (type.ImplementedInterfaces.Contains(typeof(ILocalDB))) xcls.LocalDB = true;
-            if (type.ImplementedInterfaces.Contains(typeof(IDataSource))) xcls.IsDataSource = true;
-            if (type.ImplementedInterfaces.Contains(typeof(IInMemoryDB))) xcls.InMemory = true;
+
+            if (type.ImplementedInterfaces.Contains(typeof(ILocalDB)))
+            {
+                xcls.LocalDB = true;
+            }
+
+            if (type.ImplementedInterfaces.Contains(typeof(IInMemoryDB)))
+            {
+                xcls.InMemory = true;
+            }
+
+            // Check for PipelinePluginAttribute
+            var pipelineAttr = (PipelinePluginAttribute)type.GetCustomAttribute(typeof(PipelinePluginAttribute), false);
+            if (pipelineAttr != null)
+            {
+                xcls.IsPipelinePlugin = true;
+                xcls.PipelinePluginId = pipelineAttr.PluginId;
+                xcls.PipelinePluginType = pipelineAttr.PluginType;
+                xcls.PipelinePluginAuthor = pipelineAttr.Author;
+                xcls.RootName = pipelineAttr.DisplayName;
+                xcls.Imagename = pipelineAttr.IconPath;
+                xcls.Version = pipelineAttr.Version;
+            }
+
+            // Check for FileReaderAttribute (IFileFormatReader — core + plugin assemblies)
+            var fileReaderAttr = (TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute)type.GetCustomAttribute(
+                typeof(TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute), false);
+            if (fileReaderAttr != null)
+            {
+                xcls.IsFileReader = true;
+                xcls.FileReaderExtension = fileReaderAttr.DefaultExtension;
+                xcls.DatasourceType = fileReaderAttr.FormatType;
+                xcls.RootName = fileReaderAttr.DisplayName;
+                xcls.Imagename = fileReaderAttr.IconPath;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = fileReaderAttr.Version;
+            }
+
+            // Check for DefaultResolverAttribute (third-party IDefaultValueResolver plugins)
+            var defaultResolverAttr = (TheTechIdea.Beep.Editor.Defaults.Attributes.DefaultResolverAttribute)type.GetCustomAttribute(
+                typeof(TheTechIdea.Beep.Editor.Defaults.Attributes.DefaultResolverAttribute), false);
+            if (defaultResolverAttr != null)
+            {
+                xcls.IsDefaultResolver = true;
+                xcls.DefaultResolverName = defaultResolverAttr.ResolverName;
+                xcls.RootName = defaultResolverAttr.DisplayName;
+                xcls.Imagename = defaultResolverAttr.IconPath;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = defaultResolverAttr.Version;
+            }
+
+            // Check for RuleAttribute
+            var ruleAttr = (RuleAttribute)type.GetCustomAttribute(typeof(RuleAttribute), false);
+            if (ruleAttr != null)
+            {
+                xcls.IsRule = true;
+                xcls.RuleKey = ruleAttr.RuleKey;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = ruleAttr.RuleVersion;
+                if (string.IsNullOrEmpty(xcls.RootName)) xcls.RootName = ruleAttr.RuleName;
+            }
+
+            // Check for RuleParserAttribute
+            var ruleParserAttr = (RuleParserAttribute)type.GetCustomAttribute(typeof(RuleParserAttribute), false);
+            if (ruleParserAttr != null)
+            {
+                xcls.IsRuleParser = true;
+                xcls.RuleParserKey = ruleParserAttr.ParserKey;
+                if (string.IsNullOrEmpty(xcls.Version)) xcls.Version = ruleParserAttr.ParserVersion;
+                if (string.IsNullOrEmpty(xcls.RootName)) xcls.RootName = ruleParserAttr.ParserName;
+            }
+
             xcls.classProperties = (AddinAttribute)type.GetCustomAttribute(typeof(AddinAttribute), false);
             if (xcls.classProperties != null)
             {
@@ -175,24 +243,33 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 try
                 {
                     xcls.VisSchema = (AddinVisSchema)type.GetCustomAttribute(typeof(AddinVisSchema), false);
-                    if (xcls.VisSchema != null && type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
+                    if (xcls.VisSchema != null)
                     {
-                        var addinTree = new AddinTreeStructure
+                        if (type.ImplementedInterfaces.Contains(typeof(IAddinVisSchema)))
                         {
-                            className = type.Name,
-                            dllname = type.Module.Name,
-                            PackageName = type.FullName,
-                            Order = xcls.Order,
-                            Imagename = xcls.VisSchema.IconImageName,
-                            RootName = xcls.VisSchema.RootNodeName,
-                            NodeName = xcls.VisSchema.BranchText,
-                            ObjectType = type.Name
-                        };
-                        _configEditor?.AddinTreeStructure?.Add(addinTree);
+                            var addinTree = new AddinTreeStructure
+                            {
+                                className = type.Name,
+                                dllname = type.Module.Name,
+                                PackageName = type.FullName,
+                                Order = xcls.Order,
+                                Imagename = xcls.VisSchema.IconImageName,
+                                RootName = xcls.VisSchema.RootNodeName,
+                                NodeName = xcls.VisSchema.BranchText,
+                                ObjectType = type.Name
+                            };
+                            _configEditor?.AddinTreeStructure?.Add(addinTree);
+                        }
                     }
                 }
-                catch (Exception ex) { _logger?.LogWithContext($"Error processing VisSchema for {type.FullName}", ex); }
-                foreach (MethodInfo methods in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).Where(m => m.GetCustomAttributes(typeof(CommandAttribute), true).Length > 0))
+                catch (Exception ex)
+                {
+                    _logger?.LogWithContext($"GetAssemblyClassDefinition: Error processing VisSchema: {ex.Message}", ex);
+                }
+
+                foreach (MethodInfo methods in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
+                         .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), true).Length > 0)
+                          .ToArray())
                 {
                     var methodAttribute = methods.GetCustomAttribute<CommandAttribute>();
                     if (methodAttribute != null)
@@ -217,11 +294,19 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                         });
                     }
                 }
+
                 if (type.ImplementedInterfaces.Contains(typeof(IOrder)))
                 {
-                    try { IOrder cls = (IOrder)Activator.CreateInstance(type); xcls.Order = cls.Order; } catch (Exception ex) { _logger?.LogWithContext($"Error creating IOrder instance for {type.FullName}", ex); }
+                    try
+                    {
+                        IOrder cls = (IOrder)Activator.CreateInstance(type);
+                        xcls.Order = cls.Order;
+                        cls = null;
+                    }
+                    catch (Exception) { }
                 }
             }
+
             return xcls;
         }
 

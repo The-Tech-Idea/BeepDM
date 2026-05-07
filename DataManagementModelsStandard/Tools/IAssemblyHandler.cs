@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +12,28 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Logger;
 
+using TheTechIdea.Beep.NuGet;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Tools
 {
-    public interface IAssemblyHandler:IDisposable
+    /// <summary>
+    /// Specifies the type of assembly handler implementation to use.
+    /// </summary>
+    public enum AssemblyHandlerType
+    {
+        /// <summary>
+        /// The default AssemblyHandler implementation (AssemblySystem).
+        /// </summary>
+        Default,
+
+        /// <summary>
+        /// The SharedContextAssemblyHandler implementation (PluginSystem) with enhanced isolation and plugin management.
+        /// </summary>
+        SharedContext
+    }
+
+    public interface IAssemblyHandler : IDisposable, IAssemblyLoadContext
     {
         //  List<IDM_Addin> AddIns { get; set; }
 
@@ -148,6 +165,103 @@ namespace TheTechIdea.Beep.Tools
         /// Gets assembly loading statistics.
         /// </summary>
         AssemblyLoadStatistics GetLoadStatistics();
+
+        #endregion
+
+        #region NuGet Package Lifecycle (Unified)
+
+        /// <summary>
+        /// Installs and loads a NuGet package with all its dependencies.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <param name="version">The specific version. If null, latest is used.</param>
+        /// <returns>NuggetInfo containing loaded assembly information, or null if failed.</returns>
+        Task<NuggetInfo> InstallAndLoadNuGetPackageAsync(string packageName, string version = null);
+
+        /// <summary>
+        /// Installs a NuGet package without loading it.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <param name="version">The specific version. If null, latest is used.</param>
+        /// <returns>Installation result.</returns>
+        Task<PackageInstallResult> InstallNuGetPackageAsync(string packageName, string version = null);
+
+        /// <summary>
+        /// Updates a NuGet package to the latest or specified version.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <param name="version">Target version. If null, updates to latest.</param>
+        /// <returns>Update result.</returns>
+        Task<PackageUpdateResult> UpdateNuGetPackageAsync(string packageName, string version = null);
+
+        /// <summary>
+        /// Uninstalls a NuGet package completely.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <param name="removeDependencies">If true, removes unused dependencies.</param>
+        /// <returns>True if uninstalled successfully; otherwise, false.</returns>
+        Task<bool> UninstallNuGetPackageAsync(string packageName, bool removeDependencies = false);
+
+        /// <summary>
+        /// Repairs a corrupted or damaged NuGet package.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <returns>True if repaired successfully; otherwise, false.</returns>
+        Task<bool> RepairNuGetPackageAsync(string packageName);
+
+        /// <summary>
+        /// Performs bulk update of all installed NuGet packages.
+        /// </summary>
+        /// <returns>Bulk update result.</returns>
+        Task<BulkUpdateResult> UpdateAllNuGetPackagesAsync();
+
+        /// <summary>
+        /// Gets detailed metadata for a NuGet package.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <param name="version">The package version.</param>
+        /// <returns>Package metadata, or null if not found.</returns>
+        Task<PackageMetadata> GetNuGetPackageMetadataAsync(string packageName, string version);
+
+        /// <summary>
+        /// Gets dependency tree for a NuGet package.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <param name="version">The package version.</param>
+        /// <returns>List of package dependencies.</returns>
+        Task<List<PackageDependency>> GetNuGetPackageDependenciesAsync(string packageName, string version);
+
+        /// <summary>
+        /// Gets all installed NuGet packages.
+        /// </summary>
+        /// <returns>List of installed package information.</returns>
+        Task<List<InstalledPackageInfo>> GetInstalledNuGetPackagesAsync();
+
+        /// <summary>
+        /// Checks if a NuGet package is installed.
+        /// </summary>
+        /// <param name="packageName">The package identifier.</param>
+        /// <returns>True if installed; otherwise, false.</returns>
+        Task<bool> IsNuGetPackageInstalledAsync(string packageName);
+
+        /// <summary>
+        /// Clears the NuGet package cache.
+        /// </summary>
+        /// <param name="packageName">Optional specific package to clear. If null, clears all.</param>
+        /// <param name="version">Optional specific version to clear.</param>
+        Task ClearNuGetCacheAsync(string packageName = null, string version = null);
+
+        /// <summary>
+        /// Exports installed packages to a JSON file.
+        /// </summary>
+        /// <param name="filePath">The export file path.</param>
+        Task ExportInstalledPackagesAsync(string filePath);
+
+        /// <summary>
+        /// Imports packages from a JSON file.
+        /// </summary>
+        /// <param name="filePath">The import file path.</param>
+        Task ImportPackagesAsync(string filePath);
 
         #endregion
     }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.NuGet;
 using TheTechIdea.Beep.Tools;
 
 namespace TheTechIdea.Beep.Tools.PluginSystem
