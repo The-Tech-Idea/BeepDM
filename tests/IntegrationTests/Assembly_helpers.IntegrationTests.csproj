@@ -17,9 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Assembly_helpers.csproj" />
     <ProjectReference Include="..\..\DataManagementEngineStandard\DataManagementEngine.csproj" />
-    <ProjectReference Include="..\..\..\Beep.Nugget\Beep.Nugget.Logic\Beep.Nugget.Logic.csproj" />
   </ItemGroup>
 
 </Project>

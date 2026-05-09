@@ -1178,67 +1178,66 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
         {
             try
             {
-                    foreach (var assembly in assemblies)
+                foreach (var assembly in assemblies)
+                {
+                    try
                     {
+                        Type[] types = null;
+                        
                         try
                         {
-                            Type[] types = null;
-                            
-                            try
-                            {
-                                types = assembly.GetTypes();
-                            }
-                            catch (ReflectionTypeLoadException rtle)
-                            {
-                                // Some types failed to load, but we can still use the ones that loaded successfully
-                                types = rtle.Types.Where(t => t != null).ToArray();
-                                
-                                // Log the loader exceptions for debugging
-                                if (rtle.LoaderExceptions != null && rtle.LoaderExceptions.Length > 0)
-                                {
-                                    var missingAssemblies = rtle.LoaderExceptions
-                                        .OfType<FileNotFoundException>()
-                                        .Select(ex => ex.FileName)
-                                        .Distinct()
-                                        .ToList();
-                                    
-                                    if (missingAssemblies.Any())
-                                    {
-                                        _logger?.LogWithContext(
-                                            $"Assembly {assembly.GetName().Name} has missing dependencies: {string.Join(", ", missingAssemblies)}", 
-                                            null);
-                                    }
-                                }
-                            }
-                            
-                            if (types != null && types.Length > 0)
-                            {
-                                foreach (var type in types)
-                                {
-                                    if (type != null && !string.IsNullOrEmpty(type.FullName))
-                                    {
-                                        _sharedTypeCache.AddOrUpdate(type.FullName,
-                                            _ => new WeakReference<Type>(type),
-                                            (_, __) => new WeakReference<Type>(type));
-                                        
-                                        // Track origin nugget (best-effort)
-                                        try
-                                        {
-                                            var nuggetId = _nuggetAssemblies.FirstOrDefault(kv => kv.Value.Contains(assembly)).Key;
-                                            if (!string.IsNullOrEmpty(nuggetId))
-                                            {
-                                                _typeOriginMap[type.FullName] = nuggetId;
-                                            }
-                                        }
-                                        catch { }
-                                    }
-                                }
-                            }
+                            types = assembly.GetTypes();
                         }
-                        catch (Exception ex)
+                        catch (ReflectionTypeLoadException rtle)
                         {
-                            _logger?.LogWithContext($"Failed to cache types from assembly: {assembly.GetName().Name} - {ex.Message}", ex);
+                            // Some types failed to load, but we can still use the ones that loaded successfully
+                            types = rtle.Types.Where(t => t != null).ToArray();
+                            
+                            // Log the loader exceptions for debugging
+                            if (rtle.LoaderExceptions != null && rtle.LoaderExceptions.Length > 0)
+                            {
+                                var missingAssemblies = rtle.LoaderExceptions
+                                    .OfType<FileNotFoundException>()
+                                    .Select(ex => ex.FileName)
+                                    .Distinct()
+                                    .ToList();
+                                
+                                if (missingAssemblies.Any())
+                                {
+                                    _logger?.LogWithContext(
+                                        $"Assembly {assembly.GetName().Name} has missing dependencies: {string.Join(", ", missingAssemblies)}", 
+                                        null);
+                                }
+                            }
                         }
+                        
+                        if (types != null && types.Length > 0)
+                        {
+                            foreach (var type in types)
+                            {
+                                if (type != null && !string.IsNullOrEmpty(type.FullName))
+                                {
+                                    _sharedTypeCache.AddOrUpdate(type.FullName,
+                                        _ => new WeakReference<Type>(type),
+                                        (_, __) => new WeakReference<Type>(type));
+                                    
+                                    // Track origin nugget (best-effort)
+                                    try
+                                    {
+                                        var nuggetId = _nuggetAssemblies.FirstOrDefault(kv => kv.Value.Contains(assembly)).Key;
+                                        if (!string.IsNullOrEmpty(nuggetId))
+                                        {
+                                            _typeOriginMap[type.FullName] = nuggetId;
+                                        }
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWithContext($"Failed to cache types from assembly: {assembly.GetName().Name} - {ex.Message}", ex);
                     }
                 }
             }

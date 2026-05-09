@@ -148,7 +148,7 @@ namespace Assembly_helpers.IntegrationTests
         private static DataBlockInfo CreateBlock(
             string blockName,
             EntityStructure entityStructure,
-            IEnumerable<RelationShipKeys> dataSourceRelations = null)
+            IEnumerable<RelationShipKeys>? dataSourceRelations = null)
         {
             var unitOfWork = new Mock<IUnitofWork>();
 
@@ -171,9 +171,9 @@ namespace Assembly_helpers.IntegrationTests
 
         private static EntityStructure CreateEntity(
             string entityName,
-            string primaryKeyString = null,
-            List<RelationShipKeys> relations = null,
-            string[] fieldNames = null)
+            string? primaryKeyString = null,
+            List<RelationShipKeys>? relations = null,
+            string[]? fieldNames = null)
         {
             var entity = new EntityStructure
             {

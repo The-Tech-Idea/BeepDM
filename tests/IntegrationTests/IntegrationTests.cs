@@ -31,6 +31,11 @@ namespace Assembly_helpers.IntegrationTests
             GC.Collect(); GC.WaitForPendingFinalizers();
         }
 
+        private static T RequireNotNull<T>(T? value, string message) where T : class
+        {
+            return value ?? throw new Xunit.Sdk.XunitException(message);
+        }
+
         [Fact]
         public async Task MultiFeedInstallAndLoadAsync()
         {
@@ -98,8 +103,10 @@ namespace Assembly_helpers.IntegrationTests
 
             // Find pak paths
             var commonNupkgPath = Path.Combine(feed, $"{commonId}.{commonVersion}.nupkg");
-            var pluginNupkgPath = Directory.GetFiles(feed, "*.nupkg", SearchOption.TopDirectoryOnly)
-                .FirstOrDefault(p => p.Contains(pluginId.ToLower()));
+            var pluginNupkgPath = RequireNotNull(
+                Directory.GetFiles(feed, "*.nupkg", SearchOption.TopDirectoryOnly)
+                    .FirstOrDefault(p => p.Contains(pluginId.ToLowerInvariant())),
+                "Expected plugin package to be created in the feed.");
 
             // Extract both packages
             string commonExtract = Path.Combine(_workspaceTemp, "common_extracted");
@@ -114,10 +121,11 @@ namespace Assembly_helpers.IntegrationTests
             var pluginNugget = await shared.LoadNuggetAsync(pluginLib);
 
             // Now, instantiate plugin class and ensure it uses the SharedClass
-            var pluginAssembly = pluginNugget.LoadedAssemblies.FirstOrDefault();
-            var pluginType = pluginAssembly.GetType("Plugin.UsesCommon.PluginClass");
-            var instance = Activator.CreateInstance(pluginType);
-            var result = pluginType.GetMethod("Run").Invoke(instance, null) as string;
+            var pluginAssembly = RequireNotNull(pluginNugget.LoadedAssemblies.FirstOrDefault(), "Expected the plugin nugget to load an assembly.");
+            var pluginType = RequireNotNull(pluginAssembly.GetType("Plugin.UsesCommon.PluginClass"), "Expected the plugin type to be available in the loaded assembly.");
+            var instance = RequireNotNull(Activator.CreateInstance(pluginType), "Expected to instantiate the plugin type.");
+            var runMethod = RequireNotNull(pluginType.GetMethod("Run"), "Expected the plugin type to expose a Run method.");
+            var result = runMethod.Invoke(instance, null) as string;
             result.Should().Be("HelloShared");
         }
 
@@ -143,8 +151,8 @@ namespace Assembly_helpers.IntegrationTests
             var assemblies = mgr.GetNuggetAssemblies(Path.GetFileName(lib));
             assemblies.Should().NotBeEmpty();
             var asm = assemblies.First();
-            var type = asm.GetType("MemoryHog");
-            var obj = Activator.CreateInstance(type);
+            var type = RequireNotNull(asm.GetType("MemoryHog"), "Expected MemoryHog type to exist in the loaded assembly.");
+            var obj = RequireNotNull(Activator.CreateInstance(type), "Expected to instantiate MemoryHog.");
             var weak = new WeakReference(obj);
 
             // Drop strong refs
