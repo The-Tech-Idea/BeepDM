@@ -2285,7 +2285,7 @@
             Unloads a nugget with true memory cleanup using collectible contexts
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.CacheAssemblyTypesAsync(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
+        <member name="M:TheTechIdea.Beep.Tools.PluginSystem.SharedContextManager.CacheAssemblyTypes(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
             <summary>
             Caches types from assemblies for fast shared access
             </summary>
