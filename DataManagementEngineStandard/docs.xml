@@ -55971,6 +55971,949 @@
             loop, awaits its shutdown, then disposes every sink.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter">
+             <summary>
+             Base adapter for Blazor Server applications.
+            
+             This class compiles without Blazor references and provides the core run logic.
+             In your Blazor Server project, subclass this and inject
+             <c>IHubContext&lt;SetupProgressHub&gt;</c> to push real-time progress via SignalR:
+            
+             <code>
+             public class MyBlazorSetupAdapter : BlazorServerSetupWizardAdapter
+             {
+                 private readonly IHubContext&lt;SetupProgressHub&gt; _hub;
+                 public MyBlazorSetupAdapter(IHubContext&lt;SetupProgressHub&gt; hub) => _hub = hub;
+            
+                 protected override void OnProgress(PassedArgs args)
+                     => _ = _hub.Clients.All.SendAsync("SetupProgress",
+                            new { pct = args.ParameterInt1, msg = args.Messege });
+            
+                 protected override void OnComplete(SetupReport report)
+                     => _ = _hub.Clients.All.SendAsync("SetupComplete",
+                            new { succeeded = report.Succeeded, hash = report.ContentHash });
+             }
+             </code>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnProgress(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>Override to push progress updates to connected clients (e.g. SignalR).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnComplete(TheTechIdea.Beep.SetUp.SetupReport)">
+            <summary>Override to notify clients when the wizard completes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter">
+             <summary>
+             Base adapter for Blazor WebAssembly applications.
+            
+             This class compiles without Blazor references and persists <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/>
+             to a provided key/value store so interrupted setup runs can resume after a page reload.
+            
+             In your Blazor WASM project, subclass this and inject <c>IJSRuntime</c> to use
+             <c>localStorage</c>:
+            
+             <code>
+             public class MyWasmSetupAdapter : BlazorWasmSetupWizardAdapter
+             {
+                 private readonly IJSRuntime _js;
+                 public MyWasmSetupAdapter(IJSRuntime js) => _js = js;
+            
+                 protected override async Task&lt;string&gt; LoadStateAsync(string key)
+                     => await _js.InvokeAsync&lt;string&gt;("localStorage.getItem", key);
+            
+                 protected override async Task SaveStateAsync(string key, string json)
+                     => await _js.InvokeVoidAsync("localStorage.setItem", key, json);
+             }
+             </code>
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.StateStorageKey">
+            <summary>Key used to persist <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/> in the backing store.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.LoadStateAsync(System.String)">
+            <summary>Override to load persisted state JSON from the platform store (e.g. localStorage).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.SaveStateAsync(System.String,System.String)">
+            <summary>Override to save state JSON to the platform store (e.g. localStorage).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnComplete(TheTechIdea.Beep.SetUp.SetupReport)">
+            <summary>Override to react when the wizard finishes (e.g. navigate to a results page).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnProgress(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>Override to surface progress updates to the component (e.g. call StateHasChanged).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter">
+             <summary>
+             Bridges the setup wizard to a plain-console (CLI / BeepShell) output surface.
+            
+             Progress is written to <see cref="P:System.Console.Out"/> using simple text formatting.
+             For Spectre.Console / AnsiConsole styling, subclass this adapter in the CLI project
+             and override <see cref="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)"/> and <see cref="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)"/>.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter">
+             <summary>
+             Bridges the setup wizard to a WinForms/WPF progress surface.
+            
+             The caller provides an <see cref="T:System.Action`1"/> callback that updates the
+             application's wait/progress form, plus an optional completion callback.
+             Wizard execution runs on a thread-pool thread so the UI remains responsive.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.#ctor(System.Action{TheTechIdea.Beep.Addin.PassedArgs},System.Action{TheTechIdea.Beep.SetUp.SetupReport})">
+            <param name="progressCallback">
+            Called on the thread-pool each time a step reports progress.
+            Marshal to the UI thread if needed (e.g. <c>Invoke</c> / <c>Dispatcher.Invoke</c>).
+            </param>
+            <param name="completedCallback">Called once when the wizard finishes.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter">
+             <summary>
+             Base adapter for .NET MAUI applications.
+            
+             This class compiles without MAUI references and provides thread-safe progress
+             dispatch via an overridable <see cref="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.InvokeOnMainThreadAsync(System.Action)"/> hook.
+            
+             In your MAUI project, subclass this to dispatch to the main thread:
+            
+             <code>
+             public class MyMauiSetupAdapter : MauiSetupWizardAdapter
+             {
+                 public MyMauiSetupAdapter(Action&lt;int, string&gt; progressAction,
+                                           Action&lt;SetupReport&gt; completedAction = null)
+                     : base(progressAction, completedAction) { }
+            
+                 protected override Task InvokeOnMainThreadAsync(Action action)
+                     => MainThread.InvokeOnMainThreadAsync(action);
+             }
+             </code>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.#ctor(System.Action{System.Int32,System.String},System.Action{TheTechIdea.Beep.SetUp.SetupReport})">
+            <param name="progressAction">Invoked with (percentComplete, message) for each progress event.</param>
+            <param name="completedAction">Invoked with the final report when the wizard finishes.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.InvokeOnMainThreadAsync(System.Action)">
+            <summary>
+            Override in your MAUI project to dispatch <paramref name="action"/> to the UI thread.
+            Default implementation runs the action inline (safe for unit tests and non-MAUI use).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus">
+            <summary>
+            Mutable status object that <see cref="T:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter"/> updates in real-time.
+            Expose this via a polling endpoint (e.g. <c>GET /api/setup/status</c>).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.State">
+            <summary>
+            Lifecycle state: <c>Idle</c> → <c>Running</c> → <c>Completed</c> | <c>Failed</c> | <c>Cancelled</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.CurrentStepName">
+            <summary>Name of the step currently executing.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.CurrentStepIndex">
+            <summary>Zero-based index of the step currently executing.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.TotalSteps">
+            <summary>Total number of steps in the wizard.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.PercentComplete">
+            <summary>Overall percent-complete across all steps (0–100).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.CurrentMessage">
+            <summary>Latest progress message.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.Report">
+            <summary>Populated after the wizard finishes (<see cref="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.State"/> == Completed or Failed).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter">
+             <summary>
+             Runs the setup wizard on a background thread and exposes status via
+             <see cref="P:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.Status"/> so a polling endpoint (e.g. <c>GET /api/setup/status</c>)
+             can report progress to web clients.
+            
+             Register as <c>Singleton</c> in ASP.NET Core DI and expose <see cref="P:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.Status"/>
+             through a minimal-API endpoint.
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.Status">
+            <summary>Live status updated throughout the wizard run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory">
+             <summary>
+             Default <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizardFactory"/> implementation.
+            
+             <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)"/> returns an empty wizard (no steps).
+             Applications should register a custom factory that adds their domain steps,
+             or use <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.SetupWizardBuilder})"/> with a configuration callback.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <inheritdoc/>
+            <remarks>
+            Returns a wizard with no steps by default. Applications that need a standard
+            wizard should override this class or register a custom <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizardFactory"/>.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.SetupWizardBuilder})">
+            <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ISetupProgressReporter">
+            <summary>
+            Unified progress surface used by all platform adapters to surface wizard progress
+            without coupling to platform-specific UI APIs.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupProgressReporter.ReportStepStart(System.String,System.String,System.Int32,System.Int32)">
+            <summary>Called when a step is about to begin execution.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupProgressReporter.ReportStepProgress(System.String,System.Int32,System.String)">
+            <summary>Called by a step to report incremental progress (0–100).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupProgressReporter.ReportStepComplete(System.String,System.Boolean,System.String)">
+            <summary>Called when a step finishes (succeeded or failed).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupProgressReporter.ReportWizardComplete(TheTechIdea.Beep.SetUp.SetupReport)">
+            <summary>Called when the entire wizard finishes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ISetupStep">
+            <summary>
+            A single unit of work within a setup wizard.
+            Implementations must not throw — surface all errors via <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.StepId">
+            <summary>Stable, unique identifier for this step (e.g. "connection-config").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.StepName">
+            <summary>Human-readable display name shown in progress UI.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.Description">
+            <summary>Optional description shown in wizard UI and reports.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.DependsOn">
+            <summary>Ordered list of StepIds that must complete before this step runs.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Returns true when this step detects it has already been applied and can be
+            safely skipped (idempotency guard).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupStep.Validate(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Validate pre-conditions before <see cref="M:TheTechIdea.Beep.SetUp.ISetupStep.Execute(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> is called.
+            Returns <c>Errors.Failed</c> if the step cannot safely run.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupStep.Execute(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Execute the step.  Must return <c>Errors.Ok</c> on success.
+            Must NOT throw; surface errors via <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ISetupWizard">
+            <summary>
+            Orchestration contract for running a sequence of <see cref="T:TheTechIdea.Beep.SetUp.ISetupStep"/>s.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupWizard.Steps">
+            <summary>Ordered list of steps to execute.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupWizard.State">
+            <summary>Current runtime state (may be resumed from a saved checkpoint).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupWizard.Options">
+            <summary>Options controlling dry-run, skip-seed, environment, etc.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizard.Run(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Run all pending steps in order. Idempotent: already-done steps are skipped.
+            Returns <c>Errors.Ok</c> when all steps succeed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizard.Resume(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Resume from the last persisted checkpoint.
+            Equivalent to <see cref="M:TheTechIdea.Beep.SetUp.ISetupWizard.Run(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> but skips steps recorded as done in <see cref="P:TheTechIdea.Beep.SetUp.ISetupWizard.State"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizard.GetReport">
+            <summary>Returns the report for the most recent Run/Resume call.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ISetupWizardAdapter">
+            <summary>
+            Platform adapter that bridges <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizard"/> to a specific UI/runtime
+            (WinForms, Blazor, CLI, MAUI, Web API).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <summary>Run the wizard within this platform's execution model.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <summary>Show current step information to the user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
+            <summary>Update the progress indicator for the current step.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <summary>Display the final setup result to the user.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ISetupWizardFactory">
+            <summary>
+            Creates pre-configured <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizard"/> instances so platform adapters
+            do not duplicate wizard construction logic.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Returns a wizard and its associated context built from the application's
+            default steps (driver provision → connection config → schema setup → seeding).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.SetupWizardBuilder})">
+            <summary>
+            Returns a wizard and context built with explicit options and a builder callback
+            for adding custom steps.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.ISeeder">
+            <summary>
+            Single unit of seed work. Implementations insert reference data or initial records
+            into a datasource. Each seeder is idempotent — it checks
+            <see cref="M:TheTechIdea.Beep.SetUp.Seeding.ISeeder.IsAlreadySeeded(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)"/> before writing.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.ISeeder.SeederId">
+            <summary>Stable unique identifier (e.g. <c>"roles-seeder"</c>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.ISeeder.SeederName">
+            <summary>Human-readable display name shown in progress output.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.ISeeder.DependsOn">
+            <summary>
+            SeedIds of seeders that must execute before this one.
+            Declare foreign-key–style dependencies here so the registry can topologically sort them.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeeder.IsAlreadySeeded(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Returns <c>true</c> when this seeder's data is already present in the datasource.
+            When true, <see cref="!:SeedingStep"/> will skip this seeder.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeeder.Seed(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Insert seed data into <paramref name="dataSource"/>. Must not throw.
+            Returns <c>Errors.Ok</c> on success.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry">
+            <summary>
+            Manages a collection of <see cref="T:TheTechIdea.Beep.SetUp.Seeding.ISeeder"/> instances and resolves their
+            execution order using topological sorting.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry.All">
+            <summary>All registered seeders (unordered).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry.Register(TheTechIdea.Beep.SetUp.Seeding.ISeeder)">
+            <summary>
+            Registers a seeder.
+            Returns <c>false</c> (no-op) if a seeder with the same <see cref="P:TheTechIdea.Beep.SetUp.Seeding.ISeeder.SeederId"/> is already registered.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry.DiscoverFromAssemblies(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
+            <summary>
+            Scans the provided assemblies for concrete <see cref="T:TheTechIdea.Beep.SetUp.Seeding.ISeeder"/> types
+            with a public parameterless constructor and registers them.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry.GetOrderedSeeders">
+            <summary>
+            Returns all registered seeders sorted so that each seeder's dependencies
+            appear before it in the list.
+            Throws <see cref="T:System.InvalidOperationException"/> on circular dependency.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry.Get(System.String)">
+            <summary>Returns the seeder registered with <paramref name="seederId"/>, or <c>null</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1">
+            <summary>
+            Convenience base for seeders that insert a fixed, immutable list of reference records
+            (status codes, role types, country codes, etc.) into a single entity/table.
+            </summary>
+            <typeparam name="T">The entity type whose records are inserted.</typeparam>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.GetRecords">
+            <summary>Returns the full set of reference records to insert.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.SeedCore(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.SeederBase">
+            <summary>
+            Abstract base for seeders. Provides:
+            <list type="bullet">
+              <item>Default idempotency check via row-count query on <see cref="P:TheTechIdea.Beep.SetUp.Seeding.SeederBase.TargetEntityName"/>.</item>
+              <item><see cref="T:TheTechIdea.Beep.Editor.Defaults.DefaultsManager"/> initialisation before <see cref="M:TheTechIdea.Beep.SetUp.Seeding.SeederBase.SeedCore(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> runs.</item>
+              <item>Exception catch-all so seeders never propagate throws.</item>
+            </list>
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.SeederBase.SeederId">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.SeederBase.SeederName">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.SeederBase.DependsOn">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.SeederBase.TargetEntityName">
+            <summary>Name of the primary entity/table written by this seeder, used by the default idempotency check.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederBase.IsAlreadySeeded(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Default idempotency guard: returns <c>true</c> when <see cref="P:TheTechIdea.Beep.SetUp.Seeding.SeederBase.TargetEntityName"/> exists
+            and contains at least one row.
+            Override for a more specific check (e.g. look for a sentinel record).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederBase.Seed(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederBase.SeedCore(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>Implement the actual insert logic here.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry"/> implementation.
+            Uses Kahn's algorithm for topological sorting.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry.All">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry.Register(TheTechIdea.Beep.SetUp.Seeding.ISeeder)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry.DiscoverFromAssemblies(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry.Get(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry.GetOrderedSeeders">
+            <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupContext">
+            <summary>
+            Mutable shared state that flows through all wizard steps.
+            Steps read from and write to this context.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.Editor">
+            <summary>The central BeepDM editor — provides ConfigEditor, assemblyHandler, data sources, etc.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.DataSource">
+            <summary>The open datasource being configured/migrated/seeded. Populated by Phase 2.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.Options">
+            <summary>Wizard-level options (dry-run, skip flags, environment).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.State">
+            <summary>Persisted wizard state (completed steps, schema hash, completed seeders, etc.).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.ProgressReporter">
+            <summary>Platform-specific progress reporter. Optional.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.ConnectionProperties">
+            <summary>Validated and persisted connection properties. Populated by ConnectionConfigStep.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.MigrationPlan">
+            <summary>Migration plan produced by SchemaSetupStep.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.MigrationResult">
+            <summary>Migration execution result produced by SchemaSetupStep.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.CompletedSeederIds">
+            <summary>
+            Seeder IDs that completed in this run.
+            Sourced from <see cref="P:TheTechIdea.Beep.SetUp.SetupContext.State"/>.CompletedSeederIds; provided here for
+            convenient access by callers who inspect the context after the wizard completes.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupContext.Properties">
+            <summary>Arbitrary key-value bag for steps to pass custom data forward.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupOptions">
+            <summary>
+            Configuration flags that control overall wizard behaviour.
+            Pass a <see cref="T:TheTechIdea.Beep.SetUp.SetupOptions"/> instance to <see cref="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithOptions(TheTechIdea.Beep.SetUp.SetupOptions)"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.DryRun">
+            <summary>
+            When true, build plans and dry-run reports but do NOT apply any changes to the
+            datasource.  Steps should read from context and report what they would do.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.SkipSeeding">
+            <summary>Skip all seeding steps (Phase 4).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.SkipSchema">
+            <summary>Skip schema-creation steps (Phase 3) — assume schema already exists.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.Environment">
+            <summary>
+            Target environment label used by policy gates (e.g. "Development", "Staging", "Production").
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.StrictPolicyMode">
+            <summary>
+            When true, any policy warning is treated as a blocking error.
+            Recommended for production deployments.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.StateFilePath">
+            <summary>
+            File path where <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/> JSON is persisted so runs can resume
+            after interruption.  Null = in-memory only (no checkpoint persistence).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.ReportOutputPath">
+            <summary>
+            Directory path where <see cref="T:TheTechIdea.Beep.SetUp.SetupReport"/> JSON and Markdown artifacts are
+            written after a run.  Null = no file output.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupStepResult">
+            <summary>
+            Per-step outcome record included in <see cref="T:TheTechIdea.Beep.SetUp.SetupReport"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupReport">
+            <summary>
+            Immutable outcome record produced after a wizard run.
+            Contains per-step results, timing, and a SHA-256 content hash.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.WizardId">
+            <summary>Wizard identifier from <see cref="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithId(System.String)"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.RunId">
+            <summary>Unique run identifier generated at report creation time.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.Succeeded">
+            <summary>True when all steps succeeded or were intentionally skipped.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.StepResults">
+            <summary>Per-step results in execution order.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.ContentHash">
+            <summary>SHA-256 hex digest of the serialized StepResults for tamper detection.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.RollbackReportJson">
+            <summary>Populated when a rollback was executed (Phase 6).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.DryRunReportJson">
+            <summary>Populated in dry-run mode (Phase 3/8).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.Environment">
+            <summary>Target environment label at run time.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupState">
+            <summary>
+            Serializable snapshot of wizard progress used for checkpointing and resume.
+            Persist to JSON so runs can resume after a crash or user interruption.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.CompletedStepIds">
+            <summary>Set of step IDs that have completed successfully.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.SkippedStepIds">
+            <summary>Set of step IDs that were skipped (CanSkip returned true).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.FailedStepId">
+            <summary>Step ID of the last failed step, or null if no failure yet.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.SchemaHash">
+            <summary>Content hash of the entity list used for schema creation (Phase 3).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.CompletedSeederIds">
+            <summary>Seeder IDs that have already been applied (Phase 4).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.StartedAt">
+            <summary>UTC timestamp when the first step in this run started.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.LastUpdatedAt">
+            <summary>UTC timestamp of the last completed step.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.Metadata">
+            <summary>Arbitrary key-value bag for step-specific persisted state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupState.IsStepCompleted(System.String)">
+            <summary>
+            Returns true when <paramref name="stepId"/> has been completed or skipped,
+            meaning the wizard should not re-execute it.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupWizard">
+             <summary>
+             Core orchestrator — runs registered <see cref="T:TheTechIdea.Beep.SetUp.ISetupStep"/>s in sequence.
+             Checkpoints state after each step so execution can be resumed with <see cref="M:TheTechIdea.Beep.SetUp.SetupWizard.Resume(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>.
+            
+             State management
+             ─────────────────
+             The wizard owns <see cref="P:TheTechIdea.Beep.SetUp.SetupWizard.State"/> (used for step-level bookkeeping) and keeps it
+             in sync with <see cref="P:TheTechIdea.Beep.SetUp.SetupContext.State"/> at the start of each run and after
+             every step.  Steps may write to <c>context.State</c> freely; the wizard merges
+             those writes back into its own <see cref="P:TheTechIdea.Beep.SetUp.SetupWizard.State"/> before persisting.
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupWizard.Steps">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupWizard.State">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupWizard.Options">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.Run(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.Resume(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <inheritdoc/>
+            <remarks>
+            Loads the persisted checkpoint from <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.StateFilePath"/> before
+            re-entering <see cref="M:TheTechIdea.Beep.SetUp.SetupWizard.Run(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>, so a wizard recreated after a crash will correctly
+            skip already-completed steps.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.GetReport">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.SyncFromContext(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Merges step-level progress from <paramref name="context"/>.State into the
+            wizard's own <see cref="P:TheTechIdea.Beep.SetUp.SetupWizard.State"/> so previously completed steps are not re-run.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.SyncToContext(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Pushes all step-level bookkeeping from <see cref="P:TheTechIdea.Beep.SetUp.SetupWizard.State"/> into
+            <paramref name="context"/>.State so every step reads current data.
+            Call <see cref="M:TheTechIdea.Beep.SetUp.SetupWizard.SyncFromContext(TheTechIdea.Beep.SetUp.SetupContext)"/> first on the success path to pull any
+            state written by the just-completed step before pushing back.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupWizardBuilder">
+            <summary>
+            Fluent builder for composing a <see cref="T:TheTechIdea.Beep.SetUp.SetupWizard"/>.
+            </summary>
+            <example>
+            <code>
+            var wizard = new SetupWizardBuilder()
+                .WithId("my-app-setup")
+                .WithEnvironment("Production")
+                .AddStep(new DriverProvisionStep(driverOpts))
+                .AddStep(new ConnectionConfigStep(connOpts))
+                .Build();
+            </code>
+            </example>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithId(System.String)">
+            <summary>Sets the wizard identifier used in reports.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.AddStep(TheTechIdea.Beep.SetUp.ISetupStep)">
+            <summary>Appends a step to the wizard execution sequence.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithOptions(TheTechIdea.Beep.SetUp.SetupOptions)">
+            <summary>Replaces the entire options object.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithDryRun(System.Boolean)">
+            <summary>Toggles dry-run mode.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithEnvironment(System.String)">
+            <summary>Sets the target environment label.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithStateFile(System.String)">
+            <summary>Sets the checkpoint state file path.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithReportOutput(System.String)">
+            <summary>Sets the report output directory.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithResumeFromFile(System.String)">
+            <summary>
+            Sets the checkpoint state file path and configures the wizard to resume
+            from the persisted checkpoint when <see cref="M:TheTechIdea.Beep.SetUp.ISetupWizard.Resume(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> is called.
+            Equivalent to <see cref="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithStateFile(System.String)"/> but communicates intent clearly.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.Build">
+            <summary>
+            Builds and returns a configured <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizard"/>.
+            Validates that each step's <c>DependsOn</c> constraints are satisfied by
+            earlier steps in the sequence; throws <see cref="T:System.InvalidOperationException"/>
+            if a dependency is missing or declared out of order.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep">
+             <summary>
+             Configures, persists, and optionally opens a data connection.
+            
+             Execution order
+             ───────────────
+              1. Find the best-matching driver config
+                 (ConnectionHelper.GetBestMatchingDriver)
+              2. Build / resolve connection string template
+                 (ConnectionHelper.ReplaceValueFromConnectionString)
+              3. Normalise file-system paths for file-based datasources
+              4. Validate connection string structure (skippable via options)
+              5. Report readiness (credentials kept intact in cp.ConnectionString)
+              6. Persist: AddDataConnection (new) / UpdateDataConnection (existing)
+                 + SaveDataconnectionsValues
+              7. Optionally open the datasource and populate context.DataSource
+             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions">
+            <summary>
+            Configuration options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.ConnectionProperties">
+            <summary>
+            Connection properties to register and open.
+            At minimum <see cref="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.ConnectionName"/>
+            and <see cref="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.DatabaseType"/> must be set.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.SkipConnectionStringValidation">
+            <summary>
+            When true the step skips validation of the raw connection string structure
+            (useful when the connection string will be built from individual fields by
+            <see cref="M:TheTechIdea.Beep.Helpers.ConnectionHelper.ReplaceValueFromConnectionString(TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,TheTechIdea.Beep.ConfigUtil.IConnectionProperties,TheTechIdea.Beep.Editor.IDMEEditor)"/>).
+            Default: false.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.BaseDirectory">
+            <summary>
+            Base path used by
+            <see cref="!:TheTechIdea.Beep.Helpers.ConnectionHelpers.ConnectionHelper.NormalizeFilePath"/>
+            to resolve relative file paths (file-based datasources only).
+            When null, <see cref="P:System.AppContext.BaseDirectory"/> is used.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.OpenConnection">
+            <summary>
+            When true, attempt to open the datasource at the end of Execute and surface
+            any connection error as a step failure.
+            Default: true.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep">
+             <summary>
+             Ensures that the connection driver for a specific package is available in the
+             current process before a connection is opened.
+            
+             Three-state resolution model
+             ─────────────────────────────
+              State 1  !IsMissing           → already loaded in-process → no-op / CanSkip
+              State 2  IsMissing &amp;&amp; !NuggetMissing → DLL cached on disk, not yet loaded →
+                                               assemblyHandler.LoadDriverFromLocalPackage
+                                               (falls through to State 3 on failure)
+              State 3  NuggetMissing        → package not downloaded →
+                                               assemblyHandler.LoadNuggetFromNuGetAsync
+            
+             After any State 2/3 work: ConfigEditor.SaveConnectionDriversConfigValues()
+             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions">
+            <summary>
+            Configuration options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.PackageName">
+            <summary>
+            The <see cref="!:TheTechIdea.Beep.ConfigUtil.ConnectionDriversConfig.PackageName"/>
+            of the driver to ensure is loaded.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.Version">
+            <summary>
+            Optional specific NuGet package version to download. When null, the version
+            stored in <see cref="!:TheTechIdea.Beep.ConfigUtil.ConnectionDriversConfig.NuggetVersion"/>
+            is used first; if that is also empty the latest stable version is fetched.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.NuGetSources">
+            <summary>
+            Additional NuGet package sources to try when downloading. Appended to any
+            source already stored in <see cref="!:TheTechIdea.Beep.ConfigUtil.ConnectionDriversConfig.NuggetSource"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.AppInstallPath">
+            <summary>
+            Override the local installation path for the downloaded package.
+            When null the assemblyHandler default path is used.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep">
+             <summary>
+             Creates the full database schema for a set of .NET entity types by driving the
+             <c>MigrationManager</c> plan → policy → dry-run → preflight → compensation →
+             approve → execute pipeline.
+            
+             This step is datasource-agnostic: no raw SQL is generated here.
+             All DDL is produced by <c>MigrationManager</c> based on the connected <c>IDataSource</c>.
+            
+             Idempotency: the entity-list SHA-256 hash is stored in <see cref="P:TheTechIdea.Beep.SetUp.SetupState.SchemaHash"/>.
+             <see cref="M:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)"/> returns <c>true</c> when the hash is unchanged, meaning the schema
+             was already applied and no entity types have been added or removed.
+             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions">
+            <summary>
+            Configuration options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypes">
+            <summary>
+            .NET entity types whose schemas must be created in the target datasource.
+            At least one type is required.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.ExtraAssemblies">
+            <summary>
+            Extra assemblies to register with <c>MigrationManager</c> for type discovery.
+            Optional — only needed when entity types reside in assemblies not yet loaded.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.DetectRelationships">
+            <summary>
+            Pass <c>true</c> to ask <c>MigrationManager</c> to auto-detect foreign-key
+            relationships between entity types.  Default: <c>true</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.StrictPolicyMode">
+            <summary>
+            When <c>true</c>, treat any policy warning as a blocking error.
+            Overrides <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.StrictPolicyMode"/> for this step only
+            when explicitly set.  Default: inherits from <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.StrictPolicyMode"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.ApproverLabel">
+            <summary>
+            Override the approver label stamped on the migration plan.
+            Default: <c>"SetupWizard"</c>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.SeedingStep">
+             <summary>
+             Wizard step that drives all registered <see cref="T:TheTechIdea.Beep.SetUp.Seeding.ISeeder"/>s in dependency order.
+            
+             Behaviour
+             ─────────
+              - Skips the entire step when <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.SkipSeeding"/> is true.
+              - Each seeder is individually guarded by <see cref="M:TheTechIdea.Beep.SetUp.Seeding.ISeeder.IsAlreadySeeded(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)"/>
+                (idempotency) and by the completed-seeder list in <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/>
+                (resume after partial failure).
+              - Partial progress is persisted to <see cref="P:TheTechIdea.Beep.SetUp.SetupState.CompletedSeederIds"/>
+                after each seeder so a failed run can resume.
+             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions">
+            <summary>
+            Configuration options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.SeedingStep"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions.Registry">
+            <summary>Registry containing all seeders to run. Required.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions.SeederFilter">
+            <summary>
+            When set, only seeders whose <see cref="P:TheTechIdea.Beep.SetUp.Seeding.ISeeder.SeederId"/> appears in this list
+            will be executed. Useful for partial / incremental seeding scenarios.
+            When <c>null</c> (default), all registered seeders run.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIAuthenticationHelper">
             <summary>
             Authentication helper for Web API connections supporting various auth methods

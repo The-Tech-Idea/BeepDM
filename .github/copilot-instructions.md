@@ -82,11 +82,40 @@ Console.WriteLine($"Success: {syncResult.Success}, Records: {syncResult.RecordsP
 - **Progress**: Components report progress via `IProgress<PassedArgs>` (DMEEditor.progress)
 - **Async Patterns**: ETL, sync operations are async-first; use `await` for long-running data operations
 
+## Setup Framework
+
+**Purpose**: Wizard-based automated initialization (driver provisioning, connection setup, schema creation, data seeding) across all platforms (Desktop, Blazor, MAUI, CLI, Web API).
+
+**Entry Point**: Use `.cursor/setup/SKILL.md` for complete guidance.
+
+**Key Files**:
+- `DataManagementEngineStandard/SetUp/SetupWizard.cs` — Main orchestrator
+- `DataManagementEngineStandard/SetUp/Steps/` — Driver, Connection, Schema, Seeding steps
+- `DataManagementEngineStandard/SetUp/Adapters/` — Platform-specific bridges (6 types)
+- `DataManagementEngineStandard/SetUp/Seeding/` — Seeder contracts & registry
+
+**Help**: [Help/setup-framework.html](../Help/setup-framework.html)
+
+**Quick Example**:
+```csharp
+var wizard = new SetupWizardBuilder()
+    .WithId("app-setup")
+    .AddStep(new DriverProvisionStep(driverOpts))
+    .AddStep(new ConnectionConfigStep(connOpts))
+    .AddStep(new SchemaSetupStep(schemaOpts))
+    .AddStep(new SeedingStep(seedingOpts))
+    .Build();
+
+var adapter = new DesktopSetupWizardAdapter(progressCallback, completeCallback);
+var report = await adapter.RunAsync(wizard, context);
+```
+
 ## Critical File Locations
 
 | Purpose | Path |
 |---------|------|
 | Central orchestrator | [DataManagementEngineStandard/Editor/DM/DMEEditor.cs](../DataManagementEngineStandard/Editor/DM/DMEEditor.cs) |
+| Setup Wizard | [DataManagementEngineStandard/SetUp/SetupWizard.cs](../DataManagementEngineStandard/SetUp/SetupWizard.cs) |
 | Config management | [DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs](../DataManagementEngineStandard/ConfigUtil/ConfigEditor.cs) |
 | Main interfaces | [DataManagementModelsStandard/Editor/IDMEEditor.cs](../DataManagementModelsStandard/Editor/IDMEEditor.cs), [DataManagementModelsStandard/IDataSource.cs](../DataManagementModelsStandard/IDataSource.cs) |
 | UnitOfWork pattern | [DataManagementEngineStandard/Editor/UOW/](../DataManagementEngineStandard/Editor/UOW/) |

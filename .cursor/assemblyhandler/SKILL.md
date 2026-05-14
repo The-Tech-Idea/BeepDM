@@ -1,6 +1,6 @@
 ---
 name: assemblyhandler
-description: Entry-point guidance for AssemblyHandler and IAssemblyHandler in BeepDM. Use when loading or scanning plugin assemblies, resolving types via reflection, managing NuGet-backed package loading, tracking driver-package provenance, or inspecting load statistics.
+description: Entry-point guidance for AssemblyHandler and IAssemblyHandler in BeepDM. Use when loading or scanning plugin assemblies, resolving types via reflection, managing NuGet-backed package loading, tracking driver-package provenance, discovering [AddinAttribute] marked drivers, or inspecting load statistics.
 ---
 
 # AssemblyHandler Guide
@@ -57,6 +57,8 @@ Use this skill as the top-level router for all non-shared-context `AssemblyHandl
 - NuGet search/download/source management: [`assemblyhandler-nuget-operations`](../assemblyhandler-nuget-operations/SKILL.md)
 - Reflection helpers and driver extraction: [`assemblyhandler-helpers-reflection`](../assemblyhandler-helpers-reflection/SKILL.md)
 - Driver package tracking and load metrics: [`assemblyhandler-driver-statistics`](../assemblyhandler-driver-statistics/SKILL.md)
+- Custom driver implementation & NuGet packaging: [`drivers-nuget-idatasource-implementation`](../drivers-nuget-idatasource-implementation/SKILL.md)
+- Setup Framework integration (DriverProvisionStep): [`setup`](../setup/SKILL.md)
 
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for end-to-end scenarios and API examples.

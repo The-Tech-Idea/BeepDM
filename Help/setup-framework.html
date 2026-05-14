@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Framework | BeepDM</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html">Home</a> | 
+        <a href="navigation.html">Topics</a> | 
+        <a href="api-reference.html">API Reference</a>
+    </nav>
+    <h1>Setup Framework</h1>
+    <p>Comprehensive wizard-based system for automating application initialization: driver provisioning, connection configuration, database schema creation, and seed data injection across all platforms (WinForms, Blazor WASM, Blazor Server, MAUI, CLI, Web API).</p>
+
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#phases">8-Phase Implementation Plan</a></li>
+        <li><a href="#api">Core API Contracts</a></li>
+        <li><a href="#usage">Usage Patterns</a></li>
+        <li><a href="#state">State Management</a></li>
+        <li><a href="#adapters">Platform Adapters</a></li>
+    </ul>
+
+    <h2 id="overview">Overview</h2>
+    <p>The Setup Framework automates the end-to-end initialization of BeepDM applications. It:</p>
+    <ul>
+        <li><strong>Runs as a sequence of steps</strong> — each step handles one responsibility (driver load, connection, schema, seeding)</li>
+        <li><strong>Is idempotent</strong> — steps detect when work is done and skip safely</li>
+        <li><strong>Checkpoints state</strong> — supports resume after interruption or failure</li>
+        <li><strong>Works cross-platform</strong> — dedicated adapters bridge to WinForms, Blazor, MAUI, CLI, Web API</li>
+        <li><strong>Exposes progress</strong> — unified IProgress&lt;PassedArgs&gt; reporting per-step</li>
+        <li><strong>Returns reports</strong> — SHA-256 checksummed outcome with per-step timings and messages</li>
+    </ul>
+
+    <h2 id="architecture">Architecture</h2>
+    <h3>Core Components</h3>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Component</th>
+            <th>Responsibility</th>
+            <th>Location</th>
+        </tr>
+        <tr>
+            <td><code>SetupWizard</code></td>
+            <td>Orchestrates step sequence, manages state checkpoints, handles resume</td>
+            <td><code>SetUp/SetupWizard.cs</code></td>
+        </tr>
+        <tr>
+            <td><code>ISetupStep</code></td>
+            <td>Single unit of setup work (validate, skip, execute)</td>
+            <td><code>SetUp/ISetupStep.cs</code></td>
+        </tr>
+        <tr>
+            <td><code>SetupContext</code></td>
+            <td>Shared state read/written by all steps (editor, datasource, progress)</td>
+            <td><code>SetUp/SetupContext.cs</code></td>
+        </tr>
+        <tr>
+            <td><code>SetupState</code></td>
+            <td>Checkpointed state (completed steps, seeder IDs, schema hash, metadata)</td>
+            <td><code>SetUp/SetupState.cs</code></td>
+        </tr>
+        <tr>
+            <td><code>SetupWizardBuilder</code></td>
+            <td>Fluent builder to compose steps and validate dependency order</td>
+            <td><code>SetUp/SetupWizardBuilder.cs</code></td>
+        </tr>
+        <tr>
+            <td><code>ISetupWizardAdapter</code></td>
+            <td>Platform-specific bridge to UI/runtime</td>
+            <td><code>SetUp/Adapters/</code></td>
+        </tr>
+    </table>
+
+    <h3>Step Implementations (Phase 2–5)</h3>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Step</th>
+            <th>Purpose</th>
+            <th>Dependencies</th>
+        </tr>
+        <tr>
+            <td><code>DriverProvisionStep</code></td>
+            <td>Ensure connection driver is loaded (local or NuGet)</td>
+            <td>None (first)</td>
+        </tr>
+        <tr>
+            <td><code>ConnectionConfigStep</code></td>
+            <td>Build, validate, persist connection; optionally open</td>
+            <td>DriverProvisionStep</td>
+        </tr>
+        <tr>
+            <td><code>SchemaSetupStep</code></td>
+            <td>Plan, validate, and apply database schema via MigrationManager</td>
+            <td>ConnectionConfigStep</td>
+        </tr>
+        <tr>
+            <td><code>SeedingStep</code></td>
+            <td>Run all registered seeders in topological order</td>
+            <td>SchemaSetupStep</td>
+        </tr>
+    </table>
+
+    <h2 id="phases">8-Phase Implementation Plan</h2>
+    <dl>
+        <dt><strong>Phase 1: Contract &amp; Wizard Architecture</strong></dt>
+        <dd>Core interfaces (ISetupStep, ISetupWizard, ISetupWizardFactory, ISetupProgressReporter) and SetupWizard orchestrator with state sync.</dd>
+        
+        <dt><strong>Phase 2: Driver &amp; Connection Steps</strong></dt>
+        <dd>DriverProvisionStep (3-state loading) and ConnectionConfigStep (link, build, validate, persist, open).</dd>
+        
+        <dt><strong>Phase 3: Schema Setup &amp; Dry-Run</strong></dt>
+        <dd>SchemaSetupStep (9-step migration pipeline: plan → policy → dry-run → preflight → compensation → approve → execute) with DryRun mode support.</dd>
+        
+        <dt><strong>Phase 4: Seeding Subsystem</strong></dt>
+        <dd>ISeeder/SeederBase, SeederRegistry (Kahn topological sort), ReferenceDataSeederBase, and SeedingStep with partial-resume support.</dd>
+        
+        <dt><strong>Phase 5: Platform Adapters</strong></dt>
+        <dd>Desktop (WinForms), ConsoleSetupWizardAdapter, BlazorWasmSetupWizardAdapter, BlazorServerSetupWizardAdapter, WebApiSetupWizardAdapter, MauiSetupWizardAdapter.</dd>
+        
+        <dt><strong>Phase 6: Preflight Validation &amp; Rollback</strong></dt>
+        <dd>Pre-execution checks, compensation planning, rollback readiness assessment.</dd>
+        
+        <dt><strong>Phase 7: Observability &amp; Reporting</strong></dt>
+        <dd>Structured logging, audit trails, JSON export, tamper detection via SHA-256.</dd>
+        
+        <dt><strong>Phase 8: Advanced Features</strong></dt>
+        <dd>Multi-tenant upgrades, CI/CD integration, orchestration with external systems.</dd>
+    </dl>
+
+    <h2 id="api">Core API Contracts</h2>
+
+    <h3>ISetupStep</h3>
+    <pre>
+public interface ISetupStep
+{
+    string StepId { get; }
+    string StepName { get; }
+    string Description { get; }
+    IReadOnlyList&lt;string&gt; DependsOn { get; }
+    
+    bool CanSkip(SetupContext context);
+    IErrorsInfo Validate(SetupContext context);
+    IErrorsInfo Execute(SetupContext context, IProgress&lt;PassedArgs&gt; progress = null);
+}
+    </pre>
+
+    <h3>SetupContext</h3>
+    <pre>
+public class SetupContext
+{
+    public IDMEEditor Editor { get; set; }
+    public IDataSource DataSource { get; set; }
+    public SetupOptions Options { get; set; }
+    public SetupState State { get; set; }
+    public ISetupProgressReporter ProgressReporter { get; set; }
+    public ConnectionProperties ConnectionProperties { get; set; }
+    public MigrationPlanArtifact MigrationPlan { get; set; }
+    public MigrationExecutionResult MigrationResult { get; set; }
+    public Dictionary&lt;string, object&gt; Properties { get; }
+}
+    </pre>
+
+    <h3>ISetupWizardAdapter</h3>
+    <pre>
+public interface ISetupWizardAdapter
+{
+    Task&lt;SetupReport&gt; RunAsync(
+        ISetupWizard wizard,
+        SetupContext context,
+        CancellationToken cancellationToken = default);
+    
+    void ShowStep(ISetupStep step, int stepIndex, int totalSteps);
+    void ShowProgress(string stepId, int percentComplete, string message);
+    void ShowResult(SetupReport report);
+}
+    </pre>
+
+    <h2 id="usage">Usage Patterns</h2>
+
+    <h3>Desktop Application (WinForms)</h3>
+    <pre>
+var editor = new DMEEditor();
+var connProps = new ConnectionProperties
+{
+    ConnectionName = "ProductDB",
+    DatabaseType = DataSourceType.SqlLite,
+    ConnectionString = "Data Source=./products.db"
+};
+
+var wizard = new SetupWizardBuilder()
+    .WithId("product-app-setup")
+    .WithEnvironment("Development")
+    .AddStep(new DriverProvisionStep(new DriverProvisionStepOptions 
+        { PackageName = "TheTechIdea.Beep.DataSources.SQLite" }))
+    .AddStep(new ConnectionConfigStep(new ConnectionConfigStepOptions 
+        { ConnectionProperties = connProps, OpenConnection = true }))
+    .AddStep(new SchemaSetupStep(new SchemaSetupStepOptions 
+        { EntityTypes = new[] { typeof(Product), typeof(Category) } }))
+    .AddStep(new SeedingStep(new SeedingStepOptions { Registry = registry }))
+    .Build();
+
+var adapter = new DesktopSetupWizardAdapter(
+    progressArgs => progressLabel.Text = progressArgs.Messege,
+    report => MessageBox.Show(report.Succeeded ? "Setup OK" : "Setup failed"));
+
+var context = new SetupContext { Editor = editor, Options = new SetupOptions() };
+var report = await adapter.RunAsync(wizard, context);
+    </pre>
+
+    <h3>Blazor Server with SignalR Progress</h3>
+    <pre>
+public class MyBlazorSetupAdapter : BlazorServerSetupWizardAdapter
+{
+    private readonly IHubContext&lt;SetupHub&gt; _hub;
+    
+    public MyBlazorSetupAdapter(IHubContext&lt;SetupHub&gt; hub) => _hub = hub;
+    
+    protected override void OnProgress(PassedArgs args)
+        => _ = _hub.Clients.All.SendAsync("Progress", args.ParameterInt1, args.Messege);
+    
+    protected override void OnComplete(SetupReport report)
+        => _ = _hub.Clients.All.SendAsync("Complete", report.Succeeded);
+}
+    </pre>
+
+    <h3>Resume from Checkpoint</h3>
+    <pre>
+var options = new SetupOptions { StateFilePath = "./setup-checkpoint.json" };
+var wizard = builder.Build();
+
+// First run
+var report1 = await adapter.RunAsync(wizard, context);
+// Context.State is persisted to StateFilePath after each step
+
+// After interruption or restart, resume
+var report2 = await wizard.Resume(context); // Loads checkpoint, skips completed steps
+    </pre>
+
+    <h2 id="state">State Management</h2>
+
+    <h3>SetupState</h3>
+    <pre>
+public class SetupState
+{
+    public HashSet&lt;string&gt; CompletedStepIds { get; set; }
+    public HashSet&lt;string&gt; SkippedStepIds { get; set; }
+    public string FailedStepId { get; set; }
+    public string SchemaHash { get; set; }
+    public HashSet&lt;string&gt; CompletedSeederIds { get; set; }
+    public DateTimeOffset? StartedAt { get; set; }
+    public DateTimeOffset? LastUpdatedAt { get; set; }
+    public Dictionary&lt;string, string&gt; Metadata { get; set; }
+    
+    public bool IsStepCompleted(string stepId) 
+        => CompletedStepIds.Contains(stepId) || SkippedStepIds.Contains(stepId);
+}
+    </pre>
+
+    <h3>Sync Strategy</h3>
+    <ul>
+        <li><code>SyncFromContext</code>: Merges fresh writes from a step (via context.State) back into the wizard's State (post-Execute on success path)</li>
+        <li><code>SyncToContext</code>: Pushes wizard's State into context before Execute, so steps read current bookkeeping</li>
+        <li><code>PersistState</code>: Atomic temp-file + rename to checkpoint file after each step</li>
+        <li><code>LoadPersistedState</code>: Restores checkpoint on wizard init or Resume</li>
+    </ul>
+
+    <h2 id="adapters">Platform Adapters</h2>
+
+    <h3>DesktopSetupWizardAdapter</h3>
+    <p>For WinForms/WPF. Runs wizard on thread-pool; callbacks marshal to UI thread.</p>
+
+    <h3>ConsoleSetupWizardAdapter</h3>
+    <p>For CLI/BeepShell. Writes formatted text progress; can be subclassed for Spectre.Console.</p>
+
+    <h3>BlazorWasmSetupWizardAdapter</h3>
+    <p>For Blazor WASM. Loads/saves state via platform store (localStorage); supports cancellation.</p>
+
+    <h3>BlazorServerSetupWizardAdapter</h3>
+    <p>For Blazor Server. Extensible for SignalR real-time progress push to connected clients.</p>
+
+    <h3>WebApiSetupWizardAdapter</h3>
+    <p>For ASP.NET Core. Exposes Status polling object; ideal for UI polling endpoints.</p>
+
+    <h3>MauiSetupWizardAdapter</h3>
+    <p>For .NET MAUI. Thread-safe main-thread dispatch; integrates with MAUI threading model.</p>
+
+    <h2>Key Design Principles</h2>
+    <ul>
+        <li><strong>Idempotency</strong>: Every step detects if its work is complete (via CanSkip) and safely skips</li>
+        <li><strong>Resilience</strong>: Failed steps are recorded; Resume picks up from the next step</li>
+        <li><strong>Progress Transparency</strong>: Unified IProgress&lt;PassedArgs&gt; per-step with percentage + message</li>
+        <li><strong>State Isolation</strong>: Each SetupContext owns its state; wizard merges selectively</li>
+        <li><strong>Extensibility</strong>: Builders, adapters, and custom step implementations supported</li>
+        <li><strong>Error Reporting</strong>: Return IErrorsInfo instead of throwing; exceptions caught and wrapped</li>
+    </ul>
+
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="dmeeditor.html">DMEEditor Reference</a></li>
+        <li><a href="configeditor.html">ConfigEditor Reference</a></li>
+        <li><a href="migrationmanager.html">MigrationManager Reference</a></li>
+        <li><a href="assemblyhandler-loading-nuget-extensions.html">AssemblyHandler &amp; NuGet Loading</a></li>
+    </ul>
+</body>
+</html>

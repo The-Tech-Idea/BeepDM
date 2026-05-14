@@ -4,6 +4,15 @@
 			"path": "."
 		},
 		{
+			"path": "../Beep.Sample"
+		},
+		{
+			"path": "../BeepWeb"
+		},
+		{
+			"path": "../Beep.Winform"
+		},
+		{
 			"path": "../Beep.Shell"
 		}
 	],
