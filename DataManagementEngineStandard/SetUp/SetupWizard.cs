@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
@@ -23,6 +25,11 @@ namespace TheTechIdea.Beep.SetUp
     /// </summary>
     public class SetupWizard : ISetupWizard
     {
+        private const int StateIoRetryCount = 5;
+        private const int StateIoRetryDelayMs = 30;
+        private static readonly ConcurrentDictionary<string, object> _stateFileLocks =
+            new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
         private readonly string _wizardId;
         private readonly List<ISetupStep> _steps;
         private SetupReport _lastReport;
@@ -291,6 +298,7 @@ namespace TheTechIdea.Beep.SetUp
             failedStepId = null;
 
             var knownStepIds = new HashSet<string>(StringComparer.Ordinal);
+            var stepIndexById = new Dictionary<string, int>(StringComparer.Ordinal);
             for (int i = 0; i < _steps.Count; i++)
             {
                 var step = _steps[i];
@@ -318,6 +326,8 @@ namespace TheTechIdea.Beep.SetUp
                     };
                 }
 
+                stepIndexById[step.StepId] = i;
+
                 foreach (var dep in step.DependsOn ?? Array.Empty<string>())
                 {
                     if (string.IsNullOrWhiteSpace(dep))
@@ -336,6 +346,16 @@ namespace TheTechIdea.Beep.SetUp
             {
                 foreach (var dep in step.DependsOn ?? Array.Empty<string>())
                 {
+                    if (string.Equals(dep, step.StepId, StringComparison.Ordinal))
+                    {
+                        failedStepId = step.StepId;
+                        return new ErrorsInfo
+                        {
+                            Flag = Errors.Failed,
+                            Message = $"Step '{step.StepId}' cannot depend on itself."
+                        };
+                    }
+
                     if (!knownStepIds.Contains(dep))
                     {
                         failedStepId = step.StepId;
@@ -343,6 +363,21 @@ namespace TheTechIdea.Beep.SetUp
                         {
                             Flag = Errors.Failed,
                             Message = $"Step '{step.StepId}' depends on unknown step '{dep}'."
+                        };
+                    }
+
+                    // SetupWizard executes in registration order and requires dependencies
+                    // to be already completed before a step runs. Reject forward dependencies
+                    // up-front to avoid runtime dependency failures on fresh runs.
+                    if (stepIndexById.TryGetValue(dep, out var depIdx) &&
+                        stepIndexById.TryGetValue(step.StepId, out var stepIdx) &&
+                        depIdx > stepIdx)
+                    {
+                        failedStepId = step.StepId;
+                        return new ErrorsInfo
+                        {
+                            Flag = Errors.Failed,
+                            Message = $"Step '{step.StepId}' depends on '{dep}', but '{dep}' is registered after it. Reorder steps so dependencies appear first."
                         };
                     }
                 }
@@ -417,44 +452,112 @@ namespace TheTechIdea.Beep.SetUp
             if (string.IsNullOrEmpty(opts?.StateFilePath)) return;
             if (!force && State.CompletedStepIds.Count > 0) return; // already have in-memory state
 
-            try
-            {
-                if (!File.Exists(opts.StateFilePath)) return;
-                var json = File.ReadAllText(opts.StateFilePath);
-                var loaded = JsonSerializer.Deserialize<SetupState>(json);
-                if (loaded == null) return;
+            var statePath = opts.StateFilePath;
+            var stateLock = _stateFileLocks.GetOrAdd(statePath, _ => new object());
 
-                // Replace the wizard's state with the persisted snapshot
-                State = loaded;
-            }
-            catch
+            lock (stateLock)
             {
-                // Corrupt / unreadable checkpoint — start fresh.
+                for (int attempt = 0; attempt < StateIoRetryCount; attempt++)
+                {
+                    try
+                    {
+                        if (!File.Exists(statePath)) return;
+
+                        // Open with Delete sharing so concurrent atomic replace/move writes are not blocked.
+                        var json = ReadAllTextWithSharedDelete(statePath);
+                        var loaded = JsonSerializer.Deserialize<SetupState>(json);
+                        if (loaded == null) return;
+
+                        // Replace the wizard's state with the persisted snapshot
+                        State = loaded;
+                        return;
+                    }
+                    catch (IOException) when (attempt < StateIoRetryCount - 1)
+                    {
+                        Thread.Sleep(StateIoRetryDelayMs);
+                    }
+                    catch (UnauthorizedAccessException) when (attempt < StateIoRetryCount - 1)
+                    {
+                        Thread.Sleep(StateIoRetryDelayMs);
+                    }
+                    catch
+                    {
+                        // Corrupt / unreadable checkpoint — start fresh.
+                        return;
+                    }
+                }
             }
         }
 
         private void PersistState(SetupOptions opts)
         {
             if (string.IsNullOrEmpty(opts?.StateFilePath)) return;
-            try
-            {
-                var json = JsonSerializer.Serialize(State,
-                    new JsonSerializerOptions { WriteIndented = false });
 
-                // Atomic write: write to a temp file then replace the target so a mid-write
-                // crash never leaves a corrupt checkpoint file.
-                var dir = Path.GetDirectoryName(opts.StateFilePath);
-                var tmp = Path.Combine(
-                    string.IsNullOrEmpty(dir) ? "." : dir,
-                    Path.GetRandomFileName());
+            var statePath = opts.StateFilePath;
+            var stateLock = _stateFileLocks.GetOrAdd(statePath, _ => new object());
 
-                File.WriteAllText(tmp, json);
-                File.Move(tmp, opts.StateFilePath, overwrite: true);
-            }
-            catch
+            lock (stateLock)
             {
-                // State persistence is best-effort; do not propagate file-system errors.
+                var dir = Path.GetDirectoryName(statePath);
+                var targetDir = string.IsNullOrEmpty(dir) ? "." : dir;
+                Directory.CreateDirectory(targetDir);
+
+                var tmp = Path.Combine(targetDir, Path.GetRandomFileName() + ".tmp");
+
+                try
+                {
+                    var json = JsonSerializer.Serialize(State,
+                        new JsonSerializerOptions { WriteIndented = false });
+
+                    // Write the new snapshot to a temp file first.
+                    File.WriteAllText(tmp, json, new UTF8Encoding(false));
+
+                    // Retry replace/move to tolerate short-lived sharing violations when
+                    // multiple processes target the same state file concurrently.
+                    for (int attempt = 0; attempt < StateIoRetryCount; attempt++)
+                    {
+                        try
+                        {
+                            File.Move(tmp, statePath, overwrite: true);
+                            return;
+                        }
+                        catch (IOException) when (attempt < StateIoRetryCount - 1)
+                        {
+                            Thread.Sleep(StateIoRetryDelayMs);
+                        }
+                        catch (UnauthorizedAccessException) when (attempt < StateIoRetryCount - 1)
+                        {
+                            Thread.Sleep(StateIoRetryDelayMs);
+                        }
+                    }
+                }
+                catch
+                {
+                    // State persistence is best-effort; do not propagate file-system errors.
+                }
+                finally
+                {
+                    try
+                    {
+                        if (File.Exists(tmp)) File.Delete(tmp);
+                    }
+                    catch
+                    {
+                        // Ignore temp cleanup failures.
+                    }
+                }
             }
+        }
+
+        private static string ReadAllTextWithSharedDelete(string path)
+        {
+            using var fs = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
+            using var sr = new StreamReader(fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return sr.ReadToEnd();
         }
     }
 }
