@@ -364,6 +364,20 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+# IDE / AI assistant directories
+.cursor/
+.github/copilot-instructions.md
+.github/.cursorrules
+.github/.windsurfrules
+.github/claude.md
+
+# Planning / phase files
+.plans/
+**/.plans/
+
+# Tizen workload installer (not part of this project)
+workload-install.ps1
+
 #outputdll
 outputdll/
 /DataManagmentEngineShared/Addin/addins.dtx

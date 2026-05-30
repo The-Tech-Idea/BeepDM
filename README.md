@@ -16,7 +16,7 @@ BeepDM is a modular, extensible data management engine designed to streamline co
 - **Extensibility**: Add custom functionality with `IDM_Addin` and extend connections/data types.
 
 ## Core Components (Main Interfaces)
-These are the primary interfaces driving BeepDM’s functionality:
+These are the primary interfaces driving BeepDM's functionality:
 1. **`IDMEEditor`**: The mother class, orchestrating all components below. Acts as the central hub for data management operations.
 2. **`IConfigEditor` (`ConfigEditor`)**: Manages framework configurations (e.g., `DataDriversClasses`, `DataTypesMap`, `QueryList`, `DataConnections`), persisting them to JSON files.
 3. **`IDataSource`**: Defines the contract for all data source implementations (e.g., SQLite, XLS), providing methods like `GetEntity`, `CreateEntityAs`, and `UpdateEntities`.
@@ -127,7 +127,7 @@ Ensure data source configurations are registered in `ConfigEditor`. The initiali
 
 ### Basic Usage
 #### Bootstrapping with Autofac (Mother Class: `DMEEditor`)
-`IDMEEditor` must be initialized to use BeepDM. Here’s an implementation using Autofac:
+`IDMEEditor` must be initialized to use BeepDM. Here's an implementation using Autofac:
 ```csharp
 using Autofac;
 using TheTechIdea.Beep;
@@ -326,6 +326,33 @@ if (sqliteDB.ConnectionStatus == ConnectionState.Open)
 
 ## License
 BeepDM is licensed under the [MIT License](LICENSE).
+
+## Documentation
+
+For detailed technical documentation, usage patterns, and implementation guides, see the [`Docs/`](Docs/) directory:
+
+### Getting Started
+- [Getting Started Guide](Docs/GettingStarted.md) - Quick start and basic setup
+- [Core Architecture](Docs/CoreArchitecture.md) - IDMEEditor, IDataSource, ConfigEditor, and plugin architecture
+
+### Service Registration
+- [Service Registration](Docs/ServiceRegistration.md) - Desktop, Web API, Blazor Server, and Blazor WASM setup
+
+### Data Operations
+- [How to Create a New Data Source](Docs/HowToCreateNewDataSource.md) - Building custom data source plugins
+- [IDataSourceHelper Usage Patterns](Docs/IDataSourceHelper_Usage_Patterns.md) - Practical patterns for data source implementations
+- [IDataSourceHelper Method Reference](Docs/IDataSourceHelper_Method_Reference.md) - Complete API reference
+- [CreateEntityAs Implementation Guide](Docs/CreateEntityAs_Implementation_Guide.md) - Entity creation patterns
+
+### Advanced Features
+- [Unit of Work Pattern](Docs/UnitOfWork.md) - CRUD, change tracking, transactions, validation, undo/redo
+- [ETL Operations](Docs/ETL.md) - Data migration, transformation, and script-based ETL
+- [Forms Manager](Docs/FormsManager.md) - Oracle Forms-style UI orchestration
+- [Assembly Handler](Docs/AssemblyHandler.md) - Plugin loading, NuGet operations, and driver tracking
+- [Configuration Management](Docs/Configuration.md) - ConfigEditor, managers, and persisted settings
+
+### Implementation Guides
+- [Phase 1 Overview](Docs/Phase1_Overview.md) - IDataSourceHelper integration roadmap
 
 ## Learn More
 - [Wiki](https://github.com/The-Tech-Idea/BeepDM/wiki/Beep-Data-Management-Engine-(BeepDM))
