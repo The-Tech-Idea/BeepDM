@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extending BeepDM - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Extending BeepDM</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Extending BeepDM</h1>
+                    <p class="page-subtitle">How to create custom IDataSource implementations, Loader Extensions for new interfaces, and integrate them into the framework</p>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Extension Overview</a></li>
+                        <li><a href="#idatasource">Pattern 1: Creating a New IDataSource</a>
+                            <ul>
+                                <li><a href="#idatasource-contract">The constructor contract</a></li>
+                                <li><a href="#idatasource-stepbystep">Step-by-step: FileDataSource</a></li>
+                                <li><a href="#idatasource-discovery">How AssemblyHandler discovers it</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="#loader-extension">Pattern 2: Creating a Loader Extension for a New Interface</a>
+                            <ul>
+                                <li><a href="#loader-why">Why you need a Loader Extension</a></li>
+                                <li><a href="#loader-iloaderextention">ILoaderExtention interface</a></li>
+                                <li><a href="#loader-example">Real example: BranchLoaderExtension for IBranch</a></li>
+                                <li><a href="#loader-registration">Registering the extension</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="#consumer">Pattern 3: Consuming the Discovered Types</a>
+                            <ul>
+                                <li><a href="#consumer-trees">BeepAppTree: Building a UI tree from IBranch</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="#end-to-end">End-to-End: A Complete Integration Walkthrough</a></li>
+                        <li><a href="#quick-ref">Quick Reference Card</a></li>
+                    </ul>
+                </div>
+
+                <!-- Overview -->
+                <section id="overview" class="section">
+                    <h2>Extension Overview</h2>
+                    <p>
+                        BeepDM has <strong>two extension patterns</strong> depending on whether you are adding
+                        support for a new kind of interface that the engine doesn't natively know about:
+                    </p>
+
+                    <div class="code-example">
+                        <h3>When to use each pattern</h3>
+                        <pre><code class="language-none">┌──────────────────────────────────────────────────────────────────┐
+│ Pattern 1: New IDataSource                                        │
+│ Use when: You are adding a new data source type (MySQL,          │
+│           REST API, Parquet file, etc.) that the engine should    │
+│           query through the standard dm.GetDataSource() flow.     │
+│                                                                   │
+│ Pattern 2: LoaderExtension for a NEW interface                    │
+│ Use when: You are adding a completely new plug-in interface      │
+│           that the engine's built-in AssemblyHandler doesn't      │
+│           scan for (e.g. IBranch, ICustomWorkflow, IReport).      │
+│                                                                   │
+│ The difference: IDataSource is a first-class citizen —            │
+│ AssemblyHandler already scans for it. Anything else needs a       │
+│ custom ILoaderExtention to teach AssemblyHandler to find it.     │
+└──────────────────────────────────────────────────────────────────┘</code></pre>
+                    </div>
+                </section>
+
+                <!-- Pattern 1: IDataSource -->
+                <section id="idatasource" class="section">
+                    <h2>Pattern 1: Creating a New IDataSource</h2>
+
+                    <section id="idatasource-contract">
+                        <h3>The Universal Constructor Contract</h3>
+                        <p>
+                            Every <code>IDataSource</code> implementation <strong>must</strong> have a public constructor
+                            with this exact signature. <code>AssemblyHandler</code> and <code>DMEEditor</code> use reflection
+                            to find and invoke it:
+                        </p>
+                        <pre><code class="language-csharp">// The single constructor contract for ALL IDataSource implementations:
+// (string name, IDMLogger logger, IDMEEditor editor, DataSourceType type, IErrorsInfo errors)
+
+public MyDataSource(
+    string datasourcename,
+    IDMLogger logger,
+    IDMEEditor pDMEEditor,
+    DataSourceType pDatasourceType,
+    IErrorsInfo per)</code></pre>
+                    </section>
+
+                    <section id="idatasource-stepbystep">
+                        <h3>Step-by-Step: Creating FileDataSource</h3>
+                        <p><strong>Real source:</strong> <code>DataManagementEngineStandard/FileManager/FileDataSource.cs</code> (7 partial class files)</p>
+
+                        <div class="code-example">
+                            <h3>Step 1: Declare the class with AddinAttribute</h3>
+                            <pre><code class="language-csharp">[AddinAttribute(
+    Category = DatasourceCategory.FILE,
+    DatasourceType = DataSourceType.CSV | DataSourceType.TSV |
+                     DataSourceType.Json | DataSourceType.Text,
+    FileType = "csv,tsv,json,txt")]
+public partial class FileDataSource : IDataSource, IIdempotentFileIngester,
+                                        IFileDataSourceReaderHost
+{
+    // Your datasource can implement additional interfaces beyond IDataSource.
+    // The AddinAttribute tells AssemblyHandler what it is and where it fits.</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 2: Implement IDataSource properties</h3>
+                            <pre><code class="language-csharp">public string ColumnDelimiter    { get; set; } = ",";
+public string ParameterDelimiter { get; set; } = ":";
+public string GuidID             { get; set; } = Guid.NewGuid().ToString();
+public DataSourceType   DatasourceType  { get; set; }
+public DatasourceCategory Category      { get; set; } = DatasourceCategory.FILE;
+public IDataConnection  Dataconnection  { get; set; }  // ← Transport layer
+public string           DatasourceName  { get; set; }
+public IErrorsInfo      ErrorObject     { get; set; }
+public IDMLogger        Logger          { get; set; }
+public IDMEEditor       DMEEditor       { get; set; }
+public ConnectionState  ConnectionStatus { get; set; } = ConnectionState.Closed;
+
+public List&lt;string&gt;          EntitiesNames { get; set; }
+public List&lt;EntityStructure&gt; Entities      { get; set; }
+// ↑ These two are the schema — the engine reads them to know
+//   what tables/collections/entities your datasource provides.</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 3: Implement Openconnection() — the connection lifecycle</h3>
+                            <pre><code class="language-csharp">public ConnectionState Openconnection()
+{
+    // 1. Ensure connection infrastructure exists
+    Dataconnection ??= new FileConnection(DMEEditor);
+    Dataconnection.ConnectionProp ??= DMEEditor.ConfigEditor
+        .DataConnections.FirstOrDefault(c =>
+            c.ConnectionName == DatasourceName);
+
+    // 2. Register your format readers (if pluggable)
+    FileReaderFactory.RegisterDefaults();
+
+    // 3. Resolve the reader for this file format
+    _reader = FileReaderFactory.GetReader(DatasourceType);
+    _reader.Initialize(Dataconnection.ConnectionProp);
+
+    // 4. Open the transport layer
+    Dataconnection.OpenConnection();
+    ConnectionStatus = Dataconnection.ConnectionStatus;
+
+    // 5. Auto-discover schema (populates Entities/EntitiesNames)
+    if (ConnectionStatus == ConnectionState.Open)
+        InferEntityStructure(EntityName);
+
+    return ConnectionStatus;
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 4: Implement GetEntityStructure() — schema introspection</h3>
+                            <pre><code class="language-csharp">public EntityStructure GetEntityStructure(string EntityName, bool refresh)
+{
+    if (!refresh)
+    {
+        var cached = Entities.FirstOrDefault(e =>
+            e.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
+        if (cached != null) return cached;
+    }
+
+    return InferEntityStructure(EntityName);
+}
+
+private EntityStructure InferEntityStructure(string entityName)
+{
+    string filePath = ResolveFilePath(entityName);
+
+    // 1. Read column headers
+    string[] headers = _reader.ReadHeaders(filePath);
+
+    // 2. Sample up to 200 rows per column for type inference
+    var columnSamples = CollectColumnSamples(filePath, headers, sampleSize: 200);
+
+    // 3. Statistical type inference
+    var entity = new EntityStructure { EntityName = entityName };
+    foreach (var (colName, sampleValues) in columnSamples)
+    {
+        var (type, confidence) = TypeInferenceHelper.InferWithStats(sampleValues);
+        entity.Fields.Add(new EntityField
+        {
+            FieldName = colName,
+            Fieldtype = type,  // "System.String", "System.Int32", etc.
+            FieldCategory = MapToDbFieldCategory(type)
+        });
+    }
+
+    // 4. Register so dm.GetEntity() can find it
+    RegisterEntity(entity);
+    return entity;
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 5: Implement GetEntity() — the query method</h3>
+                            <pre><code class="language-csharp">public IEnumerable&lt;object&gt; GetEntity(string EntityName, List&lt;AppFilter&gt; filter)
+{
+    string filePath = ResolveFilePath(EntityName);
+    EntityStructure structure = GetEntityStructure(EntityName, false);
+    string[] headers = _reader.ReadHeaders(filePath);
+
+    var headerIndex = BuildHeaderIndex(headers);
+    var rows = new List&lt;Dictionary&lt;string, object&gt;&gt;();
+
+    foreach (string[] values in _reader.ReadRows(filePath))
+    {
+        // Apply filters
+        if (!MatchesFilters(filter, structure, values, headerIndex))
+            continue;
+
+        // Project columns into a typed dictionary
+        var row = ProjectRow(structure, values, headerIndex);
+        rows.Add(row);
+    }
+
+    return rows;
+}
+
+public PagedResult GetEntity(string EntityName, List&lt;AppFilter&gt; filter,
+                              int pageNumber, int pageSize)
+{
+    // Single-pass streaming paging
+    // Skip to start, read one page, return total match count
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 6: Implement CRUD (InsertEntity)</h3>
+                            <pre><code class="language-csharp">public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
+{
+    var entity = GetEntityStructure(EntityName, false);
+    string filePath = ResolveFilePath(EntityName);
+    string[] headers = GetOrCreateHeaders(filePath, entity);
+
+    // Convert object → ordered row matching entity.Fields
+    var rowValues = ToOrderedArray(InsertedData, entity);
+
+    // Validate before writing
+    var validation = ValidateRow(entity, rowValues, headers, rowIndex: -1, "INSERT");
+    if (!ShouldWriteRow(validation))
+    {
+        ErrorObject.Flag = Errors.Failed;
+        ErrorObject.Message = validation.ErrorMessage;
+        return ErrorObject;
+    }
+
+    _reader.AppendRow(filePath, entity.Fields, rowValues);
+    ErrorObject.Flag = Errors.Ok;
+    return ErrorObject;
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 7: Register the driver so the engine knows about it</h3>
+                            <p>
+                                Add a <code>ConnectionDriversConfig</code> entry. The <code>classHandler</code>
+                                must match the <code>[AddinAttribute]</code> class name:
+                            </p>
+                            <pre><code class="language-csharp">// In ConnectionHelper_File.cs (or appropriate partial file):
+public static ConnectionDriversConfig CreateCSVConfig()
+{
+    return new ConnectionDriversConfig
+    {
+        GuidID            = Guid.NewGuid().ToString(),
+        PackageName       = "TheTechIdea.Beep.FileManager",
+        DriverClass       = "TheTechIdea.Beep.FileManager",
+        dllname           = "TheTechIdea.Beep.DataManagementEngine.dll",
+        extensionstoHandle = "csv",
+        classHandler      = "FileDataSource",    // ← Must match class name
+        DatasourceCategory = DatasourceCategory.FILE,
+        DatasourceType    = DataSourceType.CSV,
+        IsMissing         = false
+    };
+}</code></pre>
+                        </div>
+                    </section>
+
+                    <section id="idatasource-discovery">
+                        <h3>How AssemblyHandler Discovers It</h3>
+                        <p>The complete chain from DLL to running data source:</p>
+                        <pre><code class="language-none">1. Compile your DLL (e.g. MyPlugin.dll)
+            │
+2. AssemblyHandler.LoadAllAssembly() scans the DLL
+            │
+3. IScanningService finds classes with [AddinAttribute] implementing IDataSource
+            │
+4. Creates AssemblyClassDefinition in ConfigEditor.DataSourcesClasses
+   - className = "FileDataSource"
+   - type = typeof(FileDataSource)
+   - PackageName = "TheTechIdea.Beep.FileManager"
+            │
+5. User calls dm.GetDataSource("myfile.csv")
+            │
+6. DMEEditor links ConnectionProperties → ConnectionDriversConfig
+   → classHandler = "FileDataSource"
+            │
+7. DMEEditor matches classHandler to DataSourcesClasses by className
+   → finds AssemblyClassDefinition with type = typeof(FileDataSource)
+            │
+8. Finds constructor (string, IDMLogger, IDMEEditor, DataSourceType, IErrorsInfo)
+            │
+9. Instantiates via ObjectActivator&lt;IDataSource&gt;
+   → FileDataSource instance is ready
+            │
+10. dm.GetDataSource() returns it. Consumer calls ds.Openconnection()</code></pre>
+                    </section>
+                </section>
+
+                <!-- Pattern 2: Loader Extension -->
+                <section id="loader-extension" class="section">
+                    <h2>Pattern 2: Creating a Loader Extension for a New Interface</h2>
+
+                    <section id="loader-why">
+                        <h3>Why You Need a Loader Extension</h3>
+                        <p>
+                            <code>AssemblyHandler</code> has built-in scanning for a fixed set of interfaces:
+                            <code>IDataSource</code>, <code>IDM_Addin</code>, <code>IWorkFlowAction</code>,
+                            <code>IRuleParser</code>, <code>IDefaultValueResolver</code>, <code>IFileFormatReader</code>,
+                            and a few others.
+                        </p>
+                        <p>
+                            If you create a <strong>brand-new interface</strong> (e.g. <code>IBranch</code>, <code>IReport</code>,
+                            <code>ICustomDashboard</code>) and want the engine to discover implementations of it,
+                            you must write an <code>ILoaderExtention</code> that teaches the engine how to find them.
+                        </p>
+                    </section>
+
+                    <section id="loader-iloaderextention">
+                        <h3>ILoaderExtention Interface</h3>
+                        <pre><code class="language-csharp">// DataManagementModelsStandard/Tools/ILoaderExtention.cs
+public interface ILoaderExtention
+{
+    IErrorsInfo LoadAllAssembly();              // Scan ALL loaded assemblies
+    IErrorsInfo Scan(assemblies_rep assembly);  // Scan a single assembly reference
+    IErrorsInfo Scan(Assembly assembly);         // Scan a single System.Reflection.Assembly
+    IErrorsInfo Scan();                          // No-arg convenience scan
+}</code></pre>
+                    </section>
+
+                    <section id="loader-example">
+                        <h3>Real Example: BranchLoaderExtension for IBranch</h3>
+                        <p>
+                            <strong>Source:</strong> <code>Beep.Branchs/TheTechIdea.Beep.Vis.Loader/BranchLoaderExtension.cs</code>
+                        </p>
+                        <p>
+                            The problem: <code>IBranch</code> is not one of the built-in interfaces that
+                            AssemblyHandler scans for. The solution: A loader extension that teaches
+                            the engine to find <code>IBranch</code> implementations and register them
+                            in <code>ConfigEditor.BranchesClasses</code>.
+                        </p>
+
+                        <div class="code-example">
+                            <h3>Step 1: Define your interface (in a shared models project)</h3>
+                            <pre><code class="language-csharp">// Beep.Vis.Modules/IBranch.cs
+namespace BeepEnterprize.Vis.Module
+{
+    public interface IBranch : IBranchID
+    {
+        int ID { get; set; }
+        IDMEEditor DMEEditor { get; set; }
+        IDataSource DataSource { get; set; }
+        string DataSourceName { get; set; }
+        List&lt;IBranch&gt; ChildBranchs { get; set; }
+        ITree TreeEditor { get; set; }
+        IVisManager Visutil { get; set; }
+        List&lt;string&gt; BranchActions { get; set; }
+        EntityStructure EntityStructure { get; set; }
+
+        IErrorsInfo ExecuteBranchAction(string ActionName);
+        IErrorsInfo SetConfig(ITree tree, IDMEEditor editor,
+            IBranch parent, string text, int id,
+            EnumPointType branchType, string imageName);
+        IErrorsInfo CreateChildNodes();
+        IErrorsInfo RemoveChildNodes();
+    }
+}
+
+// Beep.Vis.Modules/IBranchID.cs
+namespace BeepEnterprize.Vis.Module
+{
+    public interface IBranchID
+    {
+        string Name { get; set; }
+        string BranchText { get; set; }
+        int Level { get; set; }
+        EnumPointType BranchType { get; set; }
+        int BranchID { get; set; }
+        string IconImageName { get; set; }
+        string BranchStatus { get; set; }
+        int ParentBranchID { get; set; }
+        string BranchDescription { get; set; }
+        string BranchClass { get; set; }
+    }
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 2: Add a BranchesClasses collection to ConfigEditor</h3>
+                            <pre><code class="language-csharp">// In IConfigEditor (ConfigUtil folder):
+public List&lt;AssemblyClassDefinition&gt; BranchesClasses { get; set; }
+
+// Initialize in ConfigEditor constructor:
+BranchesClasses = new List&lt;AssemblyClassDefinition&gt;();</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>Step 3: Implement ILoaderExtention — the scanner</h3>
+                            <pre><code class="language-csharp">// Beep.Branchs/TheTechIdea.Beep.Vis.Loader/BranchLoaderExtension.cs
+namespace AssemblyLoaderExtension
+{
+    public class BranchLoaderExtension : ILoaderExtention
+    {
+        public AppDomain CurrentDomain { get; set; }
+        public IAssemblyHandler Loader { get; set; }
+
+        public BranchLoaderExtension(IAssemblyHandler ploader)
+        {
+            Loader = ploader;
+            CurrentDomain = AppDomain.CurrentDomain;
+            // Wire up assembly resolution for dependency loading
+            CurrentDomain.AssemblyResolve += Loader.CurrentDomain_AssemblyResolve;
+        }
+
+        // === Scan ALL loaded assemblies ===
+        public IErrorsInfo LoadAllAssembly()
+        {
+            var er = new ErrorsInfo();
+            foreach (var item in Loader.Assemblies)
+            {
+                try { ScanAssembly(item.DllLib); }
+                catch (Exception ex) { /* log and continue */ }
+            }
+            return er;
+        }
+
+        // === The core scanner — detects IBranch implementations ===
+        private bool ScanAssembly(Assembly asm)
+        {
+            Type[] types;
+            try
+            {
+                types = asm.GetTypes();   // Try all types first
+                if (types == null)
+                    types = asm.GetExportedTypes();  // Fall back to public only
+            }
+            catch { return false; }
+
+            if (types == null) return false;
+
+            foreach (var type in types)
+            {
+                var typeInfo = type.GetTypeInfo();
+
+                // ★ THIS IS THE KEY LINE ★
+                // Check if the type implements YOUR interface
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(IBranch)))
+                {
+                    // Register it using AssemblyHandler's helper
+                    var classDef = Loader.GetAssemblyClassDefinition(
+                        typeInfo, "IBranch");
+
+                    // Add to the dedicated collection in ConfigEditor
+                    Loader.ConfigEditor.BranchesClasses.Add(classDef);
+                }
+
+                // You can scan for MULTIPLE interfaces in one extension:
+                // if (typeInfo.ImplementedInterfaces.Contains(typeof(IReport)))
+                //     Loader.ConfigEditor.ReportClasses.Add(...);
+            }
+
+            return true;
+        }
+
+        // === Convenience overloads ===
+        public IErrorsInfo Scan(assemblies_rep assembly)
+        {
+            try { ScanAssembly(assembly.DllLib); }
+            catch (Exception ex) { /* ... */ }
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+
+        public IErrorsInfo Scan(Assembly assembly)
+        {
+            try { ScanAssembly(assembly); }
+            catch (Exception ex) { /* ... */ }
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+
+        public IErrorsInfo Scan()
+        {
+            LoadAllAssembly();
+            return new ErrorsInfo { Flag = Errors.Ok };
+        }
+    }
+}</code></pre>
+                        </div>
+                    </section>
+
+                    <section id="loader-registration">
+                        <h3>Step 4: Auto-Discovery — No Manual Registration Needed</h3>
+                        <p>
+                            <strong>You do NOT need to manually register the extension.</strong>
+                            <code>AssemblyHandler</code> (and <code>SharedContextAssemblyHandler</code>) automatically
+                            scan for <code>ILoaderExtention</code> implementations during <code>LoadAllAssembly()</code>.
+                        </p>
+                        <p>The auto-discovery flow in <code>AssemblyHandler.Scanning.cs:99-300</code>:</p>
+
+                        <div class="code-example">
+                            <h3>How AssemblyHandler discovers and runs ILoaderExtentions automatically</h3>
+                            <pre><code class="language-csharp">// Phase 1: Discovery (AssemblyHandler.Scanning.cs line 104)
+// During the main assembly scan, every type is checked:
+private void ProcessTypeInfo(TypeInfo typeInfo, Assembly asm)
+{
+    if (typeInfo.ImplementedInterfaces.Contains(typeof(ILoaderExtention)))
+    {
+        LoaderExtensions.Add(typeInfo);    // Store the Type
+        LoaderExtensionClasses.Add(
+            GetAssemblyClassDefinition(typeInfo, "ILoaderExtention"));
+    }
+    // ... also checks IDataSource, IDM_Addin, IRuleParser, etc.
+}
+
+// Phase 2: Auto-Instantiation & Auto-Scan (line 256)
+private void ScanExtensions()
+{
+    foreach (Type item in LoaderExtensions)
+    {
+        // 1. Instantiate automatically — passes 'this' (IAssemblyHandler)
+        ILoaderExtention cls = (ILoaderExtention)
+            Activator.CreateInstance(item, new object[] { this });
+
+        // 2. Store the instance
+        LoaderExtensionInstances.Add(cls);
+
+        // 3. Auto-scan EVERY loaded assembly through the extension
+        foreach (Assembly assembly1 in LoadedAssemblies)
+        {
+            if (!assembly1.FullName.StartsWith("System") &&
+                !assembly1.FullName.StartsWith("Microsoft"))
+            {
+                cls.Scan(assembly1);  // ← Your ScanAssembly() gets called
+            }
+        }
+    }
+}</code></pre>
+                        </div>
+
+                        <div class="note">
+                            <strong>All you need to do:</strong>
+                            <ol>
+                                <li>Implement <code>ILoaderExtention</code></li>
+                                <li>Provide a constructor that takes <code>IAssemblyHandler</code></li>
+                                <li>Place the compiled DLL in <code>LoadingExtensions/</code> or <code>ProjectClasses/</code></li>
+                                <li><code>LoadAllAssembly()</code> does the rest — discovers, instantiates, and calls <code>Scan()</code></li>
+                            </ol>
+                        </div>
+
+                        <p>
+                            The constructor signature matters. AssemblyHandler instantiates
+                            your extension with <code>new BranchLoaderExtension(this)</code> — so your
+                            constructor must accept an <code>IAssemblyHandler</code>:
+                        </p>
+
+                        <pre><code class="language-csharp">public BranchLoaderExtension(IAssemblyHandler ploader)
+{
+    Loader = ploader;   // ← Now you have access to assemblies, ConfigEditor, etc.
+}</code></pre>
+                    </section>
+                </section>
+
+                <!-- Pattern 3: Consumer -->
+                <section id="consumer" class="section">
+                    <h2>Pattern 3: Consuming the Discovered Types</h2>
+
+                    <section id="consumer-trees">
+                        <h3>BeepAppTree.CreateRootTree() — Building a UI from IBranch</h3>
+                        <p>
+                            <strong>Source:</strong> <code>Beep.Winform/.../BeepTreeView/BeepAppTree.cs</code> (line 413)
+                        </p>
+                        <p>
+                            Once the <code>BranchLoaderExtension</code> has populated <code>BranchesClasses</code>,
+                            the UI layer reads those definitions, instantiates each branch via reflection,
+                            and builds the tree. Here's the complete flow:
+                        </p>
+
+                        <div class="code-example">
+                            <h3>The full flow — from AssemblyClassDefinition to visible tree node</h3>
+                            <pre><code class="language-csharp">public IErrorsInfo CreateRootTree()
+{
+    // === PHASE 1: Build Genre (category) nodes ===
+    // Genre branches group related branches under a category header
+    foreach (AssemblyClassDefinition def in DMEEditor.ConfigEditor.BranchesClasses
+        .Where(b => b.VisSchema?.BranchType == EnumPointType.Genre)
+        .OrderBy(b => b.Order))
+    {
+        // a) Resolve the Type from the fully-qualified name
+        Type type = DMEEditor.assemblyHandler.GetType(def.PackageName);
+        // def.PackageName = "BeepEnterprize.Vis.Module.MyGenreBranch"
+
+        // b) Find a parameterless constructor
+        ConstructorInfo ctor = type.GetConstructors()
+            .FirstOrDefault(c => c.GetParameters().Length == 0);
+
+        // c) Create an activator (compiled expression tree, fast)
+        ObjectActivator&lt;IBranch&gt; activator = GetActivator&lt;IBranch&gt;(ctor);
+
+        // d) Instantiate the branch
+        IBranch genre = activator();
+
+        // e) Configure it
+        genre.Name = def.PackageName;
+        genre.ID = nextId++;
+        genre.BranchID = genre.ID;
+
+        // f) Create a UI node in the tree
+        CreateNode(genre.ID, genre);
+        Branches.Add(genre);
+    }
+
+    // === PHASE 2: Build Root branches ===
+    // Root branches are top-level navigation items
+    foreach (AssemblyClassDefinition def in DMEEditor.ConfigEditor.BranchesClasses
+        .Where(b => b.VisSchema?.BranchType == EnumPointType.Root)
+        .OrderBy(b => b.Order))
+    {
+        // Same reflection pattern: resolve type → find constructor → activate
+        Type type = DMEEditor.assemblyHandler.GetType(def.PackageName);
+        ConstructorInfo ctor = type.GetConstructors()
+            .FirstOrDefault(c => c.GetParameters().Length == 0);
+
+        ObjectActivator&lt;IBranch&gt; activator = GetActivator&lt;IBranch&gt;(ctor);
+        IBranch branch = activator();
+
+        // Configure branch
+        branch.Name = def.PackageName;
+        branch.ID = nextId++;
+        branch.DMEEditor = DMEEditor;
+        branch.TreeEditor = this;   // branch can now interact with the tree
+
+        // === PHASE 3: Route branch to the right Genre ===
+        // Match branch to its parent Genre by menu category
+        var parentGenre = GenreBranches.FirstOrDefault(g =>
+            g.Item2 == def.classProperties.menu);
+
+        if (parentGenre != null)
+        {
+            // Add under the Genre category node
+            AddBranch(parentGenre.Item1, branch);
+        }
+        else
+        {
+            // Top-level root node
+            CreateNode(branch.ID, branch);
+        }
+    }
+}
+
+// === AddBranch: recursive child construction ===
+public IErrorsInfo AddBranch(IBranch parent, IBranch child)
+{
+    // 1. Link parent-child
+    child.ParentBranch = parent;
+    child.ParentBranchID = parent.ID;
+
+    // 2. Create UI node under parent
+    SimpleItem node = CreateNode(child.ID, child);
+    AddNodeWithBranch(node, parent.GuidID);
+
+    // 3. Give the branch a chance to populate its children
+    child.SetConfig(this, DMEEditor, parent,
+        child.BranchText, child.ID,
+        child.BranchType, null);
+
+    // 4. Recursively build child branches
+    parent.ChildBranchs.Add(child);
+    child.CreateChildNodes();  // ← Branch's own logic to build sub-items
+
+    // 5. Recurse into grandchildren
+    foreach (var grandchild in child.ChildBranchs)
+        AddBranch(child, grandchild);
+
+    return DMEEditor.ErrorObject;
+}</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>The three branch types used in the tree</h3>
+                            <pre><code class="language-csharp">public enum EnumPointType
+{
+    Genre,   // Category header — groups related branches
+             //   e.g. "Data Sources", "Reports", "Administration"
+    Root,    // Top-level navigation item
+             //   e.g. "Northwind DB", "Sales Dashboard"
+    Child    // Nested item under a Root or another Child
+             //   e.g. "Customers" table, "Monthly Report"
+}
+
+// Each branch type gets handled differently:
+// Genre  → Created first as top-level category containers
+// Root   → Added under a Genre, or standalone at root
+// Child  → Created by the branch's own CreateChildNodes()</code></pre>
+                        </div>
+
+                        <div class="code-example">
+                            <h3>What a concrete IBranch implementation looks like</h3>
+                            <pre><code class="language-csharp">// A branch that represents a database connection in the tree
+[AddinAttribute(Name = "DatabaseBranch",
+    Caption = "Database Connection",
+    Category = DatasourceCategory.RDBMS)]
+public class DatabaseBranch : IBranch
+{
+    // IBranchID properties
+    public string Name { get; set; }
+    public string BranchText { get; set; } = "Database";
+    public EnumPointType BranchType { get; set; } = EnumPointType.Root;
+    public int BranchID { get; set; }
+    public string IconImageName { get; set; } = "database.svg";
+
+    // IBranch properties
+    public int ID { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+    public IDataSource DataSource { get; set; }
+    public List&lt;IBranch&gt; ChildBranchs { get; set; } = new();
+
+    // CreateChildNodes — called by the tree to build the subtree
+    public IErrorsInfo CreateChildNodes()
+    {
+        if (DataSource == null) return DMEEditor.ErrorObject;
+
+        // Discover tables from the connected database
+        foreach (var entityName in DataSource.EntitiesNames)
+        {
+            var child = new TableBranch
+            {
+                Name = entityName,
+                BranchText = entityName,
+                BranchType = EnumPointType.Child,
+                IconImageName = "table.svg",
+                DataSource = DataSource,
+                DMEEditor = DMEEditor
+            };
+            ChildBranchs.Add(child);
+        }
+
+        return DMEEditor.ErrorObject;
+    }
+
+    public IErrorsInfo SetConfig(ITree tree, IDMEEditor editor,
+        IBranch parent, string text, int id,
+        EnumPointType branchType, string imageName)
+    {
+        TreeEditor = tree;
+        DMEEditor = editor;
+        // Open the database connection
+        DataSource = DMEEditor.GetDataSource(Name);
+        DataSource?.Openconnection();
+        return DMEEditor.ErrorObject;
+    }
+}</code></pre>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- End-to-End -->
+                <section id="end-to-end" class="section">
+                    <h2>End-to-End: A Complete Integration Walkthrough</h2>
+                    <p>Here's the full lifecycle, from defining a new interface to seeing it in the UI:</p>
+
+                    <div class="code-example">
+                        <h3>The complete picture</h3>
+                        <pre><code class="language-none">┌──────────────────────────────────────────────────────────────────┐
+│ STEP 1: Define the interface (shared models project)              │
+│   File: Beep.Vis.Modules/IBranch.cs                              │
+│   Content: interface IBranch : IBranchID { ... }                 │
+├──────────────────────────────────────────────────────────────────┤
+│ STEP 2: Add collection to ConfigEditor                           │
+│   File: ConfigUtil/IConfigEditor.cs                              │
+│   Content: List&lt;AssemblyClassDefinition&gt; BranchesClasses { get; } │
+├──────────────────────────────────────────────────────────────────┤
+│ STEP 3: Create the LoaderExtension                               │
+│   File: Beep.Branchs/.../BranchLoaderExtension.cs                │
+│   Implements: ILoaderExtention                                   │
+│   Constructor: takes IAssemblyHandler (required by auto-discovery)│
+│   Scans for: typeof(IBranch)                                     │
+│   Registers into: ConfigEditor.BranchesClasses                   │
+├──────────────────────────────────────────────────────────────────┤
+│ STEP 4: Place DLL in LoadingExtensions/ directory                │
+│   AssemblyHandler auto-discovers ILoaderExtention implementations│
+│   during ScanExtensions() — NO manual registration needed.       │
+│   It instantiates: new BranchLoaderExtension(this)               │
+│   It calls: cls.Scan(assembly) for every loaded assembly         │
+├──────────────────────────────────────────────────────────────────┤
+│ STEP 5: Create implementations of IBranch                        │
+│   File: YourPlugin/DataSourcesBranch.cs                          │
+│   Implements: IBranch                                            │
+│   Marked with: [AddinAttribute]                                  │
+├──────────────────────────────────────────────────────────────────┤
+│ STEP 6: AssemblyHandler discovers them                           │
+│   LoadAllAssembly() → ProcessTypeInfo() finds ILoaderExtention   │
+│   → ScanExtensions() instantiates → cls.Scan(assembly)           │
+│   → BranchLoaderExtension.ScanAssembly() finds IBranch types     │
+│   → ConfigEditor.BranchesClasses populated (15 entries)          │
+├──────────────────────────────────────────────────────────────────┤
+│ STEP 7: UI consumes BranchesClasses                              │
+│   BeepAppTree.CreateRootTree() reads BranchesClasses             │
+│   → Instantiates each IBranch via reflection                     │
+│   → Creates tree nodes, wires SetConfig/CreateChildNodes         │
+│   → User sees the tree in the application                        │
+└──────────────────────────────────────────────────────────────────┘</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>App startup code — no manual registration needed</h3>
+                        <pre><code class="language-csharp">// Program.cs / Startup
+var beepService = new BeepService(services);
+beepService.Configure(AppContext.BaseDirectory, "MyEnterpriseApp",
+                      BeepConfigType.DataConnector);
+
+// ★ No manual registration needed! AssemblyHandler auto-discovers
+//    ILoaderExtention implementations when it scans DLLs in
+//    LoadingExtensions/ and ProjectClasses/ directories.
+
+// LoadAllAssembly does everything:
+//   1. Scans for IDataSource, IDM_Addin, IWorkFlowAction, etc.
+//   2. Finds ILoaderExtention implementations → instantiates them
+//   3. Calls each extension's Scan(assembly) for every loaded assembly
+//   4. BranchLoaderExtension populates ConfigEditor.BranchesClasses
+beepService.LoadAssemblies();
+
+// Verify discovery
+Console.WriteLine($"Data sources: " +
+    $"{beepService.Config_editor.DataSourcesClasses.Count}");
+Console.WriteLine($"Branches: " +
+    $"{beepService.Config_editor.BranchesClasses.Count}");
+
+// Later, the UI builds the tree:
+var tree = new BeepAppTree(beepService);
+tree.init(beepService, visManager);
+tree.CreateRootTree();   // ← Reads BranchesClasses, builds the tree</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Why it works automatically</strong>
+                        <p>
+                            <code>AssemblyHandler.ScanExtensions()</code> (line 256 in <code>AssemblyHandler.Scanning.cs</code>)
+                            iterates over all discovered <code>ILoaderExtention</code> types, instantiates them with
+                            <code>new YourExtension(this)</code>, and calls <code>Scan(assembly)</code> for every
+                            non-System assembly. The only requirement: your DLL must be in a scanned directory
+                            and your constructor must accept <code>IAssemblyHandler</code>.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Quick Reference -->
+                <section id="quick-ref" class="section">
+                    <h2>Quick Reference Card</h2>
+                    <div class="note">
+                        <table>
+                            <thead><tr><th>Task</th><th>What to create</th><th>Key rule</th></tr></thead>
+                            <tbody>
+                                <tr><td>New database / file format</td><td><code>IDataSource</code> implementation</td><td>Constructor: (string, IDMLogger, IDMEEditor, DataSourceType, IErrorsInfo)</td></tr>
+                                <tr><td>New driver metadata entry</td><td><code>CreateXxxConfig()</code> in a <code>ConnectionHelper_*.cs</code> partial</td><td><code>classHandler</code> must match the <code>IDataSource</code> class name</td></tr>
+                                <tr><td>New interface not in engine</td><td><code>ILoaderExtention</code> implementation</td><td>Scan assemblies for <code>typeof(YourInterface)</code></td></tr>
+                                <tr><td>New collection on ConfigEditor</td><td>Add <code>List&lt;AssemblyClassDefinition&gt;</code> property</td><td>Initialize in constructor, save/load if needed</td></tr>
+                                <tr><td>Register loader extension</td><td>Place DLL in <code>LoadingExtensions/</code> directory</td><td>AssemblyHandler auto-discovers <code>ILoaderExtention</code>, instantiates with <code>new YourExt(this)</code>, calls <code>Scan()</code></td></tr>
+                                <tr><td>Create branch implementations</td><td>Implement <code>IBranch</code> with <code>[AddinAttribute]</code></td><td>Must have parameterless constructor</td></tr>
+                                <tr><td>Consume discovered types</td><td>Read <code>ConfigEditor.YourCollection</code></td><td>Use <code>AssemblyHandler.GetType(name)</code> + <code>ObjectActivator</code></td></tr>
+                                <tr><td>Debug discovery issues</td><td>Check <code>ConfigEditor.YourCollection.Count</code></td><td>Verify <code>[AddinAttribute]</code> is present and interface matches</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div class="nav-links">
+                    <a href="creating-custom-datasources.html"><i class="bi bi-arrow-left"></i> Previous: Creating Custom Data Sources</a>
+                    <a href="index.html">Home <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="extending-beepdm.html">Extending BeepDM</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Helpers - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <a href="helpers-runtime-reference.html">Helpers Reference</a>
+                    <span>&gt;</span>
+                    <span>Connection Helpers</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Connection Helpers</h1>
+                    <p class="page-subtitle">Complete reference for the ConnectionHelper facade, driver factories, connection-string utilities, liveness probes, and the 200+ pre-configured data source drivers</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li>Facade: <code>DataManagementEngineStandard/Helpers/ConnectionHelpers/ConnectionHelper.cs</code></li>
+                        <li>Driver linking: <code>ConnectionDriverLinkingHelper.cs</code></li>
+                        <li>String processing: <code>ConnectionStringProcessingHelper.cs</code></li>
+                        <li>Validation: <code>ConnectionStringValidationHelper.cs</code></li>
+                        <li>Security: <code>ConnectionStringSecurityHelper.cs</code></li>
+                        <li>Parameter utilities: <code>ConnectionHelper_GetParameterList.cs</code></li>
+                        <li>Liveness: <code>ProxyLivenessHelper.cs</code>, <code>TestConnectionHelper.cs</code></li>
+                        <li>Category factories: 17 partial class files (see below)</li>
+                        <li>Readme: <code>DataManagementEngineStandard/Helpers/ConnectionHelpers/README.md</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#architecture">Architecture Overview</a></li>
+                        <li><a href="#bootstrapping">Bootstrapping &amp; How Drivers Get Loaded</a></li>
+                        <li><a href="#facade">ConnectionHelper Facade</a></li>
+                        <li><a href="#driver-linking">Driver Linking</a></li>
+                        <li><a href="#string-processing">Connection String Processing</a></li>
+                        <li><a href="#string-validation">Connection String Validation</a></li>
+                        <li><a href="#string-security">Connection String Security</a></li>
+                        <li><a href="#string-params">Parameter Utilities</a></li>
+                        <li><a href="#factory-overview">Category Factory Overview</a></li>
+                        <li><a href="#factory-rdbms">RDBMS (19 drivers)</a></li>
+                        <li><a href="#factory-nosql">NoSQL (17 drivers)</a></li>
+                        <li><a href="#factory-vector">Vector DB (8 drivers)</a></li>
+                        <li><a href="#factory-file">File (25+ drivers)</a></li>
+                        <li><a href="#factory-cloud">Cloud (24 drivers)</a></li>
+                        <li><a href="#factory-streaming">Streaming &amp; Messaging (20 drivers)</a></li>
+                        <li><a href="#factory-inmemory">In-Memory &amp; Cache (14 drivers)</a></li>
+                        <li><a href="#factory-webapi">Web API (11 drivers)</a></li>
+                        <li><a href="#factory-connectors">Connector Categories (35+ drivers across CRM, Marketing, E-Commerce, PM, Communication)</a></li>
+                        <li><a href="#factory-blockchain">Blockchain (3 drivers)</a></li>
+                        <li><a href="#factory-proxy">Proxy / Cluster (2 drivers)</a></li>
+                        <li><a href="#liveness">Liveness &amp; Test Connection</a></li>
+                        <li><a href="#extension">Extending — Adding a New Driver</a></li>
+                        <li><a href="#quick-ref">Quick Reference Card</a></li>
+                    </ul>
+                </div>
+
+                <!-- Architecture Overview -->
+                <section id="architecture" class="section">
+                    <h2>Architecture Overview</h2>
+                    <p>
+                        The Connection Helpers subsystem is the <strong>metadata catalog</strong> for BeepDM.
+                        It defines everything the engine needs to know about every supported database, file format,
+                        cloud service, API protocol, and SaaS connector <em>before</em> any actual driver code is loaded.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Two-layer design</h3>
+                        <pre><code class="language-csharp">// Layer 1: ConnectionHelper — static facade (public API)
+// Delegates to sub-helpers for all implementation logic
+ConnectionHelper.LinkConnection2Drivers(conn, editor);    // → ConnectionDriverLinkingHelper
+ConnectionHelper.ReplaceValueFromConnectionString(...);    // → ConnectionStringProcessingHelper
+ConnectionHelper.IsConnectionStringValid(...);             // → ConnectionStringValidationHelper
+ConnectionHelper.SecureConnectionString(...);              // → ConnectionStringSecurityHelper
+ConnectionHelper.GetAllConnectionConfigs();                // → aggregates ALL factory methods
+
+// Layer 2: 17 partial-class factory files
+// Each adds Get*Configs() + Create*Config() for one category
+GetRDBMSConfigs();      // SQL Server, PostgreSQL, MySQL, Oracle, SQLite, ...
+GetNoSQLConfigs();      // MongoDB, Redis, Cassandra, Elasticsearch, ...
+GetVectorDBConfigs();   // ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, ...
+GetFileConfigs();       // CSV, JSON, XML, Excel, Parquet, Avro, ...
+GetCloudConfigs();      // AWS, Azure, GCP, Databricks, ...
+GetStreamingConfigs();  // Kafka, RabbitMQ, Pulsar, ...
+GetCRMConnectorConfigs();  // Salesforce, HubSpot, Dynamics 365, ...
+// ... and 10 more</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Partial file inventory</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Namespace</th><th>Responsibility</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>ConnectionHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Public facade — re-exports every sub-helper method under one type</td></tr>
+                                <tr><td><code>ConnectionDriverLinkingHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Match connection properties to registered drivers</td></tr>
+                                <tr><td><code>ConnectionStringProcessingHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Placeholder substitution, path normalisation</td></tr>
+                                <tr><td><code>ConnectionStringValidationHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Per-driver connection-string validation rules</td></tr>
+                                <tr><td><code>ConnectionStringSecurityHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Mask passwords, API keys, tokens for logging</td></tr>
+                                <tr><td><code>ConnectionHelper_GetParameterList.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Parse / mutate individual connection-string parameters</td></tr>
+                                <tr><td><code>ConnectionHelper_RDBMS.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: SQL Server, MySQL, PostgreSQL, SQLite, Firebird, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_NoSQL.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: MongoDB, Redis, Cassandra, Elasticsearch, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_VectorDB.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_File.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: CSV, JSON, XML, Excel, Parquet, Avro, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_File_Misc.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: DICOM, LAS, HDF5, Markdown, INI, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_Cloud.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: AWS (S3, Redshift, Athena), Azure, GCP (BigQuery)</td></tr>
+                                <tr><td><code>ConnectionHelper_Streaming.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Kafka, RabbitMQ, Pulsar, Azure Service Bus, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_InMemory.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: SQLite Memory, DuckDB Memory, Hazelcast, Ignite</td></tr>
+                                <tr><td><code>ConnectionHelper_Cache.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: InMemoryCache, Redis Cache, NCache, Hazelcast Cache, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_WebAPI.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: REST, GraphQL, gRPC, SOAP, OData, WebSocket, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_CRM.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Salesforce, HubSpot, Dynamics 365, Zoho, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_Marketing.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Mailchimp, Marketo, Klaviyo, SendGrid, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_ECommerce.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Shopify, WooCommerce, Magento, BigCommerce, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_ProjectManagement.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Jira, Asana, Monday.com, ClickUp, Trello, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_Communication.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Slack, Teams, Discord, Zoom, Telegram, ...</td></tr>
+                                <tr><td><code>ConnectionHelper_Blockchain.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: Ethereum, Hyperledger, Bitcoin Core</td></tr>
+                                <tr><td><code>ConnectionHelper_Proxy.cs</code></td><td><code>TheTechIdea.Beep.Helpers</code></td><td>Factory: BeepProxyNode, BeepProxyCluster</td></tr>
+                                <tr><td><code>ProxyLivenessHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Category-aware liveness probe for a live <code>IDataSource</code></td></tr>
+                                <tr><td><code>TestConnectionHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.ConnectionHelpers</code></td><td>Async setup-time and runtime connection tests</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Bootstrapping -->
+                <section id="bootstrapping" class="section">
+                    <h2>Bootstrapping &amp; How Drivers Get Loaded</h2>
+                    <p>
+                        The connection helpers don't operate in isolation — they are the first step in a multi-stage
+                        bootstrap process that ultimately produces running <code>IDataSource</code> instances.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>The complete bootstrap chain</h3>
+                        <pre><code class="language-csharp">// Stage 1: LoadConfigurations() seeds Metadata (ConnectionDriversConfig entries)
+EnvironmentService.AddAllConnectionConfigurations(editor);
+// → editor.ConfigEditor.DataDriversClasses now has 200+ entries
+//   Each entry has: classHandler, PackageName, dllname, AdapterType,
+//   ConnectionString template, DatasourceType, iconname, flags
+
+// Stage 2: LoadAssemblies() discovers Runtime Code (AssemblyClassDefinition entries)
+LLoader.LoadAllAssembly(progress, token);
+// → Scans DLLs for [AddinAttribute] classes implementing IDataSource
+// → editor.ConfigEditor.DataSourcesClasses now has matching Type entries
+
+// Stage 3: classHandler → className bridge
+//   ConnectionDriversConfig.classHandler == "SQLiteDataSource"
+//   AssemblyClassDefinition.className == "SQLiteDataSource"
+//   → DMEEditor resolves: string match → Type → IDataSource instance</code></pre>
+                    </div>
+
+                    <p>
+                        The relationship between the two collections is documented in detail in the
+                        <a href="../README.md#deep-dive-datadriversclasses--classhandler--idatasource-datasourcesclasses">README Deep Dive section</a>.
+                    </p>
+                </section>
+
+                <!-- Facade -->
+                <section id="facade" class="section">
+                    <h2>ConnectionHelper Facade</h2>
+                    <p>
+                        <code>ConnectionHelper</code> (<code>ConnectionHelper.cs</code>) is a <strong>static partial class</strong>
+                        that serves as the single public entry point. It delegates all implementation to sub-helpers:
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Facade methods</h3>
+                        <pre><code class="language-csharp">// === Driver Linking (→ ConnectionDriverLinkingHelper) ===
+public static ConnectionDriversConfig LinkConnection2Drivers(
+    IConnectionProperties cn, IConfigEditor configEditor);
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForDataSourceType(
+    DataSourceType dataSourceType, IConfigEditor configEditor);
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForFileExtension(
+    string fileExtension, IConfigEditor configEditor);
+public static ConnectionDriversConfig GetBestMatchingDriver(
+    IConnectionProperties connectionProperties, IConfigEditor configEditor);
+
+// === Connection String Processing (→ ConnectionStringProcessingHelper) ===
+public static string ReplaceValueFromConnectionString(
+    ConnectionDriversConfig DataSourceDriver,
+    IConnectionProperties ConnectionProp,
+    IDMEEditor DMEEditor);
+public static string NormalizePath(string relativePath, string basePath);
+public static void NormalizeFilePath(IConnectionProperties connectionProp, string basePath);
+public static List&lt;string&gt; ValidateRequiredPlaceholders(
+    string connectionStringTemplate, IConnectionProperties connectionProp);
+
+// === Validation (→ ConnectionStringValidationHelper) ===
+public static bool IsConnectionStringValid(string connectionString, DataSourceType dataSourceType);
+public static string GetValidationRequirements(DataSourceType dataSourceType);
+public static bool ValidateConnectionStringStructure(string connectionString);
+// + per-driver: ValidateSqlServer, ValidateMySql, ValidateSQLite, ...
+
+// === Security (→ ConnectionStringSecurityHelper) ===
+public static string SecureConnectionString(string connectionString);
+public static bool ContainsSensitiveInformation(string connectionString);
+public static string SelectiveMask(string connectionString, char maskChar = '*', int visibleChars = 2);
+
+// === Parameters (→ ConnectionHelper_GetParameterList) ===
+public static List&lt;string&gt; GetParameterList(string connectionString);
+public static Dictionary&lt;string, string&gt; GetAllParameters(string connectionString);
+public static string GetParameterValue(string connectionString, string parameterName);
+public static string SetParameterValue(string connectionString, string parameterName, string parameterValue);
+public static string RemoveParameter(string connectionString, string parameterName);
+
+// === Configuration Catalog ===
+public static List&lt;ConnectionDriversConfig&gt; GetAllConnectionConfigs();
+// Aggregates ALL Get*Configs() methods below (200+ entries)</code></pre>
+                    </div>
+                </section>
+
+                <!-- Driver Linking -->
+                <section id="driver-linking" class="section">
+                    <h2>Driver Linking — <code>ConnectionDriverLinkingHelper</code></h2>
+                    <p>
+                        <strong>Source:</strong> <code>DataManagementEngineStandard/Helpers/ConnectionHelpers/ConnectionDriverLinkingHelper.cs</code>
+                    </p>
+                    <p>
+                        This is the <strong>resolver</strong> that answers the question: <em>"Given these connection properties (host, database type, file extension, etc.),
+                        which driver configuration should I use?"</em>
+                    </p>
+                    <p>
+                        It searches <code>IConfigEditor.DataDriversClasses</code> — the 200+ entry catalog seeded by
+                        <code>LoadConfigurations()</code> — using a cascade of four matching strategies.
+                        Only <code>LinkConnection2Drivers()</code> and <code>GetBestMatchingDriver()</code> are the two
+                        public entry points; all other methods are public query helpers.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>All 8 public methods</h3>
+                        <pre><code class="language-csharp">// === PRIMARY RESOLVERS (the two you use most) ===
+
+// Cascading lookup: tries 4 strategies in order, returns first match
+public static ConnectionDriversConfig LinkConnection2Drivers(
+    IConnectionProperties cn, IConfigEditor configEditor);
+
+// Compatibility-filtered best match: narrows by type+category first,
+// then prioritizes exact package name+version > package name > first compatible
+public static ConnectionDriversConfig GetBestMatchingDriver(
+    IConnectionProperties connectionProperties, IConfigEditor configEditor);
+
+// === FILTERED QUERIES ===
+
+// All drivers for a given DataSourceType enum value (e.g. DataSourceType.SqlLite)
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForDataSourceType(
+    DataSourceType dataSourceType, IConfigEditor configEditor);
+
+// All drivers that handle a given file extension (e.g. "csv", "parquet")
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForFileExtension(
+    string fileExtension, IConfigEditor configEditor);
+
+// All drivers in a DatasourceCategory (e.g. DatasourceCategory.RDBMS)
+public static List&lt;ConnectionDriversConfig&gt; GetDriversForCategory(
+    DatasourceCategory category, IConfigEditor configEditor);
+
+// === VALIDATION ===
+
+// Returns true if driver type + category + file extension all match
+public static bool IsDriverCompatible(
+    ConnectionDriversConfig driverConfig, IConnectionProperties connectionProperties);</code></pre>
+                    </div>
+
+                    <h3>The Four-Strategy Cascade — How <code>LinkConnection2Drivers()</code> Works</h3>
+                    <p>
+                        When called, it tries each strategy in order. The first non-null result wins.
+                        This means more specific matches (exact package) take priority over generic ones (enum type).
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Strategy 1: Exact Package Name + Version</h3>
+                        <pre><code class="language-csharp">// Source: FindDriverByPackageNameAndVersion() — line 55
+// Matches when cn.DriverName AND cn.DriverVersion are both set
+// e.g. cn.DriverName = "System.Data.SqlClient", cn.DriverVersion = "4.6.1.1"
+
+private static ConnectionDriversConfig FindDriverByPackageNameAndVersion(
+    IConnectionProperties cn, IConfigEditor configEditor)
+{
+    if (string.IsNullOrEmpty(cn.DriverName) || string.IsNullOrEmpty(cn.DriverVersion))
+        return null;
+
+    return configEditor.DataDriversClasses
+        .FirstOrDefault(c =>
+            c.PackageName.Equals(cn.DriverName, StringComparison.InvariantCultureIgnoreCase)
+            && c.version == cn.DriverVersion);
+}
+// Used when the user explicitly picked a driver from a list
+// and we know both the package name and version.</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Strategy 2: Package Name Only</h3>
+                        <pre><code class="language-csharp">// Source: FindDriverByPackageName() — line 71
+// Matches when only cn.DriverName is set (version unknown or "latest")
+
+private static ConnectionDriversConfig FindDriverByPackageName(
+    IConnectionProperties cn, IConfigEditor configEditor)
+{
+    if (string.IsNullOrEmpty(cn.DriverName))
+        return null;
+
+    return configEditor.DataDriversClasses
+        .FirstOrDefault(c =>
+            c.PackageName.Equals(cn.DriverName, StringComparison.InvariantCultureIgnoreCase));
+}
+// Typical for user-typed connections where the driver name is known
+// but the version was left as default.</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Strategy 3: DataSourceType Enum</h3>
+                        <pre><code class="language-csharp">// Source: FindDriverByDataSourceType() — line 91
+// The fallback used 90% of the time. Matches by DatabaseType enum value.
+// e.g. cn.DatabaseType = DataSourceType.SqlServer
+
+private static ConnectionDriversConfig FindDriverByDataSourceType(
+    IConnectionProperties cn, IConfigEditor configEditor)
+{
+    return configEditor.DataDriversClasses
+        .FirstOrDefault(c => c.DatasourceType == cn.DatabaseType);
+}
+// Works because every Create*Config() factory sets DatasourceType explicitly.
+// This is the simplest match: "I want SQLite" → finds the SQLite driver entry.</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Strategy 4: File Extension (File category only)</h3>
+                        <pre><code class="language-csharp">// Source: FindDriverByFileExtension() — line 103
+// Only attempted when cn.Category == DatasourceCategory.FILE
+// Parses the extension from cn.FileName (e.g. "data.parquet" → "parquet")
+
+private static ConnectionDriversConfig FindDriverByFileExtension(
+    IConnectionProperties cn, IConfigEditor configEditor)
+{
+    if (string.IsNullOrEmpty(cn.FileName))
+        return null;
+
+    var driversWithExtensions = configEditor.DataDriversClasses
+        .Where(p => !string.IsNullOrEmpty(p.extensionstoHandle))
+        .ToList();
+
+    if (!driversWithExtensions.Any())
+        return null;
+
+    string fileExtension = Path.GetExtension(cn.FileName)
+        .Replace(".", "").ToLowerInvariant();
+    if (string.IsNullOrEmpty(fileExtension))
+        return null;
+
+    return driversWithExtensions
+        .FirstOrDefault(c =>
+            c.extensionstoHandle.ToLowerInvariant().Contains(fileExtension));
+}
+// Example: FileName = "sales.parquet"
+// → extension = "parquet"
+// → finds the driver whose extensionstoHandle contains "parquet"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Strategy X (internal): Local-Only Driver</h3>
+                        <pre><code class="language-csharp">// Source: FindDriverByIsLocal() — line 80
+// Finds a driver marked CreateLocal = true (e.g. SQLite, in-memory DBs)
+// Not part of the public cascade but available internally
+
+private static ConnectionDriversConfig FindDriverByIsLocal(
+    IConnectionProperties cn, IConfigEditor configEditor)
+{
+    return configEditor.DataDriversClasses
+        .FirstOrDefault(c => c.CreateLocal);
+}</code></pre>
+                    </div>
+
+                    <h3><code>GetBestMatchingDriver()</code> — Compatibility-First Variant</h3>
+                    <p>
+                        Unlike <code>LinkConnection2Drivers()</code> which returns <em>any</em> first match,
+                        <code>GetBestMatchingDriver()</code> first narrows the field to only <strong>compatible</strong> drivers
+                        (those whose <code>DatasourceType</code>, <code>DatasourceCategory</code>, and file extension all match
+                        the connection properties). This is the method used by the setup wizard and connection-test dialog.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Source</h3>
+                        <pre><code class="language-csharp">public static ConnectionDriversConfig GetBestMatchingDriver(
+    IConnectionProperties connectionProperties, IConfigEditor configEditor)
+{
+    if (connectionProperties == null || configEditor == null)
+        return null;
+
+    // Step 1: Filter to compatible drivers only
+    var allDrivers = configEditor.DataDriversClasses.ToList();
+    var compatibleDrivers = allDrivers
+        .Where(d => IsDriverCompatible(d, connectionProperties))
+        .ToList();
+
+    if (!compatibleDrivers.Any())
+        return null;
+
+    // Step 2: Within compatible set, prioritize exact package+version
+    if (!string.IsNullOrEmpty(connectionProperties.DriverName)
+        && !string.IsNullOrEmpty(connectionProperties.DriverVersion))
+    {
+        var exactMatch = compatibleDrivers.FirstOrDefault(d =>
+            d.PackageName.Equals(connectionProperties.DriverName,
+                StringComparison.InvariantCultureIgnoreCase)
+            && d.version == connectionProperties.DriverVersion);
+        if (exactMatch != null) return exactMatch;
+    }
+
+    // Step 3: Then package name only
+    if (!string.IsNullOrEmpty(connectionProperties.DriverName))
+    {
+        var packageMatch = compatibleDrivers.FirstOrDefault(d =>
+            d.PackageName.Equals(connectionProperties.DriverName,
+                StringComparison.InvariantCultureIgnoreCase));
+        if (packageMatch != null) return packageMatch;
+    }
+
+    // Step 4: Fall back to first compatible driver
+    return compatibleDrivers.First();
+}</code></pre>
+                    </div>
+
+                    <h3><code>IsDriverCompatible()</code> — Three-Point Compatibility Check</h3>
+                    <div class="code-example">
+                        <pre><code class="language-csharp">public static bool IsDriverCompatible(
+    ConnectionDriversConfig driverConfig,
+    IConnectionProperties connectionProperties)
+{
+    if (driverConfig == null || connectionProperties == null)
+        return false;
+
+    // Check 1: DataSourceType must match
+    if (driverConfig.DatasourceType != connectionProperties.DatabaseType)
+        return false;
+
+    // Check 2: DatasourceCategory must match
+    if (driverConfig.DatasourceCategory != connectionProperties.Category)
+        return false;
+
+    // Check 3: For file connections, file extension must be supported
+    if (connectionProperties.Category == DatasourceCategory.FILE
+        && !string.IsNullOrEmpty(connectionProperties.FileName)
+        && !string.IsNullOrEmpty(driverConfig.extensionstoHandle))
+    {
+        string fileExtension = Path.GetExtension(connectionProperties.FileName)
+            .Replace(".", "").ToLowerInvariant();
+        if (!string.IsNullOrEmpty(fileExtension)
+            && !driverConfig.extensionstoHandle
+                .ToLowerInvariant().Contains(fileExtension))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}</code></pre>
+                    </div>
+
+                    <h3>End-to-End Usage Scenarios</h3>
+
+                    <div class="code-example">
+                        <h3>Scenario A: Opening a known database by name</h3>
+                        <pre><code class="language-csharp">// User has a connection named "northwind.db" already configured.
+// DMEEditor.GetDataSourceClass() calls LinkConnection2Drivers() internally:
+
+// 1. Look up the connection from user config
+var cn = dmEditor.ConfigEditor.DataConnections
+    .FirstOrDefault(c => c.ConnectionName == "northwind.db");
+
+// 2. Resolve which driver handles it
+var driver = ConnectionHelper.LinkConnection2Drivers(cn, dmEditor.ConfigEditor);
+// → cn.DatabaseType = DataSourceType.SqlLite
+// → Strategy 3 kicks in → finds SQLite entry in DataDriversClasses
+// → driver.classHandler = "SQLiteDataSource"
+// → driver.ConnectionString template is now available
+
+// 3. Then DMEEditor uses classHandler to find the IDataSource Type:
+var asDef = dmEditor.ConfigEditor.DataSourcesClasses
+    .FirstOrDefault(x => x.className == driver.classHandler);
+
+// 4. Instantiate and open
+Type t = dmEditor.assemblyHandler.GetType(asDef.type.AssemblyQualifiedName);
+IDataSource ds = (IDataSource)Activator.CreateInstance(t, "northwind.db",
+    dmEditor.Logger, dmEditor, dmEditor.ErrorObject, dmEditor);
+ds.Openconnection();</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario B: Connection wizard — finding compatible drivers for a dropdown</h3>
+                        <pre><code class="language-csharp">// The user selected "SQLite" from a database type picker.
+// Populate the driver version dropdown:
+
+DataSourceType selectedType = DataSourceType.SqlLite;
+
+var drivers = ConnectionHelper.GetDriversForDataSourceType(
+    selectedType, dmEditor.ConfigEditor);
+
+foreach (var d in drivers)
+{
+    Console.WriteLine($"{d.PackageName} v{d.version} " +
+                      $"[{(d.IsMissing ? "Not installed" : "Ready")}]");
+}
+// Output:
+//   System.Data.SQLite v4.6.1.1 [Ready]
+//   Microsoft.Data.Sqlite v8.0.0 [Not installed]</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario C: Opening a file — auto-detecting format by extension</h3>
+                        <pre><code class="language-csharp">// User selects "C:\data\sales_2024.parquet"
+string filePath = @"C:\data\sales_2024.parquet";
+
+var conn = new ConnectionProperties
+{
+    ConnectionName = "Sales Data",
+    FileName       = filePath,
+    Category       = DatasourceCategory.FILE
+};
+
+// GetBestMatchingDriver will filter to FILE category,
+// then find which driver handles ".parquet"
+var driver = ConnectionHelper.GetBestMatchingDriver(conn, dmEditor.ConfigEditor);
+// → Finds the Parquet driver entry in DataDriversClasses
+// → driver.classHandler = "ParquetDataSource"
+
+// Or get ALL drivers that can handle parquet:
+var parquetDrivers = ConnectionHelper.GetDriversForFileExtension(
+    "parquet", dmEditor.ConfigEditor);
+// → Returns all FILE-category drivers whose extensionstoHandle contains "parquet"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario D: Checking if a driver is compatible before use</h3>
+                        <pre><code class="language-csharp">// Before instantiating a data source, verify the driver is right
+
+var myConn = new ConnectionProperties
+{
+    DatabaseType = DataSourceType.Mysql,
+    Category     = DatasourceCategory.RDBMS
+};
+
+var candidateDriver = dmEditor.ConfigEditor.DataDriversClasses
+    .FirstOrDefault(d => d.PackageName == "MySql.Data");
+
+if (ConnectionHelper.IsDriverCompatible(candidateDriver, myConn))
+{
+    // Safe to use — DatasourceType and Category both match
+    string cs = ConnectionHelper.ReplaceValueFromConnectionString(
+        candidateDriver, myConn, dmEditor);
+    // cs = "Server={host};Database={database};Uid={userid};Pwd={password}"
+}
+else
+{
+    Console.WriteLine("Driver mismatch — check DatabaseType and Category");
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Where LinkConnection2Drivers is actually called in the engine</strong>
+                        <ul>
+                            <li><code>DMEEditor.GetDataSourceClass(guidID)</code> — resolves which <code>AssemblyClassDefinition</code> to instantiate</li>
+                            <li><code>DMEEditor.CreateNewDataSourceConnection(...)</code> — instantiates the <code>IDataSource</code></li>
+                            <li><code>Setup/Steps/ConnectionConfigStep</code> — validates driver availability during wizard</li>
+                            <li><code>Setup/Steps/DriverProvisionStep</code> — checks if driver needs NuGet download</li>
+                            <li><code>ConnectionHelper.ReplaceValueFromConnectionString()</code> — needs the driver to get the template</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Connection String Processing -->
+                <section id="string-processing" class="section">
+                    <h2>Connection String Processing</h2>
+                    <p>
+                        <code>ConnectionStringProcessingHelper</code> fills placeholder tokens
+                        (<code>{Host}</code>, <code>{Database}</code>, <code>{UserID}</code>, <code>{Password}</code>, etc.)
+                        in a driver's connection-string template at connection-open time.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>How placeholder substitution works</h3>
+                        <pre><code class="language-csharp">// Template in driver config:
+// "Server={Host};Database={Database};User Id={UserID};Password={Password}"
+
+var conn = new ConnectionProperties
+{
+    Host     = "db.example.com",
+    DataBase = "sales",
+    UserID   = "app",
+    Password = "s3cr3t"
+};
+
+var driver = ConnectionHelper.LinkConnection2Drivers(conn, dmeEditor.ConfigEditor);
+string cs = ConnectionHelper.ReplaceValueFromConnectionString(driver, conn, dmeEditor);
+// "Server=db.example.com;Database=sales;User Id=app;Password=s3cr3t"
+
+// Validate nothing is missing before opening
+var missing = ConnectionHelper.ValidateRequiredPlaceholders(driver.ConnectionString, conn);
+if (missing.Any())
+    throw new InvalidOperationException($"Missing fields: {string.Join(", ", missing)}");</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Priority order for input string</strong>
+                        <p>
+                            <code>ConnectionString</code> &rarr; <code>Url</code> &rarr; <code>FilePath + FileName</code>.
+                            Relative paths starting with <code>./</code> are automatically expanded to absolute paths.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Connection String Validation -->
+                <section id="string-validation" class="section">
+                    <h2>Connection String Validation</h2>
+                    <p>
+                        <code>ConnectionStringValidationHelper</code> performs lightweight structural/keyword checks
+                        on a connection string <em>before</em> attempting to open a connection.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">string cs = "Server=localhost;Database=northwind;Trusted_Connection=True";
+
+// Generic dispatch
+bool ok = ConnectionHelper.IsConnectionStringValid(cs, DataSourceType.SqlServer);
+
+// Get human-readable requirements when validation fails
+if (!ok)
+{
+    string reqs = ConnectionHelper.GetValidationRequirements(DataSourceType.SqlServer);
+    Console.WriteLine($"Required: {reqs}");
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Validation rules by DataSourceType</strong>
+                        <table>
+                            <thead><tr><th>DataSourceType</th><th>Required keyword(s)</th></tr></thead>
+                            <tbody>
+                                <tr><td>SqlServer</td><td><code>Server</code> / <code>Data Source</code> / <code>Address</code></td></tr>
+                                <tr><td>Mysql</td><td><code>Server</code> / <code>Host</code> / <code>Data Source</code></td></tr>
+                                <tr><td>SqlLite</td><td><code>Data Source</code> / <code>DataSource</code></td></tr>
+                                <tr><td>Postgre</td><td><code>Host</code> / <code>Server</code></td></tr>
+                                <tr><td>MongoDB</td><td><code>mongodb://</code> prefix</td></tr>
+                                <tr><td>Redis</td><td>host:port pattern</td></tr>
+                                <tr><td>OLEDB / ODBC</td><td><code>Provider=</code> / <code>DSN=</code> or <code>Driver=</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Connection String Security -->
+                <section id="string-security" class="section">
+                    <h2>Connection String Security</h2>
+                    <p>
+                        <code>ConnectionStringSecurityHelper</code> masks secret values before connection strings
+                        are logged, displayed in UIs, or transmitted in error reports.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">string raw = "Server=db;Database=sales;User Id=app;Password=MyP@ss!;ApiKey=key-abc123";
+
+string safe = ConnectionHelper.SecureConnectionString(raw);
+// "Server=db;Database=sales;User Id=app;Password=********;ApiKey=********"
+
+// Guard before logging
+if (ConnectionHelper.ContainsSensitiveInformation(raw))
+    logger.WriteLog(ConnectionHelper.SecureConnectionString(raw));
+else
+    logger.WriteLog(raw);
+
+// Selective mask — shows first/last 2 chars
+string partial = ConnectionHelper.SelectiveMask(raw);
+// "Server=db;Database=sales;User Id=ap**;Password=My****!;ApiKey=ke*c123"</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Masked keyword categories</strong>
+                        <table>
+                            <thead><tr><th>Category</th><th>Matched keywords (case-insensitive)</th></tr></thead>
+                            <tbody>
+                                <tr><td>Passwords</td><td><code>Password</code>, <code>Pwd</code>, <code>Pass</code>, <code>UserPassword</code></td></tr>
+                                <tr><td>API keys</td><td><code>ApiKey</code>, <code>ApplicationKey</code>, <code>ClientKey</code></td></tr>
+                                <tr><td>Access keys</td><td><code>AccessKey</code>, <code>SecretKey</code>, <code>AwsAccessKey</code></td></tr>
+                                <tr><td>Tokens</td><td><code>Token</code>, <code>BearerToken</code>, <code>AccessToken</code></td></tr>
+                                <tr><td>Secrets</td><td><code>Secret</code>, <code>ClientSecret</code>, <code>AppSecret</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Parameter Utilities -->
+                <section id="string-params" class="section">
+                    <h2>Parameter Utilities</h2>
+                    <p>
+                        Parse and mutate semi-colon delimited connection strings as key=value dictionaries
+                        without opening any database connection.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">string cs = "Server=localhost;Database=Northwind;User Id=sa;Password=P@ssw0rd";
+
+// Inspect
+var keys = ConnectionHelper.GetParameterList(cs);      // ["Server", "Database", "User Id", "Password"]
+string db = ConnectionHelper.GetParameterValue(cs, "Database");  // "Northwind"
+
+// Mutate — switch database without rebuilding the whole string
+cs = ConnectionHelper.SetParameterValue(cs, "Database", "Sales");
+cs = ConnectionHelper.SetParameterValue(cs, "Encrypt", "True");  // add new
+cs = ConnectionHelper.RemoveParameter(cs, "Password");           // remove</code></pre>
+                    </div>
+                </section>
+
+                <!-- Category Factory Overview -->
+                <section id="factory-overview" class="section">
+                    <h2>Category Factory Overview</h2>
+                    <p>
+                        Each partial class file exposes a <code>Get*Configs()</code> method that returns a
+                        <code>List&lt;ConnectionDriversConfig&gt;</code> pre-populated with all known drivers for that
+                        category. Individual <code>Create*Config()</code> factory methods produce a single
+                        <code>ConnectionDriversConfig</code> with every field set (GUID, package name, DLL name, class
+                        handler, connection-string template, icon, flags, NuGet metadata).
+                    </p>
+
+                    <p>
+                        These factories are used at startup to seed <code>IConfigEditor.DataDriversClasses</code> so
+                        that drivers are available for <code>LinkConnection2Drivers</code> even before NuGet packages
+                        or plugin DLLs are downloaded.
+                    </p>
+
+                    <div class="note">
+                        <strong>200+ pre-configured drivers across 14 categories</strong>
+                        <table>
+                            <thead><tr><th>Category</th><th>Partial file</th><th>Drivers</th><th>Example</th></tr></thead>
+                            <tbody>
+                                <tr><td>RDBMS</td><td><code>ConnectionHelper_RDBMS.cs</code></td><td>19</td><td>SQL Server, PostgreSQL, MySQL, Oracle, SQLite, DuckDB, Snowflake, SAP HANA, ...</td></tr>
+                                <tr><td>NoSQL</td><td><code>ConnectionHelper_NoSQL.cs</code></td><td>17</td><td>MongoDB, Redis, Cassandra, Elasticsearch, Neo4j, DynamoDB, ...</td></tr>
+                                <tr><td>Vector DB</td><td><code>ConnectionHelper_VectorDB.cs</code></td><td>8</td><td>ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, ...</td></tr>
+                                <tr><td>File</td><td><code>ConnectionHelper_File.cs</code> + <code>_File_Misc.cs</code></td><td>25+</td><td>CSV, JSON, XML, Excel, Parquet, Avro, ORC, PDF, DICOM, LAS, ...</td></tr>
+                                <tr><td>Cloud</td><td><code>ConnectionHelper_Cloud.cs</code></td><td>24</td><td>AWS S3/Redshift/Athena/Glue, Azure SQL/Synapse/Blob, GCP BigQuery, Databricks, ...</td></tr>
+                                <tr><td>Streaming</td><td><code>ConnectionHelper_Streaming.cs</code></td><td>20</td><td>Kafka, RabbitMQ, Pulsar, NATS, AWS Kinesis/SQS/SNS, Azure Service Bus/Event Hubs, ...</td></tr>
+                                <tr><td>In-Memory</td><td><code>ConnectionHelper_InMemory.cs</code></td><td>8</td><td>SQLite Memory, DuckDB Memory, Hazelcast, Apache Ignite, H2, ...</td></tr>
+                                <tr><td>Cache</td><td><code>ConnectionHelper_Cache.cs</code></td><td>6</td><td>InMemoryCache, Redis Cache, NCache, Hazelcast Cache, Memcached, ...</td></tr>
+                                <tr><td>Web API</td><td><code>ConnectionHelper_WebAPI.cs</code></td><td>11</td><td>REST, GraphQL, gRPC, SOAP, OData, ODBC, OLEDB, WebSocket, SSE, ...</td></tr>
+                                <tr><td>CRM</td><td><code>ConnectionHelper_CRM.cs</code></td><td>11</td><td>Salesforce, HubSpot, Dynamics 365, Zoho, Pipedrive, SugarCRM, ...</td></tr>
+                                <tr><td>Marketing</td><td><code>ConnectionHelper_Marketing.cs</code></td><td>10</td><td>Mailchimp, Marketo, Klaviyo, SendGrid, Mailgun, Google Ads, ...</td></tr>
+                                <tr><td>E-Commerce</td><td><code>ConnectionHelper_ECommerce.cs</code></td><td>9</td><td>Shopify, WooCommerce, Magento, BigCommerce, Etsy, ...</td></tr>
+                                <tr><td>Project Mgmt</td><td><code>ConnectionHelper_ProjectManagement.cs</code></td><td>11</td><td>Jira, Asana, Monday.com, ClickUp, Trello, Notion, Basecamp, ...</td></tr>
+                                <tr><td>Communication</td><td><code>ConnectionHelper_Communication.cs</code></td><td>9</td><td>Slack, Teams, Discord, Zoom, Telegram, WhatsApp Business, ...</td></tr>
+                                <tr><td>Blockchain</td><td><code>ConnectionHelper_Blockchain.cs</code></td><td>3</td><td>Ethereum, Hyperledger Fabric, Bitcoin Core</td></tr>
+                                <tr><td>Proxy</td><td><code>ConnectionHelper_Proxy.cs</code></td><td>2</td><td>BeepProxyNode, BeepProxyCluster</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- RDBMS -->
+                <section id="factory-rdbms" class="section">
+                    <h2>RDBMS (Relational Databases) — 19 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_RDBMS.cs</code> | <strong>Method:</strong> <code>GetRDBMSConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th><th>Example connection string</th></tr></thead>
+                        <tbody>
+                            <tr><td>SqlServer</td><td><code>CreateSqlServerConfig()</code></td><td><code>Server={Host};Database={Database};User Id={UserID};Password={Password}</code></td></tr>
+                            <tr><td>Mysql</td><td><code>CreateMySqlConfig()</code></td><td><code>Server={Host};Database={Database};Uid={UserID};Pwd={Password}</code></td></tr>
+                            <tr><td>Postgre</td><td><code>CreatePostgreConfig()</code></td><td><code>Host={Host};Database={Database};Username={UserID};Password={Password}</code></td></tr>
+                            <tr><td>Oracle</td><td><code>CreateOracleConfig()</code></td><td><code>Data Source={Host};User Id={UserID};Password={Password}</code></td></tr>
+                            <tr><td>SqlLite</td><td><code>CreateSQLiteConfig()</code></td><td><code>Data Source={FilePath}</code></td></tr>
+                            <tr><td>SqlCompact</td><td><code>CreateSqlCompactConfig()</code></td><td><code>Data Source={FilePath}</code></td></tr>
+                            <tr><td>Firebird</td><td><code>CreateFirebirdConfig()</code></td><td><code>Database={FilePath};User={UserID};Password={Password}</code></td></tr>
+                            <tr><td>DB2</td><td><code>CreateDB2Config()</code></td><td><code>Server={Host};Database={Database};Uid={UserID};Pwd={Password}</code></td></tr>
+                            <tr><td>SnowFlake</td><td><code>CreateSnowFlakeConfig()</code></td><td><code>Account={Host};User={UserID};Password={Password}</code></td></tr>
+                            <tr><td>VistaDB</td><td><code>CreateVistaDBConfig()</code></td><td><code>Data Source={FilePath}</code></td></tr>
+                            <tr><td>DuckDB</td><td><code>CreateDuckDBConfig()</code></td><td><code>Data Source={FilePath}</code></td></tr>
+                            <tr><td>TimeScale</td><td><code>CreateTimeScaleConfig()</code></td><td><code>Host={Host};Database={Database};Username={UserID}</code></td></tr>
+                            <tr><td>CockroachDB</td><td><code>CreateCockroachConfig()</code></td><td><code>Host={Host};Database={Database};Username={UserID}</code></td></tr>
+                            <tr><td>GoogleSpanner</td><td><code>CreateSpannerConfig()</code></td><td><code>Data Source={Host};Project={Database};User={UserID}</code></td></tr>
+                            <tr><td>Teradata</td><td><code>CreateTerraDataConfig()</code></td><td><code>Data Source={Host};User Id={UserID};Password={Password}</code></td></tr>
+                            <tr><td>Vertica</td><td><code>CreateVerticaConfig()</code></td><td><code>Host={Host};Database={Database};User Id={UserID}</code></td></tr>
+                            <tr><td>AWSSQLServer</td><td><code>CreateAWSRDSConfig()</code></td><td><code>Server={Host};Database={Database};User Id={UserID}</code></td></tr>
+                            <tr><td>AzureSQLDatabase</td><td><code>CreateAzureSQLConfig()</code></td><td><code>Server={Host};Database={Database};User Id={UserID}</code></td></tr>
+                            <tr><td>Hana</td><td><code>CreateHanaConfig()</code></td><td><code>Server={Host};Database={Database};User={UserID};Password={Password}</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- NoSQL -->
+                <section id="factory-nosql" class="section">
+                    <h2>NoSQL — 17 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_NoSQL.cs</code> | <strong>Method:</strong> <code>GetNoSQLConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th></tr></thead>
+                        <tbody>
+                            <tr><td>MongoDB</td><td><code>CreateMongoDBConfig()</code></td></tr>
+                            <tr><td>Redis</td><td><code>CreateRedisConfig()</code></td></tr>
+                            <tr><td>Cassandra</td><td><code>CreateCassandraConfig()</code></td></tr>
+                            <tr><td>CouchDB</td><td><code>CreateCouchDBConfig()</code></td></tr>
+                            <tr><td>HBase</td><td><code>CreateHBaseConfig()</code></td></tr>
+                            <tr><td>RavenDB</td><td><code>CreateRavenDBConfig()</code></td></tr>
+                            <tr><td>Elasticsearch</td><td><code>CreateElasticsearchConfig()</code></td></tr>
+                            <tr><td>Neo4j</td><td><code>CreateNeo4jConfig()</code></td></tr>
+                            <tr><td>ArangoDB</td><td><code>CreateArangoDBConfig()</code></td></tr>
+                            <tr><td>OrientDB</td><td><code>CreateOrientDBConfig()</code></td></tr>
+                            <tr><td>InfluxDB</td><td><code>CreateInfluxDBConfig()</code></td></tr>
+                            <tr><td>ClickHouse</td><td><code>CreateClickHouseConfig()</code></td></tr>
+                            <tr><td>LiteDB</td><td><code>CreateLiteDBConfig()</code></td></tr>
+                            <tr><td>DynamoDB</td><td><code>CreateDynamoDBConfig()</code></td></tr>
+                            <tr><td>Firebase</td><td><code>CreateFirebaseConfig()</code></td></tr>
+                            <tr><td>CosmosDB</td><td><code>CreateCosmosDBConfig()</code></td></tr>
+                            <tr><td>DataStax</td><td><code>CreateDataStaxConfig()</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Vector DB -->
+                <section id="factory-vector" class="section">
+                    <h2>Vector DB — 8 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_VectorDB.cs</code> | <strong>Method:</strong> <code>GetVectorDBConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th></tr></thead>
+                        <tbody>
+                            <tr><td>Chroma</td><td><code>CreateChromaDBConfig()</code></td></tr>
+                            <tr><td>Pinecone</td><td><code>CreatePineConeConfig()</code></td></tr>
+                            <tr><td>Qdrant</td><td><code>CreateQdrantConfig()</code></td></tr>
+                            <tr><td>Weaviate</td><td><code>CreateWeaviateConfig()</code></td></tr>
+                            <tr><td>Milvus</td><td><code>CreateMilvusConfig()</code></td></tr>
+                            <tr><td>ZillizCloud</td><td><code>CreateZillizConfig()</code></td></tr>
+                            <tr><td>RedisVector</td><td><code>CreateRedisVectorConfig()</code></td></tr>
+                            <tr><td>Vespa</td><td><code>CreateVespaConfig()</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- File -->
+                <section id="factory-file" class="section">
+                    <h2>File — 25+ drivers</h2>
+                    <p><strong>Files:</strong> <code>ConnectionHelper_File.cs</code> + <code>ConnectionHelper_File_Misc.cs</code> | <strong>Method:</strong> <code>GetFileConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th><th>Extension</th></tr></thead>
+                        <tbody>
+                            <tr><td>CSV</td><td><code>CreateCSVConfig()</code></td><td>.csv</td></tr>
+                            <tr><td>JSON</td><td><code>CreateJSONConfig()</code></td><td>.json</td></tr>
+                            <tr><td>XML</td><td><code>CreateXMLConfig()</code></td><td>.xml</td></tr>
+                            <tr><td>YAML</td><td><code>CreateYAMLConfig()</code></td><td>.yaml</td></tr>
+                            <tr><td>Excel</td><td><code>CreateExcelConfig()</code></td><td>.xlsx, .xls</td></tr>
+                            <tr><td>Parquet</td><td><code>CreateParquetConfig()</code></td><td>.parquet</td></tr>
+                            <tr><td>Avro</td><td><code>CreateAvroConfig()</code></td><td>.avro</td></tr>
+                            <tr><td>ORC</td><td><code>CreateORCConfig()</code></td><td>.orc</td></tr>
+                            <tr><td>Feather</td><td><code>CreateFeatherConfig()</code></td><td>.feather</td></tr>
+                            <tr><td>HDF5</td><td><code>CreateHDF5Config()</code></td><td>.h5, .hdf5</td></tr>
+                            <tr><td>PDF</td><td><code>CreatePDFConfig()</code></td><td>.pdf</td></tr>
+                            <tr><td>Word</td><td><code>CreateWordConfig()</code></td><td>.docx</td></tr>
+                            <tr><td>PowerPoint</td><td><code>CreatePowerPointConfig()</code></td><td>.pptx</td></tr>
+                            <tr><td>DICOM</td><td><code>CreateDicomConfig()</code></td><td>.dcm</td></tr>
+                            <tr><td>LAS</td><td><code>CreateLASConfig()</code></td><td>.las</td></tr>
+                            <tr><td>LibSVM</td><td><code>CreateLibSVMConfig()</code></td><td>.libsvm</td></tr>
+                            <tr><td>GraphML</td><td><code>CreateGraphMLConfig()</code></td><td>.graphml</td></tr>
+                            <tr><td>TextLog</td><td><code>CreateTextLogConfig()</code></td><td>.log, .txt</td></tr>
+                            <tr><td>INI</td><td><code>CreateINIConfig()</code></td><td>.ini</td></tr>
+                            <tr><td>Markdown</td><td><code>CreateMarkdownConfig()</code></td><td>.md</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Cloud -->
+                <section id="factory-cloud" class="section">
+                    <h2>Cloud — 24 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_Cloud.cs</code> | <strong>Method:</strong> <code>GetCloudConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th></tr></thead>
+                        <tbody>
+                            <tr><td>AWSRedshift</td><td><code>CreateRedshiftConfig()</code></td></tr>
+                            <tr><td>AWSAthena</td><td><code>CreateAthenaConfig()</code></td></tr>
+                            <tr><td>AWSGlue</td><td><code>CreateGlueConfig()</code></td></tr>
+                            <tr><td>AWSS3</td><td><code>CreateS3Config()</code></td></tr>
+                            <tr><td>AWSStepFunctions</td><td><code>CreateStepFunctionsConfig()</code></td></tr>
+                            <tr><td>AWSLakeFormation</td><td><code>CreateLakeFormationConfig()</code></td></tr>
+                            <tr><td>AWSTimestream</td><td><code>CreateTimestreamConfig()</code></td></tr>
+                            <tr><td>AWSServiceCatalog</td><td><code>CreateServiceCatalogConfig()</code></td></tr>
+                            <tr><td>AWSIoT</td><td><code>CreateIotConfig()</code></td></tr>
+                            <tr><td>AWSAppFlow</td><td><code>CreateAppFlowConfig()</code></td></tr>
+                            <tr><td>AzureSynapse</td><td><code>CreateSynapseConfig()</code></td></tr>
+                            <tr><td>AzureDataFactory</td><td><code>CreateDataFactoryConfig()</code></td></tr>
+                            <tr><td>AzureBlobStorage</td><td><code>CreateBlobStorageConfig()</code></td></tr>
+                            <tr><td>AzureDataLake</td><td><code>CreateDataLakeConfig()</code></td></tr>
+                            <tr><td>AzureCosmosDB</td><td><code>CreateAzureCosmosDBConfig()</code></td></tr>
+                            <tr><td>GCPBigQuery</td><td><code>CreateBigQueryConfig()</code></td></tr>
+                            <tr><td>GCPCloudStorage</td><td><code>CreateCloudStorageConfig()</code></td></tr>
+                            <tr><td>GCPDataflow</td><td><code>CreateDataflowConfig()</code></td></tr>
+                            <tr><td>GCPSpanner</td><td><code>CreateGcpSpannerConfig()</code></td></tr>
+                            <tr><td>Databricks</td><td><code>CreateDatabricksConfig()</code></td></tr>
+                            <tr><td>DatabricksSQL</td><td><code>CreateDatabricksSQLConfig()</code></td></tr>
+                            <tr><td>Supabase</td><td><code>CreateSupabaseConfig()</code></td></tr>
+                            <tr><td>Firebolt</td><td><code>CreateFireboltConfig()</code></td></tr>
+                            <tr><td>MongoDBAtlas</td><td><code>CreateMongoDBAtlasConfig()</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Streaming -->
+                <section id="factory-streaming" class="section">
+                    <h2>Streaming &amp; Messaging — 20 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_Streaming.cs</code> | <strong>Method:</strong> <code>GetStreamingConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th></tr></thead>
+                        <tbody>
+                            <tr><td>ApacheKafka</td><td><code>CreateKafkaConfig()</code></td></tr>
+                            <tr><td>RabbitMQ</td><td><code>CreateRabbitMQConfig()</code></td></tr>
+                            <tr><td>ApachePulsar</td><td><code>CreatePulsarConfig()</code></td></tr>
+                            <tr><td>AWSSQS</td><td><code>CreateSQSConfig()</code></td></tr>
+                            <tr><td>AWSSNS</td><td><code>CreateSNSConfig()</code></td></tr>
+                            <tr><td>AWSKinesis</td><td><code>CreateKinesisConfig()</code></td></tr>
+                            <tr><td>AzureServiceBus</td><td><code>CreateServiceBusConfig()</code></td></tr>
+                            <tr><td>AzureEventHubs</td><td><code>CreateEventHubsConfig()</code></td></tr>
+                            <tr><td>ActiveMQ</td><td><code>CreateActiveMQConfig()</code></td></tr>
+                            <tr><td>NATS</td><td><code>CreateNATSConfig()</code></td></tr>
+                            <tr><td>NATSJetStream</td><td><code>CreateNATSJetStreamConfig()</code></td></tr>
+                            <tr><td>ZeroMQ</td><td><code>CreateZeroMQConfig()</code></td></tr>
+                            <tr><td>MassTransit</td><td><code>CreateMassTransitConfig()</code></td></tr>
+                            <tr><td>ApacheFlink</td><td><code>CreateFlinkConfig()</code></td></tr>
+                            <tr><td>ApacheStorm</td><td><code>CreateStormConfig()</code></td></tr>
+                            <tr><td>SparkStreaming</td><td><code>CreateSparkStreamingConfig()</code></td></tr>
+                            <tr><td>MQTT</td><td><code>CreateMQTTConfig()</code></td></tr>
+                            <tr><td>GooglePubSub</td><td><code>CreatePubSubConfig()</code></td></tr>
+                            <tr><td>WebSocketStream</td><td><code>CreateWebSocketStreamConfig()</code></td></tr>
+                            <tr><td>AWSStepFunctions</td><td><code>CreateStepFnConfig()</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- In-Memory & Cache -->
+                <section id="factory-inmemory" class="section">
+                    <h2>In-Memory &amp; Cache — 14 drivers</h2>
+                    <p><strong>Files:</strong> <code>ConnectionHelper_InMemory.cs</code> + <code>ConnectionHelper_Cache.cs</code> | <strong>Methods:</strong> <code>GetInMemoryConfigs()</code> + <code>GetCacheConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th><th>Category</th></tr></thead>
+                        <tbody>
+                            <tr><td>SqliteMemory</td><td><code>CreateSqliteInMemoryConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>DuckDBMemory</td><td><code>CreateDuckDBMemoryConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>H2Memory</td><td><code>CreateH2MemoryConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>ApacheIgnite</td><td><code>CreateIgniteConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>Hazelcast</td><td><code>CreateHazelcastConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>GridGain</td><td><code>CreateGridGainConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>RealIM</td><td><code>CreateRealIMConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>RocketSet</td><td><code>CreateRocketSetConfig()</code></td><td>In-Memory</td></tr>
+                            <tr><td>InMemoryCacheDM</td><td><code>CreateInMemoryCacheConfig()</code></td><td>Cache</td></tr>
+                            <tr><td>RedisCacheDM</td><td><code>CreateRedisCacheConfig()</code></td><td>Cache</td></tr>
+                            <tr><td>NCache</td><td><code>CreateNCacheConfig()</code></td><td>Cache</td></tr>
+                            <tr><td>HazelcastCacheDM</td><td><code>CreateHazelcastDMCacheConfig()</code></td><td>Cache</td></tr>
+                            <tr><td>MemcachedDM</td><td><code>CreateMemcachedConfig()</code></td><td>Cache</td></tr>
+                            <tr><td>ApacheGeode</td><td><code>CreateApacheGeodeConfig()</code></td><td>Cache</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Web API -->
+                <section id="factory-webapi" class="section">
+                    <h2>Web API — 11 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_WebAPI.cs</code> | <strong>Method:</strong> <code>GetWebAPIConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th><th>Protocol</th></tr></thead>
+                        <tbody>
+                            <tr><td>WebAPI</td><td><code>CreateRESTAPIConfig()</code></td><td>REST</td></tr>
+                            <tr><td>OData</td><td><code>CreateODataConfig()</code></td><td>OData</td></tr>
+                            <tr><td>GraphQL</td><td><code>CreateGraphQLConfig()</code></td><td>GraphQL</td></tr>
+                            <tr><td>gRPC</td><td><code>CreategRPCConfig()</code></td><td>gRPC</td></tr>
+                            <tr><td>Soap</td><td><code>CreateSOAPConfig()</code></td><td>SOAP</td></tr>
+                            <tr><td>XmlRpc</td><td><code>CreateXMLRPCConfig()</code></td><td>XML-RPC</td></tr>
+                            <tr><td>JsonRpc</td><td><code>CreateJSONRPCConfig()</code></td><td>JSON-RPC</td></tr>
+                            <tr><td>WebSocket</td><td><code>CreateWebSocketConfig()</code></td><td>WebSocket</td></tr>
+                            <tr><td>SSE</td><td><code>CreateSSEConfig()</code></td><td>Server-Sent Events</td></tr>
+                            <tr><td>OPC</td><td><code>CreateOPCConfig()</code></td><td>OPC-UA</td></tr>
+                            <tr><td>ODBC</td><td><code>CreateODBCConfig()</code></td><td>ODBC bridge</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Connector Categories -->
+                <section id="factory-connectors" class="section">
+                    <h2>Connector Categories — 50+ SaaS drivers</h2>
+                    <p>
+                        Connector categories use <code>DatasourceCategory.Connector</code> and are aggregated via
+                        <code>GetAllConnectorConfigs()</code>.
+                    </p>
+
+                    <h3>CRM (11)</h3>
+                    <p><strong>File:</strong> <code>ConnectionHelper_CRM.cs</code> | <strong>Method:</strong> <code>GetCRMConnectorConfigs()</code></p>
+                    <p>Salesforce, HubSpot, Microsoft Dynamics 365, Zoho CRM, Pipedrive, Freshsales, SugarCRM, Insightly, Copper, Nutshell, SAP CRM</p>
+
+                    <h3>Marketing (10)</h3>
+                    <p><strong>File:</strong> <code>ConnectionHelper_Marketing.cs</code> | <strong>Method:</strong> <code>GetMarketingConnectorConfigs()</code></p>
+                    <p>Mailchimp, Marketo, ActiveCampaign, Constant Contact, Klaviyo, Sendinblue, Campaign Monitor, ConvertKit, Google Ads, Criteo, Mailgun, SendGrid, Drip, Hootsuite</p>
+
+                    <h3>E-Commerce (9)</h3>
+                    <p><strong>File:</strong> <code>ConnectionHelper_ECommerce.cs</code> | <strong>Method:</strong> <code>GetECommerceConnectorConfigs()</code></p>
+                    <p>Shopify, WooCommerce, Magento, BigCommerce, Squarespace, Wix, Etsy, OpenCart, PrestaShop, Ecwid, Volusion, Big Cartel</p>
+
+                    <h3>Project Management (11)</h3>
+                    <p><strong>File:</strong> <code>ConnectionHelper_ProjectManagement.cs</code> | <strong>Method:</strong> <code>GetProjectManagementConnectorConfigs()</code></p>
+                    <p>Jira, Azure Boards, Microsoft Project, Trello, Asana, Monday.com, ClickUp, Notion, Basecamp, Wrike, Smartsheet, Teamwork, Podio</p>
+
+                    <h3>Communication (9)</h3>
+                    <p><strong>File:</strong> <code>ConnectionHelper_Communication.cs</code> | <strong>Method:</strong> <code>GetCommunicationConnectorConfigs()</code></p>
+                    <p>Slack, Microsoft Teams, Discord, Zoom, Google Meet, Telegram, WhatsApp Business, Mattermost, Rocket.Chat, Twist, Flock</p>
+                </section>
+
+                <!-- Blockchain -->
+                <section id="factory-blockchain" class="section">
+                    <h2>Blockchain — 3 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_Blockchain.cs</code> | <strong>Method:</strong> <code>GetBlockchainConnectorConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th></tr></thead>
+                        <tbody>
+                            <tr><td>Ethereum</td><td><code>CreateEthereumConfig()</code></td></tr>
+                            <tr><td>HyperledgerFabric</td><td><code>CreateHyperledgerConfig()</code></td></tr>
+                            <tr><td>BitcoinCore</td><td><code>CreateBitcoinCoreConfig()</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Proxy -->
+                <section id="factory-proxy" class="section">
+                    <h2>Proxy / Cluster — 2 drivers</h2>
+                    <p><strong>File:</strong> <code>ConnectionHelper_Proxy.cs</code> | <strong>Method:</strong> <code>GetProxyConfigs()</code></p>
+                    <table>
+                        <thead><tr><th>DataSourceType</th><th>Factory method</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td>BeepProxyNode</td><td><code>CreateBeepProxyNodeConfig()</code></td><td>Single remote Beep node reached over HTTP</td></tr>
+                            <tr><td>BeepProxyCluster</td><td><code>CreateBeepProxyClusterConfig()</code></td><td>Load-balanced cluster of proxy nodes</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Liveness & Test Connection -->
+                <section id="liveness" class="section">
+                    <h2>Liveness &amp; Test Connection</h2>
+                    <p>
+                        Two classes handle connection health checks at different lifecycle stages:
+                    </p>
+                    <ul>
+                        <li><strong><code>ProxyLivenessHelper</code></strong> — tests a <em>live, already-open</em> <code>IDataSource</code>
+                            using the cheapest strategy for its category. Used by the proxy/watchdog subsystem.</li>
+                        <li><strong><code>TestConnectionHelper</code></strong> — async setup-time test against a
+                            <code>ConnectionDriversConfig</code> object before a connection is registered, or against an open <code>IDataSource</code> for runtime health checks.</li>
+                    </ul>
+
+                    <div class="code-example">
+                        <h3>Probe strategy by category (ProxyLivenessHelper)</h3>
+                        <pre><code class="language-csharp">bool alive = ProxyLivenessHelper.IsAlive(ds, timeoutMs: 3_000);
+// Strategy selected by ds.Category:
+//  RDBMS      → cheapest engine-specific ping query (SELECT 1, etc.)
+//  NoSQL      → GetEntitesList (metadata)
+//  FILE       → GetEntitesList
+//  WEBAPI     → GetEntitesList (HEAD request equivalent)
+//  CLOUD      → GetEntitesList
+//  VectorDB   → GetEntitesList
+//  IoT/Stream/Queue/Blockchain/Connector → ConnectionState signal
+//  INMEMORY   → alive unless ConnectionState == Broken
+//  default    → ConnectionState signal</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>TestConnectionHelper — runtime liveness via IDataSource</h3>
+                        <pre><code class="language-csharp">var ds = dmeEditor.GetDataSource("MyDb");
+ds.Openconnection();
+
+var (ok, msg) = await TestConnectionHelper.TestConnectionAsync(ds);
+Console.WriteLine($"{ok}: {msg}");
+// "True: MyDb (RDBMS) is alive"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>TestConnectionHelper — setup-time config test</h3>
+                        <pre><code class="language-csharp">// Test a NEW connection config before registering it
+var config = new ConnectionDriversConfig
+{
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType     = DataSourceType.SqlServer,
+    ConnectionString   = "Server=localhost;Database=test;Trusted_Connection=True"
+};
+
+var (ok, msg) = await TestConnectionHelper.TestConnectionAsync(config, timeout: 10);
+if (!ok)
+    MessageBox.Show($"Cannot connect: {msg}");
+else
+    dmeEditor.ConfigEditor.AddDataConnection(myConnectionProps);</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>Never throws</strong>
+                        <p>
+                            Both helpers catch all exceptions internally and map them to
+                            <code>(false, message)</code>. It is safe to call them without a try-catch.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Extending -->
+                <section id="extension" class="section">
+                    <h2>Extending — Adding a New Driver</h2>
+                    <p>To add a new data source driver to the catalog:</p>
+
+                    <div class="code-example">
+                        <h3>Step-by-step</h3>
+                        <pre><code class="language-csharp">// 1. Choose the right partial file for your category
+//    e.g., ConnectionHelper_RDBMS.cs for a new relational database
+
+// 2. Add a Create*Config() factory method
+public static ConnectionDriversConfig CreateMyNewDbConfig()
+{
+    return new ConnectionDriversConfig
+    {
+        GuidID            = Guid.NewGuid().ToString(),
+        PackageName       = "MyNewDb.Driver",
+        DriverClass       = "MyNewDb.Driver",
+        version           = "1.0.0",
+        dllname           = "MyNewDb.Driver.dll",
+        AdapterType       = "MyNewDb.Driver.MyDbDataAdapter",
+        CommandBuilderType= "MyNewDb.Driver.MyDbCommandBuilder",
+        DbConnectionType  = "MyNewDb.Driver.MyDbConnection",
+        DbTransactionType = "MyNewDb.Driver.MyDbTransaction",
+        ConnectionString  = "Server={Host};Database={Database};User Id={UserID};Password={Password}",
+        iconname          = "mydb.svg",
+        classHandler      = "MyNewDbDataSource",    // ← Must match the IDataSource className
+        ADOType           = true,
+        DatasourceCategory= DatasourceCategory.RDBMS,
+        DatasourceType    = DataSourceType.MyNewDb,
+        IsMissing         = true,   // true until NuGet/download is done
+        NuggetMissing     = true
+    };
+}
+
+// 3. Register it in the category's Get*Configs() collector
+public static List&lt;ConnectionDriversConfig&gt; GetRDBMSConfigs()
+{
+    var configs = new List&lt;ConnectionDriversConfig&gt;
+    {
+        CreateSqlServerConfig(),
+        // ... existing drivers ...
+        CreateMyNewDbConfig()           // ← Add here
+    };
+    return configs;
+}
+
+// 4. If it's a new DataSourceType, add the enum value
+//    in DataSourceType.cs
+
+// 5. The driver will now appear in DataDriversClasses
+//    after LoadConfigurations() runs</code></pre>
+                    </div>
+
+                    <div class="tip">
+                        <strong>classHandler is critical</strong>
+                        <p>
+                            The <code>classHandler</code> string must match the <code>className</code> of the
+                            <code>AssemblyClassDefinition</code> discovered by <code>AssemblyHandler</code>. If they
+                            don't match, <code>dm.GetDataSource(...)</code> will return <code>null</code> even though
+                            the driver appears in the catalog.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Quick Reference -->
+                <section id="quick-ref" class="section">
+                    <h2>Quick Reference Card</h2>
+                    <div class="note">
+                        <table>
+                            <thead><tr><th>Use case</th><th>API call</th></tr></thead>
+                            <tbody>
+                                <tr><td>Seed all driver metadata (startup)</td><td><code>EnvironmentService.AddAllConnectionConfigurations(editor)</code></td></tr>
+                                <tr><td>Get all 200+ driver configs</td><td><code>ConnectionHelper.GetAllConnectionConfigs()</code></td></tr>
+                                <tr><td>Match connection → driver</td><td><code>ConnectionHelper.LinkConnection2Drivers(cn, editor)</code></td></tr>
+                                <tr><td>Find drivers for a DB type</td><td><code>ConnectionHelper.GetDriversForDataSourceType(type, editor)</code></td></tr>
+                                <tr><td>Find drivers for file extension</td><td><code>ConnectionHelper.GetDriversForFileExtension("csv", editor)</code></td></tr>
+                                <tr><td>Fill connection string template</td><td><code>ConnectionHelper.ReplaceValueFromConnectionString(drv, prop, editor)</code></td></tr>
+                                <tr><td>Validate connection string</td><td><code>ConnectionHelper.IsConnectionStringValid(cs, type)</code></td></tr>
+                                <tr><td>Mask secrets in connection string</td><td><code>ConnectionHelper.SecureConnectionString(cs)</code></td></tr>
+                                <tr><td>Parse key=value pairs</td><td><code>ConnectionHelper.GetAllParameters(cs)</code></td></tr>
+                                <tr><td>Test a live datasource</td><td><code>await TestConnectionHelper.TestConnectionAsync(ds)</code></td></tr>
+                                <tr><td>Probe liveness for watchdog</td><td><code>ProxyLivenessHelper.IsAlive(ds)</code></td></tr>
+                                <tr><td>Get category-specific configs</td><td><code>ConnectionHelper.GetRDBMSConfigs()</code>, <code>.GetNoSQLConfigs()</code>, etc.</td></tr>
+                                <tr><td>Get all SaaS connector configs</td><td><code>ConnectionHelper.GetAllConnectorConfigs()</code></td></tr>
+                                <tr><td>Add a custom driver</td><td><code>editor.ConfigEditor.DataDriversClasses.Add(myDriver)</code></td></tr>
+                                <tr><td>Persist driver modifications</td><td><code>editor.ConfigEditor.SaveConnectionDriversConfigValues()</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div class="nav-links">
+                    <a href="connection-properties.html"><i class="bi bi-arrow-left"></i> Previous: Connection Properties</a>
+                    <a href="helpers-runtime-reference.html">Next: Full Helpers Runtime Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="connection-helpers.html">Connection Helpers</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

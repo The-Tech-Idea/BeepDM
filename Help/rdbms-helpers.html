@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDBMS Helpers - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <a href="helpers-runtime-reference.html">Helpers Reference</a>
+                    <span>&gt;</span>
+                    <span>RDBMS Helpers</span>
+                </nav>
+                <div class="page-header">
+                    <h1>RDBMS Helpers</h1>
+                    <p class="page-subtitle">Complete reference for the RDBMSHelper system — SQL generation, DDL, DML, schema queries, feature detection, and entity-based operations across 30+ database types</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li>Facade: <code>DataManagementEngineStandard/Helpers/RDBMSHelpers/RDBMSHelper.cs</code></li>
+                        <li>Schema queries: <code>DatabaseSchemaQueryHelper.cs</code></li>
+                        <li>DDL/object creation: <code>DatabaseObjectCreationHelper.cs</code></li>
+                        <li>Feature detection: <code>DatabaseFeatureHelper.cs</code></li>
+                        <li>Query repository: <code>DatabaseQueryRepositoryHelper.cs</code></li>
+                        <li>DML layer: <code>DMLHelpers/</code> (10 files)</li>
+                        <li>Entity layer: <code>EntityHelpers/</code> (8 files)</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#architecture">Architecture Overview</a></li>
+                        <li><a href="#facade">RDBMSHelper — Facade</a></li>
+                        <li><a href="#schema">DatabaseSchemaQueryHelper</a></li>
+                        <li><a href="#ddl">DatabaseObjectCreationHelper — DDL Generation</a></li>
+                        <li><a href="#dml">DatabaseDMLHelper — Data Manipulation</a></li>
+                        <li><a href="#features">DatabaseFeatureHelper — Capability Detection</a></li>
+                        <li><a href="#queryrepo">DatabaseQueryRepositoryHelper — 200+ Predefined Queries</a></li>
+                        <li><a href="#entity">DatabaseEntityHelper — Entity-Driven SQL</a></li>
+                        <li><a href="#usage">Usage Scenarios</a></li>
+                        <li><a href="#quick-ref">Quick Reference Card</a></li>
+                    </ul>
+                </div>
+
+                <!-- Architecture -->
+                <section id="architecture" class="section">
+                    <h2>Architecture Overview</h2>
+                    <p>
+                        The RDBMSHelpers subsystem answers the question: <em>"Given a database type and a table/entity structure,
+                        generate the correct SQL for every operation — schema queries, DDL, DML, feature checks, and entity validation."</em>
+                    </p>
+                    <p>
+                        Originally a single monolithic class, it was refactored into a layered architecture with 6 top-level helpers
+                        and 18 sub-files in <code>DMLHelpers/</code> and <code>EntityHelpers/</code>.
+                        Every method accepts a <code>DataSourceType</code> enum and produce database-specific SQL.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>File tree</h3>
+                        <pre><code class="language-none">RDBMSHelpers/
+  ├── RDBMSHelper.cs                        ← static facade (delegates to all below)
+  ├── DatabaseSchemaQueryHelper.cs           ← schema/database metadata queries (25+ DBs)
+  ├── DatabaseObjectCreationHelper.cs        ← CREATE/ALTER/DROP/TRUNCATE, indexes, PKs
+  ├── DatabaseFeatureHelper.cs               ← features, sequences, identity, transactions
+  ├── DatabaseQueryRepositoryHelper.cs       ← 200+ predefined schema queries (30+ DBs)
+  ├── DMLHelpers/ (10 files)
+  │   ├── DatabaseDMLHelper.cs               ← DML facade
+  │   ├── DatabaseDMLBasicOperations.cs      ← INSERT/UPDATE/DELETE
+  │   ├── DatabaseDMLBulkOperations.cs       ← bulk insert, UPSERT/MERGE
+  │   ├── DatabaseDMLAdvancedQueryGenerator  ← SELECT, JOIN, aggregation, window functions
+  │   ├── DatabaseDMLParameterizedQueries.cs ← parameterized CRUD (injection-safe)
+  │   ├── DatabaseDMLUtilities.cs            ← paging, SafeQuote, identifier quoting
+  │   ├── DatabaseDMLSpecificHelpers.cs      ← DB-specific optimizations
+  │   ├── DatabaseDMLSupportingClasses.cs    ← shared types/enums
+  │   └── DatabaseDMLHelper.Legacy.cs        ← backward compatibility
+  └── EntityHelpers/ (8 files)
+      ├── DatabaseEntityHelper.cs            ← entity facade (CRUD from EntityStructure)
+      ├── DatabaseEntitySqlGenerator.cs      ← entity→SQL generation
+      ├── DatabaseEntityAnalyzer.cs          ← structure analysis &amp; stats
+      ├── DatabaseEntityValidator.cs         ← 15+ validation rules
+      ├── DatabaseEntityNamingValidator.cs   ← naming conventions
+      ├── DatabaseEntityReservedKeywordChecker.cs ← reserved word detection
+      ├── DatabaseEntityTypeHelper.cs        ← type compatibility &amp; suggestions
+      └── DatabaseEntityHelper.Legacy.cs     ← backward compatibility</code></pre>
+                    </div>
+                </section>
+
+                <!-- Facade -->
+                <section id="facade" class="section">
+                    <h2>RDBMSHelper — Facade</h2>
+                    <p>The single public entry point. All ~40 facade methods delegate to the 6 sub-helpers.</p>
+
+                    <div class="code-example">
+                        <h3>Complete API surface</h3>
+                        <pre><code class="language-csharp">// === Schema &amp; Metadata (→ DatabaseSchemaQueryHelper) ===
+string GetSchemasorDatabases(DataSourceType rdbms, string userName);
+(string Query, bool Success, string Error) GetSchemasorDatabasesSafe(DataSourceType, string, bool);
+QueryValidationResult ValidateSchemaQuery(DataSourceType rdbms, string userName, string query);
+string GetTableExistsQuery(DataSourceType, string tableName, string schemaName);
+string GetColumnInfoQuery(DataSourceType, string tableName, string schemaName);
+
+// === DDL / Object Creation (→ DatabaseObjectCreationHelper) ===
+(string Sql, bool Success, string Error) GenerateCreateTableSQL(EntityStructure entity);
+string GeneratePrimaryKeyQuery(DataSourceType, string table, string pk, string type);
+(string Sql, bool Success, string Error) GeneratePrimaryKeyFromEntity(EntityStructure);
+string GenerateCreateIndexQuery(DataSourceType, string table, string index, string[] cols, Dictionary? opts);
+(string Sql, bool Success, string Error) GenerateUniqueIndexFromEntity(EntityStructure);
+string GetDropEntity(DataSourceType, string entityName);
+string GetTruncateTableQuery(DataSourceType, string tableName, string schemaName);
+
+// === DML (→ DatabaseDMLHelper / 10 DML files) ===
+string GenerateInsertQuery(DataSourceType, string table, Dictionary&lt;string,object&gt; data);
+string GenerateUpdateQuery(DataSourceType, string table, Dictionary data, Dictionary conditions);
+string GenerateDeleteQuery(DataSourceType, string table, Dictionary conditions);
+string GetPagingSyntax(DataSourceType, int pageNumber, int pageSize);
+string GetRecordCountQuery(DataSourceType, string table, string schema, string where);
+string SafeQuote(string value, DataSourceType);
+
+// === Features &amp; Sequences (→ DatabaseFeatureHelper) ===
+string GenerateFetchNextSequenceValueQuery(DataSourceType, string sequenceName);
+string GenerateFetchLastIdentityQuery(DataSourceType, string sequenceName);
+string GetTransactionStatement(DataSourceType, TransactionOperation op);
+bool SupportsFeature(DataSourceType, DatabaseFeature feature);
+List&lt;DatabaseFeature&gt; GetSupportedFeatures(DataSourceType);
+bool SupportsSequences(DataSourceType);
+bool SupportsAutoIncrement(DataSourceType);
+int GetMaxIdentifierLength(DataSourceType);
+
+// === Query Repository (→ DatabaseQueryRepositoryHelper) ===
+List&lt;QuerySqlRepo&gt; CreateQuerySqlRepos();
+string GetQuery(DataSourceType, Sqlcommandtype queryType);
+bool IsSqlStatementValid(string sqlString);
+
+// === Entity Operations (→ EntityHelpers / 8 files) ===
+(string Sql, bool Success, string Error) GenerateDeleteEntityWithValues(EntityStructure, Dictionary values);
+(string Sql, Dictionary Params, bool Success, string Error) GenerateInsertWithValues(EntityStructure, Dictionary values);
+(string Sql, bool Success, string Error) GenerateUpdateEntityWithValues(EntityStructure, Dictionary values, Dictionary conditions);
+(bool IsValid, List&lt;string&gt; Errors) ValidateEntityStructure(EntityStructure entity);
+Dictionary&lt;string,object&gt; GetEntityCompatibilityInfo(EntityStructure entity);
+List&lt;string&gt; SuggestEntityImprovements(EntityStructure entity);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Schema -->
+                <section id="schema" class="section">
+                    <h2>DatabaseSchemaQueryHelper — Metadata Queries</h2>
+                    <p>Generates database-specific SQL for inspecting schema metadata across 25+ database types.</p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// List all schemas/databases accessible to a user
+string sql = RDBMSHelper.GetSchemasorDatabases(DataSourceType.SqlServer, null);
+// → "SELECT name FROM sys.databases"
+
+string pg = RDBMSHelper.GetSchemasorDatabases(DataSourceType.Postgre, "myuser");
+// → "SELECT schema_name FROM information_schema.schemata
+//     WHERE schema_owner = 'myuser'"
+
+// Safe version with error handling
+var (query, success, error) = RDBMSHelper.GetSchemasorDatabasesSafe(
+    DataSourceType.Oracle, "SCOTT", throwOnError: false);
+
+// Check if a table exists
+string check = RDBMSHelper.GetTableExistsQuery(DataSourceType.MySQL, "products", "inventory");
+// → "SELECT COUNT(*) FROM information_schema.tables
+//     WHERE table_schema = 'inventory' AND table_name = 'products'"
+
+// Get column metadata
+string cols = RDBMSHelper.GetColumnInfoQuery(DataSourceType.Postgre, "products", "public");
+// → PostgreSQL information_schema.columns query</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Supported database types:</strong> SQL Server, MySQL, PostgreSQL, Oracle, DB2, SQLite,
+                        Firebird, MongoDB, Cassandra, Redis, Elasticsearch, Snowflake, BigQuery, Redshift,
+                        Vertica, ClickHouse, Couchbase, Neo4j, and more.
+                    </div>
+                </section>
+
+                <!-- DDL -->
+                <section id="ddl" class="section">
+                    <h2>DatabaseObjectCreationHelper — DDL Generation</h2>
+                    <p>Generates CREATE TABLE, indexes, primary keys, DROP, and TRUNCATE statements from <code>EntityStructure</code> objects. Uses <code>DataTypeFieldMappingHelper</code> for column type resolution.</p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Create a table from an entity definition
+var entity = new EntityStructure
+{
+    DataSourceType = DataSourceType.SqlServer,
+    EntityName = "Products",
+    Fields = new List&lt;EntityField&gt;
+    {
+        new() { FieldName = "Id", Fieldtype = "System.Int32", IsKey = true },
+        new() { FieldName = "Name", Fieldtype = "System.String", Size1 = 200 },
+        new() { FieldName = "Price", Fieldtype = "System.Decimal",
+                NumericPrecision = 18, NumericScale = 2 }
+    }
+};
+
+var (sql, success, error) = RDBMSHelper.GenerateCreateTableSQL(entity);
+// → "CREATE TABLE Products (
+//       Id INT IDENTITY(1,1) NOT NULL,
+//       Name NVARCHAR(200) NULL,
+//       Price DECIMAL(18,2) NULL,
+//       PRIMARY KEY (Id))"
+
+// Add indexes
+string idx = RDBMSHelper.GenerateCreateIndexQuery(
+    DataSourceType.Postgre, "Products", "idx_products_name",
+    new[] { "Name" }, new Dictionary&lt;string,object&gt; { ["Unique"] = false });
+
+// Drop and truncate
+string drop = RDBMSHelper.GetDropEntity(DataSourceType.MySQL, "products");
+// → "DROP TABLE IF EXISTS products"
+string trunc = RDBMSHelper.GetTruncateTableQuery(DataSourceType.SqlServer, "products", "dbo");
+// → "TRUNCATE TABLE dbo.products"</code></pre>
+                    </div>
+                </section>
+
+                <!-- DML -->
+                <section id="dml" class="section">
+                    <h2>DML Layer — 10 Specialized Helpers</h2>
+                    <p>Data Manipulation Language operations split across 10 files for clarity.</p>
+
+                    <table>
+                        <thead><tr><th>File</th><th>Responsibility</th><th>Key methods</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DatabaseDMLHelper.cs</code></td><td>DML facade</td><td>Delegates to sub-helpers, backward compat</td></tr>
+                            <tr><td><code>DatabaseDMLBasicOperations.cs</code></td><td>Single-row CRUD</td><td><code>GenerateInsertQuery</code>, <code>GenerateUpdateQuery</code>, <code>GenerateDeleteQuery</code></td></tr>
+                            <tr><td><code>DatabaseDMLBulkOperations.cs</code></td><td>Bulk operations</td><td><code>GenerateBulkInsertQuery</code>, <code>GenerateUpsertQuery</code>, <code>GenerateBulkDeleteQuery</code></td></tr>
+                            <tr><td><code>DatabaseDMLAdvancedQueryGenerator.cs</code></td><td>Complex queries</td><td><code>GenerateSelectQuery</code>, <code>GenerateJoinQuery</code>, <code>GenerateWindowFunctionQuery</code></td></tr>
+                            <tr><td><code>DatabaseDMLParameterizedQueries.cs</code></td><td>Parameterized SQL (anti-injection)</td><td><code>GenerateParameterizedInsertQuery</code>, <code>GenerateParameterizedUpdateQuery</code>, <code>GenerateParameterizedDeleteQuery</code></td></tr>
+                            <tr><td><code>DatabaseDMLUtilities.cs</code></td><td>Utilities &amp; security</td><td><code>GetPagingSyntax</code>, <code>SafeQuote</code>, <code>QuoteIdentifierIfNeeded</code>, <code>IsValidTableName</code></td></tr>
+                            <tr><td><code>DatabaseDMLSpecificHelpers.cs</code></td><td>DB-specific syntax</td><td>Oracle-style hints, PostgreSQL RETURNING, etc.</td></tr>
+                            <tr><td><code>DatabaseDMLSupportingClasses.cs</code></td><td>Shared types/enums</td><td>Return value types, option classes</td></tr>
+                            <tr><td><code>DatabaseDMLHelper.Legacy.cs</code></td><td>Backward compatibility</td><td>Old method signatures</td></tr>
+                            <tr><td><code>DatabaseDMLHelper_Enhancement_Summary.md</code></td><td>Doc</td><td>Refactoring summary</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <h3>Usage examples</h3>
+                        <pre><code class="language-csharp">// Paging — database-specific syntax for every platform
+string pgPaging = RDBMSHelper.GetPagingSyntax(DataSourceType.SqlServer, page: 2, pageSize: 10);
+// → "OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY"
+
+string mysqlPaging = RDBMSHelper.GetPagingSyntax(DataSourceType.MySQL, page: 2, pageSize: 10);
+// → "LIMIT 10 OFFSET 10"
+
+string oraclePaging = RDBMSHelper.GetPagingSyntax(DataSourceType.Oracle, page: 2, pageSize: 10);
+// → "OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY" (Oracle 12c+)
+
+// Safe quoting — prevents SQL injection
+string safe = RDBMSHelper.SafeQuote("O'Brien", DataSourceType.SqlServer);
+// → "O''Brien"</code></pre>
+                    </div>
+                </section>
+
+                <!-- Features -->
+                <section id="features" class="section">
+                    <h2>DatabaseFeatureHelper — Capability Detection</h2>
+                    <p>Answers: <em>"Does PostgreSQL support JSON columns?"</em> or <em>"Should I use sequences or IDENTITY on this database?"</em></p>
+
+                    <div class="code-example">
+                        <h3>7 feature categories</h3>
+                        <pre><code class="language-csharp">public enum DatabaseFeature
+{
+    WindowFunctions,   // ROW_NUMBER(), RANK(), etc.
+    Json,              // Native JSON type &amp; operations
+    Xml,               // Native XML type &amp; operations
+    TemporalTables,    // System-versioned temporal tables
+    FullTextSearch,    // Full-text indexing &amp; search
+    Partitioning,      // Table partitioning
+    ColumnStore        // Columnar storage format
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Runtime feature check — avoids generating invalid SQL
+if (RDBMSHelper.SupportsFeature(DataSourceType.MySQL, DatabaseFeature.Json))
+{
+    // Safe to generate JSON column type
+}
+
+// Get all features for a database
+var features = RDBMSHelper.GetSupportedFeatures(DataSourceType.Oracle);
+// → [WindowFunctions, Json, Xml, Partitioning, ...]
+
+// Sequence operations
+string seqSql = RDBMSHelper.GenerateFetchNextSequenceValueQuery(
+    DataSourceType.Postgre, "order_id_seq");
+// → "SELECT nextval('order_id_seq')"
+
+// Last identity value (after INSERT)
+string idSql = RDBMSHelper.GenerateFetchLastIdentityQuery(DataSourceType.SqlServer);
+// → "SELECT SCOPE_IDENTITY()"
+
+// Transaction statements
+string begin = RDBMSHelper.GetTransactionStatement(
+    DataSourceType.Postgre, TransactionOperation.Begin);
+// → "BEGIN TRANSACTION"
+
+// Identifier limits
+int maxLen = RDBMSHelper.GetMaxIdentifierLength(DataSourceType.Oracle);
+// → 30  (Oracle max identifier length)
+
+if (RDBMSHelper.SupportsAutoIncrement(DataSourceType.SqlLite))
+    // Use AUTOINCREMENT syntax</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Feature support matrix highlights</strong>
+                        <table>
+                            <thead><tr><th>Feature</th><th>SQL Server</th><th>MySQL</th><th>PostgreSQL</th><th>Oracle</th></tr></thead>
+                            <tbody>
+                                <tr><td>WindowFunctions</td><td>2005+</td><td>8.0+</td><td>9.0+</td><td>8i+</td></tr>
+                                <tr><td>Json</td><td>2016+</td><td>5.7+</td><td>9.2+</td><td>12c+</td></tr>
+                                <tr><td>Xml</td><td>Yes</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+                                <tr><td>TemporalTables</td><td>2016+</td><td>No</td><td>No</td><td>12c+</td></tr>
+                                <tr><td>FullTextSearch</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+                                <tr><td>Partitioning</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+                                <tr><td>ColumnStore</td><td>2012+</td><td>No</td><td>No</td><td>12c+</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Query Repository -->
+                <section id="queryrepo" class="section">
+                    <h2>DatabaseQueryRepositoryHelper — 200+ Predefined Queries</h2>
+                    <p>
+                        Seeds the engine with schema-inspection queries for 30+ database types.
+                        Called by <code>EnvironmentService.AddAllDataSourceQueryConfigurations()</code> during startup.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Query types</h3>
+                        <pre><code class="language-csharp">// Sqlcommandtype enum values used to look up queries:
+//   getTable                    → SELECT * FROM {table} (or equivalent)
+//   getlistoftables             → List all tables/collections
+//   getlistoftablesfromotherschema → Cross-schema table listing
+//   getPKforTable               → Primary key column identification
+//   getFKforTable               → Foreign key relationships
+//   getChildTable               → Child table discovery
+//   getParentTable              → Parent table discovery</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Get a predefined query (cached)
+string sql = RDBMSHelper.GetQuery(DataSourceType.Postgre, Sqlcommandtype.getPKforTable);
+// → PostgreSQL query to find primary key columns
+
+// Get ALL queries for a specific database type
+var queries = DatabaseQueryRepositoryHelper.GetQueriesForDatabase(DataSourceType.SqlServer);
+// → Dictionary mapping Sqlcommandtype → SQL string
+
+// Validate SQL before executing
+bool ok = RDBMSHelper.IsSqlStatementValid("SELECT * FROM users");
+// → true (contains SQL keywords)
+
+// Get repository statistics
+var stats = DatabaseQueryRepositoryHelper.GetQueryStatistics();
+// → { TotalQueries: 200+, Databases: 30+, Categories: 8 }
+
+// Create the repository programmatically (called at startup)
+var repos = RDBMSHelper.CreateQuerySqlRepos();
+// → List of 200+ QuerySqlRepo objects for all supported DBs</code></pre>
+                    </div>
+                </section>
+
+                <!-- Entity Helpers -->
+                <section id="entity" class="section">
+                    <h2>Entity Helpers — Entity-Driven SQL Generation</h2>
+                    <p>
+                        Rather than passing raw table names and dictionaries, these helpers generate SQL
+                        directly from <code>EntityStructure</code> objects, validating along the way.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Entity validation — 15+ rules</h3>
+                        <pre><code class="language-csharp">var (isValid, errors) = RDBMSHelper.ValidateEntityStructure(entity);
+if (!isValid)
+{
+    foreach (var err in errors)
+        Console.WriteLine(err);
+    // "Entity name 'Select' is a reserved keyword"
+    // "Field '123abc' contains invalid characters"
+    // "No primary key defined for entity 'Users'"
+    // "Field 'email' is a duplicate"
+}
+
+// Get compatibility info across database types
+var compat = RDBMSHelper.GetEntityCompatibilityInfo(entity);
+// → { SqlServer: "compatible", Oracle: "compatible",
+//     MySQL: "column 'Description' exceeds max length" }
+
+// Get improvement suggestions
+var suggestions = RDBMSHelper.SuggestEntityImprovements(entity);
+// → ["Consider adding a CreatedAt timestamp field",
+//     "Field 'User_name' should use PascalCase: 'UserName'",
+//     "Index recommended for foreign key field 'CategoryId'"]
+</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Entity-based CRUD</h3>
+                        <pre><code class="language-csharp">// INSERT from entity definition
+var (sql, parameters, success, error) = RDBMSHelper.GenerateInsertWithValues(
+    entity,
+    new Dictionary&lt;string,object&gt; {
+        ["Name"] = "Widget",
+        ["Price"] = 19.99m
+    });
+// → ("INSERT INTO Products (Name, Price) VALUES (@Name, @Price)",
+//     { Name: "Widget", Price: 19.99 }, true, null)
+
+// UPDATE with conditions
+var (sql, success, error) = RDBMSHelper.GenerateUpdateEntityWithValues(
+    entity,
+    new Dictionary&lt;string,object&gt; { ["Price"] = 24.99m },   // SET
+    new Dictionary&lt;string,object&gt; { ["Id"] = 42 });         // WHERE
+// → "UPDATE Products SET Price = 24.99 WHERE Id = 42"
+
+// DELETE
+var (sql, success, error) = RDBMSHelper.GenerateDeleteEntityWithValues(
+    entity,
+    new Dictionary&lt;string,object&gt; { ["Id"] = 42 });
+// → "DELETE FROM Products WHERE Id = 42"</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>EntityHelpers/ file breakdown</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>DatabaseEntityHelper.cs</code></td><td>Facade — delegates CRUD to SqlGenerator, validation to Validator</td></tr>
+                                <tr><td><code>DatabaseEntitySqlGenerator.cs</code></td><td>Entity → parameterized SQL (INSERT/UPDATE/DELETE)</td></tr>
+                                <tr><td><code>DatabaseEntityValidator.cs</code></td><td>15+ structural validation rules</td></tr>
+                                <tr><td><code>DatabaseEntityAnalyzer.cs</code></td><td>Statistics, compatibility analysis, improvement suggestions</td></tr>
+                                <tr><td><code>DatabaseEntityNamingValidator.cs</code></td><td>PascalCase enforcement, character validation</td></tr>
+                                <tr><td><code>DatabaseEntityReservedKeywordChecker.cs</code></td><td>Reserved word detection per DB (SELECT, FROM, etc.)</td></tr>
+                                <tr><td><code>DatabaseEntityTypeHelper.cs</code></td><td>Type compatibility checks, type suggestions</td></tr>
+                                <tr><td><code>DatabaseEntityHelper.Legacy.cs</code></td><td>Backward-compatible API</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Usage Scenarios -->
+                <section id="usage" class="section">
+                    <h2>End-to-End Usage Scenarios</h2>
+
+                    <div class="code-example">
+                        <h3>A: Create a table from a C# model</h3>
+                        <pre><code class="language-csharp">var entity = new EntityStructure
+{
+    DataSourceType = DataSourceType.Postgre,
+    EntityName = "Orders",
+    SchemaName = "public",
+    Fields = new List&lt;EntityField&gt;
+    {
+        new() { FieldName = "Id", Fieldtype = "System.Int64", IsKey = true },
+        new() { FieldName = "CustomerId", Fieldtype = "System.Int32", IsKey = false },
+        new() { FieldName = "OrderDate", Fieldtype = "System.DateTime" },
+        new() { FieldName = "Total", Fieldtype = "System.Decimal",
+                NumericPrecision = 12, NumericScale = 2 }
+    }
+};
+
+var (ddl, ok, err) = RDBMSHelper.GenerateCreateTableSQL(entity);
+// DDL: CREATE TABLE public.Orders (
+//   Id BIGSERIAL NOT NULL,
+//   CustomerId INT NULL,
+//   OrderDate TIMESTAMP NULL,
+//   Total NUMERIC(12,2) NULL,
+//   PRIMARY KEY (Id))
+
+// Execute via IDataSource
+ds.ExecuteSql(ddl);
+
+// Add an index on CustomerId
+string idx = RDBMSHelper.GenerateCreateIndexQuery(
+    DataSourceType.Postgre, "Orders", "idx_orders_customer",
+    new[] { "CustomerId" });
+ds.ExecuteSql(idx);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>B: Schema migration — check before CREATE</h3>
+                        <pre><code class="language-csharp">string checkSql = RDBMSHelper.GetTableExistsQuery(
+    DataSourceType.SqlServer, "Products", "dbo");
+// → "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+//     WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Products'"
+
+var result = ds.RunQuery(checkSql);
+if (result.Rows[0][0] == 0)
+{
+    var (ddl, ok, err) = RDBMSHelper.GenerateCreateTableSQL(entity);
+    ds.ExecuteSql(ddl);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>C: Cross-database pagination</h3>
+                        <pre><code class="language-csharp">string BuildPagedQuery(DataSourceType dbType, string baseQuery, int page, int size)
+{
+    string paging = RDBMSHelper.GetPagingSyntax(dbType, page, size);
+    return $"{baseQuery} {paging}";
+}
+
+// SQL Server: SELECT * FROM Products ORDER BY Id OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY
+// MySQL:      SELECT * FROM Products ORDER BY Id LIMIT 10 OFFSET 10
+// Oracle:     SELECT * FROM Products ORDER BY Id OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY
+// Firebird:   SELECT * FROM Products ORDER BY Id ROWS 11 TO 20</code></pre>
+                    </div>
+                </section>
+
+                <!-- Quick Reference -->
+                <section id="quick-ref" class="section">
+                    <h2>Quick Reference Card</h2>
+                    <div class="note">
+                        <table>
+                            <thead><tr><th>Use case</th><th>API call</th></tr></thead>
+                            <tbody>
+                                <tr><td>Seed all query repos (startup)</td><td><code>EnvironmentService.AddAllDataSourceQueryConfigurations(editor)</code></td></tr>
+                                <tr><td>List schemas for a user</td><td><code>RDBMSHelper.GetSchemasorDatabases(dbType, userName)</code></td></tr>
+                                <tr><td>Check if table exists</td><td><code>RDBMSHelper.GetTableExistsQuery(dbType, tableName)</code></td></tr>
+                                <tr><td>CREATE TABLE from entity</td><td><code>RDBMSHelper.GenerateCreateTableSQL(entity)</code></td></tr>
+                                <tr><td>Drop an entity</td><td><code>RDBMSHelper.GetDropEntity(dbType, entityName)</code></td></tr>
+                                <tr><td>Truncate a table</td><td><code>RDBMSHelper.GetTruncateTableQuery(dbType, tableName)</code></td></tr>
+                                <tr><td>Create an index</td><td><code>RDBMSHelper.GenerateCreateIndexQuery(dbType, table, name, columns)</code></td></tr>
+                                <tr><td>Build INSERT SQL</td><td><code>RDBMSHelper.GenerateInsertQuery(dbType, table, data)</code></td></tr>
+                                <tr><td>Build parameterized INSERT</td><td><code>DatabaseDMLHelper.GenerateParameterizedInsertQuery(dbType, table, columns)</code></td></tr>
+                                <tr><td>Pagination syntax</td><td><code>RDBMSHelper.GetPagingSyntax(dbType, page, pageSize)</code></td></tr>
+                                <tr><td>Check DB feature support</td><td><code>RDBMSHelper.SupportsFeature(dbType, DatabaseFeature.Json)</code></td></tr>
+                                <tr><td>Get next sequence value</td><td><code>RDBMSHelper.GenerateFetchNextSequenceValueQuery(dbType, seqName)</code></td></tr>
+                                <tr><td>Get last identity value</td><td><code>RDBMSHelper.GenerateFetchLastIdentityQuery(dbType)</code></td></tr>
+                                <tr><td>Transaction statement</td><td><code>RDBMSHelper.GetTransactionStatement(dbType, TransactionOperation.Begin)</code></td></tr>
+                                <tr><td>Prevent SQL injection</td><td><code>RDBMSHelper.SafeQuote(value, dbType)</code></td></tr>
+                                <tr><td>Get predefined schema query</td><td><code>RDBMSHelper.GetQuery(dbType, Sqlcommandtype.getTable)</code></td></tr>
+                                <tr><td>Validate entity structure</td><td><code>RDBMSHelper.ValidateEntityStructure(entity)</code></td></tr>
+                                <tr><td>Entity CRUD with values</td><td><code>RDBMSHelper.GenerateInsertWithValues(entity, values)</code></td></tr>
+                                <tr><td>Suggest entity improvements</td><td><code>RDBMSHelper.SuggestEntityImprovements(entity)</code></td></tr>
+                                <tr><td>Max identifier length</td><td><code>RDBMSHelper.GetMaxIdentifierLength(dbType)</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div class="nav-links">
+                    <a href="data-types-helpers.html"><i class="bi bi-arrow-left"></i> Previous: Data Types Helpers</a>
+                    <a href="rdbms-helpers-reference.html">Next: Full RDBMS Reference <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="rdbms-helpers.html">RDBMS Helpers</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Types Helpers - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <a href="helpers-runtime-reference.html">Helpers Reference</a>
+                    <span>&gt;</span>
+                    <span>Data Types Helpers</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Data Types Helpers</h1>
+                    <p class="page-subtitle">Complete reference for the DataTypeFieldMappingHelper system — 100+ database type mappings, lookup with caching, .NET type conversion, and schema generation</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li>Facade: <code>DataManagementEngineStandard/Helpers/DataTypesHelpers/DataTypeFieldMappingHelper.cs</code></li>
+                        <li>Basic operations: <code>DataTypeBasicOperations.cs</code></li>
+                        <li>Lookup engine: <code>DataTypeMappingLookup.cs</code></li>
+                        <li>Repository aggregator: <code>DataTypeMappingRepository.cs</code></li>
+                        <li>Type activation: <code>TypeHelper.cs</code></li>
+                        <li>Database mappings: 26 files in <code>DatabaseTypeMappingRepositories/</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#architecture">Architecture Overview</a></li>
+                        <li><a href="#bootstrapping">How Type Mappings Get Loaded</a></li>
+                        <li><a href="#facade">DataTypeFieldMappingHelper — Facade</a></li>
+                        <li><a href="#basic-ops">DataTypeBasicOperations</a></li>
+                        <li><a href="#lookup">DataTypeMappingLookup — Core Engine</a></li>
+                        <li><a href="#repository">DataTypeMappingRepository — Aggregator</a></li>
+                        <li><a href="#type-helper">TypeHelper — Dynamic Type Activation</a></li>
+                        <li><a href="#dbrepos">DatabaseTypeMappingRepositories (26 files, 100+ DBs)</a></li>
+                        <li><a href="#mapping-example">Example: What a Mapping Looks Like</a></li>
+                        <li><a href="#usage">End-to-End Usage Scenarios</a></li>
+                        <li><a href="#extension">Adding a New Database Type Mapping</a></li>
+                        <li><a href="#quick-ref">Quick Reference Card</a></li>
+                    </ul>
+                </div>
+
+                <!-- Architecture -->
+                <section id="architecture" class="section">
+                    <h2>Architecture Overview</h2>
+                    <p>
+                        The DataTypesHelpers subsystem answers the question: <em>"Given a database column type like <code>NVARCHAR(50)</code>
+                        in SQL Server, what is the equivalent .NET type, and how do I generate DDL for it?"</em>
+                    </p>
+                    <p>
+                        Originally a single 2,000-line monolith, it was refactored into a layered architecture
+                        with a thin facade, a caching lookup engine, a repository aggregator, and 26 partial-class files
+                        covering 100+ database systems.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Layered design</h3>
+                        <pre><code class="language-csharp">// Layer 1: Public Facade (DataTypeFieldMappingHelper)
+// All methods delegate to specialized helpers below
+DataTypeFieldMappingHelper.GetDataType("MyDb", field, editor);    // → DataTypeMappingLookup
+DataTypeFieldMappingHelper.GetMappings();                          // → DataTypeMappingRepository
+DataTypeFieldMappingHelper.GetSqlServerDataTypesMapping();        // → DatabaseTypeMappingRepository
+
+// Layer 2: Core Engine (3 helpers)
+DataTypeMappingLookup      // Lookup with thread-safe caching, size/precision substitution
+DataTypeMappingRepository  // Routes DataSourceType/DataSourceName → filtered mapping lists
+DataTypeBasicOperations    // .NET type lists, validation, custom converters
+
+// Layer 3: Per-DB Factories (26 partial-class files)
+// Each file contains type mapping lists for one category of databases
+DatabaseTypeMappingRepository.GetSqlServerDataTypesMapping();
+// → [ { NetDataType="System.String", DataType="nvarchar(N)", Fav=true }, ... ]</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Full file inventory</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Namespace</th><th>Responsibility</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>DataTypeFieldMappingHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code></td><td>Public facade — delegates all calls to sub-helpers</td></tr>
+                                <tr><td><code>DataTypeMappingLookup.cs</code></td><td><code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code></td><td>Core engine: lookup with caching, placeholder substitution (N,P,S)</td></tr>
+                                <tr><td><code>DataTypeMappingRepository.cs</code></td><td><code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code></td><td>Routes lookup by DataSourceType/name → filters DataTypesMap</td></tr>
+                                <tr><td><code>DataTypeBasicOperations.cs</code></td><td><code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code></td><td>.NET type lists, custom converters, validation</td></tr>
+                                <tr><td><code>TypeHelper.cs</code></td><td><code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code></td><td>Dynamic type activation with constructor argument resolution</td></tr>
+                                <tr><td><code>DatabaseTypeMappingRepositories/*.cs</code></td><td><code>TheTechIdea.Beep.Helpers.DataTypesHelpers</code></td><td>26 partial-class files with per-DB type mappings</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Bootstrapping -->
+                <section id="bootstrapping" class="section">
+                    <h2>How Type Mappings Get Loaded</h2>
+
+                    <div class="code-example">
+                        <h3>The bootstrap chain</h3>
+                        <pre><code class="language-csharp">// Stage 1: LoadConfigurations() seeds the in-memory mappings
+EnvironmentService.AddAllDataSourceMappings(editor);
+// → editor.ConfigEditor.DataTypesMap becomes a List&lt;DatatypeMapping&gt;
+//   containing 1000+ entries from all 100+ database systems
+//   Each entry: DataSourceName, NetDataType, DataType, Fav flag
+
+// Stage 2: Persisted to disk as DataTypeMapping.json
+//   Loaded/saved via ConfigEditor.ReadDataTypeFile() / SaveDataTypeFile()
+
+// Stage 3: At runtime, DataTypeMappingLookup uses them:
+//   "Given data source 'SqlServerDataSource', convert System.String → nvarchar(N)"
+//   → Searches DataTypesMap for DataSourceName="SqlServerDataSource",
+//     NetDataType="System.String" → returns DataType="nvarchar(N)"</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>The DatatypeMapping entity</strong>
+                        <table>
+                            <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>DataSourceName</code></td><td><code>string</code></td><td>Matches <code>AssemblyClassDefinition.className</code> (e.g. "SqlServerDataSource")</td></tr>
+                                <tr><td><code>NetDataType</code></td><td><code>string</code></td><td>The .NET/C# type (e.g. "System.String", "System.Int32")</td></tr>
+                                <tr><td><code>DataType</code></td><td><code>string</code></td><td>The database-native type. May contain placeholders: (N)=length, (P,S)=precision,scale</td></tr>
+                                <tr><td><code>Fav</code></td><td><code>bool</code></td><td>Preferred mapping — lookup prioritizes these when multiple matches exist</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Facade -->
+                <section id="facade" class="section">
+                    <h2>DataTypeFieldMappingHelper — Facade</h2>
+                    <p>
+                        The public entry point. All ~80 public methods delegate to one of four sub-helpers.
+                        This maintains backward compatibility while allowing the implementation to evolve independently.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Key facade methods</h3>
+                        <pre><code class="language-csharp">// === Lookup (→ DataTypeMappingLookup) ===
+public static string GetDataType(string DSname, string providerfldtype, IDMEEditor DMEEditor);
+public static string GetDataType(string DSname, EntityField fld, IDMEEditor DMEEditor);
+public static string GetDataTypeFromDataSourceClassName(string className, EntityField fld, IDMEEditor DMEEditor);
+public static DatatypeMapping GetDataTypeMappingForString(string className, string Fieldtype, EntityField fld, IDMEEditor DMEEditor);
+public static string GetFieldtypeWoConversion(string DSname, EntityField fld, IDMEEditor DMEEditor);
+
+// === Repository (→ DataTypeMappingRepository) ===
+public static List&lt;DatatypeMapping&gt; GetDataTypes(string DSname, IDMEEditor DMEEditor);
+public static List&lt;DatatypeMapping&gt; GetDataTypes(DataSourceType DSname, IDMEEditor DMEEditor);
+public static List&lt;DatatypeMapping&gt; GetMappings();   // ALL mappings from all DBs
+
+// === Basic Operations (→ DataTypeBasicOperations) ===
+public static string[] GetNetDataTypes();
+public static string[] GetNetDataTypes2();
+public static string GetCustomDataType(string DSname, EntityField fld, IDMEEditor DMEEditor, Func&lt;string, string&gt; customTypeConverter);
+public static bool IsValidFieldMapping(string DSname, EntityField fld, IDMEEditor DMEEditor);
+
+// === Per-DB Mappings (→ DatabaseTypeMappingRepository) ===
+public static List&lt;DatatypeMapping&gt; GetSqlServerDataTypesMapping();
+public static List&lt;DatatypeMapping&gt; GetMySqlDataTypesMapping();
+public static List&lt;DatatypeMapping&gt; GetPostgreDataTypesMapping();
+public static List&lt;DatatypeMapping&gt; GetMongoDBDataTypeMappings();
+// ... 80+ Get*DataTypeMappings() methods for every supported DB</code></pre>
+                    </div>
+                </section>
+
+                <!-- Basic Operations -->
+                <section id="basic-ops" class="section">
+                    <h2>DataTypeBasicOperations</h2>
+                    <p>
+                        Provides the canonical list of .NET data types and utility methods for type validation and custom conversion.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Available .NET types</h3>
+                        <pre><code class="language-csharp">// Short list (16 primitive types)
+string[] types = DataTypeBasicOperations.GetNetDataTypes();
+// byte, sbyte, int, uint, short, ushort, long, ulong,
+// float, double, char, bool, object, string, decimal, DateTime
+
+// Full list (with System.* prefix, includes arrays and special types)
+string[] fullTypes = DataTypeBasicOperations.GetNetDataTypes2();
+// System.Byte[], System.SByte[], System.Byte, System.SByte,
+// System.Int32, System.UInt32, System.Int16, System.UInt16,
+// System.Int64, System.UInt64, System.Single, System.Double,
+// System.Char, System.Boolean, System.Object, System.String,
+// System.Decimal, System.DateTime, System.TimeSpan,
+// System.DateTimeOffset, System.Guid, System.Xml
+
+// Validate that a field's type can be mapped
+bool valid = DataTypeBasicOperations.IsValidFieldMapping("MySqlDb", field, editor);
+
+// Apply a custom converter on top of standard mapping
+string result = DataTypeBasicOperations.GetCustomDataType("MyDb", field, editor,
+    standardType => standardType switch {
+        "System.String" => "TEXT",
+        "System.Int32"  => "INTEGER",
+        _ => standardType
+    });</code></pre>
+                    </div>
+                </section>
+
+                <!-- Lookup Engine -->
+                <section id="lookup" class="section">
+                    <h2>DataTypeMappingLookup — Core Engine</h2>
+                    <p>
+                        The <strong>heart of type resolution</strong>. Converts between database-native types and .NET types
+                        using the <code>DataTypesMap</code> collection with thread-safe caching,
+                        placeholder substitution for sizes/precision, and intelligent fallbacks.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Three concurrent caches for performance</h3>
+                        <pre><code class="language-csharp">// Cache 1: Mapping cache — caches full DatatypeMapping objects
+private static readonly ConcurrentDictionary&lt;string, DatatypeMapping&gt; _mappingCache;
+
+// Cache 2: Data type cache — caches string results (the most common lookup)
+private static readonly ConcurrentDictionary&lt;string, string&gt; _dataTypeCache;
+
+// Cache 3: Class-level cache — caches filtered lists per className
+private static readonly ConcurrentDictionary&lt;string, List&lt;DatatypeMapping&gt;&gt; _classTypeMappingsCache;
+
+// Clear all caches when mappings are reloaded
+DataTypeMappingLookup.ClearCache();
+
+// Get cache statistics for diagnostics
+var stats = DataTypeMappingLookup.GetCacheStatistics();
+// { MappingCacheCount: 34, DataTypeCacheCount: 152, ClassMappingsCacheCount: 8, ... }</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Placeholder system — how sizes and precision work</h3>
+                        <pre><code class="language-csharp">// Mappings use placeholders that get substituted at lookup time:
+//
+//   (N)    → string length       e.g. nvarchar(N)  → nvarchar(50)
+//   (N,S)  → precision & scale   e.g. decimal(N,S) → decimal(18,2)
+//   (P,S)  → alt precision/scale e.g. number(P,S)  → number(10,4)
+
+// Example: mapping System.String to SQL Server
+// Stored mapping:  DataType = "nvarchar(N)", NetDataType = "System.String"
+// When field.Size1 = 50:
+//   → result = "nvarchar(50)"
+
+// Example: mapping System.Decimal to SQL Server
+// Stored mapping:  DataType = "decimal(P,S)", NetDataType = "System.Decimal"
+// When field.NumericPrecision = 18, field.NumericScale = 2:
+//   → result = "decimal(18,2)"
+
+// Default String size when Size1 == 0:
+//   → Falls back to editor.typesHelper.DefaultStringSize (usually 255)</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Intelligent fallbacks</h3>
+                        <pre><code class="language-csharp">// When a mapping can't be found, fallbacks analyze the raw type name:
+
+private static string GetFallbackDataType(EntityField fld)
+{
+    var FieldtypeLower = fld.Fieldtype.ToLowerInvariant();
+    return FieldtypeLower switch
+    {
+        var type when type.Contains("int") =>
+            fld.Size1 > 10 ? "System.Int64" : "System.Int32",
+        var type when type.Contains("decimal") || type.Contains("numeric") =>
+            "System.Decimal",
+        var type when type.Contains("float") || type.Contains("double") =>
+            "System.Double",
+        var type when type.Contains("bool") =>
+            "System.Boolean",
+        var type when type.Contains("date") || type.Contains("time") =>
+            "System.DateTime",
+        var type when type.Contains("guid") =>
+            "System.Guid",
+        var type when type.Contains("byte") =>
+            "System.Byte[]",
+        _ => "System.String"   // ultimate default
+    };
+}
+
+// Reverse fallback: .NET type → default SQL type
+// System.Int32 → "int", System.String → "varchar(255)", etc.</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Lookup algorithm — GetDataType(string DSname, EntityField fld, ...)</h3>
+                        <pre><code class="language-csharp">// Step 1: Check if field type is a System type (contains "System.")
+if (!IsSystemType(fld.Fieldtype))
+    // Non-System type → use GetFieldtypeWoConversion (direct match)
+else
+    // System type → resolve via class handler:
+    //   a. Get classHandler from DataSourceClass → className
+    //   b. Filter DataTypesMap to that className's entries
+    //   c. For System.String: try (N) placeholder with Fav first
+    //   d. For numeric types: try (P,S) or (N) placeholder with Fav first
+    //   e. Fall back: first match regardless of Fav
+
+// Step 2: Apply placeholder replacements
+//   "(N)"   → $"({fld.NumericPrecision})"     // or default 255
+//   "(P,S)" → $"({fld.NumericPrecision},{fld.NumericScale})"
+
+// Step 3: Cache result by composite key
+//   $"{DSname}|{fld.EntityName}|{fld.FieldName}|..."</code></pre>
+                    </div>
+                </section>
+
+                <!-- Repository -->
+                <section id="repository" class="section">
+                    <h2>DataTypeMappingRepository — Aggregator</h2>
+                    <p>
+                        Routes lookups and aggregates all 100+ database mapping lists into a single unified collection.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Two lookup paths</h3>
+                        <pre><code class="language-csharp">// Path A: by DataSource name string
+// Used when you have an open data source
+var mappings = DataTypeMappingRepository.GetDataTypes("MySqlDb", editor);
+// → Looks up classHandler for "MySqlDb"
+// → Filters DataTypesMap to entries where DataSourceName == className
+
+// Path B: by DataSourceType enum
+// Used when you know the DB type but haven't opened it yet
+var mappings = DataTypeMappingRepository.GetDataTypes(DataSourceType.SqlServer, editor);
+// → Looks up DataDriversClasses for DataSourceType.SqlServer
+// → Gets classHandler string → filters DataTypesMap
+
+// Path C: Get ALL mappings from every database
+var all = DataTypeMappingRepository.GetAllMappings();
+// → Returns 1000+ entries, used by LoadConfigurations() to seed the initial map</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>GetAllMappings() calls 90+ factory methods across 26 files.</strong>
+                        It aggregates mappings organised by category:
+                    </div>
+                </section>
+
+                <!-- TypeHelper -->
+                <section id="type-helper" class="section">
+                    <h2>TypeHelper — Dynamic Type Activation</h2>
+                    <p>
+                        Uses compiled LINQ expression trees to create fast, reflection-free object activators.
+                        Supports up to 7 constructor arguments with generic type safety.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">// Create an instance with no arguments
+object obj = typeof(MyClass).GetInstance();
+
+// With 1-2 typed constructor arguments
+object obj = typeof(DbConnection).GetInstance(connectionString);
+object obj = typeof(MyDataSource).GetInstance(name, logger);
+
+// Get a compiled activator function (fastest path, reusable)
+ObjectActivator&lt;MyDataSource&gt; activator = TypeHelper.GetActivator&lt;MyDataSource&gt;(ctor);
+MyDataSource ds = activator("MyDb", logger, editor, dbType, errorObj);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Database Repositories -->
+                <section id="dbrepos" class="section">
+                    <h2>DatabaseTypeMappingRepositories — 26 Files, 100+ DBs</h2>
+                    <p>
+                        Each partial class file contains <code>Get*DataTypeMappings()</code> methods that return
+                        <code>List&lt;DatatypeMapping&gt;</code> for a specific category of databases.
+                    </p>
+
+                    <div class="note">
+                        <strong>Complete file listing</strong>
+                        <table>
+                            <thead><tr><th>File</th><th>Databases covered</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>SqlServer.cs</code></td><td>SQL Server</td></tr>
+                                <tr><td><code>Oracle.cs</code></td><td>Oracle</td></tr>
+                                <tr><td><code>PostgreMySQL.cs</code></td><td>PostgreSQL, MySQL, MariaDB, TimeScale</td></tr>
+                                <tr><td><code>Common.cs</code></td><td>SQLite, SQL Compact, DuckDB</td></tr>
+                                <tr><td><code>FirebirdLiteDB.cs</code></td><td>Firebird, LiteDB, VistaDB</td></tr>
+                                <tr><td><code>NoSQL.cs</code></td><td>MongoDB, Couchbase, RavenDB</td></tr>
+                                <tr><td><code>Enterprise.cs</code></td><td>DB2, DynamoDB, InfluxDB, Sybase, HBase, CockroachDB, H2Database</td></tr>
+                                <tr><td><code>Modern.cs</code></td><td>Redis, Cassandra, ElasticSearch, Solr, ClickHouse, Memcached, GridGain, Hazelcast, ApacheIgnite, ChronicleMap</td></tr>
+                                <tr><td><code>Cloud.cs</code></td><td>Snowflake, BerkeleyDB, Azure Cosmos DB, Vertica, Teradata, ArangoDB, Google Sheets</td></tr>
+                                <tr><td><code>CloudPlatforms.cs</code></td><td>AWS Redshift, Google BigQuery, Azure SQL, AWS RDS, SAP Hana, Google Spanner</td></tr>
+                                <tr><td><code>Services.cs</code></td><td>Firebase, Supabase</td></tr>
+                                <tr><td><code>Graph.cs</code></td><td>Neo4j, TigerGraph, JanusGraph, OrientDB</td></tr>
+                                <tr><td><code>Vector.cs</code></td><td>PineCone, Qdrant, ShapVector, Weaviate, Milvus, RedisVector, Zilliz, Vespa, ChromaDB</td></tr>
+                                <tr><td><code>Streaming.cs</code></td><td>Kafka, RabbitMQ, ActiveMQ, Pulsar, NATS, ZeroMQ, AWS Kinesis/SQS/SNS, Azure Service Bus, MassTransit</td></tr>
+                                <tr><td><code>BigData.cs</code></td><td>Hadoop, Kudu, Druid, Pinot, Parquet, Avro, ORC, Feather, Apache Flink/Storm/Spark Streaming</td></tr>
+                                <tr><td><code>Analytics.cs</code></td><td>Presto, Trino</td></tr>
+                                <tr><td><code>FileFormats.cs</code></td><td>HDF5, LibSVM, GraphML, DICOM, LAS, RecordIO</td></tr>
+                                <tr><td><code>MachineLearning.cs</code></td><td>TFRecord, ONNX, PyTorch, Scikit-Learn</td></tr>
+                                <tr><td><code>WorkflowIoT.cs</code></td><td>AWS Step Functions, AWS SWF</td></tr>
+                                <tr><td><code>IoT.cs</code></td><td>AWS IoT, AWS IoT Core, AWS IoT Analytics</td></tr>
+                                <tr><td><code>Protocols.cs</code></td><td>WebAPI, REST, GraphQL, OData, ODBC, OLEDB, ADO, Generic Protocol</td></tr>
+                                <tr><td><code>CRM.cs</code></td><td>Salesforce, HubSpot, Dynamics, Zoho (connector type mappings)</td></tr>
+                                <tr><td><code>Accounting.cs</code></td><td>Accounting/data connector systems</td></tr>
+                                <tr><td><code>SocialMedia.cs</code></td><td>Social media API connector mappings</td></tr>
+                                <tr><td><code>PaymentGateways.cs</code></td><td>Payment processor type mappings</td></tr>
+                                <tr><td><code>(README.md)</code></td><td>Documentation of the repository structure</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Mapping Example -->
+                <section id="mapping-example" class="section">
+                    <h2>Example: What a Mapping Looks Like</h2>
+
+                    <div class="code-example">
+                        <h3>SQL Server mappings (DatabaseTypeMappingRepository.SqlServer.cs)</h3>
+                        <pre><code class="language-csharp">public static List&lt;DatatypeMapping&gt; GenerateSqlServerDataTypesMapping()
+{
+    var mappings = new List&lt;DatatypeMapping&gt;
+    {
+        // String mappings
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.String", DataType = "nvarchar(N)", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.String", DataType = "varchar(N)", Fav = false },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.String", DataType = "text", Fav = false },
+
+        // Integer mappings
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Int32", DataType = "int", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Int16", DataType = "smallint", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Int64", DataType = "bigint", Fav = true },
+
+        // Floating point
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Double", DataType = "float", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Decimal", DataType = "decimal(P,S)", Fav = true },
+
+        // Binary / Boolean / DateTime
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Byte[]", DataType = "varbinary(max)", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Boolean", DataType = "bit", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.DateTime", DataType = "datetime2", Fav = true },
+        new DatatypeMapping { DataSourceName = "SqlServerDataSource",
+            NetDataType = "System.Guid", DataType = "uniqueidentifier", Fav = true },
+    };
+    return mappings;
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Key: DataSourceName matches AssemblyClassDefinition.className</strong>
+                        <p>
+                            <code>DataSourceName = "SqlServerDataSource"</code> matches the <code>className</code>
+                            of the <code>AssemblyClassDefinition</code> discovered by <code>AssemblyHandler</code>
+                            when scanning DLLs for <code>IDataSource</code> implementations.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Usage Scenarios -->
+                <section id="usage" class="section">
+                    <h2>End-to-End Usage Scenarios</h2>
+
+                    <div class="code-example">
+                        <h3>Scenario A: .NET type → database column type (for DDL generation)</h3>
+                        <pre><code class="language-csharp">// You have a C# entity field and need to create a SQL column
+var field = new EntityField
+{
+    FieldName = "ProductName",
+    Fieldtype = "System.String",
+    Size1     = 100    // nvarchar(100)
+};
+
+string sqlType = DataTypeFieldMappingHelper.GetDataType(
+    "MySqlServerDb", field, dmeEditor);
+// → "nvarchar(100)"
+
+// Generate CREATE TABLE statement
+string ddl = $"CREATE TABLE Products ({field.FieldName} {sqlType})";
+// → "CREATE TABLE Products (ProductName nvarchar(100))"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario B: Database column type → .NET type (when reading schema)</h3>
+                        <pre><code class="language-csharp">// Reading a database schema, you have the raw column type
+string rawDbType = "decimal(18,2)";  // from INFORMATION_SCHEMA.COLUMNS
+
+// Convert to .NET type
+string netType = DataTypeFieldMappingHelper.GetDataType(
+    "MySqlServerDb", rawDbType, dmeEditor);
+// → "System.Decimal"
+
+// Use Type.GetType() to get the actual .NET Type
+Type type = Type.GetType(netType);
+// → typeof(decimal)</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario C: Getting all type mappings for a data source</h3>
+                        <pre><code class="language-csharp">// Show the type mapping UI for a connection wizard
+var mappings = DataTypeFieldMappingHelper.GetDataTypes(
+    "MySqlServerDb", dmeEditor);
+
+foreach (var m in mappings)
+{
+    Console.WriteLine($"{m.NetDataType,-25} → {m.DataType,-20} {(m.Fav ? "★" : "")}");
+}
+// System.String            → nvarchar(N)          ★
+// System.String            → varchar(N)
+// System.Int32             → int                  ★
+// System.Decimal           → decimal(P,S)         ★
+// System.DateTime          → datetime2            ★
+// ...</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario D: Schema generation across database types</h3>
+                        <pre><code class="language-csharp">// Generate DDL for the same entity on different database backends
+var field = new EntityField
+{
+    FieldName = "Price",
+    Fieldtype = "System.Decimal",
+    NumericPrecision = 18,
+    NumericScale = 2
+};
+
+// SQL Server
+string sql = DataTypeFieldMappingHelper.GetDataType("MySqlServer", field, editor);
+// → "decimal(18,2)"
+
+// PostgreSQL
+string pg = DataTypeFieldMappingHelper.GetDataType("MyPostgre", field, editor);
+// → "numeric(18,2)"
+
+// MySQL
+string mysql = DataTypeFieldMappingHelper.GetDataType("MyMySql", field, editor);
+// → "decimal(18,2)"
+
+// SQLite (no decimal type, uses REAL)
+string sqlite = DataTypeFieldMappingHelper.GetDataType("MySqlite", field, editor);
+// → "real"</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Scenario E: Custom type converter for specialized mapping</h3>
+                        <pre><code class="language-csharp">// Override the standard mapping for a specific use case
+string result = DataTypeFieldMappingHelper.GetCustomDataType(
+    "MyDb", field, editor,
+    customTypeConverter: standardType =>
+    {
+        // Force all strings to use "TEXT" regardless of size
+        if (standardType == "System.String") return "TEXT";
+        // Force all decimals to use "REAL" for SQLite compatibility
+        if (standardType == "System.Decimal") return "REAL";
+        return standardType;
+    });</code></pre>
+                    </div>
+                </section>
+
+                <!-- Extension -->
+                <section id="extension" class="section">
+                    <h2>Adding a New Database Type Mapping</h2>
+
+                    <div class="code-example">
+                        <h3>Step-by-step</h3>
+                        <pre><code class="language-csharp">// 1. Choose or create the right partial file in DatabaseTypeMappingRepositories/
+//    e.g., DatabaseTypeMappingRepository.SqlServer.cs for a new RDBMS
+
+// 2. Add a Get*DataTypeMappings() method
+public static List&lt;DatatypeMapping&gt; GetMyNewDbDataTypeMappings()
+{
+    return new List&lt;DatatypeMapping&gt;
+    {
+        // Use "MyNewDbDataSource" as DataSourceName (matches classHandler)
+        new DatatypeMapping { DataSourceName = "MyNewDbDataSource",
+            NetDataType = "System.String", DataType = "varchar(N)", Fav = true },
+        new DatatypeMapping { DataSourceName = "MyNewDbDataSource",
+            NetDataType = "System.Int32",  DataType = "int",  Fav = true },
+        new DatatypeMapping { DataSourceName = "MyNewDbDataSource",
+            NetDataType = "System.Decimal", DataType = "decimal(P,S)", Fav = true },
+        // ... add all needed types
+    };
+}
+
+// 3. Register it in GetAllMappings() (DataTypeMappingRepository.cs)
+ls.AddRange(DatabaseTypeMappingRepository.GetMyNewDbDataTypeMappings());
+
+// 4. Add a facade method in DataTypeFieldMappingHelper.cs
+public static List&lt;DatatypeMapping&gt; GetMyNewDbDataTypeMappings()
+{
+    return DatabaseTypeMappingRepository.GetMyNewDbDataTypeMappings();
+}
+
+// The new mappings will be discoverable immediately after LoadConfigurations()</code></pre>
+                    </div>
+                </section>
+
+                <!-- Quick Reference -->
+                <section id="quick-ref" class="section">
+                    <h2>Quick Reference Card</h2>
+                    <div class="note">
+                        <table>
+                            <thead><tr><th>Use case</th><th>API call</th></tr></thead>
+                            <tbody>
+                                <tr><td>Seed all type mappings (startup)</td><td><code>EnvironmentService.AddAllDataSourceMappings(editor)</code></td></tr>
+                                <tr><td>Get all 1000+ mappings</td><td><code>DataTypeFieldMappingHelper.GetMappings()</code></td></tr>
+                                <tr><td>.NET type → DB column type</td><td><code>DataTypeFieldMappingHelper.GetDataType(dsName, field, editor)</code></td></tr>
+                                <tr><td>DB raw type → .NET type</td><td><code>DataTypeFieldMappingHelper.GetDataType(dsName, rawDbType, editor)</code></td></tr>
+                                <tr><td>By class name directly</td><td><code>DataTypeFieldMappingHelper.GetDataTypeFromDataSourceClassName(className, field, editor)</code></td></tr>
+                                <tr><td>All mappings for a data source</td><td><code>DataTypeFieldMappingHelper.GetDataTypes(dsName, editor)</code></td></tr>
+                                <tr><td>All mappings for a DB type</td><td><code>DataTypeFieldMappingHelper.GetDataTypes(DataSourceType.SqlServer, editor)</code></td></tr>
+                                <tr><td>Get .NET type names</td><td><code>DataTypeBasicOperations.GetNetDataTypes()</code></td></tr>
+                                <tr><td>Validate field mapping</td><td><code>DataTypeBasicOperations.IsValidFieldMapping(dsName, field, editor)</code></td></tr>
+                                <tr><td>Custom type converter</td><td><code>DataTypeBasicOperations.GetCustomDataType(dsName, field, editor, converter)</code></td></tr>
+                                <tr><td>Clear lookup caches</td><td><code>DataTypeMappingLookup.ClearCache()</code></td></tr>
+                                <tr><td>Get cache stats</td><td><code>DataTypeMappingLookup.GetCacheStatistics()</code></td></tr>
+                                <tr><td>Dynamic type activation</td><td><code>typeof(MyClass).GetInstance(arg1, arg2)</code></td></tr>
+                                <tr><td>Per-DB: SQL Server mappings</td><td><code>DataTypeFieldMappingHelper.GetSqlServerDataTypesMapping()</code></td></tr>
+                                <tr><td>Per-DB: MongoDB mappings</td><td><code>DataTypeFieldMappingHelper.GetMongoDBDataTypeMappings()</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div class="nav-links">
+                    <a href="connection-helpers.html"><i class="bi bi-arrow-left"></i> Previous: Connection Helpers</a>
+                    <a href="rdbms-helpers-reference.html">Next: RDBMS Helpers <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="data-types-helpers.html">Data Types Helpers</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

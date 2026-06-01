@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal DataSource Helpers - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <a href="helpers-runtime-reference.html">Helpers Reference</a>
+                    <span>&gt;</span>
+                    <span>Universal DataSource Helpers</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Universal DataSource Helpers</h1>
+                    <p class="page-subtitle">Datasource-agnostic abstraction layer — single interface for 40+ datasource types with capability matrix, POCO-to-entity conversion, and per-datasource helper implementations</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li>Core: <code>DataManagementEngineStandard/Helpers/UniversalDataSourceHelpers/Core/</code></li>
+                        <li>Interface: <code>DataManagementModelsStandard/Editor/IDataSourceHelper.cs</code></li>
+                        <li>Factory: <code>Core/DataSourceHelperFactory.cs</code></li>
+                        <li>Capability matrix: <code>Core/DataSourceCapabilityMatrix.cs</code> (not in repo — via existing Help path)</li>
+                        <li>Datasource helpers: <code>RdbmsHelpers/</code>, <code>MongoDBHelpers/</code>, <code>RedisHelpers/</code>, <code>CassandraHelpers/</code>, <code>RestApiHelpers/</code>, <code>SearchHelpers/</code>, <code>GraphHelpers/</code>, <code>TimeSeriesHelpers/</code>, <code>VectorHelpers/</code>, <code>StreamingHelpers/</code></li>
+                        <li>Conversion: <code>Mapping/PocoToEntityConverter.cs</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#architecture">Architecture Overview</a></li>
+                        <li><a href="#interface">IDataSourceHelper — The Contract</a></li>
+                        <li><a href="#factory">DataSourceHelperFactory — Resolution</a></li>
+                        <li><a href="#capabilities">DataSourceCapabilities &amp; Capability Matrix</a></li>
+                        <li><a href="#poco">PocoToEntityConverter — POCO → EntityStructure</a></li>
+                        <li><a href="#rdbms">RdbmsHelper</a></li>
+                        <li><a href="#mongodb">MongoDBHelper</a></li>
+                        <li><a href="#redis">RedisHelper</a></li>
+                        <li><a href="#cassandra">CassandraHelper</a></li>
+                        <li><a href="#rest">RestApiHelper</a></li>
+                        <li><a href="#search">SearchHelpers</a></li>
+                        <li><a href="#graph">GraphHelpers</a></li>
+                        <li><a href="#timeseries">TimeSeriesHelpers</a></li>
+                        <li><a href="#vector">VectorHelpers</a></li>
+                        <li><a href="#streaming">StreamingHelpers</a></li>
+                        <li><a href="#usage">Usage Scenarios</a></li>
+                        <li><a href="#extension">Implementing a New Datasource Helper</a></li>
+                        <li><a href="#quick-ref">Quick Reference Card</a></li>
+                    </ul>
+                </div>
+
+                <!-- Architecture -->
+                <section id="architecture" class="section">
+                    <h2>Architecture Overview</h2>
+                    <p>
+                        The Universal DataSource Helpers framework provides a <strong>single abstraction</strong> over 40+ datasource types.
+                        Instead of writing <code>if (type == SqlServer) ... else if (type == MongoDB) ...</code>, you get one
+                        <code>IDataSourceHelper</code> instance from the <code>DataSourceHelperFactory</code> and call the same
+                        methods regardless of the underlying database.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Before vs After</h3>
+                        <pre><code class="language-csharp">// BEFORE (fragmented, datasource-specific)
+if (type == DataSourceType.SqlServer)
+    sql = RDBMSHelper.GenerateInsertQuery(type, table, data);
+else if (type == DataSourceType.MongoDB)
+    cmd = MongoDBHelper.GenerateInsertCommand(table, data);
+else if (type == DataSourceType.Redis)
+    key = RedisHelper.BuildHashSet(table, data);
+
+// AFTER (universal, one interface)
+IDataSourceHelper helper = DataSourceHelperFactory.GetHelper(type, dmeEditor);
+var (sql, params, success, error) = helper.GenerateInsertSql(table, data);
+// Works for all 40+ datasources</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Layered design</h3>
+                        <pre><code class="language-none">                    IDataSourceHelper (contract — 12+ methods)
+                              |
+         ┌────────────────────┼─────────────────────┐
+         │                    │                     │
+    RdbmsHelper       MongoDBHelper        RedisHelper
+    (18 SQL dialects) (BSON/aggregation)   (Hash/Lua/Sorted Set)
+         │                    │                     │
+    delegates to         delegates to          delegates to
+    legacy RDBMSHelper   native MongoDB       native Redis
+    partial class        operations            operations
+         │
+    ─────────────────────────────────────────────────────────────────
+    DataSourceHelperFactory.GetHelper(type, editor)
+    → Returns correct IDataSourceHelper for ANY DataSourceType
+         │
+    DataSourceCapabilityMatrix.Supports(type, "SupportsTransactions")
+    → Check before generating SQL that a datasource can't handle</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Full directory structure</strong>
+                        <table>
+                            <thead><tr><th>Directory</th><th>Files</th><th>Covers</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>Core/</code></td><td>4 files</td><td>Interface (IDataSourceHelper), Factory, Default/General helpers, Capabilities</td></tr>
+                                <tr><td><code>RdbmsHelpers/</code></td><td>4 files</td><td>18 SQL dialects: SQL Server, MySQL, PostgreSQL, Oracle, SQLite, DB2, Firebird, Snowflake, DuckDB, Hana, Vertica, and more</td></tr>
+                                <tr><td><code>MongoDBHelpers/</code></td><td>2 files</td><td>MongoDB: aggregation pipelines, BSON types, document validation</td></tr>
+                                <tr><td><code>RedisHelpers/</code></td><td>2 files</td><td>Redis: hash-based table simulation, Lua scripts, TTL/expiration</td></tr>
+                                <tr><td><code>CassandraHelpers/</code></td><td>2 files</td><td>Cassandra: CQL generation, composite keys, token pagination</td></tr>
+                                <tr><td><code>RestApiHelpers/</code></td><td>2 files</td><td>REST APIs: HTTP methods, query params, JSON body generation</td></tr>
+                                <tr><td><code>SearchHelpers/</code></td><td>2 files</td><td>Elasticsearch, Solr: full-text search operations</td></tr>
+                                <tr><td><code>GraphHelpers/</code></td><td>2 files</td><td>Neo4j, ArangoDB: graph traversal, Cypher queries</td></tr>
+                                <tr><td><code>TimeSeriesHelpers/</code></td><td>2 files</td><td>InfluxDB, ClickHouse, TimescaleDB: time-series operations</td></tr>
+                                <tr><td><code>VectorHelpers/</code></td><td>2 files</td><td>ChromaDB, Pinecone, Qdrant, Weaviate, Milvus: vector search</td></tr>
+                                <tr><td><code>StreamingHelpers/</code></td><td>2 files</td><td>Kafka, RabbitMQ, Pulsar: streaming/messaging operations</td></tr>
+                                <tr><td><code>Mapping/</code></td><td>—</td><td>PocoToEntityConverter: C# POCO → EntityStructure</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Interface -->
+                <section id="interface" class="section">
+                    <h2>IDataSourceHelper — The Contract</h2>
+                    <p>
+                        <strong>Source:</strong> <code>DataManagementModelsStandard/Editor/IDataSourceHelper.cs</code>
+                    </p>
+                    <p>Every datasource helper implements this interface. The 12+ methods cover the full lifecycle of schema operations, DDL, DML, and type mapping.</p>
+
+                    <div class="code-example">
+                        <h3>Complete interface</h3>
+                        <pre><code class="language-csharp">public interface IDataSourceHelper
+{
+    DataSourceType SupportedType { get; set; }
+    string Name { get; }
+    DataSourceCapabilities Capabilities { get; }
+
+    // === Schema Operations ===
+    (string Query, bool Success) GetSchemaQuery(string userName);
+    (string Query, bool Success) GetTableExistsQuery(string tableName);
+    (string Query, bool Success) GetColumnInfoQuery(string tableName);
+
+    // === DDL Operations ===
+    (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(
+        EntityStructure entity, string schemaName = null, DataSourceType? dataSourceType = null);
+    (string Sql, bool Success, string ErrorMessage) GenerateDropTableSql(
+        string tableName, string schemaName = null);
+    (string Sql, bool Success, string ErrorMessage) GenerateTruncateTableSql(
+        string tableName, string schemaName = null);
+    (string Sql, bool Success, string ErrorMessage) GenerateCreateIndexSql(
+        string tableName, string[] columns, string indexName = null, bool unique = false);
+
+    // === DML Operations ===
+    (string Sql, Dictionary&lt;string,object&gt; Params, bool Success, string ErrorMessage)
+        GenerateInsertSql(string tableName, Dictionary&lt;string,object&gt; data);
+    (string Sql, Dictionary&lt;string,object&gt; Params, bool Success, string ErrorMessage)
+        GenerateUpdateSql(string tableName, Dictionary data, Dictionary conditions);
+    (string Sql, Dictionary&lt;string,object&gt; Params, bool Success, string ErrorMessage)
+        GenerateDeleteSql(string tableName, Dictionary conditions);
+    (string Sql, Dictionary&lt;string,object&gt; Params, bool Success, string ErrorMessage)
+        GenerateSelectSql(string tableName, List&lt;string&gt; columns = null,
+                          Dictionary&lt;string,object&gt; conditions = null);
+
+    // === Utilities ===
+    string QuoteIdentifier(string identifier);
+    string MapClrTypeToDatasourceType(Type clrType);
+    Type MapDatasourceTypeToClrType(string datasourceType);
+    (bool Valid, List&lt;string&gt; Errors) ValidateEntity(EntityStructure entity);
+}</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Design principles</strong>
+                        <ul>
+                            <li>Every method returns tuples with <code>Success</code> and <code>ErrorMessage</code> — no exceptions thrown</li>
+                            <li><code>Params</code> dictionaries for DML enable proper parameterized queries</li>
+                            <li>Optional <code>dataSourceType</code> on <code>GenerateCreateTableSql</code> enables cross-dialect DDL from one helper</li>
+                            <li><code>QuoteIdentifier</code> handles each datasource's quoting style (<code>[brackets]</code>, <code>"quotes"</code>, or <code>`backticks`</code>)</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Factory -->
+                <section id="factory" class="section">
+                    <h2>DataSourceHelperFactory — Resolution</h2>
+                    <p>
+                        <strong>Source:</strong> <code>Core/DataSourceHelperFactory.cs</code>
+                    </p>
+                    <p>Maps any <code>DataSourceType</code> to the correct <code>IDataSourceHelper</code> implementation. 18 RDBMS types share one <code>RdbmsHelper</code> (with <code>SupportedType</code> set per dialect), while each NoSQL/API type has its own dedicated helper.</p>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">var factory = new DataSourceHelperFactory(dmeEditor);
+
+// Get the helper for any datasource type
+IDataSourceHelper helper = factory.GetHelper(DataSourceType.MongoDB);
+
+// All 40+ types work — same API
+IDataSourceHelper sqlHelper = factory.GetHelper(DataSourceType.SqlServer);
+IDataSourceHelper redisHelper = factory.GetHelper(DataSourceType.Redis);
+IDataSourceHelper cassHelper = factory.GetHelper(DataSourceType.Cassandra);
+IDataSourceHelper restHelper = factory.GetHelper(DataSourceType.WebAPI);
+
+// Each produces datasource-specific output from the same method call:
+var (sql, params, ok, err) = redisHelper.GenerateInsertSql("users", data);
+// → Redis HSET command, not SQL</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Factory routing</strong>
+                        <table>
+                            <thead><tr><th>DataSourceType range</th><th>Helper class</th></tr></thead>
+                            <tbody>
+                                <tr><td>18 RDBMS types (SqlServer, MySql, Postgre, Oracle, SQLite, DB2, Firebird, Hana, Snowflake, DuckDB, Vertica, CockroachDB, MariaDB, Spanner, AWSSQLServer, AzureSQL, ...)</td><td><code>RdbmsHelper</code></td></tr>
+                                <tr><td>MongoDB, CouchDB</td><td><code>MongoDBHelper</code></td></tr>
+                                <tr><td>Redis, RedisCache, RedisVector</td><td><code>RedisHelper</code></td></tr>
+                                <tr><td>Cassandra, DataStax, HBase, ScyllaDB</td><td><code>CassandraHelper</code></td></tr>
+                                <tr><td>WebAPI, REST, GraphQL, OData, gRPC, SOAP</td><td><code>RestApiHelper</code></td></tr>
+                                <tr><td>Elasticsearch, Solr</td><td><code>SearchHelper</code></td></tr>
+                                <tr><td>Neo4j, ArangoDB, OrientDB</td><td><code>GraphHelper</code></td></tr>
+                                <tr><td>InfluxDB, ClickHouse, TimeScale, Prometheus</td><td><code>TimeSeriesHelper</code></td></tr>
+                                <tr><td>Chroma, Pinecone, Qdrant, Weaviate, Milvus, Zilliz, Vespa</td><td><code>VectorHelper</code></td></tr>
+                                <tr><td>Kafka, RabbitMQ, Pulsar, NATS, AWS Kinesis/SQS/SNS</td><td><code>StreamingHelper</code></td></tr>
+                                <tr><td>CSV, JSON, XML, Excel, Parquet, Avro</td><td><code>FileDataSourceHelper</code> (Phase 2)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Capabilities -->
+                <section id="capabilities" class="section">
+                    <h2>DataSourceCapabilities &amp; Capability Matrix</h2>
+                    <p>
+                        Before generating SQL for a datasource, check if it even supports the operation.
+                        The capability matrix maps 40+ datasources × 20 features for graceful degradation.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>20 capability flags per datasource</h3>
+                        <pre><code class="language-csharp">public class DataSourceCapabilities
+{
+    public bool SupportsTransactions { get; set; }
+    public bool SupportsJoins { get; set; }
+    public bool SupportsAggregations { get; set; }
+    public bool SupportsPaging { get; set; }
+    public bool SupportsOrderBy { get; set; }
+    public bool SupportsGroupBy { get; set; }
+    public bool SupportsWindowFunctions { get; set; }
+    public bool SupportsFullTextSearch { get; set; }
+    public bool SupportsIndexes { get; set; }
+    public bool SupportsForeignKeys { get; set; }
+    public bool SupportsStoredProcedures { get; set; }
+    public bool SupportsViews { get; set; }
+    public bool SupportsTriggers { get; set; }
+    public bool SupportsSequences { get; set; }
+    public bool SupportsJson { get; set; }
+    public bool SupportsXml { get; set; }
+    public bool SupportsTtl { get; set; }
+    public bool SupportsBulkOperations { get; set; }
+    public bool SupportsPrimaryKeys { get; set; }
+    public bool IsSchemaEnforced { get; set; }
+
+    // Dynamic lookup
+    public bool IsCapable(string capabilityName);
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage — graceful degradation</h3>
+                        <pre><code class="language-csharp">// Get capabilities from helper
+var caps = helper.Capabilities;
+
+// Step 1: Check before doing something unsupported
+if (!caps.SupportsJoins)
+{
+    // Fall back to multiple queries + client-side join
+    LogWarning("JOIN not supported on this datasource");
+}
+
+// Step 2: Check from the static matrix directly
+bool hasTransactions = DataSourceCapabilityMatrix.Supports(
+    DataSourceType.Redis, "SupportsTransactions");
+// → true (Redis Lua scripts provide atomicity via MULTI/EXEC)
+
+bool hasJoins = DataSourceCapabilityMatrix.Supports(
+    DataSourceType.Cassandra, "SupportsJoins");
+// → false (Cassandra requires denormalization)
+
+// Step 3: Get all datasources that support a feature
+var ftDatasources = DataSourceCapabilityMatrix
+    .GetDatasourcesSupportingCapability("SupportsFullTextSearch");
+// → [Elasticsearch, MongoDB, ClickHouse, PostgreSQL, SQL Server, ...]
+
+// Step 4: Get a summary of all capabilities
+var summary = DataSourceCapabilityMatrix.GetCapabilitySummary();
+// → Dictionary mapping datasource → supported capabilities</code></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>Capability matrix highlights</strong>
+                        <table>
+                            <thead><tr><th>Capability</th><th>SQL Server</th><th>MongoDB</th><th>Redis</th><th>Cassandra</th><th>REST API</th></tr></thead>
+                            <tbody>
+                                <tr><td>Transactions</td><td>Yes</td><td>Yes (4.0+)</td><td>Yes (Lua)</td><td>Lightweight</td><td>No</td></tr>
+                                <tr><td>Joins</td><td>Yes</td><td>$lookup</td><td>No</td><td>No</td><td>No</td></tr>
+                                <tr><td>Aggregations</td><td>Yes</td><td>Yes</td><td>No</td><td>Yes</td><td>No</td></tr>
+                                <tr><td>Paging</td><td>OFFSET/FETCH</td><td>Skip/Limit</td><td>SCAN</td><td>Token-based</td><td>Query params</td></tr>
+                                <tr><td>Indexes</td><td>Yes</td><td>Yes</td><td>No</td><td>Yes</td><td>No</td></tr>
+                                <tr><td>FullTextSearch</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+                                <tr><td>SchemaEnforced</td><td>Yes</td><td>No</td><td>No</td><td>Partial</td><td>No</td></tr>
+                                <tr><td>Json</td><td>Yes</td><td>Native</td><td>No</td><td>Yes</td><td>Native</td></tr>
+                                <tr><td>Ttl</td><td>No</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- POCO Converter -->
+                <section id="poco" class="section">
+                    <h2>PocoToEntityConverter — POCO → EntityStructure</h2>
+                    <p>
+                        Automatically generates <code>EntityStructure</code> objects from C# POCO classes using reflection.
+                        Detects keys, extracts DataAnnotations, and prevents circular references.
+                    </p>
+
+                    <div class="code-example">
+                        <h3>Three key detection strategies</h3>
+                        <pre><code class="language-csharp">public enum KeyDetectionStrategy
+{
+    AttributeOnly,             // Only [Key] attribute
+    ConventionOnly,            // "Id" / "{ClassName}Id" naming convention
+    AttributeThenConvention    // Try attribute first, fall back to convention
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Usage</h3>
+                        <pre><code class="language-csharp">public class Product
+{
+    [Key]
+    public int ProductId { get; set; }
+
+    [Required]
+    [StringLength(100)]
+    public string Name { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal Price { get; set; }
+
+    public string Description { get; set; }
+}
+
+// One call to convert
+var entity = PocoToEntityConverter.ConvertPocoToEntity&lt;Product&gt;(
+    strategy: PocoToEntityConverter.KeyDetectionStrategy.AttributeThenConvention,
+    entityName: "Products");
+
+// Result: EntityStructure with:
+//  EntityName = "Products"
+//  Fields = [
+//    { FieldName="ProductId", IsKey=true, Fieldtype="System.Int32" },
+//    { FieldName="Name", IsKey=false, Fieldtype="System.String", Size1=100, IsRequired=true },
+//    { FieldName="Price", Fieldtype="System.Decimal", NumericPrecision=18, NumericScale=2 },
+//    { FieldName="Description", Fieldtype="System.String" }
+//  ]
+
+// Then feed the entity to any helper for DDL:
+IDataSourceHelper helper = factory.GetHelper(DataSourceType.Postgre);
+var (ddl, ok, err) = helper.GenerateCreateTableSql(entity);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>Circular reference detection</h3>
+                        <pre><code class="language-csharp">// Detects and reports circular dependencies (e.g. Parent → Child → Parent)
+var diagnostics = PocoToEntityConverter.GetCircularReferenceDiagnostics&lt;MyClass&gt;();
+if (diagnostics.HasCircularReferences)
+    foreach (var cycle in diagnostics.CircularPaths)
+        Console.WriteLine($"Circular: {cycle}");</code></pre>
+                    </div>
+                </section>
+
+                <!-- Per-Datasource Helpers -->
+                <section id="rdbms" class="section">
+                    <h2>RdbmsHelper — 18 SQL Dialects</h2>
+                    <p><strong>Source:</strong> <code>RdbmsHelpers/RdbmsHelper.cs</code> + <code>.Constraints.cs</code> + <code>.Transactions.cs</code></p>
+                    <p>Wraps the legacy static <code>RDBMSHelper</code> behind the <code>IDataSourceHelper</code> interface. Supports 18 SQL dialects via the <code>SupportedType</code> property.</p>
+                    <pre><code class="language-csharp">var helper = new RdbmsHelper(dmeEditor);
+helper.SupportedType = DataSourceType.Postgre;
+
+var (ddl, ok, err) = helper.GenerateCreateTableSql(entity);
+// → PostgreSQL DDL with SERIAL, TEXT, NUMERIC types
+
+var (insert, params, ok, err) = helper.GenerateInsertSql("users", data);
+// → "INSERT INTO users (...) VALUES (...) RETURNING id"</code></pre>
+                </section>
+
+                <section id="mongodb" class="section">
+                    <h2>MongoDBHelper — Document Database</h2>
+                    <p><strong>Source:</strong> <code>MongoDBHelpers/MongoDBHelper.cs</code></p>
+                    <p>Generates MongoDB aggregation pipelines and BSON-type documents instead of SQL.</p>
+                    <pre><code class="language-csharp">var helper = factory.GetHelper(DataSourceType.MongoDB);
+
+var (pipeline, params, ok, err) = helper.GenerateInsertSql("users", data);
+// → Generates MongoDB insert document with ObjectId, BSON types
+
+var (query, params, ok, err) = helper.GenerateSelectSql("users",
+    columns: new List&lt;string&gt; { "name", "email" },
+    conditions: new Dictionary&lt;string,object&gt; { ["age"] = 30 });
+// → db.users.find({ age: 30 }, { name: 1, email: 1 })</code></pre>
+                </section>
+
+                <section id="redis" class="section">
+                    <h2>RedisHelper — Key-Value Store</h2>
+                    <p><strong>Source:</strong> <code>RedisHelpers/RedisHelper.cs</code></p>
+                    <p>Simulates table operations using Redis Hashes, Lua scripts for atomicity, and SCAN-based pagination.</p>
+                    <pre><code class="language-csharp">var helper = factory.GetHelper(DataSourceType.Redis);
+
+var (cmd, params, ok, err) = helper.GenerateInsertSql("user:1001", data);
+// → HSET user:1001 name "John" email "john@example.com"
+
+var (cmd, params, ok, err) = helper.GenerateSelectSql("user:*", columns, conditions);
+// → SCAN-based lookup with pattern matching</code></pre>
+                </section>
+
+                <section id="cassandra" class="section">
+                    <h2>CassandraHelper — Wide-Column Store</h2>
+                    <p><strong>Source:</strong> <code>CassandraHelpers/CassandraHelper.cs</code></p>
+                    <p>Generates CQL (Cassandra Query Language) with composite primary keys and token-based pagination.</p>
+                    <pre><code class="language-csharp">var helper = factory.GetHelper(DataSourceType.Cassandra);
+
+var (cql, params, ok, err) = helper.GenerateCreateTableSql(entity);
+// → CREATE TABLE keyspace.products (
+//     id UUID, name TEXT, price DECIMAL,
+//     PRIMARY KEY ((partition_key), clustering_column))
+
+var (cql, params, ok, err) = helper.GenerateSelectSql("products",
+    conditions: new Dictionary&lt;string,object&gt; { ["id"] = someUuid });
+// → SELECT * FROM products WHERE id = ?</code></pre>
+                </section>
+
+                <section id="rest" class="section">
+                    <h2>RestApiHelper — HTTP APIs</h2>
+                    <p><strong>Source:</strong> <code>RestApiHelpers/RestApiHelper.cs</code></p>
+                    <p>Generates HTTP method operations (GET/POST/PUT/PATCH/DELETE) with query parameter building and JSON body generation.</p>
+                    <pre><code class="language-csharp">var helper = factory.GetHelper(DataSourceType.WebAPI);
+
+var (url, body, ok, err) = helper.GenerateInsertSql("https://api.example.com/products", data);
+// → POST https://api.example.com/products
+//    Body: {"name": "Widget", "price": 19.99}
+
+var (url, params, ok, err) = helper.GenerateSelectSql(
+    "https://api.example.com/products",
+    conditions: new Dictionary&lt;string,object&gt; { ["category"] = "tools" });
+// → GET https://api.example.com/products?category=tools</code></pre>
+                </section>
+
+                <!-- Other helpers summary -->
+                <section id="search" class="section">
+                    <h2>SearchHelpers — Elasticsearch, Solr</h2>
+                    <p>Generates full-text search queries with analyzers, tokenizers, and relevance scoring.</p>
+                </section>
+                <section id="graph" class="section">
+                    <h2>GraphHelpers — Neo4j, ArangoDB, OrientDB</h2>
+                    <p>Generates Cypher queries for graph traversal, node/relationship CRUD, and path finding.</p>
+                </section>
+                <section id="timeseries" class="section">
+                    <h2>TimeSeriesHelpers — InfluxDB, ClickHouse, TimescaleDB, Prometheus</h2>
+                    <p>Time-bucketed aggregation queries, downsampling, and retention policies.</p>
+                </section>
+                <section id="vector" class="section">
+                    <h2>VectorHelpers — ChromaDB, Pinecone, Qdrant, Weaviate, Milvus</h2>
+                    <p>Vector embedding operations: upsert, similarity search (cosine/euclidean/dot), filtering.</p>
+                </section>
+                <section id="streaming" class="section">
+                    <h2>StreamingHelpers — Kafka, RabbitMQ, Pulsar, NATS</h2>
+                    <p>Topic/queue management, message production/consumption, partition offset tracking.</p>
+                </section>
+
+                <!-- Usage Scenarios -->
+                <section id="usage" class="section">
+                    <h2>End-to-End Usage Scenarios</h2>
+
+                    <div class="code-example">
+                        <h3>A: POCO → DDL for any database</h3>
+                        <pre><code class="language-csharp">// 1. Define your model
+public class Customer { [Key] public int Id { get; set; }
+    [StringLength(200)] public string Name { get; set; }
+    public DateTime CreatedAt { get; set; } }
+
+// 2. Convert to EntityStructure
+var entity = PocoToEntityConverter.ConvertPocoToEntity&lt;Customer&gt;(
+    KeyDetectionStrategy.AttributeThenConvention, "Customers");
+
+// 3. Pick a target database and generate DDL
+var factory = new DataSourceHelperFactory(dmeEditor);
+var helper = factory.GetHelper(DataSourceType.Postgre);
+var (ddl, ok, err) = helper.GenerateCreateTableSql(entity);
+
+// 4. Execute
+ds.ExecuteSql(ddl);</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>B: Cross-datasource capability-aware query</h3>
+                        <pre><code class="language-csharp">string BuildSafeQuery(DataSourceType type, IDMEEditor editor)
+{
+    var helper = new DataSourceHelperFactory(editor).GetHelper(type);
+    var caps = helper.Capabilities;
+    string query = "SELECT * FROM products";
+
+    if (caps.SupportsFullTextSearch)
+        query += " WHERE MATCH(description) AGAINST('search term')";
+    else if (caps.IsSchemaEnforced)
+        query += " WHERE description LIKE '%search term%'";
+    else
+        return "Full-text search not available for " + type;
+
+    if (caps.SupportsPaging)
+        query += " LIMIT 10";
+
+    return query;
+}</code></pre>
+                    </div>
+
+                    <div class="code-example">
+                        <h3>C: Entity validation across databases</h3>
+                        <pre><code class="language-csharp">var entity = /* from user input */;
+var helper = factory.GetHelper(targetDbType);
+
+var (valid, errors) = helper.ValidateEntity(entity);
+if (!valid)
+{
+    foreach (var err in errors)
+        Console.WriteLine($"Validation: {err}");
+    return;
+}
+
+// Safe to proceed
+var (ddl, ok, err) = helper.GenerateCreateTableSql(entity);</code></pre>
+                    </div>
+                </section>
+
+                <!-- Extension -->
+                <section id="extension" class="section">
+                    <h2>Implementing a New Datasource Helper</h2>
+                    <div class="code-example">
+                        <h3>Step-by-step</h3>
+                        <pre><code class="language-csharp">// 1. Implement IDataSourceHelper
+public class Neo4jHelper : IDataSourceHelper
+{
+    private readonly IDMEEditor _editor;
+    public DataSourceType SupportedType { get; set; } = DataSourceType.Neo4j;
+    public string Name => "Neo4j";
+    public DataSourceCapabilities Capabilities =>
+        DataSourceCapabilityMatrix.GetCapabilities(SupportedType);
+
+    public Neo4jHelper(IDMEEditor editor) { _editor = editor; }
+
+    // Implement all 12 interface methods with Cypher syntax:
+    public (string, Dictionary&lt;string,object&gt;, bool, string)
+        GenerateInsertSql(string table, Dictionary&lt;string,object&gt; data)
+    {
+        // Build: CREATE (n:Label {prop1: $p1, prop2: $p2})
+        var labels = string.Join(", ", data.Keys.Select(k => $"{k}: ${k}"));
+        var sql = $"CREATE (n:{table} {{{labels}}})";
+        return (sql, data, true, null);
+    }
+    // ... implement remaining methods
+}
+
+// 2. Register in DataSourceHelperFactory
+_helpers[DataSourceType.Neo4j] = (e) => new Neo4jHelper(e);
+
+// 3. Configure capabilities in DataSourceCapabilityMatrix
+// Neo4j: SupportsJoins=true (via MATCH), SupportsAggregations=true, etc.</code></pre>
+                    </div>
+                </section>
+
+                <!-- Quick Reference -->
+                <section id="quick-ref" class="section">
+                    <h2>Quick Reference Card</h2>
+                    <div class="note">
+                        <table>
+                            <thead><tr><th>Use case</th><th>API call</th></tr></thead>
+                            <tbody>
+                                <tr><td>Get helper for a datasource</td><td><code>factory.GetHelper(DataSourceType.MongoDB)</code></td></tr>
+                                <tr><td>Check feature support</td><td><code>DataSourceCapabilityMatrix.Supports(type, "SupportsJoins")</code></td></tr>
+                                <tr><td>Get all capabilities</td><td><code>helper.Capabilities</code></td></tr>
+                                <tr><td>Get schema list</td><td><code>helper.GetSchemaQuery(userName)</code></td></tr>
+                                <tr><td>Check table exists</td><td><code>helper.GetTableExistsQuery(tableName)</code></td></tr>
+                                <tr><td>Get column info</td><td><code>helper.GetColumnInfoQuery(tableName)</code></td></tr>
+                                <tr><td>CREATE TABLE/collection</td><td><code>helper.GenerateCreateTableSql(entity)</code></td></tr>
+                                <tr><td>DROP TABLE/collection</td><td><code>helper.GenerateDropTableSql(tableName)</code></td></tr>
+                                <tr><td>TRUNCATE</td><td><code>helper.GenerateTruncateTableSql(tableName)</code></td></tr>
+                                <tr><td>Create index</td><td><code>helper.GenerateCreateIndexSql(table, cols)</code></td></tr>
+                                <tr><td>INSERT</td><td><code>helper.GenerateInsertSql(table, data)</code></td></tr>
+                                <tr><td>UPDATE</td><td><code>helper.GenerateUpdateSql(table, data, conditions)</code></td></tr>
+                                <tr><td>DELETE</td><td><code>helper.GenerateDeleteSql(table, conditions)</code></td></tr>
+                                <tr><td>SELECT</td><td><code>helper.GenerateSelectSql(table, columns, conditions)</code></td></tr>
+                                <tr><td>Quote identifier</td><td><code>helper.QuoteIdentifier("my_table")</code></td></tr>
+                                <tr><td>C# type → DB type</td><td><code>helper.MapClrTypeToDatasourceType(typeof(int))</code></td></tr>
+                                <tr><td>DB type → C# type</td><td><code>helper.MapDatasourceTypeToClrType("INT")</code></td></tr>
+                                <tr><td>Validate entity</td><td><code>helper.ValidateEntity(entity)</code></td></tr>
+                                <tr><td>POCO → EntityStructure</td><td><code>PocoToEntityConverter.ConvertPocoToEntity&lt;T&gt;(...)</code></td></tr>
+                                <tr><td>Datasources with a feature</td><td><code>DataSourceCapabilityMatrix.GetDatasourcesSupportingCapability("FullTextSearch")</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div class="nav-links">
+                    <a href="rdbms-helpers.html"><i class="bi bi-arrow-left"></i> Previous: RDBMS Helpers</a>
+                    <a href="connection-helpers.html">Next: Connection Helpers <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                            <a href="universal-datasource-helpers.html">Universal DataSource Helpers</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>
