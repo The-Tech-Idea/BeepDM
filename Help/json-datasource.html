@@ -49,6 +49,7 @@
                         <li><a href="#json-graph">Graph Hydration &amp; Relations</a></li>
                         <li><a href="#json-cache">Caching (JsonCacheManager)</a></li>
                         <li><a href="#json-examples">End-to-End Examples</a></li>
+                        <li><a href="#full-api">Full API — All Helpers &amp; Source Map</a></li>
                     </ul>
                 </div>
 
@@ -683,6 +684,126 @@ if (changed)
                     <a href="filemanager-reader-host.html"><i class="bi bi-arrow-left"></i> FileManager Reference</a>
                     <a href="advanced-tools-utilities.html">Advanced Tools &amp; Utilities <i class="bi bi-arrow-right"></i></a>
                 </div>
+
+                <section id="full-api" class="section">
+                    <h2><i class="bi bi-book"></i> Full API — All Helpers &amp; Source Map</h2>
+
+                    <h3>JsonExtensions</h3>
+                    <pre><code class="language-csharp">public static class JsonExtensions
+{
+    // Map JSON property to EntityField with DbFieldCategory detection
+    public static EntityField MapEntityField(JProperty prop, string entityName, int ordinal, bool deep = false);
+
+    // Digest JSON root: single entity object, flat or nested array, or heterogeneous root
+    public static EntityStructure DigestJsonToEntityStructure(string json, string entityName, bool useRootAsEntity = false);
+
+    // Deduce the base entity name from the JSON root token
+    public static string GetBaseEntityFromToken(JToken rootToken);
+}</code></pre>
+
+                    <h3>JsonSchemaSyncHelper</h3>
+                    <p>Schema drift detection and reconciliation for JSON-based data sources.</p>
+                    <pre><code class="language-csharp">public class JsonSchemaSyncHelper
+{
+    // Compare in-memory structure to persisted schema. Returns true if changes were applied.
+    public bool SyncSchema(string entityName);
+
+    // Detect drift: added columns, removed columns, type changes
+    public SchemaDriftReport DetectDrift(string entityName);
+
+    // Rebuild EntityStructure from raw JSON data, overwriting current schema
+    public void RebuildSchema(string entityName, JArray data);
+}</code></pre>
+
+                    <h3>JsonSchemaPersistenceHelper</h3>
+                    <p>Save/load EntityStructure metadata alongside the JSON data file.</p>
+                    <pre><code class="language-csharp">public class JsonSchemaPersistenceHelper
+{
+    public void SaveSchema(string dataFilePath, EntityStructure schema);
+    public EntityStructure LoadSchema(string dataFilePath);
+    public bool SchemaFileExists(string dataFilePath);
+    public void DeleteSchema(string dataFilePath);
+
+    // Schema file convention: data.json → data.json.schema
+    private string GetSchemaFilePath(string dataFilePath);
+}</code></pre>
+
+                    <h3>JsonDataHelper</h3>
+                    <p>Core data transformation: CLR object ↔ JSON.</p>
+                    <pre><code class="language-csharp">public class JsonDataHelper
+{
+    // Convert a POCO to a JObject with optional field filtering
+    public JObject ConvertToJObject(object entity,
+        EntityStructure structure = null, List&lt;string&gt; includeFields = null);
+
+    // Convert a JObject or JToken to a typed CLR object
+    public object ConvertToTypedObject(JToken token, Type targetType,
+        EntityStructure structure = null);
+
+    // Serialize/deserialize with Newtonsoft settings
+    public string Serialize(object obj, Formatting formatting = Formatting.Indented);
+    public T Deserialize&lt;T&gt;(string json);
+    public object Deserialize(string json, Type targetType);
+}</code></pre>
+
+                    <h3>GraphHydrationOptions</h3>
+                    <pre><code class="language-csharp">public class GraphHydrationOptions
+{
+    public int MaxDepth { get; set; } = 3;
+    public bool FollowBackReferences { get; set; } = false;
+    public bool IncludeDeleted { get; set; } = false;
+    public List&lt;string&gt; ExcludedRelations { get; set; } = new();
+    public List&lt;string&gt; IncludedRelations { get; set; } = new();   // null = all
+}</code></pre>
+
+                    <h3>JsonDeepEntityResolver</h3>
+                    <pre><code class="language-csharp">public class JsonDeepEntityResolver
+{
+    // Resolve a nested entity by dot-path: "order.customer.address.city"
+    public JToken ResolveDeep(JToken root, string dottedPath);
+
+    // Flatten nested JSON into a flat dictionary of dotted keys
+    public Dictionary&lt;string, JToken&gt; Flatten(JToken root, int maxDepth = 10);
+
+    // Unflatten a flat dotted-key dictionary back into nested JObject
+    public JObject Unflatten(Dictionary&lt;string, JToken&gt; flatMap);
+}</code></pre>
+
+                    <h3>JsonPathNavigator</h3>
+                    <pre><code class="language-csharp">public class JsonPathNavigator
+{
+    // Navigate to a token using JSONPath expression: "$.orders[0].items[*].price"
+    public JToken Navigate(string jsonPath, JToken root = null);
+
+    // Navigate and project selected fields
+    public List&lt;Dictionary&lt;string, object&gt;&gt; NavigateAndProject(
+        string jsonPath, string[] projectedFields);
+
+    // Navigate and filter
+    public List&lt;JToken&gt; NavigateAndFilter(
+        string jsonPath, Func&lt;JToken, bool&gt; predicate);
+}</code></pre>
+
+                    <h3>Source File Map (16 files)</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>JsonDataSource.cs</code></td><td>IDataSource impl: constructor, connection, CRUD, schema, JObject/JArray, Dispose</td></tr>
+                    <tr><td><code>JsonDataSourceAdvanced.cs</code></td><td>Advanced: nested iterators, pagination, error recovery, async streaming, bulk</td></tr>
+                    <tr><td><code>JsonExtensions.cs</code></td><td>JOJect→EntityField mapping, DigestJsonToEntityStructure, base name deduction</td></tr>
+                    <tr><td><code>Helpers/JsonSchemaHelper.cs</code></td><td>Schema inference: from JObject, JArray, multi-sample merge, schema caching</td></tr>
+                    <tr><td><code>Helpers/JsonSchemaSyncHelper.cs</code></td><td>Schema drift detection, sync/reconciliation, rebuild from raw data</td></tr>
+                    <tr><td><code>Helpers/JsonFilterHelper.cs</code></td><td>AppFilter→Predicate&lt;JToken&gt; compilation, field getter caching, operator support</td></tr>
+                    <tr><td><code>Helpers/JsonCrudHelper.cs</code></td><td>Find by ID/predicate, add/update/delete to JArray, merge/diff</td></tr>
+                    <tr><td><code>Helpers/JsonAsyncDataHelper.cs</code></td><td>Streaming JArray row-by-row, paged yield, lazy materialization</td></tr>
+                    <tr><td><code>Helpers/JsonGraphHelper.cs</code></td><td>Hydrate entity graph from JSON: top-down, follow FK relations, depth-limited expansion</td></tr>
+                    <tr><td><code>Helpers/JsonRelationHelper.cs</code></td><td>Extract FK relationships from JSON structure, bidirectional relation detection</td></tr>
+                    <tr><td><code>Helpers/JsonCacheManager.cs</code></td><td>In-memory predicate/property-map cache, per-entity invalidation, TTL</td></tr>
+                    <tr><td><code>Helpers/JsonSchemaPersistenceHelper.cs</code></td><td>Save/Load/Delete .schema companion files alongside JSON data</td></tr>
+                    <tr><td><code>Helpers/JsonDataHelper.cs</code></td><td>POCO ↔ JObject conversion, typed deserialization, Newtonsoft serialization</td></tr>
+                    <tr><td><code>Helpers/GraphHydrationOptions.cs</code></td><td>MaxDepth, FollowBackReferences, IncludeDeleted, Include/Exclude relations</td></tr>
+                    <tr><td><code>Helpers/JsonDeepEntityResolver.cs</code></td><td>Dot-path resolved access, flatten/unflatten nested JSON</td></tr>
+                    <tr><td><code>Helpers/JsonPathNavigator.cs</code></td><td>JSONPath navigation, projected query, predicate filtering</td></tr>
+                    </tbody></table>
+                </section>
 
                 <footer class="documentation-footer">
                     <div class="footer-content">

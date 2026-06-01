@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETL Engine Scheduling Internals - Beep Data Management Engine Documentation</title>
+    <title>ETL Engine Scheduling - Beep Data Management Engine Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -15,12 +25,11 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>ETL Engine Scheduling Internals</span>
+                    <span>ETL Engine Scheduling</span>
                 </nav>
-
                 <div class="page-header">
-                    <h1>ETL Engine Scheduling Internals</h1>
-                    <p class="page-subtitle">Signature-verified scheduling runtime with trigger plugins, queue isolation, governance, watermarks, and backfills.</p>
+                    <h1>ETL Engine Scheduling</h1>
+                    <p class="page-subtitle">Cron-based scheduling with trigger plugins, queue isolation, governance, watermarks, and backfills</p>
                 </div>
 
                 <div class="note">
@@ -34,59 +43,415 @@
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
+                <!-- TOC -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#scheduler-host">SchedulerHost</a></li>
+                        <li><a href="#schedule-definition">ScheduleDefinition</a></li>
+                        <li><a href="#pipeline-run-queue">PipelineRunQueue</a></li>
+                        <li><a href="#watermark-tracker">WatermarkTracker</a></li>
+                        <li><a href="#backfill-manager">BackfillManager</a></li>
+                        <li><a href="#circuit-breaker">Circuit Breaker</a></li>
+                        <li><a href="#dependency-graph">Dependency Graph</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The ETL scheduling subsystem provides enterprise-grade pipeline orchestration:</p>
+                    <ul>
+                        <li><strong>Trigger plugins</strong> - Cron, event-driven, webhook, and manual triggers</li>
+                        <li><strong>Priority queues</strong> - Workload-class based queueing with concurrency limits</li>
+                        <li><strong>Watermarks</strong> - Incremental sync with automatic window computation</li>
+                        <li><strong>Backfills</strong> - Historical data reprocessing with windowing</li>
+                        <li><strong>Circuit breakers</strong> - Automatic failure detection and isolation</li>
+                        <li><strong>Dependency graphs</strong> - Schedule dependencies with cycle detection</li>
+                        <li><strong>Rate limiting</strong> - Per-schedule execution throttling</li>
+                        <li><strong>Governance loop</strong> - Dependency timeouts and fail-fast monitoring</li>
+                    </ul>
+                </section>
+
+                <section id="architecture" class="section">
+                    <h2>Architecture</h2>
+                    <pre><code class="language-text">SchedulerHost (singleton)
+├── ScheduleStorage          ← Persisted schedule definitions
+├── WatermarkTracker         ← Incremental sync state
+├── BackfillManager          ← Historical reprocessing
+├── ScheduleAuditLog         ← Audit trail
+├── PipelineRunQueue         ← Priority queue
+├── ConcurrencyGate          ← Parallel execution limits
+├── DependencyGraph          ← Schedule dependencies
+└── PipelinePluginRegistry   ← Scheduler plugin discovery
+
+DispatchLoopAsync
+├── Dequeue run from queue
+├── Check concurrency gate
+├── Resolve dependencies
+├── Execute via PipelineEngine
+└── Update watermark / checkpoint
+
+GovernanceLoopAsync (every 15s)
+├── Check dependency timeouts
+├── Detect stuck runs
+├── Update circuit breaker state
+└── Log governance events</code></pre>
+                </section>
+
+                <section id="scheduler-host" class="section">
+                    <h2>SchedulerHost</h2>
+                    <p>Singleton service managing all scheduler plugins and pipeline execution:</p>
                     <pre><code class="language-csharp">public sealed class SchedulerHost : IAsyncDisposable
 {
+    public SchedulerHost(IDMEEditor editor);
+
+    // Subsystems
     public ScheduleStorage Storage { get; }
     public WatermarkTracker Watermarks { get; }
     public BackfillManager Backfills { get; }
     public ScheduleAuditLog AuditLog { get; }
 
+    // Events
     public event EventHandler&lt;SchedulerRunEventArgs&gt;? RunStarted;
     public event EventHandler&lt;SchedulerRunEventArgs&gt;? RunCompleted;
     public event EventHandler&lt;SchedulerRunEventArgs&gt;? RunFailed;
     public event EventHandler&lt;SchedulerRunEventArgs&gt;? CircuitBreakerChanged;
 
-    public SchedulerHost(IDMEEditor editor);
+    // Lifecycle
     public Task StartAsync(CancellationToken token = default);
     public Task StopAsync();
     public Task ReloadAsync();
-    public Task&lt;string&gt; TriggerManualAsync(string pipelineOrWorkflowId,
-        IReadOnlyDictionary&lt;string, object&gt;? overrideParams = null);
-    public Task&lt;string&gt; SubmitBackfillAsync(string scheduleId, string fromValue, string toValue,
-        string reason = "", string requestedBy = "", int windowSizeSeconds = 86400);
-    public Task ResetCircuitBreakerAsync(string scheduleId, string resetBy = "");
-    public IReadOnlyList&lt;(string RunId, string PipelineId, RunStatus Status)&gt; GetActiveRuns();
-}
 
-public sealed class PipelineRunQueue
+    // Manual trigger
+    public Task&lt;string&gt; TriggerManualAsync(
+        string pipelineOrWorkflowId,
+        IReadOnlyDictionary&lt;string, object&gt;? overrideParams = null);
+
+    // Backfill
+    public Task&lt;string&gt; SubmitBackfillAsync(
+        string scheduleId, string fromValue, string toValue,
+        string reason = "", string requestedBy = "",
+        int windowSizeSeconds = 86400);
+
+    // Circuit breaker
+    public Task ResetCircuitBreakerAsync(string scheduleId, string resetBy = "");
+
+    // Monitoring
+    public IReadOnlyList&lt;(string RunId, string PipelineId, RunStatus Status)&gt; GetActiveRuns();
+}</code></pre>
+
+                    <h3>Configuration</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Constant</th><th>Value</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>MaxParallel</code></td><td>8</td><td>Max parallel pipelines across the host</td></tr>
+                            <tr><td><code>GovernanceIntervalMs</code></td><td>15,000</td><td>Governance loop interval (15 seconds)</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="schedule-definition" class="section">
+                    <h2>ScheduleDefinition</h2>
+                    <p>Persisted schedule configuration:</p>
+                    <pre><code class="language-csharp">public class ScheduleDefinition
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string PipelineId { get; set; }
+    public bool IsWorkflow { get; set; }
+    public bool IsEnabled { get; set; }
+    public int Priority { get; set; } = 5;
+    public string WorkloadClass { get; set; } = "standard";
+
+    // Scheduler plugin
+    public string SchedulerPluginId { get; set; }
+    public Dictionary&lt;string, object&gt; SchedulerConfig { get; set; }
+
+    // Watermark for incremental sync
+    public WatermarkConfig Watermark { get; set; }
+
+    // Dependencies
+    public List&lt;string&gt; DependsOn { get; set; }
+    public string DependencyCondition { get; set; } = "ALL_SUCCESS";
+    public int DependencyMaxWaitSeconds { get; set; }
+
+    // Circuit breaker
+    public bool CircuitBreakerTripped { get; set; }
+    public int ConsecutiveFailures { get; set; }
+    public int CircuitBreakerThreshold { get; set; } = 5;
+    public int CircuitBreakerCooldownSeconds { get; set; } = 300;
+
+    // Rate limiting
+    public int MaxRunsPerMinute { get; set; } = 0; // 0 = unlimited
+}</code></pre>
+                </section>
+
+                <section id="pipeline-run-queue" class="section">
+                    <h2>PipelineRunQueue</h2>
+                    <p>Priority queue with workload-class isolation:</p>
+                    <pre><code class="language-csharp">public sealed class PipelineRunQueue
 {
     public int Count { get; }
     public int CountByClass(string workloadClass);
+
+    // Concurrency limits per workload class
     public void SetClassConcurrencyLimit(string workloadClass, int maxConcurrent);
+
+    // Queue operations
     public void Enqueue(QueuedRun run);
     public Task&lt;QueuedRun&gt; DequeueAsync(CancellationToken token);
     public void NotifyRunCompleted(string workloadClass);
-}
+}</code></pre>
 
-public sealed class WatermarkTracker
+                    <h3>QueuedRun</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RunId</code></td><td>Unique run identifier</td></tr>
+                            <tr><td><code>ScheduleId</code></td><td>Parent schedule</td></tr>
+                            <tr><td><code>PipelineId</code></td><td>Pipeline or workflow to execute</td></tr>
+                            <tr><td><code>IsWorkflow</code></td><td>True if workflow, false if pipeline</td></tr>
+                            <tr><td><code>Priority</code></td><td>1-10 (1 = highest)</td></tr>
+                            <tr><td><code>TriggerSource</code></td><td>"cron", "manual", "event", "backfill"</td></tr>
+                            <tr><td><code>WorkloadClass</code></td><td>"critical", "standard", "backfill"</td></tr>
+                            <tr><td><code>OverrideParams</code></td><td>Runtime parameter overrides</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="watermark-tracker" class="section">
+                    <h2>WatermarkTracker</h2>
+                    <p>Manages incremental sync state for each schedule:</p>
+                    <pre><code class="language-csharp">public sealed class WatermarkTracker
 {
     public WatermarkTracker(IDMEEditor editor);
+
+    // Load/save watermark state
     public Task&lt;WatermarkState?&gt; LoadAsync(string scheduleId);
     public Task&lt;IErrorsInfo&gt; SaveAsync(string scheduleId, WatermarkState state);
-    public WatermarkWindow ComputeWindow(WatermarkConfig config, WatermarkState? currentState);
-    public Task&lt;IErrorsInfo&gt; ResetAsync(string scheduleId);
-}
 
-public sealed class BackfillManager
+    // Compute next window
+    public WatermarkWindow ComputeWindow(
+        WatermarkConfig config,
+        WatermarkState? currentState);
+
+    // Reset
+    public Task&lt;IErrorsInfo&gt; ResetAsync(string scheduleId);
+}</code></pre>
+
+                    <h3>Watermark Types</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>datetime</code></td><td>Timestamp-based</td><td><code>2024-01-15T10:30:00Z</code></td></tr>
+                            <tr><td><code>sequence</code></td><td>Integer sequence</td><td><code>15243</code></td></tr>
+                            <tr><td><code>offset</code></td><td>Byte offset in file</td><td><code>1048576</code></td></tr>
+                            <tr><td><code>composite</code></td><td>Multiple columns</td><td><code>id:100,ts:2024-01-15</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="backfill-manager" class="section">
+                    <h2>BackfillManager</h2>
+                    <p>Historical data reprocessing with automatic windowing:</p>
+                    <pre><code class="language-csharp">public sealed class BackfillManager
 {
     public BackfillManager(IDMEEditor editor, WatermarkTracker watermarks);
-    public Task&lt;BackfillRequest&gt; CreateRequestAsync(string scheduleId, string pipelineId, string fromValue, string toValue,
-        string watermarkType = "datetime", string watermarkColumn = "", string reason = "", string requestedBy = "",
+
+    public Task&lt;BackfillRequest&gt; CreateRequestAsync(
+        string scheduleId,
+        string pipelineId,
+        string fromValue,
+        string toValue,
+        string watermarkType = "datetime",
+        string watermarkColumn = "",
+        string reason = "",
+        string requestedBy = "",
         int windowSizeSeconds = 86400);
+
+    public Task&lt;BackfillWindow?&gt; GetNextWindowAsync(string requestId);
+    public Task MarkWindowCompletedAsync(string requestId, string windowId);
+    public Task&lt;BackfillStatus&gt; GetStatusAsync(string requestId);
 }</code></pre>
+
+                    <h3>BackfillRequest</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Id</code></td><td>Unique request ID</td></tr>
+                            <tr><td><code>ScheduleId</code></td><td>Target schedule</td></tr>
+                            <tr><td><code>FromValue</code></td><td>Start watermark</td></tr>
+                            <tr><td><code>ToValue</code></td><td>End watermark</td></tr>
+                            <tr><td><code>WindowSize</code></td><td>Seconds per window</td></tr>
+                            <tr><td><code>Status</code></td><td>Pending, Running, Completed, Failed</td></tr>
+                            <tr><td><code>CompletedWindows</code></td><td>Count of finished windows</td></tr>
+                            <tr><td><code>TotalWindows</code></td><td>Total window count</td></tr>
+                        </tbody>
+                    </table>
                 </section>
+
+                <section id="circuit-breaker" class="section">
+                    <h2>Circuit Breaker</h2>
+                    <p>Automatic failure detection and isolation:</p>
+                    <pre><code class="language-csharp">// Configuration on ScheduleDefinition
+public int CircuitBreakerThreshold { get; set; } = 5;       // Failures before trip
+public int CircuitBreakerCooldownSeconds { get; set; } = 300; // 5 minute cooldown
+
+// Automatic behavior
+// 1. Increment ConsecutiveFailures on each failure
+// 2. When >= Threshold, set CircuitBreakerTripped = true
+// 3. Block all triggers while tripped
+// 4. After Cooldown, allow one test run
+// 5. If test succeeds, reset; if fails, extend cooldown</code></pre>
+
+                    <h3>Reset</h3>
+                    <pre><code class="language-csharp">await scheduler.ResetCircuitBreakerAsync("schedule-id", resetBy: "admin");</code></pre>
+                </section>
+
+                <section id="dependency-graph" class="section">
+                    <h2>Dependency Graph</h2>
+                    <p>Schedule dependencies with cycle detection:</p>
+                    <pre><code class="language-csharp">// Register dependency
+_deps.RegisterDependency(
+    scheduleId: "daily-report",
+    dependsOn: new[] { "load-customers", "load-orders" },
+    condition: "ALL_SUCCESS"); // or "ANY_SUCCESS"
+
+// Set max wait
+_deps.SetMaxWait("daily-report", maxWaitSeconds: 3600); // 1 hour
+
+// Cycle detection at startup
+var cycles = _deps.DetectCycles();
+if (cycles.Count > 0)
+    Console.WriteLine($"Cycles: {string.Join(" → ", cycles)}");</code></pre>
+
+                    <h3>Dependency Conditions</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Condition</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ALL_SUCCESS</code></td><td>All dependencies must succeed</td></tr>
+                            <tr><td><code>ANY_SUCCESS</code></td><td>At least one dependency must succeed</td></tr>
+                            <tr><td><code>ALL_COMPLETED</code></td><td>All dependencies completed (any status)</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Basic Scheduling</h3>
+                    <pre><code class="language-csharp">var host = new SchedulerHost(editor);
+await host.StartAsync();
+
+// Create schedule
+var schedule = new ScheduleDefinition
+{
+    Name = "Hourly Sync",
+    PipelineId = "customer-sync",
+    SchedulerPluginId = "beep.schedule.cron",
+    SchedulerConfig = new Dictionary&lt;string, object&gt;
+    {
+        ["cron"] = "0 * * * *" // Every hour
+    },
+    Watermark = new WatermarkConfig
+    {
+        WatermarkType = "datetime",
+        WatermarkColumn = "last_modified"
+    }
+};
+
+await host.Storage.SaveAsync(schedule);
+await host.ReloadAsync();</code></pre>
+
+                    <h3>Event-Driven Trigger</h3>
+                    <pre><code class="language-csharp">var schedule = new ScheduleDefinition
+{
+    Name = "On New Order",
+    PipelineId = "process-order",
+    SchedulerPluginId = "beep.schedule.event",
+    SchedulerConfig = new Dictionary&lt;string, object&gt;
+    {
+        ["eventTopic"] = "orders.created",
+        ["filter"] = "status == 'confirmed'"
+    }
+};</code></pre>
+
+                    <h3>Backfill</h3>
+                    <pre><code class="language-csharp">var backfillId = await host.SubmitBackfillAsync(
+    scheduleId: "customer-sync",
+    fromValue: "2024-01-01T00:00:00Z",
+    toValue: "2024-01-31T23:59:59Z",
+    reason: "Initial load",
+    requestedBy: "admin",
+    windowSizeSeconds: 86400); // 1 day windows
+
+// Monitor progress
+var status = await host.Backfills.GetStatusAsync(backfillId);
+Console.WriteLine($"Progress: {status.CompletedWindows}/{status.TotalWindows}");</code></pre>
+
+                    <h3>Monitoring Events</h3>
+                    <pre><code class="language-csharp">host.RunStarted += (s, e) =>
+    Console.WriteLine($"Started: {e.PipelineId} ({e.RunId})");
+
+host.RunCompleted += (s, e) =>
+    Console.WriteLine($"Completed: {e.PipelineId} in {e.Duration}");
+
+host.RunFailed += (s, e) =>
+    Console.WriteLine($"Failed: {e.PipelineId} - {e.ErrorMessage}");
+
+host.CircuitBreakerChanged += (s, e) =>
+    Console.WriteLine($"Circuit breaker: {e.ScheduleId} = {e.IsTripped}");</code></pre>
+
+                    <h3>Dependency Chain</h3>
+                    <pre><code class="language-csharp">// Load raw data
+var loadSchedule = new ScheduleDefinition
+{
+    Name = "Load Raw Data",
+    PipelineId = "load-raw",
+    SchedulerPluginId = "beep.schedule.cron",
+    SchedulerConfig = new Dictionary&lt;string, object&gt; { ["cron"] = "0 2 * * *" }
+};
+
+// Transform depends on load
+var transformSchedule = new ScheduleDefinition
+{
+    Name = "Transform Data",
+    PipelineId = "transform-data",
+    DependsOn = new List&lt;string&gt; { loadSchedule.Id },
+    DependencyCondition = "ALL_SUCCESS",
+    DependencyMaxWaitSeconds = 3600
+};
+
+// Report depends on transform
+var reportSchedule = new ScheduleDefinition
+{
+    Name = "Generate Report",
+    PipelineId = "generate-report",
+    DependsOn = new List&lt;string&gt; { transformSchedule.Id },
+    DependencyCondition = "ALL_SUCCESS"
+};</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="etl-engine-pipeline.html"><i class="bi bi-arrow-left"></i> Previous: ETL Pipeline</a>
+                    <a href="etl-engine-observability.html">Next: ETL Observability <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>

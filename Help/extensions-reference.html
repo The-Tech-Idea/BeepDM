@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extensions - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="bi bi-sun-fill" id="theme-icon"></i></button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a><span>&gt;</span><span>Extensions</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Extensions</h1>
+                    <p class="page-subtitle">Entity manipulation, batch processing, and DI registration extension methods for the BeepDM engine</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files (4) in <code>DataManagementEngineStandard/Extensions/</code></strong>
+                    <ul>
+                        <li><code>EntitiesExtensions.cs</code> — Static utility methods on <code>EntityStructure</code> and <code>EntityField</code></li>
+                        <li><code>EntitiesExtensions.Additions.cs</code> — Diff, Merge, Validate, Export, Normalize operations</li>
+                        <li><code>BatchExtensions.cs</code> — Enumerable batching with projection and parallel processing</li>
+                        <li><code>ServiceCollectionExtensions.cs</code> — DI registration helpers</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#entity-utils">EntitiesExtensions — Utilities</a></li>
+                        <li><a href="#entity-extended">EntitiesExtensions.Additions — Diff &amp; Merge</a></li>
+                        <li><a href="#entity-merge-strategies">FieldMergeStrategy</a></li>
+                        <li><a href="#batch">BatchExtensions</a></li>
+                        <li><a href="#service-collection">ServiceCollectionExtensions</a></li>
+                        <li><a href="#source-map">Source File Map</a></li>
+                    </ul>
+                </div>
+
+                <section id="entity-utils" class="section">
+                    <h2>EntitiesExtensions</h2>
+                    <p>Static utility methods for <code>EntityStructure</code> and <code>EntityField</code> used throughout the editor pipeline.</p>
+                    <pre><code class="language-csharp">public static partial class EntitiesExtensions
+{
+    // Field access
+    public static EntityField GetField(this EntityStructure entity, string fieldName);
+    public static bool HasField(this EntityStructure entity, string fieldName);
+
+    // Field manipulation
+    public static void AddField(this EntityStructure entity, EntityField field);
+    public static bool RemoveField(this EntityStructure entity, string fieldName);
+
+    // Cloning
+    public static EntityField Clone(this EntityField field);
+    public static EntityStructure Clone(this EntityStructure entity, bool deep = true);
+
+    // Key helpers
+    public static bool IsPrimaryKeyField(this EntityStructure entity, string fieldName);
+    public static List&lt;EntityField&gt; GetPrimaryKeyFields(this EntityStructure entity);
+    public static bool HasPrimaryKey(this EntityStructure entity);
+}</code></pre>
+                </section>
+
+                <section id="entity-extended" class="section">
+                    <h2>EntitiesExtensions.Additions</h2>
+                    <p>Extended EntityStructure operations — structural diff, smart field merging, and schema operations.</p>
+
+                    <h3>Diff &amp; Compare</h3>
+                    <pre><code class="language-csharp">// Structural diff: added, removed, and changed fields
+public static EntityDiff DiffAgainst(this EntityStructure entity, EntityStructure other);
+
+// EntityDiff result type
+public class EntityDiff
+{
+    public IReadOnlyList&lt;EntityField&gt; Added { get; }
+    public IReadOnlyList&lt;EntityField&gt; Removed { get; }
+    public IReadOnlyList&lt;FieldChange&gt; Changed { get; }
+    public bool HasChanges => Added.Count > 0 || Removed.Count > 0 || Changed.Count > 0;
+}
+
+// Individual field change detail
+public class FieldChange
+{
+    public string FieldName { get; }
+    public EntityField From { get; }      // Original field
+    public EntityField To { get; }        // Changed field
+    public string Summary { get; }        // Human-readable diff summary
+}</code></pre>
+
+                    <h3>Merge</h3>
+                    <pre><code class="language-csharp">public static EntityStructure MergeFields(
+    this EntityStructure entity, EntityStructure sourceEntity, FieldMergeStrategy strategy);
+// Merges fields from sourceEntity into entity using the specified strategy</code></pre>
+
+                    <h3>Validation</h3>
+                    <pre><code class="language-csharp">public static IErrorsInfo Validate(this EntityStructure entity, IDMEEditor editor = null);
+// Validates: required properties, field count, primary key existence, duplicate names
+
+public static IErrorsInfo ValidateDataTypeMapping(
+    this EntityStructure entity, DataSourceType dsType, IDMEEditor editor);
+// Validates field types against DataSourceType type mapping</code></pre>
+
+                    <h3>Export</h3>
+                    <pre><code class="language-csharp">public static DataTable ToDataTable(this EntityStructure entity);
+public static string ToJson(this EntityStructure entity, Formatting formatting = Indented);
+public static string ToCSharpClass(this EntityStructure entity, string className = null,
+    string namespaceName = "MyApp.Entities");</code></pre>
+
+                    <h3>Normalization</h3>
+                    <pre><code class="language-csharp">public static void Normalize(this EntityStructure entity);
+// Applies: field name trimming, type casing normalization, auto-increment PK type adjustment
+// Sets field entity ownership, catalog field count, deduplicates field names</code></pre>
+                </section>
+
+                <section id="entity-merge-strategies" class="section">
+                    <h2>FieldMergeStrategy</h2>
+                    <table class="ref-table"><thead><tr><th>Strategy</th><th>Behavior</th><th>Use Case</th></tr></thead><tbody>
+                    <tr><td><code>KeepExisting</code></td><td>New fields are added; existing fields are never overwritten</td><td>Safe schema sync — don't change existing</td></tr>
+                    <tr><td><code>Overwrite</code></td><td>Existing fields replaced entirely by source fields</td><td>Schema migration — source is authoritative</td></tr>
+                    <tr><td><code>PreferNonNull</code></td><td>Only overwrites null/empty properties; merges non-null values</td><td>Incremental enrichment from partial schemas</td></tr>
+                    </tbody></table>
+                </section>
+
+                <section id="batch" class="section">
+                    <h2>BatchExtensions</h2>
+                    <p>Efficient batching of <code>IEnumerable&lt;T&gt;</code> with lazy streaming — no intermediate materialization.</p>
+                    <pre><code class="language-csharp">public static class BatchExtensions
+{
+    // Split into batches of batchSize
+    public static IEnumerable&lt;IEnumerable&lt;T&gt;&gt; Batch&lt;T&gt;(this IEnumerable&lt;T&gt; source, int batchSize);
+
+    // Split + project per batch (read-only projection to avoid mutation)
+    public static IEnumerable&lt;TResult&gt; Batch&lt;T, TResult&gt;(
+        this IEnumerable&lt;T&gt; source, int batchSize,
+        Func&lt;IReadOnlyList&lt;T&gt;, TResult&gt; resultSelector);
+
+    // Read-only batches to prevent external modification
+    public static IEnumerable&lt;ReadOnlyCollection&lt;T&gt;&gt; ToSafeBatches&lt;T&gt;(
+        this IEnumerable&lt;T&gt; source, int batchSize);
+
+    // Async batch processing with optional concurrency
+    public static async IAsyncEnumerable&lt;TResult&gt; BatchForEachAsync&lt;T, TResult&gt;(
+        this IEnumerable&lt;T&gt; source, int batchSize,
+        Func&lt;IReadOnlyList&lt;T&gt;, CancellationToken, Task&lt;TResult&gt;&gt; processor,
+        int maxConcurrency = 1, CancellationToken ct = default);
+}</code></pre>
+
+                    <h3>Usage</h3>
+                    <pre><code class="language-csharp">// Simple batching
+foreach (var batch in records.Batch(100))
+    await InsertBatchAsync(batch);
+
+// Batch with projection
+var summaries = records.Batch(100, batch => new
+{
+    Count = batch.Count,
+    First = batch[0],
+    Last = batch[^1]
+});
+
+// Async with concurrency
+await foreach (var result in records.BatchForEachAsync(
+    100, async (batch, ct) => { await bulkInsertAsync(batch, ct); return batch.Count; },
+    maxConcurrency: 4))
+{
+    Console.WriteLine($"Inserted {result} records");
+}</code></pre>
+                </section>
+
+                <section id="service-collection" class="section">
+                    <h2>ServiceCollectionExtensions</h2>
+                    <p>DI registration helpers. <strong>Full documentation:</strong> <a href="services-registration-lifetimes.html">Services Registration &amp; Lifetimes</a>.</p>
+                    <pre><code class="language-csharp">public static class ServiceCollectionExtensions
+{
+    // Register BeepDM core components with default lifetimes
+    public static IServiceCollection AddBeepDM(this IServiceCollection services);
+    public static IServiceCollection AddBeepDM(this IServiceCollection services,
+        Action&lt;BeepDMOptions&gt; configure);
+
+    // Individual component registrations
+    public static IServiceCollection AddJsonLoader(this IServiceCollection services);
+    public static IServiceCollection AddDMEEditor(this IServiceCollection services);
+}
+// See services-registration-lifetimes.html for complete platform extensions
+// (Desktop, Web, Blazor Server, Blazor WASM, MAUI) and fluent builder API</code></pre>
+                </section>
+
+                <section id="source-map" class="section">
+                    <h2>Source File Map (4 files)</h2>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>EntitiesExtensions.cs</code></td><td>Static utilities: GetField, HasField, AddField, RemoveField, Clone (field + entity), IsPrimaryKeyField, GetPrimaryKeyFields, HasPrimaryKey</td></tr>
+                    <tr><td><code>EntitiesExtensions.Additions.cs</code></td><td>DiffAgainst + EntityDiff + FieldChange, MergeFields (3 strategies), Validate + ValidateDataTypeMapping, ToDataTable/ToJson/ToCSharpClass export, Normalize</td></tr>
+                    <tr><td><code>BatchExtensions.cs</code></td><td>Batch (split), Batch with projection, ToSafeBatches (read-only), BatchForEachAsync (async + concurrency)</td></tr>
+                    <tr><td><code>ServiceCollectionExtensions.cs</code></td><td>AddBeepDM + AddBeepDM with options, AddJsonLoader, AddDMEEditor</td></tr>
+                    </tbody></table>
+                </section>
+
+                <div class="nav-links">
+                    <a href="utils-reference.html"><i class="bi bi-arrow-left"></i> Previous: Utils</a>
+                    <a href="index.html">Home <i class="bi bi-house"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

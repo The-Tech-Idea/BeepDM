@@ -1,11 +1,26 @@
 # Addin
 
-Reserved extension point for addin artifacts and addin-related runtime assets.
+Extension point for addin DLLs implementing the `IDM_Addin` interface.
 
 ## Purpose
-This folder is available for addin integration content used by Beep runtime workflows. It currently has no committed source files.
+During application startup, AssemblyHandler scans this directory for DLLs containing `IDM_Addin` implementations. Discovered addins are registered in `ConfigEditor` and made available through the addin tree.
 
-## Notes
-- Keep addin-specific files and documentation here when addin features are introduced.
-- For addin registration and orchestration patterns, see `DataManagementEngineStandard/ConfigUtil/README.md` and `DataManagementEngineStandard/Editor/README.md`.
+## Key Files
+- This directory holds addin DLLs at runtime (populated during assembly loading)
+- Addins are discovered by `AssemblyHandler.ScanAssembly()` when `[AddinAttribute]` is present
 
+## Registration
+```csharp
+[AddinAttribute(Caption = "Copy Entity Manager", Name = "CopyEntityManager",
+    misc = "ImportDataManager", addinType = AddinType.Class)]
+public class CopyEntityManager : IDM_Addin
+{
+    public void Run(IPassedArgs args) { /* implementation */ }
+    public void SetConfig(IDMEEditor editor, IDMLogger logger, 
+        IUtil util, string[] args, IPassedArgs e, IErrorsInfo per) { }
+}
+```
+
+## Related Documentation
+- [AssemblyHandler Help](../Help/assemblyhandler-loading-nuget-extensions.html)
+- [Creating Custom DataSources](../Help/creating-custom-datasources.html)

@@ -97,9 +97,10 @@
                                 <li><a href="#utils-entity-structure">EntityStructureHelper</a></li>
                                 <li><a href="#utils-filter">FilterHelper</a></li>
                                 <li><a href="#utils-file-datasource">FileDataSourceHelper</a></li>
-                                <li><a href="#utils-reflection">ReflectionHelper</a></li>
-                            </ul>
+                        <li><a href="#utils-reflection">ReflectionHelper</a></li>
+                                </ul>
                         </li>
+                        <li><a href="#tools-api-ref">Tools: Full API Reference</a></li>
                     </ul>
                 </div>
 
@@ -1578,6 +1579,163 @@ var mappedObj = ReflectionHelper.MapObject(
                     <a href="etl-workflow-engine.html"><i class="bi bi-arrow-left"></i> ETL & Workflow Engine</a>
                     <a href="api-reference.html">API Reference <i class="bi bi-arrow-right"></i></a>
                 </div>
+
+                <!-- ═══════════════════════════════════════════════════ FULL TOOLS API REF -->
+                <section id="tools-api-ref" class="section">
+                    <h2><i class="bi bi-book"></i> Tools Module — Full API Reference</h2>
+
+                    <h3>IClassCreator — Complete Interface</h3>
+                    <pre><code class="language-csharp">public interface IClassCreator
+{
+    IDMEEditor DMEEditor { get; set; }
+    string outputFileName { get; set; }
+    string outputpath { get; set; }
+
+    // Core generation
+    string CreateClass(string classname, EntityStructure entity, string poutputpath,
+        string NameSpacestring = "TheTechIdea.ProjectClasses",
+        bool GenerateCSharpCodeFiles = true);
+    string CreatePOCOClass(string classname, EntityStructure entity, string usingheader,
+        string implementations, string extracode, string outputpath,
+        string nameSpacestring = "TheTechIdea.ProjectClasses",
+        bool GenerateCSharpCodeFiles = true);
+    void CompileClassFromText(string sourceString, string output);
+    void GenerateCSharpCode(string fileName);
+
+    // DLL creation
+    string CreateDLL(string dllname, List&lt;EntityStructure&gt; entities,
+        string outputpath, IProgress&lt;PassedArgs&gt; progress, CancellationToken token,
+        string NameSpacestring = "TheTechIdea.ProjectClasses",
+        bool GenerateCSharpCodeFiles = true);
+    string CreateDLLFromPoco(string dllname, Type pocoType, string outputpath,
+        IProgress&lt;PassedArgs&gt; progress, CancellationToken token,
+        System.Text.Encoding encoding = null);
+    string CreateBatchDLL(string dllname, List&lt;EntityStructure&gt; entities,
+        string outputpath, string NameSpacestring = "TheTechIdea.ProjectClasses");
+
+    // Dynamic runtime types
+    Type CreateEntityTypeAtRuntime(EntityStructure entity,
+        string namespaceString = "TheTechIdea.ProjectClasses");
+    Type CreateMultipleEntityTypesAtRuntime(List&lt;EntityStructure&gt; entities,
+        string namespaceString = "TheTechIdea.ProjectClasses");
+
+    // Database / EF Core
+    string GenerateDataAccessLayer(EntityStructure entity, string outputPath,
+        string namespaceName = "TheTechIdea.DAL");
+    string GenerateDbContext(List&lt;EntityStructure&gt; entities, string outputPath,
+        string namespaceString = "MyApp.Data");
+    string GenerateEntityConfiguration(EntityStructure entity, string outputPath,
+        string namespaceString = "MyApp.Data.Configurations");
+    string GenerateRepositoryImplementation(EntityStructure entity,
+        string outputPath, string namespaceName = "MyApp.Repositories",
+        bool interfaceOnly = false);
+
+    // Web API
+    List&lt;string&gt; GenerateWebApiControllers(string dataSourceName,
+        List&lt;EntityStructure&gt; entities, string outputPath,
+        string namespaceName = "MyApp.Controllers");
+    string GenerateWebApiControllerForEntityWithParams(string className,
+        string outputPath, string namespaceName = "MyApp.Controllers");
+    string GenerateMinimalWebApi(string outputPath,
+        string namespaceName = "MyApp.MinimalApi");
+
+    // Testing & Validation
+    string GenerateUnitTestClass(EntityStructure entity, string outputPath,
+        string namespaceName = "MyApp.Tests", string testFramework = "xUnit");
+    string GenerateFluentValidators(EntityStructure entity, string outputPath,
+        string namespaceName = "MyApp.Validators");
+
+    // UI & Docs
+    string GenerateBlazorComponent(EntityStructure entity, string outputPath,
+        string namespaceName = "MyApp.Components");
+    string GenerateGraphQLSchema(List&lt;EntityStructure&gt; entities,
+        string outputPath, string namespaceName = "TheTechIdea.ProjectGraphQL");
+    string GenerateEntityDocumentation(EntityStructure entity, string outputPath);
+    string GenerateEntityDiffReport(EntityStructure original,
+        EntityStructure updated);
+
+    // POCO → Entity
+    List&lt;Type&gt; ScanNamespaceForPocos(string namespaceName, Assembly assembly);
+    EntityStructure ConvertPocoToEntity(Type pocoType,
+        bool detectRelationships = true);
+    string GenerateEntityClassFromPoco(Type pocoType, string outputPath,
+        string namespaceString = "MyApp.Entities");
+    List&lt;string&gt; GenerateEntityClassesFromNamespace(string namespaceName,
+        string outputPath, string targetNamespace = "MyApp.Entities");
+
+    // Type conversions
+    EntityStructure CreateEntityStructureFromType(Type type,
+        string entityName = null);
+    EntityStructure CreateEntityStructureFromType&lt;T&gt;();
+    EntityStructure CreateEntityStructureFromDataTable(DataTable table);
+    EntityStructure CreateEntityStructureFromList(IEnumerable items, string name);
+    List&lt;EntityStructure&gt; CreateEntityStructuresFromTypes(params Type[] types);
+}</code></pre>
+
+                    <h3>ClassCreator — 10 Generator Helpers</h3>
+                    <table class="reference-table"><thead><tr><th>Helper</th><th>Class</th><th>Generates</th></tr></thead><tbody>
+                    <tr><td><code>PocoClassGeneratorHelper</code></td><td>POCO</td><td>Plain C# classes with {get; set;} properties, constructors, field validation</td></tr>
+                    <tr><td><code>ModernClassGeneratorHelper</code></td><td>record / init</td><td>.NET 5+ records, init-only setters, required keyword, nullability annotations</td></tr>
+                    <tr><td><code>ClassGenerationHelper</code></td><td>Utilities</td><td>Namespace import, using directives, type mapping, file I/O, Roslyn compilation</td></tr>
+                    <tr><td><code>DatabaseClassGeneratorHelper</code></td><td>DAL / EF</td><td>DataAccessLayer, DbContext, EntityConfiguration (IEntityTypeConfiguration), Repository pattern</td></tr>
+                    <tr><td><code>WebApiGeneratorHelper</code></td><td>ASP.NET</td><td>ApiControllers, Minimal API endpoints, parameterized controllers</td></tr>
+                    <tr><td><code>ValidationAndTestingGeneratorHelper</code></td><td>Tests</td><td>xUnit/NUnit scaffolds, FluentValidation validators, Moq mocks</td></tr>
+                    <tr><td><code>UiComponentGeneratorHelper</code></td><td>Blazor / GQL</td><td>Blazor .razor components, GraphQL SDL schemas with Query/Mutation</td></tr>
+                    <tr><td><code>DocumentationGeneratorHelper</code></td><td>Docs</td><td>XML doc comments, entity diff reports, markdown summaries</td></tr>
+                    <tr><td><code>PocoToEntityGeneratorHelper</code></td><td>Reverse</td><td>Namespace scanning, POCO → EntityStructure conversion, relationship detection</td></tr>
+                    <tr><td><code>EfCoreToEntityGeneratorHelper</code></td><td>EF → Beep</td><td>EF Core DbContext/model → EntityStructure, navigation property detection</td></tr>
+                    <tr><td><code>ServerlessGeneratorHelper</code></td><td>Azure/AWS</td><td>Azure Functions, AWS Lambda function stubs wired to Beep IDataSource</td></tr>
+                    </tbody></table>
+
+                    <h3>WebApiGenerator — Standalone Utility (not ClassCreator)</h3>
+                    <pre><code class="language-csharp">public class WebApiGenerator
+{
+    // Direct API endpoint generation from data sources
+    public static List&lt;string&gt; GenerateControllers(
+        string dataSourceName, List&lt;EntityStructure&gt; entities,
+        string outputPath, string namespaceName = "MyApp.Controllers");
+
+    // Emit with OpenAPI annotations
+    public static string GenerateWithSwaggerAnnotations(
+        EntityStructure entity, string outputPath,
+        string namespaceName = "MyApp.Controllers");
+
+    // Emit with versioning
+    public static string GenerateVersionedController(
+        EntityStructure entity, string apiVersion, string outputPath,
+        string namespaceName = "MyApp.Controllers");
+
+    // Emit with custom authorization policy
+    public static string GenerateWithAuthorization(
+        EntityStructure entity, string policyName, string outputPath,
+        string namespaceName = "MyApp.Controllers");
+}</code></pre>
+
+                    <h3>Tools Source File Map (21 files)</h3>
+                    <table class="reference-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>ClassCreator.cs</code></td><td>Namespace declaration only (shell)</td></tr>
+                    <tr><td><code>ClassCreator.Core.cs</code></td><td>Constructor (DI with 10 helpers), properties, CompileClassFromText, GenerateCSharpCode</td></tr>
+                    <tr><td><code>ClassCreator.Advanced.cs</code></td><td>GenerateEntityDocumentation, GenerateEntityDiffReport, GenerateBlazorComponent, GenerateGraphQLSchema</td></tr>
+                    <tr><td><code>ClassCreator.Database.cs</code></td><td>GenerateDataAccessLayer, GenerateDbContext, GenerateEntityConfiguration, GenerateRepositoryImplementation</td></tr>
+                    <tr><td><code>ClassCreator.WebApi.cs</code></td><td>GenerateWebApiControllers, GenerateWebApiControllerForEntityWithParams, GenerateMinimalWebApi</td></tr>
+                    <tr><td><code>ClassCreator.Testing.cs</code></td><td>GenerateUnitTestClass, GenerateFluentValidators</td></tr>
+                    <tr><td><code>ClassCreator.DllCreation.cs</code></td><td>CreateDLL, CreateDLLFromPoco, CreateBatchDLL, CreateMultipleEntityTypesAtRuntime</td></tr>
+                    <tr><td><code>ClassCreator.PocoToEntity.cs</code></td><td>ScanNamespaceForPocos, ConvertPocoToEntity, GenerateEntityClassFromPoco, GenerateEntityClassesFromNamespace</td></tr>
+                    <tr><td><code>ClassCreator.EntityExtensions.cs</code></td><td>CreateEntityStructureFromType, FromDataTable, FromList, FromTypes batch</td></tr>
+                    <tr><td><code>WebApiGenerator.cs</code></td><td>Standalone Web API: GenerateControllers, Swagger, versioning, authorization</td></tr>
+                    <tr><td><code>Helpers/PocoClassGeneratorHelper.cs</code></td><td>POCO class code generation</td></tr>
+                    <tr><td><code>Helpers/ModernClassGeneratorHelper.cs</code></td><td>Modern C# (record, init, required) generators</td></tr>
+                    <tr><td><code>Helpers/ClassGenerationHelper.cs</code></td><td>Shared utilities: namespaces, type mapping, file I/O</td></tr>
+                    <tr><td><code>Helpers/DatabaseClassGeneratorHelper.cs</code></td><td>DAL, EF Core DbContext, Repository codegen</td></tr>
+                    <tr><td><code>Helpers/WebApiGeneratorHelper.cs</code></td><td>ASP.NET Core controller + Minimal API codegen</td></tr>
+                    <tr><td><code>Helpers/ValidationAndTestingGeneratorHelper.cs</code></td><td>xUnit/NUnit + FluentValidation codegen</td></tr>
+                    <tr><td><code>Helpers/UiComponentGeneratorHelper.cs</code></td><td>Blazor components + GraphQL SDL codegen</td></tr>
+                    <tr><td><code>Helpers/DocumentationGeneratorHelper.cs</code></td><td>XML docs + entity diff codegen</td></tr>
+                    <tr><td><code>Helpers/PocoToEntityGeneratorHelper.cs</code></td><td>POCO scanning + EntityStructure reverse mapping</td></tr>
+                    <tr><td><code>Helpers/EfCoreToEntityGeneratorHelper.cs</code></td><td>EF Core model → EntityStructure converter</td></tr>
+                    <tr><td><code>Helpers/ServerlessGeneratorHelper.cs</code></td><td>Azure Functions / AWS Lambda stub codegen</td></tr>
+                    </tbody></table>
+                </section>
 
                 <!-- Footer -->
                 <footer class="documentation-footer">

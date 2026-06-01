@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Composite DataSource - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Composite DataSource</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Composite DataSource</h1>
+                    <p class="page-subtitle">Layered datasource composition for cache, persistence, and replica stacking with read-through, write-through, write-behind, and refresh-ahead strategies</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementModelsStandard/Composite/CompositeLayer.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Composite/ILayer.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Composite/ICompositeLayerDataSource.cs</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture &amp; Patterns</a></li>
+                        <li><a href="#composite-layer">CompositeLayer Class</a></li>
+                        <li><a href="#strategies">Caching Strategies</a></li>
+                        <li><a href="#read-path">Read Path</a></li>
+                        <li><a href="#write-path">Write Path</a></li>
+                        <li><a href="#eviction">Eviction Policies</a></li>
+                        <li><a href="#health">Health &amp; Monitoring</a></li>
+                        <li><a href="#patterns">Common Patterns</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#pitfalls">Pitfalls</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The Composite DataSource pattern allows stacking multiple datasources into prioritized layers for automatic data propagation:</p>
+                    <ul>
+                        <li><strong>Cache layer</strong> — Fast in-memory reads, transparently populated from lower layers</li>
+                        <li><strong>Primary layer</strong> — Main persistent storage (read/write, source of truth)</li>
+                        <li><strong>Replica layer</strong> — Read replicas for scaling (read-only, eventual consistency)</li>
+                        <li><strong>Fallback layer</strong> — Last-resort data source when all above fail</li>
+                    </ul>
+                </section>
+
+                <section id="architecture" class="section">
+                    <h2>Architecture &amp; Patterns</h2>
+                    <pre><code class="language-text">CompositeLayerDataSource
+├── Layer 1: Cache       (Read-Through, Write-Through)
+│   └── InMemoryDataSource / CachedMemoryDataSource
+├── Layer 2: Primary     (Read-Through, Write-Through)
+│   └── SqlServerDataSource / PostgreSQLDataSource
+├── Layer 3: Replica     (Read-Through, Read-Only)
+│   └── ReadReplicaDataSource
+└── Layer 4: Fallback    (Read-Through, Read-Only)
+    └── BackupDataSource</code></pre>
+
+                    <h3>Layer Order</h3>
+                    <p>Layers are tried in <strong>registration order</strong> (first = highest priority). Place cache layers first, then primary, then fallbacks.</p>
+                </section>
+
+                <section id="composite-layer" class="section">
+                    <h2>CompositeLayer Class</h2>
+                    <pre><code class="language-csharp">public class CompositeLayer : ILayer
+{
+    public CompositeLayer();
+    public CompositeLayer(string layerName, string dataViewDataSourceName,
+        string localDBDriver, string localDBDriverVersion);
+
+    public int ID { get; set; }
+    public string GuidID { get; set; }
+    public string LayerName { get; set; }
+    public DateTime DateCreated { get; set; }
+    public DateTime DateUpdated { get; set; }
+    public IDataSource DataSource { get; set; }
+    public List&lt;EntityStructure&gt; Entities { get; set; }
+    public string DataSourceName { get; set; }
+    public string DataViewDataSourceName { get; set; }
+    public string LocalDBDriver { get; set; }
+    public string LocalDBDriverVersion { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="strategies" class="section">
+                    <h2>Caching Strategies</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Strategy</th><th>Read Behavior</th><th>Write Behavior</th><th>Consistency</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Read-Through</strong></td><td>Cache miss → load from primary → populate cache</td><td>N/A</td><td>Eventual</td></tr>
+                            <tr><td><strong>Write-Through</strong></td><td>N/A</td><td>Write primary → update cache</td><td>Strong</td></tr>
+                            <tr><td><strong>Write-Behind</strong></td><td>N/A</td><td>Write cache → async write to primary</td><td>Weak</td></tr>
+                            <tr><td><strong>Refresh-Ahead</strong></td><td>Proactively refresh before expiry</td><td>N/A</td><td>Near real-time</td></tr>
+                            <tr><td><strong>Cache-Aside</strong></td><td>App checks cache first, loads if miss</td><td>App writes primary → invalidates cache</td><td>Strong</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Layer Strategies</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Strategy</th><th>Description</th><th>Use Case</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>CacheOnly</code></td><td>Reads from cache only, no fallback</td><td>Stale data OK, high performance</td></tr>
+                            <tr><td><code>CacheThenPrimary</code></td><td>Cache first, fallback to primary on miss</td><td>Most common pattern</td></tr>
+                            <tr><td><code>PrimaryOnly</code></td><td>Skip cache, go direct to primary</td><td>Always-fresh data needed</td></tr>
+                            <tr><td><code>PrimaryThenReplica</code></td><td>Primary first, replica on failure</td><td>High availability reads</td></tr>
+                            <tr><td><code>AllAvailable</code></td><td>Try all layers, first success wins</td><td>Maximum resilience</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="read-path" class="section">
+                    <h2>Read Path</h2>
+                    <pre><code class="language-csharp">// 1. Try cache
+var cacheResult = cacheLayer.GetEntity("Customers", filters);
+if (cacheResult != null) return cacheResult;
+
+// 2. Cache miss → try primary
+var primaryResult = primaryLayer.GetEntity("Customers", filters);
+if (primaryResult != null)
+{
+    // 3. Populate cache (read-through)
+    cacheLayer.InsertEntity("Customers", primaryResult);
+    return primaryResult;
+}
+
+// 4. Primary failed → try replica
+var replicaResult = replicaLayer.GetEntity("Customers", filters);
+if (replicaResult != null) return replicaResult;
+
+// 5. All failed
+return null;</code></pre>
+                </section>
+
+                <section id="write-path" class="section">
+                    <h2>Write Path</h2>
+                    <pre><code class="language-csharp">// Write-Through: Primary first, then cache
+var result = primaryLayer.InsertEntity("Customers", entity);
+if (result.Flag != Errors.Ok) return result;
+cacheLayer.UpdateEntity("Customers", entity);
+
+// Write-Behind: Cache first, async primary
+cacheLayer.InsertEntity("Customers", entity);
+await _writeBehindQueue.EnqueueAsync(() =>
+    primaryLayer.InsertEntity("Customers", entity));</code></pre>
+                </section>
+
+                <section id="eviction" class="section">
+                    <h2>Eviction Policies</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Policy</th><th>Description</th><th>Best For</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>TTL</strong></td><td>Time-to-live per entry</td><td>Frequently updated data</td></tr>
+                            <tr><td><strong>LRU</strong></td><td>Least recently used</td><td>Session data, recent items</td></tr>
+                            <tr><td><strong>LFU</strong></td><td>Least frequently used</td><td>Popular content</td></tr>
+                            <tr><td><strong>Size-based</strong></td><td>Max item count</td><td>Memory-constrained</td></tr>
+                            <tr><td><strong>Sliding</strong></td><td>Reset TTL on access</td><td>Active sessions</td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">// Configure eviction
+composite.WithCacheExpiration(TimeSpan.FromMinutes(30));   // TTL
+composite.WithMaxCacheSize(10000);                          // Size-based
+composite.WithEvictionPolicy(EvictionPolicy.LRU);           // LRU</code></pre>
+                </section>
+
+                <section id="health" class="section">
+                    <h2>Health &amp; Monitoring</h2>
+                    <pre><code class="language-csharp">// Health checks
+composite.WithHealthCheckInterval(TimeSpan.FromSeconds(30));
+
+// Layer health events
+composite.OnLayerDown += (s, e) =>
+    Console.WriteLine($"Layer {e.LayerName} is down");
+
+composite.OnLayerRestored += (s, e) =>
+    Console.WriteLine($"Layer {e.LayerName} restored");
+
+// Hit/miss statistics
+var stats = composite.GetCacheStats();
+Console.WriteLine($"Hit ratio: {stats.HitRatio:P1}");
+Console.WriteLine($"Misses: {stats.MissCount}");
+Console.WriteLine($"Evictions: {stats.EvictionCount}");
+Console.WriteLine($"Avg read latency: {stats.AvgReadLatencyMs:F1}ms");</code></pre>
+                </section>
+
+                <section id="patterns" class="section">
+                    <h2>Common Patterns</h2>
+
+                    <h3>Read-Through Cache</h3>
+                    <pre><code class="language-csharp">composite.AddLayer(new CompositeLayer
+    { LayerName = "L1_Cache", DataSource = cacheDs });
+composite.AddLayer(new CompositeLayer
+    { LayerName = "L2_Primary", DataSource = primaryDs });
+composite.WithReadStrategy(ReadStrategy.CacheThenPrimary);</code></pre>
+
+                    <h3>Write-Through Cache</h3>
+                    <pre><code class="language-csharp">composite.WithWriteStrategy(WriteStrategy.WriteThrough);</code></pre>
+
+                    <h3>Write-Behind (Async)</h3>
+                    <pre><code class="language-csharp">composite.WithWriteStrategy(WriteStrategy.WriteBehind);
+composite.WithWriteBehindQueueSize(1000);
+composite.WithWriteBehindInterval(TimeSpan.FromSeconds(5));</code></pre>
+
+                    <h3>Multi-Tier with Fallback</h3>
+                    <pre><code class="language-csharp">composite.AddLayer(new CompositeLayer
+    { LayerName = "L1_Redis", DataSource = redisDs });
+composite.AddLayer(new CompositeLayer
+    { LayerName = "L2_Primary", DataSource = sqlDs });
+composite.AddLayer(new CompositeLayer
+    { LayerName = "L3_Fallback", DataSource = backupDs });
+composite.WithFallbackStrategy(FallbackStrategy.TryNextOnFailure);</code></pre>
+
+                    <h3>Cache Stampede Prevention</h3>
+                    <pre><code class="language-csharp">// Prevent multiple simultaneous cache-loads for same key
+composite.WithCacheStampedeProtection(
+    maxConcurrentLoads: 5,
+    lockTimeout: TimeSpan.FromSeconds(10));
+
+// Probabilistic early expiration to smooth reloads
+composite.WithEarlyExpiration(factor: 0.8); // Refresh at 80% TTL</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+                    <pre><code class="language-csharp">var cacheDs = new InMemoryCacheDataSource(cacheProps, editor);
+var primaryDs = editor.GetDataSource("ProductionDB");
+var replicaDs = editor.GetDataSource("ReadReplica");
+
+var composite = new CompositeLayerDataSource();
+composite.AddLayer(new CompositeLayer
+    { LayerName = "Cache", DataSource = cacheDs });
+composite.AddLayer(new CompositeLayer
+    { LayerName = "Primary", DataSource = primaryDs });
+composite.AddLayer(new CompositeLayer
+    { LayerName = "Replica", DataSource = replicaDs });
+
+composite.WithReadStrategy(ReadStrategy.CacheThenPrimary);
+composite.WithWriteStrategy(WriteStrategy.WriteThrough);
+composite.WithCacheExpiration(TimeSpan.FromMinutes(30));
+
+var customers = composite.GetEntity("Customers", filters);
+composite.InsertEntity("Customers", newCustomer);</code></pre>
+                </section>
+
+                <section id="pitfalls" class="section">
+                    <h2>Pitfalls</h2>
+                    <ul>
+                        <li><strong>Stale reads</strong> — Cache may return old data; use short TTL for frequently updated entities</li>
+                        <li><strong>Write inconsistency</strong> — WriteBehind is fast but can lose data on crash; use WriteThrough for critical data</li>
+                        <li><strong>Memory pressure</strong> — Cache layer grows unbounded without eviction policy; set max size</li>
+                        <li><strong>Layer mismatch</strong> — All layers must support the same entity schema; validate on setup</li>
+                        <li><strong>FanOut cost</strong> — Sending reads to all layers increases load; use only when necessary</li>
+                        <li><strong>Cache stampede</strong> — Multiple concurrent cache misses load same key simultaneously; use stampede protection</li>
+                        <li><strong>Double writing</strong> — WriteThrough writes to both cache and primary synchronously; use WriteBehind for throughput</li>
+                    </ul>
+                </section>
+
+                <div class="nav-links">
+                    <a href="dataviewdatasource.html"><i class="bi bi-arrow-left"></i> Previous: DataView</a>
+                    <a href="caching-api.html">Next: Caching <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utils - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="bi bi-sun-fill" id="theme-icon"></i></button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Utils</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Utils — Engine Utility Classes</h1>
+                    <p class="page-subtitle">Core engine helper classes: data conversion, filtering, entity structure, reflection, and file-based data source support</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Utils/Util.cs</code> — ~1500 lines, IUtil implementation</li>
+                        <li><code>.../Utils/FilterHelper.cs</code> — <code>AppFilter</code> → <code>DataView.RowFilter</code> / LINQ evaluation</li>
+                        <li><code>.../Utils/DataConversionHelper.cs</code> — DataTable ↔ List / CSV / ObservableCollection conversion</li>
+                        <li><code>.../Utils/EntityStructureHelper.cs</code> — EntityStructure extraction from DataTable / Type</li>
+                        <li><code>.../Utils/FileDataSourceHelper.cs</code> — File-based connection props factory</li>
+                        <li><code>.../Utils/ReflectionHelper.cs</code> — Expression-compiled activator, type introspection</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#util">Util (IUtil)</a></li>
+                        <li><a href="#filter-helper">FilterHelper</a></li>
+                        <li><a href="#data-conversion">DataConversionHelper</a></li>
+                        <li><a href="#entity-structure">EntityStructureHelper</a></li>
+                        <li><a href="#file-datasource">FileDataSourceHelper</a></li>
+                        <li><a href="#reflection">ReflectionHelper</a></li>
+                    </ul>
+                </div>
+
+                <section id="util" class="section">
+                    <h2>Util — IUtil Implementation</h2>
+                    <p>Core engine utility. Implements <code>IUtil</code>. Provides type conversion, DataTable handling, CSV I/O, entity structure extraction, file download, and generic type construction.</p>
+
+                    <h3>Properties</h3>
+                    <table class="ref-table"><thead><tr><th>Property</th><th>Type</th></tr></thead><tbody>
+                    <tr><td><code>Logger</code></td><td><code>IDMLogger</code></td></tr>
+                    <tr><td><code>Namespacelist</code></td><td><code>List&lt;string&gt;</code></td></tr>
+                    <tr><td><code>Classlist</code></td><td><code>List&lt;string&gt;</code></td></tr>
+                    <tr><td><code>FunctionHierarchy</code></td><td><code>List&lt;ParentChildObject&gt;</code></td></tr>
+                    <tr><td><code>ErrorObject</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>ConfigEditor</code></td><td><code>IConfigEditor</code></td></tr>
+                    <tr><td><code>DME</code></td><td><code>IDMEEditor</code></td></tr>
+                    </tbody></table>
+
+                    <h3>Methods</h3>
+
+                    <h4>DataTable Conversion</h4>
+                    <pre><code class="language-csharp">// DataTable → Typed List / ObservableBindingList
+public ObservableBindingList&lt;T&gt; ConvertDataTableToObservableBindingList&lt;T&gt;(DataTable dt) where T : Entity, new();
+public List&lt;T&gt; ConvertDataTable&lt;T&gt;(DataTable dt);
+public IBindingList ConvertDataTableToObservableList(DataTable dt, Type type);
+public List&lt;object&gt; GetListByDataTable(DataTable dt, Type type, EntityStructure enttype);
+public List&lt;object&gt; GetListByDataTable(IDMEEditor editor, DataTable dt, string ns, string entityName);
+public object GetBindingListByDataTable(DataTable dt, Type type, EntityStructure enttype);
+public object GetBindingListFromIList(IList inputList, Type itemType, EntityStructure entType);
+
+// DataTable creation from various sources
+public DataTable CreateDataTableFromFile(string filepath);
+public DataTable CreateDataTableFromListofStrings(List&lt;string&gt; strings);
+public DataTable CreateDataTableVer1(object[] array);      // Reflection-based
+public DataTable CreateDataTableVer2(object[] array);      // XML serialization-based
+public DataTable ToDataTable(IList list, Type tp);
+public DataTable ToDataTable(Type tp);                      // Schema only
+public DataTable ToDataTable(IEntityStructure entity);      // Schema only</code></pre>
+
+                    <h4>CSV I/O</h4>
+                    <pre><code class="language-csharp">public bool ToCSVFile(IList list, string filepath);
+public bool ToCSVFile(DataTable list, string filepath);</code></pre>
+
+                    <h4>Entity Structure Extraction</h4>
+                    <pre><code class="language-csharp">public EntityStructure GetEntityStructure(DataTable tb);
+public EntityStructure GetEntityStructureFromType&lt;T&gt;();
+public EntityStructure GetEntityStructureFromType(Type type);
+public EntityStructure GetEntityStructureFromList&lt;T&gt;(List&lt;T&gt; list);</code></pre>
+
+                    <h4>Type Utilities</h4>
+                    <pre><code class="language-csharp">public TypeCode GetTypeCode(Type dest);
+public bool IsObjectNumeric(object o);
+public Type GetTypeFromStringValue(string str);
+public Type GetListType(object someList);
+public Type MakeGenericListofType(string typestring);
+public Type MakeGenericType(string typestring);
+public Type MakeGenericType(string typestring, Type[] parameters);</code></pre>
+
+                    <h4>Object Creation &amp; Conversion</h4>
+                    <pre><code class="language-csharp">public T CreateInstance&lt;T&gt;(params object[] paramArray);
+public static T CreateItemFromRow&lt;T&gt;(DataRow row) where T : new();
+public static void SetItemFromRow&lt;T&gt;(T item, DataRow row) where T : new();
+public static ObjectActivator&lt;T&gt; GetActivator&lt;T&gt;(ConstructorInfo ctor);
+public ExpandoObject convertToExpando(object obj);
+public void AddProperty(ExpandoObject expando, string propertyName, object propertyValue);
+public ObservableCollection&lt;T&gt; ConvertToObservableCollection&lt;T&gt;(List&lt;T&gt; list);</code></pre>
+
+                    <h4>Other Utilities</h4>
+                    <pre><code class="language-csharp">public string GetRelativePath(string fromPath, string toPath);
+public bool AddinInterfaceFilter(Type typeObj, object criteriaObj);
+public ConnectionDriversConfig LinkConnection2Drivers(IConnectionProperties cn);
+public bool Download(string url, string downloadFileName, string downloadFilePath);
+public DataTable JsonToDataTable(string jsonString);</code></pre>
+                </section>
+
+                <section id="filter-helper" class="section">
+                    <h2>FilterHelper</h2>
+                    <p>Internal static class. Converts <code>AppFilter</code> collections to <code>DataView.RowFilter</code> expressions or evaluates them as LINQ predicates.</p>
+                    <pre><code class="language-csharp">internal static class FilterHelper
+{
+    // Apply to DataView (string-based RowFilter)
+    internal static DataView ApplyFilters(DataTable records, List&lt;AppFilter&gt; filters);
+
+    // Apply as LINQ enumerable filter
+    internal static IEnumerable&lt;DataRow&gt; ApplyFiltersEnumerable(DataTable records, List&lt;AppFilter&gt; filters);
+}</code></pre>
+                    <p><strong>Supported operators (both paths):</strong> <code>=</code>, <code>contains</code>, <code>startswith</code>, <code>endswith</code>, <code>in</code>, <code>not in</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>&lt;&gt;</code>, <code>between</code>, <code>not between</code>, <code>is null</code>, <code>is not null</code>.</p>
+                    <p>The <code>in</code>/<code>not in</code> operators split collection values on <code>,;|</code> and handle typed comparison (DateTime, bool, numeric, string).</p>
+                </section>
+
+                <section id="data-conversion" class="section">
+                    <h2>DataConversionHelper</h2>
+                    <p>Internal static class. Type-safe DataTable ↔ List/CSV/ObservableCollection conversions with proper DBNull, enum, char, and numeric handling.</p>
+                    <pre><code class="language-csharp">internal static class DataConversionHelper
+{
+    // DataTable → Typed List
+    internal static ObservableBindingList&lt;T&gt; ConvertDataTableToObservableBindingList&lt;T&gt;(DataTable dt) where T : Entity, new();
+    internal static List&lt;T&gt; ConvertDataTable&lt;T&gt;(DataTable dt);
+    internal static IBindingList ConvertDataTableToObservableList(DataTable dt, Type type);
+    internal static List&lt;object&gt; ConvertTableToList(DataTable dt, EntityStructure ent, Type entType);
+
+    // DataTable → object via PropertyInfo mapping
+    internal static T GetItem&lt;T&gt;(DataRow dr);
+    internal static T CreateItemFromRow&lt;T&gt;(DataRow row) where T : new();
+    internal static void SetItemFromRow&lt;T&gt;(T item, DataRow row) where T : new();
+
+    // DataTable creation
+    internal static DataTable CreateDataTableFromFile(string path);
+    internal static DataTable CreateDataTableFromListofStrings(List&lt;string&gt; lines);
+    internal static DataTable ToDataTable(IList list, Type type);
+    internal static DataTable ToDataTable(Type type);
+    internal static DataTable CreateDataTableVer1(object[] array);
+    internal static DataTable CreateDataTableVer2(object[] array);
+
+    // CSV Export
+    internal static bool ToCsvFromList(IList list, string filepath);
+    internal static bool ToCsvFromDataTable(DataTable dt, string filepath);
+
+    // Observable wrapper
+    internal static ObservableCollection&lt;T&gt; ConvertToObservableCollection&lt;T&gt;(List&lt;T&gt; list);
+}</code></pre>
+                </section>
+
+                <section id="entity-structure" class="section">
+                    <h2>EntityStructureHelper</h2>
+                    <p>Internal static class. Extracts <code>EntityStructure</code> metadata from a <code>DataTable</code> or individual columns.</p>
+                    <pre><code class="language-csharp">internal static class EntityStructureHelper
+{
+    // Full entity from DataTable
+    internal static EntityStructure FromDataTable(DataTable tb);
+
+    // Build a single field from a column (infers DbFieldCategory: String, Numeric, Date, Boolean, Binary, Guid, Json, Xml, Enum)
+    internal static EntityField BuildFieldFromColumn(DataColumn col);
+
+    // Build entity from a Type (via reflection)
+    internal static EntityStructure FromType(Type type);
+
+    // Build entity from a Type with PropertyInfo field discovery
+    internal static EntityStructure FromPropertyInfo(PropertyInfo[] properties, string entityName);
+}</code></pre>
+                </section>
+
+                <section id="file-datasource" class="section">
+                    <h2>FileDataSourceHelper</h2>
+                    <p>Internal static class. Creates <code>ConnectionProperties</code> for file-based data sources by matching file extensions to registered drivers.</p>
+                    <pre><code class="language-csharp">internal static class FileDataSourceHelper
+{
+    // Bulk: create connections for a batch of files
+    internal static List&lt;ConnectionProperties&gt; CreateFileConnections(IDMEEditor dme, string[] filenames);
+
+    // Single: create a connection for one file
+    // Matches by extension → driver config → DataSourceType → ConnectionString
+    internal static ConnectionProperties CreateFileDataConnection(IDMEEditor dme, string file);
+
+    // Driver matching logic:
+    // 1. File extension → ConnectionDriversConfig.extensionstoHandle
+    // 2. Driver config → DataSourceType + driver-specific connection string
+    // 3. Sets DatabaseType, ConnectionName (from filename), Category = FILE
+    // 4. Registers the connection in ConfigEditor if not already present
+}</code></pre>
+                </section>
+
+                <section id="reflection" class="section">
+                    <h2>ReflectionHelper</h2>
+                    <p>Internal static class. Performance-oriented reflection utilities with Expression-compiled activator delegates.</p>
+                    <pre><code class="language-csharp">internal static class ReflectionHelper
+{
+    // Expression-compiled constructor activator (avoids Activator.CreateInstance overhead)
+    internal static Util.ObjectActivator&lt;T&gt; GetActivator&lt;T&gt;(ConstructorInfo ctor);
+
+    // Generic instance creation
+    internal static T CreateInstance&lt;T&gt;(params object[] args);
+
+    // Type introspection
+    internal static bool IsObjectNumeric(object o);
+    internal static TypeCode GetTypeCode(Type type);
+    internal static Type GetTypeFromStringValue(string str);
+    internal static Type GetListType(object someList);
+
+    // Relationship detection
+    internal static bool HasNavigationProperties(Type type);
+    internal static List&lt;Type&gt; GetNavigationPropertyTypes(Type type);
+    internal static bool IsCollectionType(PropertyInfo prop);
+}</code></pre>
+                    <p><strong>ObjectActivator&lt;T&gt; delegate:</strong> Expression tree compiles a <code>Func&lt;object[], T&gt;</code> that directly invokes the constructor with typed parameter casting — significantly faster than <code>Activator.CreateInstance</code> for hot-path scenarios.</p>
+                </section>
+
+                <div class="nav-links">
+                    <a href="advanced-tools-utilities.html"><i class="bi bi-arrow-left"></i> Previous: Advanced Tools</a>
+                    <a href="index.html">Home <i class="bi bi-house"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2026 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

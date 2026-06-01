@@ -1,12 +1,15 @@
-# Exensions
+# Extensions
 
-Extension methods and entity comparison helpers.
+Extension methods and entity comparison helpers used throughout the engine.
 
 ## Key Files
-- `BatchExtensions.cs`: batch-processing extensions.
-- `EntitiesExtensions.cs`: entity-level helper extensions.
-- `EntitiesExtensions.Additions.cs`: additional entity operations such as diff/merge support.
+- `BatchExtensions.cs`: Batch-processing extensions (Partition, ForEachAsync, TrySelect)
+- `EntitiesExtensions.cs`: Entity-level helpers (property copying, comparison)
+- `EntitiesExtensions.Additions.cs`: Additional entity operations (diff, merge, deep clone)
 
 ## How It Fits
-Provides reusable extension-based utilities consumed by editor and helper layers.
+Provides reusable extension-based utilities consumed by editor, helper, and datasource layers. Batch extensions are used by DataImportManager, ETL operations, and sync workflows for efficient bulk processing.
 
+## Related Documentation
+- [DataImportManager Help](../Help/dataimportmanager.html)
+- [ETL Editor Help](../Help/etleditor.html)

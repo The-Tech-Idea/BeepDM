@@ -69,6 +69,10 @@
                         <li><a href="#udsh-specialized">Specialized Store Helpers</a></li>
                         <li><a href="#udsh-analysis">Analysis Helpers</a></li>
                         <li><a href="#udsh-poco">POCO-to-Entity Conversion</a></li>
+                        <li><a href="#file-folder">File &amp; Folder Helpers</a></li>
+                        <li><a href="#project-library">Project &amp; Library Helpers</a></li>
+                        <li><a href="#general-utilities">General Utility Helpers</a></li>
+                        <li><a href="#source-map">Complete Source File Map</a></li>
                     </ul>
                 </div>
 
@@ -2157,6 +2161,314 @@ var (createSql, ok, err) = helper.GenerateCreateTableSql(entity);
                     <a href="creating-custom-datasources.html"><i class="bi bi-arrow-left"></i> Creating Custom DataSources</a>
                     <a href="advanced-tools-utilities.html">Advanced Tools &amp; Utilities <i class="bi bi-arrow-right"></i></a>
                 </div>
+
+                <!-- ═══════════════════════════════════════════════════════ File & Folder Helpers -->
+                <section id="file-folder">
+                    <h2><i class="bi bi-folder2"></i> File &amp; Folder Helpers</h2>
+
+                    <h3>FileHelper</h3>
+                    <pre><code class="language-csharp">public static class FileHelper
+{
+    // Driver/file extension discovery
+    public static string GetFileExtensions(IDMEEditor dmeEditor);
+    public static List&lt;ConnectionDriversConfig&gt; GetFileDataSources(IDMEEditor dmeEditor);
+    public static DataSourceType GetDataSourceTypeFromExtension(string fileExtension, IDMEEditor dmeEditor);
+
+    // File operations
+    public static bool IsFileLocked(string filePath);
+    public static string GetFileHash(string filePath, HashAlgorithmName algorithm);
+    public static string ComputeFileChecksum(string filePath);
+
+    // Path helpers
+    public static string GetRelativePath(string basePath, string fullPath);
+    public static string EnsureAbsolutePath(string basePath, string relativePath);
+    public static string NormalizePath(string path);
+    public static string SanitizeFileName(string fileName);
+}</code></pre>
+
+                    <h3>FileOperationHelper</h3>
+                    <pre><code class="language-csharp">public static class FileOperationHelper
+{
+    // Safe file operations with locking
+    public static bool SafeDelete(string filePath);
+    public static bool SafeMove(string sourcePath, string destPath, bool overwrite = false);
+    public static bool SafeCopy(string sourcePath, string destPath, bool overwrite = false);
+
+    // Directory operations
+    public static void EnsureDirectoryExists(string directoryPath);
+    public static void ClearDirectory(string directoryPath, bool recursive = true);
+
+    // Compression
+    public static Task CompressDirectoryAsync(string sourceDir, string destZipPath);
+    public static Task DecompressArchiveAsync(string archivePath, string destDir);
+
+    // JSON/XML helpers
+    public static T LoadJsonFile&lt;T&gt;(string filePath);
+    public static Task SaveJsonFileAsync&lt;T&gt;(string filePath, T data, bool indent = true);
+    public static XDocument LoadXmlFile(string filePath);
+    public static Task SaveXmlFileAsync(string filePath, XDocument doc);
+}</code></pre>
+                </section>
+
+                <!-- ═══════════════════════════════════════════════════ Project & Library Helpers -->
+                <section id="project-library">
+                    <h2><i class="bi bi-journal-code"></i> Project &amp; Library Helpers</h2>
+                    <p>6 helpers in <code>ProjectandLibraryHelpers/</code> for project management and metadata.</p>
+
+                    <h3>ProjectCreationHelper</h3>
+                    <pre><code class="language-csharp">public static class ProjectCreationHelper
+{
+    public static Tuple&lt;IErrorsInfo, RootFolder&gt; CreateProject(
+        IDMEEditor dmeEditor, string folderpath, ProjectFolderType folderType = ProjectFolderType.Files);
+}</code></pre>
+
+                    <h3>ProjectMetadataHelper</h3>
+                    <pre><code class="language-csharp">public static class ProjectMetadataHelper
+{
+    public static ProjectMetadata LoadProjectMetadata(string projectPath);
+    public static void SaveProjectMetadata(string projectPath, ProjectMetadata metadata);
+    public static ProjectMetadata CreateDefaultMetadata(string projectName, string rootPath);
+}</code></pre>
+
+                    <h3>ProjectRetrievalHelper</h3>
+                    <pre><code class="language-csharp">public static class ProjectRetrievalHelper
+{
+    public static List&lt;RootFolder&gt; GetProjects(IDMEEditor dmeEditor, string rootPath);
+    public static RootFolder LoadProject(IDMEEditor dmeEditor, string projectPath);
+}</code></pre>
+
+                    <h3>ProjectSynchronizationHelper</h3>
+                    <pre><code class="language-csharp">public static class ProjectSynchronizationHelper
+{
+    public static void SyncProjectDataSources(RootFolder project, IDMEEditor dmeEditor);
+    public static void SyncProjectAssemblies(RootFolder project, IAssemblyHandler handler);
+}</code></pre>
+
+                    <h3>ProjectLifecycleHelper</h3>
+                    <pre><code class="language-csharp">public static class ProjectLifecycleHelper
+{
+    public static bool InitializeProject(RootFolder project, IDMEEditor dmeEditor);
+    public static bool ValidateProjectIntegrity(RootFolder project);
+    public static void ArchiveProject(RootFolder project, string archivePath);
+    public static void RestoreProject(string archivePath, string targetPath);
+}</code></pre>
+
+                    <h3>ProjectManagementHelper</h3>
+                    <pre><code class="language-csharp">public static class ProjectManagementHelper
+{
+    public static void AddDataSourceToProject(RootFolder project, string datasourceName, IDMEEditor editor);
+    public static void RemoveDataSourceFromProject(RootFolder project, string datasourceName, IDMEEditor editor);
+    public static List&lt;string&gt; GetProjectDataSources(RootFolder project);
+    public static Dictionary&lt;string, int&gt; GetProjectFileStats(RootFolder project);
+}</code></pre>
+                </section>
+
+                <!-- ═══════════════════════════════════════════════ General Utilities -->
+                <section id="general-utilities">
+                    <h2><i class="bi bi-tools"></i> General Utility Helpers</h2>
+
+                    <h3>ValidationHelper</h3>
+                    <pre><code class="language-csharp">public static class ValidationHelper
+{
+    // ValidationResult class
+    public class ValidationResult
+    {
+        public bool IsValid { get; set; }
+        public List&lt;string&gt; Errors { get; set; }
+        public List&lt;string&gt; Warnings { get; set; }
+
+        public void AddError(string message);
+        public void AddWarning(string message);
+        public string ToSummary();
+    }
+
+    // Core validation methods
+    public static ValidationResult ValidateConnectionProperties(IConnectionProperties props);
+    public static ValidationResult ValidateEntityStructure(EntityStructure entity);
+    public static ValidationResult ValidateDataType(string dataType, DataSourceType dsType);
+    public static ValidationResult ValidateEntityName(string entityName, DataSourceType dsType, bool allowReserved = false);
+    public static ValidationResult ValidateColumnName(string columnName, DataSourceType dsType, bool allowReserved = false);
+    public static ValidationResult ValidateConnectionString(string connectionString, DataSourceType dsType);
+
+    // Data validation
+    public static ValidationResult ValidateDataValue(object value, EntityField field);
+    public static ValidationResult ValidatePrimaryKey(object value, EntityStructure entity);
+    public static ValidationResult ValidateForeignKey(object value, RelationShipKeys fk);
+
+    // Regex helpers
+    public static bool IsValidEmail(string email);
+    public static bool IsValidUrl(string url);
+    public static bool IsValidIpAddress(string ip);
+}</code></pre>
+
+                    <h3>ErrorHandlingHelper</h3>
+                    <pre><code class="language-csharp">public static class ErrorHandlingHelper
+{
+    // Structured error handling
+    public static void HandleException(Exception ex, string context, IDMEEditor editor,
+        bool includeStackTrace = true);
+    public static void LogError(string message, string context, IDMEEditor editor,
+        Exception ex = null);
+
+    // Error categorization
+    public static ErrorCategory CategorizeError(Exception ex);
+    public static string GetUserFriendlyMessage(Exception ex);
+    public static bool IsTransientError(Exception ex);     // network, timeout
+    public static bool IsConfigurationError(Exception ex);  // bad config, missing driver
+
+    public enum ErrorCategory
+    {
+        Unknown, Validation, Configuration, Connection,
+        Query, DataMapping, Security, Permission,
+        ResourceNotFound, Timeout, Concurrency,
+        Serialization, OutOfMemory
+    }
+}</code></pre>
+
+                    <h3>StringExtensions</h3>
+                    <pre><code class="language-csharp">public static class StringExtensions
+{
+    // String manipulation extensions
+    public static string ToCamelCase(this string value);
+    public static string ToPascalCase(this string value);
+    public static string ToSnakeCase(this string value);
+    public static string ToKebabCase(this string value);
+
+    // Splitting and parsing
+    public static string[] SplitAndTrim(this string value, char separator = ',');
+    public static bool EqualsIgnoreCase(this string value, string other);
+    public static bool ContainsIgnoreCase(this string value, string substring);
+    public static string Truncate(this string value, int maxLength, string suffix = "...");
+
+    // Encoding/path helpers
+    public static string ToSafeFileName(this string value);
+    public static string ToUrlSafeString(this string value);
+    public static string RemoveSpecialCharacters(this string value, string allowedChars = null);
+    public static string ToSqlSafeString(this string value);
+    public static string ToXmlSafeString(this string value);
+}</code></pre>
+
+                    <h3>VectorDatabaseHelper</h3>
+                    <pre><code class="language-csharp">public static class VectorDatabaseHelper
+{
+    public static float[] NormalizeVector(float[] vector);
+    public static float CosineSimilarity(float[] a, float[] b);
+    public static float EuclideanDistance(float[] a, float[] b);
+    public static float DotProduct(float[] a, float[] b);
+    public static List&lt;(int Index, float Similarity)&gt; FindNearest(
+        float[] query, List&lt;(int Id, float[] Vector)&gt; vectors, int topK = 10);
+}</code></pre>
+
+                    <h3>DataSourceLifecycleHelper</h3>
+                    <pre><code class="language-csharp">public static class DataSourceLifecycleHelper
+{
+    public static IErrorsInfo OpenDataSource(IDataSource ds);
+    public static IErrorsInfo CloseDataSource(IDataSource ds);
+    public static ConnectionState RefreshConnection(IDataSource ds);
+    public static bool IsHealthy(IDataSource ds);
+    public static Task&lt;bool&gt; PingAsync(IDataSource ds, int timeoutMs = 5000, CancellationToken ct = default);
+}</code></pre>
+                </section>
+
+                <!-- ═══════════════════════════════════════════════════ Complete Source File Map -->
+                <section id="source-map">
+                    <h2><i class="bi bi-map"></i> Complete Helpers Source File Map (100+ files)</h2>
+
+                    <table class="reference-table"><thead><tr><th>Category</th><th>File</th><th>Description</th></tr></thead><tbody>
+                    <tr><td rowspan="18"><strong>ConnectionHelpers</strong> (22 files)</td>
+                    <td><code>ConnectionHelper.cs</code></td><td>Static facade — delegates to sub-helpers</td></tr><tr>
+                    <td><code>ConnectionDriverLinkingHelper.cs</code></td><td>Links connections to driver configs</td></tr><tr>
+                    <td><code>ConnectionStringProcessingHelper.cs</code></td><td>Parses/builds connection strings</td></tr><tr>
+                    <td><code>ConnectionStringValidationHelper.cs</code></td><td>Validates connection string format</td></tr><tr>
+                    <td><code>ConnectionStringSecurityHelper.cs</code></td><td>En/decrypts connection secrets</td></tr><tr>
+                    <td><code>ConnectionHelper_GetParameterList.cs</code></td><td>Extracts parameter lists from config</td></tr><tr>
+                    <td><code>TestConnectionHelper.cs</code></td><td>Tests connection liveness</td></tr><tr>
+                    <td><code>ProxyLivenessHelper.cs</code></td><td>Proxy-specific health probing</td></tr><tr>
+                    <td><code>ConnectionHelper_RDBMS.cs</code></td><td>RDBMS connection config factory</td></tr><tr>
+                    <td><code>ConnectionHelper_NoSQL.cs</code></td><td>NoSQL connection config factory</td></tr><tr>
+                    <td><code>ConnectionHelper_File.cs</code> / <code>.Misc</code></td><td>File-based connection config (2)</td></tr><tr>
+                    <td><code>ConnectionHelper_Cloud.cs</code></td><td>Cloud service config factory</td></tr><tr>
+                    <td><code>ConnectionHelper_Streaming.cs</code></td><td>Streaming data config factory</td></tr><tr>
+                    <td><code>ConnectionHelper_InMemory.cs</code></td><td>In-memory/Cache config factory</td></tr><tr>
+                    <td><code>ConnectionHelper_WebAPI.cs</code></td><td>WebAPI/REST config factory</td></tr><tr>
+                    <td><code>ConnectionHelper_Proxy.cs</code></td><td>Proxy data source config factory</td></tr><tr>
+                    <td><td colspan="2"><strong>SaaS Connectors (8):</strong> ECommerce, CRM, Communication, Cache, ProjectManagement, Marketing, VectorDB, Blockchain</td></tr>
+
+                    <tr><td rowspan="17"><strong>DataTypesHelpers</strong> (20 files)</td>
+                    <td><code>DataTypesHelper.cs</code></td><td>IDataTypesHelper — type conversion, listing</td></tr><tr>
+                    <td><code>DataTypeBasicOperations.cs</code></td><td>Basic type operations (null check, coercion)</td></tr><tr>
+                    <td><code>DataTypeMappingLookup.cs</code></td><td>CLR ↔ database type lookup tables</td></tr><tr>
+                    <td><code>DataTypeMappingRepository.cs</code></td><td>Central type mapping repository</td></tr><tr>
+                    <td><code>DataTypeFieldMappingHelper.cs</code></td><td>Per-field type mapping with defaults</td></tr><tr>
+                    <td><td colspan="2"><strong>Database-specific repos (14):</strong> SQL Server, Oracle, PostgreMySQL, NoSQL, Modern, Search, Vector, Streaming, MachineLearning, WorkflowIoT, Protocols, Services, SocialMedia, PaymentGateways, IoT</td></tr>
+
+                    <tr><td rowspan="4"><strong>RDBMSHelpers — Core</strong></td>
+                    <td><code>RDBMSHelper.cs</code></td><td>General RDBMS helper facade</td></tr><tr>
+                    <td><code>DatabaseFeatureHelper.cs</code></td><td>Feature detection per RDBMS type</td></tr><tr>
+                    <td><code>DatabaseSchemaQueryHelper.cs</code></td><td>Schema metadata query builder</td></tr><tr>
+                    <td><code>DatabaseQueryRepositoryHelper.cs</code></td><td>Query template repository</td></tr>
+
+                    <tr><td rowspan="8"><strong>RDBMSHelpers — DML</strong></td>
+                    <td><code>DatabaseDMLHelper.cs</code></td><td>Static facade — DML generation</td></tr><tr>
+                    <td><code>DatabaseDMLBasicOperations.cs</code></td><td>INSERT, UPDATE, DELETE generators</td></tr><tr>
+                    <td><code>DatabaseDMLBulkOperations.cs</code></td><td>Bulk insert/update/delete</td></tr><tr>
+                    <td><code>DatabaseDMLAdvancedQueryGenerator.cs</code></td><td>Advanced query patterns</td></tr><tr>
+                    <td><code>DatabaseDMLParameterizedQueries.cs</code></td><td>Parameterized query helpers</td></tr><tr>
+                    <td><code>DatabaseDMLUtilities.cs</code></td><td>SQL utility methods</td></tr><tr>
+                    <td><code>DatabaseDMLSupportingClasses.cs</code></td><td>Expression printer, SQL dialect</td></tr><tr>
+                    <td><code>DatabaseDMLSpecificHelpers.cs</code></td><td>Per-RDBMS specific DML</td></tr>
+
+                    <tr><td rowspan="5"><strong>RDBMSHelpers — Entity</strong></td>
+                    <td><code>DatabaseEntityHelper.cs</code> / <code>.Legacy</code></td><td>Entity CRUD SQL generation (2)</td></tr><tr>
+                    <td><code>DatabaseEntityAnalyzer.cs</code></td><td>Entity structure analysis</td></tr><tr>
+                    <td><code>DatabaseEntityValidator.cs</code></td><td>Entity validation against schema</td></tr><tr>
+                    <td><code>DatabaseEntityNamingValidator.cs</code></td><td>Naming convention validator</td></tr><tr>
+                    <td><code>DatabaseEntityTypeHelper.cs</code></td><td>Type inference from schema</td></tr>
+
+                    <tr><td rowspan="9"><strong>UniversalDataSourceHelpers — Core</strong></td>
+                    <td><code>DataSourceHelperFactory.cs</code></td><td>Factory: creates helpers by DataSourceType</td></tr><tr>
+                    <td><code>GeneralDataSourceHelper.cs</code></td><td>Facade delegating to type-specific helper</td></tr><tr>
+                    <td><code>DefaultDataSourceHelper.cs</code></td><td>Default fallback helper</td></tr><tr>
+                    <td><code>DataSourceCapabilityMatrix.cs</code></td><td>Feature support matrix per DS type</td></tr><tr>
+                    <td><td colspan="2"><strong>Analysis:</strong> RelationshipInferencer, NavigationPropertyDetector</td></tr><tr>
+                    <td><td colspan="2"><strong>Mapping:</strong> RelationshipToEntityMapper</td></tr><tr>
+                    <td><td colspan="2"><strong>RDBMS:</strong> RdbmsHelper, RdbmsHelper.Constraints, RdbmsHelper.Transactions</td></tr>
+
+                    <tr><td rowspan="8"><strong>UniversalDataSourceHelpers — Specialized</strong></td>
+                    <td><code>CassandraHelper.cs</code></td><td>Cassandra-specific helper</td></tr><tr>
+                    <td><code>MongoDBHelper.cs</code></td><td>MongoDB-specific helper</td></tr><tr>
+                    <td><code>RedisHelper.cs</code></td><td>Redis-specific helper</td></tr><tr>
+                    <td><code>GraphDbHelper.cs</code></td><td>Graph DB helper</td></tr><tr>
+                    <td><code>VectorDbHelper.cs</code></td><td>Vector DB helper</td></tr><tr>
+                    <td><code>SearchEngineHelper.cs</code></td><td>Search engine helper</td></tr><tr>
+                    <td><code>TimeSeriesHelper.cs</code></td><td>Time-series DB helper</td></tr><tr>
+                    <td><code>RestApiHelper.cs</code></td><td>REST API helper</td></tr><tr>
+                    <td><code>FileFormatHelper.cs</code></td><td>File format (CSV, Excel, Parquet) helper</td></tr><tr>
+                    <td><code>StreamingHelper.cs</code></td><td>Apache Kafka helper</td></tr>
+
+                    <tr><td rowspan="6"><strong>FileandFolderHelpers</strong></td>
+                    <td><code>FileHelper.cs</code></td><td>File extension/data source discovery, hashing, path helpers</td></tr><tr>
+                    <td><code>FileOperationHelper.cs</code></td><td>Safe file/dir ops, compression, JSON/XML</td></tr>
+
+                    <tr><td rowspan="6"><strong>ProjectandLibraryHelpers</strong></td>
+                    <td><code>ProjectCreationHelper.cs</code></td><td>Create project from folder path</td></tr><tr>
+                    <td><code>ProjectMetadataHelper.cs</code></td><td>Load/Save project metadata</td></tr><tr>
+                    <td><code>ProjectRetrievalHelper.cs</code></td><td>List/load projects from root</td></tr><tr>
+                    <td><code>ProjectSynchronizationHelper.cs</code></td><td>Sync data sources/assemblies with project</td></tr><tr>
+                    <td><code>ProjectLifecycleHelper.cs</code></td><td>Init/validate/archive/restore projects</td></tr><tr>
+                    <td><code>ProjectManagementHelper.cs</code></td><td>Add/remove DS, file stats from project</td></tr>
+
+                    <tr><td rowspan="7"><strong>General Utilities</strong></td>
+                    <td><code>ValidationHelper.cs</code></td><td>Connection/entity/data validation + regex</td></tr><tr>
+                    <td><code>ErrorHandlingHelper.cs</code></td><td>Structured error handling, categorization, transience detection</td></tr><tr>
+                    <td><code>StringExtensions.cs</code></td><td>String case conversions, encoding, truncation</td></tr><tr>
+                    <td><code>VectorDatabaseHelper.cs</code></td><td>Vector math: normalize, cosine similarity, nearest neighbors</td></tr><tr>
+                    <td><code>DataSourceLifecycleHelper.cs</code></td><td>Open/close/refresh/ping data sources</td></tr>
+                    <tr><td><code>DatabaseObjectCreationHelper.cs</code></td><td>Database object (table, view, SP) creation</td></tr>
+                    <tr><td><code>DatabaseEntitySqlGenerator.cs</code></td><td>Entity-to-SQL generation pipeline</td></tr>
+                    <tr><td><code>DatabaseEntityReservedKeywordChecker.cs</code></td><td>Reserved keyword collision detection</td></tr>
+                    </tbody></table>
+                </section>
 
                 <!-- Footer -->
                 <footer class="documentation-footer">

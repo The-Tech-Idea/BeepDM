@@ -46,7 +46,7 @@
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>â­ Table of Contents</h3>
+                    <h3>⭐ Table of Contents</h3>
                     <ul>
                         <li><a href="#general-principles">General Principles</a></li>
                         <li><a href="#unitofwork-practices">UnitOfWork Best Practices</a></li>
@@ -65,12 +65,12 @@
                     <h2>General Principles</h2>
                     
                     <div class="success">
-                        <strong>âœ… Follow SOLID Principles</strong>
+                        <strong>✅ Follow SOLID Principles</strong>
                         <p>Design your data access layer following SOLID principles. Each UnitOfWork should have a single responsibility, and dependencies should be injected rather than created directly.</p>
                     </div>
 
                     <div class="success">
-                        <strong>âœ… Always Use Using Statements</strong>
+                        <strong>✅ Always Use Using Statements</strong>
                         <p>UnitOfWork implements IDisposable. Always use using statements or explicitly call Dispose() to ensure proper resource cleanup.</p>
                     </div>
                     
@@ -101,7 +101,7 @@ finally
                     </div>
 
                     <div class="success">
-                        <strong>âš¡ Use Async/Await Consistently</strong>
+                        <strong>⚡ Use Async/Await Consistently</strong>
                         <p>Always use async versions of methods for database operations to avoid blocking the UI thread.</p>
                     </div>
                     
@@ -133,7 +133,7 @@ public void ProcessCustomer(Customer customer)
                     <h2>UnitOfWork Best Practices</h2>
 
                     <div class="success">
-                        <strong>ðŸ”„ Initialize Early, Use Throughout</strong>
+                        <strong>🔄 Initialize Early, Use Throughout</strong>
                         <p>Initialize UnitOfWork instances early in your application lifecycle and reuse them throughout the session.</p>
                     </div>
                     
@@ -189,7 +189,7 @@ public void ProcessCustomer(Customer customer)
                     </div>
 
                     <div class="success">
-                        <strong>âœ”ï¸ Implement Proper Validation</strong>
+                        <strong>✔️ Implement Proper Validation</strong>
                         <p>Use event handlers to implement validation logic at appropriate lifecycle points.</p>
                     </div>
                     
@@ -239,7 +239,7 @@ private void LogChanges(object sender, UnitofWorkParams args)
                     </div>
 
                     <div class="success">
-                        <strong>ðŸ” Check IsDirty Before Operations</strong>
+                        <strong>🔍 Check IsDirty Before Operations</strong>
                         <p>Always check IsDirty before committing or closing to avoid data loss.</p>
                     </div>
                     
@@ -337,7 +337,7 @@ private void LogChanges(object sender, UnitofWorkParams args)
                     <h2>MultiDataSourceUnitOfWork Best Practices</h2>
 
                     <div class="success">
-                        <strong>ðŸ”— Setup Relationships Early</strong>
+                        <strong>🔗 Setup Relationships Early</strong>
                         <p>Define all relationships before starting data operations to ensure proper coordination.</p>
                     </div>
                     
@@ -386,7 +386,7 @@ private async Task LoadInitialDataAsync()
                     </div>
 
                     <div class="success">
-                        <strong>ðŸ“¡ Use Events for UI Updates</strong>
+                        <strong>📡 Use Events for UI Updates</strong>
                         <p>Subscribe to ChildDataChanged events to keep UI synchronized with data changes.</p>
                     </div>
                     
@@ -432,7 +432,7 @@ private async Task RefreshOrdersGrid()
                     </div>
 
                     <div class="success">
-                        <strong>âš™ï¸ Choose Appropriate Relationship Behaviors</strong>
+                        <strong>⚙️ Choose Appropriate Relationship Behaviors</strong>
                         <p>Select relationship behaviors based on business requirements, not technical convenience.</p>
                     </div>
                     
@@ -461,7 +461,7 @@ _multiUoW.AddRelationship("Customer", "Order", "CustomerID", "CustomerID",
                     <h2>Performance Optimization</h2>
 
                     <div class="success">
-                        <strong>ðŸ” Use Filtering at Database Level</strong>
+                        <strong>🔍 Use Filtering at Database Level</strong>
                         <p>Apply filters at the database level rather than in memory to improve performance.</p>
                     </div>
                     
@@ -495,7 +495,7 @@ public async Task&lt;List&lt;Customer&gt;&gt; GetActiveCustomersSlow(DateTime si
                     </div>
 
                     <div class="success">
-                        <strong>ðŸ“¦ Batch Operations When Possible</strong>
+                        <strong>📦 Batch Operations When Possible</strong>
                         <p>For large datasets, process data in batches to avoid memory issues.</p>
                     </div>
                     
@@ -562,7 +562,7 @@ private async Task ProcessBatchAsync(List&lt;Customer&gt; batch)
                     </div>
 
                     <div class="success">
-                        <strong>ðŸ“Š Use Progress Reporting for Long Operations</strong>
+                        <strong>📊 Use Progress Reporting for Long Operations</strong>
                         <p>Implement progress reporting for operations that might take significant time.</p>
                     </div>
                     
@@ -609,7 +609,7 @@ private async Task ProcessBatchAsync(List&lt;Customer&gt; batch)
                     <h2>Error Handling Best Practices</h2>
 
                     <div class="error">
-                        <strong>ðŸ›¡ï¸ Implement Comprehensive Error Handling</strong>
+                        <strong>🛡️ Implement Comprehensive Error Handling</strong>
                         <p>Handle different types of errors appropriately and provide meaningful feedback.</p>
                     </div>
                     
@@ -662,7 +662,7 @@ private async Task ProcessBatchAsync(List&lt;Customer&gt; batch)
                     </div>
 
                     <div class="warning">
-                        <strong>ðŸ“ Log Important Operations</strong>
+                        <strong>📝 Log Important Operations</strong>
                         <p>Enable logging for audit trails and debugging purposes.</p>
                     </div>
                     
@@ -704,7 +704,7 @@ private void SaveLogsToFile(object state)
                     <h2>Testing Strategies</h2>
 
                     <div class="success">
-                        <strong>ðŸ§ª Use List Mode for Unit Testing</strong>
+                        <strong>🧪 Use List Mode for Unit Testing</strong>
                         <p>Use list mode for unit testing to avoid database dependencies.</p>
                     </div>
                     
@@ -783,7 +783,7 @@ public class CustomerUnitOfWorkTests
                     </div>
 
                     <div class="success">
-                        <strong>ðŸŽ­ Mock Dependencies</strong>
+                        <strong>🎭 Mock Dependencies</strong>
                         <p>Mock IDMEEditor and IDataSource for isolated unit testing.</p>
                     </div>
                     
@@ -852,7 +852,7 @@ public class CustomerServiceTests
                     <h2>Security Guidelines</h2>
 
                     <div class="warning">
-                        <strong>ðŸ”’ Validate Input Data</strong>
+                        <strong>🔒 Validate Input Data</strong>
                         <p>Always validate input data before processing to prevent injection attacks and data corruption.</p>
                     </div>
                     
@@ -894,7 +894,7 @@ private bool ContainsSqlInjectionPatterns(string input)
                     </div>
 
                     <div class="warning">
-                        <strong>ðŸ›¡ï¸ Implement Authorization Checks</strong>
+                        <strong>🛡️ Implement Authorization Checks</strong>
                         <p>Check user permissions before allowing data operations.</p>
                     </div>
                     
@@ -946,7 +946,7 @@ private bool ContainsSqlInjectionPatterns(string input)
                     <h2>Common Anti-Patterns to Avoid</h2>
 
                     <div class="error">
-                        <strong>âŒ Don't Create UnitOfWork in Loops</strong>
+                        <strong>❌ Don't Create UnitOfWork in Loops</strong>
                         <p>Creating new UnitOfWork instances in loops is inefficient and can cause resource issues.</p>
                     </div>
                     
@@ -984,7 +984,7 @@ public async Task ImportCustomersGoodAsync(List&lt;ImportData&gt; importData)
                     </div>
 
                     <div class="error">
-                        <strong>âŒ Don't Ignore Event Cancellation</strong>
+                        <strong>❌ Don't Ignore Event Cancellation</strong>
                         <p>Always respect the Cancel flag in event handlers.</p>
                     </div>
                     
@@ -1022,7 +1022,7 @@ private void OnPreInsert_Good(object sender, UnitofWorkParams args)
                     </div>
 
                     <div class="error">
-                        <strong>âŒ Don't Mix Synchronous and Asynchronous Calls</strong>
+                        <strong>❌ Don't Mix Synchronous and Asynchronous Calls</strong>
                         <p>Mixing sync and async calls can lead to deadlocks and performance issues.</p>
                     </div>
                     
@@ -1075,68 +1075,68 @@ public async Task ProcessCustomer_Good(Customer customer)
                     <h2>Deployment and Production Checklist</h2>
                     
                     <div class="tip">
-                        <strong>ðŸ“‹ Pre-Deployment Checklist</strong>
+                        <strong>📋 Pre-Deployment Checklist</strong>
                         <p>Ensure these items are verified before deploying to production:</p>
                     </div>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>ðŸ”§ Configuration</h3>
+                            <h3>🔧 Configuration</h3>
                             <ul>
-                                <li>âœ… Connection timeouts configured appropriately</li>
-                                <li>âœ… Batch sizes optimized for data volume</li>
-                                <li>âœ… Relationship behaviors documented</li>
-                                <li>âœ… Environment-specific settings applied</li>
+                                <li>✅ Connection timeouts configured appropriately</li>
+                                <li>✅ Batch sizes optimized for data volume</li>
+                                <li>✅ Relationship behaviors documented</li>
+                                <li>✅ Environment-specific settings applied</li>
                             </ul>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>ðŸ“ Logging & Monitoring</h3>
+                            <h3>📝 Logging & Monitoring</h3>
                             <ul>
-                                <li>âœ… Logging levels configured correctly</li>
-                                <li>âœ… Error alerting system in place</li>
-                                <li>âœ… Performance monitoring enabled</li>
-                                <li>âœ… Audit trail configuration verified</li>
+                                <li>✅ Logging levels configured correctly</li>
+                                <li>✅ Error alerting system in place</li>
+                                <li>✅ Performance monitoring enabled</li>
+                                <li>✅ Audit trail configuration verified</li>
                             </ul>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>ðŸ§ª Testing</h3>
+                            <h3>🧪 Testing</h3>
                             <ul>
-                                <li>âœ… Load testing completed</li>
-                                <li>âœ… Rollback scenarios tested</li>
-                                <li>âœ… Error handling verified</li>
-                                <li>âœ… Resource disposal confirmed</li>
+                                <li>✅ Load testing completed</li>
+                                <li>✅ Rollback scenarios tested</li>
+                                <li>✅ Error handling verified</li>
+                                <li>✅ Resource disposal confirmed</li>
                             </ul>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>ðŸ”’ Security</h3>
+                            <h3>🔒 Security</h3>
                             <ul>
-                                <li>âœ… Input validation implemented</li>
-                                <li>âœ… Authorization checks in place</li>
-                                <li>âœ… SQL injection prevention verified</li>
-                                <li>âœ… Sensitive data protection confirmed</li>
+                                <li>✅ Input validation implemented</li>
+                                <li>✅ Authorization checks in place</li>
+                                <li>✅ SQL injection prevention verified</li>
+                                <li>✅ Sensitive data protection confirmed</li>
                             </ul>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>ðŸ¥ Health Checks</h3>
+                            <h3>🏥 Health Checks</h3>
                             <ul>
-                                <li>âœ… Data source health monitoring</li>
-                                <li>âœ… Connection pool monitoring</li>
-                                <li>âœ… Memory usage tracking</li>
-                                <li>âœ… Performance baseline established</li>
+                                <li>✅ Data source health monitoring</li>
+                                <li>✅ Connection pool monitoring</li>
+                                <li>✅ Memory usage tracking</li>
+                                <li>✅ Performance baseline established</li>
                             </ul>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>ðŸ“š Documentation</h3>
+                            <h3>📚 Documentation</h3>
                             <ul>
-                                <li>âœ… Support procedures documented</li>
-                                <li>âœ… Common error scenarios documented</li>
-                                <li>âœ… Backup/recovery procedures ready</li>
-                                <li>âœ… Troubleshooting guide available</li>
+                                <li>✅ Support procedures documented</li>
+                                <li>✅ Common error scenarios documented</li>
+                                <li>✅ Backup/recovery procedures ready</li>
+                                <li>✅ Troubleshooting guide available</li>
                             </ul>
                         </div>
                     </div>
@@ -1144,7 +1144,7 @@ public async Task ProcessCustomer_Good(Customer customer)
 
                 <!-- Final Note -->
                 <div class="note">
-                    <strong>ðŸ’¡ Remember</strong>
+                    <strong>💡 Remember</strong>
                     <p>These best practices are guidelines based on common scenarios. Always adapt them to your specific requirements and constraints. Regular code reviews and performance testing will help ensure your implementation remains optimal as your application evolves.</p>
                 </div>
 

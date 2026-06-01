@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services: Audit, Logging &amp; Telemetry - Beep DME Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Services: Audit, Logging &amp; Telemetry</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Services: Audit, Logging &amp; Telemetry</h1>
+                    <p class="page-subtitle">Shared telemetry pipeline powering BeepAudit, BeepLog, and BeepService extensions with enrichment, redaction, sampling, rate-limiting, and cross-platform sinks</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Services/Audit/</code> (BeepAudit, NullBeepAudit, Integrity, Purge, Query)</li>
+                        <li><code>DataManagementEngineStandard/Services/Logging/</code> (BeepLog, NullBeepLog, Levels, ScopeExtensions)</li>
+                        <li><code>DataManagementEngineStandard/Services/Telemetry/</code> (Pipeline, Sinks, Samplers, Redaction, RateLimit)</li>
+                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.*.cs</code> (7 extension files)</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#telemetry-pipeline">TelemetryPipeline</a></li>
+                        <li><a href="#beep-audit">BeepAudit</a></li>
+                        <li><a href="#beep-log">BeepLog</a></li>
+                        <li><a href="#sinks">Sinks &amp; Processing</a></li>
+                        <li><a href="#extensions">Service Extensions</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="architecture" class="section">
+                    <h2>Architecture</h2>
+                    <pre><code class="language-text">TelemetryPipeline (shared orchestrator)
+└── BoundedChannelQueue (backpressure-aware)
+    └── BatchWriter (fan-out to sinks)
+
+BeepLog (IBeepLog) ───────────────┐
+BeepAudit (IBeepAudit) ────────────┤──→ TelemetryPipeline ──→ Sinks
+Extensions (Audit/Log/Diagnostics) ┘
+
+Pipeline stages (per envelope):
+1. Enricher     → add correlation/context
+2. Deduper      → suppress duplicates
+3. Sampler      → probabilistic/rate-based sampling
+4. Redactor     → PII/secret scrubbing
+5. RateLimiter  → token bucket throttling
+6. BatchWriter  → fan-out to sinks</code></pre>
+                </section>
+
+                <section id="telemetry-pipeline" class="section">
+                    <h2>TelemetryPipeline</h2>
+                    <p>Shared, opt-in telemetry orchestrator backing both <code>BeepLog</code> and <code>BeepAudit</code>:</p>
+                    <pre><code class="language-csharp">public sealed partial class TelemetryPipeline : IAsyncDisposable
+{
+    private readonly BoundedChannelQueue _queue;
+    private readonly BatchWriter _writer;
+    private readonly IReadOnlyList&lt;ITelemetrySink&gt; _sinks;
+    private readonly IReadOnlyList&lt;IEnricher&gt; _enrichers;
+    private readonly IReadOnlyList&lt;IRedactor&gt; _redactors;
+    private readonly IReadOnlyList&lt;ISampler&gt; _samplers;
+    private readonly IMessageDeduper _deduper;
+    private readonly IRateLimiter _rateLimiter;
+
+    public event Action&lt;string, Exception&gt; SinkErrored;
+
+    // Submit an envelope to the pipeline
+    public ValueTask SubmitAsync(TelemetryEnvelope envelope);
+
+    // Graceful shutdown
+    public ValueTask FlushAsync(CancellationToken token);
+}</code></pre>
+
+                    <h3>Pipeline Stages</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Stage</th><th>Interface</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td>Enrichment</td><td><code>IEnricher</code></td><td>Add correlation IDs, host metadata, timestamps</td></tr>
+                            <tr><td>Deduplication</td><td><code>IMessageDeduper</code></td><td>Suppress duplicate log entries</td></tr>
+                            <tr><td>Sampling</td><td><code>ISampler</code></td><td>Probabilistic or rate-based decision</td></tr>
+                            <tr><td>Redaction</td><td><code>IRedactor</code></td><td>Scrub PII, secrets, sensitive fields</td></tr>
+                            <tr><td>Rate Limiting</td><td><code>IRateLimiter</code></td><td>Token bucket throttling per source</td></tr>
+                            <tr><td>Batching</td><td><code>BatchWriter</code></td><td>Fan-out to registered sinks</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Backpressure Modes</h3>
+                    <pre><code class="language-csharp">public enum BackpressureMode { Drop, Block, Throw }</code></pre>
+                </section>
+
+                <section id="beep-audit" class="section">
+                    <h2>BeepAudit</h2>
+                    <p>Audit recorder with tamper-evidence, GDPR purge, and compliance querying:</p>
+                    <pre><code class="language-csharp">public sealed partial class BeepAudit : IBeepAudit
+{
+    public BeepAudit(BeepAuditOptions options,
+        TelemetryPipeline pipeline, IHashChainSigner signer = null);
+
+    // Record an audit event
+    public ValueTask RecordAsync(string action, string actor,
+        string resource, Dictionary&lt;string, object&gt; metadata);
+
+    // Compliance services (Phase 10)
+    public void AttachComplianceServices(
+        IAuditQueryEngine queryEngine = null,
+        GdprPurgeService purgeService = null,
+        IntegrityVerifier integrityVerifier = null);
+
+    // Tamper-evidence (hash chain)
+    public bool VerifyIntegrity(string entryId);
+}
+
+public class BeepAuditOptions
+{
+    public bool Enabled { get; set; } = false;
+    public bool HashChain { get; set; } = false;
+    public RetentionOptions Retention { get; set; }
+}</code></pre>
+
+                    <h3>Partial Files</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>BeepAudit.Core.cs</code></td><td>ctor, RecordAsync, AttachComplianceServices</td></tr>
+                            <tr><td><code>BeepAudit.Lifetime.cs</code></td><td>Flush, Dispose semantics</td></tr>
+                            <tr><td><code>BeepAudit.Query.cs</code></td><td>Query, purge, verify stubs</td></tr>
+                            <tr><td><code>NullBeepAudit.cs</code></td><td>No-op when disabled</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Sub-components</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Directory</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Integrity/</code></td><td>Hash chain signing and tamper verification</td></tr>
+                            <tr><td><code>Purge/</code></td><td>GDPR-compliant data purging</td></tr>
+                            <tr><td><code>Query/</code></td><td>Audit event querying and export</td></tr>
+                            <tr><td><code>Export/</code></td><td>Compliance export formats</td></tr>
+                            <tr><td><code>Bridges/</code></td><td>Integration with legacy subsystems</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="beep-log" class="section">
+                    <h2>BeepLog</h2>
+                    <p>Structured logging with severity levels, scopes, and filtering:</p>
+                    <pre><code class="language-csharp">public sealed partial class BeepLog : IBeepLog
+{
+    public BeepLog(BeepLoggingOptions options, TelemetryPipeline pipeline);
+
+    public bool IsEnabled { get; }
+    public BeepLogLevel MinLevel { get; }
+
+    // Core logging
+    public void Log(BeepLogLevel level, string message,
+        Dictionary&lt;string, object&gt; extra = null);
+
+    // Extension methods (via BeepLogScopeExtensions)
+    public void Trace(string msg);
+    public void Debug(string msg);
+    public void Info(string msg);
+    public void Warn(string msg);
+    public void Error(string msg, Exception ex = null);
+    public void Critical(string msg, Exception ex = null);
+}
+
+public enum BeepLogLevel { Verbose, Debug, Information, Warning, Error, Critical }
+
+public class BeepLoggingOptions
+{
+    public bool Enabled { get; set; } = false;
+    public BeepLogLevel MinLevel { get; set; } = BeepLogLevel.Information;
+}</code></pre>
+                </section>
+
+                <section id="sinks" class="section">
+                    <h2>Sinks &amp; Processing</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Component</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ITelemetrySink</code></td><td>Destination for telemetry (file, console, database)</td></tr>
+                            <tr><td><code>BatchWriter</code></td><td>Fan-out to multiple sinks with error isolation</td></tr>
+                            <tr><td><code>BoundedChannelQueue</code></td><td>Backpressure-aware queue</td></tr>
+                            <tr><td><code>IEnricher</code></td><td>Add metadata (correlation ID, host, timestamp)</td></tr>
+                            <tr><td><code>IRedactor</code></td><td>PII/secret scrubbing</td></tr>
+                            <tr><td><code>ISampler</code></td><td>Probabilistic sampling</td></tr>
+                            <tr><td><code>IRateLimiter</code></td><td>Token bucket throttling</td></tr>
+                            <tr><td><code>NdjsonSerializer</code></td><td>Newline-delimited JSON serialization</td></tr>
+                            <tr><td><code>Retention/</code></td><td>Log rotation, compression, budgeting</td></tr>
+                            <tr><td><code>Diagnostics/</code></td><td>Pipeline health and self-observability</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="extensions" class="section">
+                    <h2>Service Extensions</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Extension File</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>BeepServiceExtensions.Audit.cs</code></td><td><code>AddBeepAudit()</code> — registers BeepAudit</td></tr>
+                            <tr><td><code>BeepServiceExtensions.Logging.cs</code></td><td><code>AddBeepLogging()</code> — registers BeepLog</td></tr>
+                            <tr><td><code>BeepServiceExtensions.Diagnostics.cs</code></td><td>Diagnostics configuration</td></tr>
+                            <tr><td><code>BeepServiceExtensions.Maui.cs</code></td><td>MAUI platform setup</td></tr>
+                            <tr><td><code>BeepServiceExtensions.Retention.cs</code></td><td>Log retention policies</td></tr>
+                            <tr><td><code>ServiceCollectionExtensions.cs</code></td><td>General DI extensions</td></tr>
+                            <tr><td><code>ServiceHelper.cs</code></td><td>Service resolution helpers</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Setup Audit and Logging</h3>
+                    <pre><code class="language-csharp">var builder = Host.CreateApplicationBuilder();
+
+builder.Services.AddBeepForDesktop(opts =>
+{
+    opts.AppRepoName = "MyApp";
+    opts.DirectoryPath = AppContext.BaseDirectory;
+});
+
+// Add audit with tamper-evidence
+builder.Services.AddBeepAudit(auditOpts =>
+{
+    auditOpts.Enabled = true;
+    auditOpts.HashChain = true;
+    auditOpts.Retention = new RetentionOptions { Days = 365 };
+});
+
+// Add structured logging
+builder.Services.AddBeepLogging(logOpts =>
+{
+    logOpts.Enabled = true;
+    logOpts.MinLevel = BeepLogLevel.Information;
+});
+
+var host = builder.Build();</code></pre>
+
+                    <h3>Recording Audit Events</h3>
+                    <pre><code class="language-csharp">var audit = serviceProvider.GetRequiredService&lt;IBeepAudit&gt;();
+
+await audit.RecordAsync("PipelineModified", "admin",
+    "customer-sync",
+    new Dictionary&lt;string, object&gt;
+    {
+        ["OldBatchSize"] = 100,
+        ["NewBatchSize"] = 500,
+        ["Timestamp"] = DateTime.UtcNow
+    });
+
+// Verify integrity
+bool valid = audit.VerifyIntegrity("entry-id-123");</code></pre>
+
+                    <h3>Structured Logging</h3>
+                    <pre><code class="language-csharp">var log = serviceProvider.GetRequiredService&lt;IBeepLog&gt;();
+
+log.Info("Pipeline started");
+log.Debug($"Batch size: {config.BatchSize}");
+
+try
+{
+    await pipeline.ExecuteAsync();
+    log.Info("Pipeline completed successfully");
+}
+catch (Exception ex)
+{
+    log.Error("Pipeline failed", ex);
+    log.Critical("Pipeline critical failure - data may be inconsistent", ex);
+}</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="beepservice.html"><i class="bi bi-arrow-left"></i> Previous: BeepService</a>
+                    <a href="environmentservice.html">Next: Environment Service <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

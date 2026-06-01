@@ -32,6 +32,7 @@
     <li><a href="#profiling">Data Profiling</a></li>
     <li><a href="#run-history">Run History</a></li>
     <li><a href="#examples">Examples</a></li>
+    <li><a href="#full-api">Full API Reference</a></li>
   </ul>
 </nav>
 
@@ -686,6 +687,209 @@ foreach (var f in profile.Fields.Where(f => f.NullCount * 1.0 / profile.SampleSi
   <a href="configeditor.html">← Config Editor</a>
   <a href="defaultsmanager.html">Defaults Manager →</a>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<a id="full-api"></a>
+<section id="full-api-section">
+<h2><i class="bi bi-book"></i> Full API Reference</h2>
+
+<h3>IDataImportManager (complete interface)</h3>
+<table class="api-table">
+<thead><tr><th>Member</th><th>Return</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>ValidationHelper</code></td><td><code>IDataImportValidationHelper</code></td><td>Read-only accessor for the validation helper</td></tr>
+<tr><td><code>TransformationHelper</code></td><td><code>IDataImportTransformationHelper</code></td><td>Read-only accessor for the transformation helper</td></tr>
+<tr><td><code>BatchHelper</code></td><td><code>IDataImportBatchHelper</code></td><td>Read-only accessor for the batch helper</td></tr>
+<tr><td><code>ProgressHelper</code></td><td><code>IDataImportProgressHelper</code></td><td>Read-only accessor for the progress helper</td></tr>
+<tr><td><code>PauseImport()</code></td><td><code>void</code></td><td>Pause at next batch boundary. State → Paused</td></tr>
+<tr><td><code>ResumeImport()</code></td><td><code>void</code></td><td>Release pause gate. State → Running</td></tr>
+<tr><td><code>CancelImport()</code></td><td><code>void</code></td><td>Request cancellation. State → Cancelled</td></tr>
+<tr><td><code>GetImportStatus()</code></td><td><code>ImportStatus</code></td><td>Thread-safe detached status snapshot</td></tr>
+<tr><td><code>RunImportAsync(ImportContext, IProgress, CancellationToken)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td><td>Recommended entry point: context-based import</td></tr>
+<tr><td><code>BuildConfigurationFromContext(ImportContext)</code></td><td><code>DataImportConfiguration</code></td><td>Translates context to config without executing</td></tr>
+<tr><td><code>CreateImportConfiguration(srcEntity, srcDS, destEntity, destDS)</code></td><td><code>DataImportConfiguration</code></td><td>Factory helper from four string identifiers</td></tr>
+<tr><td><code>TestImportConfigurationAsync(DataImportConfiguration)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td><td>Tests connectivity and entity presence</td></tr>
+<tr><td><code>RunImportAsync(DataImportConfiguration, IProgress?, CancellationToken)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td><td>Explicit config-based import</td></tr>
+<tr><td><code>RunMigrationPreflightAsync(DataImportConfiguration, Action&lt;string&gt;?)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td><td>Schema compatibility validation</td></tr>
+<tr><td><code>BuildSyncDraftAsync(DataImportConfiguration)</code></td><td><code>Task&lt;DataSyncSchema&gt;</code></td><td>Build sync-draft schema without executing</td></tr>
+<tr><td><code>ReplayFailedRecordsAsync(contextKey, IProgress?, CancellationToken)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td><td>Dead-letter replay from error store</td></tr>
+</tbody>
+</table>
+
+<h3>Helper Interfaces (all 4)</h3>
+
+<h4>IDataImportValidationHelper</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>ValidateImportConfiguration(DataImportConfiguration)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>ValidateEntityMapping(EntityDataMap)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>ValidateEntityCompatibility(EntityStructure, EntityStructure)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>ValidateDataSources(IDataSource, IDataSource)</code></td><td><code>IErrorsInfo</code></td></tr>
+</tbody>
+</table>
+
+<h4>IDataImportTransformationHelper</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>ApplyFieldFiltering(object, List&lt;string&gt;)</code></td><td><code>object</code></td></tr>
+<tr><td><code>ApplyEntityMapping(object, EntityDataMap, string)</code></td><td><code>object</code></td></tr>
+<tr><td><code>ApplyDefaultValues(object, List&lt;DefaultValue&gt;, EntityStructure, string)</code></td><td><code>object</code></td></tr>
+<tr><td><code>ApplyCustomTransformation(object, Func&lt;object,object&gt;)</code></td><td><code>object</code></td></tr>
+<tr><td><code>ApplyTransformationPipeline(object, DataImportConfiguration)</code></td><td><code>object</code></td></tr>
+</tbody>
+</table>
+
+<h4>IDataImportBatchHelper</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>CalculateOptimalBatchSize(int, long, long?)</code></td><td><code>int</code></td></tr>
+<tr><td><code>ProcessBatchAsync(IEnumerable&lt;object&gt;, DataImportConfiguration, IProgress, CancellationToken)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td></tr>
+<tr><td><code>SplitIntoBatches(IEnumerable&lt;object&gt;, int)</code></td><td><code>IEnumerable&lt;IEnumerable&lt;object&gt;&gt;</code></td></tr>
+</tbody>
+</table>
+
+<h4>IDataImportProgressHelper</h4>
+<table class="api-table">
+<thead><tr><th>Member</th><th>Return/Params</th></tr></thead>
+<tbody>
+<tr><td><code>ImportLogData</code></td><td><code>List&lt;Importlogdata&gt;</code> {get;}</td></tr>
+<tr><td><code>LogImport(string, int)</code></td><td><code>void</code></td></tr>
+<tr><td><code>LogError(string, Exception)</code></td><td><code>void</code></td></tr>
+<tr><td><code>ReportProgress(IProgress, string, int, int?)</code></td><td><code>void</code></td></tr>
+<tr><td><code>CalculatePerformanceMetrics(DateTime, int, int)</code></td><td><code>ImportPerformanceMetrics</code></td></tr>
+<tr><td><code>ClearLog()</code></td><td><code>void</code></td></tr>
+</tbody>
+</table>
+
+<h3>SchemaSnapshot &amp; SchemaSnapshotStore</h3>
+<p>In <code>Schema/</code>: captures entity structure at a point in time for schema drift comparison.</p>
+<pre><code class="language-csharp">// SchemaSnapshot — static capture method
+public class SchemaSnapshot
+{
+    // Properties
+    public string DataSourceName { get; set; }
+    public string EntityName { get; set; }
+    public DateTime CapturedAt { get; set; }
+    public List&lt;EntityField&gt; Fields { get; set; }
+
+    // Static factory
+    public static SchemaSnapshot CaptureFrom(IDataSource ds, string entityName);
+}
+
+// SchemaComparator — static comparison utility
+public static class SchemaComparator
+{
+    public static SchemaDriftReport Compare(SchemaSnapshot baseline, SchemaSnapshot current);
+    // SchemaDriftReport: AddedFields, RemovedFields, AlteredFields lists
+}
+
+// SchemaSnapshotStore — persistence for schema snapshots
+public class SchemaSnapshotStore
+{
+    public Task SaveSnapshotAsync(SchemaSnapshot snapshot);
+    public Task&lt;SchemaSnapshot?&gt; LoadSnapshotAsync(string contextKey);
+    public Task ClearAsync(string contextKey);
+}</code></pre>
+
+<h3>IWatermarkStore / WatermarkStore (incremental sync)</h3>
+<p>In <code>Sync/</code>: persists watermark values for incremental data imports.</p>
+<pre><code class="language-csharp">public interface IWatermarkStore
+{
+    Task&lt;object?&gt; GetWatermarkAsync(string contextKey);
+    Task SaveWatermarkAsync(string contextKey, object value);
+    Task ClearAsync(string contextKey);
+}
+
+// Implementation
+public class WatermarkStore : IWatermarkStore { /* backed by IDataSource or local store */ }</code></pre>
+
+<h3>DataQualityEvaluator</h3>
+<p>In <code>Quality/</code>: orchestrates rule evaluation across a batch.</p>
+<pre><code class="language-csharp">public class DataQualityEvaluator
+{
+    public DataQualityEvaluator(List&lt;IDataQualityRule&gt; rules, IImportErrorStore? errorStore = null);
+
+    public QualityEvaluationResult Evaluate(object record);
+    // Returns: Passed {bool}, Action {DataQualityAction}, Failures {List&lt;RuleResult&gt;}
+
+    public class QualityEvaluationResult
+    {
+        public bool Passed { get; set; }
+        public DataQualityAction Action { get; set; }
+        public List&lt;RuleResult&gt; Failures { get; set; } = new();
+    }
+
+    public class RuleResult
+    {
+        public string RuleName { get; set; }
+        public string FieldName { get; set; }
+        public string Message { get; set; }
+        public DataQualityAction Action { get; set; }
+    }
+}</code></pre>
+
+<h3>LocalStoreFactory</h3>
+<p>In <code>Factories/</code>: creates local JSON-file backed error store, run history, and watermark stores.</p>
+<pre><code class="language-csharp">public static class LocalStoreFactory
+{
+    public static IImportErrorStore CreateErrorStore(string directoryPath);
+    public static IImportRunHistoryStore CreateRunHistoryStore(string directoryPath);
+    public static IWatermarkStore CreateWatermarkStore(string directoryPath);
+}</code></pre>
+
+<h3>All Enums</h3>
+<table class="api-table">
+<thead><tr><th>Enum</th><th>Values</th></tr></thead>
+<tbody>
+<tr><td><code>ImportState</code></td><td><code>Idle</code>, <code>Running</code>, <code>Paused</code>, <code>Completed</code>, <code>Faulted</code>, <code>Cancelled</code></td></tr>
+<tr><td><code>BatchErrorStrategy</code></td><td><code>Abort</code>, <code>Skip</code>, <code>Retry</code></td></tr>
+<tr><td><code>SyncMode</code></td><td><code>FullRefresh</code>, <code>Incremental</code>, <code>Upsert</code></td></tr>
+<tr><td><code>SchemaDriftPolicy</code></td><td><code>Ignore</code>, <code>AbortOnDrift</code>, <code>AutoAddColumns</code>, <code>AutoDropColumns</code></td></tr>
+<tr><td><code>DataQualityAction</code></td><td><code>Block</code>, <code>Quarantine</code>, <code>Warn</code></td></tr>
+<tr><td><code>ImportLogLevel</code></td><td><code>Info</code>, <code>Warning</code>, <code>Error</code>, <code>Debug</code>, <code>Success</code></td></tr>
+</tbody>
+</table>
+
+<h3>Source File Map</h3>
+<table class="api-table">
+<thead><tr><th>File</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td><code>DataImportManager.cs</code></td><td>Main class — fields, constructors, backward-compat properties, Dispose</td></tr>
+<tr><td><code>DataImportManager.Core.cs</code></td><td>Core import pipeline — data-source init, entity discovery, main run loop</td></tr>
+<tr><td><code>DataImportManager.Migration.cs</code></td><td>Preflight validation + sync-draft generation</td></tr>
+<tr><td><code>DataImportManager.Replay.cs</code></td><td>Dead-letter record replay from error store</td></tr>
+<tr><td><code>Interfaces/IDataImportInterfaces.cs</code></td><td>All interfaces + shared model types (ImportContext, ImportStatus, DataImportConfiguration, enums)</td></tr>
+<tr><td><code>Helpers/DataImportValidationHelper.cs</code></td><td>Validation helper concrete implementation</td></tr>
+<tr><td><code>Helpers/DataImportTransformationHelper.cs</code></td><td>Transformation pipeline (field filter → mapping → defaults → custom fn)</td></tr>
+<tr><td><code>Helpers/DataImportBatchHelper.cs</code></td><td>Batch sizing, splitting, retry processing</td></tr>
+<tr><td><code>Helpers/DataImportProgressHelper.cs</code></td><td>Progress reporting, logging, performance metrics</td></tr>
+<tr><td><code>Factories/LocalStoreFactory.cs</code></td><td>Creates JSON-file backed stores (error, history, watermark)</td></tr>
+<tr><td><code>Staging/StagingOptions.cs</code></td><td>Staging configuration (suffix, drop, skip normalization)</td></tr>
+<tr><td><code>Schema/SchemaComparator.cs</code></td><td>Baseline vs current schema comparison → drift report</td></tr>
+<tr><td><code>Schema/SchemaSnapshot.cs</code></td><td>Point-in-time entity structure capture</td></tr>
+<tr><td><code>Schema/SchemaSnapshotStore.cs</code></td><td>Persistence for schema snapshots</td></tr>
+<tr><td><code>ErrorStore/IImportErrorStore.cs</code></td><td>Error store contract</td></tr>
+<tr><td><code>ErrorStore/ImportErrorRecord.cs</code></td><td>Error record data class</td></tr>
+<tr><td><code>ErrorStore/DataSourceImportErrorStore.cs</code></td><td>Error store backed by IDataSource entity</td></tr>
+<tr><td><code>ErrorStore/JsonFileImportErrorStore.cs</code></td><td>Error store backed by JSON file</td></tr>
+<tr><td><code>History/IImportRunHistoryStore.cs</code></td><td>Run history contract</td></tr>
+<tr><td><code>History/ImportRunRecord.cs</code></td><td>Run record data class</td></tr>
+<tr><td><code>History/DataSourceImportRunHistoryStore.cs</code></td><td>Run history backed by IDataSource</td></tr>
+<tr><td><code>History/JsonFileImportRunHistoryStore.cs</code></td><td>Run history backed by JSON file</td></tr>
+<tr><td><code>Profiling/DataProfiler.cs</code></td><td>Async field-level profiling utility</td></tr>
+<tr><td><code>Profiling/FieldProfile.cs</code></td><td>Per-field statistics (null count, distinct count, min, max)</td></tr>
+<tr><td><code>Quality/IDataQualityRule.cs</code></td><td>Quality rule contract + DataQualityAction enum</td></tr>
+<tr><td><code>Quality/BuiltInRules.cs</code></td><td>NotNullRule, UniqueRule, RangeRule, RegexRule</td></tr>
+<tr><td><code>Quality/DataQualityEvaluator.cs</code></td><td>Batch rule evaluation orchestrator</td></tr>
+<tr><td><code>Sync/IWatermarkStore.cs</code></td><td>Watermark persistence contract</td></tr>
+<tr><td><code>Sync/WatermarkStore.cs</code></td><td>Watermark persistence implementation</td></tr>
+<tr><td><code>Examples/DataImportManagerExamples.cs</code></td><td>Usage examples for the full pipeline</td></tr>
+</tbody>
+</table>
+</section>
 
 </div><!-- .content-wrapper -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>

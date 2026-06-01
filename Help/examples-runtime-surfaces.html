@@ -5,8 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examples - Runtime Surfaces - Beep DME Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -21,25 +32,342 @@
 
                 <div class="page-header">
                     <h1>Examples - Runtime Surfaces</h1>
-                    <p class="page-subtitle">Focused references for UnitOfWork, DataView, Caching, Proxy, Rules, Services, and Migration</p>
+                    <p class="page-subtitle">Practical examples for UnitOfWork, DataView, Caching, Proxy, Rules, Services, and Migration</p>
                 </div>
 
-                <section class="section">
-                    <h2>Example Sections</h2>
+                <!-- TOC -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
                     <ul>
-                        <li><a href="unitofwork.html">UnitofWork examples</a></li>
-                        <li><a href="multidatasource-unitofwork.html">MultiDataSource UnitofWork examples</a></li>
-                        <li><a href="dataviewdatasource.html">DataViewDataSource examples</a></li>
-                        <li><a href="caching-api.html">Caching API examples</a></li>
-                        <li><a href="proxy-datasource.html">Proxy DataSource examples</a></li>
-                        <li><a href="rules-engine-parser.html">Rules/Parser runtime examples</a></li>
-                        <li><a href="services-registration-lifetimes.html">Services registration/lifetime examples</a></li>
-                        <li><a href="migrationmanager.html">MigrationManager examples</a></li>
+                        <li><a href="#unitofwork">UnitOfWork</a></li>
+                        <li><a href="#dataview">DataView</a></li>
+                        <li><a href="#caching">Caching</a></li>
+                        <li><a href="#proxy">Proxy DataSource</a></li>
+                        <li><a href="#rules">Rules Engine</a></li>
+                        <li><a href="#services">Service Registration</a></li>
+                        <li><a href="#migration">Migration</a></li>
                     </ul>
+                </div>
+
+                <section id="unitofwork" class="section">
+                    <h2>UnitOfWork Examples</h2>
+                    
+                    <h3>Basic CRUD</h3>
+                    <pre><code class="language-csharp">using var uow = new UnitofWork&lt;Customer&gt;(editor, "MyDB", "Customers", "Id");
+
+// Create
+uow.New();
+uow.CurrentItem.Name = "John Doe";
+uow.CurrentItem.Email = "john@example.com";
+
+// Read
+var all = await uow.Get();
+var customer = uow.Get("123");
+
+// Update
+customer.Name = "Jane Doe";
+uow.Update(customer);
+
+// Delete
+uow.Delete(customer);
+
+// Commit
+var result = await uow.Commit();
+if (result.Flag != Errors.Ok)
+    Console.WriteLine(result.Message);</code></pre>
+
+                    <h3>Undo/Redo</h3>
+                    <pre><code class="language-csharp">uow.IsUndoEnabled = true;
+uow.MaxUndoDepth = 50;
+
+// Make changes
+customer.Name = "Changed";
+
+// Undo
+uow.Undo(); // Name reverts to original
+
+// Redo
+uow.Redo(); // Name goes back to "Changed"</code></pre>
+
+                    <h3>Validation</h3>
+                    <pre><code class="language-csharp">uow.IsAutoValidateEnabled = true;
+uow.BlockCommitOnValidationError = true;
+
+var result = uow.ValidateAll();
+if (!result.IsValid)
+{
+    foreach (var error in result.Errors)
+        Console.WriteLine($"{error.PropertyName}: {error.Message}");
+}</code></pre>
                 </section>
+
+                <section id="dataview" class="section">
+                    <h2>DataView Examples</h2>
+                    
+                    <h3>Create Federated View</h3>
+                    <pre><code class="language-csharp">var viewConnection = new DataViewConnection(editor);
+viewConnection.AddConnection("CustomersDB", customerDs);
+viewConnection.AddConnection("OrdersDB", ordersDs);
+
+var viewDs = new DataViewDataSource("CustomerOrders", viewConnection, editor);
+
+// Define entities
+viewDs.AddEntity(new EntityStructure
+{
+    EntityName = "CustomerView",
+    DataSourceID = "CustomersDB",
+    EntityID = "Customers"
+});
+
+viewDs.AddEntity(new EntityStructure
+{
+    EntityName = "OrderView",
+    DataSourceID = "OrdersDB",
+    EntityID = "Orders"
+});
+
+// Define join
+var joinGraph = new JoinGraph();
+joinGraph.AddJoin(new EntityJoin
+{
+    LeftEntity = "CustomerView",
+    RightEntity = "OrderView",
+    LeftField = "CustomerId",
+    RightField = "CustomerId",
+    JoinType = JoinType.Left
+});
+
+viewDs.SetJoinGraph(joinGraph);
+
+// Query
+var results = viewDs.GetEntity("CustomerView", new List&lt;AppFilter&gt;());</code></pre>
+                </section>
+
+                <section id="caching" class="section">
+                    <h2>Caching Examples</h2>
+                    
+                    <h3>Initialize Cache</h3>
+                    <pre><code class="language-csharp">// Simple in-memory cache
+CacheManager.Initialize();
+
+// Redis with fallback
+CacheManager.Initialize(
+    new CacheConfiguration
+    {
+        DefaultExpiry = TimeSpan.FromMinutes(30),
+        MaxItems = 10000,
+        Redis = new RedisConfiguration
+        {
+            ConnectionString = "localhost:6379"
+        }
+    },
+    primaryProvider: CacheProviderType.Redis,
+    fallbackProvider: CacheProviderType.InMemory);
+
+// Store data
+await CacheManager.SetAsync("user:123", userData, TimeSpan.FromMinutes(30));
+
+// Retrieve
+var user = await CacheManager.GetAsync&lt;UserData&gt;("user:123");
+
+// GetOrCreate
+var data = await CacheManager.GetOrCreateAsync("expensive:key", async () =>
+{
+    return await ComputeExpensiveOperation();
+}, TimeSpan.FromHours(1));</code></pre>
+
+                    <h3>Tagged Caching</h3>
+                    <pre><code class="language-csharp">// Tag items
+await CacheManager.SetWithTagsAsync("item:1", data,
+    new[] { "user", "recent" });
+
+// Invalidate by tag
+await CacheManager.RemoveByTagAsync("user");</code></pre>
+                </section>
+
+                <section id="proxy" class="section">
+                    <h2>Proxy DataSource Examples</h2>
+                    
+                    <h3>Basic Failover</h3>
+                    <pre><code class="language-csharp">var proxy = new ProxyDataSource(editor,
+    new List&lt;string&gt; { "PrimaryDB", "Replica1", "Replica2" });
+
+// Query (automatically routes to healthy target)
+var data = proxy.GetEntity("Customers", new List&lt;AppFilter&gt;());
+
+// Failover event
+proxy.OnFailover += (s, e) =>
+    Console.WriteLine($"Failover: {e.FromDataSource} -> {e.ToDataSource}");</code></pre>
+
+                    <h3>Circuit Breaker</h3>
+                    <pre><code class="language-csharp">proxy.SetFailureThreshold(5);
+proxy.SetCircuitResetTimeout(TimeSpan.FromMinutes(5));
+
+// Check metrics
+var metrics = proxy.GetMetrics();
+Console.WriteLine($"Success rate: {metrics.SuccessRate:F1}%");
+Console.WriteLine($"Avg latency: {metrics.AverageResponseTime}ms");</code></pre>
+                </section>
+
+                <section id="rules" class="section">
+                    <h2>Rules Engine Examples</h2>
+                    
+                    <h3>Define and Execute Rules</h3>
+                    <pre><code class="language-csharp">var engine = new RulesEngine(editor);
+
+// Register rules
+engine.RegisterRule("ValidateAge", "Age >= 18 AND Age <= 120");
+engine.RegisterRule("ComputeDiscount", "Price * (1 - DiscountRate)");
+
+// Execute
+var result = engine.Execute("ValidateAge", new { Age = 25 });
+if (result.Success)
+    Console.WriteLine("Age is valid");
+
+// Execute with context
+var context = new RuleContext
+{
+    Data = customer,
+    Parameters = new Dictionary&lt;string, object&gt;
+    {
+        ["MaxDiscount"] = 0.20
+    }
+};
+var discount = engine.Execute("ComputeDiscount", context);</code></pre>
+
+                    <h3>Built-in Rules</h3>
+                    <pre><code class="language-csharp">// Data quality
+var dqRule = new IsNotNullRule { FieldName = "Email" };
+var result = dqRule.Execute(customer);
+
+// Date operations
+var dateRule = new DateDiffRule
+{
+    FieldName = "BirthDate",
+    TargetDate = DateTime.Now,
+    OutputField = "Age"
+};
+
+// Transform
+var transformRule = new StringReplaceRule
+{
+    FieldName = "Phone",
+    Pattern = "-",
+    Replacement = ""
+};</code></pre>
+                </section>
+
+                <section id="services" class="section">
+                    <h2>Service Registration Examples</h2>
+                    
+                    <h3>Desktop Application</h3>
+                    <pre><code class="language-csharp">var builder = Host.CreateApplicationBuilder();
+builder.Services.AddBeepForDesktop(opts =>
+{
+    opts.AppRepoName = "MyDesktopApp";
+    opts.DirectoryPath = AppContext.BaseDirectory;
+    opts.EnableAssemblyLoading = true;
+    opts.EnableAutoMapping = true;
+});
+
+var host = builder.Build();
+var beepService = host.Services.GetRequiredService&lt;IBeepService&gt;();
+
+// Load plugins
+var progress = new Progress&lt;PassedArgs&gt;(args =>
+    Console.WriteLine($"Loading: {args.Messege}"));
+beepService.LoadAssemblies(progress);</code></pre>
+
+                    <h3>Web API</h3>
+                    <pre><code class="language-csharp">var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddBeepForWeb(opts =>
+{
+    opts.AppRepoName = "MyWebApi";
+    opts.DirectoryPath = Path.Combine(AppContext.BaseDirectory, "Beep");
+    opts.MaxConnectionPoolSize = 100;
+});
+
+var app = builder.Build();
+app.UseBeepForWeb();</code></pre>
+
+                    <h3>Blazor Server</h3>
+                    <pre><code class="language-csharp">var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddBeepForBlazorServer(opts =>
+{
+    opts.AppRepoName = "MyBlazorApp";
+    opts.EnableSignalRSupport = true;
+});
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();</code></pre>
+                </section>
+
+                <section id="migration" class="section">
+                    <h2>Migration Examples</h2>
+                    
+                    <h3>Basic Migration</h3>
+                    <pre><code class="language-csharp">var migrationManager = new MigrationManager(editor);
+
+// Create migration
+var migration = new Migration
+{
+    Name = "Add Customer Table",
+    Version = "1.0.0",
+    Up = async () =>
+    {
+        var ds = editor.GetDataSource("MyDB");
+        await ds.ExecuteSql(@"
+            CREATE TABLE Customers (
+                Id INTEGER PRIMARY KEY,
+                Name TEXT NOT NULL,
+                Email TEXT
+            )");
+    },
+    Down = async () =>
+    {
+        var ds = editor.GetDataSource("MyDB");
+        await ds.ExecuteSql("DROP TABLE Customers");
+    }
+};
+
+// Apply
+await migrationManager.ApplyAsync(migration);</code></pre>
+
+                    <h3>Migration with Validation</h3>
+                    <pre><code class="language-csharp">// Validate before applying
+var validation = await migrationManager.ValidateAsync(migration);
+if (!validation.IsValid)
+{
+    foreach (var error in validation.Errors)
+        Console.WriteLine(error);
+    return;
+}
+
+// Apply with rollback on failure
+await migrationManager.ApplyWithRollbackAsync(migration);</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="examples-editor-classes.html"><i class="bi bi-arrow-left"></i> Previous: Editor Classes</a>
+                    <a href="index.html">Next: Home <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>
     <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
 </html>

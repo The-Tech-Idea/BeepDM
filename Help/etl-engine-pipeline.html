@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETL Engine Pipeline Internals - Beep Data Management Engine Documentation</title>
+    <title>ETL Engine - Beep Data Management Engine Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -15,12 +25,11 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>ETL Engine Pipeline Internals</span>
+                    <span>ETL Engine</span>
                 </nav>
-
                 <div class="page-header">
-                    <h1>ETL Engine Pipeline Internals</h1>
-                    <p class="page-subtitle">Signature-verified runtime surfaces for pipeline execution, checkpoints, and release/migration orchestration.</p>
+                    <h1>ETL Engine</h1>
+                    <p class="page-subtitle">Modern pipeline-based ETL with plugin architecture, scheduling, observability, and checkpointing</p>
                 </div>
 
                 <div class="note">
@@ -28,23 +37,136 @@
                     <ul>
                         <li><code>DataManagementEngineStandard/Editor/ETL/Engine/PipelineEngine.cs</code></li>
                         <li><code>DataManagementEngineStandard/Editor/ETL/Engine/PipelineManager.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/ETL/Engine/PipelineStepRunner.cs</code></li>
                         <li><code>DataManagementEngineStandard/Editor/ETL/Engine/PipelineCheckpointManager.cs</code></li>
                         <li><code>DataManagementEngineStandard/Editor/ETL/Engine/PipelineLineageTracker.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/ETL/Engine/ReleaseManager.cs</code> and <code>MigrationManager.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/ETL/Registry/PipelinePluginRegistry.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/ETL/Scheduling/SchedulerHost.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Pipelines/Models/PipelineDefinition.cs</code></li>
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
+                <!-- TOC -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#pipeline-definition">PipelineDefinition</a></li>
+                        <li><a href="#pipeline-engine">PipelineEngine</a></li>
+                        <li><a href="#pipeline-manager">PipelineManager</a></li>
+                        <li><a href="#plugin-registry">PipelinePluginRegistry</a></li>
+                        <li><a href="#scheduling">Scheduling</a></li>
+                        <li><a href="#observability">Observability</a></li>
+                        <li><a href="#checkpoints">Checkpointing</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The modern ETL Engine replaces the legacy <code>ETLEditor</code> with a plugin-based pipeline architecture:</p>
+                    <ul>
+                        <li><strong>Plugin-based</strong> - Sources, transformers, validators, and sinks are plugins discovered at runtime</li>
+                        <li><strong>Streaming</strong> - Records flow through steps in configurable batches</li>
+                        <li><strong>Observable</strong> - Metrics, alerting, and lineage tracking built-in</li>
+                        <li><strong>Resilient</strong> - Checkpointing, retries, and error sinks for fault tolerance</li>
+                        <li><strong>Scheduled</strong> - Cron-based scheduling with watermark tracking</li>
+                    </ul>
+                </section>
+
+                <section id="architecture" class="section">
+                    <h2>Architecture</h2>
+                    <pre><code class="language-text">PipelineManager (persistence, CRUD, orchestration)
+    |
+    +-- PipelineEngine (execution)
+    |       +-- PipelinePluginRegistry (discovery)
+    |       +-- PipelineStepRunner (step execution)
+    |       +-- PipelineCheckpointManager (fault tolerance)
+    |       +-- PipelineLineageTracker (data lineage)
+    |
+    +-- SchedulerHost (scheduling)
+    |       +-- PipelineRunQueue (queueing)
+    |       +-- WatermarkTracker (incremental sync)
+    |       +-- BackfillManager (backfill operations)
+    |
+    +-- ObservabilityStore (metrics, alerting)</code></pre>
+                </section>
+
+                <section id="pipeline-definition" class="section">
+                    <h2>PipelineDefinition</h2>
+                    <p>Full pipeline specification replacing <code>ETLScriptHDR</code>:</p>
+                    <pre><code class="language-csharp">public class PipelineDefinition
+{
+    // Identity
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string Category { get; set; }
+    public string Tags { get; set; }
+    public int Version { get; set; }
+    public bool IsEnabled { get; set; }
+
+    // Plugins
+    public string SourcePluginId { get; set; }
+    public string SinkPluginId { get; set; }
+    public string ErrorSinkPluginId { get; set; }
+
+    // Steps
+    public List&lt;PipelineStepDef&gt; Steps { get; set; }
+
+    // Parameters
+    public Dictionary&lt;string, object&gt; Parameters { get; set; }
+
+    // Scheduling
+    public string? SchedulerPluginId { get; set; }
+    public Dictionary&lt;string, object&gt; SchedulerParameters { get; set; }
+
+    // Execution Policy
+    public int BatchSize { get; set; } = 500;
+    public int MaxParallelBatches { get; set; } = 4;
+    public int MaxRetries { get; set; } = 3;
+    public int StopOnErrorCount { get; set; } = 0;
+    public bool EnableCheckpointing { get; set; } = true;
+    public bool EnableLineageTracking { get; set; } = true;
+
+    // Workload
+    public string WorkloadClass { get; set; } = "standard";
+    public int MemoryCapMB { get; set; }
+    public double CostBudgetPerRun { get; set; }
+
+    // Security
+    public DataClassification DataClassification { get; set; }
+    public List&lt;string&gt; SensitiveFields { get; set; }
+    public MaskingStrategy MaskingStrategy { get; set; }
+    public List&lt;string&gt; RequiredPermissions { get; set; }
+
+    // Migration
+    public PipelineTier Tier { get; set; }
+    public bool IsCanaryEnabled { get; set; }
+    public bool IsShadowRunEnabled { get; set; }
+    public bool CompatibilityMode { get; set; }
+
+    // History
+    public DateTime? LastRunAt { get; set; }
+    public string? LastRunStatus { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="pipeline-engine" class="section">
+                    <h2>PipelineEngine</h2>
+                    <p>Core pipeline runner that executes PipelineDefinitions:</p>
                     <pre><code class="language-csharp">public class PipelineEngine
 {
+    public PipelineEngine(IDMEEditor editor);
+
+    // Observability hooks
     public ObservabilityStore? ObservabilityStore { get; set; }
     public MetricsEngine? Metrics { get; set; }
     public AlertingEngine? Alerting { get; set; }
     public SecurityPolicyEngine? SecurityPolicy { get; set; }
 
-    public PipelineEngine(IDMEEditor editor);
-
+    // Execution
     public Task&lt;PipelineRunResult&gt; RunAsync(
         PipelineDefinition def,
         IProgress&lt;PassedArgs&gt;? progress = null,
@@ -52,28 +174,47 @@
         Dictionary&lt;string, object&gt;? overrideParams = null,
         SecurityContext? securityContext = null);
 
+    // Resume from checkpoint
     public Task&lt;PipelineRunResult&gt; ResumeAsync(
         string checkpointId,
         IProgress&lt;PassedArgs&gt;? progress = null,
         CancellationToken token = default);
-}
+}</code></pre>
 
-public class PipelineManager
+                    <h3>Execution Flow</h3>
+                    <ol>
+                        <li>Resolve plugins via <code>PipelinePluginRegistry</code></li>
+                        <li>Configure source, transformers, validators, sinks</li>
+                        <li>Stream records through steps in batches</li>
+                        <li>Write accepted records to main sink</li>
+                        <li>Route rejected records to error sink</li>
+                        <li>Save checkpoints after committed batches</li>
+                        <li>Record column-level lineage</li>
+                    </ol>
+                </section>
+
+                <section id="pipeline-manager" class="section">
+                    <h2>PipelineManager</h2>
+                    <p>Persists, loads, and runs PipelineDefinitions:</p>
+                    <pre><code class="language-csharp">public class PipelineManager
 {
+    public PipelineManager(IDMEEditor editor);
+
+    // Observability
     public ObservabilityStore? ObservabilityStore { get; set; }
     public MetricsEngine? Metrics { get; set; }
     public AlertingEngine? Alerting { get; set; }
     public SecurityPolicyEngine? SecurityPolicy { get; set; }
     public SecurityContext? SecurityContext { get; set; }
 
-    public PipelineManager(IDMEEditor editor);
-
+    // CRUD
     public Task&lt;IErrorsInfo&gt; SaveAsync(PipelineDefinition pipeline);
     public Task&lt;IErrorsInfo&gt; DeleteAsync(string pipelineId);
     public Task&lt;PipelineDefinition?&gt; LoadAsync(string pipelineId);
     public Task&lt;IReadOnlyList&lt;PipelineDefinition&gt;&gt; LoadAllAsync();
     public Task&lt;IReadOnlyList&lt;PipelineDefinition&gt;&gt; FindByTagAsync(string tag);
 
+    // Execution
     public Task&lt;PipelineRunResult&gt; RunAsync(
         string pipelineId,
         IProgress&lt;PassedArgs&gt;? progress = null,
@@ -89,7 +230,291 @@ public class PipelineManager
         IProgress&lt;PassedArgs&gt;? progress = null,
         CancellationToken token = default);
 }</code></pre>
+
+                    <h3>Storage</h3>
+                    <ul>
+                        <li><strong>Pipelines</strong>: <code>{BeepDataPath}/Pipelines/{id}.pipeline.json</code></li>
+                        <li><strong>History</strong>: <code>{BeepDataPath}/Pipelines/History/{pipelineId}/{runId}.run.json</code></li>
+                    </ul>
                 </section>
+
+                <section id="plugin-registry" class="section">
+                    <h2>PipelinePluginRegistry</h2>
+                    <p>Discovers and instantiates pipeline plugins using the same mechanism as <code>[AddinAttribute]</code> connectors:</p>
+                    <pre><code class="language-csharp">public class PipelinePluginRegistry
+{
+    public PipelinePluginRegistry(IDMEEditor editor);
+
+    // Discovery
+    public void Discover();
+
+    // Instantiation
+    public T Create&lt;T&gt;(string pluginId) where T : IPipelinePlugin;
+
+    // Queries
+    public IReadOnlyList&lt;PipelinePluginDescriptor&gt; GetAll();
+    public IReadOnlyList&lt;PipelinePluginDescriptor&gt; GetByCategory(string category);
+    public bool HasPlugin(string pluginId);
+}</code></pre>
+
+                    <h3>Plugin Categories</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Interface</th><th>Purpose</th><th>Examples</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>IPipelineSource</code></td><td>Read data</td><td>DbSource, FileSource, ApiSource</td></tr>
+                            <tr><td><code>IPipelineTransformer</code></td><td>Transform records</td><td>MapFields, FilterRows, Aggregate</td></tr>
+                            <tr><td><code>IPipelineValidator</code></td><td>Validate records</td><td>SchemaValidator, RangeCheck</td></tr>
+                            <tr><td><code>IPipelineSink</code></td><td>Write data</td><td>DbSink, FileSink, ApiSink</td></tr>
+                            <tr><td><code>IPipelineScheduler</code></td><td>Schedule runs</td><td>CronScheduler, EventScheduler</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="scheduling" class="section">
+                    <h2>Scheduling</h2>
+                    <p>The <code>SchedulerHost</code> provides cron-based scheduling with watermarks and backfills:</p>
+                    <pre><code class="language-csharp">public sealed class SchedulerHost : IAsyncDisposable
+{
+    public SchedulerHost(IDMEEditor editor);
+
+    // State
+    public ScheduleStorage Storage { get; }
+    public WatermarkTracker Watermarks { get; }
+    public BackfillManager Backfills { get; }
+    public ScheduleAuditLog AuditLog { get; }
+
+    // Events
+    public event EventHandler&lt;SchedulerRunEventArgs&gt;? RunStarted;
+    public event EventHandler&lt;SchedulerRunEventArgs&gt;? RunCompleted;
+    public event EventHandler&lt;SchedulerRunEventArgs&gt;? RunFailed;
+    public event EventHandler&lt;SchedulerRunEventArgs&gt;? CircuitBreakerChanged;
+
+    // Control
+    public Task StartAsync(CancellationToken token = default);
+    public Task StopAsync();
+    public Task ReloadAsync();
+
+    // Manual trigger
+    public Task&lt;string&gt; TriggerManualAsync(
+        string pipelineOrWorkflowId,
+        IReadOnlyDictionary&lt;string, object&gt;? overrideParams = null);
+
+    // Backfill
+    public Task&lt;string&gt; SubmitBackfillAsync(
+        string scheduleId, string fromValue, string toValue,
+        string reason = "", string requestedBy = "",
+        int windowSizeSeconds = 86400);
+
+    // Circuit breaker
+    public Task ResetCircuitBreakerAsync(string scheduleId, string resetBy = "");
+
+    // Monitoring
+    public IReadOnlyList&lt;(string RunId, string PipelineId, RunStatus Status)&gt; GetActiveRuns();
+}</code></pre>
+
+                    <h3>PipelineRunQueue</h3>
+                    <pre><code class="language-csharp">public sealed class PipelineRunQueue
+{
+    public int Count { get; }
+    public int CountByClass(string workloadClass);
+    public void SetClassConcurrencyLimit(string workloadClass, int maxConcurrent);
+    public void Enqueue(QueuedRun run);
+    public Task&lt;QueuedRun&gt; DequeueAsync(CancellationToken token);
+    public void NotifyRunCompleted(string workloadClass);
+}</code></pre>
+
+                    <h3>WatermarkTracker</h3>
+                    <pre><code class="language-csharp">public sealed class WatermarkTracker
+{
+    public Task&lt;WatermarkState?&gt; LoadAsync(string scheduleId);
+    public Task&lt;IErrorsInfo&gt; SaveAsync(string scheduleId, WatermarkState state);
+    public WatermarkWindow ComputeWindow(WatermarkConfig config, WatermarkState? currentState);
+    public Task&lt;IErrorsInfo&gt; ResetAsync(string scheduleId);
+}</code></pre>
+                </section>
+
+                <section id="observability" class="section">
+                    <h2>Observability</h2>
+                    <p>Built-in metrics, alerting, and lineage tracking:</p>
+                    <pre><code class="language-csharp">public class MetricsEngine
+{
+    public void RecordCounter(string metricName, long value, Dictionary&lt;string, string&gt;? tags = null);
+    public void RecordGauge(string metricName, double value, Dictionary&lt;string, string&gt;? tags = null);
+    public void RecordHistogram(string metricName, double value, Dictionary&lt;string, string&gt;? tags = null);
+    public void RecordTimer(string metricName, TimeSpan duration, Dictionary&lt;string, string&gt;? tags = null);
+    public IReadOnlyList&lt;MetricSnapshot&gt; GetSnapshots();
+}
+
+public class AlertingEngine
+{
+    public void RegisterRule(AlertRule rule);
+    public void Evaluate(PipelineRunResult result);
+    public IReadOnlyList&lt;Alert&gt; GetActiveAlerts();
+    public void AcknowledgeAlert(string alertId, string acknowledgedBy);
+}
+
+public class PipelineLineageTracker
+{
+    public void RecordFieldLineage(string runId, string fieldName, string source, string transformation);
+    public void RecordRecordLineage(string runId, string recordId, List&lt;string&gt; sourceIds);
+    public LineageReport GetReport(string runId);
+}</code></pre>
+                </section>
+
+                <section id="checkpoints" class="section">
+                    <h2>Checkpointing</h2>
+                    <p>Fault-tolerant execution with resume capability:</p>
+                    <pre><code class="language-csharp">public class PipelineCheckpointManager
+{
+    public Task&lt;Checkpoint&gt; CreateAsync(string runId, long recordsProcessed);
+    public Task&lt;Checkpoint?&gt; LoadAsync(string checkpointId);
+    public Task SaveAsync(Checkpoint checkpoint);
+    public Task&lt;IReadOnlyList&lt;Checkpoint&gt;&gt; GetHistoryAsync(string pipelineId);
+    public Task PurgeAsync(string pipelineId, TimeSpan olderThan);
+}</code></pre>
+
+                    <h3>Checkpoint Data</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>CheckpointId</code></td><td>Unique identifier</td></tr>
+                            <tr><td><code>RunId</code></td><td>Associated run</td></tr>
+                            <tr><td><code>PipelineId</code></td><td>Pipeline definition ID</td></tr>
+                            <tr><td><code>RecordsProcessed</code></td><td>Count of committed records</td></tr>
+                            <tr><td><code>LastOffset</code></td><td>Source offset position</td></tr>
+                            <tr><td><code>CreatedAt</code></td><td>Timestamp</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Creating a Pipeline</h3>
+                    <pre><code class="language-csharp">var pipeline = new PipelineDefinition
+{
+    Name = "DailyCustomerSync",
+    Description = "Sync customers from CRM to Data Warehouse",
+    SourcePluginId = "crm-db-source",
+    SinkPluginId = "warehouse-db-sink",
+    ErrorSinkPluginId = "error-log-sink",
+    BatchSize = 1000,
+    MaxParallelBatches = 2,
+    EnableCheckpointing = true,
+    Steps = new List&lt;PipelineStepDef&gt;
+    {
+        new PipelineStepDef
+        {
+            StepType = "transform",
+            PluginId = "map-fields",
+            Parameters = new Dictionary&lt;string, object&gt;
+            {
+                ["mappings"] = new Dictionary&lt;string, string&gt;
+                {
+                    ["cust_id"] = "customer_id",
+                    ["cust_name"] = "customer_name"
+                }
+            }
+        },
+        new PipelineStepDef
+        {
+            StepType = "validate",
+            PluginId = "schema-validator",
+            Parameters = new Dictionary&lt;string, object&gt;
+            {
+                ["required_fields"] = new[] { "customer_id", "email" }
+            }
+        }
+    }
+};
+
+// Save
+var manager = new PipelineManager(editor);
+await manager.SaveAsync(pipeline);</code></pre>
+
+                    <h3>Running a Pipeline</h3>
+                    <pre><code class="language-csharp">// Run by ID
+var result = await manager.RunAsync(
+    pipelineId: "daily-customer-sync",
+    progress: new Progress&lt;PassedArgs&gt;(p =&gt; 
+        Console.WriteLine($"Progress: {p.Messege}")),
+    token: cancellationToken);
+
+Console.WriteLine($"Records processed: {result.RecordsProcessed}");
+Console.WriteLine($"Records rejected: {result.RecordsRejected}");
+Console.WriteLine($"Duration: {result.Duration}");
+
+// Run by definition
+var result2 = await manager.RunDefinitionAsync(
+    pipeline,
+    progress: progressReporter);</code></pre>
+
+                    <h3>Scheduling</h3>
+                    <pre><code class="language-csharp">var host = new SchedulerHost(editor);
+await host.StartAsync();
+
+// Manual trigger
+var runId = await host.TriggerManualAsync(
+    "daily-customer-sync",
+    new Dictionary&lt;string, object&gt; { ["full_refresh"] = true });
+
+// Backfill
+var backfillId = await host.SubmitBackfillAsync(
+    scheduleId: "daily-customer-sync",
+    fromValue: "2024-01-01T00:00:00Z",
+    toValue: "2024-01-31T23:59:59Z",
+    reason: "Initial load",
+    requestedBy: "admin");</code></pre>
+
+                    <h3>Plugin Development</h3>
+                    <pre><code class="language-csharp">[PipelinePlugin(
+    pluginId: "custom-transform",
+    category: "transform",
+    name: "Custom Transform",
+    description: "Applies custom business logic")]
+public class CustomTransformPlugin : IPipelineTransformer
+{
+    private readonly IDMEEditor _editor;
+
+    public CustomTransformPlugin(IDMEEditor editor)
+    {
+        _editor = editor;
+    }
+
+    public async Task&lt;IEnumerable&lt;PipelineRecord&gt;&gt; TransformAsync(
+        IEnumerable&lt;PipelineRecord&gt; records,
+        Dictionary&lt;string, object&gt; parameters,
+        CancellationToken token)
+    {
+        var result = new List&lt;PipelineRecord&gt;();
+        foreach (var record in records)
+        {
+            // Custom transformation logic
+            record.Data["processed_at"] = DateTime.UtcNow;
+            result.Add(record);
+        }
+        return result;
+    }
+}</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="etl-workflow-engine.html"><i class="bi bi-arrow-left"></i> Previous: ETL Workflow Engine</a>
+                    <a href="etl-engine-scheduling.html">Next: ETL Scheduling <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>

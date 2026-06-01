@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV DataSource - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>CSV DataSource</span>
+                </nav>
+                <div class="page-header">
+                    <h1>CSV DataSource</h1>
+                    <p class="page-subtitle">File-based CSV (Comma-Separated Values) datasource with automatic delimiter detection, type inference, CRUD operations, and Excel interop</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/CSV_DataSource/CSVDataSource.cs</code> (1000+ lines)</li>
+                        <li>Registered via <code>[AddinAttribute(Category=FILE, DatasourceType=CSV|Xls, FileType="csv")]</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#class">Class Definition</a></li>
+                        <li><a href="#constructor">Constructor &amp; Delimiter Detection</a></li>
+                        <li><a href="#connection">Connection Lifecycle</a></li>
+                        <li><a href="#field-scanning">Field Scanning &amp; Type Inference</a></li>
+                        <li><a href="#crud">CRUD Operations</a></li>
+                        <li><a href="#scripting">Query &amp; Script Operations</a></li>
+                        <li><a href="#excel">Excel Interop</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#full-api">Full API — Parser, Reader, TypeMapper, Analyser</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>CSVDataSource</code> implements <code>IDataSource</code> for CSV files with automatic delimiter detection, type inference via table scanning, and full CRUD operations. It supports both CSV and XLS datasource types via a single implementation.</p>
+                    <ul>
+                        <li><strong>Automatic delimiter detection</strong> — Detects comma, tab, semicolon, or pipe delimiters</li>
+                        <li><strong>Type inference</strong> — Scans rows to determine field types (int, decimal, DateTime, etc.)</li>
+                        <li><strong>Auto-creation</strong> — Creates empty file if not found</li>
+                        <li><strong>File locking</strong> — Retry logic for locked files with exponential backoff</li>
+                        <li><strong>CSVTextFieldParser</strong> — Robust quoted-field parsing via <code>Microsoft.VisualBasic</code></li>
+                    </ul>
+                </section>
+
+                <section id="class" class="section">
+                    <h2>Class Definition</h2>
+                    <pre><code class="language-csharp">[AddinAttribute(Category = DatasourceCategory.FILE,
+    DatasourceType = DataSourceType.CSV | DataSourceType.Xls,
+    FileType = "csv")]
+public class CSVDataSource : IDataSource
+{
+    // Core constructor
+    public CSVDataSource(string datasourcename, IDMLogger logger,
+        IDMEEditor pDMEEditor, DataSourceType pDatasourceType, IErrorsInfo per);
+
+    // IDataSource identity
+    public string GuidID { get; set; }
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; }
+    public DatasourceCategory Category { get; set; }
+    public IDataConnection Dataconnection { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+    public IErrorsInfo ErrorObject { get; set; }
+    public IDMLogger Logger { get; set; }
+    public ConnectionState ConnectionStatus { get; set; }
+    public List&lt;string&gt; EntitiesNames { get; set; }
+    public List&lt;EntityStructure&gt; Entities { get; set; }
+    public List&lt;object&gt; Records { get; set; }
+
+    // Delimiter support
+    public virtual string ColumnDelimiter { get; set; } = "''";
+    public virtual string ParameterDelimiter { get; set; } = ":";
+
+    // Static helpers
+    public static int GetDecimalScale(decimal value);
+    public static int GetDecimalPrecision(decimal value);
+}</code></pre>
+                </section>
+
+                <section id="constructor" class="section">
+                    <h2>Constructor &amp; Delimiter Detection</h2>
+                    <p>The constructor automatically detects the delimiter from the file:</p>
+                    <pre><code class="language-csharp">// Delimiter detection logic
+public CSVDataSource(string datasourcename, IDMLogger logger,
+    IDMEEditor pDMEEditor, DataSourceType pDatasourceType, IErrorsInfo per)
+{
+    DatasourceName = datasourcename;
+    Logger = logger;
+    ErrorObject = per;
+    DMEEditor = pDMEEditor;
+    DatasourceType = pDatasourceType;
+    Category = DatasourceCategory.FILE;
+
+    // Create FileConnection
+    Dataconnection = new FileConnection(DMEEditor);
+
+    // Read config
+    var connProp = DMEEditor.ConfigEditor.DataConnections
+        .FirstOrDefault(c => c.FileName == datasourcename);
+    Dataconnection.ConnectionProp = connProp;
+
+    // Detect delimiter from file
+    string fullPath = Path.Combine(connProp.FilePath, connProp.FileName);
+    if (File.Exists(fullPath))
+        Delimiter = DetectDelimiter(fullPath); // , ; \t |
+    else
+        Delimiter = ',';
+}</code></pre>
+                </section>
+
+                <section id="connection" class="section">
+                    <h2>Connection Lifecycle</h2>
+                    <pre><code class="language-csharp">public ConnectionState Openconnection()
+{
+    // Retry logic for file locks (5 attempts, exponential backoff)
+    for (int i = 0; i < 5; i++)
+    {
+        try
+        {
+            Dataconnection.OpenConnection();
+            if (Dataconnection.ConnectionStatus == ConnectionState.Open)
+            {
+                fieldParser = new CsvTextFieldParser(fullPath);
+                fieldParser.Delimiters = new[] { Delimiter.ToString() };
+                fieldParser.HasFieldsEnclosedInQuotes = true;
+                return ConnectionState.Open;
+            }
+        }
+        catch (IOException ex) when (i < 4)
+        {
+            Thread.Sleep(500 * (int)Math.Pow(2, i)); // Exponential backoff
+        }
+    }
+    return ConnectionState.Closed;
+}
+
+public ConnectionState Closeconnection()
+{
+    fieldParser?.Close();
+    fieldParser = null;
+    return Dataconnection.CloseConn();
+}
+
+public ConnectionState GetFileState() => ConnectionStatus == ConnectionState.Open
+    ? ConnectionStatus : Openconnection();</code></pre>
+                </section>
+
+                <section id="field-scanning" class="section">
+                    <h2>Field Scanning &amp; Type Inference</h2>
+                    <pre><code class="language-csharp">// Scans up to 100 rows to determine column types
+private List&lt;EntityField&gt; GetFieldsbyTableScan(
+    string sheetname, List&lt;EntityField&gt; flds, string[] headerRow)
+{
+    int i = 0;
+    while (fieldParser.EndOfData == false && i &lt; 100)
+    {
+        string[] row = fieldParser.ReadFields();
+        i++;
+        for (int j = 0; j &lt; flds.Count; j++)
+        {
+            EntityField f = flds[j];
+            string val = row[j];
+
+            if (f.FieldName.Contains("date") || f.FieldName.EndsWith("_dt"))
+                f.Fieldtype = "System.DateTime";
+            else if (int.TryParse(val, out _))
+                f.Fieldtype = "System.Int32";
+            else if (decimal.TryParse(val, out _))
+                f.Fieldtype = "System.Decimal";
+            else if (DateTime.TryParse(val, out _))
+                f.Fieldtype = "System.DateTime";
+            else if (bool.TryParse(val, out _))
+                f.Fieldtype = "System.Boolean";
+            else
+                f.Fieldtype = "System.String";
+        }
+    }
+    IsFieldsScanned = true;
+    return flds;
+}</code></pre>
+                </section>
+
+                <section id="crud" class="section">
+                    <h2>CRUD Operations</h2>
+                    <pre><code class="language-csharp">// Read entities
+public IEnumerable&lt;object&gt; GetEntity(string EntityName, List&lt;AppFilter&gt; filter);
+public IEnumerable&lt;string&gt; GetEntitesList();
+public virtual Task&lt;double&gt; GetScalarAsync(string query);
+public virtual double GetScalar(string query);
+
+// Create
+public bool CreateEntityAs(EntityStructure entity);
+public IErrorsInfo CreateEntities(List&lt;EntityStructure&gt; entities);
+
+// Check existence
+public bool CheckEntityExist(string EntityName);
+public int GetEntityIdx(string entityName);
+
+// Execute SQL
+public IErrorsInfo ExecuteSql(string sql);
+
+// Get schema
+public IEnumerable&lt;ETLScriptDet&gt; GetCreateEntityScript(
+    List&lt;EntityStructure&gt; entities = null);
+public IEnumerable&lt;ChildRelation&gt; GetChildTablesList(
+    string tablename, string SchemaName, string Filterparamters);</code></pre>
+                </section>
+
+                <section id="scripting" class="section">
+                    <h2>Query &amp; Script Operations</h2>
+                    <pre><code class="language-csharp">// Scalar queries
+var count = ds.GetScalar("SELECT COUNT(*) FROM Customers");
+var total = await ds.GetScalarAsync("SELECT SUM(Amount) FROM Orders");
+
+// Script execution
+var result = ds.ExecuteSql("UPDATE Customers SET Status = 'Active'");
+if (result.Flag == Errors.Ok)
+    Console.WriteLine("Script executed successfully");</code></pre>
+                </section>
+
+                <section id="excel" class="section">
+                    <h2>Excel Interop</h2>
+                    <p>CSVDataSource also handles XLS files via the same implementation:</p>
+                    <pre><code class="language-csharp">// Works for both CSV and XLS
+var csvProps = new ConnectionProperties
+{
+    ConnectionName = "MyCSV",
+    FileName = "data.csv",
+    ConnectionString = "./data/",
+    DatabaseType = DataSourceType.CSV
+};
+
+var xlsProps = new ConnectionProperties
+{
+    ConnectionName = "MyExcel",
+    FileName = "report.xls",
+    ConnectionString = "./data/",
+    DatabaseType = DataSourceType.Xls
+};
+
+// Both resolve to CSVDataSource due to [AddinAttribute] registration</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Basic CSV Access</h3>
+                    <pre><code class="language-csharp">var props = new ConnectionProperties
+{
+    ConnectionName = "Customers",
+    ConnectionString = "./data/",
+    FileName = "customers.csv",
+    DatabaseType = DataSourceType.CSV,
+    Category = DatasourceCategory.FILE
+};
+
+editor.ConfigEditor.AddDataConnection(props);
+var ds = editor.GetDataSource("Customers");
+ds.Openconnection();
+
+// Read data
+var customers = ds.GetEntity("customers", new List&lt;AppFilter&gt;());
+foreach (var c in customers)
+    Console.WriteLine(c);
+
+// Get entity list
+var entities = ds.GetEntitesList();
+foreach (var name in entities)
+    Console.WriteLine(name);</code></pre>
+
+                    <h3>With Filters</h3>
+                    <pre><code class="language-csharp">var filtered = ds.GetEntity("customers", new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" },
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" }
+});</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="filemanager-reader-host.html"><i class="bi bi-arrow-left"></i> Previous: FileManager DataSource</a>
+                    <a href="json-datasource.html">Next: JSON DataSource <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <section id="full-api" class="section">
+                    <h2><i class="bi bi-book"></i> Full API — All CSV_DataSource Classes</h2>
+
+                    <h3>CsvTextFieldParser</h3>
+                    <p>Line-by-line CSV parser used by <code>CSVDataSource</code> and <code>CSVAnalyser</code>.</p>
+                    <pre><code class="language-csharp">public class CsvTextFieldParser : IDisposable
+{
+    public CsvTextFieldParser(string filePath);
+    public CsvTextFieldParser(Stream stream);
+
+    public bool EndOfData { get; }
+    public string[] ReadFields();                 // Next line as field array
+    public void SetDelimiter(char delimiter);     // Default: comma
+    public void SetQuoteChar(char quoteChar);     // Default: double-quote
+    public void Close();
+    public void Dispose();
+}</code></pre>
+
+                    <h3>ICSVDataReader</h3>
+                    <p><code>IDataReader</code> over a CSV file — iterates <code>CsvTextFieldParser</code> rows.</p>
+                    <pre><code class="language-csharp">public interface ICSVDataReader : IDataReader
+{
+    void SetDelimiter(char delimiter);
+    void SetQuoteChar(char quoteChar);
+}</code></pre>
+
+                    <h3>CSVTypeMapper</h3>
+                    <p>Static bidirectional .NET ↔ CSV type mapping with auto-detection from sample rows.</p>
+                    <pre><code class="language-csharp">public static class CSVTypeMapper
+{
+    // .NET Type → CSV type string
+    public static string MapToCSVType(Type dotNetType);
+
+    // CSV type string → .NET Type (case-insensitive)
+    public static Type MapToNetType(string csvType);
+
+    // Detect column types from first N non-null values in each column
+    public static Dictionary&lt;string, Type&gt; DetectColumnTypes(
+        string filePath, int sampleRows = 100);
+
+    // Create EntityStructure from CSV header + type detection
+    public static EntityStructure CreateEntityStructureFromCSV(
+        string filePath, string entityName = null);
+}</code></pre>
+                    <table class="ref-table"><thead><tr><th>.NET Type</th><th>CSV Type</th></tr></thead><tbody>
+                    <tr><td><code>byte, sbyte, short, ushort, int, uint, long, ulong</code></td><td>integer</td></tr>
+                    <tr><td><code>float, double, decimal</code></td><td>number</td></tr>
+                    <tr><td><code>bool</code></td><td>boolean</td></tr>
+                    <tr><td><code>DateTime, DateTimeOffset</code></td><td>datetime</td></tr>
+                    <tr><td><code>TimeSpan</code></td><td>timespan</td></tr>
+                    <tr><td><code>Guid</code></td><td>guid</td></tr>
+                    <tr><td><code>string</code></td><td>string</td></tr>
+                    <tr><td><code>char</code></td><td>char</td></tr>
+                    </tbody></table>
+
+                    <h3>CSVAnalyser</h3>
+                    <pre><code class="language-csharp">public class CSVAnalyser
+{
+    public CSVAnalyser(IDMEEditor dmeEditor);
+    public CSVAnalysisResult AnalyzeCSVFile(string filePath, char delimiter = ',');
+    public DataQualityReport ValidateDataQuality(CSVAnalysisResult analysis);
+    public string GetQuickSummary(string filePath, char delimiter = ',');
+}</code></pre>
+
+                    <h4>CSVAnalysisResult</h4>
+                    <table class="ref-table"><thead><tr><th>Property</th><th>Type</th></tr></thead><tbody>
+                    <tr><td><code>RowCount</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>ColumnCount</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>FileSizeMB</code></td><td><code>double</code></td></tr>
+                    <tr><td><code>Delimiter</code></td><td><code>char</code></td></tr>
+                    <tr><td><code>HasInconsistentColumnCount</code></td><td><code>bool</code></td></tr>
+                    <tr><td><code>HasQuotingIssues</code></td><td><code>bool</code></td></tr>
+                    <tr><td><code>LargeTextFieldCount</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>DocumentType</code></td><td><code>string</code></td></tr>
+                    <tr><td><code>Columns</code></td><td><code>Dictionary&lt;string,ColumnStats&gt;</code></td></tr>
+                    <tr><td><code>Suggestions</code></td><td><code>List&lt;string&gt;</code></td></tr>
+                    <tr><td><code>Errors</code></td><td><code>List&lt;string&gt;</code></td></tr>
+                    </tbody></table>
+
+                    <h4>ColumnStats</h4>
+                    <table class="ref-table"><thead><tr><th>Property</th><th>Type</th></tr></thead><tbody>
+                    <tr><td><code>Index</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>NullCount</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>MinLength</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>MaxLength</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>DetectedType</code></td><td><code>Type</code></td></tr>
+                    <tr><td><code>IsCandidateKey</code></td><td><code>bool</code></td></tr>
+                    <tr><td><code>UniqueValues</code></td><td><code>HashSet&lt;string&gt;</code></td></tr>
+                    </tbody></table>
+
+                    <h4>Analyse and Type-Detect</h4>
+                    <pre><code class="language-csharp">var analyser = new CSVAnalyser(editor);
+var result = analyser.AnalyzeCSVFile(@"C:\Data\sales.csv");
+Console.WriteLine($"Rows: {result.RowCount}, Document: {result.DocumentType}");
+foreach (var s in result.Suggestions) Console.WriteLine(s);
+
+var types = CSVTypeMapper.DetectColumnTypes(@"C:\Data\sales.csv");
+var entity = CSVTypeMapper.CreateEntityStructureFromCSV(@"C:\Data\sales.csv", "Sale");</code></pre>
+                </section>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

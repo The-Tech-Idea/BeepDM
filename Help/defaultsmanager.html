@@ -59,6 +59,7 @@
                         <li><a href="#legacy-api">Legacy / Persistence API</a></li>
                         <li><a href="#di-interface">Dependency Injection Interface</a></li>
                         <li><a href="#examples">Examples</a></li>
+                        <li><a href="#full-api">Full API Reference</a></li>
                     </ul>
                 </div>
 
@@ -698,6 +699,260 @@ foreach (var (name, examples) in resolvers.OrderBy(x => x.Key))
                     <a href="mappingmanager.html">&larr; Mapping Manager</a>
                     <a href="datasyncmanager.html">Data Sync Manager &rarr;</a>
                 </div>
+
+                <!-- ═══════════════════════════════════════════════════════ FULL API REFERENCE -->
+                <section id="full-api" class="section">
+                    <h2><i class="bi bi-book"></i> Full API Reference</h2>
+
+                    <h3>IDefaultsManager — Complete Interface</h3>
+                    <table class="reference-table"><thead><tr><th>Category</th><th>Method</th><th>Return</th></tr></thead><tbody>
+                    <tr><td>Lifecycle</td><td><code>Initialize(IDMEEditor)</code></td><td><code>void</code></td></tr>
+                    <tr><td rowspan="3">Profile Registry</td><td><code>RegisterProfile(ds, entity, profile)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>GetProfile(ds, entity)</code></td><td><code>EntityDefaultsProfile?</code></td></tr>
+                    <tr><td><code>RemoveProfile(ds, entity)</code></td><td><code>void</code></td></tr>
+                    <tr><td rowspan="3">Apply</td><td><code>Apply(editor, ds, entity, Dict&lt;string,object&gt;)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>Apply&lt;T&gt;(editor, ds, entity, T) where T:class</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>Apply(editor, ds, entity, DataRow)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td rowspan="3">Resolve</td><td><code>Resolve(editor, rule, context?)</code></td><td><code>object</code></td></tr>
+                    <tr><td><code>TestRule(editor, rule, params?)</code></td><td><code>Tuple&lt;IErrorsInfo,object&gt;</code></td></tr>
+                    <tr><td><code>ValidateRule(editor, rule)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td rowspan="2">Resolver Mgmt</td><td><code>RegisterCustomResolver(editor, resolver)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>GetAvailableResolvers(editor)</code></td><td><code>Dict&lt;string,IEnumerable&gt;</code></td></tr>
+                    <tr><td rowspan="8">Legacy/Persistence</td><td><code>GetDefaults(editor, ds)</code></td><td><code>List&lt;DefaultValue&gt;</code></td></tr>
+                    <tr><td><code>SaveDefaults(editor, defaults, ds)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>SetColumnDefault(editor, ds, entity, col, val, isRule)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>GetColumnDefault(editor, ds, entity, col, params?)</code></td><td><code>object</code></td></tr>
+                    <tr><td><code>RemoveColumnDefault(editor, ds, entity, col)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>GetEntityDefaults(editor, ds, entity)</code></td><td><code>Dict&lt;string,DefaultValue&gt;</code></td></tr>
+                    <tr><td><code>SetMultipleColumnDefaults(editor, ds, entity, columnDefaults)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>CreateDefaultValue(editor, field, val, rule?)</code></td><td><code>Tuple&lt;IErrorsInfo,DefaultValue&gt;</code></td></tr>
+                    </tbody></table>
+
+                    <h3>DefaultsManager Static Accessors</h3>
+                    <table class="reference-table"><thead><tr><th>Accessor</th><th>Type</th><th>Description</th></tr></thead><tbody>
+                    <tr><td><code>DefaultValueHelper</code></td><td><code>IDefaultValueHelper</code></td><td>CRUD for persisted <code>DefaultValue</code> entries. Throws if not initialized.</td></tr>
+                    <tr><td><code>ResolverManager</code></td><td><code>IDefaultValueResolverManager</code></td><td>Resolver pipeline manager. Throws if not initialized.</td></tr>
+                    <tr><td><code>ValidationHelper</code></td><td><code>IDefaultValueValidationHelper</code></td><td>Rule syntax/semantic/safety validation. Throws if not initialized.</td></tr>
+                    </tbody></table>
+
+                    <h3>IDefaultValueResolverManager — Complete Interface</h3>
+                    <table class="reference-table"><thead><tr><th>Method</th><th>Details</th></tr></thead><tbody>
+                    <tr><td><code>RegisterResolver(IDefaultValueResolver)</code></td><td>At self-declared priority (default 100). Replaces by name.</td></tr>
+                    <tr><td><code>RegisterResolver(resolver, int priority)</code></td><td>Phase 4: explicit priority. Lower = tried first (0-49 overrides, 50-99 custom, 100 built-in, 200+ fallback).</td></tr>
+                    <tr><td><code>UnregisterResolver(string name)</code></td><td>Remove by name. No-op if missing.</td></tr>
+                    <tr><td><code>ResolveValue(string rule, IPassedArgs)</code></td><td>Normalizes rule, routes to first priority-ordered <code>CanHandle</code> match, checks caching if deterministic.</td></tr>
+                    <tr><td><code>ResolveValueWithNormalization(rule, args)</code></td><td>Same as <code>ResolveValue</code> but passes through <code>RuleNormalizer</code> first.</td></tr>
+                    <tr><td><code>ResolveWithTelemetry(rule, args)</code></td><td>Phase 5: timed resolution returning full <code>ResolverExecutionResult</code> (name, duration, fingerprint, fallback flags).</td></tr>
+                    <tr><td><code>ParseRule(string rule)</code></td><td>Phase 1: parses and normalizes to structured <code>ParsedRule</code>. Results may be cached.</td></tr>
+                    <tr><td><code>CompileRule(string rule)</code></td><td>Phase 6: pre-parses and caches rule to eliminate parse overhead during resolution.</td></tr>
+                    <tr><td><code>InvalidateValueCache()</code></td><td>Phase 6: clears value result cache. Call when datasource/config changes.</td></tr>
+                    <tr><td><code>GetResolvers()</code></td><td>Returns <code>IReadOnlyDictionary&lt;string, IDefaultValueResolver&gt;</code></td></tr>
+                    <tr><td><code>GetResolverForRule(string)</code></td><td>Returns first resolver where <code>CanHandle</code> = true, or null.</td></tr>
+                    <tr><td><code>CanResolveRule(string)</code></td><td>True if any resolver can handle the rule.</td></tr>
+                    <tr><td><code>GetResolverStatistics()</code></td><td>Returns TotalResolvers, ResolverNames, RegisteredAt, ResolverTypes.</td></tr>
+                    <tr><td><code>GetAllExamples()</code></td><td>Resolver names → example strings from all registered resolvers.</td></tr>
+                    <tr><td><code>ValidateResolvers()</code></td><td>Validates each resolver for non-null name/types/examples.</td></tr>
+                    </tbody></table>
+
+                    <h3>ResolverExecutionResult (Phase 5 telemetry)</h3>
+                    <pre><code class="language-csharp">public sealed class ResolverExecutionResult
+{
+    public string ResolverName     { get; init; }   // Winning resolver or "none"
+    public string OriginalRule     { get; init; }   // Verbatim rule string
+    public string NormalizedRule   { get; init; }   // After dot-style normalization
+    public object ResolvedValue    { get; init; }   // Value or null on failure
+    public bool   Succeeded         { get; init; }   // True when resolver produced value
+    public bool   FallbackUsed      { get; init; }   // Primary failed, fallback value used
+    public TimeSpan Duration        { get; init; }   // Wall-clock time spent resolving
+    public string ErrorMessage      { get; init; }   // Exception message when Succeeded=false
+    public string RuleFingerprint   { get; init; }   // 8-char FNV-1a hex hash of NormalizedRule
+}</code></pre>
+
+                    <h3>ResolverContext</h3>
+                    <pre><code class="language-csharp">public class ResolverContext
+{
+    public IPassedArgs PassedArgs { get; }
+    public Dictionary&lt;string, object&gt; Extras { get; }
+
+    public ResolverContext(IPassedArgs passedArgs);
+    public ResolverContext(IPassedArgs passedArgs, Dictionary&lt;string, object&gt; extras);
+
+    public T GetExtra&lt;T&gt;(string key, T defaultValue = default);
+
+    // Computed shortcuts:
+    public string EntityName => PassedArgs?.CurrentEntity;
+    public string FieldName  => /* Extras["FieldName"] ?? PassedArgs.ParameterString1 */;
+}</code></pre>
+
+                    <h3>IResolverCapabilities</h3>
+                    <table class="reference-table"><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+                    <tr><td><code>Priority</code></td><td><code>int</code></td><td>100</td><td>Lower tried first. 0-49=override, 50-99=custom, 100=built-in, 200+=fallback</td></tr>
+                    <tr><td><code>IsDeterministic</code></td><td><code>bool</code></td><td>false</td><td>Same rule+context always produces same value</td></tr>
+                    <tr><td><code>SupportsCaching</code></td><td><code>bool</code></td><td>=IsDeterministic</td><td>Whether resolver output may be cached</td></tr>
+                    <tr><td><code>SupportsAsync</code></td><td><code>bool</code></td><td>false</td><td>Reserved for future async resolver support</td></tr>
+                    </tbody></table>
+
+                    <h3>IDefaultValueResolver — Contract</h3>
+                    <pre><code class="language-csharp">public interface IDefaultValueResolver
+{
+    string ResolverName { get; }                                     // Unique name for registration
+    IEnumerable&lt;string&gt; SupportedRuleTypes { get; }                  // Tokens this resolver handles
+    object ResolveValue(string rule, IPassedArgs parameters);        // Produce concrete value
+    bool CanHandle(string rule);                                     // Fast pre-check
+    IEnumerable&lt;string&gt; GetExamples();                               // For documentation/tooling
+}</code></pre>
+
+                    <h3>BaseDefaultValueResolver — Protected Utilities</h3>
+                    <pre><code class="language-csharp">public abstract class BaseDefaultValueResolver : IDefaultValueResolver, IResolverCapabilities
+{
+    protected readonly IDMEEditor Editor;
+
+    // Logging helpers
+    protected virtual void LogError(string message, Exception ex = null);
+    protected virtual void LogInfo(string message);
+    protected virtual void LogWarning(string message);
+
+    // Parameter extraction
+    protected virtual T GetParameterValue&lt;T&gt;(IPassedArgs, string propertyName, T defaultValue);
+    protected virtual object GetObjectFromParameters(IPassedArgs, string propertyName = "Objects");
+    protected virtual IDataSource GetDataSource(IPassedArgs, string dataSourceName = null);
+
+    // String parsing helpers
+    protected virtual string ExtractParenthesesContent(string rule);
+    protected virtual string[] SplitParameters(string parameterString);
+    protected virtual string RemoveQuotes(string value);
+    protected virtual bool TryConvert&lt;T&gt;(string value, out T result);
+    protected virtual bool ValidateFunctionFormat(string rule, string functionName);
+}</code></pre>
+
+                    <h3>DefaultResolverRegistry — Discovery &amp; Descriptor</h3>
+                    <pre><code class="language-csharp">public class DefaultResolverRegistry
+{
+    public DefaultResolverRegistry(IDMEEditor editor);
+
+    // Scans assemblies for [DefaultResolver] classes, instantiates, registers via DefaultsManager
+    public void Discover();
+    public IReadOnlyDictionary&lt;string, DefaultResolverDescriptor&gt; GetDescriptors();
+    public bool TryGet(string resolverName, out DefaultResolverDescriptor descriptor);
+    public IDefaultValueResolver Create(string resolverName);  // Creates new instance
+}
+
+public sealed class DefaultResolverDescriptor
+{
+    public DefaultResolverAttribute Attribute { get; }
+    public Type ImplementationType { get; }
+}</code></pre>
+
+                    <h3>Rule Parsing: ParsedRule, RuleNormalizer, DotStyleRuleParser</h3>
+                    <pre><code class="language-csharp">// ── Syntax versions ──
+public enum RuleSyntaxVersion { V1Legacy = 0, V1Dot = 1, Literal = 2, Unknown = -1 }
+
+// ── Normalized output ──
+public sealed class ParsedRule
+{
+    public string Operator { get; }                     // Uppercase operator name
+    public IReadOnlyList&lt;string&gt; Args { get; }          // Order argument strings
+    public string OriginalRule { get; }                  // Verbatim input
+    public string NormalizedRule { get; }                // Function-style equivalent
+    public RuleSyntaxVersion SyntaxVersion { get; }      // Detected DSL syntax
+    public bool IsValid { get; }                         // No Error-severity diagnostics
+    public bool IsLiteral { get; }                       // SyntaxVersion == Literal
+    public IReadOnlyList&lt;RuleDiagnostic&gt; Diagnostics { get; }
+}
+
+public sealed class RuleDiagnostic
+{
+    public RuleDiagnosticSeverity Severity { get; }    // Info / Warning / Error
+    public string Code { get; }                        // e.g. "DSL001", "NRM001"
+    public string Message { get; }
+    public int Position { get; }                       // -1 = unknown
+}
+
+// ── Normalizer pipeline ──
+public static class RuleNormalizer
+{
+    public static ParsedRule Normalize(string rule);
+    // 1. Empty/null → NRM001
+    // 2. Strip ":" prefix
+    // 3. Bare legacy token (NOW, TODAY, USERNAME, etc.) → NRM002 deprecation warning
+    // 4. Literal (no ":" and not a known operator) → Literal syntax
+    // 5. Otherwise → NormalizeExpression (delegates to DotStyleRuleParser for dot-style)
+}
+
+public class DotStyleRuleParser
+{
+    public static ParsedRule Parse(string rule);
+    // Converts "ADDDAYS.TODAY.7" → "ADDDAYS(TODAY,7)"
+    // Detects operator from _knownOperators set
+    // Skips dot-style if '(' appears before any '.'
+    // Protects quoted segments: FORMAT.NOW.'yyyy-MM-dd' → FORMAT(NOW,'yyyy-MM-dd')
+}</code></pre>
+
+                    <h3>IDefaultValueValidationHelper — Three-Tier Validation</h3>
+                    <table class="reference-table"><thead><tr><th>Tier</th><th>Method</th><th>Checks</th></tr></thead><tbody>
+                    <tr><td>1</td><td><code>ValidateRuleSyntax(rule)</code></td><td>Normalizes, checks IsValid, double punctuation, control chars, balanced parentheses</td></tr>
+                    <tr><td>2</td><td><code>ValidateRuleSemantic(rule)</code></td><td>Operator arity (IF=3 args, LOOKUP=2), <code>@Param</code> references, known rule patterns</td></tr>
+                    <tr><td>3</td><td><code>ValidateRuleSafety(rule)</code></td><td>Rejects EXEC, DROP, DELETE, TRUNCATE, SCRIPT, CMD, SHELL, POWERSHELL; blocks SQL injection</td></tr>
+                    </tbody></table>
+
+                    <h3>EntityDefaultsProfile — Template Factories</h3>
+                    <table class="reference-table"><thead><tr><th>Factory</th><th>Default Rules</th></tr></thead><tbody>
+                    <tr><td><code>AuditTemplate(entity)</code></td><td>CreatedBy (:USERNAME), CreatedAt (:NOW), ModifiedBy (:USERNAME), ModifiedAt (:NOW), IsActive (true), Version (1), RowGuid (:NEWGUID)</td></tr>
+                    <tr><td><code>TimestampTemplate(entity)</code></td><td>CreatedAt (:NOW), ModifiedAt (:NOW)</td></tr>
+                    <tr><td><code>UserStampTemplate(entity)</code></td><td>CreatedBy (:USERNAME), ModifiedBy (:USERNAME)</td></tr>
+                    <tr><td><code>IdentityTemplate(entity)</code></td><td>Id (:NEWGUID)</td></tr>
+                    <tr><td><code>FullTemplate(entity)</code></td><td>Id (:NEWGUID), CreatedBy (:USERNAME), CreatedAt (:NOW), ModifiedBy (:USERNAME), ModifiedAt (:NOW), IsActive (true), Version (1)</td></tr>
+                    </tbody></table>
+
+                    <h3>All 10 Built-in Resolvers — Complete Reference</h3>
+                    <table class="reference-table"><thead><tr><th>#</th><th>Resolver</th><th>Type</th><th>Priority</th><th>Cacheable</th><th>Key Tokens</th></tr></thead><tbody>
+                    <tr><td>1</td><td>DateTime</td><td>Non-deterministic</td><td>100</td><td>No</td><td>NOW, TODAY, YESTERDAY, TOMORROW, STARTOFMONTH, ENDOFMONTH, STARTOFYEAR, ENDOFYEAR, STARTOFWEEK, ENDOFWEEK, ADDDAYS, ADDHOURS, ADDMONTHS, ADDYEARS, FORMAT</td></tr>
+                    <tr><td>2</td><td>UserContext</td><td>Deterministic</td><td>100</td><td>Yes</td><td>USERNAME, USERID, USEREMAIL, USERLOGIN, USERDOMAIN, USERPROFILE, USERGROUP, USERROLE, USERPRINCIPAL</td></tr>
+                    <tr><td>3</td><td>SystemInfo</td><td>Deterministic</td><td>100</td><td>Yes</td><td>MACHINENAME, VERSION, APPVERSION, OSVERSION, PLATFORM, PROCESSORCOUNT, WORKINGSET, TIMESTAMP, TICKS</td></tr>
+                    <tr><td>4</td><td>Guid</td><td>Non-deterministic</td><td>100</td><td>No</td><td>NEWGUID, GUID, UUID, GENERATEUNIQUEID + format args: N, D, B, P</td></tr>
+                    <tr><td>5</td><td>Formula</td><td>Non-deterministic</td><td>100</td><td>No</td><td>SEQUENCE, INCREMENT, RANDOM, CALCULATE, ADD, SUBTRACT, MULTIPLY, DIVIDE, ROUND + math: PI, SQRT, ABS, SIN, COS, TAN</td></tr>
+                    <tr><td>6</td><td>Expression</td><td>Deterministic</td><td>100</td><td>Yes*</td><td>IF, CASE, ISNULL, COALESCE, AND, OR, NOT, EQ, NE, GT, GTE, LT, LTE</td></tr>
+                    <tr><td>7</td><td>Configuration</td><td>Deterministic</td><td>100</td><td>Yes</td><td>CONFIG, CONFIGURATIONVALUE, APPSETTING, SETTING, CONNECTIONSTRING</td></tr>
+                    <tr><td>8</td><td>Environment</td><td>Deterministic</td><td>100</td><td>Yes</td><td>ENV, ENVIRONMENTVARIABLE, TEMP, SYSTEMPATH, USERPATH</td></tr>
+                    <tr><td>9</td><td>DataSource</td><td>Non-deterministic</td><td>100</td><td>No</td><td>LOOKUP, QUERY, COUNT, MAX, MIN, SUM, AVG, GETENTITY</td></tr>
+                    <tr><td>10</td><td>ObjectProperty</td><td>Deterministic</td><td>100</td><td>Yes</td><td>PROPERTY, FIELD, NESTED, ARRAYITEM, DICTVALUE, PARENTVALUE</td></tr>
+                    </tbody></table>
+
+                    <h3>Source File Map (31 files, 4,200+ lines)</h3>
+                    <table class="reference-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>DefaultsManager.cs</code></td><td>Static facade, static accessors (Helper/Resolver/Validation), profile registry (lock-guarded Dictionary), Resolve, legacy API</td></tr>
+                    <tr><td><code>DefaultsManager.Apply.cs</code></td><td>3 ApplyInstance methods: Dictionary, POCO&lt;T&gt; via reflection, DataRow — ApplyOnlyIfNull logic + ConvertValue</td></tr>
+                    <tr><td><code>IDefaultsManager.cs</code></td><td>DI contract — 22 methods across lifecycle, profiles, apply, resolve, resolver management, legacy persistence</td></tr>
+                    <tr><td><code>EntityDefaultsProfile.cs</code></td><td>FieldDefaultRule + EntityDefaultsProfile: fluent Set/Remove builder, 5 template factories, computed IsExpression/ExpressionBody</td></tr>
+                    <tr><td><code>Resolvers/BaseDefaultValueResolver.cs</code></td><td>Abstract base: IResolverCapabilities virtuals, 8 protected logging/string parsing/parameter extraction helpers</td></tr>
+                    <tr><td><code>Resolvers/DefaultValueResolverManager.cs</code></td><td>Pipeline manager: 10 built-in registrations, priority-ordered CanHandle dispatch, value/rule caching, telemetry</td></tr>
+                    <tr><td><code>Resolvers/DateTimeResolver.cs</code></td><td>NOW, TODAY, YESTERDAY, TOMORROW, STARTOF*/ENDOF*, ADDDAYS/HOURS/MINUTES/MONTHS/YEARS, FORMAT</td></tr>
+                    <tr><td><code>Resolvers/UserContextResolver.cs</code></td><td>USERNAME, USERID, USEREMAIL, USERDOMAIN, USERPROFILE, USERGROUP via WindowsPrincipal, USERROLE</td></tr>
+                    <tr><td><code>Resolvers/SystemInfoResolver.cs</code></td><td>MACHINENAME, VERSION, APPVERSION, OSVERSION, PLATFORM, PROCESSORCOUNT, WORKINGSET, TIMESTAMP, TICKS</td></tr>
+                    <tr><td><code>Resolvers/GuidResolver.cs</code></td><td>NEWGUID, GUID, UUID, GENERATEUNIQUEID — format specifiers: N, D, B, P, X (lower+upper)</td></tr>
+                    <tr><td><code>Resolvers/FormulaResolver.cs</code></td><td>SEQUENCE, INCREMENT, RANDOM, CALCULATE, COMPUTE, ADD, SUBTRACT, MULTIPLY, DIVIDE, ROUND — math: PI, SQRT, ABS, SIN, COS, TAN, FLOOR, CEILING</td></tr>
+                    <tr><td><code>Resolvers/ExpressionResolver.cs</code></td><td>IF, CASE, ISNULL, COALESCE, AND, OR, NOT, EQ, NE, GT, GTE, LT, LTE — fully evaluated conditionals + logical + comparison</td></tr>
+                    <tr><td><code>Resolvers/ConfigurationResolver.cs</code></td><td>CONFIG, APPSETTING, SETTING, CONNECTIONSTRING — reads app/web config at runtime</td></tr>
+                    <tr><td><code>Resolvers/EnvironmentResolver.cs</code></td><td>ENV, TEMP, SYSTEMPATH, USERPATH — targets (USER/MACHINE/PROCESS), GetAllEnvironmentVariables</td></tr>
+                    <tr><td><code>Resolvers/DataSourceResolver.cs</code></td><td>LOOKUP, QUERY, COUNT, MAX, MIN, SUM, AVG, GETENTITY — @Param binding from context</td></tr>
+                    <tr><td><code>Resolvers/ObjectPropertyResolver.cs</code></td><td>PROPERTY, FIELD, NESTED dot-paths, ARRAYITEM (negative index support), DICTVALUE</td></tr>
+                    <tr><td><code>Registry/DefaultResolverRegistry.cs</code></td><td>[DefaultResolverAttribute] assembly discovery, descriptor creation, resolver instantiation</td></tr>
+                    <tr><td><code>Registry/DefaultResolverDescriptor.cs</code></td><td>Attribute + Type pairing for registered resolver metadata</td></tr>
+                    <tr><td><code>Helpers/DefaultValueHelper.cs</code></td><td>GetDefaults, SaveDefaults, CreateDefaultValue, GetDefaultForField, GetMultipleDefaults, FindDefaultsByPropertyName</td></tr>
+                    <tr><td><code>Helpers/DefaultValueValidationHelper.cs</code></td><td>Three-tier validation: syntax → semantic → safety; rejects dangerous patterns, SQL injection</td></tr>
+                    <tr><td><code>Interfaces/IDefaultValueResolver.cs</code></td><td>Resolver contract: ResolverName, SupportedRuleTypes, ResolveValue, CanHandle, GetExamples</td></tr>
+                    <tr><td><code>Interfaces/IDefaultValueHelper.cs</code></td><td>GetDefaults, SaveDefaults, GetDefaultForField, CreateDefaultValue, ValidateDefaultValue</td></tr>
+                    <tr><td><code>Interfaces/IDefaultValueValidationHelper.cs</code></td><td>ValidateDefaultValue, ValidateRule, ValidateFieldName</td></tr>
+                    <tr><td><code>Interfaces/IDefaultValueResolverManager.cs</code></td><td>15 methods: registration, resolution, telemetry, parsing, caching, introspection</td></tr>
+                    <tr><td><code>Interfaces/IResolverCapabilities.cs</code></td><td>Priority, IsDeterministic, SupportsCaching, SupportsAsync</td></tr>
+                    <tr><td><code>Interfaces/ResolverContext.cs</code></td><td>IPassedArgs + Extras dictionary + EntityName/FieldName shortcuts + GetExtra&lt;T&gt;</td></tr>
+                    <tr><td><code>Interfaces/ResolverExecutionResult.cs</code></td><td>9 init-only telemetry properties + FNV-1a fingerprint computation</td></tr>
+                    <tr><td><code>Interfaces/IDefaultValueInterfaces.cs</code></td><td>Placeholder — each type lives in its own file</td></tr>
+                    <tr><td><code>RuleParsing/ParsedRule.cs</code></td><td>RuleSyntaxVersion enum, RuleDiagnostic, ParsedRule — 9 properties, ToString → NormalizedRule</td></tr>
+                    <tr><td><code>RuleParsing/RuleNormalizer.cs</code></td><td>Normalize pipeline: empty/null check, strip ":", legacy deprecation, literal detection, expression dispatch</td></tr>
+                    <tr><td><code>RuleParsing/DotStyleRuleParser.cs</code></td><td>Dot-style → function-style conversion: ADDDAYS.TODAY.7 → ADDDAYS(TODAY,7), quoted segment protection</td></tr>
+                    </tbody></table>
+                </section>
             </div>
         </main>
     </div>

@@ -24,17 +24,42 @@ class NavigationManager {
             },
             
             // Getting Started
+            // Getting Started
+            'beepservice': {
+                activeId: 'nav-beepservice',
+                openSection: 'nav-getting-started'
+            },
+            'services-audit-logging-telemetry': {
+                activeId: 'nav-services-audit-log',
+                openSection: 'nav-getting-started'
+            },
             'registerbeep': { 
                 activeId: 'nav-registration', 
                 openSection: 'nav-getting-started' 
             },
+            'environmentservice': {
+                activeId: 'nav-environmentservice',
+                openSection: 'nav-core-concepts'
+            },
+            'connection-properties': {
+                activeId: 'nav-connection-properties',
+                openSection: 'nav-core-concepts'
+            },
+            'observablebindinglist': {
+                activeId: 'nav-observablebindinglist',
+                openSection: 'nav-core-concepts'
+            },
             'unitofwork': { 
-                activeId: 'nav-tutorial', 
-                openSection: 'nav-getting-started' 
+                activeId: 'nav-unitofwork', 
+                openSection: 'nav-core-concepts' 
             },
             'data-management-examples': { 
-                activeId: 'nav-data-sources', 
-                openSection: 'nav-getting-started' 
+                activeId: 'nav-data-examples', 
+                openSection: 'nav-data-management' 
+            },
+            'datasource-types-reference': {
+                activeId: 'nav-datasource-types',
+                openSection: 'nav-data-management'
             },
             
             // Core Concepts
@@ -44,6 +69,14 @@ class NavigationManager {
             },
             'multidatasource-unitofwork': { 
                 activeId: 'nav-multidatasource', 
+                openSection: 'nav-core-concepts' 
+            },
+            'unitofwork-factory': { 
+                activeId: 'nav-unitofwork-factory', 
+                openSection: 'nav-core-concepts' 
+            },
+            'unitofwork-wrapper': { 
+                activeId: 'nav-unitofwork-wrapper', 
                 openSection: 'nav-core-concepts' 
             },
             
@@ -80,9 +113,29 @@ class NavigationManager {
                 activeId: 'nav-proxy-datasource',
                 openSection: 'nav-data-management'
             },
-            'distributed-datasource': {
-                activeId: 'nav-distributed-datasource',
+            'proxycluster': {
+                activeId: 'nav-proxycluster',
                 openSection: 'nav-data-management'
+            },
+            'remoteproxy-datasource': {
+                activeId: 'nav-remoteproxy',
+                openSection: 'nav-data-management'
+            },
+            'composite-datasource': {
+                activeId: 'nav-composite-datasource',
+                openSection: 'nav-data-management'
+            },
+            'inmemory-datasource': {
+                activeId: 'nav-inmemory-datasource',
+                openSection: 'nav-data-management'
+            },
+            'localdb': {
+                activeId: 'nav-localdb',
+                openSection: 'nav-data-management'
+            },
+            'distributed-datasource': { 
+                activeId: 'nav-distributed-datasource', 
+                openSection: 'nav-data-management' 
             },
             
             // Editor Classes
@@ -96,6 +149,22 @@ class NavigationManager {
             },
             'dataimportmanager': { 
                 activeId: 'nav-dataimport', 
+                openSection: 'nav-editor-classes' 
+            },
+            'datasyncmanager': { 
+                activeId: 'nav-datasync', 
+                openSection: 'nav-editor-classes' 
+            },
+            'entitydatamovevalidator': {
+                activeId: 'nav-entity-validator',
+                openSection: 'nav-editor-classes'
+            },
+            'formsmanager': {
+                activeId: 'nav-formsmanager',
+                openSection: 'nav-editor-classes'
+            },
+            'configeditor': { 
+                activeId: 'nav-configeditor', 
                 openSection: 'nav-editor-classes' 
             },
             'mappingmanager': { 
@@ -128,6 +197,10 @@ class NavigationManager {
             },
             
             // Advanced Topics
+            'setup-framework': {
+                activeId: 'nav-setup-framework',
+                openSection: 'nav-advanced-topics'
+            },
             'etl-workflow-engine': { 
                 activeId: 'nav-etl-workflow', 
                 openSection: 'nav-advanced-topics' 
@@ -146,15 +219,31 @@ class NavigationManager {
             },
             'advanced-tools-utilities': { 
                 activeId: 'nav-advanced-tools', 
-                openSection: 'nav-advanced-topics' 
+                openSection: 'nav-reference-tools' 
+            },
+            'roslyn-reports': {
+                activeId: 'nav-roslyn-reports',
+                openSection: 'nav-reference-tools'
             },
             'assemblyhandler-loading-nuget-extensions': {
                 activeId: 'nav-assemblyhandler-loading-nuget-extensions',
-                openSection: 'nav-advanced-topics'
+                openSection: 'nav-reference-tools'
+            },
+            'plugin-system': {
+                activeId: 'nav-plugin-system',
+                openSection: 'nav-reference-tools'
+            },
+            'nuget-package-manager': {
+                activeId: 'nav-nuget-manager',
+                openSection: 'nav-reference-tools'
             },
             'filemanager-reader-host': {
                 activeId: 'nav-filemanager-reader-host',
-                openSection: 'nav-advanced-topics'
+                openSection: 'nav-data-management'
+            },
+            'csv-datasource': {
+                activeId: 'nav-csv-datasource',
+                openSection: 'nav-data-management'
             },
             'json-datasource': {
                 activeId: 'nav-json-datasource',
@@ -162,6 +251,10 @@ class NavigationManager {
             },
             'rules-engine-parser': {
                 activeId: 'nav-rules-engine-parser',
+                openSection: 'nav-advanced-topics'
+            },
+            'workflow': {
+                activeId: 'nav-workflow',
                 openSection: 'nav-advanced-topics'
             },
             'beepsyncmanager': {
@@ -174,7 +267,19 @@ class NavigationManager {
             },
             'helpers-runtime-reference': {
                 activeId: 'nav-helpers-runtime-reference',
-                openSection: 'nav-advanced-topics'
+                openSection: 'nav-reference-tools'
+            },
+            'rdbms-helpers-reference': {
+                activeId: 'nav-rdbms-helpers',
+                openSection: 'nav-reference-tools'
+            },
+            'idatasourcehelper-reference': {
+                activeId: 'nav-idatasourcehelper',
+                openSection: 'nav-reference-tools'
+            },
+            'addin-interfaces-reference': {
+                activeId: 'nav-addin-interfaces',
+                openSection: 'nav-reference-tools'
             },
             'migrationmanager': {
                 activeId: 'nav-migrationmanager',
@@ -202,7 +307,7 @@ class NavigationManager {
             <img src="assets/beep-logo.svg" alt="Beep Data Management Engine Logo">
             <div class="logo-text">
                 <h2>Beep DME</h2>
-                <span class="version">v2.0.32</span>
+                <span class="version">v3.0.0</span>
             </div>
         </div>
 
@@ -217,6 +322,8 @@ class NavigationManager {
                 <li class="has-submenu" id="nav-getting-started">
                     <a href="#"><i class="bi bi-rocket"></i> Getting Started</a>
                     <ul class="submenu">
+                        <li><a href="beepservice.html" id="nav-beepservice">BeepService</a></li>
+                        <li><a href="services-audit-logging-telemetry.html" id="nav-services-audit-log">Audit, Logging &amp; Telemetry</a></li>
                         <li><a href="registerbeep.html" id="nav-registration">Registration & Setup</a></li>
                         <li><a href="unitofwork.html" id="nav-tutorial">Quick Start Tutorial</a></li>
                         <li><a href="data-management-examples.html" id="nav-data-sources">Data Sources</a></li>
@@ -225,19 +332,31 @@ class NavigationManager {
                 <li class="has-submenu" id="nav-core-concepts">
                     <a href="#"><i class="bi bi-layers"></i> Core Concepts</a>
                     <ul class="submenu">
+                        <li><a href="registerbeep.html" id="nav-registerbeep">Getting Started</a></li>
+                        <li><a href="environmentservice.html" id="nav-environmentservice">Environment Service</a></li>
+                        <li><a href="connection-properties.html" id="nav-connection-properties">Connections &amp; Properties</a></li>
+                        <li><a href="observablebindinglist.html" id="nav-observablebindinglist">ObservableBindingList</a></li>
                         <li><a href="unitofwork.html" id="nav-unitofwork">UnitOfWork Pattern</a></li>
                         <li><a href="unitofwork-deep-dive.html" id="nav-unitofwork-deep">UnitOfWork Deep Dive</a></li>
                         <li><a href="multidatasource-unitofwork.html" id="nav-multidatasource">Multi-DataSource UnitOfWork</a></li>
+                        <li><a href="unitofwork-factory.html" id="nav-unitofwork-factory">UnitOfWork Factory</a></li>
+                        <li><a href="unitofwork-wrapper.html" id="nav-unitofwork-wrapper">UnitOfWork Wrapper</a></li>
                     </ul>
                 </li>
                 <li class="has-submenu" id="nav-data-management">
                     <a href="#"><i class="bi bi-database"></i> Data Management</a>
                     <ul class="submenu">
                         <li><a href="data-management-examples.html" id="nav-data-examples">Data Sources</a></li>
+                        <li><a href="datasource-types-reference.html" id="nav-datasource-types">Datasource Types Reference</a></li>
                         <li><a href="webapidatasource.html" id="nav-webapi">WebAPIDataSource</a></li>
                         <li><a href="dataviewdatasource.html" id="nav-dataviewdatasource">DataViewDataSource</a></li>
+                        <li><a href="composite-datasource.html" id="nav-composite-datasource">CompositeDataSource</a></li>
+                        <li><a href="inmemory-datasource.html" id="nav-inmemory-datasource">InMemory DataSource</a></li>
+                        <li><a href="localdb.html" id="nav-localdb">LocalDB DataSource</a></li>
                         <li><a href="caching-api.html" id="nav-caching-api">ICacheProvider + CacheManager</a></li>
                         <li><a href="proxy-datasource.html" id="nav-proxy-datasource">IProxyDataSource</a></li>
+                        <li><a href="proxycluster.html" id="nav-proxycluster">ProxyCluster</a></li>
+                        <li><a href="remoteproxy-datasource.html" id="nav-remoteproxy">RemoteProxy</a></li>
                         <li><a href="distributed-datasource.html" id="nav-distributed-datasource">DistributedDataSource</a></li>
                         <li><a href="examples.html" id="nav-examples">Code Examples</a></li>
                         <li><a href="examples-editor-classes.html" id="nav-examples-editor-classes">Examples: Editor Classes</a></li>
@@ -254,6 +373,7 @@ class NavigationManager {
                         <li><a href="mappingmanager.html" id="nav-mapping">Mapping Manager</a></li>
                         <li><a href="defaultsmanager.html" id="nav-defaults">Defaults Manager</a></li>
                         <li><a href="datasyncmanager.html" id="nav-datasync">Data Sync Manager</a></li>
+                        <li><a href="entitydatamovevalidator.html" id="nav-entity-validator">Entity Validator</a></li>
                         <li><a href="formsmanager.html" id="nav-formsmanager">FormsManager</a></li>
                         <li><a href="configeditor.html" id="nav-configeditor">ConfigEditor</a></li>
                     </ul>
@@ -261,18 +381,27 @@ class NavigationManager {
                 <li class="has-submenu" id="nav-advanced-topics">
                     <a href="#"><i class="bi bi-tools"></i> Advanced Topics</a>
                     <ul class="submenu">
+                        <li><a href="setup-framework.html" id="nav-setup-framework">Setup Framework</a></li>
                         <li><a href="etl-workflow-engine.html" id="nav-etl-workflow">ETL & Workflow Engine</a></li>
                         <li><a href="etl-engine-pipeline.html" id="nav-etl-engine-pipeline">ETL Engine: Pipeline</a></li>
                         <li><a href="etl-engine-scheduling.html" id="nav-etl-engine-scheduling">ETL Engine: Scheduling</a></li>
                         <li><a href="etl-engine-observability.html" id="nav-etl-engine-observability">ETL Engine: Observability</a></li>
                         <li><a href="advanced-tools-utilities.html" id="nav-advanced-tools">Advanced Tools & Utilities</a></li>
-                        <li><a href="assemblyhandler-loading-nuget-extensions.html" id="nav-assemblyhandler-loading-nuget-extensions">AssemblyHandler: Loading & NuGet</a></li>
+                        <li><a href="roslyn-reports.html" id="nav-roslyn-reports">Roslyn & Report Engine</a></li>
+                        <li><a href="assemblyhandler-loading-nuget-extensions.html" id="nav-assemblyhandler-loading-nuget-extensions">AssemblyHandler: AssemblySystem</a></li>
+                        <li><a href="plugin-system.html" id="nav-plugin-system">Plugin System (PluginSystem)</a></li>
+                        <li><a href="nuget-package-manager.html" id="nav-nuget-manager">NuGet Package Manager</a></li>
                         <li><a href="filemanager-reader-host.html" id="nav-filemanager-reader-host">FileManager DataSource</a></li>
+                        <li><a href="csv-datasource.html" id="nav-csv-datasource">CSV DataSource</a></li>
                         <li><a href="json-datasource.html" id="nav-json-datasource">JSON DataSource</a></li>
                         <li><a href="rules-engine-parser.html" id="nav-rules-engine-parser">Rules Engine &amp; Parsers</a></li>
+                        <li><a href="workflow.html" id="nav-workflow">Workflow Engine</a></li>
                         <li><a href="beepsyncmanager.html" id="nav-beepsyncmanager">BeepSync Manager</a></li>
                         <li><a href="services-registration-lifetimes.html" id="nav-services-registration-lifetimes">Services Registration & Lifetimes</a></li>
                         <li><a href="helpers-runtime-reference.html" id="nav-helpers-runtime-reference">Helpers Runtime Reference</a></li>
+                        <li><a href="rdbms-helpers-reference.html" id="nav-rdbms-helpers">RDBMS Helpers Reference</a></li>
+                        <li><a href="idatasourcehelper-reference.html" id="nav-idatasourcehelper">IDataSourceHelper</a></li>
+                        <li><a href="addin-interfaces-reference.html" id="nav-addin-interfaces">Addin Interfaces</a></li>
                         <li><a href="migrationmanager.html" id="nav-migrationmanager">MigrationManager</a></li>
                         <li><a href="creating-custom-datasources.html" id="nav-custom-datasources">Creating Custom Data Sources</a></li>
                         <li><a href="technical-folder-guides.html" id="nav-folder-guides">Technical Folder Guides</a></li>

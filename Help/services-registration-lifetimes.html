@@ -642,6 +642,331 @@ var beep = host.Services.GetRequiredService&lt;IBeepService&gt;();</code></pre>
 </article>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════ FULL API REFERENCE -->
+<div class="main-content"><div class="content-wrapper" style="max-width:100%">
+<article>
+<section id="full-api">
+<h2><i class="bi bi-book"></i> Full API Reference — Services Subsystems</h2>
+
+<h3>BeepService — Complete Public Surface</h3>
+<table class="table table-sm table-bordered">
+<thead><tr><th>Member</th><th>Type/Signature</th></tr></thead><tbody>
+<tr><td><code>DMEEditor</code></td><td><code>IDMEEditor</code> {get; set;} — central orchestration</td></tr>
+<tr><td><code>Config_editor</code></td><td><code>IConfigEditor</code> {get; set;}</td></tr>
+<tr><td><code>lg</code></td><td><code>IDMLogger</code> {get; set;}</td></tr>
+<tr><td><code>util</code></td><td><code>IUtil</code> {get; set;}</td></tr>
+<tr><td><code>Erinfo</code></td><td><code>IErrorsInfo</code> {get; set;}</td></tr>
+<tr><td><code>jsonLoader</code></td><td><code>IJsonLoader</code> {get; set;}</td></tr>
+<tr><td><code>LLoader</code></td><td><code>IAssemblyHandler</code> {get; set;}</td></tr>
+<tr><td><code>AppRepoName</code></td><td><code>string</code> {get;} — container/repository name</td></tr>
+<tr><td><code>Containername</code> [Obsolete]</td><td>Alias for AppRepoName</td></tr>
+<tr><td><code>ConfigureationType</code></td><td><code>BeepConfigType</code> {get;}</td></tr>
+<tr><td><code>BeepDirectory</code></td><td><code>string</code> {get;}</td></tr>
+<tr><td><code>AssemblyHandlerType</code></td><td><code>AssemblyHandlerType</code> {get; set;}</td></tr>
+<tr><td><code>Environments</code></td><td><code>Dictionary&lt;EnvironmentType, IBeepEnvironment&gt;</code></td></tr>
+<tr><td><code>Configure(path, appRepo, configType, devMode?)</code></td><td>Creates DMEEditor, ConfigEditor, assembly handler, logger, error info</td></tr>
+<tr><td><code>ConfigureForDesignTime()</code></td><td>Design-time configuration</td></tr>
+<tr><td><code>LoadAssemblies()</code></td><td>Loads assemblies from BeepDirectory + appData</td></tr>
+<tr><td><code>ReloadConfig()</code></td><td>Thread-safe config reload</td></tr>
+<tr><td><code>ReloadAssemblies()</code></td><td>Thread-safe assembly reload</td></tr>
+</tbody></table>
+
+<h3>Platform Extensions — Complete Signatures</h3>
+<pre><code class="language-csharp">// Desktop
+public static IServiceCollection AddBeepForDesktop(
+    this IServiceCollection services, string appPath, string appName,
+    AssemblyHandlerType handlerType = AssemblyHandlerType.Default, bool isDev = false);
+
+// Web (ASP.NET Core)
+public static IServiceCollection AddBeepForWeb(
+    this IServiceCollection services, string appPath, string appName,
+    AssemblyHandlerType handlerType = AssemblyHandlerType.Default, bool isDev = false);
+
+// Blazor Server
+public static IServiceCollection AddBeepForBlazorServer(
+    this IServiceCollection services, string appPath, string appName,
+    AssemblyHandlerType handlerType = AssemblyHandlerType.Default, bool isDev = false);
+
+// Blazor WASM
+public static IServiceCollection AddBeepForBlazorWasm(
+    this IServiceCollection services, string appPath, string appName);
+
+// Options pattern (cross-platform)
+public static IServiceCollection AddBeepServices(
+    this IServiceCollection services, Action&lt;BeepServiceOptions&gt; configure);
+
+// Fluent builder
+public static BeepServiceBuilder AddBeepServices(this IServiceCollection services);
+    // .WithDirectory(path).WithAppRepo(name).WithConfigType(type)
+    // .WithAssemblyLoading().WithMapping().AsSingleton().AsScoped().Build()</code></pre>
+
+<h3>BeepServiceOptions — Full Properties</h3>
+<table class="table table-sm table-bordered">
+<thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>AppPath</code></td><td><code>string</code></td><td>required</td></tr>
+<tr><td><code>AppRepoName</code></td><td><code>string</code></td><td>required</td></tr>
+<tr><td><code>ConfigType</code></td><td><code>BeepConfigType</code></td><td><code>DataConnector</code></td></tr>
+<tr><td><code>AssemblyHandlerType</code></td><td><code>AssemblyHandlerType</code></td><td><code>Default</code></td></tr>
+<tr><td><code>IsDevelopment</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+<tr><td><code>AddMapping</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+<tr><td><code>AddAssemblyLoading</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+<tr><td><code>Lifetime</code></td><td><code>ServiceLifetime?</code></td><td><code>null</code> (default = Singleton)</td></tr>
+</tbody></table>
+
+<!-- ═══════════════════════════════════════════════════════ Logging -->
+<h3>Logging Subsystem</h3>
+<p><strong>5 files:</strong> <code>Logging/BeepLog.Core.cs</code>, <code>BeepLog.Levels.cs</code>, <code>BeepLog.Lifetime.cs</code>, <code>BeepLogScopeExtensions.cs</code>, <code>BeepLoggingOptions.cs</code></p>
+
+<pre><code class="language-csharp">public sealed partial class BeepLog : IBeepLog
+{
+    public bool IsEnabled { get; }                          // from options
+    public BeepLogLevel MinLevel { get; }                   // from options
+
+    // Core logging
+    public void Log(BeepLogLevel level, string category, string message,
+        IReadOnlyDictionary&lt;string,object&gt; properties = null, Exception exception = null);
+
+    // Convenience wrappers (.Levels)
+    public void Trace(string category, string message, ...);
+    public void Debug(string category, string message, ...);
+    public void Info(string category, string message, ...);
+    public void Warn(string category, string message, ...);
+    public void Error(string category, string message, ...);
+    public void Critical(string category, string message, ...);
+
+    // Scope (.Scope)
+    public IDisposable BeginScope(string scopeName, IDictionary&lt;string,object&gt; properties = null);
+
+    // Lifetime (.Lifetime)
+    public Task FlushAsync(CancellationToken ct = default);
+    public void Dispose();
+}</code></pre>
+
+<table class="table table-sm table-bordered"><thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>Enabled</code></td><td><code>bool</code></td><td><code>false</code> — must enable explicitly</td></tr>
+<tr><td><code>MinLevel</code></td><td><code>BeepLogLevel</code></td><td><code>Information</code></td></tr>
+<tr><td><code>EnableDedup</code></td><td><code>bool</code></td><td><code>true</code> — dedup repeated log messages</td></tr>
+<tr><td><code>DedupWindowSeconds</code></td><td><code>int</code></td><td>60</td></tr>
+<tr><td><code>EnableRedaction</code></td><td><code>bool</code></td><td><code>true</code> — redact PII in messages</td></tr>
+<tr><td><code>EnableSampling</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+<tr><td><code>EnableEnrichers</code></td><td><code>bool</code></td><td><code>true</code> — attach context at runtime</td></tr>
+<tr><td><code>DupEventIntervalMinutes</code></td><td><code>int</code></td><td>5 — synthetic dedup summary</td></tr>
+</tbody></table>
+
+<!-- ═══════════════════════════════════════════════════════ Telemetry -->
+<h3>Telemetry Architecture</h3>
+<p><strong>Core pipeline:</strong> Producer (BeepLog / BeepAudit) → Enrichers → Redactors → Samplers → Deduper → Rate Limiter → BoundedChannelQueue → BatchWriter → Sinks</p>
+
+<h4>ITelemetrySink</h4>
+<pre><code class="language-csharp">public interface ITelemetrySink : IAsyncDisposable
+{
+    string Name { get; }
+    bool IsHealthy { get; }
+    Task WriteBatchAsync(IReadOnlyList&lt;TelemetryEnvelope&gt; batch, CancellationToken ct);
+    Task FlushAsync(CancellationToken ct);
+}</code></pre>
+
+<h4>TelemetryEnvelope</h4>
+<pre><code class="language-csharp">public sealed partial class TelemetryEnvelope
+{
+    public TelemetryKind Kind { get; set; }                 // Log, Audit, SelfObservability
+    public DateTime TimestampUtc { get; set; }
+    public string Category { get; set; }
+    public BeepLogLevel Level { get; set; }
+    public string Message { get; set; }
+    public Exception Exception { get; set; }
+    public IDictionary&lt;string,object&gt; Properties { get; set; }
+    public AuditEvent Audit { get; set; }                    // Non-null only when Kind=Audit
+    public string TraceId { get; set; }                      // OpenTelemetry-compatible
+    public string CorrelationId { get; set; }
+}</code></pre>
+
+<h4>IEnricher</h4>
+<pre><code class="language-csharp">public interface IEnricher
+{
+    string Name { get; }
+    void Enrich(TelemetryEnvelope envelope);               // Runs on producer thread, must be cheap
+}</code></pre>
+
+<h4>All 7 Built-in Enrichers</h4>
+<table class="table table-sm table-bordered"><thead><tr><th>Enricher</th><th>Adds</th></tr></thead><tbody>
+<tr><td><code>CorrelationEnricher</code></td><td>CorrelationId from AsyncLocal / HTTP header</td></tr>
+<tr><td><code>TraceEnricher</code></td><td>TraceId + SpanId for OpenTelemetry compat</td></tr>
+<tr><td><code>UserEnricher</code></td><td>UserId, UserName, UserEmail from identity</td></tr>
+<tr><td><code>TenantEnricher</code></td><td>TenantId from HttpContext.Items</td></tr>
+<tr><td><code>MachineProcessEnricher</code></td><td>MachineName, ProcessId, ProcessName, Pid</td></tr>
+<tr><td><code>EnvironmentEnricher</code></td><td>EnvironmentName, FrameworkVersion, Platform</td></tr>
+<tr><td><code>ActivityScopeEnricher</code></td><td>BeepActivity scope name + parent chain</td></tr>
+</tbody></table>
+
+<h4>All Sinks</h4>
+<table class="table table-sm table-bordered"><thead><tr><th>Sink</th><th>File</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>NullSink</code></td><td><code>NullSink.cs</code></td><td>No-op sink — always healthy, drops all data</td></tr>
+<tr><td><code>MemorySink</code></td><td><code>MemorySink.cs</code></td><td>In-memory ring buffer — used for testing/debugging</td></tr>
+<tr><td><code>FileRollingSink</code></td><td><code>FileRollingSink.*.cs</code> (3 files)</td><td>NDJSON rolling files by date — Core, Write, Roll, Health</td></tr>
+<tr><td><code>SqliteSink</code></td><td><code>SqliteSink.*.cs</code> (6 files)</td><td>SQLite storage — Core, Write, Query, QueryLog, QueryAudit, PurgeAudit, Schema, Health</td></tr>
+<tr><td><code>CompositeSink</code></td><td><code>CompositeSink.cs</code></td><td>Fan-out to multiple sinks with per-sink error isolation</td></tr>
+<tr><td><code>RedactingSinkDecorator</code></td><td><code>RedactingSinkDecorator.cs</code></td><td>Wraps any sink with PII redaction via IRedactor list</td></tr>
+<tr><td><code>BlazorIndexedDbSink</code></td><td>3 files</td><td>Blazor WASM local storage via IndexedDB (Core, Write, Health)</td></tr>
+<tr><td><code>MauiAppDataSink</code></td><td><code>MauiAppDataSink.cs</code></td><td>MAUI app data directory NDJSON sink</td></tr>
+</tbody></table>
+
+<h4>Telemetry Pipeline — Key Types</h4>
+<table class="table table-sm table-bordered"><thead><tr><th>Type</th><th>File</th><th>Role</th></tr></thead><tbody>
+<tr><td><code>TelemetryPipeline</code></td><td><code>TelemetryPipeline.*.cs</code> (3)</td><td>Orchestrator — queue + stages + drain + flush</td></tr>
+<tr><td><code>BoundedChannelQueue</code></td><td><code>BoundedChannelQueue.cs</code></td><td>System.Threading.Channels bounded queue</td></tr>
+<tr><td><code>BatchWriter</code></td><td><code>BatchWriter.cs</code></td><td>Periodic batch writer — drains + fans out to sinks</td></tr>
+<tr><td><code>BackpressureMode</code></td><td><code>BackpressureMode.cs</code></td><td>enum: <code>Drop</code>, <code>Block</code>, <code>WaitAndDrop</code></td></tr>
+<tr><td><code>TelemetryKind</code></td><td><code>TelemetryKind.cs</code></td><td>enum: <code>Log</code>, <code>Audit</code>, <code>SelfObservability</code></td></tr>
+<tr><td><code>TelemetryFeature</code></td><td><code>TelemetryFeature.cs</code></td><td>Feature flag enum (Log, Audit, Diagnostics, etc.)</td></tr>
+<tr><td><code>IRedactor</code></td><td><code>IRedactor.cs</code></td><td>Interface: <code>Redact(TelemetryEnvelope)</code></td></tr>
+<tr><td><code>ISampler</code></td><td><code>ISampler.cs</code></td><td>Interface: <code>ShouldSample(TelemetryEnvelope) → bool</code></td></tr>
+<tr><td><code>IMessageDeduper</code></td><td><code>IMessageDeduper.cs</code></td><td>Interface: <code>ShouldDrop(envelope) → bool</code></td></tr>
+<tr><td><code>WindowedDeduper</code></td><td><code>WindowedDeduper.*.cs</code> (2)</td><td>Sliding-window dedup with template normalization</td></tr>
+<tr><td><code>MessageTemplateNormalizer</code></td><td><code>MessageTemplateNormalizer.cs</code></td><td>Normalizes templates for dedup comparison</td></tr>
+<tr><td><code>NdjsonSerializer</code></td><td><code>NdjsonSerializer.cs</code></td><td>NDJSON serialization for file sinks</td></tr>
+</tbody></table>
+
+<h4>Diagnostics</h4>
+<table class="table table-sm table-bordered"><thead><tr><th>Type</th><th>File</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>PipelineMetrics</code></td><td><code>PipelineMetrics.*.cs</code> (4)</td><td>Counters, gauges, snapshots — queue depth, enqueue rate, drain rate, sampled-out count</td></tr>
+<tr><td><code>SinkHealth</code></td><td><code>SinkHealth.cs</code></td><td>Per-sink health status (IsHealthy, last error, consecutive failures)</td></tr>
+<tr><td><code>SelfEventEmitter</code></td><td><code>SelfEventEmitter.cs</code></td><td>Emits pipeline self-observability events on health transitions</td></tr>
+<tr><td><code>SelfEventCategory</code></td><td><code>SelfEventCategory.cs</code></td><td>enum: <code>SinkHealth</code>, <code>QueuePressure</code>, <code>Backpressure</code>, <code>FlushLatency</code></td></tr>
+<tr><td><code>PeriodicMetricsSnapshotHostedService</code></td><td><code>PeriodicMetricsSnapshotHostedService.cs</code></td><td>IHostedService — emits periodic metrics snapshots</td></tr>
+<tr><td><code>PipelineDiagnosticsHooks</code></td><td><code>PipelineDiagnosticsHooks.cs</code></td><td>Diagnostic hooks for external monitoring</td></tr>
+</tbody></table>
+
+<!-- ═══════════════════════════════════════════════════════ Audit -->
+<h3>Audit Subsystem</h3>
+<p><strong>8 files:</strong> <code>BeepAudit.Core.cs</code>, <code>BeepAudit.Lifetime.cs</code>, <code>BeepAudit.Query.cs</code>, <code>BeepAuditOptions.cs</code>, <code>NullBeepAudit.cs</code>, <code>Query/IAuditQueryEngine.cs</code>, <code>Query/SqliteAuditQueryEngine.cs</code>, <code>Query/CompositeAuditQueryEngine.cs</code>, <code>Query/FileScanAuditQueryEngine.cs</code>, <code>Query/NdjsonAuditDeserializer.cs</code></p>
+
+<pre><code class="language-csharp">public sealed partial class BeepAudit : IBeepAudit
+{
+    public bool IsEnabled { get; }
+    
+    // Record audit events via telemetry pipeline
+    public ValueTask RecordValueTaskAsync(AuditEvent auditEvent, CancellationToken ct = default);
+    
+    // Late-bind Phase 10 compliance services
+    public void AttachComplianceServices(
+        IAuditQueryEngine queryEngine = null,
+        GdprPurgeService purgeService = null,
+        IntegrityVerifier integrityVerifier = null);
+
+    // Query (Phase 10) — from .Query partial
+    public IAsyncEnumerable&lt;AuditEvent&gt; QueryAsync(AuditQuery query, CancellationToken ct = default);
+    public IAsyncEnumerable&lt;AuditEvent&gt; QueryAllAsync(CancellationToken ct = default);
+    
+    // Purge
+    public Task&lt;GdprPurgeResult&gt; PurgeSubjectAsync(string subjectId, CancellationToken ct = default);
+    
+    // Integrity
+    public Task&lt;IntegrityVerificationResult&gt; VerifyIntegrityAsync(CancellationToken ct = default);
+    
+    // Lifetime (.Lifetime)
+    public Task FlushAsync(CancellationToken ct = default);
+    public void Dispose();
+}</code></pre>
+
+<h4>BeepAuditOptions</h4>
+<table class="table table-sm table-bordered"><thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>Enabled</code></td><td><code>bool</code></td><td><code>false</code> — must enable explicitly</td></tr>
+<tr><td><code>HashChain</code></td><td><code>bool</code></td><td><code>false</code> — tamper-evident hashing</td></tr>
+<tr><td><code>EnrichCorrelationId</code></td><td><code>bool</code></td><td><code>true</code></td></tr>
+<tr><td><code>EnrichUserId</code></td><td><code>bool</code></td><td><code>true</code></td></tr>
+<tr><td><code>EnrichTenantId</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+<tr><td><code>RetentionDays</code></td><td><code>int</code></td><td>0 (indefinite)</td></tr>
+</tbody></table>
+
+<h4>Audit Query Engines</h4>
+<table class="table table-sm table-bordered"><thead><tr><th>Engine</th><th>Backend</th></tr></thead><tbody>
+<tr><td><code>SqliteAuditQueryEngine</code></td><td>SQLite — same DB the writer uses</td></tr>
+<tr><td><code>FileScanAuditQueryEngine</code></td><td>NDJSON file scan with streaming deserialization</td></tr>
+<tr><td><code>CompositeAuditQueryEngine</code></td><td>Federated — queries all registered engines, merges results</td></tr>
+</tbody></table>
+
+<!-- ═══════════════════════════════════════════════════════ Source Map -->
+<h3>Source File Map (90+ files)</h3>
+<table class="table table-sm table-bordered"><thead><tr><th>Category</th><th>File</th><th>Content</th></tr></thead><tbody>
+<tr><td rowspan="4"><strong>Core DI</strong></td><td><code>BeepService.cs</code></td><td>IBeepService impl, 14 props, Configure/Load/Reload</td></tr>
+<tr><td><code>RegisterBeepinServiceCollection.cs</code></td><td>AddBeepServices, fluent builder, options, validation</td></tr>
+<tr><td><code>ServiceCollectionExtensions.cs</code></td><td>Low-level JsonLoader/DMEEditor registrations</td></tr>
+<tr><td><code>ServiceHelper.cs</code></td><td>Static service-locator helper</td></tr>
+<tr><td rowspan="8"><strong>Platform Extensions</strong></td><td><code>BeepServiceExtensions.Desktop.cs</code></td><td>AddBeepForDesktop + DesktopBeepOptions</td></tr>
+<tr><td><code>BeepServiceExtensions.Web.cs</code></td><td>AddBeepForWeb + WebBeepOptions</td></tr>
+<tr><td><code>BeepServiceExtensions.Blazor.cs</code></td><td>AddBeepForBlazorServer/BlazorWasm + BlazorBeepOptions</td></tr>
+<tr><td><code>BeepServiceExtensions.Maui.cs</code></td><td>AddBeepForMaui</td></tr>
+<tr><td><code>BeepServiceExtensions.Audit.cs</code></td><td>AddBeepAudit registration</td></tr>
+<tr><td><code>BeepServiceExtensions.Logging.cs</code></td><td>AddBeepLogging registration</td></tr>
+<tr><td><code>BeepServiceExtensions.Diagnostics.cs</code></td><td>AddBeepDiagnostics registration</td></tr>
+<tr><td><code>BeepServiceExtensions.Retention.cs</code></td><td>Retention policy registration</td></tr>
+<tr><td rowspan="5"><strong>Logging</strong></td><td><code>Logging/BeepLog.Core.cs</code></td><td>Fields, ctor, Log entry point</td></tr>
+<tr><td><code>Logging/BeepLog.Levels.cs</code></td><td>Trace/Debug/Info/Warn/Error/Critical wrappers</td></tr>
+<tr><td><code>Logging/BeepLog.Lifetime.cs</code></td><td>Flush/Dispose semantics</td></tr>
+<tr><td><code>Logging/BeepLogScopeExtensions.cs</code></td><td>BeginScope extension methods</td></tr>
+<tr><td><code>Logging/BeepLoggingOptions.cs</code></td><td>Enabled, MinLevel, EnableDedup, etc.</td></tr>
+<tr><td rowspan="3"><strong>Telemetry Core</strong></td><td><code>TelemetryPipeline.Core.cs</code></td><td>Queue + stages + SubmitLog/SubmitAudit entry points</td></tr>
+<tr><td><code>TelemetryPipeline.Drain.cs</code></td><td>Stage application pipeline</td></tr>
+<tr><td><code>TelemetryPipeline.Flush.cs</code></td><td>Graceful shutdown / FlushAsync</td></tr>
+<tr><td rowspan="6"><strong>Telemetry Abstractions</strong></td><td><code>ITelemetrySink.cs</code></td><td>Sink contract: Name, IsHealthy, WriteBatchAsync, FlushAsync</td></tr>
+<tr><td><code>IEnricher.cs</code></td><td>Enricher contract: Name, Enrich</td></tr>
+<tr><td><code>IRedactor.cs</code></td><td>Redactor contract: Redact</td></tr>
+<tr><td><code>ISampler.cs</code></td><td>Sampler contract: ShouldSample</td></tr>
+<tr><td><code>IMessageDeduper.cs</code> (Dedup)</td><td>Dedup contract: ShouldDrop</td></tr>
+<tr><td><code>TelemetryEnvelope.cs</code> + <code>.Clone.cs</code></td><td>Unified envelope: Kind, Timestamp, Level, Message, Audit, TraceId, CorrelationId</td></tr>
+<tr><td rowspan="8"><strong>Sinks</strong></td><td><code>Sinks/NullSink.cs</code></td><td>No-op sink</td></tr>
+<tr><td><code>Sinks/MemorySink.cs</code></td><td>Ring buffer for testing</td></tr>
+<tr><td><code>Sinks/FileRollingSink.*.cs</code> (4)</td><td>NDJSON rolling files w/health</td></tr>
+<tr><td><code>Sinks/SqliteSink.*.cs</code> (7)</td><td>SQLite w/query, purge, audit, schema, health</td></tr>
+<tr><td><code>Sinks/CompositeSink.cs</code></td><td>Fan-out to multiple sinks</td></tr>
+<tr><td><code>Sinks/RedactingSinkDecorator.cs</code></td><td>PII redaction wrapper</td></tr>
+<tr><td><code>Sinks/Platform/BlazorIndexedDbSink.*.cs</code> (3)</td><td>Blazor WASM IDB sink</td></tr>
+<tr><td><code>Sinks/Platform/MauiAppDataSink.cs</code></td><td>MAUI app data NDJSON sink</td></tr>
+<tr><td rowspan="7"><strong>Context Enrichers</strong></td><td><code>Context/CorrelationEnricher.cs</code></td><td>CorrelationId from AsyncLocal/HTTP header</td></tr>
+<tr><td><code>Context/TraceEnricher.cs</code></td><td>TraceId + SpanId for OpenTelemetry</td></tr>
+<tr><td><code>Context/UserEnricher.cs</code></td><td>UserId, UserName, UserEmail</td></tr>
+<tr><td><code>Context/TenantEnricher.cs</code></td><td>TenantId from HttpContext</td></tr>
+<tr><td><code>Context/MachineProcessEnricher.cs</code></td><td>MachineName, ProcessId</td></tr>
+<tr><td><code>Context/EnvironmentEnricher.cs</code></td><td>EnvironmentName, FrameworkVersion</td></tr>
+<tr><td><code>Context/ActivityScopeEnricher.cs</code></td><td>BeepActivity scope chain</td></tr>
+<tr><td rowspan="6"><strong>Diagnostics</strong></td><td><code>Diagnostics/PipelineMetrics.*.cs</code> (4)</td><td>Counters, gauges, snapshots</td></tr>
+<tr><td><code>Diagnostics/SinkHealth.cs</code></td><td>Per-sink health tracking</td></tr>
+<tr><td><code>Diagnostics/SelfEventEmitter.cs</code></td><td>Pipeline self-observability events</td></tr>
+<tr><td><code>Diagnostics/SelfEventCategory.cs</code></td><td>SinkHealth, QueuePressure, etc.</td></tr>
+<tr><td><code>Diagnostics/PeriodicMetricsSnapshotHostedService.cs</code></td><td>IHostedService periodic snapshots</td></tr>
+<tr><td><code>Diagnostics/PipelineDiagnosticsHooks.cs</code></td><td>External monitoring hooks</td></tr>
+<tr><td rowspan="4"><strong>Dedup</strong></td><td><code>Dedup/WindowedDeduper.Core.cs</code></td><td>Sliding-window dedup logic</td></tr>
+<tr><td><code>Dedup/WindowedDeduper.Window.cs</code></td><td>Window management</td></tr>
+<tr><td><code>Dedup/IMessageDeduper.cs</code></td><td>Dedup contract</td></tr>
+<tr><td><code>Dedup/MessageTemplateNormalizer.cs</code></td><td>Template normalization</td></tr>
+<tr><td rowspan="5"><strong>Audit</strong></td><td><code>Audit/BeepAudit.Core.cs</code></td><td>RecordValueTaskAsync, hash-chain signing</td></tr>
+<tr><td><code>Audit/BeepAudit.Lifetime.cs</code></td><td>Flush/Dispose</td></tr>
+<tr><td><code>Audit/BeepAudit.Query.cs</code></td><td>QueryAllAsync, PurgeSubjectAsync</td></tr>
+<tr><td><code>Audit/BeepAuditOptions.cs</code></td><td>Enabled, HashChain, enrichment flags</td></tr>
+<tr><td><code>Audit/NullBeepAudit.cs</code></td><td>No-op disabled audit</td></tr>
+<tr><td rowspan="4"><strong>Audit Engines</strong></td><td><code>Audit/Query/IAuditQueryEngine.cs</code></td><td>Query contract</td></tr>
+<tr><td><code>Audit/Query/SqliteAuditQueryEngine.cs</code></td><td>SQLite-backed query</td></tr>
+<tr><td><code>Audit/Query/CompositeAuditQueryEngine.cs</code></td><td>Federated multi-engine query</td></tr>
+<tr><td><code>Audit/Query/FileScanAuditQueryEngine.cs</code></td><td>NDJSON file scanning</td></tr>
+<tr><td rowspan="5"><strong>Other</strong></td><td><code>EnvironmentService.cs</code></td><td>Platform folder creation, path mapping</td></tr>
+<tr><td><code>Telemetry/BoundedChannelQueue.cs</code></td><td>Channel-based bounded queue</td></tr>
+<tr><td><code>Telemetry/BatchWriter.cs</code></td><td>Periodic batch flush to sinks</td></tr>
+<tr><td><code>Telemetry/NdjsonSerializer.cs</code></td><td>NDJSON serialization</td></tr>
+<tr><td><code>Telemetry/PlatformPaths.cs</code></td><td>Platform path resolution</td></tr>
+<tr><td rowspan="8"><strong>Examples</strong></td><td><code>Examples/WebApiExample.cs</code></td><td>Minimal ASP.NET Core registration</td></tr>
+<tr><td><code>Examples/BlazorServerExample.cs</code></td><td>Blazor Server registration</td></tr>
+<tr><td><code>Examples/DesktopMinimalExample.cs</code></td><td>Desktop app minimal setup</td></tr>
+<tr><td><code>Examples/LoggingWebApiExample.cs</code></td><td>Web API logging configuration</td></tr>
+<tr><td><code>Examples/LoggingBlazorExample.cs</code></td><td>Blazor logging configuration</td></tr>
+<tr><td><code>Examples/LoggingDesktopExample.cs</code></td><td>Desktop logging configuration</td></tr>
+<tr><td><code>Examples/AuditDistributedExample.cs</code></td><td>Distributed audit setup</td></tr>
+<tr><td><code>Examples/AuditFormsExample.cs</code></td><td>Forms-based audit recording</td></tr>
+</tbody></table>
+</section>
+</article>
+</div></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
 <script src="navigation.js"></script>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment Service - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Environment Service</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Environment Service</h1>
+                    <p class="page-subtitle">Cross-platform folder management, data path resolution, app initialization, and BeepDM environment setup</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Services/EnvironmentService.cs</code> (325 lines)</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#class">Class Definition</a></li>
+                        <li><a href="#folder-management">Folder Management</a></li>
+                        <li><a href="#platform-paths">Platform-Specific Paths</a></li>
+                        <li><a href="#initialization">Initialization</a></li>
+                        <li><a href="#sanitization">Folder Name Sanitization</a></li>
+                        <li><a href="#integration">Integration Points</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>EnvironmentService</code> is a static utility class providing cross-platform folder management and application initialization. It is the foundation for all BeepDM application data storage.</p>
+                    <ul>
+                        <li><strong>Cross-platform paths</strong> — Windows, macOS, and Linux folder locations via <code>RuntimeInformation</code></li>
+                        <li><strong>Folder hierarchy</strong> — Main Beep folder → App Repo folder → Application folders</li>
+                        <li><strong>Initialization</strong> — Bootstraps <code>ConfigEditor</code> with default drivers, type mappings, and queries</li>
+                        <li><strong>Sanitization</strong> — Cross-platform safe folder names (invalid chars → underscores)</li>
+                        <li><strong>Idempotency</strong> — All methods track whether they've been called and skip duplicates</li>
+                    </ul>
+                </section>
+
+                <section id="class" class="section">
+                    <h2>Class Definition</h2>
+                    <pre><code class="language-csharp">public static class EnvironmentService
+{
+    private static IDMEEditor _editor;
+    private static IServiceCollection Services;
+
+    public static string BeepDataPath { get; }
+    public static string AppRepoDataPath { get; }
+
+    // Idempotency flags
+    private static bool mappingcreated = false;
+    private static bool connectioncreated = false;
+    private static bool datasourcecreated = false;
+
+    // Folder creation
+    public static string CreateMainFolder();
+    public static string CreateMainFolder(this IDMEEditor editor);
+    public static string CreateAppRepofolder(string AppReponame = "");
+    public static string CreateAppfolder(string AppReponame, string appfolder);
+    public static string CreateAppfolder(string appfolder);
+
+    // Initialization (extension methods)
+    public static IServiceCollection CreateBeepMapping(this IDMEEditor editor);
+    public static void AddAllConnectionConfigurations(this IDMEEditor editor);
+    public static void AddAllDataSourceMappings(this IDMEEditor editor);
+    public static void AddAllDataSourceQueryConfigurations(this IDMEEditor editor);
+
+    // Internal helpers
+    private static string GetBaseFolderPath();
+    private static string SanitizeFolderName(string folderName);
+    private static bool CreateDirectorySafely(string path);
+}</code></pre>
+                </section>
+
+                <section id="folder-management" class="section">
+                    <h2>Folder Management</h2>
+                    
+                    <h3>CreateMainFolder</h3>
+                    <p>Creates the root Beep data directory:</p>
+                    <pre><code class="language-csharp">public static string CreateMainFolder()
+// Returns: {BasePath}/TheTechIdea/Beep
+// Sets: BeepDataPath</code></pre>
+
+                    <h3>CreateAppRepofolder</h3>
+                    <p>Creates a named repository folder inside Beep root:</p>
+                    <pre><code class="language-csharp">public static string CreateAppRepofolder(string AppReponame = "")
+// Returns: {BeepDataPath}/{AppReponame}
+// Sets: AppRepoDataPath
+// Auto-creates BeepDataPath if needed</code></pre>
+
+                    <h3>CreateAppfolder</h3>
+                    <p>Creates a sub-folder, with two overloads:</p>
+                    <pre><code class="language-csharp">// Inside a specific app repo
+public static string CreateAppfolder(string AppReponame, string appfolder)
+// Returns: {BeepDataPath}/{AppReponame}/{appfolder}
+
+// Directly inside Beep root
+public static string CreateAppfolder(string appfolder)
+// Returns: {BeepDataPath}/{appfolder}</code></pre>
+
+                    <h3>Folder Creation Flow</h3>
+                    <ol>
+                        <li><code>GetBaseFolderPath()</code> — Determines OS-appropriate base directory</li>
+                        <li><code>CreateDirectorySafely()</code> — Creates folders with error handling</li>
+                        <li><code>SanitizeFolderName()</code> — Cross-platform safe naming</li>
+                        <li>Auto-creates parent directories as needed</li>
+                    </ol>
+                </section>
+
+                <section id="platform-paths" class="section">
+                    <h2>Platform-Specific Paths</h2>
+                    <p>Determined via <code>RuntimeInformation.IsOSPlatform()</code>:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Platform</th><th>Detection</th><th>Base Path</th><th>Full Beep Path</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Windows</strong></td>
+                                <td><code>OSPlatform.Windows</code></td>
+                                <td><code>CommonApplicationData</code></td>
+                                <td><code>C:\ProgramData\TheTechIdea\Beep</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>macOS</strong></td>
+                                <td><code>OSPlatform.OSX</code></td>
+                                <td><code>~/Library/Application Support</code></td>
+                                <td><code>~/Library/Application Support/TheTechIdea/Beep</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Linux</strong></td>
+                                <td>(fallback)</td>
+                                <td><code>~/.config</code></td>
+                                <td><code>~/.config/TheTechIdea/Beep</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Typical App Structure</h3>
+                    <pre><code class="language-text">{BasePath}/TheTechIdea/Beep/
+├── MyApp/                         # App repo folder
+│   ├── Config/                    # Configuration files
+│   │   ├── ConnectionConfig.json
+│   │   ├── DataConnections.json
+│   │   └── DataTypeMapping.json
+│   ├── Pipelines/                 # Pipeline definitions
+│   │   └── {id}.pipeline.json
+│   └── History/                   # Run history and audit
+├── InMemory/                      # InMemory datasource files
+└── Shared/                        # Cross-app shared data</code></pre>
+                </section>
+
+                <section id="initialization" class="section">
+                    <h2>Initialization</h2>
+                    <p>EnvironmentService bootstraps <code>ConfigEditor</code> with all default configurations:</p>
+
+                    <h3>CreateBeepMapping</h3>
+                    <pre><code class="language-csharp">public static IServiceCollection CreateBeepMapping(this IDMEEditor editor)
+
+// Calls all three initialization methods at once:
+// 1. AddAllConnectionConfigurations
+// 2. AddAllDataSourceMappings  
+// 3. AddAllDataSourceQueryConfigurations</code></pre>
+
+                    <h3>AddAllConnectionConfigurations</h3>
+                    <pre><code class="language-csharp">public static void AddAllConnectionConfigurations(this IDMEEditor editor)
+
+// Source: ConnectionHelper.GetAllConnectionConfigs()
+// Target: ConfigEditor.DataDriversClasses
+// Idempotent: connectioncreated flag
+// Includes: All built-in driver definitions (SQLite, SQL Server, etc.)</code></pre>
+
+                    <h3>AddAllDataSourceMappings</h3>
+                    <pre><code class="language-csharp">public static void AddAllDataSourceMappings(this IDMEEditor editor)
+
+// Source: DataTypeFieldMappingHelper.GetMappings()
+// Target: ConfigEditor.DataTypesMap
+// Idempotent: mappingcreated flag
+// Maps: CLR types ↔ datasource-specific types</code></pre>
+
+                    <h3>AddAllDataSourceQueryConfigurations</h3>
+                    <pre><code class="language-csharp">public static void AddAllDataSourceQueryConfigurations(this IDMEEditor editor)
+
+// Source: RDBMSHelper.CreateQuerySqlRepos()
+// Target: ConfigEditor.QueryList
+// Idempotent: datasourcecreated flag
+// Populates: Schema query templates, entity discovery queries</code></pre>
+                </section>
+
+                <section id="sanitization" class="section">
+                    <h2>Folder Name Sanitization</h2>
+                    <pre><code class="language-csharp">private static string SanitizeFolderName(string folderName)
+{
+    // Replace invalid chars with underscores
+    char[] invalidChars = Path.GetInvalidFileNameChars();
+    foreach (char c in invalidChars)
+        folderName = folderName.Replace(c, '_');
+
+    // Trim whitespace
+    folderName = folderName.Trim();
+
+    // Enforce max length
+    if (folderName.Length > 100)
+        folderName = folderName.Substring(0, 100);
+
+    return folderName;
+}</code></pre>
+                    <p>This ensures folders work across Windows, macOS, and Linux without filesystem errors.</p>
+                </section>
+
+                <section id="integration" class="section">
+                    <h2>Integration Points</h2>
+                    <p>EnvironmentService paths are consumed throughout BeepDM:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Consumer</th><th>Path Pattern</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ConfigEditor</code></td><td><code>{AppRepoDataPath}/Config/</code></td></tr>
+                            <tr><td><code>PipelineManager</code></td><td><code>{AppRepoDataPath}/Pipelines/</code></td></tr>
+                            <tr><td><code>ObservabilityStore</code></td><td><code>{AppRepoDataPath}/Pipelines/History/</code></td></tr>
+                            <tr><td><code>InMemoryDataSource</code></td><td><code>{BeepDataPath}/InMemory/</code></td></tr>
+                            <tr><td><code>BeepService</code></td><td>Calls <code>LoadConfigurations()</code> → creates folders + loads configs</td></tr>
+                            <tr><td><code>SetupWizard</code></td><td>Uses paths for checkpoint persistence</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Basic Setup</h3>
+                    <pre><code class="language-csharp">// Create folder hierarchy
+var beepPath = EnvironmentService.CreateMainFolder();
+Console.WriteLine($"Beep data: {beepPath}");
+
+var repoPath = EnvironmentService.CreateAppRepofolder("MyApp");
+Console.WriteLine($"App repo: {repoPath}");
+
+var configPath = EnvironmentService.CreateAppfolder("MyApp", "Config");
+Console.WriteLine($"Config: {configPath}");</code></pre>
+
+                    <h3>Full Initialization with Editor</h3>
+                    <pre><code class="language-csharp">var editor = new DMEEditor();
+
+// Create folders
+EnvironmentService.CreateMainFolder();
+EnvironmentService.CreateAppRepofolder("MyApp");
+
+// Initialize configurations (all three at once)
+editor.CreateBeepMapping();
+
+// Or individually for more control:
+editor.AddAllConnectionConfigurations();
+editor.AddAllDataSourceMappings();
+editor.AddAllDataSourceQueryConfigurations();</code></pre>
+
+                    <h3>Checking Paths</h3>
+                    <pre><code class="language-csharp">Console.WriteLine($"Beep root: {EnvironmentService.BeepDataPath}");
+Console.WriteLine($"App repo: {EnvironmentService.AppRepoDataPath}");
+
+// On Windows:  C:\ProgramData\TheTechIdea\Beep
+//             C:\ProgramData\TheTechIdea\Beep\MyApp
+// On macOS:    ~/Library/Application Support/TheTechIdea/Beep
+//             ~/Library/Application Support/TheTechIdea/Beep/MyApp
+// On Linux:    ~/.config/TheTechIdea/Beep
+//             ~/.config/TheTechIdea/Beep/MyApp</code></pre>
+
+                    <h3>Cross-Platform Safety</h3>
+                    <pre><code class="language-csharp">// Unsafe name gets sanitized
+var path = EnvironmentService.CreateAppfolder("My App: Data*");
+// Result: creates folder named "My App_ Data_"
+
+// Full automated setup (used by BeepService.Configure())
+editor.CreateBeepMapping();
+Console.WriteLine($"Drivers: {editor.ConfigEditor.DataDriversClasses.Count}");
+Console.WriteLine($"Mappings: {editor.ConfigEditor.DataTypesMap.Count}");
+Console.WriteLine($"Queries: {editor.ConfigEditor.QueryList.Count}");</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="registerbeep.html"><i class="bi bi-arrow-left"></i> Previous: Service Registration</a>
+                    <a href="configeditor.html">Next: ConfigEditor <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

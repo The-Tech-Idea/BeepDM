@@ -48,18 +48,25 @@
                 </div>
 
                 <div class="note">
-                    <strong>Source of truth (2026)</strong>
+                    <strong>Source of truth (2026) — 20 files in Editor/UOW/</strong>
                     <ul>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.Extensions.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.Core.Utilities.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitofWork.CRUD.cs</code></li>
+                        <li><code>UnitofWork.Core.cs</code> — Constructors (7), ~30 properties, OBL wiring, helper composition, ChangeSummary, Export/Import, Dispose</li>
+                        <li><code>UnitofWork.CRUD.cs</code> — Read/Get/New/Add/Update/Insert/Delete with async variants</li>
+                        <li><code>UnitofWork.Core.Extensions.cs</code> — 13 lifecycle events (Pre/Post Create,Insert,Update,Delete,Query,Commit,Edit), Commit/Rollback, AddRange/UpdateRange/DeleteRange, RevertItem, FindAsync</li>
+                        <li><code>UnitofWork.Core.Utilities.cs</code> — Clear, navigation (MoveFirst/Next/Previous/Last/MoveTo), state queries (DocExist, FindDocIdx, Getindex, GetTrackingItem)</li>
+                        <li><code>UnitofWork.OBLIntegration.cs</code> — Validation, Undo/Redo, Computed Columns, Bookmarks, Thread Safety, Aggregates, Virtual Loading</li>
+                        <li><code>IUnitofWorkCapabilities.cs</code> — 7 interfaces: IRevertable, IBatchCommittable, IExportable, IImportable, IAggregatable, IUndoable, IMergeable, IUnitofWorkHistory</li>
+                        <li><code>UnitOfWorkFactory.cs</code> (517 lines) — Runtime type creation, caching, validation</li>
+                        <li><code>UnitOfWorkWrapper.cs</code> (1164 lines) — Late-bound wrapper with full CRUD, navigation, events</li>
+                        <li><code>UnitOfWorkWrapperExtensions.cs</code> — ForEachRecordAsync, FindRecord, BatchInsertAsync, etc.</li>
+                        <li><code>Helpers/</code> — StateHelper, DataHelper, CollectionHelper, ValidationHelper, EventHelper, DefaultsHelper, QueryHistory, ExportHelper</li>
+                        <li><code>Models/</code> — QueryHistoryEntry, ChangeSummary, CommitBatchProgress, CommitBatchResult</li>
                     </ul>
                 </div>
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>ðŸ“š Table of Contents</h3>
+                    <h3>📚 Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#constructors">Constructors</a></li>
@@ -476,22 +483,22 @@ catch (Exception ex)
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>âž• Added</h3>
+                            <h3>➕ Added</h3>
                             <p>New entities not yet persisted to the data source</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>âœï¸ Modified</h3>
+                            <h3>✏️ Modified</h3>
                             <p>Existing entities with property changes</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ—‘ï¸ Deleted</h3>
+                            <h3>🗑️ Deleted</h3>
                             <p>Entities marked for removal from data source</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>âž– Unchanged</h3>
+                            <h3>➖ Unchanged</h3>
                             <p>Entities with no modifications since last commit</p>
                         </div>
                     </div>
@@ -575,57 +582,57 @@ Console.WriteLine($"Total records: {customerUoW.Units.Count}");</code></pre>
                             <tr>
                                 <td>PreCreate</td>
                                 <td>Before creating new entity</td>
-                                <td>âœ… Yes</td>
+                                <td>✅ Yes</td>
                             </tr>
                             <tr>
                                 <td>PostCreate</td>
                                 <td>After creating new entity</td>
-                                <td>âœ… Yes</td>
+                                <td>✅ Yes</td>
                             </tr>
                             <tr>
                                 <td>PreInsert</td>
                                 <td>Before inserting to data source</td>
-                                <td>âœ… Yes</td>
+                                <td>✅ Yes</td>
                             </tr>
                             <tr>
                                 <td>PostInsert</td>
                                 <td>After inserting to data source</td>
-                                <td>âŒ No</td>
+                                <td>❌ No</td>
                             </tr>
                             <tr>
                                 <td>PreUpdate</td>
                                 <td>Before updating in data source</td>
-                                <td>âœ… Yes</td>
+                                <td>✅ Yes</td>
                             </tr>
                             <tr>
                                 <td>PostUpdate</td>
                                 <td>After updating in data source</td>
-                                <td>âŒ No</td>
+                                <td>❌ No</td>
                             </tr>
                             <tr>
                                 <td>PreDelete</td>
                                 <td>Before deleting from data source</td>
-                                <td>âœ… Yes</td>
+                                <td>✅ Yes</td>
                             </tr>
                             <tr>
                                 <td>PostDelete</td>
                                 <td>After deleting from data source</td>
-                                <td>âŒ No</td>
+                                <td>❌ No</td>
                             </tr>
                             <tr>
                                 <td>PreCommit</td>
                                 <td>Before committing changes</td>
-                                <td>âœ… Yes</td>
+                                <td>✅ Yes</td>
                             </tr>
                             <tr>
                                 <td>PostCommit</td>
                                 <td>After committing changes</td>
-                                <td>âŒ No</td>
+                                <td>❌ No</td>
                             </tr>
                             <tr>
                                 <td>PostEdit</td>
                                 <td>After property changes</td>
-                                <td>âŒ No</td>
+                                <td>❌ No</td>
                             </tr>
                         </tbody>
                     </table>
@@ -705,7 +712,7 @@ Console.WriteLine($"Customer {customerToDelete.Name} restored");</code></pre>
                     </div>
 
                     <div class="tip">
-                        <strong>ðŸ’¡ Tip:</strong>
+                        <strong>💡 Tip:</strong>
                         <p>Undo functionality is limited to the current session. Once you commit changes to the database, use the
                             Rollback method to revert uncommitted changes.</p>
                     </div>
@@ -748,7 +755,7 @@ if (success)
                     </div>
 
                     <div class="note">
-                        <strong>ðŸ“ Log Format:</strong>
+                        <strong>📝 Log Format:</strong>
                         <p>The log is saved as JSON and includes timestamps, entity information, property changes, and operation
                             types. This is useful for auditing and debugging purposes.</p>
                     </div>
@@ -1035,12 +1042,12 @@ foreach (var (country, orders) in byCountry)
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>ðŸ”’ Resource Management</h3>
+                            <h3>🔒 Resource Management</h3>
                             <p>Always use <code>using</code> statements since UnitOfWork implements IDisposable</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ“¡ Event Handling</h3>
+                            <h3>📡 Event Handling</h3>
                             <p>Use lifecycle events for validation and business logic implementation</p>
                         </div>
 
@@ -1050,17 +1057,17 @@ foreach (var (country, orders) in byCountry)
                         </div>
 
                         <div class="feature-card">
-                            <h3>âš¡ Async Operations</h3>
+                            <h3>⚡ Async Operations</h3>
                             <p>Use async methods for all database operations to prevent UI blocking</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ“Š Audit Trails</h3>
+                            <h3>📊 Audit Trails</h3>
                             <p>Enable logging for audit trails and debugging purposes</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>âœ… Validation</h3>
+                            <h3>✅ Validation</h3>
                             <p>Use PreCommit event for final validation before persisting changes</p>
                         </div>
                     </div>

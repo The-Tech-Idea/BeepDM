@@ -33,7 +33,7 @@ Use this skill as the top-level entry point for `FormsManager` orchestration.
   - `ConfigurationManager`
 
 ## File Locations
-- `DataManagementEngineStandard/Editor/Forms/FormsManager.cs`
+- `DataManagementEngineStandard/Editor/Forms/FormsManager.Core.cs` (main coordinator, split across 30+ partial files)
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.FormOperations.cs`
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.Navigation.cs`
 - `DataManagementEngineStandard/Editor/Forms/FormsManager.ModeTransitions.cs`

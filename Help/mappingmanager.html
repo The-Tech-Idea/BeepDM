@@ -30,6 +30,7 @@
     <li><a href="#performance">Performance &amp; Caching</a></li>
     <li><a href="#autoobjmapper">AutoObjMapper</a></li>
     <li><a href="#examples">Examples</a></li>
+    <li><a href="#full-api">Full API Reference</a></li>
   </ul>
 </nav>
 
@@ -755,6 +756,242 @@ if (diff.HasChanges)
   <a href="defaultsmanager.html">← Defaults Manager</a>
   <a href="beepsyncmanager.html">BeepSync Manager →</a>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<a id="full-api"></a>
+<section id="full-api-section">
+<h2><i class="bi bi-book"></i> Full API Reference</h2>
+
+<h3>MappingManager — Complete Static API</h3>
+
+<h4>Create Methods</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>CreateEntityMap(DMEEditor, destent, srcName, srcDS)</code></td><td><code>Tuple&lt;IErrorsInfo, EntityDataMap&gt;</code></td></tr>
+<tr><td><code>CreateEntityMap(DMEEditor, srcName, srcDS, destName, destDS)</code></td><td><code>Tuple&lt;IErrorsInfo, EntityDataMap&gt;</code></td></tr>
+<tr><td><code>CreateEntityMap(DMEEditor, destName, destDS)</code></td><td><code>Tuple&lt;IErrorsInfo, EntityDataMap&gt;</code></td></tr>
+<tr><td><code>AddEntityToMappedEntities(DMEEditor, srcDS, srcName, destent)</code></td><td><code>EntityDataMap_DTL</code></td></tr>
+<tr><td><code>MapEntityFields(DMEEditor, srcent, datamap)</code></td><td><code>List&lt;Mapping_rep_fields&gt;</code></td></tr>
+</tbody>
+</table>
+
+<h4>Load / Save</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>LoadMapping(DMEEditor, entityName, dataSource)</code></td><td><code>EntityDataMap</code></td></tr>
+<tr><td><code>SaveMapping(DMEEditor, entityName, dataSource, mapping)</code></td><td><code>void</code></td></tr>
+<tr><td><code>SaveEntityMap(DMEEditor, entityName, dataSourceID, mapping)</code></td><td><code>void</code></td></tr>
+<tr><td><code>LoadOrInitializeMapping(DMEEditor, entityName, dataSource)</code></td><td><code>EntityDataMap</code></td></tr>
+</tbody>
+</table>
+
+<h4>Map / Apply / Transform</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>MapObject(DMEEditor, mapping, sourceRecord, destEntity, destDS)</code></td><td><code>object</code></td></tr>
+<tr><td><code>MapObjects(DMEEditor, mapping, sourceList, destEntity, destDS)</code></td><td><code>List&lt;object&gt;</code></td></tr>
+<tr><td><code>MapToDataRow(DMEEditor, mapping, sourceRecord, row, destEntity)</code></td><td><code>DataRow</code></td></tr>
+<tr><td><code>MapObjectToAnother(DMEEditor, destEntity, SelectedMapping, sourceobj)</code></td><td><code>object</code></td></tr>
+<tr><td><code>MapObjectGraph(DMEEditor, destEntity, selectedMapping, source, options)</code></td><td><code>Tuple&lt;object, ObjectGraphMappingResult&gt;</code></td></tr>
+</tbody>
+</table>
+
+<h4>Auto-Matching</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>AutoMapByConvention(DMEEditor, srcName, srcDS, destName, destDS, mode)</code></td><td><code>EntityDataMap</code></td></tr>
+<tr><td><code>AutoMapByConventionWithScoring(DMEEditor, srcName, srcDS, destName, destDS, mode, opts)</code></td><td><code>Tuple&lt;EntityDataMap, MappingAutoMatchReport&gt;</code></td></tr>
+</tbody>
+</table>
+
+<h4>Validation &amp; Quality</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>ValidateMappingAsync(DMEEditor, mapping)</code></td><td><code>Task&lt;MappingValidationResult&gt;</code></td></tr>
+<tr><td><code>ValidateMappingWithScore(DMEEditor, mapping, productionThreshold)</code></td><td><code>MappingQualityReport</code></td></tr>
+<tr><td><code>GetMappingDiff(baseline, current)</code></td><td><code>MappingDiff</code></td></tr>
+</tbody>
+</table>
+
+<h4>Governance</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>BeginGovernanceScope(author, reason, targetState)</code></td><td><code>IDisposable</code></td></tr>
+<tr><td><code>GetMappingGovernance(DMEEditor, entity, dataSource)</code></td><td><code>MappingGovernanceRecord</code></td></tr>
+<tr><td><code>GetMappingVersionHistory(DMEEditor, entity, dataSource)</code></td><td><code>List&lt;MappingVersionRecord&gt;</code></td></tr>
+<tr><td><code>UpdateMappingApprovalState(DMEEditor, entity, dataSource, state, actor, reason)</code></td><td><code>bool</code></td></tr>
+</tbody>
+</table>
+
+<h4>Rules</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>ValidateRuleSet(mapping)</code></td><td><code>MappingRuleValidationResult</code></td></tr>
+</tbody>
+</table>
+
+<h4>Conversion Pipeline</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>SetConversionPolicy(destDS, destEntity, policy)</code></td><td><code>void</code></td></tr>
+<tr><td><code>GetConversionPolicy(destDS, destEntity)</code></td><td><code>MappingConversionPolicy</code></td></tr>
+<tr><td><code>RegisterTransform(name, func)</code></td><td><code>void</code></td></tr>
+<tr><td><code>SetFieldTransformChain(destDS, destEntity, field, chain)</code></td><td><code>void</code></td></tr>
+<tr><td><code>GetFieldTransformChain(destDS, destEntity, field)</code></td><td><code>MappingFieldTransformChain</code></td></tr>
+</tbody>
+</table>
+
+<h4>Performance / Caching</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>InvalidateMappingCaches(destDS, destEntity)</code></td><td><code>void</code></td></tr>
+</tbody>
+</table>
+
+<h3>AutoObjMapper Complete Interfaces</h3>
+
+<h4>IAutoObjMapper</h4>
+<table class="api-table">
+<thead><tr><th>Member</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>Options</code></td><td><code>AutoObjMapperOptions</code> {get;} — current options read-only</td></tr>
+<tr><td><code>Configure(Action&lt;IMapperConfiguration&gt;)</code></td><td><code>IMapperConfiguration</code> — configures and returns config; clears compiled cache</td></tr>
+<tr><td><code>Map&lt;TSource, TDest&gt;(TSource) where TDest : new()</code></td><td>Creates new <code>TDest</code> and maps matching properties</td></tr>
+<tr><td><code>Map&lt;TSource, TDest&gt;(TSource, TDest)</code></td><td>Maps into existing destination (preserves existing values where source is null)</td></tr>
+<tr><td><code>GetStatistics()</code></td><td><code>MappingStatistics</code> — cached mappers count + type map count</td></tr>
+<tr><td><code>ClearCache()</code></td><td>Clears ALL compiled mappers and setter/getter delegates</td></tr>
+</tbody>
+</table>
+
+<h4>IMapperConfiguration</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>For&lt;TSource, TDest&gt;()</code></td><td><code>ITypeMapConfiguration&lt;TSource, TDest&gt;</code></td></tr>
+<tr><td><code>GetRegisteredTypeMapsCount()</code></td><td><code>int</code></td></tr>
+<tr><td><code>GetTypeMap(Type src, Type dest)</code></td><td><code>ITypeMapBase</code></td></tr>
+</tbody>
+</table>
+
+<h4>ITypeMapConfiguration&lt;TSource, TDest&gt;</h4>
+<table class="api-table">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>Ignore(string destPropertyName)</code></td><td><code>ITypeMapConfiguration&lt;TSource, TDest&gt;</code></td></tr>
+<tr><td><code>ForMember(string destPropertyName, Func&lt;TSource, object&gt;)</code></td><td><code>ITypeMapConfiguration&lt;TSource, TDest&gt;</code></td></tr>
+<tr><td><code>BeforeMap(Action&lt;TSource, TDest&gt;)</code></td><td><code>ITypeMapConfiguration&lt;TSource, TDest&gt;</code></td></tr>
+<tr><td><code>AfterMap(Action&lt;TSource, TDest&gt;)</code></td><td><code>ITypeMapConfiguration&lt;TSource, TDest&gt;</code></td></tr>
+</tbody>
+</table>
+
+<h4>ITypeMapBase</h4>
+<table class="api-table">
+<thead><tr><th>Member</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>IsIgnored(string destPropName)</code></td><td><code>bool</code></td></tr>
+<tr><td><code>TryGetResolver(string destPropName, out Delegate)</code></td><td><code>bool</code></td></tr>
+<tr><td><code>BeforeMapDelegate</code></td><td><code>Delegate</code></td></tr>
+<tr><td><code>AfterMapDelegate</code></td><td><code>Delegate</code></td></tr>
+</tbody>
+</table>
+
+<h4>AutoObjMapperOptions</h4>
+<table class="api-table">
+<thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>IgnoreNullSourceValues</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+<tr><td><code>MapPrivateMembers</code></td><td><code>bool</code></td><td><code>false</code></td></tr>
+</tbody>
+</table>
+
+<h3>Complete Enums Reference</h3>
+<table class="api-table">
+<thead><tr><th>Enum</th><th>Values</th></tr></thead>
+<tbody>
+<tr><td><code>NameMatchMode</code></td><td><code>Exact</code>, <code>CaseInsensitive</code>, <code>FuzzyPrefix</code></td></tr>
+<tr><td><code>MatchConfidenceDecision</code></td><td><code>AutoAccept</code>, <code>ReviewRequired</code>, <code>Reject</code></td></tr>
+<tr><td><code>MappingQualityBand</code></td><td><code>Excellent</code>, <code>Good</code>, <code>NeedsReview</code>, <code>HighRisk</code></td></tr>
+<tr><td><code>MappingIssueSeverity</code></td><td><code>Info</code>, <code>Warning</code>, <code>Error</code></td></tr>
+<tr><td><code>MappingApprovalState</code></td><td><code>Draft</code>, <code>Review</code>, <code>Approved</code>, <code>Deprecated</code></td></tr>
+<tr><td><code>MappingRulePriority</code></td><td><code>ExplicitUserRule</code>, <code>ConfidenceAutoMap</code>, <code>FallbackDefault</code></td></tr>
+<tr><td><code>MappingRuleDecision</code></td><td><code>Map</code>, <code>Skip</code>, <code>UseDefault</code></td></tr>
+<tr><td><code>MappingNullHandlingMode</code></td><td><code>PreserveNull</code>, <code>SubstituteDefault</code>, <code>SkipAssignment</code></td></tr>
+<tr><td><code>MappingConversionFailureMode</code></td><td><code>WarnAndContinue</code>, <code>Reject</code>, <code>UseFallback</code></td></tr>
+<tr><td><code>MappingStringCaseMode</code></td><td><code>None</code>, <code>Upper</code>, <code>Lower</code></td></tr>
+<tr><td><code>CollectionMappingMode</code></td><td><code>Append</code>, <code>Replace</code>, <code>MergeByKey</code></td></tr>
+</tbody>
+</table>
+
+<h3>Helper Classes</h3>
+<table class="api-table">
+<thead><tr><th>File</th><th>Class</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>MappingDefaultsHelper.cs</code></td><td><code>MappingDefaultsHelper</code></td><td>Applies DefaultsManager defaults to mapped objects after field assignment</td></tr>
+<tr><td><code>MappingPerformanceHelper.cs</code></td><td><code>MappingPerformanceHelper</code></td><td>Compiled plan caching, Expression-compiled setter/getter delegates, cache invalidation</td></tr>
+<tr><td><code>MappingValidationHelper.cs</code></td><td><code>MappingValidationHelper</code></td><td>Mapping schema validation, compatibility checks, field existence verification</td></tr>
+<tr><td><code>PropertyDiscoveryHelper.cs</code></td><td><code>PropertyDiscoveryHelper</code></td><td>Reflection-based property discovery with caching for POCO types</td></tr>
+<tr><td><code>TypeConversionHelper.cs</code></td><td><code>TypeConversionHelper</code></td><td>Type coercion pipeline: string → numeric, date parsing, enum conversion, nullable unwrap</td></tr>
+</tbody>
+</table>
+
+<h3>Configuration Types</h3>
+<table class="api-table">
+<thead><tr><th>File</th><th>Class</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>TypeMap.cs</code></td><td><code>TypeMap&lt;TSource, TDest&gt;</code></td><td>Concrete typed configuration implementing <code>ITypeMapConfiguration</code></td></tr>
+<tr><td><code>TypeMapBase.cs</code></td><td><code>TypeMapBase</code></td><td>Non-generic base with ignored properties dict, resolver lookup, before/after delegates</td></tr>
+<tr><td><code>MapperConfig.cs</code></td><td><code>MapperConfig</code></td><td>Implements <code>IMapperConfiguration</code> — registry of <code>TypeMapBase</code> instances</td></tr>
+<tr><td><code>MapperConfiguration.cs</code></td><td><code>MapperConfiguration</code></td><td>Configuration factory and storage</td></tr>
+<tr><td><code>AutoObjMapperOptions.cs</code></td><td><code>AutoObjMapperOptions</code></td><td>IgnoreNullSourceValues, MapPrivateMembers</td></tr>
+</tbody>
+</table>
+
+<h3>Source File Map (30 files)</h3>
+<table class="api-table">
+<thead><tr><th>File</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td><code>MappingManager.cs</code></td><td>Core CRUD: CreateEntityMap, LoadMapping, SaveMapping, MapObject, MapToDataRow</td></tr>
+<tr><td><code>MappingManager.Conventions.cs</code></td><td>AutoMapByConvention, NameMatchMode, GetMappingDiff</td></tr>
+<tr><td><code>MappingManager.AutoMatching.cs</code></td><td>AutoMapByConventionWithScoring, confidence engine, AutoMatchOptions</td></tr>
+<tr><td><code>MappingManager.ConversionPipeline.cs</code></td><td>ConversionPolicy, RegisterTransform, field transform chains</td></tr>
+<tr><td><code>MappingManager.ObjectGraph.cs</code></td><td>MapObjectGraph, nested POCO + collection traversal, ObjectGraphMappingOptions</td></tr>
+<tr><td><code>MappingManager.Rules.cs</code></td><td>ValidateRuleSet, MappingRulePriority, execution traces</td></tr>
+<tr><td><code>MappingManager.ValidationScoring.cs</code></td><td>ValidateMappingWithScore, MappingQualityReport, drift detection</td></tr>
+<tr><td><code>MappingManager.Governance.cs</code></td><td>BeginGovernanceScope, versioning, approval states, audit trail</td></tr>
+<tr><td><code>MappingManager.PerformanceCaching.cs</code></td><td>Compiled plan cache (512), source path accessor (2048), dest setter cache (2048), invalidation</td></tr>
+<tr><td><code>Interfaces/IMappingInterfaces.cs</code></td><td>IAutoObjMapper, IMapperConfiguration, ITypeMapConfiguration, ITypeMapBase</td></tr>
+<tr><td><code>Interfaces/ITypeMapConfig.cs</code></td><td>Type map configuration contracts</td></tr>
+<tr><td><code>Models/MappingModels.cs</code></td><td>MappingStatistics, MappingValidationResult, MappingDriftReport, Rule models</td></tr>
+<tr><td><code>Configuration/TypeMap.cs</code></td><td>TypeMap&lt;TSource, TDest&gt; concrete class</td></tr>
+<tr><td><code>Configuration/TypeMapBase.cs</code></td><td>Non-generic base with ignored/resolver/delegates storage</td></tr>
+<tr><td><code>Configuration/MapperConfig.cs</code></td><td>MapperConfig implementing IMapperConfiguration</td></tr>
+<tr><td><code>Configuration/MapperConfiguration.cs</code></td><td>Configuration factory</td></tr>
+<tr><td><code>Configuration/AutoObjMapperOptions.cs</code></td><td>AutoObjMapperOptions class</td></tr>
+<tr><td><code>Core/AutoObjMapper.Core.cs</code></td><td>Core mapping engine, expression compilation, property matching</td></tr>
+<tr><td><code>Core/AutoObjMapper.Factory.cs</code></td><td>Factory methods for AutoObjMapper creation</td></tr>
+<tr><td><code>Core/AutoObjMapper.Performance.cs</code></td><td>Performance-optimized mapping paths, delegate caching</td></tr>
+<tr><td><code>Core/AutoObjMapper.ExpressionBuilder.cs</code></td><td>Expression tree builder for compiled property setters/getters</td></tr>
+<tr><td><code>Core/AutoObjMapper.Validation.cs</code></td><td>Type compatibility validation, property existence checks</td></tr>
+<tr><td><code>Helpers/MappingDefaultsHelper.cs</code></td><td>DefaultsManager integration for mapping</td></tr>
+<tr><td><code>Helpers/MappingPerformanceHelper.cs</code></td><td>Compiled plan execution and caching</td></tr>
+<tr><td><code>Helpers/MappingValidationHelper.cs</code></td><td>Schema validation for mappings</td></tr>
+<tr><td><code>Helpers/PropertyDiscoveryHelper.cs</code></td><td>Reflection-based property discovery</td></tr>
+<tr><td><code>Helpers/TypeConversionHelper.cs</code></td><td>Type coercion and conversion pipeline</td></tr>
+<tr><td><code>Extensions/AutoObjMapperExtensions.cs</code></td><td>Extension methods for AutoObjMapper (List mapping, etc.)</td></tr>
+<tr><td><code>Utilities/AutoObjMapperUtilities.cs</code></td><td>Utility methods, type comparison helpers</td></tr>
+<tr><td><code>Examples/AutoObjMapperExamples.cs</code></td><td>Usage examples for AutoObjMapper</td></tr>
+</tbody>
+</table>
+</section>
 
 </div><!-- .content-wrapper -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>

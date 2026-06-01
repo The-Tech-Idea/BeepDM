@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin System - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="bi bi-sun-fill" id="theme-icon"></i></button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a><span>&gt;</span><span>Plugin System</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Plugin System (PluginSystem/)</h1>
+                    <p class="page-subtitle">Two IAssemblyHandler implementations: legacy AssemblySystem/ and modern PluginSystem/ with shared context, lifecycle management, isolation, health monitoring, and plugin versioning</p>
+                </div>
+                <div class="note"><strong>Source files</strong><ul>
+                    <li><code>AssemblyHandler/AssemblySystem/</code> (10 files) — legacy AssemblyHandler</li>
+                    <li><code>AssemblyHandler/PluginSystem/</code> (21 files) — modern SharedContextAssemblyHandler</li>
+                </ul></div>
+
+                <div class="toc"><h3>Table of Contents</h3><ul>
+                    <li><a href="#comparison">Implementation Comparison</a></li>
+                    <li><a href="#shared-context">SharedContextAssemblyHandler</a></li>
+                    <li><a href="#shared-context-manager">SharedContextManager</a></li>
+                    <li><a href="#plugin-lifecycle">Plugin Lifecycle</a></li>
+                    <li><a href="#isolation">Plugin Isolation</a></li>
+                    <li><a href="#registry">Plugin Registry</a></li>
+                    <li><a href="#monitoring">Health Monitoring</a></li>
+                    <li><a href="#message-bus">Plugin Message Bus</a></li>
+                    <li><a href="#assistants">Assistants</a></li>
+                    <li><a href="#nuget">NuGet Plugin Loading</a></li>
+                    <li><a href="#examples">Usage Examples</a></li>
+                </ul></div>
+
+                <section id="comparison" class="section">
+                    <h2>Implementation Comparison</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Aspect</th><th>AssemblySystem (Legacy)</th><th>PluginSystem (Modern)</th></tr></thead>
+                        <tbody>
+                            <tr><td>Class</td><td><code>AssemblyHandler</code></td><td><code>SharedContextAssemblyHandler</code></td></tr>
+                            <tr><td>Context</td><td>Per-instance</td><td>Shared context manager</td></tr>
+                            <tr><td>DLL isolation</td><td>None</td><td>PluginIsolationManager (ALC-based)</td></tr>
+                            <tr><td>Plugin lifecycle</td><td>Manual</td><td>PluginLifecycleManager (state machine)</td></tr>
+                            <tr><td>Versioning</td><td>None</td><td>PluginVersionManager (semantic versioning)</td></tr>
+                            <tr><td>Health monitoring</td><td>None</td><td>PluginHealthMonitor (heartbeat, probes)</td></tr>
+                            <tr><td>Message bus</td><td>None</td><td>PluginMessageBus (pub/sub)</td></tr>
+                            <tr><td>Process management</td><td>None</td><td>PluginProcessManager (out-of-process)</td></tr>
+                            <tr><td>Scanning</td><td>Built-in</td><td>IScanningService abstraction</td></tr>
+                            <tr><td>Files</td><td>10</td><td>21</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="shared-context" class="section">
+                    <h2>SharedContextAssemblyHandler</h2>
+                    <p>Modern IAssemblyHandler implementation using <code>SharedContextManager</code>:</p>
+                    <pre><code class="language-csharp">public class SharedContextAssemblyHandler : IAssemblyHandler
+{
+    private readonly SharedContextManager _sharedContextManager;
+    private readonly DriverDiscoveryAssistant _driverAssistant;
+    private readonly IScanningService _scanningService;
+    private readonly PluginRegistry _pluginRegistry;
+    private readonly PluginInstaller _pluginInstaller;
+
+    public bool PreferDefaultContextDependencies { get; set; } = true;
+
+    // Caches
+    public List&lt;assemblies_rep&gt; Assemblies { get; }
+    public List&lt;Assembly&gt; LoadedAssemblies { get; }
+    public List&lt;Type&gt; LoaderExtensions { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; LoaderExtensionClasses { get; set; }
+    public List&lt;ILoaderExtention&gt; LoaderExtensionInstances { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; DataSourcesClasses { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; AddinClasses { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; AllClassesFound { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; WorkFlowStepClasses { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; WorkFlowActionClasses { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; PrintManagerClasses { get; set; }
+    public List&lt;AssemblyClassDefinition&gt; FunctionExtensionClasses { get; set; }
+
+    public bool HasLoadErrors { get; }
+    public List&lt;string&gt; LoadErrors { get; }
+
+    public IErrorsInfo LoadAllAssembly(IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
+    public Assembly LoadAssembly(string path);
+    public List&lt;Assembly&gt; LoadAssembliesFromFolder(string folderPath, FolderFileTypes type, bool scan);
+    public void ScanAssembly(Assembly assembly);
+    public void ScanFolder(string folderPath, FolderFileTypes type);
+}</code></pre>
+                </section>
+
+                <section id="shared-context-manager" class="section">
+                    <h2>SharedContextManager</h2>
+                    <p>Core loading system providing unified load/unload for DLLs, plugins, and assemblies:</p>
+                    <pre><code class="language-csharp">public class SharedContextManager
+{
+    public ConcurrentDictionary&lt;string, Assembly&gt; SharedAssemblies { get; }
+    public SharedAssemblyTracker Tracker { get; }
+
+    public Assembly LoadDll(string path, bool useSharedContext = true);
+    public bool UnloadDll(string assemblyName);
+    public Assembly GetSharedAssembly(string name);
+    public IEnumerable&lt;Assembly&gt; GetAllSharedAssemblies();
+
+    public AssemblyLoadStatistics Statistics { get; }
+}
+
+public class SharedAssemblyTracker
+{
+    public void TrackAssembly(Assembly assembly, string sourcePath);
+    public bool IsTracked(string assemblyName);
+    public string GetSourcePath(string assemblyName);
+    public IReadOnlyList&lt;TrackedAssembly&gt; GetTrackedAssemblies();
+}</code></pre>
+                </section>
+
+                <section id="plugin-lifecycle" class="section">
+                    <h2>Plugin Lifecycle</h2>
+                    <h3>PluginLifecycleManager</h3>
+                    <p>Manages plugin lifecycle states and transitions:</p>
+                    <pre><code class="language-csharp">public class PluginLifecycleManager : IDisposable
+{
+    private readonly ConcurrentDictionary&lt;string, PluginInfo&gt; _plugins;
+    private readonly ConcurrentDictionary&lt;string, WeakReference&gt; _pluginInstances;
+
+    public event EventHandler&lt;PluginEventArgs&gt; PluginStateChanged;
+    public event EventHandler&lt;PluginEventArgs&gt; PluginHealthChanged;
+    public event EventHandler&lt;PluginEventArgs&gt; PluginError;
+
+    public bool RegisterPlugin(PluginInfo plugin);
+    public bool UnregisterPlugin(string pluginId);
+    public Task&lt;PluginInfo&gt; InstallPlugin(PluginManifest manifest);
+    public Task&lt;bool&gt; UninstallPlugin(string pluginId);
+    public Task StartPlugin(string pluginId);
+    public Task StopPlugin(string pluginId);
+    public PluginState GetPluginState(string pluginId);
+    public IReadOnlyList&lt;PluginInfo&gt; GetAllPlugins();
+}
+
+public enum PluginState { Registered, Installing, Installed, Starting,
+    Running, Stopping, Stopped, Uninstalling, Uninstalled, Faulted }</code></pre>
+
+                    <h3>PluginInstaller</h3>
+                    <pre><code class="language-csharp">public class PluginInstaller
+{
+    public Task&lt;bool&gt; InstallAsync(string sourcePath, string targetPath);
+    public Task&lt;bool&gt; UninstallAsync(string pluginId);
+    public Task&lt;bool&gt; VerifyInstallation(string pluginId);
+}</code></pre>
+
+                    <h3>PluginVersionManager</h3>
+                    <pre><code class="language-csharp">public class PluginVersionManager
+{
+    public Version GetInstalledVersion(string pluginId);
+    public Task&lt;Version&gt; GetLatestVersion(string pluginId);
+    public bool IsCompatible(string pluginId, Version hostVersion);
+    public Task&lt;bool&gt; UpgradePlugin(string pluginId, Version targetVersion);
+    public List&lt;PluginVersionHistory&gt; GetVersionHistory(string pluginId);
+}</code></pre>
+
+                    <h3>UnloadAnalysis</h3>
+                    <pre><code class="language-csharp">public class UnloadAnalysis
+{
+    public bool CanUnload(Assembly assembly);
+    public IReadOnlyList&lt;string&gt; GetBlockingReferences(Assembly assembly);
+    public void ForceUnload(Assembly assembly);
+}</code></pre>
+                </section>
+
+                <section id="isolation" class="section">
+                    <h2>Plugin Isolation</h2>
+                    <h3>PluginIsolationManager</h3>
+                    <pre><code class="language-csharp">public class PluginIsolationManager
+{
+    public AssemblyLoadContext CreateIsolatedContext(string pluginId);
+    public bool UnloadIsolatedContext(string pluginId);
+    public Assembly LoadAssemblyInContext(string pluginId, string assemblyPath);
+    public object CreateInstanceInContext(string pluginId, string typeName);
+}
+
+// Uses collectible AssemblyLoadContext for unloadable plugin isolation</code></pre>
+
+                    <h3>PluginProcessManager</h3>
+                    <pre><code class="language-csharp">public class PluginProcessManager
+{
+    public Task&lt;int&gt; StartPluginProcess(string pluginId, string executablePath);
+    public Task&lt;bool&gt; StopPluginProcess(int processId);
+    public bool IsProcessRunning(int processId);
+    public Task&lt;ProcessHealth&gt; GetProcessHealth(int processId);
+}
+
+// For out-of-process plugin execution with crash isolation</code></pre>
+
+                    <h3>PluginServiceManager</h3>
+                    <pre><code class="language-csharp">public class PluginServiceManager
+{
+    public Task StartService(string pluginId);
+    public Task StopService(string pluginId);
+    public ServiceStatus GetServiceStatus(string pluginId);
+}
+
+public enum ServiceStatus { Stopped, Starting, Running, Stopping, Faulted }</code></pre>
+                </section>
+
+                <section id="registry" class="section">
+                    <h2>Plugin Registry</h2>
+                    <pre><code class="language-csharp">public class PluginRegistry
+{
+    public void Register(PluginManifest manifest);
+    public void Unregister(string pluginId);
+    public PluginManifest GetManifest(string pluginId);
+    public IReadOnlyList&lt;PluginManifest&gt; GetAll();
+    public List&lt;PluginManifest&gt; Query(Predicate&lt;PluginManifest&gt; filter);
+}
+
+public class PluginManifest
+{
+    public string PluginId { get; set; }
+    public string Name { get; set; }
+    public Version Version { get; set; }
+    public string Author { get; set; }
+    public string Description { get; set; }
+    public List&lt;string&gt; Dependencies { get; set; }
+    public Version MinHostVersion { get; set; }
+    public List&lt;string&gt; EntryTypes { get; set; }
+    public DateTime InstalledAt { get; set; }
+    public string InstallPath { get; set; }
+    public PluginType Type { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="monitoring" class="section">
+                    <h2>Health Monitoring</h2>
+                    <pre><code class="language-csharp">public class PluginHealthMonitor : IDisposable
+{
+    public event EventHandler&lt;PluginHealthEventArgs&gt; HealthStatusChanged;
+
+    public void TrackPlugin(string pluginId, int heartbeatIntervalMs = 5000);
+    public void UntrackPlugin(string pluginId);
+    public PluginHealthStatus GetHealth(string pluginId);
+    public IReadOnlyDictionary&lt;string, PluginHealthStatus&gt; GetAllHealth();
+    public Task&lt;bool&gt; ProbeAsync(string pluginId);
+    public void ReportHeartbeat(string pluginId);
+}
+
+public class PluginHealthStatus
+{
+    public string PluginId { get; }
+    public HealthState State { get; set; }
+    public DateTime LastHeartbeat { get; set; }
+    public int MissedHeartbeats { get; set; }
+    public string LastError { get; set; }
+}
+
+public enum HealthState { Unknown, Healthy, Degraded, Unhealthy, Failed }</code></pre>
+                </section>
+
+                <section id="message-bus" class="section">
+                    <h2>Plugin Message Bus</h2>
+                    <pre><code class="language-csharp">public class PluginMessageBus : IDisposable
+{
+    public void Publish(string topic, object message);
+    public void Subscribe(string topic, Action&lt;object&gt; handler);
+    public void Unsubscribe(string topic);
+    public void UnsubscribeAll();
+}
+
+// Topics: plugin.installed, plugin.started, plugin.stopped,
+//         plugin.health.changed, plugin.error</code></pre>
+                </section>
+
+                <section id="assistants" class="section">
+                    <h2>Assistants</h2>
+                    <pre><code class="language-csharp">// Assembly loading with dependency resolution
+public class AssemblyLoadingAssistant
+{
+    public Assembly LoadWithDependencies(string path);
+    public Assembly ResolveAssembly(string name);
+}
+
+// Assembly scanning and type discovery  
+public class AssemblyScanningAssistant
+{
+    public List&lt;Type&gt; FindTypesImplementing&lt;T&gt;(Assembly assembly);
+    public List&lt;AssemblyClassDefinition&gt; ScanForAddins(Assembly assembly);
+    public List&lt;AssemblyClassDefinition&gt; ScanForDataSources(Assembly assembly);
+}
+
+// Plug-in scanning abstraction
+public interface IScanningService
+{
+    void ScanAssembly(Assembly assembly, IAssemblyHandler handler);
+    void ScanFolder(string folderPath, FolderFileTypes fileType, IAssemblyHandler handler);
+}
+
+// Instance creation with caching
+public class InstanceCreationAssistant
+{
+    public object CreateInstance(string typeName, params object[] args);
+    public T CreateInstance&lt;T&gt;(params object[] args);
+    public void ClearCache();
+}
+
+// Driver configuration extraction
+public class DriverDiscoveryAssistant
+{
+    public ConnectionDriversConfig ExtractDriverConfig(Type dataSourceType);
+    public List&lt;ConnectionDriversConfig&gt; DiscoverAllDrivers(Assembly assembly);
+}
+
+// NuGet plugin download and load
+public class NuggetPackageDownloader
+{
+    public Task&lt;string&gt; DownloadAsync(string packageId, string version, string targetDir);
+    public Task&lt;bool&gt; VerifyPackageAsync(string packagePath);
+}
+
+public class NuggetPluginLoader
+{
+    public Task&lt;Assembly&gt; LoadFromNuGetAsync(string packageId, string version);
+    public Task&lt;PluginManifest&gt; LoadPluginManifestAsync(string packageId, string version);
+}</code></pre>
+                </section>
+
+                <section id="nuget" class="section">
+                    <h2>NuGet Plugin Loading</h2>
+                    <pre><code class="language-csharp">// Configuring SharedContextAssemblyHandler for NuGet
+var handler = new SharedContextAssemblyHandler(config, errors, logger, util);
+var nugetManager = handler.NuGetService;
+
+// Download and load as plugin
+var downloader = new NuggetPackageDownloader();
+string packagePath = await downloader.DownloadAsync(
+    "MyCompany.Plugin", "1.0.0", "./plugins/");
+
+var loader = new NuggetPluginLoader();
+var manifest = await loader.LoadPluginManifestAsync(
+    "MyCompany.Plugin", "1.0.0");
+
+// Register in the plugin system
+PluginRegistry.Register(manifest);
+PluginLifecycleManager.InstallPlugin(manifest);
+
+// Track in shared context
+SharedContextManager.LoadDll(packagePath);
+SharedAssemblyTracker.TrackAssembly(assembly, packagePath);</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Using SharedContextAssemblyHandler</h3>
+                    <pre><code class="language-csharp">var handler = new SharedContextAssemblyHandler(
+    config, errors, logger, util);
+
+// Load all assemblies with progress
+var progress = new Progress&lt;PassedArgs&gt;(p =>
+    Console.WriteLine($"Loading: {p.Messege}"));
+handler.LoadAllAssembly(progress, CancellationToken.None);
+
+// Results
+Console.WriteLine($"Assemblies: {handler.LoadedAssemblies.Count}");
+Console.WriteLine($"Data sources: {handler.DataSourcesClasses.Count}");
+Console.WriteLine($"Addins: {handler.AddinClasses.Count}");</code></pre>
+
+                    <h3>Plugin Lifecycle</h3>
+                    <pre><code class="language-csharp">var lifecycle = new PluginLifecycleManager(logger);
+lifecycle.PluginStateChanged += (s, e) =>
+    Console.WriteLine($"Plugin {e.PluginId}: {e.NewState}");
+
+// Register
+lifecycle.RegisterPlugin(new PluginInfo { PluginId = "my-plugin" });
+
+// Install
+var manifest = new PluginManifest
+{
+    PluginId = "my-plugin",
+    Version = new Version(1, 0, 0),
+    EntryTypes = new List&lt;string&gt; { "MyPlugin.MyAddin" }
+};
+await lifecycle.InstallPlugin(manifest);
+
+// Start
+await lifecycle.StartPlugin("my-plugin");
+var state = lifecycle.GetPluginState("my-plugin"); // PluginState.Running
+
+// Monitor
+var health = new PluginHealthMonitor();
+health.TrackPlugin("my-plugin", heartbeatIntervalMs: 3000);
+health.HealthStatusChanged += (s, e) =>
+    Console.WriteLine($"Health: {e.Status.State}");</code></pre>
+
+                    <h3>Isolated Plugin Loading</h3>
+                    <pre><code class="language-csharp">var isolation = new PluginIsolationManager();
+var ctx = isolation.CreateIsolatedContext("sandboxed-plugin");
+
+var asm = isolation.LoadAssemblyInContext("sandboxed-plugin", "./plugins/sandbox.dll");
+var instance = isolation.CreateInstanceInContext("sandboxed-plugin",
+    "SandboxPlugin.Worker");
+
+// Can unload the entire context
+isolation.UnloadIsolatedContext("sandboxed-plugin");
+// All assemblies in that ALC are released</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="assemblyhandler-loading-nuget-extensions.html"><i class="bi bi-arrow-left"></i> Previous: AssemblySystem</a>
+                    <a href="nuget-package-manager.html">Next: NuGet Package Manager <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer"><div class="footer-content">
+                    <div class="footer-copyright"><p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p></div>
+                    <div class="footer-links"><a href="index.html">Home</a><a href="api-reference.html">API Reference</a></div>
+                </div></footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

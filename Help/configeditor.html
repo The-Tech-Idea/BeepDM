@@ -861,6 +861,96 @@ public static class ConfigurationManager
                     </div>
                 </section>
 
+                <!-- DMTypeBuilder: Dynamic Type Generation -->
+                <section id="dmtypebuilder" class="section">
+                    <h2>DMTypeBuilder — Dynamic Type Generation</h2>
+                    <p><code>DMTypeBuilder</code> creates runtime dynamic types from <code>EntityField</code> definitions using both <code>System.Reflection.Emit</code> and <code>RoslynCompiler</code>:</p>
+                    <pre><code class="language-csharp">public static class DMTypeBuilder
+{
+    public static IDMEEditor DMEEditor { get; set; }
+    public static Type MyType { get; set; }
+    public static object MyObject { get; set; }
+    public static Dictionary&lt;string, string&gt; DataSourceNameSpace { get; set; }
+
+    // Type cache for performance
+    public static readonly Dictionary&lt;string, Type&gt; typeCache;
+
+    // Primary: creates dynamic object from EntityField list
+    public static object CreateNewObject(IDMEEditor editor, string classNamespace,
+        string dataSourceName, string typeName, List&lt;EntityField&gt; fields);
+
+    // Overload without dataSourceName  
+    public static object CreateNewObject(IDMEEditor editor, string classNamespace,
+        string typeName, List&lt;EntityField&gt; fields);
+
+    // Create dynamic type from an existing object (reflection-based)
+    public static Type CreateDynamicTypeFromObject(object sourceObject,
+        string typeName = "DynamicType");
+}</code></pre>
+                    <h3>How It Works</h3>
+                    <ol>
+                        <li>Converts <code>EntityField</code> list → <code>EntityStructure</code></li>
+                        <li>Calls <code>ConvertPOCOClassToEntity</code> → generates C# code via <code>ClassCreator</code></li>
+                        <li>Compiles via <code>RoslynCompiler.CompileClassTypeandAssembly()</code></li>
+                        <li>Caches result in <code>typeCache</code> for subsequent calls</li>
+                        <li>Returns <code>Activator.CreateInstance(type)</code></li>
+                    </ol>
+                    <h3>Usage</h3>
+                    <pre><code class="language-csharp">var fields = new List&lt;EntityField&gt;
+{
+    new EntityField { FieldName = "Id", FieldType = "System.Int32", IsKey = true },
+    new EntityField { FieldName = "Name", FieldType = "System.String", MaxLength = 100 },
+    new EntityField { FieldName = "Email", FieldType = "System.String" }
+};
+
+// Create dynamic object
+var obj = DMTypeBuilder.CreateNewObject(editor, "MyApp.Models",
+    "MyDB", "DynamicCustomer", fields);
+
+// Set properties via reflection
+var type = obj.GetType();
+type.GetProperty("Name").SetValue(obj, "John");
+Console.WriteLine(type.GetProperty("Name").GetValue(obj));</code></pre>
+                    <h3>CreateDynamicTypeFromObject</h3>
+                    <p>Reflection-based type generation from an existing instance:</p>
+                    <pre><code class="language-csharp">var source = new { Id = 1, Name = "Test", Date = DateTime.Now };
+Type dynamicType = DMTypeBuilder.CreateDynamicTypeFromObject(source, "CustomType");
+var instance = Activator.CreateInstance(dynamicType);
+// Instance has matching Id, Name, Date properties</code></pre>
+                </section>
+
+                <!-- MigrationHistory -->
+                <section id="migration-history" class="section">
+                    <h2>MigrationHistory — Schema Version Tracking</h2>
+                    <pre><code class="language-csharp">public class MigrationHistory
+{
+    public string DataSourceName { get; set; }
+    public DataSourceType DataSourceType { get; set; }
+    public List&lt;MigrationRecord&gt; Migrations { get; set; }
+}
+
+public class MigrationRecord
+{
+    public string MigrationId { get; set; }
+    public string Name { get; set; }
+    public DateTime AppliedOnUtc { get; set; }
+    public bool Success { get; set; }
+    public string Notes { get; set; }
+    public List&lt;MigrationStep&gt; Steps { get; set; }
+}
+
+public class MigrationStep
+{
+    public string Operation { get; set; }   // Create, Alter, Drop, Rename
+    public string EntityName { get; set; }
+    public string ColumnName { get; set; }
+    public string Sql { get; set; }
+    public bool Success { get; set; }
+    public string Message { get; set; }
+}</code></pre>
+                    <p><code>MigrationHistoryManager</code> (in <code>Managers/MigrationHistoryManager.cs</code>) persists this data per datasource and provides query/export operations. Stored in <code>ConfigEditor._migrationHistory</code> and loaded via <code>ConfigEditor.LoadMigrationHistory()</code>.</p>
+                </section>
+
                 <!-- Examples -->
                 <section id="examples" class="section">
                     <h2>Usage Examples</h2>

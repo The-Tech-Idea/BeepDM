@@ -44,7 +44,7 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>ðŸŒ Multi-DataSource UnitOfWork</h1>
+                    <h1>🌐 Multi-DataSource UnitOfWork</h1>
                     <p class="page-subtitle">Coordinate operations across multiple data sources with relationship management and transaction coordination</p>
                 </div>
 
@@ -57,7 +57,7 @@
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>ðŸ“š Table of Contents</h3>
+                    <h3>📚 Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#constructor">Constructor</a></li>
@@ -83,7 +83,7 @@
                     </p>
 
                     <div class="success">
-                        <strong>ðŸŽ¯ Key Benefits</strong>
+                        <strong>🎯 Key Benefits</strong>
                         <ul>
                             <li><strong>Unified Interface:</strong> Work with multiple data sources through a single API</li>
                             <li><strong>Automatic Relationship Management:</strong> Define relationships once, navigate automatically</li>
@@ -96,22 +96,22 @@
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>ðŸ”— Cross-Platform Support</h3>
+                            <h3>🔗 Cross-Platform Support</h3>
                             <p>Connect SQL Server, PostgreSQL, MongoDB, SQLite, and more in a single transaction</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>âš¡ Automatic Loading</h3>
+                            <h3>⚡ Automatic Loading</h3>
                             <p>Related entities are loaded automatically when navigating parent records</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ›¡ï¸ Data Integrity</h3>
+                            <h3>🛡️ Data Integrity</h3>
                             <p>Enforce referential integrity and business rules across multiple systems</p>
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸŽ¯ Event-Driven</h3>
+                            <h3>🎯 Event-Driven</h3>
                             <p>Responsive UI updates through comprehensive event notifications</p>
                         </div>
                     </div>
@@ -145,7 +145,7 @@
 
                 <!-- Constructor -->
                 <section id="constructor" class="section">
-                    <h2>ðŸ”§ Constructor</h2>
+                    <h2>🔧 Constructor</h2>
 
                     <div class="code-example">
                         <h3>Basic Initialization</h3>
@@ -178,7 +178,7 @@ Console.WriteLine("Multi-DataSource UnitOfWork initialized successfully");</code
 
                 <!-- Setup -->
                 <section id="setup" class="section">
-                    <h2>ðŸ”§ Setting Up Entities & Relationships</h2>
+                    <h2>🔧 Setting Up Entities & Relationships</h2>
 
                     <div class="code-example">
                         <h3>Adding Entity Types</h3>
@@ -275,7 +275,7 @@ Console.WriteLine("Cross-datasource relationships configured successfully");</co
 
                 <!-- Data Access -->
                 <section id="data-access" class="section">
-                    <h2>ðŸ“Š Data Access Methods</h2>
+                    <h2>📊 Data Access Methods</h2>
 
                     <div class="code-example">
                         <h3>Getting Entity Collections</h3>
@@ -331,7 +331,7 @@ if (currentParent != null)
                     </div>
 
                     <div class="tip">
-                        <strong>ðŸ’¡ Performance Tips</strong>
+                        <strong>💡 Performance Tips</strong>
                         <ul>
                             <li>Entity collections are cached and reused across calls</li>
                             <li>Related children are loaded on-demand when navigating</li>
@@ -343,7 +343,7 @@ if (currentParent != null)
 
                 <!-- CRUD Operations -->
                 <section id="crud-operations" class="section">
-                    <h2>ðŸ”„ CRUD Operations</h2>
+                    <h2>🔄 CRUD Operations</h2>
 
                     <div class="code-example">
                         <h3>Insert Operations</h3>
@@ -498,14 +498,14 @@ if (orderToDelete != null)
     
     if (result.Flag == Errors.Ok)
     {
-        Console.WriteLine("âœ… All changes committed successfully across:");
+        Console.WriteLine("✅ All changes committed successfully across:");
         Console.WriteLine("   - SQL Server (Customer, Address)");
         Console.WriteLine("   - MongoDB (Order)");
         Console.WriteLine("   - Transaction completed atomically");
     }
     else
     {
-        Console.WriteLine($"âŒ Commit failed: {result.Message}");
+        Console.WriteLine($"❌ Commit failed: {result.Message}");
         Console.WriteLine("All changes have been rolled back automatically");
         
         // Detailed error information
@@ -517,13 +517,13 @@ if (orderToDelete != null)
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"âŒ Transaction error: {ex.Message}");
+    Console.WriteLine($"❌ Transaction error: {ex.Message}");
     Console.WriteLine("All changes have been rolled back automatically");
 }</code></pre>
                     </div>
 
                     <div class="success">
-                        <strong>ðŸ›¡ï¸ Transaction Guarantees</strong>
+                        <strong>🛡️ Transaction Guarantees</strong>
                         <ul>
                             <li><strong>Atomicity:</strong> All changes succeed or all fail</li>
                             <li><strong>Consistency:</strong> Relationships are validated before commit</li>
@@ -533,7 +533,7 @@ catch (Exception ex)
                     </div>
 
                     <div class="note">
-                        <strong>ðŸ“ Rollback Behavior</strong>
+                        <strong>📝 Rollback Behavior</strong>
                         <p>If any individual UnitOfWork fails to commit, the system automatically rolls back all previously committed changes to maintain consistency across all data sources. This ensures your data remains in a valid state even when working with multiple databases.</p>
                     </div>
                 </section>
@@ -561,7 +561,7 @@ public async Task NavigateToLastAsync&lt;T&gt;(string parentEntityName) where T 
                         <pre><code class="language-csharp">// Subscribe to navigation events
 multiUoW.ChildDataChanged += async (sender, args) 
 {
-    Console.WriteLine($"ðŸ”„ Child data changed for {args.ChildEntityName}");
+    Console.WriteLine($"🔄 Child data changed for {args.ChildEntityName}");
     Console.WriteLine($"   Parent: {args.ParentEntityName}");
     Console.WriteLine($"   Operation: {args.Operation}");
     
@@ -597,7 +597,7 @@ if (currentCustomer != null)
 }
 
 // Navigate through customers
-Console.WriteLine("\nðŸ”„ Navigating through customers...");
+Console.WriteLine("\n🔄 Navigating through customers...");
 
 while (true)
 {
@@ -637,7 +637,7 @@ if (targetCustomer != null)
                     </div>
 
                     <div class="tip">
-                        <strong>ðŸ’¡ Navigation Benefits</strong>
+                        <strong>💡 Navigation Benefits</strong>
                         <ul>
                             <li><strong>Automatic Loading:</strong> Related children are loaded automatically</li>
                             <li><strong>Performance Optimized:</strong> Only loads data for the current parent</li>
@@ -649,13 +649,13 @@ if (targetCustomer != null)
 
                 <!-- Relationship Behaviors -->
                 <section id="relationship-behaviors" class="section">
-                    <h2>ðŸ”— Relationship Behaviors</h2>
+                    <h2>🔗 Relationship Behaviors</h2>
 
                     <p>The MultiDataSourceUnitOfWork supports three relationship behaviors that determine how related entities are handled during delete operations:</p>
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>ðŸ—‘ï¸ CascadeDelete</h3>
+                            <h3>🗑️ CascadeDelete</h3>
                             <p>When a parent entity is deleted, all related child entities are automatically deleted</p>
                             <div class="code-example">
                                 <pre><code class="language-csharp">// Customer -> Orders with cascade delete
@@ -685,7 +685,7 @@ multiUoW.AddRelationship(
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ”„ SetNull</h3>
+                            <h3>🔄 SetNull</h3>
                             <p>When a parent entity is deleted, the foreign key fields in related child entities are set to null</p>
                             <div class="code-example">
                                 <pre><code class="language-csharp">// Manager -> Employees with set null
@@ -722,18 +722,18 @@ if (customerToDelete != null)
         
         if (result.Flag == Errors.Ok)
         {
-            Console.WriteLine("âœ… Customer deleted successfully");
+            Console.WriteLine("✅ Customer deleted successfully");
             Console.WriteLine("   â†’ All customer orders were cascade deleted");
             Console.WriteLine("   â†’ All order details were cascade deleted");
         }
         else
         {
-            Console.WriteLine($"âŒ Delete failed: {result.Message}");
+            Console.WriteLine($"❌ Delete failed: {result.Message}");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"âŒ Delete prevented by relationship constraint: {ex.Message}");
+        Console.WriteLine($"❌ Delete prevented by relationship constraint: {ex.Message}");
     }
 }
 
@@ -747,13 +747,13 @@ if (productToDelete != null)
         
         if (result.Flag != Errors.Ok)
         {
-            Console.WriteLine($"âŒ Product deletion restricted: {result.Message}");
+            Console.WriteLine($"❌ Product deletion restricted: {result.Message}");
             Console.WriteLine("   â†’ Product is referenced in existing order details");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"âŒ Delete prevented: {ex.Message}");
+        Console.WriteLine($"❌ Delete prevented: {ex.Message}");
     }
 }</code></pre>
                     </div>
@@ -814,16 +814,16 @@ if (productToDelete != null)
         // Setup event handling
         _multiUoW.ChildDataChanged += OnChildDataChanged;
         
-        Console.WriteLine("ðŸŽ¯ E-Commerce data structure configured across:");
-        Console.WriteLine("   ðŸ“Š SQL Server: Customers, Addresses");
-        Console.WriteLine("   ðŸ“Š MongoDB: Orders, OrderDetails");
-        Console.WriteLine("   ðŸ“Š PostgreSQL: Products");
-        Console.WriteLine("   ðŸ“Š Firebird: Payments");
+        Console.WriteLine("🎯 E-Commerce data structure configured across:");
+        Console.WriteLine("   📊 SQL Server: Customers, Addresses");
+        Console.WriteLine("   📊 MongoDB: Orders, OrderDetails");
+        Console.WriteLine("   📊 PostgreSQL: Products");
+        Console.WriteLine("   📊 Firebird: Payments");
     }
     
     private async void OnChildDataChanged(object sender, ChildDataChangedEventArgs e)
     {
-        Console.WriteLine($"ðŸ”„ Data changed: {e.ChildEntityName} for {e.ParentEntityName}");
+        Console.WriteLine($"🔄 Data changed: {e.ChildEntityName} for {e.ParentEntityName}");
         
         // Update UI or trigger business logic
         switch (e.ChildEntityName)
@@ -927,11 +927,11 @@ if (productToDelete != null)
             
             if (result.Flag == Errors.Ok)
             {
-                Console.WriteLine("âœ… Order processed successfully across all systems:");
-                Console.WriteLine($"   ðŸ“¦ Order: {order.OrderID}");
+                Console.WriteLine("✅ Order processed successfully across all systems:");
+                Console.WriteLine($"   📦 Order: {order.OrderID}");
                 Console.WriteLine($"   ðŸ’° Total: ${orderTotal:F2}");
                 Console.WriteLine($"   ðŸª Items: {request.Items.Count}");
-                Console.WriteLine($"   ðŸŽ¯ Customer: {customer.Name}");
+                Console.WriteLine($"   🎯 Customer: {customer.Name}");
                 
                 return order.OrderID;
             }
@@ -942,8 +942,8 @@ if (productToDelete != null)
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"âŒ Order processing failed: {ex.Message}");
-            Console.WriteLine("ðŸ”„ All changes have been rolled back automatically");
+            Console.WriteLine($"❌ Order processing failed: {ex.Message}");
+            Console.WriteLine("🔄 All changes have been rolled back automatically");
             throw;
         }
     }
@@ -985,7 +985,7 @@ if (productToDelete != null)
     private async Task UpdateCustomerOrderSummary()
     {
         // Business logic for updating customer metrics
-        Console.WriteLine("ðŸ“Š Updating customer order summary...");
+        Console.WriteLine("📊 Updating customer order summary...");
     }
     
     private async Task ValidateShippingOptions()
@@ -997,7 +997,7 @@ if (productToDelete != null)
     private async Task UpdateOrderStatus()
     {
         // Business logic for order status updates
-        Console.WriteLine("ðŸ“‹ Updating order status...");
+        Console.WriteLine("📋 Updating order status...");
     }
     
     public void Dispose()
@@ -1038,7 +1038,7 @@ public class CustomerOrderSummary
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>ðŸ—ï¸ Setup Phase</h3>
+                            <h3>🏗️ Setup Phase</h3>
                             <ul>
                                 <li>Define all entities and relationships before starting operations</li>
                                 <li>Use meaningful entity names that match your domain</li>
@@ -1048,7 +1048,7 @@ public class CustomerOrderSummary
                         </div>
 
                         <div class="feature-card">
-                            <h3>âš¡ Performance</h3>
+                            <h3>⚡ Performance</h3>
                             <ul>
                                 <li>Use specific generic types when possible</li>
                                 <li>Leverage caching of entity collections</li>
@@ -1058,7 +1058,7 @@ public class CustomerOrderSummary
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ›¡ï¸ Error Handling</h3>
+                            <h3>🛡️ Error Handling</h3>
                             <ul>
                                 <li>Always wrap commits in try-catch blocks</li>
                                 <li>Handle relationship constraint violations gracefully</li>
@@ -1068,7 +1068,7 @@ public class CustomerOrderSummary
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ”§ Resource Management</h3>
+                            <h3>🔧 Resource Management</h3>
                             <ul>
                                 <li>Use <code>using</code> statements for automatic disposal</li>
                                 <li>Subscribe to events appropriately</li>
@@ -1090,7 +1090,7 @@ public class CustomerOrderSummary
                     </div>
 
                     <div class="success">
-                        <strong>âœ… Success Checklist</strong>
+                        <strong>✅ Success Checklist</strong>
                         <ul>
                             <li>All data sources are properly configured in DME</li>
                             <li>Entity relationships are clearly defined and tested</li>

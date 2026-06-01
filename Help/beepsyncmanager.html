@@ -65,6 +65,7 @@
                         <li><a href="#rule-policies">Rule Execution Policies</a></li>
                         <li><a href="#helpers">Helper Classes</a></li>
                         <li><a href="#examples">Examples</a></li>
+                        <li><a href="#full-api">Full API Reference</a></li>
                     </ul>
                 </div>
 
@@ -799,6 +800,233 @@ else
                     <a href="rules-engine-parser.html">&larr; Rules Engine &amp; Parsers</a>
                     <a href="services-registration-lifetimes.html">Services Registration &amp; Lifetimes &rarr;</a>
                 </div>
+
+                <!-- ═══════════════════════════════════════════════════════ FULL API REFERENCE -->
+                <section id="full-api" class="section">
+                    <h2><i class="bi bi-book"></i> Full API Reference</h2>
+
+                    <h3>BeepSyncManager — Complete Public Surface</h3>
+                    <table class="reference-table"><thead><tr><th>Category</th><th>Method</th><th>Return</th></tr></thead><tbody>
+                    <tr><td rowspan="2">Constructors</td><td><code>BeepSyncManager(IDMEEditor)</code></td><td>—</td></tr>
+                    <tr><td><code>BeepSyncManager(IDMEEditor, SyncIntegrationContext)</code></td><td>—</td></tr>
+                    <tr><td rowspan="2">Core Sync</td><td><code>SyncDataAsync(schema, token?, progress?, errorStore?, historyStore?)</code></td><td><code>Task&lt;IErrorsInfo&gt;</code></td></tr>
+                    <tr><td><code>SyncData(schema)</code> / <code>SyncData(schema, token, progress)</code></td><td><code>void</code></td></tr>
+                    <tr><td rowspan="3">Bulk Sync</td><td><code>SyncAllDataAsync(token?, progress?)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>SyncAllDataParallelAsync(token?, progress?)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>SyncAllData()</code> + 6 <code>SyncData(schemaId, ...)</code> overloads</td><td><code>void</code></td></tr>
+                    <tr><td rowspan="7">Schema CRUD</td><td><code>AddSyncSchema(schema)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>RemoveSyncSchema(id)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>UpdateSyncSchema(schema)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>AddFilter(schemaId, filter)</code> / <code>RemoveFilter(schemaId, fieldName)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>AddFieldMapping(schemaId, field)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>ValidateSchema(schema)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>SaveSchemasAsync()</code> / <code>LoadSchemasAsync()</code></td><td><code>Task</code></td></tr>
+                    <tr><td rowspan="2">Preflight/Governance</td><td><code>RunPreflightAsync(schema, token?)</code></td><td><code>Task&lt;SyncPreflightReport&gt;</code></td></tr>
+                    <tr><td><code>PromoteSchemaAsync(schema, targetState, approver?, notes?, token?)</code></td><td><code>Task&lt;SyncPreflightReport&gt;</code></td></tr>
+                    </tbody></table>
+
+                    <h3>Core Properties</h3>
+                    <table class="reference-table"><thead><tr><th>Property</th><th>Type</th><th>Access</th></tr></thead><tbody>
+                    <tr><td><code>SyncSchemas</code></td><td><code>ObservableBindingList&lt;DataSyncSchema&gt;</code></td><td>get; set;</td></tr>
+                    <tr><td><code>IntegrationContext</code></td><td><code>SyncIntegrationContext</code></td><td>get; set;</td></tr>
+                    <tr><td><code>LastRunConflicts</code></td><td><code>List&lt;ConflictEvidence&gt;</code></td><td>get; private set;</td></tr>
+                    <tr><td><code>LastRunCheckpoint</code></td><td><code>SyncCheckpoint</code></td><td>get; private set;</td></tr>
+                    <tr><td><code>LastRunReconciliationReport</code></td><td><code>SyncReconciliationReport</code></td><td>get; private set;</td></tr>
+                    <tr><td><code>Filepath</code></td><td><code>string</code></td><td>get; set;</td></tr>
+                    <tr><td><code>Editor</code></td><td><code>IDMEEditor</code></td><td>get; (returns _editor)</td></tr>
+                    </tbody></table>
+
+                    <h3>SyncMetrics — Complete Properties (23)</h3>
+                    <table class="reference-table"><thead><tr><th>Property</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+                    <tr><td><code>SchemaID</code></td><td><code>string</code></td><td>Schema identifier</td></tr>
+                    <tr><td><code>SyncDate</code></td><td><code>DateTime</code></td><td>Timestamp of sync run</td></tr>
+                    <tr><td><code>TotalRecords</code></td><td><code>int</code></td><td>Total records processed</td></tr>
+                    <tr><td><code>SuccessfulRecords</code></td><td><code>int</code></td><td>Successfully synced</td></tr>
+                    <tr><td><code>FailedRecords</code></td><td><code>int</code></td><td>Failed records</td></tr>
+                    <tr><td><code>SkippedRecords</code></td><td><code>int</code></td><td>Skipped records</td></tr>
+                    <tr><td><code>RecordsInserted</code></td><td><code>int</code></td><td>New records inserted</td></tr>
+                    <tr><td><code>RecordsUpdated</code></td><td><code>int</code></td><td>Existing records updated</td></tr>
+                    <tr><td><code>RecordsDeleted</code></td><td><code>int</code></td><td>Soft-deleted records</td></tr>
+                    <tr><td><code>Duration</code></td><td><code>TimeSpan</code></td><td>Total runtime</td></tr>
+                    <tr><td><code>AverageRecordProcessingTime</code></td><td><code>TimeSpan</code></td><td>Computed: Duration / TotalRecords</td></tr>
+                    <tr><td><code>SuccessRate</code></td><td><code>double</code></td><td>Computed: Successful / Total × 100%</td></tr>
+                    <tr><td><code>IsSuccessful</code></td><td><code>bool</code></td><td>Computed: Failed==0 && Total>0</td></tr>
+                    <tr><td><code>ErrorMessages</code></td><td><code>List&lt;string&gt;</code></td><td>Error messages</td></tr>
+                    <tr><td><code>Metadata</code></td><td><code>Dict</code></td><td>Custom metadata</td></tr>
+                    <tr><td><code>MappingPlanVersion</code></td><td><code>string</code></td><td>Mapping version</td></tr>
+                    <tr><td><code>CorrelationId</code></td><td><code>string</code></td><td>Correlation identifier</td></tr>
+                    <tr><td><code>RejectRate</code></td><td><code>double</code></td><td>DQ rejection rate</td></tr>
+                    <tr><td><code>ConflictRate</code></td><td><code>double</code></td><td>Conflict occurrence rate</td></tr>
+                    <tr><td><code>FreshnessLagSeconds</code></td><td><code>double</code></td><td>Data freshness lag</td></tr>
+                    <tr><td><code>RetryCount</code></td><td><code>int</code></td><td>Total retries</td></tr>
+                    <tr><td><code>RuleEvaluationCount</code></td><td><code>int</code></td><td>Rule engine invocations</td></tr>
+                    <tr><td><code>SloComplianceTier</code></td><td><code>string</code></td><td>SLO compliance label</td></tr>
+                    <tr><td><code>MappingDriftDetected</code></td><td><code>bool</code></td><td>Mapping drift indicator</td></tr>
+                    </tbody></table>
+
+                    <h3>ISyncValidationHelper — Complete Interface</h3>
+                    <table class="reference-table"><thead><tr><th>Method</th><th>Return</th></tr></thead><tbody>
+                    <tr><td><code>ValidateSchema(DataSyncSchema)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>ValidateDataSource(string)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>ValidateEntity(string, string)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>ValidateSyncOperation(DataSyncSchema)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>ValidateWatermarkPolicy(DataSyncSchema)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    <tr><td><code>EvaluateDqGateRules(schema, record, ruleEngine?)</code></td><td><code>List&lt;DqGateResult&gt;</code></td></tr>
+                    <tr><td><code>FillMissingFieldsWithDefaults(schema, record, defaultsMgr)</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>CheckMappingQualityGate(schema, out score, out band)</code></td><td><code>IErrorsInfo</code></td></tr>
+                    </tbody></table>
+
+                    <h3>ISyncProgressHelper — Complete Interface</h3>
+                    <table class="reference-table"><thead><tr><th>Method</th><th>Return</th></tr></thead><tbody>
+                    <tr><td><code>ReportProgress(progress, message, current, total)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>BuildReconciliationReport(schema, runId, ... 16 params)</code></td><td><code>SyncReconciliationReport</code></td></tr>
+                    <tr><td><code>LogMessage(message, errorLevel?)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>LogSyncRun(schema)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>LogError(schema, message, ex?)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>LogCancellation(schema, progress)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>LogSuccess(schema, recordsProcessed, progress?)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>EmitSloMetrics(schema, metrics, runId, ... 6 params)</code></td><td><code>void</code></td></tr>
+                    <tr><td><code>EvaluateAlertRules(schema, metrics, ruleEngine)</code></td><td><code>List&lt;SyncAlertRecord&gt;</code></td></tr>
+                    <tr><td><code>BuildAlertPayload(schema, metrics, ruleKey, ruleOutputs)</code></td><td><code>SyncAlertRecord</code></td></tr>
+                    </tbody></table>
+
+                    <h3>ISchemaPersistenceHelper — Complete Interface</h3>
+                    <table class="reference-table"><thead><tr><th>Method</th><th>Return</th></tr></thead><tbody>
+                    <tr><td><code>SaveSchemasAsync(IEnumerable&lt;DataSyncSchema&gt;)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>LoadSchemasAsync()</code></td><td><code>Task&lt;ObservableBindingList&lt;DataSyncSchema&gt;&gt;</code></td></tr>
+                    <tr><td><code>SaveSchemaAsync(DataSyncSchema)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>DeleteSchemaAsync(string schemaId)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>SaveVersionedSchemaAsync(schema, SyncSchemaVersion)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>LoadSchemaVersionsAsync(schemaId)</code></td><td><code>Task&lt;List&lt;SyncSchemaVersion&gt;&gt;</code></td></tr>
+                    <tr><td><code>DiffSchemaToPersistedAsync(schema)</code></td><td><code>Task&lt;string&gt;</code></td></tr>
+                    <tr><td><code>SaveCheckpointAsync(SyncCheckpoint)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>LoadCheckpointAsync(schemaId)</code></td><td><code>Task&lt;SyncCheckpoint&gt;</code></td></tr>
+                    <tr><td><code>ClearCheckpointAsync(schemaId)</code></td><td><code>Task</code></td></tr>
+                    <tr><td><code>CreateBackupAsync()</code>*</td><td><code>Task&lt;bool&gt;</code></td></tr>
+                    <tr><td><code>GetSchemasFilePath()</code>*</td><td><code>string</code></td></tr>
+                    <tr><td><code>SchemasFileExists()</code>*</td><td><code>bool</code></td></tr>
+                    </tbody></table>
+                    <p>*Additional members beyond <code>ISchemaPersistenceHelper</code> interface.</p>
+
+                    <h3>IDataSourceHelper &amp; IFieldMappingHelper</h3>
+                    <pre><code class="language-csharp">public interface IDataSourceHelper
+{
+    IDataSource GetDataSource(string name);
+    bool ValidateDataSourceConnection(string name);
+    Task&lt;object&gt; GetEntityDataAsync(string ds, string entity, List&lt;AppFilter&gt;);
+    Task&lt;IErrorsInfo&gt; InsertEntityAsync(string ds, string entity, object entity);
+    Task&lt;IErrorsInfo&gt; UpdateEntityAsync(string ds, string entity, object entity);
+    Task&lt;bool&gt; EntityExistsAsync(string ds, string entity, List&lt;AppFilter&gt;);
+}
+
+public interface IFieldMappingHelper
+{
+    List&lt;FieldSyncData&gt; AutoMapFields(string srcDS, string srcEntity, string destDS, string destEntity);
+    IErrorsInfo ValidateFieldMappings(IEnumerable&lt;FieldSyncData&gt;);
+    IEnumerable&lt;FieldSyncData&gt; LoadGovernedMapping(DataSyncSchema);
+    bool CheckMappingDrift(DataSyncSchema, IEnumerable&lt;FieldSyncData&gt; baseline);
+    IErrorsInfo PromoteMappingState(DataSyncSchema, string targetState);
+}</code></pre>
+
+                    <h3>SyncSchemaTranslator — Static API</h3>
+                    <pre><code class="language-csharp">public static class SyncSchemaTranslator
+{
+    // Converts BeepSync schema → DataImportManager configuration
+    public static DataImportConfiguration ToImportConfiguration(
+        DataSyncSchema schema,
+        IImportErrorStore errorStore = null,
+        IImportRunHistoryStore historyStore = null);
+
+    // Converts BeepSync schema → reverse-direction DataImportManager configuration
+    public static DataImportConfiguration ToReverseImportConfiguration(
+        DataSyncSchema schema,
+        IImportErrorStore errorStore = null,
+        IImportRunHistoryStore historyStore = null);
+}</code></pre>
+
+                    <h3>SyncRuleExecutionPolicies</h3>
+                    <pre><code class="language-csharp">public static class SyncRuleExecutionPolicies
+{
+    public static RuleExecutionPolicy DefaultSafe;  // MaxDepth=10, MaxExecutionMs=5000
+    public static RuleExecutionPolicy FastPath;      // MaxDepth=3, MaxExecutionMs=2000
+
+    public static RuleExecutionPolicy Resolve(string mode);
+    // Returns FastPath if mode == "FastPath" (case-insensitive), otherwise DefaultSafe
+}</code></pre>
+
+                    <h3>Model Types</h3>
+                    <h4>CdcFilterContext</h4>
+                    <table class="reference-table"><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody>
+                    <tr><td><code>SchemaId</code></td><td><code>string</code></td><td>Schema identifier</td></tr>
+                    <tr><td><code>WatermarkField</code></td><td><code>string</code></td><td>Field used for watermark tracking</td></tr>
+                    <tr><td><code>WindowStart</code></td><td><code>object</code></td><td>Start of CDC window</td></tr>
+                    <tr><td><code>WindowEnd</code></td><td><code>object</code></td><td>End of CDC window</td></tr>
+                    <tr><td><code>WindowOpenedAt</code></td><td><code>DateTime</code></td><td>When window opened (UtcNow)</td></tr>
+                    <tr><td><code>ResolvedFilters</code></td><td><code>List&lt;AppFilter&gt;</code></td><td>Resolved CDC filters</td></tr>
+                    <tr><td><code>LateArrivalAction</code></td><td><code>string</code></td><td>"include" (default)</td></tr>
+                    <tr><td><code>TombstoneAction</code></td><td><code>string</code></td><td>"soft-delete" (default)</td></tr>
+                    <tr><td><code>WatermarkFieldDrifted</code></td><td><code>bool</code></td><td>Watermark field schema drift detected</td></tr>
+                    <tr><td><code>NewWatermarkValue</code></td><td><code>object</code></td><td>Next window start for next run</td></tr>
+                    </tbody></table>
+
+                    <h4>SyncIntegrationContext</h4>
+                    <table class="reference-table"><thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead><tbody>
+                    <tr><td><code>RuleEngine</code></td><td><code>IRuleEngine?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>DefaultsManager</code></td><td><code>IDefaultsManager?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>MappingPlanVersion</code></td><td><code>int</code></td><td><code>-1</code></td></tr>
+                    <tr><td><code>GovernanceScopeId</code></td><td><code>string?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>RunInitiatedBy</code></td><td><code>string</code></td><td><code>Environment.UserName</code></td></tr>
+                    <tr><td><code>CorrelationId</code></td><td><code>string</code></td><td><code>Guid.NewGuid()</code></td></tr>
+                    </tbody></table>
+
+                    <h4>SyncPlanMetadata</h4>
+                    <table class="reference-table"><thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead><tbody>
+                    <tr><td><code>PlanId</code></td><td><code>string</code></td><td><code>Guid.NewGuid()</code></td></tr>
+                    <tr><td><code>Name</code> / <code>OwnerTeam</code> / <code>Description</code></td><td><code>string?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>CreatedBy</code> / <code>LastModifiedBy</code> / <code>ApprovedBy</code></td><td><code>string?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>CreatedAt</code> / <code>LastModifiedAt</code></td><td><code>DateTime</code></td><td><code>default</code></td></tr>
+                    <tr><td><code>ApprovedAt</code></td><td><code>DateTime?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>LifecycleState</code></td><td><code>string</code></td><td><code>"Draft"</code></td></tr>
+                    <tr><td><code>SchemaVersion</code></td><td><code>int</code></td><td><code>1</code></td></tr>
+                    <tr><td><code>Environment</code></td><td><code>string?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>RuleCatalogVersion</code></td><td><code>string?</code></td><td><code>null</code></td></tr>
+                    <tr><td><code>MappingVersion</code></td><td><code>int</code></td><td><code>-1</code></td></tr>
+                    </tbody></table>
+
+                    <h3>Source File Map (29 files)</h3>
+                    <table class="reference-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>BeepSyncManager.Core.cs</code></td><td>Constructor (2), 7 properties, 3 helpers, Dispose pattern</td></tr>
+                    <tr><td><code>BeepSyncManager.Sync.cs</code></td><td>SyncDataAsync main orchestration, SyncData overloads, 7 private pipeline methods (checkpoint, DQ, SLO, recon)</td></tr>
+                    <tr><td><code>BeepSyncManager.Cdc.cs</code></td><td>BuildCdcFilterContext: watermark window + late-arrival + tombstone policy</td></tr>
+                    <tr><td><code>BeepSyncManager.RetryCheckpoint.cs</code></td><td>TryClassifyError (rule engine + keyword fallback), IsCheckpointResumeSafe</td></tr>
+                    <tr><td><code>BeepSyncManager.ConflictResolution.cs</code></td><td>TryEvaluateConflictGate (rule engine + DestinationWins fallback + evidence capture)</td></tr>
+                    <tr><td><code>BeepSyncManager.BulkSync.cs</code></td><td>SyncAllDataAsync, SyncAllDataParallelAsync, 6 SyncData(schemaId) overloads</td></tr>
+                    <tr><td><code>BeepSyncManager.SchemaManagement.cs</code></td><td>Add/Remove/Update schema, Add/Remove filter, AddFieldMapping, ValidateSchema, Load/Save</td></tr>
+                    <tr><td><code>BeepSyncManager.Preflight.cs</code></td><td>RunPreflightAsync (7 validation checks), BuildRulePolicy</td></tr>
+                    <tr><td><code>BeepSyncManager.SchemaGovernance.cs</code></td><td>PromoteSchemaAsync (governed promotion + versioning + mapping co-promotion)</td></tr>
+                    <tr><td><code>SyncRuleExecutionPolicies.cs</code></td><td>DefaultSafe + FastPath policies, Resolve(mode)</td></tr>
+                    <tr><td><code>SyncMetrics.cs</code></td><td>23 properties (3 computed), FromImportRunRecord, ToString</td></tr>
+                    <tr><td><code>Interfaces/ISyncHelpers.cs</code></td><td>5 interfaces: IDataSourceHelper (6), IFieldMappingHelper (5), ISyncValidationHelper (8), ISyncProgressHelper (10), ISchemaPersistenceHelper (10)</td></tr>
+                    <tr><td><code>Helpers/DataSourceHelper.cs</code></td><td>GetDataSource, ValidateConnection, GetEntityDataAsync, InsertEntityAsync, UpdateEntityAsync, EntityExistsAsync</td></tr>
+                    <tr><td><code>Helpers/FieldMappingHelper.cs</code></td><td>AutoMapFields, ValidateFieldMappings, LoadGovernedMapping, CheckMappingDrift, PromoteMappingState</td></tr>
+                    <tr><td><code>Helpers/SchemaPersistenceHelper.cs</code></td><td>10 interface methods + 3 extra: backup, file path check, 3 versioning methods, 3 checkpoint methods</td></tr>
+                    <tr><td><code>Helpers/SyncProgressHelper.cs</code></td><td>ReportProgress, LogMessage/LogSyncRun/LogError/LogCancellation/LogSuccess, BuildReconciliationReport, EmitSloMetrics, EvaluateAlertRules, BuildAlertPayload</td></tr>
+                    <tr><td><code>Helpers/SyncSchemaTranslator.cs</code></td><td>ToImportConfiguration + ToReverseImportConfiguration (BeepSync schema → DataImportManager config)</td></tr>
+                    <tr><td><code>Helpers/SyncValidationHelper.cs</code></td><td>5 validation methods + DQ gates, defaults fill, mapping quality gate</td></tr>
+                    <tr><td><code>Models/CdcFilterContext.cs</code></td><td>10 window + late-arrival + tombstone properties</td></tr>
+                    <tr><td><code>Models/SyncIntegrationContext.cs</code></td><td>6 integration dependency properties</td></tr>
+                    <tr><td><code>Models/SyncPlanMetadata.cs</code></td><td>16 lifecycle + governance + versioning properties</td></tr>
+                    <tr><td colspan="2"><strong>Examples (8)</strong></td></tr>
+                    <tr><td><code>Example01_BasicFullSync.cs</code></td><td>One-way full sync, automap, basic run</td></tr>
+                    <tr><td><code>Example02_SchemaVersioning.cs</code></td><td>Schema versioning &amp; <code>PromoteSchemaAsync</code></td></tr>
+                    <tr><td><code>Example03_IncrementalSync.cs</code></td><td>Timestamp watermark, repeated delta runs</td></tr>
+                    <tr><td><code>Example04_BidirectionalConflict.cs</code></td><td>Bidirectional sync, conflict policy, quarantine</td></tr>
+                    <tr><td><code>Example05_RetryAndCheckpoint.cs</code></td><td>Retry policy, exponential back-off, checkpoint resume</td></tr>
+                    <tr><td><code>Example06_DataQualityAndReconciliation.cs</code></td><td>DQ gates, mapping quality, reconciliation report</td></tr>
+                    <tr><td><code>Example07_SloAndAlerting.cs</code></td><td>SLO thresholds, SyncMetrics, alerting integration</td></tr>
+                    <tr><td><code>Example08_PerformanceAndParallel.cs</code></td><td>Parallel bulk sync, performance profile tuning</td></tr>
+                    </tbody></table>
+                </section>
             </div>
         </main>
     </div>

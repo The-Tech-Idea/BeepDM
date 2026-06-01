@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Engine - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Workflow Engine</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Workflow Engine</h1>
+                    <p class="page-subtitle">Multi-step business processes with actions, rules, triggers, retry policies, conditional branching, and parallel execution</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementModelsStandard/Workflow/WorkFlow.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Workflow/WorkFlowStep.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Workflow/WorkFlowAction.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Workflow/WorkFlowTrigger.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Workflow/WorkFlowRetryPolicy.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/WorkFlowEditor.cs</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#workflow">WorkFlow Class</a></li>
+                        <li><a href="#workflowstep">WorkFlowStep</a></li>
+                        <li><a href="#workflowaction">WorkFlowAction</a></li>
+                        <li><a href="#workflowtrigger">WorkFlowTrigger</a></li>
+                        <li><a href="#retrypolicy">WorkFlowRetryPolicy</a></li>
+                        <li><a href="#rules">Workflow Rules</a></li>
+                        <li><a href="#editor">WorkFlowEditor</a></li>
+                        <li><a href="#branching">Conditional Branching</a></li>
+                        <li><a href="#parallel">Parallel Execution</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The Workflow Engine provides a flexible system for defining and executing multi-step business processes. Workflows consist of steps connected in a directed graph, with each step containing actions, rules, and transitions.</p>
+                    <p>The engine supports:</p>
+                    <ul>
+                        <li><strong>Directed graphs</strong> — Steps with previous/next references (not just linear)</li>
+                        <li><strong>Conditional branching</strong> — Route execution based on rule evaluation</li>
+                        <li><strong>Parallel execution</strong> — Multiple branches executing simultaneously</li>
+                        <li><strong>Parameter passing</strong> — Data flow between steps via InParameters/OutParameters</li>
+                        <li><strong>Error handling</strong> — Step-level retry policies with exponential backoff</li>
+                        <li><strong>Triggers</strong> — Manual, scheduled, event-driven, webhook, pipeline completion</li>
+                    </ul>
+                </section>
+
+                <section id="workflow" class="section">
+                    <h2>WorkFlow Class</h2>
+                    <pre><code class="language-csharp">public class WorkFlow : IWorkFlow
+{
+    public List&lt;IWorkFlowStep&gt; Datasteps { get; set; }
+    public List&lt;string&gt; DataSources { get; set; }
+    public string WorkSpaceDatabase { get; set; }
+    public string WorkSpaceFolder { get; set; }
+    public string DataWorkFlowName { get; set; }
+    public string Description { get; set; }
+    public int ID { get; set; }
+    public string GuidID { get; set; }
+    public List&lt;WorkFlow_Run_Result&gt; workFlow_Run_Results { get; set; }
+
+    public event EventHandler&lt;WorkFlowEventArgs&gt; WorkFlowStarted;
+    public event EventHandler&lt;WorkFlowEventArgs&gt; WorkFlowEnded;
+    public event EventHandler&lt;WorkFlowEventArgs&gt; WorkFlowRunning;
+}</code></pre>
+
+                    <h3>Properties</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Datasteps</code></td><td><code>List&lt;IWorkFlowStep&gt;</code></td><td>Step nodes in the workflow graph</td></tr>
+                            <tr><td><code>DataSources</code></td><td><code>List&lt;string&gt;</code></td><td>Datasource names used by steps</td></tr>
+                            <tr><td><code>WorkSpaceDatabase</code></td><td><code>string</code></td><td>Workspace database for intermediate storage</td></tr>
+                            <tr><td><code>DataWorkFlowName</code></td><td><code>string</code></td><td>Unique workflow identifier</td></tr>
+                            <tr><td><code>workFlow_Run_Results</code></td><td><code>List&lt;WorkFlow_Run_Result&gt;</code></td><td>Execution history</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="workflowstep" class="section">
+                    <h2>WorkFlowStep</h2>
+                    <pre><code class="language-csharp">public class WorkFlowStep : IWorkFlowStep
+{
+    public int Seq { get; set; }
+    public string ID { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string StepType { get; set; }
+    public string Code { get; set; }
+    public bool IsFinish { get; set; }
+    public bool IsRunning { get; set; }
+
+    // Graph navigation
+    public IWorkFlowStep PrevStep { get; set; }
+    public List&lt;IWorkFlowStep&gt; NextStep { get; set; }
+
+    // Actions to execute in this step
+    public List&lt;IWorkFlowAction&gt; Actions { get; set; }
+
+    // Parameter flow
+    public List&lt;IPassedArgs&gt; InParameters { get; set; }
+    public List&lt;IPassedArgs&gt; OutParameters { get; set; }
+
+    // Rules for conditional execution
+    public List&lt;IWorkFlowRule&gt; Rules { get; set; }
+
+    public event EventHandler&lt;WorkFlowEventArgs&gt; WorkFlowStepStarted;
+    public event EventHandler&lt;WorkFlowEventArgs&gt; WorkFlowStepEnded;
+    public event EventHandler&lt;WorkFlowEventArgs&gt; WorkFlowStepRunning;
+}</code></pre>
+
+                    <h3>Step Properties</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Seq</code></td><td>Sequence number for ordering</td></tr>
+                            <tr><td><code>IsFinish</code></td><td>Terminal step marker (end of workflow)</td></tr>
+                            <tr><td><code>PrevStep</code></td><td>Single predecessor in graph</td></tr>
+                            <tr><td><code>NextStep</code></td><td>Multiple successors (forking)</td></tr>
+                            <tr><td><code>Actions</code></td><td>Actions executed when step runs</td></tr>
+                            <tr><td><code>InParameters</code></td><td>Input data from previous step</td></tr>
+                            <tr><td><code>OutParameters</code></td><td>Output data for next step</td></tr>
+                            <tr><td><code>Rules</code></td><td>Conditional execution rules</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="workflowaction" class="section">
+                    <h2>WorkFlowAction</h2>
+                    <pre><code class="language-csharp">public class WorkFlowAction : IWorkFlowAction
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string ActionTypeName { get; set; }
+    public string Code { get; set; }
+    public string ClassName { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+
+    // Action chain
+    public IWorkFlowAction PrevAction { get; set; }
+    public List&lt;IWorkFlowAction&gt; NextAction { get; set; }
+
+    // Parameter flow
+    public List&lt;IPassedArgs&gt; InParameters { get; set; }
+    public List&lt;IPassedArgs&gt; OutParameters { get; set; }
+
+    // Conditional rules
+    public List&lt;IWorkFlowRule&gt; Rules { get; set; }
+    public bool IsFinish { get; set; }
+    public bool IsRunning { get; set; }
+
+    // Execution
+    public virtual PassedArgs PerformAction(
+        IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
+    public virtual PassedArgs PerformAction(
+        IProgress&lt;PassedArgs&gt; progress, CancellationToken token,
+        Func&lt;PassedArgs, object&gt; actionToExecute);
+    public virtual PassedArgs StopAction();
+}</code></pre>
+                </section>
+
+                <section id="workflowtrigger" class="section">
+                    <h2>WorkFlowTrigger</h2>
+                    <pre><code class="language-csharp">public enum TriggerKind 
+{ 
+    Manual, 
+    Scheduled, 
+    EventDriven, 
+    WebHook, 
+    PipelineCompletion 
+}
+
+public class WorkFlowTrigger
+{
+    public TriggerKind Kind { get; set; } = TriggerKind.Manual;
+    public string? CronExpression { get; set; }
+    public string? EventTopic { get; set; }
+    public string? PipelineId { get; set; }
+}</code></pre>
+
+                    <h3>Trigger Kinds</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Kind</th><th>Config Fields</th><th>Example</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Manual</code></td><td>None</td><td>User clicks "Execute"</td></tr>
+                            <tr><td><code>Scheduled</code></td><td><code>CronExpression</code></td><td><code>"0 0 * * *"</code> (daily midnight)</td></tr>
+                            <tr><td><code>EventDriven</code></td><td><code>EventTopic</code></td><td><code>"orders.created"</code></td></tr>
+                            <tr><td><code>WebHook</code></td><td><code>EventTopic</code> (URL)</td><td><code>"/api/hooks/slack"</code></td></tr>
+                            <tr><td><code>PipelineCompletion</code></td><td><code>PipelineId</code></td><td><code>"daily-sync"</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="retrypolicy" class="section">
+                    <h2>WorkFlowRetryPolicy</h2>
+                    <pre><code class="language-csharp">public class WorkFlowRetryPolicy
+{
+    public static WorkFlowRetryPolicy None { get; } = new() { MaxRetries = 0 };
+    public static WorkFlowRetryPolicy Once { get; } = new() { MaxRetries = 1, DelaySeconds = 5 };
+
+    public int MaxRetries { get; set; } = 0;
+    public double DelaySeconds { get; set; } = 5;
+    public bool ExponentialBackoff { get; set; } = false;
+    public double MaxDelaySeconds { get; set; } = 300;
+
+    public TimeSpan GetDelay(int attempt)
+    {
+        if (!ExponentialBackoff)
+            return TimeSpan.FromSeconds(DelaySeconds);
+
+        var delay = DelaySeconds * Math.Pow(2, attempt);
+        return TimeSpan.FromSeconds(Math.Min(delay, MaxDelaySeconds));
+    }
+}</code></pre>
+
+                    <h3>Backoff Examples</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Attempt</th><th>Fixed (5s)</th><th>Exponential (2s base)</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>5s</td><td>2s</td></tr>
+                            <tr><td>2</td><td>5s</td><td>4s</td></tr>
+                            <tr><td>3</td><td>5s</td><td>8s</td></tr>
+                            <tr><td>4</td><td>5s</td><td>16s</td></tr>
+                            <tr><td>5</td><td>5s</td><td>32s</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="rules" class="section">
+                    <h2>Workflow Rules</h2>
+                    <p>Rules enable conditional execution, branching, and validation within workflow steps and actions:</p>
+                    <pre><code class="language-csharp">public interface IWorkFlowRule
+{
+    string RuleName { get; set; }
+    bool Evaluate(IPassedArgs context);
+}
+
+// Conditional execution based on step outcome
+step.Rules.Add(new WorkFlowRule
+{
+    RuleName = "CheckIfApproved",
+    Evaluate = context => context.ParameterInt1 == 100
+});</code></pre>
+                </section>
+
+                <section id="editor" class="section">
+                    <h2>WorkFlowEditor</h2>
+                    <pre><code class="language-csharp">public class WorkFlowEditor
+{
+    public WorkFlowEditor(IDMEEditor editor);
+
+    // Execution
+    public Task&lt;WorkFlowResult&gt; ExecuteAsync(
+        WorkFlow workflow,
+        WorkFlowContext context);
+
+    // Design-time
+    public void AddStep(WorkFlow workflow, WorkFlowStep step);
+    public void LinkSteps(WorkFlowStep from, WorkFlowStep to);
+    public bool ValidateWorkflow(WorkFlow workflow, out List&lt;string&gt; errors);
+}</code></pre>
+
+                    <h3>WorkFlowResult</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Success</code></td><td>All steps completed successfully</td></tr>
+                            <tr><td><code>FailedStep</code></td><td>Name of the failing step (if any)</td></tr>
+                            <tr><td><code>Duration</code></td><td>Total execution time</td></tr>
+                            <tr><td><code>Error</code></td><td>Exception details if failed</td></tr>
+                            <tr><td><code>StepResults</code></td><td>Per-step outcome details</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="branching" class="section">
+                    <h2>Conditional Branching</h2>
+                    <pre><code class="language-csharp">// Setup branching workflow
+var validateStep = new WorkFlowStep { Name = "ValidateOrder", Seq = 1 };
+var approveStep = new WorkFlowStep { Name = "ApproveOrder", Seq = 2 };
+var rejectStep = new WorkFlowStep { Name = "RejectOrder", Seq = 2 };
+
+// Branch based on validation result
+validateStep.NextStep = new List&lt;IWorkFlowStep&gt; { approveStep, rejectStep };
+
+approveStep.Rules.Add(new WorkFlowRule
+{
+    RuleName = "OrderApproved",
+    Evaluate = ctx => ctx.ParameterInt1 == 100
+});
+
+rejectStep.Rules.Add(new WorkFlowRule
+{
+    RuleName = "OrderRejected", 
+    Evaluate = ctx => ctx.ParameterInt1 != 100
+});
+
+// Only execute branch whose rules evaluate to true
+// Rules provide flexible branching without hard-coded logic</code></pre>
+                </section>
+
+                <section id="parallel" class="section">
+                    <h2>Parallel Execution</h2>
+                    <pre><code class="language-csharp">var mainStep = new WorkFlowStep { Name = "ProcessOrder", Seq = 1 };
+
+// Multiple parallel branches
+var paymentStep = new WorkFlowStep { Name = "ProcessPayment", Seq = 2 };
+var inventoryStep = new WorkFlowStep { Name = "UpdateInventory", Seq = 2 };
+var notifyStep = new WorkFlowStep { Name = "SendNotification", Seq = 2 };
+
+// Fork: one predecessor, multiple successors
+mainStep.NextStep = new List&lt;IWorkFlowStep&gt; { paymentStep, inventoryStep, notifyStep };
+
+// Each runs independently (parallel)
+paymentStep.PrevStep = mainStep;
+inventoryStep.PrevStep = mainStep;
+notifyStep.PrevStep = mainStep;
+
+// Join back to single step
+var completeStep = new WorkFlowStep { Name = "CompleteOrder", Seq = 3, IsFinish = true };
+paymentStep.NextStep.Add(completeStep);
+inventoryStep.NextStep.Add(completeStep);
+notifyStep.NextStep.Add(completeStep);</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Order Processing Workflow</h3>
+                    <pre><code class="language-csharp">var workflow = new WorkFlow
+{
+    DataWorkFlowName = "OrderProcessing",
+    Description = "End-to-end order processing",
+    Datasteps = new List&lt;IWorkFlowStep&gt;
+    {
+        new WorkFlowStep
+        {
+            Name = "ValidateOrder", Seq = 1,
+            Actions = { new ValidateOrderAction() },
+            NextStep = new List&lt;IWorkFlowStep&gt;()
+        },
+        new WorkFlowStep
+        {
+            Name = "ProcessPayment", Seq = 2,
+            Actions = { new ProcessPaymentAction() },
+            NextStep = new List&lt;IWorkFlowStep&gt;()
+        },
+        new WorkFlowStep
+        {
+            Name = "FulfillOrder", Seq = 3, IsFinish = true,
+            Actions = { new FulfillOrderAction() }
+        }
+    },
+    Triggers = new List&lt;WorkFlowTrigger&gt;
+    {
+        new WorkFlowTrigger { Kind = TriggerKind.EventDriven,
+            EventTopic = "orders.created" },
+        new WorkFlowTrigger { Kind = TriggerKind.Scheduled,
+            CronExpression = "0 */6 * * *" } // Every 6 hours
+    }
+};
+
+// Link steps
+workflow.Datasteps[0].NextStep.Add(workflow.Datasteps[1]);
+workflow.Datasteps[1].PrevStep = workflow.Datasteps[0];
+workflow.Datasteps[1].NextStep.Add(workflow.Datasteps[2]);
+workflow.Datasteps[2].PrevStep = workflow.Datasteps[1];</code></pre>
+
+                    <h3>Execute with Context</h3>
+                    <pre><code class="language-csharp">var engine = new WorkFlowEditor(editor);
+var result = await engine.ExecuteAsync(workflow, new WorkFlowContext
+{
+    Data = order,
+    Parameters = new Dictionary&lt;string, object&gt;
+    {
+        ["UserId"] = userId,
+        ["Source"] = "web",
+        ["Priority"] = "high"
+    }
+});
+
+if (result.Success)
+{
+    Console.WriteLine($"Completed in {result.Duration}");
+    foreach (var step in result.StepResults)
+        Console.WriteLine($"  {step.StepName}: OK");
+}
+else
+{
+    Console.WriteLine($"Failed at: {result.FailedStep}");
+    Console.WriteLine($"Error: {result.Error?.Message}");
+}</code></pre>
+
+                    <h3>Custom Action</h3>
+                    <pre><code class="language-csharp">public class ValidateOrderAction : WorkFlowAction
+{
+    public override PassedArgs PerformAction(
+        IProgress&lt;PassedArgs&gt; progress, CancellationToken token)
+    {
+        return PerformAction(progress, token, args =>
+        {
+            var order = InParameters[0].ParameterObject as Order;
+            if (order.Total &lt;= 0)
+            {
+                args.Messege = "Invalid order total";
+                args.ParameterInt1 = -1;
+            }
+            else
+            {
+                args.Messege = "Order validated";
+                args.ParameterInt1 = 100;
+            }
+            return args;
+        });
+    }
+}</code></pre>
+
+                    <h3>Validation</h3>
+                    <pre><code class="language-csharp">var editor = new WorkFlowEditor(dmeEditor);
+if (!editor.ValidateWorkflow(workflow, out var errors))
+{
+    Console.WriteLine("Workflow validation failed:");
+    foreach (var error in errors)
+        Console.WriteLine($"  - {error}");
+    return;
+}
+
+var result = await editor.ExecuteAsync(workflow, context);</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="rules-engine-parser.html"><i class="bi bi-arrow-left"></i> Previous: Rules Engine</a>
+                    <a href="beepsyncmanager.html">Next: BeepSync Manager <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

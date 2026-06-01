@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDataSourceHelper Reference - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>IDataSourceHelper</span>
+                </nav>
+                <div class="page-header">
+                    <h1>IDataSourceHelper Reference</h1>
+                    <p class="page-subtitle">Central contract for ALL datasource-specific helper implementations — schema, DDL, DML, constraints, transactions, and utilities</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementModelsStandard/Editor/IDataSourceHelper.cs</code> (350 lines)</li>
+                        <li>Implementations: RdbmsHelper, MongoDBHelper, RedisHelper, VectorDbHelper, GraphDbHelper, etc.</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#interface">Interface Definition</a></li>
+                        <li><a href="#schema">Schema Operations</a></li>
+                        <li><a href="#ddl">DDL Operations</a></li>
+                        <li><a href="#constraints">Constraint Operations</a></li>
+                        <li><a href="#transactions">Transaction Control</a></li>
+                        <li><a href="#dml">DML Operations</a></li>
+                        <li><a href="#utilities">Utility Methods</a></li>
+                        <li><a href="#implementations">Implementations</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>IDataSourceHelper</code> is the central abstraction enabling database-agnostic operations across 30+ datasource types. Each datasource (RDBMS, MongoDB, Redis, etc.) implements this interface to provide:</p>
+                    <ul>
+                        <li><strong>Unified API</strong> — Same method calls regardless of backend</li>
+                        <li><strong>Query generation</strong> — Native SQL/CQL/aggregation pipeline per datasource</li>
+                        <li><strong>Feature detection</strong> — Graceful degradation via <code>DataSourceCapabilities</code></li>
+                        <li><strong>Type mapping</strong> — CLR types to datasource-specific types</li>
+                    </ul>
+                </section>
+
+                <section id="interface" class="section">
+                    <h2>Interface Definition</h2>
+                    <pre><code class="language-csharp">public interface IDataSourceHelper
+{
+    DataSourceType SupportedType { get; set; }
+    string Name { get; }
+    DataSourceCapabilities Capabilities { get; }
+
+    // Schema Operations
+    (string Query, bool Success) GetSchemaQuery(string userName);
+    (string Query, bool Success) GetTableExistsQuery(string tableName);
+    (string Query, bool Success) GetColumnInfoQuery(string tableName);
+
+    // DDL Operations (Level 1)
+    (string Sql, bool Success, string ErrorMessage) GenerateCreateTableSql(
+        EntityStructure entity, string schemaName = null,
+        DataSourceType? dataSourceType = null);
+    // ... Drop, Truncate, Index, Column, Rename operations
+
+    // Constraint Operations (Level 2)
+    // ... Primary Key, Foreign Key, Unique, GetConstraints operations
+
+    // Transaction Control (Level 3)
+    (string Sql, bool Success) BeginTransaction();
+    (string Sql, bool Success) CommitTransaction();
+    (string Sql, bool Success) RollbackTransaction();
+
+    // DML Operations (Level 4)
+    // ... Insert, Update, Delete, Select with entity/parameter support
+
+    // Utility Methods
+    string QuoteIdentifier(string identifier);
+    // ... Type mapping, data conversion helpers
+}</code></pre>
+                </section>
+
+                <section id="schema" class="section">
+                    <h2>Schema Operations</h2>
+                    <pre><code class="language-csharp">// List schemas/databases
+var (sql, ok) = helper.GetSchemaQuery("app_user");
+// SQL Server: SELECT name FROM sys.databases WHERE HAS_DBACCESS(name)=1
+// PostgreSQL: SELECT schema_name FROM information_schema.schemata
+// MySQL: SHOW DATABASES
+
+// Check if table exists
+var (sql, ok) = helper.GetTableExistsQuery("Customers");
+// SQL Server: SELECT OBJECT_ID('Customers')
+// PostgreSQL: SELECT EXISTS(SELECT FROM information_schema.tables...)
+// SQLite: SELECT name FROM sqlite_master WHERE type='table'
+
+// Get column info
+var (sql, ok) = helper.GetColumnInfoQuery("Customers");
+// SQL Server: sp_columns 'Customers'
+// MySQL: SHOW COLUMNS FROM Customers</code></pre>
+                </section>
+
+                <section id="ddl" class="section">
+                    <h2>DDL Operations (Level 1)</h2>
+                    <pre><code class="language-csharp">var (sql, success, error) = helper.GenerateCreateTableSql(entity);
+// SQL Server: CREATE TABLE [Customers] (Id INT IDENTITY PRIMARY KEY...)
+// PostgreSQL: CREATE TABLE "Customers" (Id SERIAL PRIMARY KEY...)
+// MySQL: CREATE TABLE `Customers` (Id INT AUTO_INCREMENT...)
+
+var (sql, ok, err) = helper.DropTable(entity, "Customers", "dbo");
+// SQL Server: DROP TABLE [dbo].[Customers]
+
+var (sql, ok, err) = helper.TruncateTable(entity, "Customers");
+// SQL Server: TRUNCATE TABLE [Customers]
+// PostgreSQL: TRUNCATE TABLE "Customers" RESTART IDENTITY
+
+var (sql, ok, err) = helper.CreateIndex(entity, "idx_email", "Email");
+var (sql, ok, err) = helper.AddColumn(entity, "NewField", "VARCHAR(100)", null);
+var (sql, ok, err) = helper.AlterColumn(entity, "OldField", "INT", false);
+var (sql, ok, err) = helper.DropColumn(entity, "TempField");
+var (sql, ok, err) = helper.RenameTable(entity, "OldName", "NewName");
+var (sql, ok, err) = helper.RenameColumn(entity, "OldCol", "NewCol");</code></pre>
+                </section>
+
+                <section id="constraints" class="section">
+                    <h2>Constraint Operations (Level 2)</h2>
+                    <pre><code class="language-csharp">var (sql, ok) = helper.AddPrimaryKey(entity, "PK_Customers", "Id");
+var (sql, ok) = helper.DropPrimaryKey(entity, "PK_Customers");
+
+var (sql, ok) = helper.AddForeignKey(entity, "FK_CustomerId",
+    "CustomerId", "Customers", "Id");
+var (sql, ok) = helper.DropForeignKey(entity, "FK_CustomerId");
+
+var (sql, ok) = helper.AddUniqueConstraint("Customers", "UQ_Email", "Email");
+var (sql, ok) = helper.DropUniqueConstraint("Customers", "UQ_Email");
+
+var (sql, ok) = helper.GetConstraints(entity, "Customers");</code></pre>
+                </section>
+
+                <section id="transactions" class="section">
+                    <h2>Transaction Control (Level 3)</h2>
+                    <pre><code class="language-csharp">var (sql, ok) = helper.BeginTransaction();
+// SQL Server: BEGIN TRANSACTION
+// PostgreSQL: BEGIN
+// MySQL: START TRANSACTION
+
+var (sql, ok) = helper.CommitTransaction();
+// SQL Server: COMMIT TRANSACTION
+// PostgreSQL: COMMIT
+
+var (sql, ok) = helper.RollbackTransaction();
+// SQL Server: ROLLBACK TRANSACTION
+// PostgreSQL: ROLLBACK</code></pre>
+                </section>
+
+                <section id="dml" class="section">
+                    <h2>DML Operations (Level 4)</h2>
+                    <pre><code class="language-csharp">// INSERT with parameter support
+var (sql, success, error) = helper.Insert(
+    entity, "Customers", new { Name = "John" });
+// SQL Server: INSERT INTO [Customers] (Name) VALUES (@Name)
+// PostgreSQL: INSERT INTO "Customers" ("Name") VALUES ($1)
+
+// UPDATE
+var (sql, ok, err) = helper.Update(entity, "Customers",
+    new { Name = "Jane" }, new { Id = 1 });
+
+// DELETE
+var (sql, ok, err) = helper.Delete(entity, "Customers",
+    new { Id = 1 });
+
+// SELECT with filter
+var (sql, ok, err) = helper.Select(entity, "Customers",
+    new List&lt;AppFilter&gt; { new AppFilter { FieldName = "Status", FilterValue = "Active" } });
+
+// Bulk operations
+var (sql, ok, err) = helper.BulkInsert(entity, "Customers", records);
+var (sql, ok, err) = helper.BulkUpdate(entity, "Customers", records);
+var (sql, ok, err) = helper.BulkDelete(entity, "Customers", ids);</code></pre>
+                </section>
+
+                <section id="utilities" class="section">
+                    <h2>Utility Methods</h2>
+                    <pre><code class="language-csharp">// Identifier quoting per datasource
+string quoted = helper.QuoteIdentifier("My Table");
+// SQL Server: [My Table]
+// PostgreSQL: "My Table"
+// MySQL: `My Table`
+
+// Type mapping
+string dbType = helper.MapClrToDataSourceType("System.String", 100);
+// SQL Server: NVARCHAR(100)
+// PostgreSQL: VARCHAR(100)
+
+// Data conversion (value, direction)
+object converted = helper.ConvertData("123", "int", DataDirection.ToDataSource);
+
+// Capability checking
+if (helper.Capabilities.SupportsTransactions)
+{
+    var (sql, ok) = helper.BeginTransaction();
+}
+
+// Get data type by provider
+DataType dataType = helper.GetDataType("int");</code></pre>
+                </section>
+
+                <section id="implementations" class="section">
+                    <h2>Implementations</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Implementation</th><th>Category</th><th>DatasourceType</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RdbmsHelper</code></td><td>RDBMS</td><td>SqlServer, PostgreSQL, MySQL, Oracle, SQLite, DB2, etc.</td></tr>
+                            <tr><td><code>MongoDBHelper</code></td><td>NOSQL</td><td>MongoDB</td></tr>
+                            <tr><td><code>RedisHelper</code></td><td>NOSQL</td><td>Redis</td></tr>
+                            <tr><td><code>VectorDbHelper</code></td><td>Vector</td><td>ChromaDB, Pinecone, Milvus</td></tr>
+                            <tr><td><code>GraphDbHelper</code></td><td>Graph</td><td>Neo4j, ArangoDB</td></tr>
+                            <tr><td><code>SearchEngineHelper</code></td><td>Search</td><td>ElasticSearch</td></tr>
+                            <tr><td><code>CassandraHelper</code></td><td>NOSQL</td><td>Cassandra</td></tr>
+                            <tr><td><code>StreamingHelper</code></td><td>Streaming</td><td>Kafka, Kinesis</td></tr>
+                            <tr><td><code>TimeSeriesHelper</code></td><td>TimeSeries</td><td>InfluxDB, TimescaleDB</td></tr>
+                            <tr><td><code>FileFormatHelper</code></td><td>File</td><td>CSV, Excel, JSON, XML</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Get Helper from DMEEditor</h3>
+                    <pre><code class="language-csharp">var helper = editor.GetDataSourceHelper(DataSourceType.SqlServer);
+var (sql, ok) = helper.GetTableExistsQuery("Customers");
+var result = ds.ExecuteSql(sql);</code></pre>
+
+                    <h3>Cross-Database Schema Generation</h3>
+                    <pre><code class="language-csharp">var entity = GetEntityStructure("Products");
+
+// Generate for each target
+var sqlHelper = editor.GetDataSourceHelper(DataSourceType.SqlServer);
+var (sqlServerDDL, _, _) = sqlHelper.GenerateCreateTableSql(entity);
+
+var pgHelper = editor.GetDataSourceHelper(DataSourceType.Postgresql);
+var (pgDDL, _, _) = pgHelper.GenerateCreateTableSql(entity);
+
+// Different output per provider:
+// SQL Server: [Id] INT IDENTITY(1,1)
+// PostgreSQL: "Id" SERIAL</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="rdbms-helpers-reference.html"><i class="bi bi-arrow-left"></i> Previous: RDBMS Helpers</a>
+                    <a href="helpers-runtime-reference.html">Next: Helpers Runtime <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

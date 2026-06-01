@@ -51,6 +51,7 @@
   <tr><td>RolloutGovernance</td><td>KPI gates, wave eligibility, hard-stop policy</td></tr>
   <tr><td>DevExAutomation</td><td>CI validation, plan diff, manifest serialization</td></tr>
   <tr><td>ManifestParser</td><td>Manifest ingestion</td></tr>
+  <tr><td>—</td><td><a href="#full-api">Full API Reference, all models, enums, source map</a></td></tr>
 </tbody>
 </table>
 </div>
@@ -814,6 +815,211 @@ if (!gov.CanPromote)
 
 </article>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════ API REFERENCE -->
+<section id="full-api" style="margin: 0 2rem 3rem;">
+<h2><i class="bi bi-book"></i> Full API Reference</h2>
+
+<h3>IMigrationManager — Complete Interface</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>EnsureEntity(EntityStructure, bool, bool)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>EnsureEntity(Type, bool, bool, bool)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>GetMissingColumns(EntityStructure, EntityStructure)</code></td><td><code>IReadOnlyList&lt;EntityField&gt;</code></td></tr>
+<tr><td><code>CreateEntity(EntityStructure)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>DropEntity(string)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>TruncateEntity(string)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>RenameEntity(string, string)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>AlterColumn(string, string, EntityField)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>DropColumn(string, string)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>RenameColumn(string, string, string)</code></td><td><code>IErrorsInfo</code></td></tr>
+<tr><td><code>CreateIndex(string, string, string[], Dictionary)</code></td><td><code>IErrorsInfo</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Assembly &amp; Discovery:</strong></p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>RegisterAssembly(Assembly)</code></td><td><code>void</code></td></tr>
+<tr><td><code>RegisterAssemblies(IEnumerable&lt;Assembly&gt;)</code></td><td><code>void</code></td></tr>
+<tr><td><code>GetRegisteredAssemblies()</code></td><td><code>IReadOnlyList&lt;Assembly&gt;</code></td></tr>
+<tr><td><code>DiscoverEntityTypes(string?, Assembly?, bool)</code></td><td><code>List&lt;Type&gt;</code></td></tr>
+<tr><td><code>DiscoverAllEntityTypes(bool)</code></td><td><code>List&lt;Type&gt;</code></td></tr>
+<tr><td><code>DiscoverEntityTypesFromManifest(string, Assembly?)</code></td><td><code>MigrationManifestParseResult</code></td></tr>
+<tr><td><code>ParseMigrationManifest(string)</code></td><td><code>MigrationManifestParseResult</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Planning &amp; Execution:</strong></p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>BuildMigrationPlan(string?, Assembly?)</code></td><td><code>MigrationPlanArtifact</code></td></tr>
+<tr><td><code>BuildMigrationPlanForTypes(IEnumerable&lt;Type&gt;)</code></td><td><code>MigrationPlanArtifact</code></td></tr>
+<tr><td><code>BuildMigrationPlanFromManifest(string, Assembly?)</code></td><td><code>MigrationPlanArtifact</code></td></tr>
+<tr><td><code>BuildReadinessReport(IEnumerable&lt;Type&gt;?, bool)</code></td><td><code>MigrationReadinessReport</code></td></tr>
+<tr><td><code>BuildReadinessReport(MigrationManifestParseResult)</code></td><td><code>MigrationReadinessReport</code></td></tr>
+<tr><td><code>EnsureDatabaseWithDiscovery(string?, Assembly?, bool)</code></td><td><code>EntityPipelineResult</code></td></tr>
+<tr><td><code>EnsureEntities(IEnumerable&lt;Type&gt;, bool, bool)</code></td><td><code>EntityPipelineResult</code></td></tr>
+<tr><td><code>ExecuteMigrationPlan(MigrationPlanArtifact, MigrationExecutionPolicy, string?)</code></td><td><code>MigrationExecutionResult</code></td></tr>
+<tr><td><code>RunRollback(MigrationPlanArtifact, MigrationExecutionResult, bool)</code></td><td><code>MigrationRollbackResult</code></td></tr>
+<tr><td><code>ApplyCompensation(MigrationPlanArtifact, MigrationExecutionResult)</code></td><td><code>MigrationRollbackResult</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Policy &amp; Governance:</strong></p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>EvaluateMigrationPlanPolicy(MigrationPlanArtifact, MigrationPolicyOptions)</code></td><td><code>MigrationPolicyEvaluation</code></td></tr>
+<tr><td><code>GenerateDryRunReport(MigrationPlanArtifact)</code></td><td><code>MigrationDryRunReport</code></td></tr>
+<tr><td><code>RunPreflightChecks(MigrationPlanArtifact)</code></td><td><code>MigrationPreflightReport</code></td></tr>
+<tr><td><code>BuildCompensationPlan(MigrationPlanArtifact)</code></td><td><code>MigrationCompensationPlan</code></td></tr>
+<tr><td><code>CheckRollbackReadiness(MigrationPlanArtifact, bool, bool, string)</code></td><td><code>MigrationRollbackReadinessReport</code></td></tr>
+<tr><td><code>BuildPerformancePlan(MigrationPlanArtifact)</code></td><td><code>MigrationPerformancePlan</code></td></tr>
+<tr><td><code>ValidatePlanForCi(MigrationPlanArtifact, MigrationPolicyOptions?)</code></td><td><code>MigrationCiValidationReport</code></td></tr>
+<tr><td><code>BuildMigrationPlanDiff(MigrationPlanArtifact, MigrationPlanArtifact)</code></td><td><code>string</code></td></tr>
+<tr><td><code>ApproveMigrationPlan(MigrationPlanArtifact, string, string)</code></td><td><code>MigrationPlanArtifact</code></td></tr>
+<tr><td><code>EvaluateRolloutGovernance(MigrationPlanArtifact, MigrationRolloutGovernanceRequest)</code></td><td><code>MigrationRolloutGovernanceReport</code></td></tr>
+<tr><td><code>BuildDevExArtifactBundle(MigrationPlanArtifact)</code></td><td><code>MigrationDevExArtifactBundle</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Observability:</strong></p>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Method</th><th>Return</th></tr></thead>
+<tbody>
+<tr><td><code>GetMigrationTelemetrySnapshot(string)</code></td><td><code>MigrationTelemetrySnapshot</code></td></tr>
+<tr><td><code>GetMigrationDiagnostics(string, MigrationDiagnosticSeverity?)</code></td><td><code>List&lt;MigrationDiagnosticEntry&gt;</code></td></tr>
+<tr><td><code>GetMigrationAuditEvents(string)</code></td><td><code>List&lt;MigrationAuditEvent&gt;</code></td></tr>
+<tr><td><code>GetDiscoveryEvidence()</code></td><td><code>AssemblyDiscoveryEvidence</code></td></tr>
+<tr><td><code>GetDdlEvidence()</code></td><td><code>IReadOnlyList&lt;DdlOperationEvidence&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Complete Enums Reference</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Enum</th><th>Values</th></tr></thead>
+<tbody>
+<tr><td><code>MigrationIssueSeverity</code></td><td><code>Info</code>, <code>Warning</code>, <code>Error</code></td></tr>
+<tr><td><code>MigrationPlanLifecycleState</code></td><td><code>Draft</code>, <code>Reviewed</code>, <code>Approved</code>, <code>Applied</code>, <code>Verified</code></td></tr>
+<tr><td><code>MigrationPlanOperationKind</code></td><td><code>None</code>, <code>CreateEntity</code>, <code>DropEntity</code>, <code>AddMissingColumns</code>, <code>DropColumn</code>, <code>AlterColumn</code>, <code>RenameEntity</code>, <code>RenameColumn</code>, <code>TruncateEntity</code>, <code>UpToDate</code>, <code>Error</code></td></tr>
+<tr><td><code>MigrationPlanRiskLevel</code></td><td><code>Low</code>, <code>Medium</code>, <code>High</code>, <code>Critical</code></td></tr>
+<tr><td><code>MigrationPolicyDecision</code></td><td><code>Pass</code>, <code>Warn</code>, <code>Block</code></td></tr>
+<tr><td><code>MigrationEnvironmentTier</code></td><td><code>Development</code>, <code>Test</code>, <code>Staging</code>, <code>Production</code></td></tr>
+<tr><td><code>MigrationExecutionStepStatus</code></td><td><code>Pending</code>, <code>Running</code>, <code>Completed</code>, <code>Failed</code>, <code>Skipped</code></td></tr>
+<tr><td><code>MigrationRollbackMode</code></td><td><code>ReversibleDdl</code>, <code>ForwardFixWithCompensation</code>, <code>ManualOnly</code></td></tr>
+<tr><td><code>MigrationDiagnosticSeverity</code></td><td><code>Info</code>, <code>Warning</code>, <code>Error</code>, <code>Critical</code></td></tr>
+<tr><td><code>MigrationExecutionWindowMode</code></td><td><code>OnlinePreferred</code>, <code>MaintenanceWindowRequired</code></td></tr>
+<tr><td><code>MigrationRolloutWave</code></td><td><code>Wave1NonCritical</code>, <code>Wave2StandardProduction</code>, <code>Wave3Critical</code></td></tr>
+<tr><td><code>MigrationImpactSensitivity</code></td><td><code>Low</code>, <code>Medium</code>, <code>High</code></td></tr>
+<tr><td><code>EntityMigrationSource</code></td><td><code>Explicit</code>, <code>DiscoveryAssembly</code>, <code>DiscoveryFileSystem</code></td></tr>
+<tr><td><code>EntityMigrationDecision</code></td><td><code>Create</code>, <code>Update</code>, <code>NoChange</code>, <code>Error</code>, <code>Skipped</code></td></tr>
+<tr><td><code>MigrationReportChannel</code></td><td><code>ReadinessIssue</code>, <code>BestPractice</code>, <code>MigrationDecision</code></td></tr>
+<tr><td><code>DdlOperationOutcome</code></td><td><code>Executed</code>, <code>NoOp</code>, <code>Unsupported</code>, <code>Emulated</code>, <code>Failed</code></td></tr>
+<tr><td><code>DdlHelperSource</code></td><td><code>UniversalRdbmsHelper</code>, <code>LegacyRdbmsFacade</code>, <code>FileMutation</code>, <code>Direct</code></td></tr>
+<tr><td><code>AssemblySourceKind</code></td><td><code>ManualRegistered</code>, <code>EntryReference</code>, <code>CallingReference</code>, <code>AppDomainLoaded</code>, <code>AssemblyHandlerPlugin</code></td></tr>
+<tr><td><code>RecommendationSeverity</code></td><td><code>Info</code>, <code>Warning</code>, <code>Critical</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>All Model Classes (from IMigrationManager.cs)</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>Class</th><th>Key Properties</th></tr></thead>
+<tbody>
+<tr><td><code>MigrationSummary</code></td><td>EntitiesToCreate, EntitiesToUpdate, EntitiesUpToDate, Errors, TotalPendingMigrations, HasPendingMigrations, EntityDecisions, ReportHash, DataSourceType</td></tr>
+<tr><td><code>MigrationReadinessReport</code></td><td>DataSourceName, DataSourceType, UsesDiscovery, HelperAvailable, SupportsSchemaEvolution, IsSchemaEnforced, SupportsTransactions, Issues, EntityTypeCount, HasBlockingIssues, PolicyEvaluation, ReportHash, EntityDecisions, AppliedProfile</td></tr>
+<tr><td><code>MigrationReadinessIssue</code></td><td>Code, Severity, Message, Recommendation, EntityName, Channel, RecommendationId, CapabilityContextSnapshot</td></tr>
+<tr><td><code>MigrationPlanArtifact</code></td><td>PlanId, PlanHash, CreatedOnUtc, LifecycleState, DataSourceName, Operations, ReadinessIssues, PolicyEvaluation, ProviderCapabilities, DryRunReport, PreflightReport, CompensationPlan, RollbackReadinessReport, PerformancePlan, CiValidationReport, RolloutGovernanceReport, ExecutionCheckpoint, ImpactReport, PendingOperationCount</td></tr>
+<tr><td><code>MigrationPlanOperation</code></td><td>EntityName, EntityTypeName, Kind, RiskLevel, IsDestructive, IsTypeNarrowing, HasNullabilityTightening, ProviderAssumptions, FallbackTasks, MissingColumns, Note</td></tr>
+<tr><td><code>MigrationProviderCapabilityProfile</code></td><td>DataSourceType, SupportsAlterColumn, SupportsRenameEntity, SupportsRenameColumn, SupportsTransactionalDdl, RequiresOfflineWindow, PortabilityWarning, Constraints</td></tr>
+<tr><td><code>MigrationPolicyOptions</code></td><td>EnvironmentTier, RequireApprovalForHighRisk, RequireApprovalForCriticalRisk, BlockDestructiveInProtectedEnvironments, AllowDestructiveOverrideInProtectedEnvironments, OverrideReason, Approver</td></tr>
+<tr><td><code>MigrationPolicyEvaluation</code></td><td>EnvironmentTier, IsProtectedEnvironment, RequiresManualApproval, Decision, Findings, HasBlockingFindings</td></tr>
+<tr><td><code>MigrationPolicyFinding</code></td><td>RuleId, Decision, Message, Recommendation, EntityName, OperationKind, RiskLevel</td></tr>
+<tr><td><code>MigrationDryRunReport</code></td><td>GeneratedOnUtc, PlanId, PlanHash, Operations, HasBlockingIssues, Diagnostics</td></tr>
+<tr><td><code>MigrationDryRunOperation</code></td><td>EntityName, Kind, RiskLevel, DdlPreview, RiskTags, Diagnostics</td></tr>
+<tr><td><code>MigrationPreflightReport</code></td><td>CheckedOnUtc, PlanId, PlanHash, CanApply, SchemaDriftDetected, Checks</td></tr>
+<tr><td><code>MigrationPreflightCheck</code></td><td>Code, Decision, Message, Recommendation</td></tr>
+<tr><td><code>MigrationImpactReport</code></td><td>GeneratedOnUtc, PlanId, PlanHash, Entries</td></tr>
+<tr><td><code>MigrationImpactEntry</code></td><td>EntityName, Kind, Sensitivity, UsageHints, DataVolumeIndicators</td></tr>
+<tr><td><code>MigrationExecutionPolicy</code></td><td>MaxTransientRetries (2), RetryDelayMilliseconds (250), TransientErrorMarkers, HardFailMarkers, RequireOperatorInterventionOnHardFail, OperatorInterventionHint</td></tr>
+<tr><td><code>MigrationExecutionResult</code></td><td>ExecutionToken, ResumedFromCheckpoint, Success, RequiresOperatorIntervention, Message, RollbackOutcome, CompensationOutcome, Checkpoint</td></tr>
+<tr><td><code>MigrationExecutionCheckpoint</code></td><td>ExecutionToken, CorrelationId, PlanId, PlanHash, StartedOnUtc, LastCompletedStep, ElapsedMs, IsCompleted, HasFailed, FailureCategory, FailureReason, Steps</td></tr>
+<tr><td><code>MigrationExecutionStep</code></td><td>Sequence, StepId, DependsOn, EntityName, EntityTypeName, OperationKind, MissingColumns, Status, AttemptCount, ElapsedMilliseconds, Message</td></tr>
+<tr><td><code>MigrationCompensationPlan</code></td><td>GeneratedOnUtc, PlanId, PlanHash, Actions</td></tr>
+<tr><td><code>MigrationCompensationAction</code></td><td>ActionId, Sequence, EntityName, OperationKind, RollbackMode, IsHighRisk, IsRequiredBeforeApply, RollbackSqlPreview, CompensationPlaybook</td></tr>
+<tr><td><code>MigrationRollbackReadinessReport</code></td><td>CheckedOnUtc, PlanId, PlanHash, BackupConfirmed, RestoreTestEvidenceProvided, RestoreTestEvidence, IsReady, Checks</td></tr>
+<tr><td><code>MigrationRollbackResult</code></td><td>ExecutionToken, DryRun, Success, Message, ExecutedActions</td></tr>
+<tr><td><code>MigrationPerformancePlan</code></td><td>GeneratedOnUtc, PlanId, PlanHash, Policy, Kpis, OperationAnnotations, MaintenanceWindowGuidance, TimeoutGuidance</td></tr>
+<tr><td><code>MigrationPerformancePolicy</code></td><td>BatchSize (10), ThrottleDelayMs (0), LockTimeoutMs (30000), EnableThrottledMode, PreferredWindowMode</td></tr>
+<tr><td><code>MigrationPerformanceKpi</code></td><td>PlannedMigrationWindowMinutes (30), MaxAllowedLockWaitMs (5000), TargetOperationsPerMinute (20)</td></tr>
+<tr><td><code>MigrationOperationScaleAnnotation</code></td><td>EntityName, OperationKind, WindowMode, EstimatedRuntimeSeconds, EstimatedLockImpactScore, Note</td></tr>
+<tr><td><code>MigrationTelemetrySnapshot</code></td><td>CapturedOnUtc, Metrics, SuccessRate, FailureRate, DiagnosticsBySeverity, Diagnostics, AuditEvents</td></tr>
+<tr><td><code>MigrationTelemetryMetrics</code></td><td>PlanCount, ExecutionCount, SuccessCount, FailureCount, RetryCount, RollbackCount, PolicyBlockCount, AverageStepDurationMs, PolicyBlockRatio</td></tr>
+<tr><td><code>MigrationAuditEvent</code></td><td>TimestampUtc, ExecutionToken, CorrelationId, PlanId, PlanHash, EventType, ApprovedBy, ExecutedBy, Result, Notes</td></tr>
+<tr><td><code>MigrationDiagnosticEntry</code></td><td>TimestampUtc, ExecutionToken, CorrelationId, OperationCode, Severity, EntityName, Message, Recommendation</td></tr>
+<tr><td><code>MigrationCiValidationReport</code></td><td>GeneratedOnUtc, PlanId, PlanHash, CanMerge, Gates</td></tr>
+<tr><td><code>MigrationCiGateResult</code></td><td>Gate, Decision, Message</td></tr>
+<tr><td><code>MigrationDevExArtifactBundle</code></td><td>GeneratedOnUtc, PlanId, PlanHash, PlanJson, DryRunJson, CiValidationJson, ApprovalReportMarkdown</td></tr>
+<tr><td><code>MigrationRolloutGovernanceReport</code></td><td>GeneratedOnUtc, PlanId, PlanHash, Wave, CanPromote, HardStopTriggered, HardStopReason, ReviewedBy, Notes, Kpis, Gates</td></tr>
+<tr><td><code>MigrationRolloutGovernanceRequest</code></td><td>Wave, IsCriticalDataSource, ReviewedBy, Notes, Thresholds, HardStopPolicy</td></tr>
+<tr><td><code>MigrationRolloutKpiThresholds</code></td><td>MinSuccessRate (0.95), MaxMeanExecutionDurationMs (120000), MaxRollbackInvocationRate (0.10), MaxPolicyBlockRatio (0.25)</td></tr>
+<tr><td><code>MigrationRolloutHardStopPolicy</code></td><td>StopOnAnyCriticalDiagnostic (true), StopOnAnyRollbackForCriticalWave (true), MaxFailureRate (0.10)</td></tr>
+<tr><td><code>MigrationRolloutKpiSnapshot</code></td><td>SuccessRate, MeanExecutionDurationMs, RollbackInvocationRate, PolicyBlockRatio</td></tr>
+<tr><td><code>MigrationRolloutGateResult</code></td><td>Gate, Decision, Observed, Threshold, Message</td></tr>
+<tr><td><code>EntityPipelineResult</code></td><td>Scanned, Processed, Created, Updated, Skipped, ErrorCount, BlockingReasons, Entries, HasBlockingReasons</td></tr>
+<tr><td><code>EntityMigrationResultEntry</code></td><td>EntityName, TypeFullName, Decision, DecisionReasonCode, Source, AssemblyName, Success, Message</td></tr>
+<tr><td><code>EntityMigrationMetadata</code></td><td>TypeFullName, AssemblyName, Source, NamespaceMatchMode, NamespacePrefix</td></tr>
+<tr><td><code>MigrationManifestParseResult</code></td><td>FilePath, Entries, Errors, HasErrors</td></tr>
+<tr><td><code>MigrationManifestEntry</code></td><td>LineNumber, TypeFullName, AssemblyHint, NamespacePrefix</td></tr>
+<tr><td><code>MigrationManifestParseError</code></td><td>Code (MIG-MANIFEST-001..004), LineNumber, LineContent, Message</td></tr>
+<tr><td><code>EntityDecisionRecord</code></td><td>EntityName, Decision, DecisionReasonCode, CapabilityContextSnapshot, Source, AssemblyName</td></tr>
+<tr><td><code>DdlOperationEvidence</code></td><td>OperationId, OperationName, EntityName, ColumnName, IndexName, Outcome, HelperSource, SqlHash, ReasonCode, Message, TimestampUtc</td></tr>
+<tr><td><code>AssemblyDiscoveryEvidence</code></td><td>TotalAssembliesConsidered, Scanned, Skipped, Records, EntityTypeOriginMap, NamespaceScopeDiagnostics</td></tr>
+<tr><td><code>AssemblyDiscoveryRecord</code></td><td>AssemblyFullName, AssemblyName, Source, Scanned, Skipped, SkipReason, LoaderExceptions, FoundEntityTypes</td></tr>
+<tr><td><code>RecommendationProfile</code></td><td>ProfileId, ProfileVersion, DataSourceType, DataSourceCategory, Recommendations, PolicyOverlays</td></tr>
+<tr><td><code>RecommendationEntry</code></td><td>Id, Text, Severity, Rationale, CapabilityDependencies, CapabilitySource</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Source File Map (17 files, 3,700+ lines)</h3>
+<div class="table-responsive">
+<table class="table table-sm table-bordered">
+<thead><tr><th>File</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td><code>IMigrationManager.cs</code></td><td>IMigrationManager interface (50+ methods), ALL model classes, ALL enums (3,700+ lines)</td></tr>
+<tr><td><code>MigrationManager.cs</code></td><td>Core shell: constructor, DDL evidence tracking, migration history, errors factory, GetDiscoveryEvidence, GetDdlEvidence</td></tr>
+<tr><td><code>MigrationManager.AssemblyRegistration.cs</code></td><td>RegisterAssembly, RegisterAssemblies, GetRegisteredAssemblies</td></tr>
+<tr><td><code>MigrationManager.Discovery.cs</code></td><td>DiscoverEntityTypes, DiscoverAllEntityTypes, assembly scanning across AppDomain + entry + handler</td></tr>
+<tr><td><code>MigrationManager.Capabilities.cs</code></td><td>BuildProviderCapabilityProfile, live DDL support probing</td></tr>
+<tr><td><code>MigrationManager.ReadinessAndExplicit.cs</code></td><td>BuildReadinessReport, EnsureEntities, EnsureDatabaseWithDiscovery, entity pipeline</td></tr>
+<tr><td><code>MigrationManager.Planning.cs</code></td><td>BuildMigrationPlan, BuildMigrationPlanForTypes, BuildMigrationPlanFromManifest, risk scoring</td></tr>
+<tr><td><code>MigrationManager.DryRunAndPreflight.cs</code></td><td>GenerateDryRunReport, RunPreflightChecks (connectivity + policy + drift + window gates)</td></tr>
+<tr><td><code>MigrationManager.Policy.cs</code></td><td>EvaluateMigrationPlanPolicy, built-in policy rules (6 rules)</td></tr>
+<tr><td><code>MigrationManager.ExecutionOrchestration.cs</code></td><td>ExecuteMigrationPlan, checkpointed steps, dependency ordering, retry/skip, resume</td></tr>
+<tr><td><code>MigrationManager.RollbackCompensation.cs</code></td><td>BuildCompensationPlan, CheckRollbackReadiness, RunRollback, ApplyCompensation</td></tr>
+<tr><td><code>MigrationManager.EntityOperations.cs</code></td><td>EnsureEntity, CreateEntity, DropEntity, TruncateEntity, RenameEntity, AlterColumn, DropColumn, RenameColumn, CreateIndex, GetMissingColumns</td></tr>
+<tr><td><code>MigrationManager.Observability.cs</code></td><td>Telemetry snapshots, diagnostics, audit events, ApproveMigrationPlan</td></tr>
+<tr><td><code>MigrationManager.PerformanceScale.cs</code></td><td>BuildPerformancePlan, lock impact scoring, batch/throttle, window guidance</td></tr>
+<tr><td><code>MigrationManager.RolloutGovernance.cs</code></td><td>EvaluateRolloutGovernance, wave eligibility, KPI gates, hard-stop policy</td></tr>
+<tr><td><code>MigrationManager.DevExAutomation.cs</code></td><td>ValidatePlanForCi, BuildMigrationPlanDiff, BuildDevExArtifactBundle</td></tr>
+<tr><td><code>MigrationManager.ManifestParser.cs</code></td><td>DiscoverEntityTypesFromManifest, ParseMigrationManifest, manifest file parsing</td></tr>
+</tbody>
+</table>
+</div>
+</section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>

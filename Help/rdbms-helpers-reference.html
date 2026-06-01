@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDBMS Helpers Reference - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>RDBMS Helpers</span>
+                </nav>
+                <div class="page-header">
+                    <h1>RDBMS Helpers Reference</h1>
+                    <p class="page-subtitle">Cross-datasource dialect-aware helpers for SQL generation, schema operations, DML/DML, entity management, validation, and feature detection</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Helpers/RDBMSHelpers/RDBMSHelper.cs</code> (facade)</li>
+                        <li><code>.../RDBMSHelpers/DatabaseSchemaQueryHelper.cs</code></li>
+                        <li><code>.../RDBMSHelpers/DatabaseObjectCreationHelper.cs</code></li>
+                        <li><code>.../RDBMSHelpers/DatabaseFeatureHelper.cs</code></li>
+                        <li><code>.../RDBMSHelpers/DatabaseQueryRepositoryHelper.cs</code></li>
+                        <li><code>.../RDBMSHelpers/DMLHelpers/</code></li>
+                        <li><code>.../RDBMSHelpers/EntityHelpers/</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#facade">RDBMSHelper Facade</a></li>
+                        <li><a href="#schema-query">Schema &amp; Metadata Queries</a></li>
+                        <li><a href="#object-creation">Object Creation (DDL)</a></li>
+                        <li><a href="#dml">DML Operations</a></li>
+                        <li><a href="#entity-helpers">Entity Helpers</a></li>
+                        <li><a href="#feature-detection">Feature Detection</a></li>
+                        <li><a href="#query-repository">Query Repository</a></li>
+                        <li><a href="#validation">Entity Validation</a></li>
+                        <li><a href="#universal-helpers">Universal Helpers</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>RDBMS helpers provide <strong>dialect-aware</strong> SQL generation and schema operations across 30+ database systems. The facade delegates to specialized helpers:</p>
+                    <ul>
+                        <li><strong>Schema queries</strong> — Table existence, column info, schema listing, constraint queries</li>
+                        <li><strong>Object creation</strong> — DDL for tables, indexes, constraints, views, procedures</li>
+                        <li><strong>DML</strong> — INSERT, UPDATE, DELETE, SELECT generation with provider-specific syntax</li>
+                        <li><strong>Entity helpers</strong> — Object relation mapping, CRUD, caching, parameter generation</li>
+                        <li><strong>Feature detection</strong> — Capability checks, version detection, SQL dialect rules</li>
+                        <li><strong>Query repository</strong> — Pre-built query templates for each database type</li>
+                        <li><strong>Validation</strong> — Entity schema validation against target database</li>
+                    </ul>
+
+                    <h3>Supported Database Types</h3>
+                    <pre><code class="language-text">SqlServer, Oracle, MySQL, PostgreSQL, SQLite, DB2, Sybase, 
+Informix, Firebird, Teradata, Netezza, ODBC, OleDb, 
+MsAccess, Excel, Csv, Xml, Json, MongoDB, Redis, 
+Cassandra, CosmosDB, DocumentDB, Hive, Impala, 
+Spark, Neo4j, ArangoDB, ElasticSearch, Cassandra, Couchbase</code></pre>
+                </section>
+
+                <section id="facade" class="section">
+                    <h2>RDBMSHelper Facade</h2>
+                    <pre><code class="language-csharp">namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
+{
+    public static partial class RDBMSHelper
+    {
+        // Schema & Metadata (→ DatabaseSchemaQueryHelper)
+        public static string GetSchemasorDatabases(DataSourceType rdbms, string userName);
+        public static (string, bool, string) GetSchemasorDatabasesSafe(DataSourceType, string, bool);
+        public static QueryValidationResult ValidateSchemaQuery(DataSourceType, string, string);
+        public static string GetTableExistsQuery(DataSourceType, string tableName, string schema = null);
+        public static string GetColumnInfoQuery(DataSourceType, string tableName, string schema = null);
+
+        // Object Creation (→ DatabaseObjectCreationHelper)
+        public static string CreateTableSqlString(EntityStructure entity, DataSourceType dsType);
+        public static List&lt;string&gt; CreateAlterSqlStrings(EntityStructure, DataSourceType);
+        public static string DropTableSqlString(EntityStructure entity, DataSourceType dsType);
+
+        // DML (→ DMLHelpers)
+        public static string InsertSqlString(DataSourceType, EntityStructure, string tableName, params[]);
+        public static string UpdateSqlString(DataSourceType, EntityStructure, string tableName, params[]);
+        public static string DeleteSqlString(DataSourceType, EntityStructure, string tableName, params[]);
+        public static string SelectSqlString(DataSourceType, EntityStructure, string tableName, params[]);
+
+        // Feature Detection (→ DatabaseFeatureHelper)
+        public static bool SupportsTransaction(DataSourceType dsType);
+        public static bool SupportsBatching(DataSourceType dsType);
+        public static string GetIdentitySql(DataSourceType dsType);
+
+        // Query Repository (→ DatabaseQueryRepositoryHelper)
+        public static List&lt;QueryConfig&gt; CreateQuerySqlRepos();
+        public static QueryConfig GetQueryByType(DataSourceType dsType, string queryType);
+    }
+}</code></pre>
+                </section>
+
+                <section id="schema-query" class="section">
+                    <h2>Schema &amp; Metadata Queries</h2>
+                    <p>DatabaseSchemaQueryHelper generates dialect-aware schema introspection queries:</p>
+                    <pre><code class="language-csharp">// List accessible schemas or databases
+string sql = RDBMSHelper.GetSchemasorDatabases(DataSourceType.SqlServer, "sa");
+// Returns: SELECT name FROM sys.databases (SQL Server)
+// Returns: SELECT schema_name FROM information_schema.schemata (PostgreSQL)
+// Returns: SHOW DATABASES (MySQL)
+
+// Table existence check
+string checkSql = RDBMSHelper.GetTableExistsQuery(
+    DataSourceType.Postgresql, "customers", schemaName: "public");
+// Returns: SELECT EXISTS (SELECT FROM information_schema.tables 
+//          WHERE table_name = 'customers' AND table_schema = 'public')
+
+// Column info
+string colsSql = RDBMSHelper.GetColumnInfoQuery(
+    DataSourceType.MySql, "orders");
+// Returns: SHOW COLUMNS FROM orders (MySQL)
+// Returns: sp_columns 'orders' (SQL Server)
+
+// Safe query with error handling
+var (query, success, error) = RDBMSHelper.GetSchemasorDatabasesSafe(
+    DataSourceType.Oracle, "SCOTT", throwOnError: false);
+if (!success) Console.WriteLine(error);</code></pre>
+                </section>
+
+                <section id="object-creation" class="section">
+                    <h2>Object Creation (DDL)</h2>
+                    <pre><code class="language-csharp">// Create table
+var entity = new EntityStructure
+{
+    EntityName = "Customers",
+    Fields = new List&lt;EntityField&gt;
+    {
+        new EntityField { FieldName = "Id", FieldType = "int", IsKey = true },
+        new EntityField { FieldName = "Name", FieldType = "string", MaxLength = 100 },
+        new EntityField { FieldName = "Email", FieldType = "string" }
+    }
+};
+
+string createSql = RDBMSHelper.CreateTableSqlString(entity, DataSourceType.SqlServer);
+// Returns: CREATE TABLE Customers (Id INT PRIMARY KEY, Name NVARCHAR(100), Email NVARCHAR(MAX))
+
+string createPgSql = RDBMSHelper.CreateTableSqlString(entity, DataSourceType.Postgresql);
+// Returns: CREATE TABLE Customers (Id SERIAL PRIMARY KEY, Name VARCHAR(100), Email TEXT)
+
+// Alter table
+var alteredEntity = /* modified entity structure */;
+var alterStatements = RDBMSHelper.CreateAlterSqlStrings(alteredEntity, DataSourceType.SqlServer);
+
+// Drop table
+string dropSql = RDBMSHelper.DropTableSqlString(entity, DataSourceType.SqlLite);
+// Returns: DROP TABLE IF EXISTS Customers</code></pre>
+                </section>
+
+                <section id="dml" class="section">
+                    <h2>DML Operations</h2>
+                    <pre><code class="language-csharp">// INSERT
+string insertSql = RDBMSHelper.InsertSqlString(
+    DataSourceType.SqlServer, entity, "Customers",
+    "Id", "Name", "Email");
+// Returns: INSERT INTO Customers (Id, Name, Email) VALUES (@Id, @Name, @Email)
+
+// PostgreSQL INSERT
+string pgInsert = RDBMSHelper.InsertSqlString(
+    DataSourceType.Postgresql, entity, "Customers",
+    "Id", "Name", "Email");
+// Returns: INSERT INTO Customers (Id, Name, Email) VALUES ($1, $2, $3)
+
+// UPDATE
+string updateSql = RDBMSHelper.UpdateSqlString(
+    DataSourceType.MySql, entity, "Customers",
+    "Name", "Email");
+// Returns: UPDATE Customers SET Name = @Name, Email = @Email WHERE Id = @Id
+
+// DELETE
+string deleteSql = RDBMSHelper.DeleteSqlString(
+    DataSourceType.Oracle, entity, "Customers", "Id");
+// Returns: DELETE FROM Customers WHERE Id = :Id
+
+// SELECT
+string selectSql = RDBMSHelper.SelectSqlString(
+    DataSourceType.SqlLite, entity, "Customers",
+    "Id", "Name", "Email");
+// Returns: SELECT Id, Name, Email FROM Customers</code></pre>
+
+                    <h3>Provider-Specific Differences</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Provider</th><th>Parameter</th><th>Identity</th><th>Quote</th></tr></thead>
+                        <tbody>
+                            <tr><td>SQL Server</td><td><code>@param</code></td><td><code>IDENTITY(1,1)</code></td><td><code>[name]</code></td></tr>
+                            <tr><td>PostgreSQL</td><td><code>$1, $2</code></td><td><code>SERIAL</code></td><td><code>"name"</code></td></tr>
+                            <tr><td>MySQL</td><td><code>@param</code></td><td><code>AUTO_INCREMENT</code></td><td><code>`name`</code></td></tr>
+                            <tr><td>Oracle</td><td><code>:param</code></td><td><code>SEQUENCE</code></td><td><code>"name"</code></td></tr>
+                            <tr><td>SQLite</td><td><code>@param</code></td><td><code>AUTOINCREMENT</code></td><td><code>"name"</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="entity-helpers" class="section">
+                    <h2>Entity Helpers</h2>
+                    <pre><code class="language-csharp">// Entity CRUD with providers
+var entityHelper = new RDBMSEntityHelper(DataSourceType.SqlServer);
+
+// Generate INSERT with entity values
+var entity = new EntityStructure { /* ... */ };
+var data = new Dictionary&lt;string, object&gt;
+{
+    ["Id"] = 1, ["Name"] = "John", ["Email"] = "john@example.com"
+};
+
+string sql = entityHelper.GenerateInsert(entity, "Customers", data);
+
+// Generate parameters
+var parameters = entityHelper.GenerateParameters(entity, data);
+
+// Caching
+entityHelper.CacheEntityStructure("Customers", entity);
+var cached = entityHelper.GetCachedStructure("Customers");
+
+// Clear cache
+entityHelper.ClearEntityCache();</code></pre>
+                </section>
+
+                <section id="feature-detection" class="section">
+                    <h2>Feature Detection</h2>
+                    <pre><code class="language-csharp">// Capability checks
+bool supportsXact = RDBMSHelper.SupportsTransaction(DataSourceType.SqlServer); // true
+bool supportsBatch = RDBMSHelper.SupportsBatching(DataSourceType.SqlServer);   // true
+bool supportsXact = RDBMSHelper.SupportsTransaction(DataSourceType.Csv);       // false
+
+// Identity SQL per provider
+string identity = RDBMSHelper.GetIdentitySql(DataSourceType.SqlServer);      // SELECT SCOPE_IDENTITY()
+string identityPg = RDBMSHelper.GetIdentitySql(DataSourceType.Postgresql);   // SELECT lastval()
+string identityMy = RDBMSHelper.GetIdentitySql(DataSourceType.MySql);        // SELECT LAST_INSERT_ID()
+
+// Feature detection matrix
+var features = DatabaseFeatureHelper.GetSupportedFeatures(DataSourceType.SqlServer);
+foreach (var (feature, supported) in features)
+    Console.WriteLine($"{feature}: {supported}");</code></pre>
+
+                    <h3>Feature Matrix</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Feature</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>SQLite</th></tr></thead>
+                        <tbody>
+                            <tr><td>Transactions</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+                            <tr><td>Batching</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+                            <tr><td>Schemas</td><td>Yes</td><td>Yes</td><td>No*</td><td>No</td></tr>
+                            <tr><td>Identity</td><td>SCOPE_IDENTITY</td><td>lastval()</td><td>LAST_INSERT_ID</td><td>last_insert_rowid</td></tr>
+                            <tr><td>Returning</td><td>OUTPUT</td><td>RETURNING</td><td>No</td><td>No</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="query-repository" class="section">
+                    <h2>Query Repository</h2>
+                    <pre><code class="language-csharp">// Get all query templates for all databases
+var allQueries = RDBMSHelper.CreateQuerySqlRepos();
+// Returns: List&lt;QueryConfig&gt; with pre-built queries per database type
+
+// Each QueryConfig contains:
+// - DataSourceType (SqlServer, PostgreSQL, etc.)
+// - QueryType (SchemaQuery, TableQuery, ColumnQuery, etc.)
+// - QuerySQL (the actual SQL template)
+// - IsDefault (whether this is the default query)
+
+// Get specific query type
+var schemaQuery = RDBMSHelper.GetQueryByType(
+    DataSourceType.Postgresql, "SchemaQuery");
+Console.WriteLine(schemaQuery.QuerySQL);
+// SELECT schema_name FROM information_schema.schemata
+// WHERE schema_name NOT IN ('information_schema', 'pg_catalog')
+
+// Query categories:
+// SchemaQuery    → List schemas/databases
+// TableQuery     → List tables in schema
+// ColumnQuery    → List columns in table
+// PrimaryKeyQuery → List primary key columns
+// ForeignKeyQuery → List foreign keys
+// IndexQuery     → List indexes
+// ConstraintQuery → List constraints</code></pre>
+                </section>
+
+                <section id="validation" class="section">
+                    <h2>Entity Validation</h2>
+                    <pre><code class="language-csharp">// Validate entity structure against target database
+var validator = new RDBMSEntityValidator(DataSourceType.SqlServer);
+
+var entity = new EntityStructure
+{
+    EntityName = "Customers",
+    Fields = new List&lt;EntityField&gt;
+    {
+        new EntityField { FieldName = "Id", FieldType = "int", IsKey = true },
+        new EntityField { FieldName = "CreditLimit", FieldType = "decimal", MaxLength = 18 }
+    }
+};
+
+var result = validator.ValidateEntity(entity);
+if (!result.IsValid)
+{
+    foreach (var error in result.Errors)
+        Console.WriteLine($"{error.FieldName}: {error.Message}");
+}
+
+// Validation checks:
+// - Reserved word conflicts
+// - Field name length limits
+// - Data type compatibility
+// - Maximum column count
+// - Index name length limits
+// - Constraint naming conventions</code></pre>
+                </section>
+
+                <section id="universal-helpers" class="section">
+                    <h2>Universal Helpers</h2>
+                    <p>The universal helper system provides instance-based helpers via <code>IUniversalHelperFactory</code>:</p>
+                    <pre><code class="language-csharp">// Get helper via factory per DataSourceType
+var factory = editor.GetUniversalHelperFactory();
+var helper = factory.GetHelper(DataSourceType.SqlServer);
+
+// Same dialect-aware API, instance-based
+var (sql, success, error) = helper.GenerateCreateTableSql(entityStructure);
+
+// Helper categories:
+// - RdbmsHelper         → SQL generation, schema, DML, features
+// - MongoDBHelper        → Document operations
+// - RestApiHelper        → HTTP request building
+// - VectorHelper         → Vector DB operations
+// - GraphHelper          → Graph DB (Cypher, Gremlin)
+// - SearchHelper         → Full-text search
+// - StreamingHelper      → Stream processing
+// - TimeSeriesHelper     → Time-series operations
+// - RedisHelper          → Key-value operations
+// - CassandraHelper      → Wide-column operations
+// - FileHelper           → File-based data source ops
+// - AnalysisHelper       → Data analysis utilities</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Cross-Database Schema Script</h3>
+                    <pre><code class="language-csharp">var entity = new EntityStructure { EntityName = "Products", Fields = { ... } };
+
+// Same entity definition, different SQL per provider
+var sqlServerSql = RDBMSHelper.CreateTableSqlString(entity, DataSourceType.SqlServer);
+var postgreSql = RDBMSHelper.CreateTableSqlString(entity, DataSourceType.Postgresql);
+var oracleSql = RDBMSHelper.CreateTableSqlString(entity, DataSourceType.Oracle);
+var mySql = RDBMSHelper.CreateTableSqlString(entity, DataSourceType.MySql);
+
+// Apply to different environments
+editor.GetDataSource("DevDB").ExecuteSql(postgreSql);
+editor.GetDataSource("ProdDB").ExecuteSql(sqlServerSql);</code></pre>
+
+                    <h3>Full CRUD Generation</h3>
+                    <pre><code class="language-csharp">var dsType = DataSourceType.Postgresql;
+var entity = GetEntityStructure("Orders");
+
+// Schema
+var create = RDBMSHelper.CreateTableSqlString(entity, dsType);
+var check = RDBMSHelper.GetTableExistsQuery(dsType, "Orders");
+
+// CRUD
+var insert = RDBMSHelper.InsertSqlString(dsType, entity, "Orders", fields);
+var update = RDBMSHelper.UpdateSqlString(dsType, entity, "Orders", fields);
+var delete = RDBMSHelper.DeleteSqlString(dsType, entity, "Orders", keyField);
+var select = RDBMSHelper.SelectSqlString(dsType, entity, "Orders", fields);
+
+// Execute
+var ds = editor.GetDataSource("AppDB");
+ds.ExecuteSql(create);
+ds.ExecuteSql(insert);
+ds.ExecuteSql(update);</code></pre>
+
+                    <h3>Feature-Gated Operations</h3>
+                    <pre><code class="language-csharp">if (RDBMSHelper.SupportsTransaction(dbType))
+{
+    using var tx = ds.BeginTransaction();
+    try
+    {
+        ds.ExecuteSql(RDBMSHelper.InsertSqlString(dbType, entity, "Orders", fields));
+        ds.ExecuteSql(RDBMSHelper.UpdateSqlString(dbType, entity, "Inventory", fields));
+        tx.Commit();
+    }
+    catch { tx.Rollback(); throw; }
+}
+else
+{
+    // Fallback: execute without transaction
+    ds.ExecuteSql(insertSql);
+    ds.ExecuteSql(updateSql);
+}</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="helpers-runtime-reference.html"><i class="bi bi-arrow-left"></i> Previous: Helpers Runtime Reference</a>
+                    <a href="creating-custom-datasources.html">Next: Custom DataSources <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

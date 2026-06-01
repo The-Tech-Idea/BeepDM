@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datasource Types Reference - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Datasource Types</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Datasource Types Reference</h1>
+                    <p class="page-subtitle">Complete catalog of all datasource types, their categories, and capabilities</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth</strong>
+                    <ul>
+                        <li><code>DataSourceType</code> enum in DataManagementModelsStandard</li>
+                        <li><code>DatasourceCategory</code> enum for grouping</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#categories">Categories</a></li>
+                        <li><a href="#rdbms">RDBMS</a></li>
+                        <li><a href="#nosql">NoSQL</a></li>
+                        <li><a href="#files">File-Based</a></li>
+                        <li><a href="#cloud-memory">Cloud &amp; Memory</a></li>
+                        <li><a href="#capabilities">Capability Matrix</a></li>
+                        <li><a href="#capability-api">Capability API</a></li>
+                        <li><a href="#connection-examples">Connection Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="categories" class="section">
+                    <h2>Categories</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Category</th><th>Description</th><th>Examples</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RDBMS</code></td><td>Relational database management systems</td><td>SqlServer, PostgreSQL, MySQL, Oracle, SQLite</td></tr>
+                            <tr><td><code>NOSQL</code></td><td>Non-relational/document stores</td><td>MongoDB, Redis, Cassandra, Couchbase</td></tr>
+                            <tr><td><code>CLOUD</code></td><td>Cloud-based data services</td><td>CosmosDB, WebService, REST APIs</td></tr>
+                            <tr><td><code>GRAPH</code></td><td>Graph databases</td><td>Neo4j, ArangoDB</td></tr>
+                            <tr><td><code>SEARCH</code></td><td>Search and analytics engines</td><td>ElasticSearch</td></tr>
+                            <tr><td><code>FileBased</code></td><td>File-based data formats</td><td>CSV, Excel, JSON, XML, PDF</td></tr>
+                            <tr><td><code>MEMORY</code></td><td>In-memory/transient storage</td><td>InMemory, InMemoryDB</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="rdbms" class="section">
+                    <h2>RDBMS</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>DatasourceType</th><th>Driver</th><th>Connection String Pattern</th><th>Specialized Helper</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SqlServer</code></td><td>Microsoft.Data.SqlClient</td><td><code>Server={Host};Database={Database};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Postgresql</code></td><td>Npgsql</td><td><code>Host={Host};Database={Database};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>MySql</code></td><td>MySqlConnector</td><td><code>Server={Host};Database={Database};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Oracle</code></td><td>Oracle.ManagedDataAccess</td><td><code>DATA SOURCE={Host}/{ServiceName};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>SqlLite</code></td><td>Microsoft.Data.Sqlite</td><td><code>Data Source={FilePath}</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>DB2</code></td><td>IBM.Data.DB2</td><td><code>Server={Host};Database={Database};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Sybase</code></td><td>AdoNetCore.AseClient</td><td><code>Data Source={Host};Port={Port};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Firebird</code></td><td>FirebirdSql.Data.FirebirdClient</td><td><code>Database={FilePath};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>MsAccess</code></td><td>System.Data.OleDb</td><td><code>Provider=Microsoft.ACE.OLEDB;</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Informix</code></td><td>IBM.Data.Informix</td><td><code>Server={Host};Service={Port};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Teradata</code></td><td>Teradata.Client</td><td><code>Data Source={Host};</code></td><td>RdbmsHelper</td></tr>
+                            <tr><td><code>Netezza</code></td><td>IBM.Data.Netezza</td><td><code>Server={Host};Database={Database};</code></td><td>RdbmsHelper</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="nosql" class="section">
+                    <h2>NoSQL</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>DatasourceType</th><th>Category</th><th>Helper</th><th>Features</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>MongoDB</code></td><td>NOSQL</td><td>MongoDBHelper</td><td>Document store, BSON, aggregation pipeline</td></tr>
+                            <tr><td><code>Redis</code></td><td>NOSQL</td><td>RedisHelper</td><td>Key-value, pub/sub, cache, streams</td></tr>
+                            <tr><td><code>Cassandra</code></td><td>NOSQL</td><td>CassandraHelper</td><td>Wide-column, CQL, high availability</td></tr>
+                            <tr><td><code>CosmosDB</code></td><td>CLOUD</td><td>RdbmsHelper</td><td>Multi-model (SQL, MongoDB, Gremlin, Table)</td></tr>
+                            <tr><td><code>Couchbase</code></td><td>NOSQL</td><td>RdbmsHelper</td><td>Document store with N1QL</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="files" class="section">
+                    <h2>File-Based</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>DatasourceType</th><th>Format</th><th>Connection</th><th>Helper</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Csv</code></td><td>Comma-separated values</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Excel</code></td><td>XLS/XLSX spreadsheets</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Json</code></td><td>JSON documents</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Xml</code></td><td>XML documents</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Parquet</code></td><td>Columnar storage</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Pdf</code></td><td>PDF documents</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Image</code></td><td>Image files</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Text</code></td><td>Plain text files</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                            <tr><td><code>Html</code></td><td>HTML documents</td><td><code>FileConnection</code></td><td>FileHelper</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="cloud-memory" class="section">
+                    <h2>Cloud &amp; Memory</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>DatasourceType</th><th>Category</th><th>Use Case</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>WebService</code></td><td>CLOUD</td><td>REST API endpoints via WebAPIDataSource</td></tr>
+                            <tr><td><code>Graph</code></td><td>GRAPH</td><td>Neo4j, ArangoDB graph traversal</td></tr>
+                            <tr><td><code>ElasticSearch</code></td><td>SEARCH</td><td>Full-text search and analytics</td></tr>
+                            <tr><td><code>InMemory</code></td><td>MEMORY</td><td>Transient runtime-only data</td></tr>
+                            <tr><td><code>InMemoryDB</code></td><td>MEMORY</td><td>In-memory with optional persistence</td></tr>
+                            <tr><td><code>DataView</code></td><td>MEMORY</td><td>Federated/virtual data views</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="capabilities" class="section">
+                    <h2>Capability Matrix</h2>
+                    <p><code>DataSourceCapabilityMatrix</code> maps each <code>DataSourceType</code> to its supported capabilities, enabling intelligent query generation and graceful degradation.</p>
+
+                    <h3>Core Capabilities</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Capability</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>SQLite</th><th>MongoDB</th><th>Redis</th><th>CSV</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SupportsTransactions</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes*</td><td>No</td></tr>
+                            <tr><td><code>SupportsJoins</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+                            <tr><td><code>SupportsAggregations</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
+                            <tr><td><code>SupportsIndexes</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
+                            <tr><td><code>SupportsIdentity</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>Yes</td><td>No</td></tr>
+                            <tr><td><code>SupportsBulkOperations</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+                            <tr><td><code>SupportsFullTextSearch</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>Yes</td><td>No</td><td>No</td></tr>
+                            <tr><td><code>SupportsViews</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+                            <tr><td><code>SupportsStoredProcedures</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>Yes*</td><td>No</td></tr>
+                            <tr><td><code>SupportsTTL</code></td><td>No</td><td>No</td><td>No</td><td>No</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+                            <tr><td><code>IsSchemaEnforced</code></td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Vector &amp; Graph Capabilities</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Capability</th><th>Purpose</th><th>Supported By</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SupportsVectorSearch</code></td><td>Similarity search</td><td>Vector DBs, PostgreSQL (pgvector), Elasticsearch</td></tr>
+                            <tr><td><code>SupportsEmbeddings</code></td><td>Embedding storage/retrieval</td><td>Vector DBs, PostgreSQL, Redis</td></tr>
+                            <tr><td><code>SupportsANN</code></td><td>Approximate Nearest Neighbor</td><td>Vector DBs (HNSW, IVF)</td></tr>
+                            <tr><td><code>SupportsGraphTraversal</code></td><td>Graph traversal</td><td>Neo4j, ArangoDB, CosmosDB</td></tr>
+                            <tr><td><code>SupportsCypherQuery</code></td><td>Cypher query language</td><td>Neo4j</td></tr>
+                            <tr><td><code>SupportsGremlinQuery</code></td><td>Gremlin query language</td><td>CosmosDB, JanusGraph</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Streaming &amp; Protocol Capabilities</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Capability</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SupportsStreaming</code></td><td>Streaming data operations (Kafka, Kinesis)</td></tr>
+                            <tr><td><code>SupportsPublishSubscribe</code></td><td>Pub/sub messaging (Redis, Kafka)</td></tr>
+                            <tr><td><code>SupportsMessageOrdering</code></td><td>Message ordering guarantees</td></tr>
+                            <tr><td><code>SupportsDeadLetterQueue</code></td><td>Failed message routing (Kafka, Azure Service Bus)</td></tr>
+                            <tr><td><code>SupportsPushNotifications</code></td><td>Real-time push updates (Redis, Firebase)</td></tr>
+                            <tr><td><code>SupportsContinuousQueries</code></td><td>Change data capture / continuous queries</td></tr>
+                            <tr><td><code>SupportsAsyncOperations</code></td><td>Async/await pattern support</td></tr>
+                            <tr><td><code>SupportsOAuth</code></td><td>OAuth authentication (REST APIs, cloud DBs)</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="capability-api" class="section">
+                    <h2>Capability API</h2>
+                    <pre><code class="language-csharp">// Get capabilities for a datasource type
+var caps = DataSourceCapabilityMatrix.GetCapabilities(DataSourceType.SqlServer);
+
+// String-based check (case-insensitive)
+bool canJoin = caps.IsCapable("SupportsJoins");         // true
+bool canVector = caps.IsCapable("SupportsVectorSearch"); // false
+
+// Enum-based check (strongly typed)
+bool canBulk = caps.IsCapable(CapabilityType.SupportsBulkOperations); // true
+
+// CapabilityType enum: 36 values
+// SupportsTransactions, SupportsJoins, SupportsAggregations,
+// SupportsIndexes, SupportsIdentity, SupportsBulkOperations,
+// SupportsVectorSearch, SupportsGraphTraversal, SupportsStreaming,
+// SupportsPushNotifications, SupportsOAuth, ...</code></pre>
+                </section>
+                    <h2>Connection Examples</h2>
+
+                    <h3>RDBMS</h3>
+                    <pre><code class="language-csharp">var props = new ConnectionProperties
+{
+    ConnectionName = "MyDB",
+    DatabaseType = DataSourceType.SqlServer,
+    Category = DatasourceCategory.RDBMS,
+    Host = "localhost",
+    Port = 1433,
+    Database = "ProductsDB",
+    UserID = "app_user",
+    Password = "secret"
+};</code></pre>
+
+                    <h3>MongoDB</h3>
+                    <pre><code class="language-csharp">var props = new ConnectionProperties
+{
+    ConnectionName = "Mongo",
+    ConnectionString = "mongodb://localhost:27017",
+    DatabaseType = DataSourceType.MongoDB,
+    Category = DatasourceCategory.NOSQL,
+    Database = "ProductCatalog"
+};</code></pre>
+
+                    <h3>File-Based</h3>
+                    <pre><code class="language-csharp">var props = new ConnectionProperties
+{
+    ConnectionName = "CSVData",
+    ConnectionString = "./data/",
+    FileName = "export.csv",
+    DatabaseType = DataSourceType.Csv,
+    Category = DatasourceCategory.FileBased
+};</code></pre>
+
+                    <h3>Web API</h3>
+                    <pre><code class="language-csharp">var props = new ConnectionProperties
+{
+    ConnectionName = "ExternalAPI",
+    ConnectionString = "https://api.example.com/v1",
+    DatabaseType = DataSourceType.WebService,
+    Category = DatasourceCategory.CLOUD,
+    Parameters = "Bearer token123"
+};</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="connection-properties.html"><i class="bi bi-arrow-left"></i> Previous: Connection Properties</a>
+                    <a href="webapidatasource.html">Next: WebAPI DataSource <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

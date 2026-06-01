@@ -1,246 +1,971 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DistributedDataSource — BeepDM Documentation</title>
-<link rel="stylesheet" href="sphinx-style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DistributedDataSource - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
-<div id="nav-placeholder"></div>
-<div class="main-content">
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Distributed DataSource</span>
+                </nav>
+                <div class="page-header">
+                    <h1>DistributedDataSource</h1>
+                    <p class="page-subtitle">Shard-aware datasource with IProxyCluster shards, distribution planning, resilience, observability, and backpressure</p>
+                </div>
 
-<div class="content-header">
-  <div class="breadcrumb">
-    <a href="index.html">Home</a>
-    <i class="bi bi-chevron-right"></i>
-    <span>Data Management</span>
-    <i class="bi bi-chevron-right"></i>
-    <span>DistributedDataSource</span>
-  </div>
-  <h1 class="page-title"><i class="bi bi-diagram-3"></i> DistributedDataSource</h1>
-  <p class="page-subtitle">
-    Shard-aware datasource that keeps the regular <code>IDataSource</code> surface while routing reads/writes across
-    multiple <code>IProxyCluster</code> shards with resilient execution, observability, audit, security, and
-    backpressure controls.
-  </p>
-</div>
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/DistributedDatasource/Distributed/DistributedDataSource.cs</code></li>
+                        <li><code>.../DistributedDataSource.Plan.cs</code> | <code>.Routing.cs</code> | <code>.Reads.cs</code></li>
+                        <li><code>.../DistributedDataSource.Writes.cs</code> | <code>.Transactions.cs</code></li>
+                        <li><code>.../DistributedDataSource.Events.cs</code> | <code>.Lifecycle.cs</code></li>
+                        <li><code>.../DistributedDataSource.Resilience.cs</code> | <code>.Observability.cs</code></li>
+                        <li><code>.../DistributedDataSource.Performance.cs</code> | <code>.Audit.cs</code></li>
+                        <li><code>.../DistributedDataSource.Resharding.cs</code> | <code>.Schema.cs</code></li>
+                        <li><code>.../DistributedDataSource.Query.cs</code> | <code>.IDataSource.cs</code></li>
+                        <li><code>.../DistributedDataSource.ShardInvoker.cs</code></li>
+                        <li><code>.../DistributedDataSourceOptions.cs</code></li>
+                        <li><code>.../DistributedExecutionContext.cs</code></li>
+                        <li><code>.../DistributionMode.cs</code></li>
+                        <li><code>.../IDistributedDataSource.cs</code></li>
+                    </ul>
+                </div>
 
-<div class="toc-container">
-  <h3><i class="bi bi-list-ul"></i> On This Page</h3>
-  <ul class="toc-list">
-    <li><a href="#overview">Overview</a></li>
-    <li><a href="#construction">Construction Pattern</a></li>
-    <li><a href="#options">High-Value Options</a></li>
-    <li><a href="#examples">Clear Examples</a></li>
-    <li><a href="#events">Operational Events</a></li>
-    <li><a href="#phase14">Phase 14 Capacity Controls</a></li>
-    <li><a href="#pitfalls">Common Pitfalls</a></li>
-  </ul>
-</div>
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#class">Class Definition</a></li>
+                        <li><a href="#options">DistributedDataSourceOptions</a></li>
+                        <li><a href="#distribution-plan">DistributionPlan</a></li>
+                        <li><a href="#placement">Placement Types</a></li>
+                        <li><a href="#routing">Shard Routing</a></li>
+                        <li><a href="#reads">Distributed Reads</a></li>
+                        <li><a href="#writes">Distributed Writes</a></li>
+                        <li><a href="#transactions">Transactions</a></li>
+                        <li><a href="#resilience">Resilience</a></li>
+                        <li><a href="#capacity">Capacity Controls</a></li>
+                        <li><a href="#events">Events</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
 
-<section id="overview">
-  <h2><i class="bi bi-info-circle-fill"></i> Overview</h2>
-  <p>
-    <code>DistributedDataSource</code> composes existing shard clusters (<code>IProxyCluster</code>) into one logical datasource.
-    You keep calling normal datasource methods, but distribution strategy is driven by a <code>DistributionPlan</code> and
-    runtime options.
-  </p>
-  <div class="table-responsive">
-    <table class="ref-table">
-      <thead><tr><th>Concern</th><th>Handled By</th><th>What it gives you</th></tr></thead>
-      <tbody>
-        <tr><td>Shard routing</td><td><code>DistributionPlan</code> + resolver/router</td><td>Sharded/replicated/broadcast placement decisions</td></tr>
-        <tr><td>Per-shard HA</td><td><code>IProxyCluster</code></td><td>Failover/circuit/load-balancing inside each shard</td></tr>
-        <tr><td>Cross-shard execution</td><td>Distributed executors</td><td>Scatter, replicated reads, fan-out writes</td></tr>
-        <tr><td>Observability</td><td>Metrics + events</td><td>Hot shard signals, degraded mode, operation telemetry</td></tr>
-        <tr><td>Capacity controls</td><td>Phase 14 performance block</td><td>Concurrency caps, rate limits, adaptive deadlines, backpressure</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>DistributedDataSource</code> distributes entities across multiple physical datasources (shards), each backed by an <code>IProxyCluster</code>. It implements <code>IDataSource</code> and <code>IDistributedDataSource</code> across 12 partial files.</p>
+                    <p>Per-shard failover, circuit breaking, and load balancing are inherited from <code>IProxyCluster</code>.</p>
+                </section>
 
-<section id="construction">
-  <h2><i class="bi bi-hammer"></i> Construction Pattern</h2>
-  <pre><code class="language-csharp">using TheTechIdea.Beep.Distributed;
-using TheTechIdea.Beep.Distributed.Performance;
-using TheTechIdea.Beep.Proxy;
+                <section id="architecture" class="section">
+                    <h2>Architecture</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Partial File</th><th>Phase</th><th>Responsibility</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DistributedDataSource.cs</code></td><td>01</td><td>Core state, constructors, IDataSource identity</td></tr>
+                            <tr><td><code>DistributedDataSource.Plan.cs</code></td><td>02</td><td>DistributionPlan management, shard-catalog validation</td></tr>
+                            <tr><td><code>DistributedDataSource.Routing.cs</code></td><td>03-05</td><td>Entity placement, shard routing</td></tr>
+                            <tr><td><code>DistributedDataSource.Reads.cs</code></td><td>06</td><td>Scatter reads, replicated reads, query planning</td></tr>
+                            <tr><td><code>DistributedDataSource.Writes.cs</code></td><td>07</td><td>Fan-out writes, broadcast operations</td></tr>
+                            <tr><td><code>DistributedDataSource.Transactions.cs</code></td><td>09</td><td>Two-phase commit across shards</td></tr>
+                            <tr><td><code>DistributedDataSource.Events.cs</code></td><td>-</td><td>Operational events</td></tr>
+                            <tr><td><code>DistributedDataSource.Lifecycle.cs</code></td><td>-</td><td>Open, close, dispose orchestration</td></tr>
+                            <tr><td><code>DistributedDataSource.Resilience.cs</code></td><td>10</td><td>Circuits, retries, health checks</td></tr>
+                            <tr><td><code>DistributedDataSource.Observability.cs</code></td><td>11</td><td>Metrics, telemetry</td></tr>
+                            <tr><td><code>DistributedDataSource.Performance.cs</code></td><td>14</td><td>Backpressure, concurrency caps</td></tr>
+                            <tr><td><code>DistributedDataSource.Resharding.cs</code></td><td>15</td><td>Online resharding</td></tr>
+                        </tbody>
+                    </table>
+                </section>
 
-IDMEEditor editor = /* existing editor */;
+                <section id="class" class="section">
+                    <h2>Class Definition</h2>
+                    <pre><code class="language-csharp">public partial class DistributedDataSource : IDistributedDataSource
+{
+    public DistributedDataSource(
+        IDMEEditor dmeEditor,
+        IReadOnlyDictionary&lt;string, IProxyCluster&gt; shards,
+        DistributionPlan plan = null,
+        DistributedDataSourceOptions options = null);
 
-IReadOnlyDictionary&lt;string, IProxyCluster&gt; shards = new Dictionary&lt;string, IProxyCluster&gt;
+    // IDataSource identity
+    public string DatasourceName { get; set; }
+    public DataSourceType DatasourceType { get; set; }
+    public DatasourceCategory Category { get; set; }
+    public ConnectionState ConnectionStatus { get; set; }
+    public IErrorsInfo ErrorObject { get; set; }
+
+    // Topology
+    public DistributionPlan DistributionPlan { get; }
+    public IReadOnlyDictionary&lt;string, IProxyCluster&gt; Shards { get; }
+
+    // Executors
+    private IDistributedReadExecutor _readExecutor;
+    private IDistributedWriteExecutor _writeExecutor;
+    private IResultMerger _resultMerger;
+    private IQueryPlanner _queryPlanner;
+    private IDistributedTransactionCoordinator _txCoordinator;
+}</code></pre>
+                </section>
+
+                <section id="options" class="section">
+                    <h2>DistributedDataSourceOptions</h2>
+                    <pre><code class="language-csharp">public sealed class DistributedDataSourceOptions
+{
+    // Timeouts
+    public int DefaultPerShardTimeoutMs { get; set; } = 30_000;
+    public int DefaultReadDeadlineMs { get; set; } = 60_000;
+    public int DisposeDrainTimeoutMs { get; set; } = 5_000;
+
+    // Parallelism
+    public int MaxScatterParallelism { get; set; } // Default: ProcessorCount
+    public int MaxFanOutParallelism { get; set; }  // Default: ProcessorCount
+
+    // Lifecycle
+    public bool EagerOpenShards { get; set; } = true;
+
+    // Placement
+    public UnmappedEntityPolicy UnmappedPolicy { get; set; }
+    public double MinimumHealthyShardRatio { get; set; } = 0.5;
+
+    // Scatter policy
+    public ScatterFailurePolicy ScatterFailurePolicy { get; set; }
+
+    // Security
+    public SecurityOptions Security { get; set; }
+
+    // Performance (Phase 14)
+    public PerformanceOptions Performance { get; set; }
+}</code></pre>
+
+                    <h3>UnmappedEntityPolicy</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Policy</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RejectUnmapped</code></td><td>Fail loudly on unmapped entities (default for dev)</td></tr>
+                            <tr><td><code>Broadcast</code></td><td>Send to all shards</td></tr>
+                            <tr><td><code>RouteToDefault</code></td><td>Route to configured default shard</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="distribution-plan" class="section">
+                    <h2>DistributionPlan</h2>
+                    <pre><code class="language-csharp">public class DistributionPlan
+{
+    public static DistributionPlan Empty { get; }
+
+    public string PlanId { get; set; }
+    public string PlanName { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    // Entity → placement mapping
+    public List&lt;EntityPlacement&gt; Placements { get; set; }
+
+    // Shard definitions
+    public List&lt;ShardDefinition&gt; Shards { get; set; }
+}</code></pre>
+
+                    <h3>Building a Plan</h3>
+                    <pre><code class="language-csharp">var plan = new DistributionPlan
+{
+    Placements = new List&lt;EntityPlacement&gt;
+    {
+        new EntityPlacement
+        {
+            EntityName = "Customers",
+            Placement = PlacementType.Sharded,
+            ShardKey = "CustomerId",
+            ShardIds = new[] { "shard-a", "shard-b" }
+        },
+        new EntityPlacement
+        {
+            EntityName = "Products",
+            Placement = PlacementType.Replicated,
+            ShardIds = new[] { "shard-a", "shard-b", "shard-c" }
+        }
+    }
+};</code></pre>
+                </section>
+
+                <section id="placement" class="section">
+                    <h2>Placement Types</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Placement</th><th>Read</th><th>Write</th><th>Use Case</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Sharded</code></td><td>1 shard (by key)</td><td>1 shard</td><td>Large tables, customer data</td></tr>
+                            <tr><td><code>Replicated</code></td><td>Any shard</td><td>All shards</td><td>Reference data, lookup tables</td></tr>
+                            <tr><td><code>Partitioned</code></td><td>Broadcast query</td><td>By partition key</td><td>Time-series data</td></tr>
+                            <tr><td><code>Global</code></td><td>Primary shard</td><td>Primary shard</td><td>Configuration, small shared tables</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="routing" class="section">
+                    <h2>Shard Routing</h2>
+                    <pre><code class="language-csharp">// Placement resolver maps entity + key → shard(s)
+var (shardIds, placementType) = _resolver.Resolve("Customers", filters);
+
+// Router selects specific healthy shard for execution
+var targetShard = _router.RouteRead(shardIds, placementType);
+
+// Routing hooks for custom logic
+distributed.RoutingHook = new CustomShardRoutingHook();</code></pre>
+                </section>
+
+                <section id="distribution-mode" class="section">
+                    <h2>DistributionMode Enum</h2>
+                    <pre><code class="language-csharp">public enum DistributionMode
+{
+    Routed    = 0,  // Entire entity on one shard, point reads/writes
+    Sharded   = 1,  // Row-level sharding via partition function, scatter reads
+    Replicated = 2, // Entity on every shard, fan-out writes, any-shard reads
+    Broadcast = 3   // Replicated with closest-healthy-shard read preference
+}</code></pre>
+                </section>
+
+                <section id="execution-context" class="section">
+                    <h2>DistributedExecutionContext</h2>
+                    <pre><code class="language-csharp">public class DistributedExecutionContext
+{
+    // Per-operation execution context
+    public string OperationId { get; set; }
+    public Dictionary&lt;string, object&gt; ContextData { get; set; }
+    public CancellationToken Token { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="idistributed" class="section">
+                    <h2>IDistributedDataSource Interface</h2>
+                    <pre><code class="language-csharp">public interface IDistributedDataSource : IDataSource
+{
+    DistributionPlan DistributionPlan { get; }
+    IReadOnlyDictionary&lt;string, IProxyCluster&gt; Shards { get; }
+    Task&lt;TransactionToken&gt; BeginTransactionAsync(string entityName, List&lt;string&gt; shardIds);
+}</code></pre>
+                </section>
+
+                <section id="reads" class="section">
+                    <h2>Distributed Reads</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Read Type</th><th>Behavior</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Single-shard</strong></td><td>Key-based lookup routes to exactly one shard</td></tr>
+                            <tr><td><strong>Scatter</strong></td><td>Read from all relevant shards, merge results</td></tr>
+                            <tr><td><strong>Replicated</strong></td><td>Read from nearest healthy replica</td></tr>
+                            <tr><td><strong>Broadcast-join</strong></td><td>Join across shards with broadcast hashing</td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">// Single-shard
+var customer = distributed.GetEntity("Customers",
+    new List&lt;AppFilter&gt; { new AppFilter { FieldName = "CustomerId",
+        Operator = "=", FilterValue = "123" } });
+
+// Scatter (auto-detects sharded placement)
+var allActive = distributed.GetEntity("Orders",
+    new List&lt;AppFilter&gt; { new AppFilter { FieldName = "Status",
+        Operator = "=", FilterValue = "Active" } });</code></pre>
+                </section>
+
+                <section id="writes" class="section">
+                    <h2>Distributed Writes</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Write Type</th><th>Behavior</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Routed</strong></td><td>Write to specific shard by key</td></tr>
+                            <tr><td><strong>Broadcast</strong></td><td>Write to all relevant shards</td></tr>
+                            <tr><td><strong>Fan-out</strong></td><td>Parallel writes with result aggregation</td></tr>
+                        </tbody>
+                    </table>
+                    <pre><code class="language-csharp">var result = distributed.InsertEntity("Orders", new
+{
+    OrderId = Guid.NewGuid(),
+    CustomerId = "123", // routing key
+    Amount = 149.99m
+});
+
+if (result.Flag != Errors.Ok)
+    throw new InvalidOperationException(result.Message);</code></pre>
+                </section>
+
+                <section id="transactions" class="section">
+                    <h2>Transactions</h2>
+                    <pre><code class="language-csharp">public interface IDistributedTransactionCoordinator
+{
+    Task&lt;TransactionToken&gt; BeginAsync(string entityName, List&lt;string&gt; shardIds);
+    Task PrepareAsync(TransactionToken token);
+    Task CommitAsync(TransactionToken token);
+    Task RollbackAsync(TransactionToken token);
+}
+
+// Usage
+using var tx = await distributed.BeginTransactionAsync("Orders");
+try
+{
+    distributed.InsertEntity("Orders", order);
+    await tx.CommitAsync();
+}
+catch
+{
+    await tx.RollbackAsync();
+    throw;
+}</code></pre>
+                </section>
+
+                <section id="resilience" class="section">
+                    <h2>Resilience</h2>
+                    <pre><code class="language-csharp">// Scatter failure policy
+public enum ScatterFailurePolicy
+{
+    FailFast,           // Abort on first failure
+    PartialResults,     // Return partial results ≥ MinimumHealthyShardRatio
+    FullResultsOrFail   // All shards must succeed
+}
+
+var options = new DistributedDataSourceOptions
+{
+    MinimumHealthyShardRatio = 0.5,  // 50% healthy shards required
+    ScatterFailurePolicy = ScatterFailurePolicy.PartialResults
+};</code></pre>
+                </section>
+
+                <section id="capacity" class="section">
+                    <h2>Capacity Controls (Phase 14)</h2>
+                    <pre><code class="language-csharp">var options = new DistributedDataSourceOptions
+{
+    Performance = new PerformanceOptions
+    {
+        EnableCapacityGates           = true,
+        MaxConcurrentDistributedCalls = 64,
+        DistributedPermitWait         = TimeSpan.FromMilliseconds(500),
+        MaxConcurrentCallsPerShard    = 16,
+        ShardPermitWait               = TimeSpan.FromMilliseconds(300),
+        ShardRateLimitPerSecond       = 120,
+        ShardRateLimitBurst           = 240,
+        AdaptiveDeadlineFactor        = 1.3,
+        MinAdaptiveDeadlineMs         = 250,
+        MaxAdaptiveDeadlineMs         = 8000,
+        EnableHotShardReadShedding    = true
+    }
+};</code></pre>
+                    <p>Overload is rejected early with <code>BackpressureException</code> instead of hidden latency growth.</p>
+                </section>
+
+                <section id="events" class="section">
+                    <h2>Events</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>OnShardSelected</code></td><td>Routing telemetry</td></tr>
+                            <tr><td><code>OnPlacementViolation</code></td><td>Plan violations or invalid placement</td></tr>
+                            <tr><td><code>OnShardDown</code></td><td>Shard marked unhealthy</td></tr>
+                            <tr><td><code>OnShardRestored</code></td><td>Shard restored to healthy</td></tr>
+                            <tr><td><code>OnDegradedMode</code></td><td>Healthy ratio below threshold</td></tr>
+                            <tr><td><code>OnPartialReplicationFailure</code></td><td>Some replicas failed</td></tr>
+                            <tr><td><code>OnPartialBroadcast</code></td><td>Broadcast partially succeeded</td></tr>
+                            <tr><td><code>OnBackpressure</code></td><td>Capacity gate rejection</td></tr>
+                            <tr><td><code>OnPlanChanged</code></td><td>Distribution plan updated</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Basic Setup</h3>
+                    <pre><code class="language-csharp">var shards = new Dictionary&lt;string, IProxyCluster&gt;
 {
     ["shard-a"] = shardACluster,
     ["shard-b"] = shardBCluster,
     ["shard-c"] = shardCCluster
 };
 
-DistributionPlan plan = /* load from plan store or build */;
-
-var options = new DistributedDataSourceOptions
-{
-    DefaultPerShardTimeoutMs = 15_000,
-    DefaultReadDeadlineMs    = 45_000,
-    MaxScatterParallelism    = 8,
-    MaxFanOutParallelism     = 6
-};
+var plan = DistributionPlanBuilder.Create()
+    .Shard("Customers", on: "CustomerId",
+        across: new[] { "shard-a", "shard-b" })
+    .Replicate("Products",
+        across: new[] { "shard-a", "shard-b", "shard-c" })
+    .Build();
 
 var distributed = new DistributedDataSource(
-    dmeEditor: editor,
-    shards:    shards,
-    plan:      plan,
-    options:   options);
+    editor, shards, plan, options);
 
 distributed.Openconnection();</code></pre>
-  <div class="info-box">
-    <i class="bi bi-lightbulb"></i>
-    <div>
-      Use explicit shard IDs and keep them stable over time. Plan routing and operational logs depend on those IDs.
-    </div>
-  </div>
-</section>
 
-<section id="options">
-  <h2><i class="bi bi-sliders"></i> High-Value Options</h2>
-  <div class="table-responsive">
-    <table class="ref-table">
-      <thead><tr><th>Option</th><th>Why it matters</th><th>Typical start value</th></tr></thead>
-      <tbody>
-        <tr><td><code>DefaultPerShardTimeoutMs</code></td><td>Caps one shard leg before it stalls whole requests</td><td><code>10_000</code>–<code>30_000</code></td></tr>
-        <tr><td><code>DefaultReadDeadlineMs</code></td><td>End-to-end read budget for scatter/replicated flow</td><td><code>30_000</code>–<code>60_000</code></td></tr>
-        <tr><td><code>MaxScatterParallelism</code></td><td>Protects shard fleet from over-fanout on reads</td><td><code>min(8, shardCount)</code></td></tr>
-        <tr><td><code>MaxFanOutParallelism</code></td><td>Bounds write fan-out concurrency</td><td><code>4</code>–<code>8</code></td></tr>
-        <tr><td><code>MinimumHealthyShardRatio</code></td><td>Degraded-mode gate for scatter/broadcast</td><td><code>0.5</code></td></tr>
-        <tr><td><code>Performance</code></td><td>Phase 14 backpressure and adaptive timeout controls</td><td>Use defaults, tune gradually</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section id="examples">
-  <h2><i class="bi bi-code-slash"></i> Clear Examples</h2>
-
-  <h3>Example 1 — Single-key read routed to one shard</h3>
-  <pre><code class="language-csharp">// Standard IDataSource call style remains valid.
-var customer = distributed.GetEntity("Customers", new List&lt;AppFilter&gt;
-{
-    new AppFilter { FieldName = "CustomerId", Operator = "=", FilterValue = customerId }
-});</code></pre>
-
-  <h3>Example 2 — Replicated read with fallback</h3>
-  <pre><code class="language-csharp">// For replicated placement, resolver picks an ordered replica set.
-// Executor attempts replicas according to policy and shard health.
-var product = distributed.GetEntity("Products", new List&lt;AppFilter&gt;
-{
-    new AppFilter { FieldName = "Sku", Operator = "=", FilterValue = sku }
-});</code></pre>
-
-  <h3>Example 3 — Sharded write</h3>
-  <pre><code class="language-csharp">var order = new
-{
-    OrderId = Guid.NewGuid(),
-    CustomerId = customerId, // routing key in most plans
-    Amount = 149.99m,
-    Status = "New"
-};
-
-IErrorsInfo writeResult = distributed.InsertEntity("Orders", order);
-if (writeResult.Flag != Errors.Ok)
-{
-    throw new InvalidOperationException(writeResult.Message);
-}</code></pre>
-
-  <h3>Example 4 — Backpressure-aware call path</h3>
-  <pre><code class="language-csharp">using TheTechIdea.Beep.Distributed.Performance;
-
-try
+                    <h3>Backpressure Handling</h3>
+                    <pre><code class="language-csharp">try
 {
     var rows = distributed.GetEntity("Orders", null);
 }
 catch (BackpressureException bp)
 {
-    // Retry after the provided hint.
-    logger.LogWarning(
-        $"Distributed gate '{bp.GateName}' rejected call. Retry after {bp.RetryAfter.TotalMilliseconds:F0} ms.");
+    Console.WriteLine($"Retry after {bp.RetryAfter.TotalMilliseconds}ms");
 }</code></pre>
 
-  <h3>Example 5 — Subscribe to operational events</h3>
-  <pre><code class="language-csharp">distributed.OnShardDown += (_, e) =>
+                    <h3>Monitoring</h3>
+                    <pre><code class="language-csharp">distributed.OnShardDown += (s, e) =>
     logger.LogWarning($"Shard down: {e.ShardId}");
 
-distributed.OnShardRestored += (_, e) =>
-    logger.LogInformation($"Shard restored: {e.ShardId}");
+distributed.OnDegradedMode += (s, e) =>
+    logger.LogWarning($"Degraded. Healthy ratio: {e.HealthyRatio:F2}");
 
-distributed.OnDegradedMode += (_, e) =>
-    logger.LogWarning($"Degraded mode. Healthy ratio={e.HealthyRatio:F2}");
+distributed.OnPlacementViolation += (s, e) =>
+    logger.LogError($"Placement violation: {e.EntityName}");</code></pre>
+                </section>
 
-distributed.OnBackpressure += (_, e) =>
-    logger.LogWarning(
-        $"Backpressure gate={e.GateName} shard={e.ShardId ?? "-"} retry={e.RetryAfter.TotalMilliseconds:F0}ms");</code></pre>
-</section>
+                <div class="nav-links">
+                    <a href="proxycluster.html"><i class="bi bi-arrow-left"></i> Previous: ProxyCluster</a>
+                    <a href="advanced-tools-utilities.html">Next: Advanced Tools <i class="bi bi-arrow-right"></i></a>
+                </div>
 
-<section id="events">
-  <h2><i class="bi bi-broadcast"></i> Operational Events</h2>
-  <p>Events to wire for observability and alerting:</p>
-  <ul>
-    <li><code>OnShardSelected</code> — routing telemetry.</li>
-    <li><code>OnPlacementViolation</code> — plan violations or invalid placement.</li>
-    <li><code>OnShardDown</code> / <code>OnShardRestored</code> — shard health transitions.</li>
-    <li><code>OnDegradedMode</code> — healthy ratio below threshold.</li>
-    <li><code>OnPartialReplicationFailure</code> / <code>OnPartialBroadcast</code> — quorum succeeded with gaps.</li>
-    <li><code>OnBackpressure</code> — Phase 14 capacity rejection events.</li>
-  </ul>
-</section>
+                <!-- ═══════════════════════════════════════════════════ FULL API REFERENCE -->
+                <section id="full-api" class="section">
+                    <h2><i class="bi bi-book"></i> Full API Reference</h2>
 
-<section id="phase14">
-  <h2><i class="bi bi-speedometer2"></i> Phase 14 Capacity Controls</h2>
-  <pre><code class="language-csharp">var options = new DistributedDataSourceOptions
+                    <h3>IDistributedDataSource — Complete Interface</h3>
+                    <pre><code class="language-csharp">public interface IDistributedDataSource : IDataSource, IDisposable
 {
-    Performance = new PerformanceOptions
-    {
-        EnableCapacityGates          = true,
-        MaxConcurrentDistributedCalls = 64,
-        DistributedPermitWait        = TimeSpan.FromMilliseconds(500),
-        MaxConcurrentCallsPerShard   = 16,
-        ShardPermitWait              = TimeSpan.FromMilliseconds(300),
-        ShardRateLimitPerSecond      = 120,
-        ShardRateLimitBurst          = 240,
-        AdaptiveDeadlineFactor       = 1.3,
-        MinAdaptiveDeadlineMs        = 250,
-        MaxAdaptiveDeadlineMs        = 8_000,
-        EnableHotShardReadShedding   = true
-    }
-};</code></pre>
-  <p>
-    This layer runs before cluster-tier execution, so overload is rejected early with a structured
-    <code>BackpressureException</code> instead of hidden latency growth.
-  </p>
-</section>
+    DistributionPlan DistributionPlan { get; }
+    IReadOnlyDictionary&lt;string, IProxyCluster&gt; Shards { get; }
+    void ApplyDistributionPlan(DistributionPlan plan);
+    
+    event EventHandler&lt;ShardSelectedEventArgs&gt; OnShardSelected;
+    event EventHandler&lt;PlacementViolationEventArgs&gt; OnPlacementViolation;
+    event EventHandler&lt;ReshardEventArgs&gt; OnReshardStarted;
+    event EventHandler&lt;ReshardEventArgs&gt; OnReshardCompleted;
+    event EventHandler&lt;ReshardProgressEventArgs&gt; OnReshardProgress;
+    event EventHandler&lt;PartialReplicationFailureEventArgs&gt; OnPartialReplicationFailure;
+    event EventHandler&lt;TransactionInDoubtEventArgs&gt; OnTransactionInDoubt;
+    event EventHandler&lt;ShardDownEventArgs&gt; OnShardDown;
+    event EventHandler&lt;ShardRestoredEventArgs&gt; OnShardRestored;
+    event EventHandler&lt;DegradedModeEventArgs&gt; OnDegradedMode;
+    event EventHandler&lt;PartialBroadcastEventArgs&gt; OnPartialBroadcast;
+}</code></pre>
 
-<section id="pitfalls">
-  <h2><i class="bi bi-exclamation-triangle"></i> Common Pitfalls</h2>
-  <ul>
-    <li>Using empty or unstable shard IDs. Keep IDs deterministic and environment-consistent.</li>
-    <li>Running with a plan that doesn't match actual shard map. Validate before deployment.</li>
-    <li>Overly high fan-out/scatter parallelism. Start conservative, measure, then scale up.</li>
-    <li>Ignoring backpressure events. Wire <code>OnBackpressure</code> to metrics/alerts.</li>
-    <li>Treating distributed writes as always all-or-nothing without checking partial failure events.</li>
-  </ul>
-</section>
+                    <h3>DistributedDataSource — 16 Partial Files</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Phase</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>.cs</code></td><td>01</td><td>Core state: Shards, Plan, Options, executors, IDataSource identity, constructor</td></tr>
+                    <tr><td><code>.IDataSource.cs</code></td><td>01</td><td>IDataSource passthrough (GetEntity, InsertEntity, etc.)</td></tr>
+                    <tr><td><code>.Plan.cs</code></td><td>02</td><td>DistributionPlan management, shard-catalog validation</td></tr>
+                    <tr><td><code>.Routing.cs</code></td><td>03-05</td><td>EntityPlacementResolver + ShardRouter integration</td></tr>
+                    <tr><td><code>.Reads.cs</code></td><td>06</td><td>Single-shard, scatter, replicated reads</td></tr>
+                    <tr><td><code>.Writes.cs</code></td><td>07</td><td>Fan-out writes, broadcast operations</td></tr>
+                    <tr><td><code>.ShardInvoker.cs</code></td><td>08</td><td>Low-level shard invocation with retry and timeout</td></tr>
+                    <tr><td><code>.Transactions.cs</code></td><td>09</td><td>Transaction token management</td></tr>
+                    <tr><td><code>.Resilience.cs</code></td><td>10</td><td>Circuits, retries, health checks per shard</td></tr>
+                    <tr><td><code>.Observability.cs</code></td><td>11</td><td>Metrics, telemetry, SLO snapshots</td></tr>
+                    <tr><td><code>.Events.cs</code></td><td>—</td><td>Event wiring and fire helpers</td></tr>
+                    <tr><td><code>.Lifecycle.cs</code></td><td>—</td><td>Open/Close/Dispose orchestration</td></tr>
+                    <tr><td><code>.Performance.cs</code></td><td>14</td><td>Backpressure semaphores, adaptive deadlines, hot-shard shedding</td></tr>
+                    <tr><td><code>.Resharding.cs</code></td><td>15</td><td>Online resharding coordination</td></tr>
+                    <tr><td><code>.Schema.cs</code></td><td>—</td><td>GetEntityStructure, entities discovery</td></tr>
+                    <tr><td><code>.Audit.cs</code></td><td>13</td><td>Distributed audit event emission</td></tr>
+                    </tbody></table>
 
-</div>
+                    <h3>Partitioning Subsystem</h3>
+                    <pre><code class="language-csharp">public interface IPartitionFunction
+{
+    string Name { get; }
+    int Resolve(PartitionInput input, int bucketCount);
+}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
-<script src="navigation.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof loadNavigation === 'function') loadNavigation('distributed-datasource');
-});
-</script>
+public struct PartitionInput
+{
+    public string EntityName { get; set; }
+    public object[] KeyValues { get; set; }
+    public string PartitionKeyField { get; set; }
+    public static PartitionInput ForEntity(string entity, params object[] keys);
+}
+
+// 4 built-in partition functions:
+public class HashPartitionFunction : IPartitionFunction;       // Default
+public class RangePartitionFunction : IPartitionFunction;      // Range-based
+public class ListPartitionFunction : IPartitionFunction;       // Explicit key → bucket
+public class CompositePartitionFunction : IPartitionFunction;  // Chains multiple functions
+
+public static class PartitionFunctionFactory
+{
+    public static IPartitionFunction Create(string type, object config = null);
+    // type: "hash", "range", "list", "composite"
+}
+
+public static class PartitionKeyCoercer
+{
+    public static object Coerce(object value, Type targetType);
+    // Coerces partition key to correct type for hashing
+}
+
+public static class MurmurHash3Helper
+{
+    public static int Hash(byte[] data, uint seed = 0);
+    public static int HashString(string value, uint seed = 0);
+}</code></pre>
+
+                    <h3>Catalog Subsystem</h3>
+                    <pre><code class="language-csharp">public interface IShardCatalog
+{
+    IReadOnlyDictionary&lt;string, Shard&gt; Shards { get; }
+    Shard GetShard(string shardId);
+    bool TryGetShard(string shardId, out Shard shard);
+    IEnumerable&lt;Shard&gt; GetShardsForPartitionRange(int start, int end);
+}
+
+public class Shard
+{
+    public string ShardId { get; set; }
+    public IProxyCluster Cluster { get; set; }
+    public ShardState State { get; set; }          // Active, Draining, Offline
+    public int SlotStart { get; set; }             // Hash slot range start
+    public int SlotEnd { get; set; }               // Hash slot range end
+    public DateTime AddedAtUtc { get; set; }
+    public Dictionary&lt;string, double&gt; Metrics { get; set; }
+}
+
+public class ShardCatalog : IShardCatalog
+{
+    public void AddShard(Shard shard);
+    public bool RemoveShard(string shardId);
+    public void UpdateShardState(string shardId, ShardState state);
+}
+
+public class ShardCatalog.Persistence.cs
+{
+    public Task SaveAsync(string path);
+    public Task LoadAsync(string path);
+}
+public enum ShardState { Active, Draining, Offline }</code></pre>
+
+                    <h3>Routing Subsystem</h3>
+                    <pre><code class="language-csharp">public interface IShardRouter
+{
+    RoutingDecision RouteRead(string entityName, List&lt;AppFilter&gt; filters,
+        DistributionPlan plan);
+    RoutingDecision RouteWrite(string entityName, object entity,
+        DistributionPlan plan);
+}
+
+public class RoutingDecision
+{
+    public List&lt;string&gt; TargetShardIds { get; set; }
+    public PlacementType PlacementType { get; set; }
+    public bool IsBroadcast { get; set; }
+    public string PrimaryShardId { get; set; }
+    public string PartitionKey { get; set; }
+}
+
+public class ShardRouter : IShardRouter { /* uses ShardCatalog + PlacementResolver */ }
+
+// Key extraction (.KeyExtraction partial)
+public class ShardRouter.KeyExtraction.cs   // Extracts partition key from filters/entity
+// Dual-write (.DualWrite partial)
+public class ShardRouter.DualWrite.cs       // Dual-write routing during resharding
+
+public interface IShardRoutingHook
+{
+    RoutingDecision OnRouteRead(RoutingDecision decision, string entityName);
+    RoutingDecision OnRouteWrite(RoutingDecision decision, string entityName, object entity);
+}
+public class NullShardRoutingHook : IShardRoutingHook;   // Pass-through default
+
+public class ShardRoutingException : Exception
+{
+    public string EntityName { get; }
+    public PlacementType Placement { get; }
+    public ShardRoutingException(string message, string entityName, PlacementType placement);
+}</code></pre>
+
+                    <h3>Execution Subsystem</h3>
+                    <pre><code class="language-csharp">public interface IDistributedReadExecutor
+{
+    Task&lt;IEnumerable&lt;object&gt;&gt; ExecuteSingleShardAsync(
+        string entityName, List&lt;AppFilter&gt; filters, string shardId, CancellationToken ct);
+    Task&lt;IEnumerable&lt;object&gt;&gt; ExecuteScatterAsync(
+        string entityName, List&lt;AppFilter&gt; filters, List&lt;string&gt; shardIds, CancellationToken ct);
+    Task&lt;IEnumerable&lt;object&gt;&gt; ExecuteReplicatedReadAsync(
+        string entityName, List&lt;AppFilter&gt; filters, List&lt;string&gt; shardIds, CancellationToken ct);
+}
+
+public class DistributedReadExecutor : IDistributedReadExecutor { /* 4 partials */ }
+    // .SingleShard  — single-shard with retry/failover
+    // .Scatter     — parallel scatter with degree-of-parallelism cap
+    // .Replicated  — nearest-healthy-replica selection
+
+public class DistributedWriteExecutor
+{
+    public Task&lt;IErrorsInfo&gt; ExecuteRoutedAsync(
+        string entityName, object entity, string shardId, CancellationToken ct);
+    public Task&lt;IErrorsInfo&gt; ExecuteBroadcastAsync(
+        string entityName, object entity, List&lt;string&gt; shardIds, CancellationToken ct);
+    public Task&lt;IErrorsInfo&gt; ExecuteFanOutAsync(
+        string entityName, object entity, List&lt;string&gt; shardIds, CancellationToken ct);
+}
+
+public class BasicResultMerger : IResultMerger
+{
+    public IEnumerable&lt;object&gt; Merge(IEnumerable&lt;IEnumerable&lt;object&gt;&gt; results);
+    public IEnumerable&lt;T&gt; MergeTyped&lt;T&gt;(IEnumerable&lt;IEnumerable&lt;T&gt;&gt; results);
+}</code></pre>
+
+                    <h3>Query Subsystem</h3>
+                    <pre><code class="language-csharp">public interface IQueryPlanner
+{
+    QueryPlan Plan(string entityName, List&lt;AppFilter&gt; filters, DistributionPlan plan);
+}
+
+public class QueryPlan
+{
+    public QueryIntent Intent { get; set; }               // SingleShard, Scatter, BroadcastJoin
+    public List&lt;string&gt; TargetShardIds { get; set; }
+    public AggregateSpec Aggregate { get; set; }
+    public MergeSpec Merge { get; set; }
+    public bool IsSingleShard { get; }
+    public bool IsScatter { get; }
+}
+
+public enum QueryIntent { SingleShard, Scatter, BroadcastJoin }
+
+public enum AggregateKind { Count, Sum, Avg, Min, Max }
+
+public class AggregateSpec
+{
+    public AggregateKind Kind { get; set; }
+    public string FieldName { get; set; }
+}
+
+public class AggregateAccumulator
+{
+    public void Accumulate(object row);
+    public void Merge(AggregateAccumulator other);
+    public object FinalResult { get; }
+}
+
+public enum OrderDirection { Asc, Desc }
+
+public class OrderBySpec
+{
+    public string FieldName { get; set; }
+    public OrderDirection Direction { get; set; }
+}
+
+public class MergeSpec
+{
+    public bool Distinct { get; set; }
+    public List&lt;OrderBySpec&gt; OrderBy { get; set; }
+    public int? Top { get; set; }
+}
+
+public enum MergeOperation { Union, Concat, Intersect }
+
+public interface IQueryAwareResultMerger
+{
+    IEnumerable&lt;object&gt; Merge(IEnumerable&lt;IEnumerable&lt;object&gt;&gt; shardResults,
+        MergeSpec spec, CancellationToken ct = default);
+}
+
+public class QueryAwareResultMerger : IQueryAwareResultMerger
+{
+    // .Sorting  — merge-sort from sorted shard results
+    // .Grouping — group-by aggregation across shards
+}
+
+public class QueryPlanner : IQueryPlanner { /* resolves Plan from filters + placement */ }
+
+public class BroadcastJoinRewriter
+{
+    public QueryPlan RewriteForBroadcastJoin(QueryPlan plan, DistributionPlan distPlan);
+}
+
+public class RowValueExtractor
+{
+    public static object GetValue(object row, string fieldName);
+}</code></pre>
+
+                    <h3>Transactions Subsystem</h3>
+                    <pre><code class="language-csharp">public interface IDistributedTransactionCoordinator
+{
+    Task&lt;TransactionToken&gt; BeginAsync(string entityName, List&lt;string&gt; shardIds,
+        TransactionStrategy strategy = TransactionStrategy.SingleShard);
+    Task PrepareAsync(TransactionToken token);
+    Task CommitAsync(TransactionToken token);
+    Task RollbackAsync(TransactionToken token);
+}
+
+public enum TransactionStrategy { SingleShard, TwoPhaseCommit, Saga }
+
+public class DistributedTransactionCoordinator : IDistributedTransactionCoordinator
+{
+    // .SingleShard     — begin on one shard, no coordination needed
+    // .TwoPhaseCommit  — 2PC: prepare all → commit all (or rollback)
+    // .Saga            — compensating-saga steps on abort
+}
+
+public class TransactionToken : IDisposable
+{
+    public string TokenId { get; }
+    public string EntityName { get; }
+    public DistributedTransactionStatus Status { get; }
+
+    public Task CommitAsync();
+    public Task RollbackAsync();
+    public void Dispose();
+}
+
+public class DistributedTransactionScope : IDisposable { /* convenience wrapper */ }
+
+public enum DistributedTransactionStatus
+{
+    None, Active, Preparing, Prepared, Committing, Committed,
+    RollingBack, RolledBack, InDoubt, TimedOut
+}
+
+public enum TransactionLogKind { Prepare, Commit, Rollback, Compensate }
+
+public class TransactionLogEntry
+{
+    public string TokenId { get; set; }
+    public TransactionLogKind Kind { get; set; }
+    public string ShardId { get; set; }
+    public DateTime TimestampUtc { get; set; }
+    public string EntityName { get; set; }
+}
+
+public interface IDistributedTransactionLog
+{
+    Task AppendAsync(TransactionLogEntry entry);
+    Task&lt;IReadOnlyList&lt;TransactionLogEntry&gt;&gt; GetEntriesAsync(string tokenId);
+    Task ClearAsync(string tokenId);
+}
+
+public class InMemoryTransactionLog : IDistributedTransactionLog;
+public class FileTransactionLog : IDistributedTransactionLog;
+
+public class TransactionDecisionResolver
+{
+    public DistributedTransactionStatus Resolve(
+        IReadOnlyList&lt;TransactionLogEntry&gt; log);
+}
+
+public class SagaStep
+{
+    public string StepName { get; set; }
+    public Func&lt;Task&gt; ExecuteAsync { get; set; }
+    public Func&lt;Task&gt; CompensateAsync { get; set; }
+    public bool IsCritical { get; set; }
+}</code></pre>
+
+                    <h3>Placement Subsystem</h3>
+                    <pre><code class="language-csharp">public class EntityPlacementResolver
+{
+    public PlacementResolution Resolve(string entityName, List&lt;AppFilter&gt; filters,
+        DistributionPlan plan);
+    public PlacementResolution ResolveForWrite(string entityName, object entity,
+        DistributionPlan plan);
+}
+
+public enum PlacementMatchKind { Exact, Wildcard, Default }
+
+public class PlacementResolution
+{
+    public PlacementMatchKind MatchKind { get; set; }
+    public PlacementType PlacementType { get; set; }
+    public List&lt;string&gt; ShardIds { get; set; }
+    public string PartitionKeyField { get; set; }
+    public bool IsSharded { get; }
+    public bool IsReplicated { get; }
+}
+
+public class EntityPlacementMap
+{
+    public Dictionary&lt;string, List&lt;string&gt;&gt; EntityToShards { get; set; }
+    public EntityPlacementMap(DistributionPlan plan);
+    public bool TryGetShards(string entityName, out List&lt;string&gt; shardIds);
+}</code></pre>
+
+                    <h3>All Event Args</h3>
+                    <table class="ref-table"><thead><tr><th>Event Args Class</th><th>Key Properties</th></tr></thead><tbody>
+                    <tr><td><code>ShardSelectedEventArgs</code></td><td>EntityName, ShardId, Filters, PlacementType</td></tr>
+                    <tr><td><code>PlacementViolationEventArgs</code></td><td>EntityName, Violation, PlanId</td></tr>
+                    <tr><td><code>ReshardEventArgs</code></td><td>PlanId, OldPlanId, Succeeded, Error, StartedAtUtc</td></tr>
+                    <tr><td><code>ReshardProgressEventArgs</code></td><td>PlanId, PercentComplete, EntitiesCopied, EntitiesTotal</td></tr>
+                    <tr><td><code>PartialReplicationFailureEventArgs</code></td><td>EntityName, SuccessfulShards, FailedShards, QuorumMet</td></tr>
+                    <tr><td><code>PartialBroadcastEventArgs</code></td><td>EntityName, ExcludedShards, Reason</td></tr>
+                    <tr><td><code>ShardDownEventArgs</code></td><td>ShardId, Reason, DetectedAtUtc</td></tr>
+                    <tr><td><code>ShardRestoredEventArgs</code></td><td>ShardId, DowntimeDuration, RestoredAtUtc</td></tr>
+                    <tr><td><code>DegradedModeEventArgs</code></td><td>HealthyRatio, HealthyShardCount, TotalShardCount</td></tr>
+                    <tr><td><code>TransactionInDoubtEventArgs</code></td><td>TokenId, ShardId, PreparedShards, FailedShards</td></tr>
+                    </tbody></table>
+
+                    <h3>Audit Subsystem</h3>
+                    <pre><code class="language-csharp">public enum DistributedAuditEventKind
+{
+    ShardRouted, ShardFailed, PlacementViolation,
+    TransactionStarted, TransactionPrepared, TransactionCommitted, TransactionRolledBack,
+    ReshardStarted, ReshardProgress, ReshardCompleted,
+    ShardDown, ShardRestored, DegradedMode, BackpressureRejected
+}
+
+public class DistributedAuditEvent
+{
+    public DistributedAuditEventKind Kind { get; set; }
+    public string EntityName { get; set; }
+    public string ShardId { get; set; }
+    public DateTime TimestampUtc { get; set; }
+    public Dictionary&lt;string, object&gt; Metadata { get; set; }
+}
+
+public interface IDistributedAuditSink
+{
+    void Record(DistributedAuditEvent auditEvent);
+}
+
+public class FileDistributedAuditSink : IDistributedAuditSink;</code></pre>
+
+                    <h3>Security</h3>
+                    <pre><code class="language-csharp">public interface IDistributedAccessPolicy
+{
+    bool CanAccessShard(string entityName, string shardId);
+    bool CanAccessEntity(string entityName);
+}
+// Set via DistributedDataSourceOptions.Security</code></pre>
+
+                    <h3>Complete Enums</h3>
+                    <table class="ref-table"><thead><tr><th>Enum</th><th>Values</th></tr></thead><tbody>
+                    <tr><td><code>DistributionMode</code></td><td><code>Routed</code>, <code>Sharded</code>, <code>Replicated</code>, <code>Broadcast</code></td></tr>
+                    <tr><td><code>PlacementType</code></td><td><code>Sharded</code>, <code>Replicated</code>, <code>Partitioned</code>, <code>Global</code></td></tr>
+                    <tr><td><code>UnmappedEntityPolicy</code></td><td><code>RejectUnmapped</code>, <code>Broadcast</code>, <code>RouteToDefault</code></td></tr>
+                    <tr><td><code>ScatterFailurePolicy</code></td><td><code>FailFast</code>, <code>PartialResults</code>, <code>FullResultsOrFail</code></td></tr>
+                    <tr><td><code>ShardState</code></td><td><code>Active</code>, <code>Draining</code>, <code>Offline</code></td></tr>
+                    <tr><td><code>TransactionStrategy</code></td><td><code>SingleShard</code>, <code>TwoPhaseCommit</code>, <code>Saga</code></td></tr>
+                    <tr><td><code>DistributedTransactionStatus</code></td><td><code>None</code>, <code>Active</code>, <code>Preparing</code>, <code>Prepared</code>, <code>Committing</code>, <code>Committed</code>, <code>RollingBack</code>, <code>RolledBack</code>, <code>InDoubt</code>, <code>TimedOut</code></td></tr>
+                    <tr><td><code>TransactionLogKind</code></td><td><code>Prepare</code>, <code>Commit</code>, <code>Rollback</code>, <code>Compensate</code></td></tr>
+                    <tr><td><code>DistributedAuditEventKind</code></td><td><code>ShardRouted</code>, <code>ShardFailed</code>, <code>PlacementViolation</code>, <code>TransactionStarted</code>, <code>TransactionPrepared</code>, <code>TransactionCommitted</code>, <code>TransactionRolledBack</code>, <code>ReshardStarted</code>, <code>ReshardProgress</code>, <code>ReshardCompleted</code>, <code>ShardDown</code>, <code>ShardRestored</code>, <code>DegradedMode</code>, <code>BackpressureRejected</code></td></tr>
+                    <tr><td><code>PlacementMatchKind</code></td><td><code>Exact</code>, <code>Wildcard</code>, <code>Default</code></td></tr>
+                    <tr><td><code>QueryIntent</code></td><td><code>SingleShard</code>, <code>Scatter</code>, <code>BroadcastJoin</code></td></tr>
+                    <tr><td><code>AggregateKind</code></td><td><code>Count</code>, <code>Sum</code>, <code>Avg</code>, <code>Min</code>, <code>Max</code></td></tr>
+                    <tr><td><code>OrderDirection</code></td><td><code>Asc</code>, <code>Desc</code></td></tr>
+                    <tr><td><code>MergeOperation</code></td><td><code>Union</code>, <code>Concat</code>, <code>Intersect</code></td></tr>
+                    </tbody></table>
+
+                    <h3>Source File Map (100+ files)</h3>
+                    <table class="ref-table"><thead><tr><th>Category</th><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td rowspan="3"><strong>Core</strong></td><td><code>IDistributedDataSource.cs</code></td><td>Interface: 11 events, DistributionPlan, Shards, ApplyDistributionPlan</td></tr>
+                    <tr><td><code>DistributedDataSourceOptions.cs</code></td><td>Options: timeouts, parallelism, lifecycle, placement, scatter, security, performance</td></tr>
+                    <tr><td><code>DistributedExecutionContext.cs</code></td><td>Per-operation context: OperationId, ContextData, Token</td></tr>
+                    <tr><td rowspan="16"><strong>Partials</strong></td><td><code>.cs</code></td><td>Core state, constructor, executors wiring, IDataSource identity</td></tr>
+                    <tr><td><code>.IDataSource.cs</code></td><td>IDataSource passthrough methods</td></tr>
+                    <tr><td><code>.Plan.cs</code></td><td>DistributionPlan Apply/Validate</td></tr>
+                    <tr><td><code>.Routing.cs</code></td><td>PlacementResolver + ShardRouter integration</td></tr>
+                    <tr><td><code>.Reads.cs</code></td><td>Single, Scatter, Replicated read dispatch</td></tr>
+                    <tr><td><code>.Writes.cs</code></td><td>Fan-out, Broadcast write dispatch</td></tr>
+                    <tr><td><code>.ShardInvoker.cs</code></td><td>Low-level shard call with retry/timeout</td></tr>
+                    <tr><td><code>.Transactions.cs</code></td><td>Transaction token factory</td></tr>
+                    <tr><td><code>.Resilience.cs</code></td><td>Circuit breakers, health checks</td></tr>
+                    <tr><td><code>.Observability.cs</code></td><td>Metrics, telemetry, SLO</td></tr>
+                    <tr><td><code>.Events.cs</code></td><td>Event helpers</td></tr>
+                    <tr><td><code>.Lifecycle.cs</code></td><td>Open/Close/Dispose</td></tr>
+                    <tr><td><code>.Performance.cs</code></td><td>Backpressure, deadlines, shedding</td></tr>
+                    <tr><td><code>.Resharding.cs</code></td><td>Online reshard coordination</td></tr>
+                    <tr><td><code>.Schema.cs</code></td><td>Entity structure discovery</td></tr>
+                    <tr><td><code>.Audit.cs</code></td><td>Audit events emission</td></tr>
+                    <tr><td rowspan="7"><strong>Partitioning</strong></td><td><code>IPartitionFunction.cs</code></td><td>Interface: Name, Resolve(PartitionInput, bucketCount)</td></tr>
+                    <tr><td><code>HashPartitionFunction.cs</code></td><td>Consistent hashing via MurmurHash3</td></tr>
+                    <tr><td><code>RangePartitionFunction.cs</code></td><td>Range-based sharding</td></tr>
+                    <tr><td><code>ListPartitionFunction.cs</code></td><td>Explicit key → bucket</td></tr>
+                    <tr><td><code>CompositePartitionFunction.cs</code></td><td>Chaining multiple functions</td></tr>
+                    <tr><td><code>PartitionFunctionFactory.cs</code></td><td>Factory: Create("hash"|"range"|"list"|"composite")</td></tr>
+                    <tr><td><code>PartitionInput.cs</code> / <code>.cs</code> / <code>MurmurHash3Helper.cs</code></td><td>Input struct, key coercer, hash helper</td></tr>
+                    <tr><td rowspan="3"><strong>Catalog</strong></td><td><code>IShardCatalog.cs</code></td><td>Catalog interface</td></tr>
+                    <tr><td><code>ShardCatalog.cs</code></td><td>Shard registry + state management</td></tr>
+                    <tr><td><code>ShardCatalog.Persistence.cs</code></td><td>Save/Load catalog from file</td></tr>
+                    <tr><td rowspan="7"><strong>Routing</strong></td><td><code>IShardRouter.cs</code></td><td>Router interface: RouteRead, RouteWrite</td></tr>
+                    <tr><td><code>ShardRouter.cs</code></td><td>Concrete router</td></tr>
+                    <tr><td><code>ShardRouter.KeyExtraction.cs</code></td><td>Partition key extraction from filters/entities</td></tr>
+                    <tr><td><code>ShardRouter.DualWrite.cs</code></td><td>Dual-write routing during resharding</td></tr>
+                    <tr><td><code>RoutingDecision.cs</code></td><td>Decision: TargetShardIds, PlacementType, IsBroadcast</td></tr>
+                    <tr><td><code>IShardRoutingHook.cs</code> / <code>NullShardRoutingHook.cs</code></td><td>Custom routing hook + default pass-through</td></tr>
+                    <tr><td><code>ShardRoutingException.cs</code></td><td>Routing exception with entity + placement info</td></tr>
+                    <tr><td rowspan="5"><strong>Execution</strong></td><td><code>IDistributedReadExecutor</code> — <code>DistributedReadExecutor.cs</code> + <code>.SingleShard</code> + <code>.Scatter</code> + <code>.Replicated</code></td><td>4 partials: single, scatter, replicated read pipelines</td></tr>
+                    <tr><td><code>DistributedWriteExecutor.cs</code></td><td>Routed, Broadcast, FanOut write pipelines</td></tr>
+                    <tr><td><code>BasicResultMerger.cs</code></td><td>Simple union/concat merge</td></tr>
+                    <tr><td colspan="2">(see Query subsystem for QueryAwareResultMerger)</td></tr>
+                    <tr><td colspan="2"></td></tr>
+                    <tr><td rowspan="6"><strong>Transactions</strong></td><td><code>IDistributedTransactionCoordinator.cs</code></td><td>Interface: BeginAsync, Prepare, Commit, Rollback</td></tr>
+                    <tr><td><code>DistributedTransactionCoordinator.cs</code> + <code>.SingleShard</code> + <code>.TwoPhaseCommit</code> + <code>.Saga</code></td><td>4 partials: single-shard, 2PC, Saga strategies</td></tr>
+                    <tr><td><code>DistributedTransactionScope.cs</code></td><td>Convenience IDisposable wrapper</td></tr>
+                    <tr><td><code>IDistributedTransactionLog.cs</code>, <code>InMemoryTransactionLog.cs</code>, <code>FileTransactionLog.cs</code></td><td>Log contract + memory + file implementations</td></tr>
+                    <tr><td><code>TransactionDecisionResolver.cs</code></td><td>Resolves InDoubt via log replay</td></tr>
+                    <tr><td><code>TransactionLogEntry.cs</code>, <code>TransactionLogKind.cs</code>, <code>DistributedTransactionStatus.cs</code>, <code>TransactionStrategy.cs</code>, <code>SagaStep.cs</code></td><td>Model types + enums</td></tr>
+                    <tr><td rowspan="4"><strong>Placement</strong></td><td><code>EntityPlacementResolver.cs</code></td><td>Resolve entity+filters → shard(s) + placement type</td></tr>
+                    <tr><td><code>EntityPlacementMap.cs</code></td><td>Entity → shards lookup dictionary</td></tr>
+                    <tr><td><code>PlacementMatchKind.cs</code></td><td>Exact, Wildcard, Default</td></tr>
+                    <tr><td><code>PlacementResolution.cs</code></td><td>Resolution result model</td></tr>
+                    <tr><td rowspan="14"><strong>Query</strong></td><td><code>IQueryPlanner.cs</code></td><td>Planner interface: Plan(entity, filters, plan)</td></tr>
+                    <tr><td><code>QueryPlanner.cs</code></td><td>Concrete planner</td></tr>
+                    <tr><td><code>QueryPlan.cs</code></td><td>Plan: Intent, ShardIds, Aggregate, Merge</td></tr>
+                    <tr><td><code>QueryIntent.cs</code></td><td>SingleShard, Scatter, BroadcastJoin</td></tr>
+                    <tr><td><code>AggregateKind.cs</code></td><td>Count, Sum, Avg, Min, Max</td></tr>
+                    <tr><td><code>AggregateSpec.cs</code></td><td>Spec: Kind, FieldName</td></tr>
+                    <tr><td><code>AggregateAccumulator.cs</code></td><td>Per-shard → merged accumulator</td></tr>
+                    <tr><td><code>OrderBySpec.cs</code> / <code>OrderDirection.cs</code></td><td>Order spec + direction enum</td></tr>
+                    <tr><td><code>MergeSpec.cs</code></td><td>Merge spec: Distinct, OrderBy, Top</td></tr>
+                    <tr><td><code>MergeOperation.cs</code></td><td>Union, Concat, Intersect</td></tr>
+                    <tr><td><code>IQueryAwareResultMerger.cs</code></td><td>Smart merger interface</td></tr>
+                    <tr><td><code>QueryAwareResultMerger.cs</code> + <code>.Sorting</code> + <code>.Grouping</code></td><td>3 partials: merge-sort, group-by aggregation</td></tr>
+                    <tr><td><code>BroadcastJoinRewriter.cs</code></td><td>Plan rewriting for broadcast joins</td></tr>
+                    <tr><td><code>RowValueExtractor.cs</code></td><td>Field value extraction from object rows</td></tr>
+                    <tr><td rowspan="9"><strong>Events</strong></td><td><code>ShardSelectedEventArgs.cs</code></td><td>EntityName, ShardId, Filters, PlacementType</td></tr>
+                    <tr><td><code>PlacementViolationEventArgs.cs</code></td><td>EntityName, Violation, PlanId</td></tr>
+                    <tr><td><code>ReshardEventArgs.cs</code></td><td>PlanId, OldPlanId, Succeeded, Error</td></tr>
+                    <tr><td><code>ReshardProgressEventArgs.cs</code></td><td>PercentComplete, EntitiesCopied, EntitiesTotal</td></tr>
+                    <tr><td><code>PartialReplicationFailureEventArgs.cs</code></td><td>SuccessfulShards, FailedShards, QuorumMet</td></tr>
+                    <tr><td><code>PartialBroadcastEventArgs.cs</code></td><td>ExcludedShards, Reason</td></tr>
+                    <tr><td><code>TransactionInDoubtEventArgs.cs</code></td><td>TokenId, ShardId, PreparedShards, FailedShards</td></tr>
+                    <tr><td><code>ShardDownEventArgs.cs</code> / <code>ShardRestoredEventArgs.cs</code></td><td>ShardId, Reason/DowntimeDuration</td></tr>
+                    <tr><td><code>DegradedModeEventArgs.cs</code></td><td>HealthyRatio, HealthyShardCount</td></tr>
+                    <tr><td rowspan="4"><strong>Audit</strong></td><td><code>IDistributedAuditSink.cs</code></td><td>Audit sink contract: Record</td></tr>
+                    <tr><td><code>DistributedAuditEventKind.cs</code></td><td>14 audit event kinds</td></tr>
+                    <tr><td><code>DistributedAuditEvent.cs</code></td><td>Event model: Kind, EntityName, ShardId, Metadata</td></tr>
+                    <tr><td><code>FileDistributedAuditSink.cs</code></td><td>File-based audit sink</td></tr>
+                    <tr><td><strong>Security</strong></td><td><code>IDistributedAccessPolicy.cs</code></td><td>CanAccessShard, CanAccessEntity</td></tr>
+                    </tbody></table>
+                </section>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
 </html>

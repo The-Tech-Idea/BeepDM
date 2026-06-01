@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ObservableBindingList - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>ObservableBindingList</span>
+                </nav>
+                <div class="page-header">
+                    <h1>ObservableBindingList&lt;T&gt;</h1>
+                    <p class="page-subtitle">Enhanced binding list with sorting, filtering, pagination, change tracking, undo/redo, and validation</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementModelsStandard/ObservableBindingList/ObservableBindingList.cs</code></li>
+                        <li><code>.../ObservableBindingList.Tracking.cs</code></li>
+                        <li><code>.../ObservableBindingList.Validation.cs</code></li>
+                        <li><code>.../ObservableBindingList.UndoRedo.cs</code></li>
+                        <li><code>.../ObservableBindingList.VirtualLoading.cs</code></li>
+                        <li><code>.../ObservableBindingList.Sort.cs</code></li>
+                        <li><code>.../ObservableBindingList.Filter.cs</code></li>
+                        <li><code>.../ObservableBindingList.Pagination.cs</code></li>
+                        <li><code>.../ObservableBindingList.Export.cs</code></li>
+                        <li>26 partial class files total</li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#core-features">Core Features</a></li>
+                        <li><a href="#tracking">Change Tracking</a></li>
+                        <li><a href="#sort-filter">Sorting &amp; Filtering</a></li>
+                        <li><a href="#pagination">Pagination</a></li>
+                        <li><a href="#validation">Validation</a></li>
+                        <li><a href="#undo-redo">Undo/Redo</a></li>
+                        <li><a href="#virtual">Virtual Loading</a></li>
+                        <li><a href="#aggregates">Aggregates &amp; Computed</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>ObservableBindingList&lt;T&gt;</code> is the single source of truth collection used by <code>UnitofWork&lt;T&gt;</code>. It extends <code>BindingList&lt;T&gt;</code> and implements <code>IBindingListView</code>, <code>INotifyCollectionChanged</code>, and <code>IDisposable</code>.</p>
+                    <pre><code class="language-csharp">public partial class ObservableBindingList&lt;T&gt; : BindingList&lt;T&gt;, IBindingListView, INotifyCollectionChanged, IDisposable
+    where T : class, INotifyPropertyChanged, new()</code></pre>
+                    <p><strong>26 partial files</strong> covering: tracking, CRUD, sort, filter, pagination, validation, undo/redo, virtual loading, aggregates, computed columns, bookmarks, thread safety, export, search, and more.</p>
+                </section>
+
+                <section id="architecture" class="section">
+                    <h2>Architecture</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ObservableBindingList.cs</code></td><td>Core fields, property cache, tracking dictionaries</td></tr>
+                            <tr><td><code>ObservableBindingList.Tracking.cs</code></td><td>Entity state tracking (Added, Modified, Deleted, Unchanged)</td></tr>
+                            <tr><td><code>ObservableBindingList.Sort.cs</code></td><td>Property-based sorting with direction support</td></tr>
+                            <tr><td><code>ObservableBindingList.Filter.cs</code></td><td>String and expression-based filtering</td></tr>
+                            <tr><td><code>ObservableBindingList.Pagination.cs</code></td><td>Page navigation and size management</td></tr>
+                            <tr><td><code>ObservableBindingList.Validation.cs</code></td><td>Data annotation and custom validation</td></tr>
+                            <tr><td><code>ObservableBindingList.UndoRedo.cs</code></td><td>Granular undo/redo stack</td></tr>
+                            <tr><td><code>ObservableBindingList.VirtualLoading.cs</code></td><td>Large dataset lazy loading</td></tr>
+                            <tr><td><code>ObservableBindingList.Aggregates.cs</code></td><td>Sum, Average, Min, Max, CountWhere, GroupBy</td></tr>
+                            <tr><td><code>ObservableBindingList.Computed.cs</code></td><td>Computed column support</td></tr>
+                            <tr><td><code>ObservableBindingList.Bookmarks.cs</code></td><td>Navigation bookmarks</td></tr>
+                            <tr><td><code>ObservableBindingList.ThreadSafety.cs</code></td><td>Reader-writer lock synchronization</td></tr>
+                            <tr><td><code>ObservableBindingList.Export.cs</code></td><td>JSON and CSV export</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="core-features" class="section">
+                    <h2>Core Features</h2>
+
+                    <h3>Properties</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Trackings</code></td><td><code>List&lt;Tracking&gt;</code></td><td>Change tracking records (O(1) by GUID)</td></tr>
+                            <tr><td><code>PageSize</code></td><td><code>int</code></td><td>Items per page (default: 20)</td></tr>
+                            <tr><td><code>CurrentPage</code></td><td><code>int</code></td><td>Active page number</td></tr>
+                            <tr><td><code>TotalPages</code></td><td><code>int</code></td><td>Total page count</td></tr>
+                            <tr><td><code>IsSorted</code></td><td><code>bool</code></td><td>Data is sorted</td></tr>
+                            <tr><td><code>SuppressNotification</code></td><td><code>bool</code></td><td>Suppress change notifications</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Events</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ItemAdded&lt;T&gt;</code></td><td>Item added to collection</td></tr>
+                            <tr><td><code>ItemRemoved&lt;T&gt;</code></td><td>Item removed from collection</td></tr>
+                            <tr><td><code>ItemChanged&lt;T&gt;</code></td><td>Item property changed</td></tr>
+                            <tr><td><code>ItemValidating&lt;T&gt;</code></td><td>Before item validation</td></tr>
+                            <tr><td><code>ItemDeleting&lt;T&gt;</code></td><td>Before item deletion</td></tr>
+                            <tr><td><code>PropertyChanged</code></td><td>Standard INotifyPropertyChanged</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="tracking" class="section">
+                    <h2>Change Tracking</h2>
+                    <p>Dual-indexed tracking with O(1) lookup:</p>
+                    <pre><code class="language-csharp">// O(1) lookup by Guid
+private Dictionary&lt;Guid, Tracking&gt; _trackingsByGuid;
+
+// O(1) lookup by original index
+private Dictionary&lt;int, Tracking&gt; _trackingsByOriginalIndex;
+
+// Tracking state per entity
+public class Tracking
+{
+    public Guid UniqueId { get; set; }
+    public int OriginalIndex { get; set; }
+    public EntityState EntityState { get; set; } // Added, Modified, Deleted, Unchanged
+    public string ModifiedBy { get; set; }
+    public DateTime ModifiedAt { get; set; }
+}</code></pre>
+
+                    <h3>Usage</h3>
+                    <pre><code class="language-csharp">var list = new ObservableBindingList&lt;Customer&gt;(customers);
+
+// Check tracking
+foreach (var tr in list.Trackings)
+{
+    Console.WriteLine($"Item {tr.OriginalIndex}: {tr.EntityState} by {tr.ModifiedBy}");
+}
+
+// Get added entities
+var added = list.Trackings.Where(t => t.EntityState == EntityState.Added);
+
+// Get modified entities
+var modified = list.Trackings.Where(t => t.EntityState == EntityState.Modified);</code></pre>
+                </section>
+
+                <section id="sort-filter" class="section">
+                    <h2>Sorting &amp; Filtering</h2>
+                    <pre><code class="language-csharp">var list = new ObservableBindingList&lt;Customer&gt;(customers);
+
+// Sort
+list.ApplySort("Name", ListSortDirection.Ascending);
+list.ApplySort("CreatedDate", ListSortDirection.Descending);
+
+// Filter
+list.Filter = "Name LIKE 'John*' OR City = 'NYC'";
+list.Filter = "Status = 'Active'";
+
+// Clear filter
+list.RemoveFilter();</code></pre>
+                </section>
+
+                <section id="pagination" class="section">
+                    <h2>Pagination</h2>
+                    <pre><code class="language-csharp">list.PageSize = 50;
+
+// Navigate pages
+list.GoToPage(1);   // First page
+list.GoToPage(3);   // Page 3
+list.NextPage();
+list.PreviousPage();
+
+// Info
+Console.WriteLine($"Page {list.CurrentPage} of {list.TotalPages}");
+Console.WriteLine($"Items: {list.Count}");</code></pre>
+                </section>
+
+                <section id="validation" class="section">
+                    <h2>Validation</h2>
+                    <pre><code class="language-csharp">// Data annotations on entity
+public class Customer : INotifyPropertyChanged
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; }
+
+    [Required, EmailAddress]
+    public string Email { get; set; }
+
+    [Range(0, 200)]
+    public int Age { get; set; }
+}
+
+// Validate
+var list = new ObservableBindingList&lt;Customer&gt;(customers);
+var result = list.ValidateAll();
+if (!result.IsValid)
+{
+    foreach (var error in result.Errors)
+        Console.WriteLine($"{error.PropertyName}: {error.Message}");
+}</code></pre>
+                </section>
+
+                <section id="undo-redo" class="section">
+                    <h2>Undo/Redo</h2>
+                    <pre><code class="language-csharp">list.EnableUndoRedo(maxDepth: 50);
+
+customer.Name = "Changed";
+list.Undo();  // Name reverts
+list.Redo();  // Restores change
+
+// Check state
+if (list.CanUndo)
+    list.UndoLastChange();
+
+if (list.CanRedo)
+    list.RedoLastChange();
+
+list.ClearUndoHistory();</code></pre>
+                </section>
+
+                <section id="virtual" class="section">
+                    <h2>Virtual Loading</h2>
+                    <pre><code class="language-csharp">// Enable virtual loading for large datasets
+list.EnableVirtualMode(totalCount: 100000);
+
+await list.GoToPageAsync(5);
+await list.PrefetchAdjacentPagesAsync();
+
+// Page cache
+list.PageCacheSize = 5; // Keep 5 pages cached
+list.InvalidatePageCache();
+list.DisableVirtualMode();</code></pre>
+                </section>
+
+                <section id="aggregates" class="section">
+                    <h2>Aggregates &amp; Computed</h2>
+                    <pre><code class="language-csharp">// Aggregates
+var total = list.Sum("Price");
+var avg = list.Average("Price");
+var max = list.Max("Price");
+var min = list.Min("Price");
+var count = list.CountWhere(c => c.IsActive);
+var groups = list.GroupBy("Category");
+var distinct = list.DistinctValues("City");
+
+// Computed columns
+list.RegisterComputed("FullName", c => $"{c.FirstName} {c.LastName}");
+list.RegisterComputed("Total", c => c.Price * c.Quantity);
+var fullName = list.GetComputed(customer, "FullName");</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Data Binding (WinForms/WPF)</h3>
+                    <pre><code class="language-csharp">var list = new ObservableBindingList&lt;Customer&gt;(customers);
+dataGridView.DataSource = list; // Automatic two-way binding</code></pre>
+
+                    <h3>Export</h3>
+                    <pre><code class="language-csharp">// Export to DataTable
+var dt = list.ToDataTable();
+
+// Export to JSON
+using var stream = new MemoryStream();
+await list.ToJsonAsync(stream);
+
+// Export to CSV
+await list.ToCsvAsync(stream, delimiter: ',');</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="unitofwork.html"><i class="bi bi-arrow-left"></i> Previous: UnitOfWork</a>
+                    <a href="unitofwork-deep-dive.html">Next: UnitOfWork Deep Dive <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

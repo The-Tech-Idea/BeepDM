@@ -28,10 +28,11 @@ Use this skill when bootstrapping BeepDM in a WinForms or desktop app and wiring
 - Avoid swallowing migration errors; surface messages to logs/UI.
 
 ## File Locations
-- Beep.Desktop/TheTechIdea.Beep.Desktop.Common/AppManager.cs
-- Beep.Desktop/TheTechIdea.Beep.Desktop.Common/BeepServices.cs
-- DataManagementEngineStandard/Editor/DM/DMEEditor.cs
-- DataManagementEngineStandard/Migration/MigrationManager.cs
+- `DataManagementEngineStandard/Services/BeepService.cs`
+- `DataManagementEngineStandard/Services/RegisterBeepinServiceCollection.cs`
+- `DataManagementEngineStandard/Services/BeepServiceExtensions.Desktop.cs`
+- `DataManagementEngineStandard/Editor/DM/DMEEditor.cs`
+- `DataManagementEngineStandard/Editor/Migration/MigrationManager.cs`
 
 ## Examples
 

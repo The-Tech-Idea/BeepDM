@@ -1,12 +1,18 @@
 # Mapping Utilities
 
 ## Purpose
-This folder contains utility-level functions used by AutoObjMapper for reusable mapping operations that do not belong in core configuration or runtime classes.
+Stateless utility functions used by AutoObjMapper for reusable mapping operations.
 
 ## Key Files
-- `AutoObjMapperUtilities.cs`: Shared utility methods consumed by mapping engine components.
+- `AutoObjMapperUtilities.cs`: Shared utility methods for mapping engine components
+
+## Functions
+- Property matching and comparison utilities
+- Type conversion helpers for field mapping
+- Naming convention normalization
+- Circular reference detection
 
 ## Usage Notes
-- Keep utility methods stateless and side-effect free.
-- Promote frequently reused logic from core files into this utility layer.
-- Ensure utility behavior remains compatible with mapper configuration rules.
+- Keep utility methods stateless and side-effect free
+- Promote frequently reused logic from core files into this utility layer
+- Ensure utility behavior remains compatible with mapper configuration rules

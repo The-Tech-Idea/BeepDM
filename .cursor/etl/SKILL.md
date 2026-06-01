@@ -29,13 +29,15 @@ Use this skill when working with `ETLEditor` and the ETL runtime.
 - `ETLEntityProcessor`
 
 ## File Locations
-- `DataManagementEngineStandard/Editor/ETL/ETLEditor.cs`
-- `DataManagementEngineStandard/Editor/ETL/ETLDataCopier.cs`
-- `DataManagementEngineStandard/Editor/ETL/ETLEntityCopyHelper.cs`
-- `DataManagementEngineStandard/Editor/ETL/ETLEntityProcessor.cs`
-- `DataManagementEngineStandard/Editor/ETL/ETLScriptBuilder.cs`
-- `DataManagementEngineStandard/Editor/ETL/ETLScriptManager.cs`
-- `DataManagementEngineStandard/Editor/ETL/ETLValidator.cs`
+> **Note:** This skill covers the legacy ETL runtime. For the modern pipeline-based ETL engine, see the `etl-engine` skill.
+
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLEditor.cs`
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLDataCopier.cs`
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLEntityCopyHelper.cs`
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLEntityProcessor.cs`
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLScriptBuilder.cs`
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLScriptManager.cs`
+- `DataManagementEngineStandard/Editor/ETL_BK/ETLValidator.cs`
 
 ## Working Rules
 1. Resolve and open source/destination datasources before high-cost runs.

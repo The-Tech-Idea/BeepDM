@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NuGet Package Manager - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="bi bi-sun-fill" id="theme-icon"></i></button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a><span>&gt;</span><span>NuGet Package Manager</span>
+                </nav>
+                <div class="page-header">
+                    <h1>NuGet Package Manager</h1>
+                    <p class="page-subtitle">Centralized NuGet package lifecycle management — download, install, load, update, uninstall, search, and vulnerability scanning</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/NuGetManagement/NuGetPackageManager.cs</code></li>
+                        <li><code>.../NuGetManagerConfiguration.cs</code></li>
+                        <li><code>.../Services/SearchService.cs</code>, <code>DownloadService.cs</code>, <code>InstallService.cs</code></li>
+                        <li><code>.../Services/LoadService.cs</code>, <code>UpdateService.cs</code>, <code>UninstallService.cs</code></li>
+                        <li><code>.../Services/CacheManager.cs</code>, <code>SourceManager.cs</code></li>
+                        <li><code>.../Services/PackageSigningService.cs</code>, <code>VulnerabilityService.cs</code></li>
+                        <li><code>.../Helpers/NuGetSdkHelper.cs</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#class">NuGetPackageManager</a></li>
+                        <li><a href="#services">Service Architecture</a></li>
+                        <li><a href="#events">Events</a></li>
+                        <li><a href="#lifecycle">Package Lifecycle</a></li>
+                        <li><a href="#configuration">Configuration</a></li>
+                        <li><a href="#signing">Signing &amp; Security</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#full-api-section">Full API Reference</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>NuGetPackageManager</code> provides complete NuGet package lifecycle management with source management, caching, security validation, and shared context loading. It serves as the primary package management layer used by the <code>AssemblyHandler</code> for driver installation.</p>
+                </section>
+
+                <section id="class" class="section">
+                    <h2>NuGetPackageManager</h2>
+                    <pre><code class="language-csharp">public class NuGetPackageManager : IDisposable
+{
+    public NuGetPackageManager(IDMLogger logger, IAssemblyLoadContext loadContext,
+        string installDirectory = null);
+    public NuGetPackageManager(IDMLogger logger, IAssemblyLoadContext loadContext,
+        NuGetManagerConfig config);
+
+    // Package operations
+    public Task&lt;PackageInstallResult&gt; DownloadAsync(string packageId,
+        string version = null, string source = null);
+    public Task&lt;PackageInstallResult&gt; InstallAsync(string packageId,
+        string version = null, string installPath = null, bool overwrite = false);
+    public Task&lt;NuggetInfo&gt; LoadAsync(string packageId,
+        string version = null, bool useSharedContext = true,
+        string installPath = null);
+    public Task&lt;PackageUpdateResult&gt; UpdateAsync(string packageId,
+        string version = null, string installPath = null);
+    public Task&lt;bool&gt; UninstallAsync(string packageId,
+        bool removeDependencies = false, string installPath = null);
+
+    // Maintenance
+    public Task&lt;bool&gt; RepairAsync(string packageId, string installPath = null);
+    public Task&lt;bool&gt; VerifyAsync(string packageId, string installPath = null);
+
+    // Search &amp; metadata
+    public Task&lt;List&lt;PackageSearchResult&gt;&gt; SearchAsync(string searchTerm,
+        SearchOptions options = null);
+    public Task&lt;List&lt;string&gt;&gt; GetVersionsAsync(string packageId,
+        bool includePrerelease = false, string source = null);
+    public Task&lt;PackageMetadata&gt; GetMetadataAsync(string packageId,
+        string version, string source = null);
+    public Task&lt;List&lt;PackageDependency&gt;&gt; GetDependenciesAsync(
+        string packageId, string version, string source = null);
+
+    // Installed packages
+    public Task&lt;List&lt;InstalledPackageInfo&gt;&gt; GetInstalledPackagesAsync(
+        string installPath = null);
+    public Task&lt;InstalledPackageInfo&gt; GetInstalledPackageAsync(
+        string packageId, string installPath = null);
+    public Task&lt;bool&gt; IsInstalledAsync(string packageId, string installPath = null);
+    public Task&lt;bool&gt; IsLoadedAsync(string packageId);
+
+    // Statistics &amp; sources
+    public Task&lt;PackageStatistics&gt; GetStatisticsAsync(string packageId = null);
+    public List&lt;NuGetSourceConfig&gt; GetSources();
+    public List&lt;NuGetSourceConfig&gt; GetActiveSources();
+    public List&lt;string&gt; GetActiveSourceUrls();
+}</code></pre>
+                </section>
+
+                <section id="services" class="section">
+                    <h2>Service Architecture</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Service</th><th>Responsibility</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>SearchService</code></td><td>Package search with filtering, prerelease support, pagination</td></tr>
+                            <tr><td><code>DownloadService</code></td><td>NuGet SDK download with progress and hash verification</td></tr>
+                            <tr><td><code>InstallService</code></td><td>Extract to target directory, dependency resolution</td></tr>
+                            <tr><td><code>LoadService</code></td><td>Assembly loading with shared context or isolated ALC</td></tr>
+                            <tr><td><code>UpdateService</code></td><td>Version comparison, backup, upgrade from NuGet feed</td></tr>
+                            <tr><td><code>UninstallService</code></td><td>Dependency-aware uninstall, orphaned cleanup</td></tr>
+                            <tr><td><code>CacheManager</code></td><td>Local NuGet package caching with TTL eviction</td></tr>
+                            <tr><td><code>SourceManager</code></td><td>NuGet source CRUD (add, remove, enable, disable)</td></tr>
+                            <tr><td><code>PackageSigningService</code></td><td>Package signature and author verification</td></tr>
+                            <tr><td><code>VulnerabilityService</code></td><td>Known vulnerability scanning (CVEs, advisories)</td></tr>
+                            <tr><td><code>NuGetSdkHelper</code></td><td>NuGet SDK abstraction for feed protocol negotiation</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="events" class="section">
+                    <h2>Events</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>Event</th><th>Args</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>PackageInstalling</code></td><td><code>PackageEventArgs</code></td><td>Install starting</td></tr>
+                            <tr><td><code>PackageInstalled</code></td><td><code>PackageEventArgs</code></td><td>Install completed</td></tr>
+                            <tr><td><code>PackageLoading</code></td><td><code>PackageEventArgs</code></td><td>Load starting</td></tr>
+                            <tr><td><code>PackageLoaded</code></td><td><code>PackageEventArgs</code></td><td>Load completed</td></tr>
+                            <tr><td><code>PackageUpdating</code></td><td><code>PackageEventArgs</code></td><td>Update starting</td></tr>
+                            <tr><td><code>PackageUpdated</code></td><td><code>PackageEventArgs</code></td><td>Update completed</td></tr>
+                            <tr><td><code>PackageUninstalling</code></td><td><code>PackageEventArgs</code></td><td>Uninstall starting</td></tr>
+                            <tr><td><code>PackageUninstalled</code></td><td><code>PackageEventArgs</code></td><td>Uninstall completed</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="lifecycle" class="section">
+                    <h2>Package Lifecycle</h2>
+                    <pre><code class="language-text">Search ──→ Download ──→ Verify ──→ Install ──→ Load
+   │                                      │
+   └──→ GetVersions                       ├──→ Update ──→ Reload
+                                          │
+                                          ├──→ Repair ──→ Reverify
+                                          │
+                                          └──→ Uninstall ──→ Cleanup</code></pre>
+                </section>
+
+                <section id="configuration" class="section">
+                    <h2>Configuration</h2>
+                    <pre><code class="language-csharp">public class NuGetManagerConfig
+{
+    public string DefaultInstallDirectory { get; set; }
+    public int MaxConcurrentDownloads { get; set; } = 4;
+    public bool EnableCaching { get; set; } = true;
+    public TimeSpan CacheExpiration { get; set; } = TimeSpan.FromHours(24);
+    public bool VerifySignatures { get; set; } = true;
+    public bool ScanVulnerabilities { get; set; } = true;
+    public bool IncludePrerelease { get; set; } = false;
+    public List&lt;NuGetSourceConfig&gt; Sources { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="signing" class="section">
+                    <h2>Signing &amp; Security</h2>
+                    <pre><code class="language-csharp">// Signature verification (automatic if VerifySignatures=true)
+var result = await manager.InstallAsync("SomePackage", "1.0.0");
+// PackageSigningService validates:
+// - Author signature
+// - Repository countersignature
+// - Certificate chain validity
+
+// Vulnerability scanning (automatic if ScanVulnerabilities=true)
+var stats = await manager.GetStatisticsAsync("SomePackage");
+// VulnerabilityService checks:
+// - Known CVEs in installed version
+// - Deprecation advisories
+// - License compliance</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Basic Package Management</h3>
+                    <pre><code class="language-csharp">var manager = new NuGetPackageManager(logger, loadContext);
+
+// Search
+var results = await manager.SearchAsync("postgresql", new SearchOptions
+    { Take = 10, IncludePrerelease = false });
+
+// Install
+var result = await manager.InstallAsync("Npgsql", "7.0.0");
+if (result.Success)
+    Console.WriteLine($"Installed to: {result.InstallPath}");
+
+// Load
+var nugget = await manager.LoadAsync("Npgsql", "7.0.0");
+Console.WriteLine($"Loaded: {nugget.Assemblies.Count} assemblies");
+
+// Check
+bool installed = await manager.IsInstalledAsync("Npgsql");
+bool loaded = await manager.IsLoadedAsync("Npgsql");</code></pre>
+
+                    <h3>Source Management</h3>
+                    <pre><code class="language-csharp">var sources = manager.GetActiveSources();
+Console.WriteLine($"Active sources: {sources.Count}");
+
+foreach (var src in sources)
+    Console.WriteLine($"  {src.Name}: {src.Url} (Enabled: {src.IsEnabled})");
+
+var url = manager.GetActiveSourceUrls();
+Console.WriteLine($"Source URLs: {string.Join(", ", url)}");</code></pre>
+
+                    <h3>Package Statistics</h3>
+                    <pre><code class="language-csharp">var stats = await manager.GetStatisticsAsync("Npgsql");
+Console.WriteLine($"Installed: {stats.IsInstalled}");
+Console.WriteLine($"Version: {stats.InstalledVersion}");
+Console.WriteLine($"Last checked: {stats.LastChecked}");
+
+// Get all installed packages
+var installed = await manager.GetInstalledPackagesAsync();
+foreach (var pkg in installed)
+    Console.WriteLine($"{pkg.PackageId} v{pkg.Version}");</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="assemblyhandler-loading-nuget-extensions.html"><i class="bi bi-arrow-left"></i> Previous: AssemblyHandler</a>
+                    <a href="roslyn-reports.html">Next: Roslyn &amp; Reports <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- ═══════════════════════════════════════════ FULL API REFERENCE -->
+                <section id="full-api-section" class="section">
+                    <h2><i class="bi bi-book"></i> Full API Reference</h2>
+
+                    <h3>NuGetManagerConfig — Full Properties</h3>
+                    <table class="ref-table"><thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead><tbody>
+                    <tr><td><code>InstallDirectory</code></td><td><code>string</code></td><td><code>{BaseDir}/Plugins</code></td></tr>
+                    <tr><td><code>MaxConcurrentDownloads</code></td><td><code>int</code></td><td>4</td></tr>
+                    <tr><td><code>EnableCaching</code></td><td><code>bool</code></td><td>true</td></tr>
+                    <tr><td><code>CacheExpiration</code></td><td><code>int</code> (hours)</td><td>24</td></tr>
+                    <tr><td><code>CachePath</code></td><td><code>string</code></td><td><code>{BaseDir}/Cache</code></td></tr>
+                    <tr><td><code>MaxCacheSizeMB</code></td><td><code>int</code></td><td>1024</td></tr>
+                    <tr><td><code>AutoCleanup</code></td><td><code>bool</code></td><td>true</td></tr>
+                    <tr><td><code>VerifySignatures</code></td><td><code>bool</code></td><td>true</td></tr>
+                    <tr><td><code>ScanVulnerabilities</code></td><td><code>bool</code></td><td>true</td></tr>
+                    <tr><td><code>IncludePrerelease</code></td><td><code>bool</code></td><td>false</td></tr>
+                    <tr><td><code>RequireLockPattern</code></td><td><code>bool</code></td><td>true — serializes install/update/remove per package via lock file</td></tr>
+                    <tr><td><code>DefaultSources</code></td><td><code>List&lt;NuGetSourceConfig&gt;</code></td><td>nuget.org</td></tr>
+                    </tbody></table>
+
+                    <h3>NuGetManagerConfiguration — Persistence</h3>
+                    <p>Separate from <code>NuGetManagerConfig</code> — handles JSON serialization to <code>nuget_manager.config.json</code>.</p>
+                    <pre><code class="language-csharp">public class NuGetManagerConfiguration
+{
+    public NuGetManagerConfiguration(IDMLogger logger, string configDirectory = null);
+
+    public NuGetManagerConfig Load();        // Load from disk or create default
+    public void Save(NuGetManagerConfig config);
+    public string GetConfigPath();
+    public bool ConfigExists { get; }
+}</code></pre>
+
+                    <h3>NuGetSourceConfig</h3>
+                    <pre><code class="language-csharp">public class NuGetSourceConfig
+{
+    public string Name { get; set; }          // "nuget.org", "internal-feed"
+    public string Url { get; set; }           // https://api.nuget.org/v3/index.json
+    public bool Enabled { get; set; }         // Active for queries
+    public string Username { get; set; }      // Optional auth
+    public string Password { get; set; }      // Optional auth
+    public int Priority { get; set; }         // Lower = higher priority
+}</code></pre>
+
+                    <h3>Service Architecture — Full Details</h3>
+
+                    <h4>SourceManager</h4>
+                    <pre><code class="language-csharp">public class SourceManager
+{
+    public void AddSource(string name, string url, bool enabled = true,
+        string username = null, string password = null);
+    public bool RemoveSource(string name);
+    public void EnableSource(string name);
+    public void DisableSource(string name);
+    public List&lt;NuGetSourceConfig&gt; GetAllSources();
+    public List&lt;NuGetSourceConfig&gt; GetActiveSources();
+    public List&lt;string&gt; GetActiveSourceUrls();
+    public NuGetSourceConfig GetSource(string name);
+    public bool HasSource(string name);
+    public void SetSourcePriority(string name, int priority);
+    public int SourceCount { get; }
+    public int ActiveSourceCount { get; }
+}</code></pre>
+
+                    <h4>CacheManager</h4>
+                    <pre><code class="language-csharp">public class CacheManager
+{
+    public CacheManager(IDMLogger logger, string cachePath,
+        long maxCacheSizeMB = 1024, bool autoCleanup = true);
+
+    public bool HasPackage(string packageId, string version);
+    public string GetCachedPackagePath(string packageId, string version);
+    public void CachePackage(string packageId, string version, string packagePath);
+    public bool RemoveCachedPackage(string packageId, string version = null);
+    public void ClearCache();
+    public long GetCacheSizeMB();
+    public CacheStatistics GetCacheStatistics();
+}</code></pre>
+
+                    <h4>DownloadService</h4>
+                    <pre><code class="language-csharp">public class DownloadService
+{
+    public Task&lt;string&gt; DownloadAsync(string packageId, string version = null,
+        string source = null, IProgress&lt;int&gt; progress = null);
+    public Task&lt;bool&gt; VerifyPackageHashAsync(string packagePath, string expectedHash);
+    public Task&lt;string&gt; ComputePackageHashAsync(string packagePath);
+}</code></pre>
+
+                    <h4>InstallService</h4>
+                    <pre><code class="language-csharp">public class InstallService
+{
+    public Task&lt;PackageInstallResult&gt; InstallAsync(string packagePath,
+        string installPath, bool overwrite = false);
+    public Task&lt;bool&gt; VerifyInstallationAsync(string installPath, string packageId);
+    public Task RepairAsync(string packageId, string installPath);
+    public Task&lt;List&lt;string&gt;&gt; ResolveDependenciesAsync(string packageId,
+        string version, string source = null);
+}</code></pre>
+
+                    <h4>LoadService</h4>
+                    <pre><code class="language-csharp">public class LoadService
+{
+    public LoadService(IDMLogger logger, IAssemblyLoadContext loadContext);
+
+    public Task&lt;NuggetInfo&gt; LoadAsync(string packageId, string version = null,
+        bool useSharedContext = true, string installPath = null);
+    public Task UnloadAsync(string packageId);
+    public bool IsLoaded(string packageId);
+    public IReadOnlyCollection&lt;string&gt; GetLoadedPackages();
+    public Task ReloadAsync(string packageId);
+}</code></pre>
+
+                    <h4>UpdateService</h4>
+                    <pre><code class="language-csharp">public class UpdateService
+{
+    public Task&lt;PackageUpdateResult&gt; UpdateAsync(string packageId,
+        string version = null, string installPath = null);
+    public Task&lt;List&lt;PackageUpdateCheck&gt;&gt; CheckForUpdatesAsync(
+        string installPath = null);
+    public Task BackupPackageAsync(string packageId, string installPath);
+    public Task RestoreBackupAsync(string packageId, string installPath);
+}</code></pre>
+
+                    <h4>UninstallService</h4>
+                    <pre><code class="language-csharp">public class UninstallService
+{
+    public Task&lt;bool&gt; UninstallAsync(string packageId,
+        bool removeUnusedDependencies = false, string installPath = null);
+    public Task&lt;List&lt;string&gt;&gt; FindUnusedDependenciesAsync(string installPath = null);
+    public Task CleanupOrphansAsync(string installPath = null);
+}</code></pre>
+
+                    <h4>SearchService</h4>
+                    <pre><code class="language-csharp">public class SearchService
+{
+    public Task&lt;List&lt;PackageSearchResult&gt;&gt; SearchAsync(string searchTerm,
+        SearchOptions options = null);
+    public Task&lt;List&lt;string&gt;&gt; GetVersionsAsync(string packageId,
+        bool includePrerelease = false, string source = null);
+    public Task&lt;PackageMetadata&gt; GetMetadataAsync(string packageId,
+        string version, string source = null);
+    public Task&lt;List&lt;PackageDependency&gt;&gt; GetDependenciesAsync(
+        string packageId, string version, string source = null);
+}</code></pre>
+
+                    <h4>VulnerabilityService</h4>
+                    <pre><code class="language-csharp">public class VulnerabilityService
+{
+    public Task&lt;List&lt;PackageVulnerability&gt;&gt; ScanAsync(string packageId, string version);
+    public Task&lt;bool&gt; IsVulnerableAsync(string packageId, string version);
+    public Task&lt;VulnerabilityReport&gt; GenerateReportAsync(List&lt;string&gt; packageIds,
+        string installPath = null);
+}</code></pre>
+
+                    <h4>PackageSigningService</h4>
+                    <pre><code class="language-csharp">public class PackageSigningService
+{
+    public Task&lt;SignatureVerificationResult&gt; VerifyAsync(string packagePath);
+    public Task&lt;bool&gt; IsTrustedAuthorAsync(string packagePath);
+    public Task&lt;string&gt; GetAuthorAsync(string packagePath);
+    public Task&lt;DateTime?&gt; GetSignatureTimestampAsync(string packagePath);
+}</code></pre>
+
+                    <h4>NuGetSdkHelper</h4>
+                    <pre><code class="language-csharp">public class NuGetSdkHelper
+{
+    public NuGetSdkHelper(IDMLogger logger);
+
+    // Protocol negotiation
+    public Task&lt;NuGetProtocolVersion&gt; ResolveProtocolAsync(string sourceUrl);
+    public Task&lt;bool&gt; SupportsProtocolAsync(string sourceUrl, NuGetProtocolVersion version);
+
+    // Core SDK operations
+    public Task&lt;NuGetClient&gt; CreateClientAsync(string sourceUrl);
+    public Task&lt;IPackageSearchMetadata&gt; SearchPackagesAsync(NuGetClient client,
+        string query, int take, int skip);
+    public Task WalkDependenciesAsync(NuGetClient client, PackageIdentity identity,
+        Action&lt;PackageDependency, IPackageSearchMetadata&gt; onDependency);
+}</code></pre>
+
+                    <h3>Result &amp; Model Types</h3>
+                    <table class="ref-table"><thead><tr><th>Type</th><th>Key Properties</th></tr></thead><tbody>
+                    <tr><td><code>PackageInstallResult</code></td><td>Success, PackageId, Version, InstallPath, Dependencies, Errors, Duration</td></tr>
+                    <tr><td><code>NuggetInfo</code></td><td>PackageId, Version, Assemblies, Dependencies, LoadPath, IsLoaded</td></tr>
+                    <tr><td><code>PackageUpdateResult</code></td><td>Success, PackageId, OldVersion, NewVersion, InstallPath, BackupPath</td></tr>
+                    <tr><td><code>PackageEventArgs</code></td><td>PackageId, Version, InstallPath, Timestamp</td></tr>
+                    <tr><td><code>PackageSearchResult</code></td><td>PackageId, Version, Description, Authors, Downloads, Tags</td></tr>
+                    <tr><td><code>PackageMetadata</code></td><td>PackageId, Version, Authors, Description, LicenseUrl, ProjectUrl, Published</td></tr>
+                    <tr><td><code>PackageDependency</code></td><td>PackageId, VersionRange, IsRequired</td></tr>
+                    <tr><td><code>PackageStatistics</code></td><td>PackageId, IsInstalled, InstalledVersion, IsLoaded, LastChecked, AccessCount</td></tr>
+                    <tr><td><code>InstalledPackageInfo</code></td><td>PackageId, Version, InstallPath, InstalledDate, IsLoaded, Dependencies</td></tr>
+                    <tr><td><code>SearchOptions</code></td><td>Take, Skip, IncludePrerelease, SourceFilter, SortBy, SortAscending</td></tr>
+                    <tr><td><code>PackageVulnerability</code></td><td>CveId, Severity, Description, AffectedVersions, FixedVersion, PublishedDate</td></tr>
+                    <tr><td><code>SignatureVerificationResult</code></td><td>IsValid, AuthorName, SignatureTimestamp, CertificateChain, Errors</td></tr>
+                    </tbody></table>
+
+                    <h3>Source File Map (13 files)</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>NuGetPackageManager.cs</code></td><td>Core facade: 2 constructors, 15 public methods, 8 lifecycle events, lock-file serialization, service wiring</td></tr>
+                    <tr><td><code>NuGetManagerConfiguration.cs</code></td><td>Config persistence: Load/Save from JSON, auto-create defaults, config path</td></tr>
+                    <tr><td><code>Services/SearchService.cs</code></td><td>Search + metadata + dependencies + version listing</td></tr>
+                    <tr><td><code>Services/DownloadService.cs</code></td><td>NuGet feed download with progress, hash verification</td></tr>
+                    <tr><td><code>Services/InstallService.cs</code></td><td>Extract to target dir, dependency resolution, repair, verify</td></tr>
+                    <tr><td><code>Services/LoadService.cs</code></td><td>Assembly loading: shared context or isolated ALC, unload, reload</td></tr>
+                    <tr><td><code>Services/UpdateService.cs</code></td><td>Version check, backup, upgrade, restore backup</td></tr>
+                    <tr><td><code>Services/UninstallService.cs</code></td><td>Dependency-aware removal, orphan cleanup</td></tr>
+                    <tr><td><code>Services/CacheManager.cs</code></td><td>Local NuGet cache: add/get/remove/clear, size tracking, auto-cleanup</td></tr>
+                    <tr><td><code>Services/SourceManager.cs</code></td><td>NuGet source CRUD: add/remove/enable/disable, priority, active filtering</td></tr>
+                    <tr><td><code>Services/PackageSigningService.cs</code></td><td>Signature verification: author, chain, timestamp</td></tr>
+                    <tr><td><code>Services/VulnerabilityService.cs</code></td><td>CVE scanning, vulnerability reports</td></tr>
+                    <tr><td><code>Helpers/NuGetSdkHelper.cs</code></td><td>NuGet SDK abstraction: protocol negotiation, client creation, dependency walker</td></tr>
+                    </tbody></table>
+                </section>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

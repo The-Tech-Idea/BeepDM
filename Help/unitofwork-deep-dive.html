@@ -1262,6 +1262,247 @@ Console.WriteLine(result.Message); // e.g. "Committed 5 of 6 items (1 skipped �
     </div><!-- end content-area -->
   </div><!-- end content-wrapper -->
 </div><!-- end main-content -->
+
+<!-- ═══════════════════════════════════════════════════════════ FULL API REFERENCE -->
+<div class="main-content"><div class="content-wrapper"><div class="content-area" style="max-width:100%">
+<section id="full-api">
+<h2><i class="bi bi-book"></i> Full API Reference — UnitofWork&lt;T&gt;</h2>
+
+<h3>Source File Map (20 files)</h3>
+<table class="api-table"><thead><tr><th>File</th><th>Lines</th><th>Content</th></tr></thead><tbody>
+<tr><td><code>UnitofWork.Core.cs</code></td><td>~600</td><td>Constructors (7), properties (30), events, ChangeSummary, Export/Import, Dispose</td></tr>
+<tr><td><code>UnitofWork.CRUD.cs</code></td><td>~400</td><td>Read/Get/New/Add/Update/Insert/Delete keys — full CRUD lifecycle</td></tr>
+<tr><td><code>UnitofWork.Core.Extensions.cs</code></td><td>~350</td><td>Delete overloads, Commit/Rollback, AddRange/UpdateRange/DeleteRange, ChangeLog, 13 lifecycle events (Pre/Post: Create,Insert,Update,Delete,Query,Commit,Edit), RevertItem, FindAsync, FindManyAsync, CloneItem, Count, Undo/Redo</td></tr>
+<tr><td><code>UnitofWork.Core.Utilities.cs</code></td><td>~300</td><td>Clear, GetIsDirty, DocExist, FindDocIdx, Getindex, GetItemFromCurrentList, navigation (MoveFirst/Next/Previous/Last/MoveTo), GetAddedEntities, GetModifiedEntities, GetDeletedEntities, Delete(id), GetTrackingItem, FilterCollection, GetDataInUnits</td></tr>
+<tr><td><code>UnitofWork.OBLIntegration.cs</code></td><td>~300</td><td>Validation, Undo/Redo, Computed Columns, Bookmarks, Thread Safety (Freeze/Unfreeze/BatchUpdate), Aggregates (Sum/Average/Min/Max/CountWhere/GroupBy/DistinctValues), Navigation (BOF/EOF/IsEmpty/MoveToItem), Virtual/Lazy Loading</td></tr>
+<tr><td><code>IUnitofWorkCapabilities.cs</code></td><td>~80</td><td>7 interfaces: IRevertable, IBatchCommittable, IExportable, IImportable, IAggregatable, IUndoable, IMergeable, IUnitofWorkHistory</td></tr>
+<tr><td><code>UnitOfWorkFactory.cs</code></td><td>517</td><td>Static factory — dynamic type creation, caching, validation, batch ops (see unitofwork-factory.html)</td></tr>
+<tr><td><code>UnitOfWorkWrapper.cs</code></td><td>1164</td><td>Late-bound wrapper — all CRUD, events, validation, navigation (see unitofwork-wrapper.html)</td></tr>
+<tr><td><code>UnitOfWorkWrapperExtensions.cs</code></td><td>~200</td><td>ForEachRecordAsync, CreateNewRecord, FindRecord, GetAllRecords, NavigateToRecord, GetPositionInfo, BatchInsertAsync, HasRecords, Get/SetCurrentFieldValue, RecordPositionInfo, BatchOperationResult, BatchProgress</td></tr>
+<tr><td><code>UnitofWorkStateHelper.cs</code></td><td>~100</td><td>Get/SetEntityState, MarkForDeletion, MarkAsModified, MarkAsAdded, ResetState, ClearAllStates, GetIndicesByState, HasPendingChanges</td></tr>
+<tr><td><code>UnitofWorkDataHelper.cs</code></td><td>~120</td><td>CloneEntity, ConvertToEntity, Get/SetEntityValues, CompareEntities (old/new diffs), GetCachedProperties, TypeExtensions (IsNullableType, IsNumericType)</td></tr>
+<tr><td><code>UnitofWorkCollectionHelper.cs</code></td><td>~80</td><td>SynchronizeCollections, FilterCollection, ApplyPaging, SortCollection</td></tr>
+<tr><td><code>UnitofWorkValidationHelper.cs</code></td><td>~100</td><td>ValidateEntity, ValidateForInsert, ValidateForUpdate, ValidateForDelete, ValidatePrimaryKey, ValidateRequiredFields</td></tr>
+<tr><td><code>UnitofWorkEventHelper.cs</code></td><td>~80</td><td>CreateEventParams, CreatePropertyChangeParams, HandlePropertyChanged, RaiseEntityEvent, RaiseEvent</td></tr>
+<tr><td><code>UnitofWorkDefaultsHelper.cs</code></td><td>~100</td><td>ApplyDefaults, ApplyDefaultsAsync, HasDefaults, GetDefaultForField, ApplyInsertDefaults, ApplyUpdateDefaults, ValidateAppliedDefaults</td></tr>
+<tr><td><code>UnitofWorkQueryHistory.cs</code></td><td>~30</td><td>MaxSize (20), Entries (IReadOnlyList), Push, Clear</td></tr>
+<tr><td><code>UnitofWorkExportHelper.cs</code></td><td>~80</td><td>ToDataTable, ToJsonAsync, ToCsvAsync, LoadFromJsonAsync, LoadFromCsvAsync</td></tr>
+<tr><td><code>Models/QueryHistoryEntry.cs</code></td><td>—</td><td>ExecutedAt, Filters, RowCount, Duration, Succeeded, EntityName</td></tr>
+<tr><td><code>Models/ChangeSummary.cs</code></td><td>—</td><td>InsertCount, UpdateCount, DeleteCount, IsDirty, TotalChanges (+ CommitBatchProgress, CommitBatchResult)</td></tr>
+<tr><td><code>Examples/UnitofWorkExamples.cs</code></td><td>—</td><td>BasicUsage, DefaultsManagerIntegration, ListMode, FilteringAndPaging, ErrorHandling, EventHandling, Performance</td></tr>
+</tbody></table>
+
+<h3>All 6 Helper Interfaces (from DataManagementModelsStandard)</h3>
+
+<h4>IUnitofWorkStateHelper&lt;T&gt;</h4>
+<pre><code class="language-csharp">public interface IUnitofWorkStateHelper&lt;T&gt; where T : Entity, new()
+{
+    EntityState GetEntityState(T entity);
+    void SetEntityState(T entity, EntityState state);
+    void MarkForDeletion(T entity);
+    void MarkAsModified(T entity);
+    void MarkAsAdded(T entity);
+    void ResetState(T entity);
+    void ClearAllStates();
+    IEnumerable&lt;int&gt; GetIndicesByState(EntityState state);
+    bool HasPendingChanges();
+}</code></pre>
+
+<h4>IUnitofWorkDataHelper&lt;T&gt;</h4>
+<pre><code class="language-csharp">public interface IUnitofWorkDataHelper&lt;T&gt; where T : Entity, new()
+{
+    T CloneEntity(T entity);
+    T ConvertToEntity(object source);
+    Dictionary&lt;string, object&gt; GetEntityValues(T entity);
+    void SetEntityValues(T entity, Dictionary&lt;string, object&gt; values);
+    Dictionary&lt;string, (object oldValue, object newValue)&gt; CompareEntities(T original, T current);
+}</code></pre>
+
+<h4>IUnitofWorkCollectionHelper&lt;T&gt;</h4>
+<pre><code class="language-csharp">public interface IUnitofWorkCollectionHelper&lt;T&gt; where T : Entity, new()
+{
+    void SynchronizeCollections(ObservableBindingList&lt;T&gt; source, ObservableBindingList&lt;T&gt; target);
+    ObservableBindingList&lt;T&gt; FilterCollection(ObservableBindingList&lt;T&gt; collection, List&lt;AppFilter&gt; filters);
+    ObservableBindingList&lt;T&gt; ApplyPaging(ObservableBindingList&lt;T&gt; collection, int pageIndex, int pageSize);
+    ObservableBindingList&lt;T&gt; SortCollection(ObservableBindingList&lt;T&gt; collection, string sortField, bool ascending);
+}</code></pre>
+
+<h4>IUnitofWorkValidation&lt;T&gt;</h4>
+<pre><code class="language-csharp">public interface IUnitofWorkValidation&lt;T&gt; where T : Entity, new()
+{
+    IErrorsInfo ValidateEntity(T entity);
+    IErrorsInfo ValidateForInsert(T entity);
+    IErrorsInfo ValidateForUpdate(T entity);
+    IErrorsInfo ValidateForDelete(T entity);
+    IErrorsInfo ValidatePrimaryKey(T entity);
+    IErrorsInfo ValidateRequiredFields(T entity);
+}</code></pre>
+
+<h4>IUnitofWorkEventHelper&lt;T&gt;</h4>
+<pre><code class="language-csharp">public interface IUnitofWorkEventHelper&lt;T&gt; where T : Entity, new()
+{
+    UnitofWorkParams CreateEventParams(T entity, EventAction action);
+    UnitofWorkParams CreatePropertyChangeParams(T entity, string propertyName, object newValue);
+    void HandlePropertyChanged(T entity, string propertyName, object oldValue, object newValue);
+    bool RaiseEntityEvent(T entity, EventAction action, bool isPreEvent);
+    bool RaiseEvent(EventHandler&lt;UnitofWorkParams&gt; handler, object sender, T entity, EventAction action);
+}</code></pre>
+
+<h4>IUnitofWorkDefaults&lt;T&gt;</h4>
+<pre><code class="language-csharp">public interface IUnitofWorkDefaults&lt;T&gt; where T : Entity, new()
+{
+    void ApplyDefaults(T entity, DefaultValueContext context);
+    Task&lt;T&gt; ApplyDefaultsAsync(T entity, DefaultValueContext context);
+    bool HasDefaults(string fieldName);
+    DefaultValue GetDefaultForField(string fieldName);
+    void ApplyInsertDefaults(T entity);
+    void ApplyUpdateDefaults(T entity);
+    IErrorsInfo ValidateAppliedDefaults(T entity);
+}</code></pre>
+
+<h3>7 Capability Interfaces (IUnitofWorkCapabilities.cs)</h3>
+<pre><code class="language-csharp">public interface IRevertable
+{
+    bool RevertItem(object item);
+    Task&lt;bool&gt; RevertItemAsync(object item, CancellationToken ct = default);
+}
+
+public interface IBatchCommittable
+{
+    Task&lt;CommitBatchResult&gt; CommitBatchAsync(int batchSize = 200,
+        IProgress&lt;CommitBatchProgress&gt; progress = null, CancellationToken ct = default);
+}
+
+public interface IExportable
+{
+    DataTable ToDataTable();
+    Task ToJsonAsync(Stream stream, CancellationToken ct = default);
+    Task ToCsvAsync(Stream stream, char delimiter = ',', CancellationToken ct = default);
+}
+
+public interface IImportable
+{
+    Task&lt;int&gt; LoadFromJsonAsync(Stream stream, bool clearFirst = true, CancellationToken ct = default);
+    Task&lt;int&gt; LoadFromCsvAsync(Stream stream, char delimiter = ',', bool clearFirst = true, bool hasHeaderRow = true, CancellationToken ct = default);
+}
+
+public interface IAggregatable
+{
+    decimal Sum(string numericFieldName);
+    decimal Average(string numericFieldName);
+    int Count(Func&lt;object, bool&gt; predicate = null);
+}
+
+public interface IUndoable
+{
+    bool CanUndo { get; }
+    bool CanRedo { get; }
+    bool UndoLastAction();
+    bool RedoLastAction();
+    void EnableUndo(bool enable, int maxDepth = 50);
+}
+
+public interface IMergeable
+{
+    Task&lt;bool&gt; RefreshAsync(List&lt;AppFilter&gt; filters = null,
+        ConflictMode conflictMode = ConflictMode.ServerWins, CancellationToken ct = default);
+}
+
+public interface IUnitofWorkHistory
+{
+    ChangeSummary GetChangeSummary();
+    IReadOnlyList&lt;QueryHistoryEntry&gt; GetQueryHistory();
+    void ClearQueryHistory();
+    object CloneItem(object item, bool deep = false);
+}</code></pre>
+
+<h3>UnitOfWorkWrapperExtensions — Full API</h3>
+<pre><code class="language-csharp">public static class UnitOfWorkWrapperExtensions
+{
+    // Iterate all records asynchronously
+    public static Task&lt;int&gt; ForEachRecordAsync(this IUnitOfWorkWrapper wrapper,
+        Func&lt;dynamic, Task&lt;bool&gt;&gt; processor);
+
+    // Create/Find
+    public static dynamic CreateNewRecord(this IUnitOfWorkWrapper wrapper);
+    public static bool TryCreateNewRecord(this IUnitOfWorkWrapper wrapper, out dynamic record);
+    public static dynamic FindRecord(this IUnitOfWorkWrapper wrapper, Func&lt;dynamic, bool&gt; predicate);
+    public static List&lt;dynamic&gt; GetAllRecords(this IUnitOfWorkWrapper wrapper);
+    public static bool NavigateToRecord(this IUnitOfWorkWrapper wrapper, string primaryKeyValue);
+
+    // Position info
+    public static RecordPositionInfo GetPositionInfo(this IUnitOfWorkWrapper wrapper);
+
+    // Batch insert
+    public static Task&lt;BatchOperationResult&gt; BatchInsertAsync(this IUnitOfWorkWrapper wrapper,
+        IEnumerable&lt;dynamic&gt; records, IProgress&lt;BatchProgress&gt; progress = null);
+    public static Task&lt;BatchOperationResult&gt; BatchInsertAsync(this IUnitOfWorkWrapper wrapper,
+        IEnumerable&lt;dynamic&gt; records, IProgress&lt;BatchProgress&gt; progress,
+        CancellationToken cancellationToken, bool stopOnFirstFailure = false);
+
+    // State checks
+    public static bool HasRecords(this IUnitOfWorkWrapper wrapper);
+
+    // Field value accessors
+    public static T GetCurrentFieldValue&lt;T&gt;(this IUnitOfWorkWrapper wrapper,
+        string fieldName, T defaultValue = default);
+    public static bool SetCurrentFieldValue(this IUnitOfWorkWrapper wrapper,
+        string fieldName, object value);
+}
+
+// Supporting types
+public class RecordPositionInfo
+{
+    public int CurrentIndex { get; }
+    public int TotalCount { get; }
+    public bool IsAtFirst { get; }
+    public bool IsAtLast { get; }
+    public bool HasRecords { get; }
+    public dynamic CurrentRecord { get; }
+    public string Summary { get; }
+}
+
+public class BatchOperationResult
+{
+    public int TotalRecords { get; }
+    public int ProcessedRecords { get; }
+    public int SuccessfulRecords { get; }
+    public int FailedRecords { get; }
+    public List&lt;string&gt; Errors { get; }
+    public TimeSpan Duration { get; }
+    public bool IsSuccess { get; }
+    public double SuccessRate { get; }
+}</code></pre>
+
+<h3>UnitofWork&lt;T&gt; — Complete Method Index</h3>
+<table class="api-table"><thead><tr><th>Category</th><th>Methods</th></tr></thead><tbody>
+<tr><td><strong>Constructors</strong></td><td>7 overloads: <code>()</code> | <code>(editor, ds, entity)</code> | <code>(editor, ds, entity, structure)</code> | <code>(editor, isListMode, obl)</code> | <code>(editor, ds, entity, pk)</code> | <code>(editor, ds, entity, structure, pk)</code> | <code>(editor, isListMode, obl, pk)</code></td></tr>
+<tr><td><strong>Read / Get</strong></td><td><code>Read(id)</code>, <code>Read(pred)</code>, <code>MultiRead(pred)</code>, <code>Get()</code>, <code>Get(filters)</code>, <code>GetQuery(query)</code>, <code>Get(key)</code>, <code>Get(PrimaryKeyId)</code>, <code>FindAsync(pred,ct)</code>, <code>FindManyAsync(pred,ct)</code></td></tr>
+<tr><td><strong>Create / Add</strong></td><td><code>New()</code>, <code>Add(entity)</code>, <code>AddRange(entities)</code></td></tr>
+<tr><td><strong>Update</strong></td><td><code>Update(pred,entity)</code>, <code>Update(entity)</code>, <code>Update(id,entity)</code>, <code>UpdateAsync(doc)</code>, <code>UpdateDoc(doc)</code>, <code>UpdateRange(entities)</code></td></tr>
+<tr><td><strong>Insert</strong></td><td><code>InsertAsync(doc)</code>, <code>InsertDoc(doc)</code></td></tr>
+<tr><td><strong>Delete</strong></td><td><code>Delete(pred)</code>, <code>Delete(entity)</code>, <code>Delete()</code>, <code>DeleteAsync(doc)</code>, <code>DeleteDoc(doc)</code>, <code>DeleteRange(entities)</code>, <code>Delete(id)</code></td></tr>
+<tr><td><strong>Keys / IDs</strong></td><td><code>GetPrimaryKeySequence(doc)</code>, <code>GetSeq(name)</code>, <code>GetLastIdentity()</code>, <code>SetIDValue(entity,val)</code>, <code>GetIDValue(entity)</code></td></tr>
+<tr><td><strong>Commit / Rollback</strong></td><td><code>Commit()</code>, <code>Commit(progress,token)</code>, <code>Rollback()</code>, <code>CommitBatchAsync(batchSize,progress,ct)</code></td></tr>
+<tr><td><strong>Navigation</strong></td><td><code>MoveFirst/MoveNext/MovePrevious/MoveLast/MoveTo/MoveToItem</code>, <code>IsAtBOF/IsAtEOF/IsEmpty</code></td></tr>
+<tr><td><strong>State Management</strong></td><td><code>Clear()</code>, <code>GetIsDirty()</code>, <code>DocExist(doc)</code>, <code>DocExistByKey(doc)</code>, <code>FindDocIdx(doc)</code>, <code>Getindex(id/entity)</code>, <code>GetItemFromCurrentList(idx)</code>, <code>GetAddedEntities()</code>, <code>GetModifiedEntities()</code>, <code>GetDeletedEntities()</code>, <code>GetTrackingItem(item)</code>, <code>GetChangeLog()</code>, <code>RevertItem(item)</code>, <code>RevertItemAsync(item,ct)</code>, <code>CloneItem(item,deepCopy)</code></td></tr>
+<tr><td><strong>Events (13 lifecycle)</strong></td><td><code>PreCreate</code>, <code>PostCreate</code>, <code>PreInsert</code>, <code>PostInsert</code>, <code>PreUpdate</code>, <code>PostUpdate</code>, <code>PreDelete</code>, <code>PostDelete</code>, <code>PreQuery</code>, <code>PostQuery</code>, <code>PreCommit</code>, <code>PostCommit</code>, <code>PostEdit</code> — all <code>EventHandler&lt;UnitofWorkParams&gt;</code></td></tr>
+<tr><td><strong>Logging</strong></td><td><code>IsLogging</code> (bool), <code>UpdateLog</code> (Dict), <code>SaveLog(path)</code></td></tr>
+</tbody></table>
+
+<h3>OBL Integration Features</h3>
+<table class="api-table"><thead><tr><th>Phase</th><th>Feature</th><th>Methods / Properties</th></tr></thead><tbody>
+<tr><td>3</td><td><strong>Validation</strong></td><td><code>IsAutoValidateEnabled</code>, <code>BlockCommitOnValidationError</code>, <code>ValidateItem</code>, <code>ValidateAll</code>, <code>GetErrors</code>, <code>GetInvalidItems</code></td></tr>
+<tr><td>4</td><td><strong>Undo / Redo</strong></td><td><code>IsUndoEnabled</code>, <code>MaxUndoDepth</code>, <code>CanUndo</code>, <code>CanRedo</code>, <code>Undo()</code>, <code>Redo()</code>, <code>UndoLastAction()</code>, <code>RedoLastAction()</code>, <code>ClearUndoHistory()</code>, <code>EnableUndo(bool,int)</code></td></tr>
+<tr><td>5</td><td><strong>Virtual Loading</strong></td><td><code>IsVirtualMode</code>, <code>PageCacheSize</code>, <code>VirtualTotalPages</code>, <code>EnableVirtualMode</code>, <code>DisableVirtualMode</code>, <code>GoToPageAsync</code>, <code>PrefetchAdjacentPagesAsync</code>, <code>InvalidatePageCache</code></td></tr>
+<tr><td>7</td><td><strong>Computed Columns</strong></td><td><code>RegisterComputed</code>, <code>UnregisterComputed</code>, <code>GetComputed</code>, <code>GetAllComputed</code>, <code>ComputedColumnNames</code></td></tr>
+<tr><td>8</td><td><strong>Bookmarks</strong></td><td><code>SetBookmark</code>, <code>GoToBookmark</code>, <code>RemoveBookmark</code>, <code>ClearBookmarks</code></td></tr>
+<tr><td>9</td><td><strong>Thread Safety</strong></td><td><code>IsThreadSafe</code>, <code>IsFrozen</code>, <code>Freeze()</code>, <code>Unfreeze()</code>, <code>BeginBatchUpdate()</code></td></tr>
+<tr><td>10</td><td><strong>Aggregates</strong></td><td><code>Sum</code>, <code>SumWhere</code>, <code>Average</code>, <code>AverageWhere</code>, <code>Min</code>, <code>Max</code>, <code>CountWhere</code>, <code>GroupBy</code>, <code>DistinctValues</code></td></tr>
+<tr><td>11</td><td><strong>Navigation Exts</strong></td><td><code>IsAtBOF</code>, <code>IsAtEOF</code>, <code>IsEmpty</code>, <code>MoveToItem</code></td></tr>
+</tbody></table>
+</section>
+</div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
 <script src="navigation.js"></script>

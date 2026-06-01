@@ -23,16 +23,17 @@ Use this skill as the top-level router for all non-shared-context `AssemblyHandl
 - Preserve `IAssemblyHandler` as the caller-facing abstraction.
 
 ## Main Files
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Core.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Loaders.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Scanning.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Helpers.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.NuGetOperations.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.NuGetSources.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.DriverTracking.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Statistics.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/NuggetManager.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandlerEnhancement.md`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Core.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Loaders.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Scanning.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Helpers.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.NuGetOperations.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.NuGetSources.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.DriverTracking.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Statistics.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/NuggetManager.cs`
+- `DataManagementEngineStandard/AssemblyHandler/PluginSystem/SharedContextAssemblyHandler.cs`
+- `DataManagementEngineStandard/AssemblyHandler/docs/AssemblyHandlerEnhancement.md`
 
 ## Typical Workflow
 1. Construct `AssemblyHandler` with `IConfigEditor`, `IErrorsInfo`, `IDMLogger`, and `IUtil`.

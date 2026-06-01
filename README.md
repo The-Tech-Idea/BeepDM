@@ -1,361 +1,367 @@
 # BeepDM: Beep Data Management Engine
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)  
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 **Current Status: Alpha** - Actively developed, expect bugs, contributions welcome!
 
-BeepDM is a modular, extensible data management engine designed to streamline connecting, managing, and synchronizing data across diverse sources. It provides a robust framework for developers, supporting databases, files, and in-memory stores with programmatic control over connections, data movement, and entity management.
+BeepDM is a modular, extensible data management engine providing a full-stack backend for .NET applications — from configuration bootstrapping and plugin discovery, through data access and entity CRUD, to synchronization, ETL, and workflows.
 
-## Key Features
-- **Modular Architecture**: Flexible components for data sources, ETL, workflows, and add-ins.
-- **Wide Data Source Support**: Connect to databases (e.g., SQLite, SQL Server), files (e.g., CSV, XLS), APIs, and in-memory stores via `IDataConnection` and `IRDBSource`.
-- **Data Synchronization**: `DataSyncManager` for real-time or scheduled sync with metrics and logging.
-- **Entity Management**: `UnitofWork<T>` for CRUD operations, change tracking, and transactional commits.
-- **ETL & Import**: `DataImportManager` for transforming and importing data with batch processing.
-- **Dependency Injection**: Supports **Microsoft.Extensions.DependencyInjection** and **Autofac**.
-- **Configuration Management**: Centralized settings via `IConfigEditor`.
-- **Extensibility**: Add custom functionality with `IDM_Addin` and extend connections/data types.
+## Architecture: The Five Core Services
 
-## Core Components (Main Interfaces)
-These are the primary interfaces driving BeepDM's functionality:
-1. **`IDMEEditor`**: The mother class, orchestrating all components below. Acts as the central hub for data management operations.
-2. **`IConfigEditor` (`ConfigEditor`)**: Manages framework configurations (e.g., `DataDriversClasses`, `DataTypesMap`, `QueryList`, `DataConnections`), persisting them to JSON files.
-3. **`IDataSource`**: Defines the contract for all data source implementations (e.g., SQLite, XLS), providing methods like `GetEntity`, `CreateEntityAs`, and `UpdateEntities`.
-4. **`IETL`**: Handles Extract, Transform, and Load operations for data integration.
-5. **`IDataTypesHelper`**: Manages data type mappings and configurations, supporting `IDataSource` type translation.
-6. **`IUtil`**: Provides common utility functions used across the engine.
-7. **`IAssemblyHandler`**: Loads assemblies and extracts implementations (e.g., `IDataSource`, drivers, `IDM_Addin`, extensions).
-8. **`IErrorsInfo`**: Handles error reporting and management.
-9. **`IDMLogger`**: Manages logging across the framework.
-10. **`IJsonLoader`**: Handles loading and saving JSON configuration files.
-11. **`IClassCreator`**: Generates classes/types for data source entities.
-12. **`IWorkFlowEditor`**: Manages data workflows.
-13. **`IWorkFlowStepEditor`**: Manages individual steps/stages within workflows.
-14. **`IRuleParser`**: Parses data rules used in workflows.
-15. **`IRulesEditor`**: Manages data rules configuration.
+BeepDM's runtime is composed of five core services wired by `BeepService`. Understanding these is understanding the engine:
 
-## Directory Structure
-Every BeepDM project follows this directory structure:
-1. **Addin**: Stores DLLs implementing the `IDM_Addin` interface (e.g., user controls, forms, classes).
-2. **AI**: Stores AI scripts (for future use).
-3. **Config**: Contains configuration files:
-   - `QueryList.json`: Defines query types for retrieving metadata from data sources.
-   - `ConnectionConfig.json`: Defines drivers, data source classes, and metadata (e.g., icons).
-   - `DataTypeMapping.json`: Maps data types between data sources.
-   - `DataConnections.json`: Stores data source connection details.
-4. **ConnectionDrivers**: Holds data source driver DLLs (e.g., Oracle, SQLite, SQL Server).
-5. **DataFiles**: Primary storage for project data files.
-6. **DataViews**: Stores JSON files for federated views of data source entities.
-7. **Entities**: Temporary storage for data source entity descriptions.
-8. **GFX**: Stores graphics and icons used by the application.
-9. **LoadingExtensions**: Contains classes implementing `ILoaderExtention` to dynamically load additional functionality.
-10. **Mapping**: Stores mapping definitions between data sources.
-11. **OtherDLL**: Holds miscellaneous DLLs required by the application.
-12. **ProjectClasses**: Primary folder for loading custom implementations (e.g., `IDataSource`, add-ins).
-13. **ProjectData**: Stores project-specific files.
-14. **Scripts**: Stores scripts and logs.
-15. **WorkFlow**: Stores workflow definitions.
+```
+BeepService (Services)
+  ├── ConfigEditor (ConfigUtil)       ← configuration persistence, JSON files, paths
+  ├── AssemblyHandler (AssemblyHandler) ← plugin/DLL/NuGet discovery and loading
+  ├── Util                              ← data conversion, driver linking
+  └── DMEEditor (Editor/DM)            ← central hub: data sources, logging, ETL
+        └── UnitofWork<T> (Editor/UOW) ← consumer-facing CRUD, validation, export
+```
+
+### 1. BeepService — Bootstrapper
+**Path:** `DataManagementEngineStandard/Services/`  |  **Doc:** [`Help/services-registration-lifetimes.html`](Help/services-registration-lifetimes.html)
+
+Creates and wires the entire object graph. Supports Desktop, Web API, Blazor Server, Blazor WASM, and MAUI.
+
+```csharp
+// Minimal startup — all platforms
+services.AddBeepServices(options =>
+{
+    options.AppPath = "C:\\MyApp";
+    options.AppRepoName = "MyAppRepo";
+    options.ConfigType = BeepConfigType.DataConnector;
+});
+
+// Or use platform shortcuts:
+services.AddBeepForDesktop("C:\\MyApp", "MyAppRepo");   // WinForms/WPF
+services.AddBeepForWeb("C:\\MyApp", "MyAppRepo");       // ASP.NET Core
+services.AddBeepForBlazorServer("C:\\MyApp", "MyAppRepo");
+services.AddBeepForBlazorWasm("C:\\MyApp", "MyAppRepo");
+```
+
+---
+
+### 2. ConfigEditor — Configuration Hub
+**Path:** `DataManagementEngineStandard/ConfigUtil/`  |  **Doc:** [`Help/configeditor.html`](Help/configeditor.html)
+
+Central configuration store persisting to JSON files. Delegates to specialized managers:
+
+| Manager | Responsibility | JSON File |
+|---|---|---|
+| `DataConnectionManager` | Connection strings, connection properties | `DataConnections.json` |
+| `QueryManager` | SQL / query repository | `QueryList.json` |
+| `ComponentConfigManager` | Drivers, workflows, reports, projects | `ConnectionConfig.json` |
+| `EntityMappingManager` | Entity structures, field mappings | entity files |
+| `MigrationHistoryManager` | Per-datasource migration history | migration files |
+
+```csharp
+var config = beepService.Config_editor;
+
+// Add a data source connection
+config.AddDataConnection(new ConnectionProperties
+{
+    ConnectionString = "Data Source=./northwind.db",
+    ConnectionName = "northwind.db",
+    DatabaseType = DataSourceType.SqlLite,
+    Category = DatasourceCategory.RDBMS
+});
+
+// Discovered type registries (populated by AssemblyHandler)
+config.DataSourcesClasses   // All IDataSource implementations found
+config.DataDriversClasses    // All driver configs found
+config.DefaultResolverClasses // Default value resolvers
+config.WorkFlowActions       // Workflow action types
+```
+
+---
+
+### 3. AssemblyHandler — Plugin & Driver Discovery
+**Path:** `DataManagementEngineStandard/AssemblyHandler/`  |  **Doc:** [`Help/assemblyhandler-loading-nuget-extensions.html`](Help/assemblyhandler-loading-nuget-extensions.html)
+
+Scans DLLs, discovers plugins, and manages NuGet packages. Two implementations:
+
+| Implementation | When to Use |
+|---|---|
+| `AssemblyHandler` (default) | Single app, few plugins — direct `Assembly.LoadFrom` |
+| `SharedContextAssemblyHandler` | Multi-tenant, plugin-heavy — `AssemblyLoadContext` isolation, plugin lifecycle, health monitoring |
+
+```csharp
+var handler = beepService.DMEEditor.assemblyHandler;
+
+// Full scan: built-in + drivers + plugins + extensions + NuGet packages
+handler.LoadAllAssembly(progress, CancellationToken.None);
+
+// Search & install NuGet drivers
+var packages = await handler.SearchNuGetPackagesAsync("postgresql", take: 10);
+await handler.InstallAndLoadNuGetPackageAsync(packages[0].PackageId);
+
+// Switch to SharedContext for plugin-heavy apps
+beepService.AssemblyHandlerType = AssemblyHandlerType.SharedContext;
+```
+
+**Scanned contracts:** `IDataSource`, `IDM_Addin`, `ILoaderExtention`, `IWorkFlowAction`, `IRuleParser`, `IPipelinePlugin`, `IDefaultValueResolver`, `IFileFormatReader`, and 8 more.
+
+---
+
+### 4. DMEEditor — Central Hub
+**Path:** `DataManagementEngineStandard/Editor/DM/`  |  **Doc:** [`Help/dmeeditor.html`](Help/dmeeditor.html)
+
+The mother class. Orchestrates all other services. Every consumer operation flows through `DMEEditor`.
+
+```csharp
+var dm = beepService.DMEEditor;
+
+// Open a data source (discovers from config, creates IDataSource via AssemblyHandler)
+var ds = dm.GetDataSource("northwind.db");
+ds.Openconnection();
+
+// Query entity data
+var customers = ds.GetEntity("Customers", new List<AppFilter>
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "UK" }
+});
+
+// Insert
+ds.InsertEntity("Customers", newRow);
+
+// Access sub-services
+dm.ConfigEditor       // IConfigEditor — configuration
+dm.assemblyHandler    // IAssemblyHandler — plugins
+dm.typesHelper        // IDataTypesHelper — type mapping
+dm.ETL                // IETL — data transformation
+dm.classCreator       // IClassCreator — dynamic type generation
+dm.WorkFlowEditor     // IWorkFlowEditor — workflow management
+
+// Schema operations
+var structure = dm.GetEntityStructure("Customers", "northwind.db");
+dm.CreateEntityAs(structure);
+```
+
+---
+
+### 5. UnitofWork<T> — Consumer-Facing CRUD
+**Path:** `DataManagementEngineStandard/Editor/UOW/`  |  **Doc:** [`Help/unitofwork.html`](Help/unitofwork.html)
+
+Full-featured entity CRUD with change tracking, validation, undo/redo, import/export, virtual paging, and computed columns.
+
+```csharp
+var uow = new UnitofWork<Product>(dmEditor, "northwind.db", "Products");
+
+// Query with filters and paging
+uow.PageSize = 50;
+uow.PageIndex = 1;
+uow.Get(new List<AppFilter> { new AppFilter { FieldName = "CategoryId", FilterValue = "1" } });
+
+// Create / Update / Delete
+var product = uow.New();
+product.ProductName = "Widget";
+product.UnitPrice = 19.99m;
+uow.Add(product);
+uow.Commit();
+
+// Change tracking
+var changes = uow.GetChangeSummary(); // Inserted: 1, Updated: 0, Deleted: 0
+
+// Export
+using var stream = File.Create("products.json");
+await uow.ToJsonAsync(stream);
+
+// Undo / Redo
+uow.EnableUndo(enable: true, maxDepth: 50);
+uow.Undo(); // Reverts last operation
+
+// Validation
+uow.IsAutoValidateEnabled = true;
+uow.BlockCommitOnValidationError = true;
+var errors = uow.GetInvalidItems();
+
+// Aggregates
+var totalRevenue = uow.Sum("Revenue");
+var avgPrice = uow.Average("UnitPrice");
+var customersByCountry = uow.GroupBy("Country");
+```
+
+`UnitofWork<T>` also provides: soft delete, virtual/lazy loading, computed columns, bookmarks, batch freeze, concurrency control, and 12 lifecycle events (`PreInsert`, `PostInsert`, `PreUpdate`, `PostUpdate`, etc.).
+
+---
+
+## Core Interfaces
+
+| Interface | Purpose |
+|---|---|
+| `IBeepService` | Bootstrapper: creates and wires the entire object graph |
+| `IDMEEditor` | Central orchestrator: data sources, logging, ETL, configuration |
+| `IConfigEditor` | Configuration persistence with specialized per-concern managers |
+| `IAssemblyHandler` | DLL discovery, NuGet lifecycle, plugin registration |
+| `IDataSource` | All data source implementations (SQL, file, REST, in-memory) |
+| `IUnitofWork<T>` | Consumer CRUD with validation, export, change tracking |
+| `IDataImportManager` | Batch import pipeline with validation, quality rules, staging |
+| `IMappingManager` | Entity mapping with auto-matching, conventions, versioning |
+| `IDefaultsManager` | Column defaults with 10 built-in resolvers (DateTime, GUID, User, etc.) |
+| `IBeepSyncManager` | Data synchronization with CDC, conflict resolution, SLO |
+| `IMigrationManager` | Schema migration with preflight, dry-run, 2PC/Saga transactions |
+| `IProxyDataSource` | Failover, circuit breaker, load-balanced data sources |
+| `IDistributedDataSource` | Distributed queries with sharding, partition routing, resharding |
+| `ISetupWizard` | Wizard-based application initialization with checkpoints |
 
 ## Getting Started
-BeepDM is in alpha and offers programmatic control over data operations. Below are examples using **Autofac** to demonstrate core functionality with `IDataSource`-based data sources.
 
 ### Prerequisites
-- .NET Framework or .NET Core (specific version TBD).
-- NuGet packages: `Autofac`.
-- Database drivers (e.g., SQLite) or file access for your data sources.
+- .NET 8, 9, or 10
+- Visual Studio 2022+
 
 ### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/The-Tech-Idea/BeepDM.git
-   ```
-2. Open the solution in Visual Studio.
-3. Restore NuGet packages.
-4. Build the project.
 
-### Initialization
-After bootstrapping with `IBeepService`, perform these steps to populate `ConfigEditor` with defaults, enabling `IDataSource` operations:
-
-#### 1. Add Connection Configurations
-Populates `ConfigEditor.DataDriversClasses` with default drivers.
-```csharp
-using TheTechIdea.Beep.Container;
-using TheTechIdea.Beep.Helpers;
-
-beepService.AddAllConnectionConfigurations();
+```bash
+git clone https://github.com/The-Tech-Idea/BeepDM.git
+cd BeepDM
+dotnet restore
+dotnet build
 ```
 
-#### 2. Add Data Type Mappings
-Populates `ConfigEditor.DataTypesMap` with default type mappings.
+### Quick Start — ASP.NET Core
+
 ```csharp
-using TheTechIdea.Beep.Container;
-using TheTechIdea.Beep.Helpers;
+var builder = WebApplication.CreateBuilder(args);
 
-beepService.AddAllDataSourceMappings();
-```
+// Register BeepDM
+builder.Services.AddBeepForWeb(
+    appPath: builder.Environment.ContentRootPath,
+    appName: "MyApp");
 
-#### 3. Add Query Configurations
-Populates `ConfigEditor.QueryList` with default SQL queries for RDBMS.
-```csharp
-using TheTechIdea.Beep.Container;
+var app = builder.Build();
 
-beepService.AddAllDataSourceQueryConfigurations();
-```
+// Access DMEEditor
+var dm = app.Services.GetRequiredService<IDMEEditor>();
 
-#### Example Initialization
-```csharp
-using Autofac;
-using TheTechIdea.Beep.Container;
-using TheTechIdea.Beep.Container.Services;
-
-static void Main()
+// Connect to a data source
+var props = new ConnectionProperties
 {
-    var builder = new ContainerBuilder();
-    BeepServicesRegisterAutFac.RegisterServices(builder);
-    var container = builder.Build();
-    BeepServicesRegisterAutFac.ConfigureServices(container);
-    var beepService = BeepServicesRegisterAutFac.beepService;
-
-    // Initialize for IDataSource support
-    beepService.AddAllConnectionConfigurations();
-    beepService.AddAllDataSourceMappings();
-    beepService.AddAllDataSourceQueryConfigurations();
-}
-```
-
-### Requirements
-Ensure data source configurations are registered in `ConfigEditor`. The initialization steps add defaults for common `IDataSource` implementations (e.g., SQLite, XLS). Custom data sources require additional setup (see "Extending BeepDM").
-
-### Basic Usage
-#### Bootstrapping with Autofac (Mother Class: `DMEEditor`)
-`IDMEEditor` must be initialized to use BeepDM. Here's an implementation using Autofac:
-```csharp
-using Autofac;
-using TheTechIdea.Beep;
-using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Container.Services;
-using TheTechIdea.Logger;
-using TheTechIdea.Util;
-
-static void Main()
-{
-    var builder = new ContainerBuilder();
-    builder.RegisterType<DMEEditor>().As<IDMEEditor>().SingleInstance();
-    builder.RegisterType<ConfigEditor>().As<IConfigEditor>().SingleInstance();
-    builder.RegisterType<DMLogger>().As<IDMLogger>().SingleInstance();
-    builder.RegisterType<Util>().As<IUtil>().SingleInstance();
-    builder.RegisterType<ErrorsInfo>().As<IErrorsInfo>().SingleInstance();
-    builder.RegisterType<JsonLoader>().As<IJsonLoader>().SingleInstance();
-    builder.RegisterType<AssemblyHandler>().As<IAssemblyHandler>().SingleInstance();
-
-    var container = builder.Build();
-    BeepServicesRegisterAutFac.ConfigureServices(container);
-    var beepService = BeepServicesRegisterAutFac.beepService;
-
-    // Initialize framework
-    beepService.AddAllConnectionConfigurations();
-    beepService.AddAllDataSourceMappings();
-    beepService.AddAllDataSourceQueryConfigurations();
-}
-```
-- All features are pluggable; replace implementations (e.g., `DMLogger` with `YourLogger`) as needed.
-
-#### Connecting to SQLite
-```csharp
-using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.DataBase;
-
-var config = beepService.DMEEditor.ConfigEditor.DataDriversClasses
-    .FirstOrDefault(p => p.DatasourceType == DataSourceType.SqlLite);
-if (config == null)
-    throw new Exception("SQLite config not found in ConfigEditor.DataDriversClasses.");
-
-var connProps = new ConnectionProperties
-{
-    ConnectionString = "Data Source=./Beep/dbfiles/northwind.db",
+    ConnectionString = "Data Source=./Data/northwind.db",
     ConnectionName = "northwind.db",
-    DriverName = config.PackageName,
-    DriverVersion = config.version,
     DatabaseType = DataSourceType.SqlLite,
     Category = DatasourceCategory.RDBMS
 };
+dm.ConfigEditor.AddDataConnection(props);
 
-beepService.DMEEditor.ConfigEditor.AddDataConnection(connProps);
-var sqliteDB = (SQLiteDataSource)beepService.DMEEditor.GetDataSource("northwind.db");
-sqliteDB.Openconnection();
+var ds = dm.GetDataSource("northwind.db");
+ds.Openconnection();
 
-if (sqliteDB.ConnectionStatus == ConnectionState.Open)
-    Console.WriteLine("SQLite connection opened successfully");
+// Use UnitofWork
+var uow = new UnitofWork<Customer>(dm, "northwind.db", "Customers");
+uow.Get();
+var customers = uow.Units;
 ```
 
+### Quick Start — Desktop (WinForms/WPF)
+
+```csharp
+var services = new ServiceCollection();
+services.AddBeepForDesktop("C:\\MyApp", "MyAppRepo");
+var sp = services.BuildServiceProvider();
+var beepService = sp.GetRequiredService<IBeepService>();
+
+// Initialize defaults
+beepService.LoadAssemblies();
+
+var dm = beepService.DMEEditor;
+// ... same data source access pattern
+```
+
+### Quick Start — Blazor Server
+
+```csharp
+builder.Services.AddBeepForBlazorServer(
+    builder.Environment.ContentRootPath, "MyApp");
+```
+
+### Quick Start — Blazor WASM
+
+```csharp
+builder.Services.AddBeepForBlazorWasm(
+    builder.HostEnvironment.BaseAddress, "MyApp");
+// Uses BlazorIndexedDbSink for telemetry
+```
+
+## Directory Structure
+
+Every BeepDM project follows this directory structure:
+
+| Directory | Purpose |
+|---|---|
+| `Addin/` | DLLs implementing `IDM_Addin` (forms, controls, classes) |
+| `Config/` | `DataConnections.json`, `ConnectionConfig.json`, `QueryList.json`, `DataTypeMapping.json` |
+| `ConnectionDrivers/` | Database driver DLLs (SQLite, SQL Server, Oracle, etc.) |
+| `DataFiles/` | Project data files (CSV, JSON, XLS, etc.) |
+| `DataViews/` | Federated view definitions (JSON) |
+| `LoadingExtensions/` | `ILoaderExtention` implementations |
+| `Mapping/` | Entity mapping definitions |
+| `ProjectClasses/` | Custom `IDataSource`, add-in, and extension DLLs |
+| `Scripts/` | ETL scripts and logs |
+| `WorkFlow/` | Workflow definitions |
+
 ## Extending BeepDM
-### Creating a New Data Source
-1. **Implement `IDataSource`**:
-   ```csharp
-   using System;
-   using System.Collections.Generic;
-   using System.Data;
-   using TheTechIdea.Beep;
-   using TheTechIdea.Beep.DataBase;
 
-   [AddinAttribute(Category = DatasourceCategory.CLOUD, DatasourceType = DataSourceType.WebService)]
-   public class AzureCosmosDataSource : IDataSource
-   {
-       public string GuidID { get; set; } = Guid.NewGuid().ToString();
-       public event EventHandler<PassedArgs> PassEvent;
-       public DataSourceType DatasourceType { get; set; } = DataSourceType.WebService;
-       public DatasourceCategory Category { get; set; } = DatasourceCategory.CLOUD;
-       public IDataConnection Dataconnection { get; set; }
-       public string DatasourceName { get; set; }
-       public IErrorsInfo ErrorObject { get; set; }
-       public string Id { get; set; }
-       public IDMLogger Logger { get; set; }
-       public List<string> EntitiesNames { get; set; }
-       public List<EntityStructure> Entities { get; set; } = new List<EntityStructure>();
-       public IDMEEditor DMEEditor { get; set; }
-       public ConnectionState ConnectionStatus { get; set; }
-       public string ColumnDelimiter { get; set; } = "''";
-       public string ParameterDelimiter { get; set; } = ":";
+### Creating a Data Source
 
-       public AzureCosmosDataSource(string name, IDMEEditor editor)
-       {
-           DatasourceName = name;
-           DMEEditor = editor;
-       }
+```csharp
+[AddinAttribute(Category = DatasourceCategory.CLOUD,
+    DatasourceType = DataSourceType.WebService)]
+public class MyDataSource : IDataSource
+{
+    // Implement IDataSource methods
+    public object GetEntity(string entityName, List<AppFilter> filter) { ... }
+    public IErrorsInfo InsertEntity(string entityName, object inserted) { ... }
+    // ...
+}
+```
 
-       public ConnectionState Openconnection() { /* Implement */ return ConnectionState.Open; }
-       public ConnectionState Closeconnection() { /* Implement */ return ConnectionState.Closed; }
-       public bool CheckEntityExist(string EntityName) { /* Implement */ return false; }
-       public bool CreateEntityAs(EntityStructure entity) { /* Implement */ return false; }
-       public object GetEntity(string EntityName, List<AppFilter> filter) { /* Implement */ return null; }
-       public IErrorsInfo UpdateEntities(string EntityName, object UploadData, IProgress<PassedArgs> progress) { /* Implement */ return null; }
-       // Implement other IDataSource methods...
+Place the compiled DLL in `ProjectClasses/`. AssemblyHandler discovers it on next `LoadAllAssembly()`.
 
-       public void Dispose() { /* Implement cleanup */ }
-   }
-   ```
+### Creating an Add-in
 
-2. **Add to `ConfigEditor`**:
-   - Place driver DLLs (if needed) in `ConnectionDrivers`.
-   - Update `ConnectionConfig.json` or use the Beep Enterprize Winform app:
-     ```csharp
-     var driver = new ConnectionDriversConfig
-     {
-         GuidID = "azure-cosmos-guid",
-         PackageName = "AzureCosmos",
-         DriverClass = "AzureCosmos",
-         version = "1.0.0",
-         DbConnectionType = "AzureCosmosConnection",
-         ConnectionString = "AccountEndpoint={Host};AccountKey={Password};Database={Database};",
-         classHandler = "AzureCosmosDataSource",
-         DatasourceCategory = DatasourceCategory.CLOUD,
-         DatasourceType = DataSourceType.WebService,
-         ADOType = false
-     };
-     beepService.DMEEditor.ConfigEditor.DataDriversClasses.Add(driver);
-     ```
-   - Place the DLL in `ProjectClasses`.
+```csharp
+[AddinAttribute(Caption = "My Addin", Name = "MyAddin", addinType = AddinType.Class)]
+public class MyAddin : IDM_Addin
+{
+    public void Run(IPassedArgs args) { ... }
+    public void SetConfig(IDMEEditor editor, IDMLogger logger, ...) { ... }
+}
+```
 
-### Creating a New Add-in
-1. **Implement `IDM_Addin`**:
-   ```csharp
-   using TheTechIdea.Beep;
-   using TheTechIdea.Beep.Addin;
+Place in `Addin/` or `ProjectClasses/`.
 
-   [AddinAttribute(Caption = "Copy Entity Manager", Name = "CopyEntityManager", misc = "ImportDataManager", addinType = AddinType.Class)]
-   public class CopyEntityManager : IDM_Addin
-   {
-       public string AddinName => "CopyEntityManager";
-       public IDMEEditor DMEEditor { get; set; }
-       public IPassedArgs Passedarg { get; set; }
-       public IDMLogger Logger { get; set; }
-       public IErrorsInfo ErrorObject { get; set; }
+## Documentation
 
-       public void Run(IPassedArgs pPassedarg)
-       {
-           var ds = DMEEditor.GetDataSource(Passedarg.DatasourceName);
-           if (ds != null) ds.Openconnection();
-           // Implement logic
-       }
+### Help/ Directory (HTML — 70+ pages)
+Open `Help/index.html` in a browser for comprehensive documentation covering:
+- **Getting Started**: BeepService, Registration, Setup Framework
+- **Core Concepts**: UnitOfWork, Connections, Data Sources
+- **Data Management**: WebAPI, JSON, CSV, DataView, Proxy, Distributed, Caching
+- **Editor Classes**: DMEEditor, ConfigEditor, DataSync, Import, Mapping, Defaults, Migration
+- **Advanced**: AssemblyHandler, Rules Engine, ETL Workflow, BeepSync, Services, Helpers, Utils
 
-       public void SetConfig(IDMEEditor pbl, IDMLogger plogger, IUtil putil, string[] args, IPassedArgs e, IErrorsInfo per)
-       {
-           DMEEditor = pbl;
-           Passedarg = e;
-           Logger = plogger;
-           ErrorObject = per;
-       }
-   }
-   ```
-
-2. **Deploy**: Place the DLL in `Addin` or `ProjectClasses`. It will appear in the add-in tree.
-
-### Creating an Extension
-1. **Implement `ILoaderExtention`**:
-   ```csharp
-   using TheTechIdea.Beep;
-   using TheTechIdea.Util;
-
-   public class CustomExtension : ILoaderExtention
-   {
-       public IAssemblyHandler Loader { get; set; }
-
-       public CustomExtension(IAssemblyHandler ploader) { Loader = ploader; }
-
-       public IErrorsInfo LoadAllAssembly()
-       {
-           var er = new ErrorsInfo();
-           // Custom loading logic
-           return er;
-       }
-
-       public IErrorsInfo Scan()
-       {
-           var er = new ErrorsInfo();
-           LoadAllAssembly();
-           er.Flag = Errors.Ok;
-           return er;
-       }
-   }
-   ```
-
-2. **Deploy**: Place the DLL in `LoadingExtensions`.
+### Docs/ Directory (Markdown — 25+ guides)
+- [Getting Started](Docs/GettingStarted.md)
+- [Core Architecture](Docs/CoreArchitecture.md)
+- [Service Registration](Docs/ServiceRegistration.md)
+- [Unit of Work Pattern](Docs/UnitOfWork.md)
+- [Assembly Handler](Docs/AssemblyHandler.md)
+- [Configuration Management](Docs/Configuration.md)
+- [Creating Custom Data Sources](Docs/HowToCreateNewDataSource.md)
+- [ETL Operations](Docs/ETL.md)
+- [WebAPI DataSource](Docs/WebAPI.md)
+- [And 15+ more...](Docs/)
 
 ## Project Status
 - **Alpha Phase**: Core features functional, APIs may evolve.
-- **Contributions**: Welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) (TBD).
+- **Contributions**: Welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 BeepDM is licensed under the [MIT License](LICENSE).
 
-## Documentation
-
-For detailed technical documentation, usage patterns, and implementation guides, see the [`Docs/`](Docs/) directory:
-
-### Getting Started
-- [Getting Started Guide](Docs/GettingStarted.md) - Quick start and basic setup
-- [Core Architecture](Docs/CoreArchitecture.md) - IDMEEditor, IDataSource, ConfigEditor, and plugin architecture
-
-### Service Registration
-- [Service Registration](Docs/ServiceRegistration.md) - Desktop, Web API, Blazor Server, and Blazor WASM setup
-
-### Data Operations
-- [How to Create a New Data Source](Docs/HowToCreateNewDataSource.md) - Building custom data source plugins
-- [IDataSourceHelper Usage Patterns](Docs/IDataSourceHelper_Usage_Patterns.md) - Practical patterns for data source implementations
-- [IDataSourceHelper Method Reference](Docs/IDataSourceHelper_Method_Reference.md) - Complete API reference
-- [CreateEntityAs Implementation Guide](Docs/CreateEntityAs_Implementation_Guide.md) - Entity creation patterns
-
-### Advanced Features
-- [Unit of Work Pattern](Docs/UnitOfWork.md) - CRUD, change tracking, transactions, validation, undo/redo
-- [ETL Operations](Docs/ETL.md) - Data migration, transformation, and script-based ETL
-- [Forms Manager](Docs/FormsManager.md) - Oracle Forms-style UI orchestration
-- [Assembly Handler](Docs/AssemblyHandler.md) - Plugin loading, NuGet operations, and driver tracking
-- [Configuration Management](Docs/Configuration.md) - ConfigEditor, managers, and persisted settings
-
-### Implementation Guides
-- [Phase 1 Overview](Docs/Phase1_Overview.md) - IDataSourceHelper integration roadmap
-
-## Learn More
-- [Wiki](https://github.com/The-Tech-Idea/BeepDM/wiki/Beep-Data-Management-Engine-(BeepDM))
+## Links
+- [Wiki](https://github.com/The-Tech-Idea/BeepDM/wiki)
 - [Issues](https://github.com/The-Tech-Idea/BeepDM/issues)
 - [Beep Data Sources](https://github.com/The-Tech-Idea/BeepDataSources)
 - [Beep Enterprize Winform](https://github.com/The-Tech-Idea/BeepEnterprize.winform)

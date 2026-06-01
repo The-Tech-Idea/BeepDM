@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitOfWork Factory - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>UnitOfWork Factory</span>
+                </nav>
+                <div class="page-header">
+                    <h1>UnitOfWork Factory</h1>
+                    <p class="page-subtitle">Runtime type creation and dynamic UnitOfWork instantiation with caching, validation, and batch operations</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Editor/UOW/UnitOfWorkFactory.cs</code> (517 lines)</li>
+                    </ul>
+                </div>
+
+                <!-- TOC -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#configuration">Configuration</a></li>
+                        <li><a href="#factory-methods">Factory Methods</a></li>
+                        <li><a href="#type-resolution">Type Resolution</a></li>
+                        <li><a href="#batch-operations">Batch Operations</a></li>
+                        <li><a href="#caching">Caching Strategy</a></li>
+                        <li><a href="#validation">Validation</a></li>
+                        <li><a href="#error-handling">Error Handling</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                        <li><a href="#cache-stats">Cache Statistics</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>UnitOfWorkFactory</code> is a static factory for creating <code>UnitofWork&lt;T&gt;</code> instances when the entity type is determined at runtime. It provides:</p>
+                    <ul>
+                        <li><strong>Type caching</strong> - Caches resolved types and constructors for performance</li>
+                        <li><strong>Validation</strong> - Validates entity types before creating UnitOfWork instances</li>
+                        <li><strong>Batch operations</strong> - Create multiple UnitOfWork instances in one call</li>
+                        <li><strong>Assembly scanning</strong> - Finds types across all loaded assemblies</li>
+                        <li><strong>Error handling</strong> - Try-pattern methods that don't throw exceptions</li>
+                    </ul>
+                    <p>For compile-time known types, use <code>UnitofWork&lt;T&gt;</code> constructors directly.</p>
+                </section>
+
+                <section id="architecture" class="section">
+                    <h2>Architecture</h2>
+                    <pre><code class="language-csharp">public static class UnitOfWorkFactory
+{
+    // Internal caches
+    private static readonly ConcurrentDictionary&lt;string, Type&gt; _typeCache;
+    private static readonly ConcurrentDictionary&lt;string, ConstructorInfo&gt; _constructorCache;
+    private static readonly ConcurrentDictionary&lt;string, Type[]&gt; _assemblyTypeCache;
+
+    // Configuration
+    public static class Configuration { ... }
+
+    // Factory Methods
+    public static IUnitOfWorkWrapper CreateUnitOfWork(...);
+    public static IUnitOfWorkWrapper CreateWrapper(...);
+    public static bool TryCreateUnitOfWork(...);
+
+    // Batch Operations
+    public static Dictionary&lt;string, IUnitOfWorkWrapper&gt; CreateUnitOfWorkBatch(...);
+    public static IUnitOfWorkWrapper CreateUnitOfWorkFromInstance(...);
+
+    // Utilities
+    public static void ClearCaches();
+    public static CacheStatistics GetCacheStatistics();
+}</code></pre>
+                </section>
+
+                <section id="configuration" class="section">
+                    <h2>Configuration</h2>
+                    <p>The <code>Configuration</code> nested class controls factory behavior:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>EnableCaching</code></td><td><code>bool</code></td><td>true</td><td>Cache resolved types and constructors. Disable for memory-constrained environments.</td></tr>
+                            <tr><td><code>EnableValidation</code></td><td><code>bool</code></td><td>true</td><td>Validate entity types (not abstract, not interface, has parameterless constructor).</td></tr>
+                            <tr><td><code>MaxCacheSize</code></td><td><code>int</code></td><td>500</td><td>Maximum entries in type and constructor caches before eviction.</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>Example</h3>
+                    <pre><code class="language-csharp">// Disable caching for testing
+UnitOfWorkFactory.Configuration.EnableCaching = false;
+
+// Increase cache size for large applications
+UnitOfWorkFactory.Configuration.MaxCacheSize = 2000;</code></pre>
+                </section>
+
+                <section id="factory-methods" class="section">
+                    <h2>Factory Methods</h2>
+
+                    <h3>CreateUnitOfWork (Type-based)</h3>
+                    <pre><code class="language-csharp">public static IUnitOfWorkWrapper CreateUnitOfWork(
+    Type entityType,
+    IDMEEditor dmeEditor,
+    string datasourceName,
+    string entityName,
+    string primaryKey = null)</code></pre>
+                    <p>Creates a UnitOfWork when the entity type is known at runtime. This is the primary factory method.</p>
+                    <ul>
+                        <li><code>entityType</code> - The runtime-determined entity type (must have parameterless constructor)</li>
+                        <li><code>dmeEditor</code> - The IDMEEditor instance for configuration and datasources</li>
+                        <li><code>datasourceName</code> - Registered datasource name in ConfigEditor</li>
+                        <li><code>entityName</code> - Entity/table name in the datasource</li>
+                        <li><code>primaryKey</code> - Optional primary key field name</li>
+                    </ul>
+
+                    <h3>CreateUnitOfWork (with EntityStructure)</h3>
+                    <pre><code class="language-csharp">public static IUnitOfWorkWrapper CreateUnitOfWork(
+    Type entityType,
+    IDMEEditor dmeEditor,
+    string datasourceName,
+    string entityName,
+    EntityStructure entityStructure,
+    string primaryKey = null)</code></pre>
+                    <p>Overload that accepts an explicit EntityStructure for scenarios where schema metadata is pre-loaded.</p>
+
+                    <h3>CreateWrapper</h3>
+                    <pre><code class="language-csharp">public static IUnitOfWorkWrapper CreateWrapper(object unitOfWork)</code></pre>
+                    <p>Wraps an existing UnitOfWork instance. If the object is already an IUnitOfWorkWrapper, returns it directly.</p>
+
+                    <h3>TryCreateUnitOfWork</h3>
+                    <pre><code class="language-csharp">public static bool TryCreateUnitOfWork(
+    Type entityType,
+    IDMEEditor dmeEditor,
+    string datasourceName,
+    string entityName,
+    out IUnitOfWorkWrapper wrapper,
+    out string errorMessage,
+    string primaryKey = null)</code></pre>
+                    <p>Non-throwing version. Returns false on failure with error message.</p>
+
+                    <h3>Legacy String-based Methods</h3>
+                    <pre><code class="language-csharp">// From type name (scans loaded assemblies)
+public static IUnitOfWorkWrapper CreateUnitOfWorkWrapper(
+    string entityTypeName, IDMEEditor dmeEditor, 
+    string datasourceName, string entityName, string primaryKey = null);
+
+// Legacy compatibility
+public static object CreateUnitOfWork(string entityTypeName, ...);
+public static object GetUnitOfWork(string entityName, string dataSourceName, IDMEEditor dmeEditor);</code></pre>
+                </section>
+
+                <section id="type-resolution" class="section">
+                    <h2>Type Resolution</h2>
+                    <p>The factory resolves types through a cascading search:</p>
+                    <ol>
+                        <li><strong>Type.GetType()</strong> - Checks if fully qualified name resolves directly</li>
+                        <li><strong>Assembly scan</strong> - Searches all loaded assemblies for matching type name</li>
+                        <li><strong>Assembly type cache</strong> - Caches GetTypes() per assembly to avoid repeated expensive calls</li>
+                    </ol>
+                    <p>Type resolution is cached when EnableCaching is true.</p>
+                </section>
+
+                <section id="batch-operations" class="section">
+                    <h2>Batch Operations</h2>
+                    <h3>CreateUnitOfWorkBatch</h3>
+                    <pre><code class="language-csharp">public static Dictionary&lt;string, IUnitOfWorkWrapper&gt; CreateUnitOfWorkBatch(
+    Dictionary&lt;Type, string&gt; entityTypes, 
+    IDMEEditor dmeEditor, 
+    string datasourceName)</code></pre>
+                    <p>Creates multiple UnitOfWork instances in one call. Useful for configuration-driven scenarios.</p>
+                    <pre><code class="language-csharp">var entityTypes = new Dictionary&lt;Type, string&gt;
+{
+    [typeof(Customer)] = "Customers",
+    [typeof(Order)] = "Orders",
+    [typeof(Product)] = "Products"
+};
+
+var uowSet = UnitOfWorkFactory.CreateUnitOfWorkBatch(
+    entityTypes, editor, "MyDatabase");
+
+// Access individual UnitOfWork instances
+var customerUow = uowSet["Customers"];
+var orderUow = uowSet["Orders"];</code></pre>
+
+                    <h3>CreateUnitOfWorkFromInstance</h3>
+                    <pre><code class="language-csharp">public static IUnitOfWorkWrapper CreateUnitOfWorkFromInstance(
+    object entityInstance, 
+    IDMEEditor dmeEditor, 
+    string datasourceName, 
+    string entityName = null)</code></pre>
+                    <p>Creates UnitOfWork from an existing entity instance (type auto-detected).</p>
+                </section>
+
+                <section id="caching" class="section">
+                    <h2>Caching Strategy</h2>
+                    <p>The factory maintains three caches:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Cache</th><th>Key</th><th>Value</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>_typeCache</code></td><td>Type name string</td><td><code>Type</code></td><td>Avoids repeated Type.GetType() and assembly scanning</td></tr>
+                            <tr><td><code>_constructorCache</code></td><td>Constructor signature hash</td><td><code>ConstructorInfo</code></td><td>Avoids repeated reflection to find compatible constructors</td></tr>
+                            <tr><td><code>_assemblyTypeCache</code></td><td>Assembly full name</td><td><code>Type[]</code></td><td>Avoids repeated Assembly.GetTypes() calls</td></tr>
+                        </tbody>
+                    </table>
+                    <p>Cache eviction: When cache exceeds MaxCacheSize, oldest 50% of entries are removed.</p>
+                </section>
+
+                <section id="validation" class="section">
+                    <h2>Validation</h2>
+                    <p>When EnableValidation is true, entity types are validated:</p>
+                    <ul>
+                        <li>Must not be abstract classes</li>
+                        <li>Must not be interfaces</li>
+                        <li>Must have a parameterless constructor</li>
+                    </ul>
+                    <p>Validation occurs before type caching and constructor resolution.</p>
+                </section>
+
+                <section id="error-handling" class="section">
+                    <h2>Error Handling</h2>
+                    <p>The factory provides multiple error handling strategies:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Strategy</th><th>Method</th><th>Behavior</th></tr></thead>
+                        <tbody>
+                            <tr><td>Throw</td><td><code>CreateUnitOfWork</code></td><td>Throws InvalidOperationException on failure</td></tr>
+                            <tr><td>Try-pattern</td><td><code>TryCreateUnitOfWork</code></td><td>Returns false, outputs error message</td></tr>
+                            <tr><td>Partial success</td><td><code>CreateUnitOfWorkBatch</code></td><td>Returns successfully created instances even if some fail</td></tr>
+                        </tbody>
+                    </table>
+                    <p>All errors are logged through IDMEEditor.AddLogMessage when available.</p>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Plugin Architecture</h3>
+                    <pre><code class="language-csharp">// Load entity types from plugin assemblies
+var pluginTypes = assembly.GetTypes()
+    .Where(t => t.GetCustomAttribute&lt;EntityAttribute&gt;() != null);
+
+foreach (var entityType in pluginTypes)
+{
+    var uow = UnitOfWorkFactory.CreateUnitOfWork(
+        entityType, editor, "PluginDB", entityType.Name);
+    // Configure plugin-specific UOW
+}</code></pre>
+
+                    <h3>Configuration-Driven UOW Creation</h3>
+                    <pre><code class="language-csharp">// Read entity configurations from file
+var config = JsonSerializer.Deserialize&lt;List&lt;EntityConfig&gt;&gt;(File.ReadAllText("entities.json"));
+
+var entityTypes = config.ToDictionary(
+    c => Type.GetType(c.TypeName),
+    c => c.EntityName);
+
+var uowSet = UnitOfWorkFactory.CreateUnitOfWorkBatch(
+    entityTypes, editor, "MainDatabase");</code></pre>
+
+                    <h3>Dynamic UI Generation</h3>
+                    <pre><code class="language-csharp">// User selects entity from dropdown
+var selectedType = availableTypes[comboBox.SelectedIndex];
+
+var uow = UnitOfWorkFactory.CreateUnitOfWork(
+    selectedType, editor, "AppDatabase", selectedType.Name, "Id");
+
+// Bind to grid
+grid.DataSource = uow.Units;</code></pre>
+                </section>
+
+                <section id="cache-stats" class="section">
+                    <h2>Cache Statistics</h2>
+                    <pre><code class="language-csharp">public class CacheStatistics
+{
+    public int TypeCacheCount { get; set; }
+    public int ConstructorCacheCount { get; set; }
+    public bool CachingEnabled { get; set; }
+}
+
+// Get statistics
+var stats = UnitOfWorkFactory.GetCacheStatistics();
+Console.WriteLine($"Types cached: {stats.TypeCacheCount}");
+Console.WriteLine($"Constructors cached: {stats.ConstructorCacheCount}");
+
+// Clear all caches
+UnitOfWorkFactory.ClearCaches();</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="unitofwork.html"><i class="bi bi-arrow-left"></i> Previous: UnitOfWork</a>
+                    <a href="unitofwork-wrapper.html">Next: UnitOfWork Wrapper <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

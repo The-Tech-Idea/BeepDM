@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Addin Interfaces Reference - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Addin Interfaces</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Addin Interfaces Reference</h1>
+                    <p class="page-subtitle">Core extensibility contracts: IDM_Addin, IAddinExtension, IBeepViewModel, IImporter/IExporter, IFunctionExtension, and IPrintManager</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementModelsStandard/Addin/IDM_Addin.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Addin/IAddinExtension.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Addin/IBeepViewModel.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Addin/IImporterandIExporter.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Addin/IFunctionExtension.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Addin/IPrintManager.cs</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#idm-addin">IDM_Addin</a></li>
+                        <li><a href="#iaddinextension">IAddinExtension</a></li>
+                        <li><a href="#ibeepviewmodel">IBeepViewModel</a></li>
+                        <li><a href="#iimporter">IImporter / IExporter</a></li>
+                        <li><a href="#ifunctionextension">IFunctionExtension</a></li>
+                        <li><a href="#iprintmanager">IPrintManager</a></li>
+                        <li><a href="#discovery">Discovery &amp; Registration</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="idm-addin" class="section">
+                    <h2>IDM_Addin</h2>
+                    <p>The primary add-in contract. Extends <code>INavigable</code> and <code>IErrorView</code>:</p>
+                    <pre><code class="language-csharp">public interface IDM_Addin : INavigable, IErrorView
+{
+    void Initialize();
+    void Dispose();
+    void Suspend();
+    void Resume();
+
+    AddinDetails Details { get; set; }
+    Dependencies Dependencies { get; set; }
+    string GetErrorDetails();
+
+    void Run(IPassedArgs pPassedarg);
+    void Run(params object[] args);
+    Task&lt;IErrorsInfo&gt; RunAsync(IPassedArgs pPassedarg);
+    Task&lt;IErrorsInfo&gt; RunAsync(params object[] args);
+
+    string GuidID { get; set; }
+    bool IsConfigured { get; set; }
+    bool IsRunning { get; set; }
+    bool IsSuspended { get; set; }
+    bool IsStarted { get; set; }
+
+    void Configure(Dictionary&lt;string, object&gt; settings);
+    void ApplyTheme();
+
+    event EventHandler OnStart;
+    event EventHandler OnStop;
+    event EventHandler&lt;ErrorEventArgs&gt; OnError;
+}
+
+public class AddinDetails
+{
+    public string ParentName { get; set; }
+    public string ObjectName { get; set; }
+    public string ObjectType { get; set; }
+    public string AddinName { get; set; }
+    public string Description { get; set; }
+    public string GuidID { get; set; }
+}
+
+public class Dependencies
+{
+    public IErrorsInfo ErrorObject { get; set; }
+    public IDMLogger Logger { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+}
+
+public interface INavigable
+{
+    void OnNavigatedTo(Dictionary&lt;string, object&gt; parameters);
+}
+
+public interface IErrorView
+{
+    void SetError(string message);
+}</code></pre>
+
+                    <h3>Implementation Example</h3>
+                    <pre><code class="language-csharp">[AddinAttribute(Caption = "Copy Entity Manager", Name = "CopyEntityManager",
+    misc = "ImportDataManager", addinType = AddinType.Class)]
+public class CopyEntityManager : IDM_Addin
+{
+    public AddinDetails Details { get; set; }
+    public Dependencies Dependencies { get; set; }
+    public bool IsConfigured { get; set; }
+    public bool IsRunning { get; set; }
+
+    public void Run(IPassedArgs args)
+    {
+        var ds = Dependencies.DMEEditor.GetDataSource(args.DatasourceName);
+        ds.Openconnection();
+    }
+
+    public void Initialize() { }
+    public void Dispose() { }
+    public void Suspend() { }
+    public void Resume() { }
+    public string GetErrorDetails() => "";
+    public void Configure(Dictionary&lt;string, object&gt; settings) { }
+    public void ApplyTheme() { }
+    public void OnNavigatedTo(Dictionary&lt;string, object&gt; parameters) { }
+    public void SetError(string message) { }
+
+    public event EventHandler OnStart;
+    public event EventHandler OnStop;
+    public event EventHandler&lt;ErrorEventArgs&gt; OnError;
+}</code></pre>
+                </section>
+
+                <section id="iaddinextension" class="section">
+                    <h2>IAddinExtension</h2>
+                    <p>Lifecycle contract for add-in extensions with state tracking:</p>
+                    <pre><code class="language-csharp">public interface IAddinExtension
+{
+    event EventHandler&lt;PassedArgs&gt; CloseParent;
+
+    bool ValidateAddin();   bool IsValidated { get; set; }
+    bool Save();            bool IsSaved { get; set; }
+    bool Delete();          bool IsDeleted { get; set; }
+    bool Update();          bool IsUpdated { get; set; }
+    bool Add();             bool IsAdded { get; set; }
+    bool Cancel();          bool IsCancelled { get; set; }
+    bool Close();           bool IsClosed { get; set; }
+    bool Open();            bool IsOpened { get; set; }
+    bool Execute();         bool IsExecuted { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="ibeepviewmodel" class="section">
+                    <h2>IBeepViewModel</h2>
+                    <p>ViewModel contract for BeepDM add-ins with validation and lifecycle:</p>
+                    <pre><code class="language-csharp">public interface IBeepViewModel
+{
+    void Initialize();
+    void Load();
+    void Save();
+    bool Validate();
+    string GetValidationErrors();
+    bool IsDirty { get; }
+    bool IsValid { get; }
+    IDMEEditor DMEEditor { get; set; }
+    IPassedArgs PassedArgs { get; set; }
+    string ViewModelName { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="iimporter" class="section">
+                    <h2>IImporter / IExporter</h2>
+                    <pre><code class="language-csharp">public interface IImporter
+{
+    string Name { get; set; }
+    string Description { get; set; }
+    string FileExtension { get; set; }
+    string MimeType { get; set; }
+    bool Import(string path);
+}
+
+public interface IExporter
+{
+    string Name { get; set; }
+    string Description { get; set; }
+    string FileExtension { get; set; }
+    string MimeType { get; set; }
+    bool Export(string path);
+}</code></pre>
+                </section>
+
+                <section id="ifunctionextension" class="section">
+                    <h2>IFunctionExtension</h2>
+                    <pre><code class="language-csharp">public interface IFunctionExtension
+{
+    IDMEEditor DMEEditor { get; set; }
+    IPassedArgs Passedargs { get; set; }
+}</code></pre>
+                </section>
+
+                <section id="iprintmanager" class="section">
+                    <h2>IPrintManager</h2>
+                    <pre><code class="language-csharp">public interface IPrintManager
+{
+    bool Print(DataTable dt, string title);
+    bool Print&lt;T&gt;(List&lt;T&gt; list, string title);
+    bool Print(IAppDefinition appDef, string title);
+    bool PrintPreview(DataTable dt, string title);
+    bool PrintPreview&lt;T&gt;(List&lt;T&gt; list, string title);
+    bool PrintPreview(IAppDefinition appDef, string title);
+}</code></pre>
+                </section>
+
+                <section id="discovery" class="section">
+                    <h2>Discovery &amp; Registration</h2>
+                    <p>Addins are discovered by <code>AssemblyHandler.ScanAssembly()</code> when marked with <code>[AddinAttribute]</code>:</p>
+                    <pre><code class="language-csharp">[AddinAttribute(
+    Caption = "My Addin",
+    Name = "MyAddin",
+    addinType = AddinType.Class,
+    menu = "Tools",
+    iconimage = "my_icon.png")]
+public class MyAddin : IDM_Addin { }
+
+// Discovered by AssemblyHandler during LoadAllAssembly()
+// Registered in ConfigEditor.Addins list
+// Available through DMEEditor.Addins tree</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+                    <h3>Accessing Addins</h3>
+                    <pre><code class="language-csharp">// Find addin by name
+var addin = editor.Addins.FirstOrDefault(a => a.Details.AddinName == "MyAddin");
+if (addin != null)
+{
+    addin.Initialize();
+    addin.Run(new PassedArgs { Messege = "Execute" });
+}</code></pre>
+
+                    <h3>Custom Importer</h3>
+                    <pre><code class="language-csharp">[AddinAttribute(Caption = "PDF Importer", Name = "PdfImporter",
+    addinType = AddinType.Importer)]
+public class PdfImporter : IImporter
+{
+    public string Name { get; set; } = "PDF Importer";
+    public string Description { get; set; } = "Import PDF tables";
+    public string FileExtension { get; set; } = ".pdf";
+    public string MimeType { get; set; } = "application/pdf";
+
+    public bool Import(string path)
+    {
+        // Extract tables from PDF
+        var tables = ExtractTables(path);
+        return tables.Count > 0;
+    }
+}</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="creating-custom-datasources.html"><i class="bi bi-arrow-left"></i> Previous: Custom DataSources</a>
+                    <a href="assemblyhandler-loading-nuget-extensions.html">Next: AssemblyHandler <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <section id="source-map" class="section">
+                    <h2><i class="bi bi-map"></i> Source File Map &amp; Model Types</h2>
+
+                    <h3>Interfaces (6 files)</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Interface</th><th>Purpose</th></tr></thead><tbody>
+                    <tr><td><code>IDM_Addin.cs</code></td><td><code>IDM_Addin</code></td><td>Plugin lifecycle: Init, Execute, GetMenuItems, property exposure</td></tr>
+                    <tr><td><code>IAddinExtension.cs</code></td><td><code>IAddinExtension</code></td><td>Lightweight extension: AssemblyName, execute on load</td></tr>
+                    <tr><td><code>IBeepViewModel.cs</code></td><td><code>IBeepViewModel</code></td><td>MVVM ViewModel: UI bindings, CRUD commands</td></tr>
+                    <tr><td><code>IImporterandIExporter.cs</code></td><td><code>IImporter</code>, <code>IExporter</code></td><td>File import/export: extensions, MIME types, Import/Export</td></tr>
+                    <tr><td><code>IFunctionExtension.cs</code></td><td><code>IFunctionExtension</code></td><td>Custom formula/DM function registration</td></tr>
+                    <tr><td><code>IPrintManager.cs</code></td><td><code>IPrintManager</code></td><td>Print rendering: HTML/PDF/Image output</td></tr>
+                    </tbody></table>
+
+                    <h3>Model &amp; Support Types (4 files)</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Type</th><th>Description</th></tr></thead><tbody>
+                    <tr><td><code>PassedArgs.cs</code></td><td><code>PassedArgs</code></td><td>Universal event/method argument: Messege, RowData, CurrentEntity, DataString1, ParameterString1, Objects, ProgressValue, CancellationToken, Oid, DatasourceName, etc.</td></tr>
+                    <tr><td><code>AddinTreeStructure.cs</code></td><td><code>AddinTreeStructure</code></td><td>Addin hierarchy: ID, ParentID, Caption, Name, AddinType, AssemblyName, ClassName, Children, IsEnabled</td></tr>
+                    <tr><td><code>ImporterExporterAttr.cs</code></td><td><code>AddinAttribute</code></td><td>Attribute for [AddinAttribute]: Caption, Name, AddinType (DataSource, Function, Importer, Exporter, Form, PrintManager, Class, Menu, Extension, ViewModel), loadOnStart</td></tr>
+                    <tr><td><code>DisplayLookUpDescription.cs</code></td><td><code>DisplayLookUpDescription</code></td><td>Lookup display annotation: DisplayFieldPath, DropDownFieldPath, ShowImage, ImagePath, ImageSize</td></tr>
+                    </tbody></table>
+
+                    <h3>PassedArgs — Key Properties</h3>
+                    <pre><code class="language-csharp">public class PassedArgs : IPassedArgs
+{
+    public string Messege { get; set; }               // Progress/detail message
+    public ReturnData RowData { get; set; }            // Current row data
+    public string CurrentEntity { get; set; }          // Entity being operated on
+    public string DataString1 { get; set; }            // General-purpose string 1
+    public string DataString2 { get; set; }            // General-purpose string 2
+    public string ParameterString1 { get; set; }       // Parameter string 1
+    public object Objects { get; set; }                // Arbitrary object payload
+    public int ProgressValue { get; set; }             // 0-100 progress
+    public CancellationToken CancellationToken { get; }
+    public int Id { get; set; }
+    public string Oid { get; set; }
+    public string DatasourceName { get; set; }
+    public string Script { get; set; }
+    public string CallingMethodName { get; set; }
+}</code></pre>
+
+                    <h3>AddinTreeStructure</h3>
+                    <pre><code class="language-csharp">public class AddinTreeStructure
+{
+    public int ID { get; set; }
+    public int ParentID { get; set; }
+    public string Caption { get; set; }
+    public string Name { get; set; }
+    public AddinType AddinType { get; set; }
+    public string AssemblyName { get; set; }
+    public string ClassName { get; set; }
+    public List&lt;AddinTreeStructure&gt; Children { get; set; }
+    public bool IsEnabled { get; set; }
+}</code></pre>
+                </section>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

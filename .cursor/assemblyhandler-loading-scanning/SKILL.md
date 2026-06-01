@@ -8,10 +8,10 @@ description: Detailed guidance for AssemblyHandler loading orchestration and ass
 Use this skill when changing assembly discovery flow or type scanning behavior in the classic handler.
 
 ## File Locations
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Loaders.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Scanning.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Core.cs`
-- `BeepDM/DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Statistics.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Loaders.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Scanning.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Core.cs`
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Statistics.cs`
 - `DataManagementModelsStandard/Addin/AddinAttribute.cs` — [AddinAttribute] definition
 
 ## Core APIs

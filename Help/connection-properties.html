@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connections & ConnectionProperties - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Connections &amp; Properties</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Connections &amp; ConnectionProperties</h1>
+                    <p class="page-subtitle">IDataConnection implementations, connection properties, and driver configuration</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source files</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Connections/DefaulDataConnection.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Connections/FileConnection.cs</code></li>
+                        <li><code>DataManagementModelsStandard/ConfigUtil/ConnectionProperties.cs</code></li>
+                        <li><code>DataManagementModelsStandard/ConfigUtil/ConnectionDriversConfig.cs</code></li>
+                        <li><code>DataManagementModelsStandard/DataBase/IDataConnection.cs</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#idataconnection">IDataConnection Interface</a></li>
+                        <li><a href="#connection-properties">ConnectionProperties</a></li>
+                        <li><a href="#default-connection">DefaulDataConnection</a></li>
+                        <li><a href="#file-connection">FileConnection</a></li>
+                        <li><a href="#driver-config">ConnectionDriversConfig</a></li>
+                        <li><a href="#connection-states">Connection States</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The connections layer binds BeepDM abstractions to concrete connection models. It provides:</p>
+                    <ul>
+                        <li><strong>Connection abstraction</strong> - <code>IDataConnection</code> interface for all connection types</li>
+                        <li><strong>Connection properties</strong> - <code>ConnectionProperties</code> as the standard connection config</li>
+                        <li><strong>Driver configuration</strong> - <code>ConnectionDriversConfig</code> for driver metadata</li>
+                        <li><strong>Default connection</strong> - <code>DefaulDataConnection</code> for standard datasources</li>
+                        <li><strong>File connection</strong> - <code>FileConnection</code> for file-based datasources</li>
+                    </ul>
+                </section>
+
+                <section id="idataconnection" class="section">
+                    <h2>IDataConnection Interface</h2>
+                    <pre><code class="language-csharp">public interface IDataConnection
+{
+    IConnectionProperties ConnectionProp { get; set; }
+    ConnectionDriversConfig DataSourceDriver { get; set; }
+    ConnectionState ConnectionStatus { get; set; }
+    IDMEEditor DMEEditor { get; set; }
+    IDMLogger Logger { get; set; }
+    IErrorsInfo ErrorObject { get; set; }
+    bool InMemory { get; set; }
+    int ID { get; set; }
+    string GuidID { get; set; }
+
+    // Connection operations
+    ConnectionState OpenConnection();
+    ConnectionState OpenConnection(DataSourceType dbtype, string host, int port,
+        string database, string userid, string password, string parameters);
+    ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring);
+    ConnectionState CloseConn();
+    string ReplaceValueFromConnectionString();
+}</code></pre>
+                </section>
+
+                <section id="connection-properties" class="section">
+                    <h2>ConnectionProperties</h2>
+                    <p>The standard configuration object for all data source connections:</p>
+                    <pre><code class="language-csharp">public class ConnectionProperties : IConnectionProperties
+{
+    public string ConnectionName { get; set; }
+    public string ConnectionString { get; set; }
+    public DataSourceType DatabaseType { get; set; }
+    public DatasourceCategory Category { get; set; }
+    public string DriverName { get; set; }
+    public string DriverVersion { get; set; }
+    public string FileName { get; set; }
+    public string Host { get; set; }
+    public int Port { get; set; }
+    public string Database { get; set; }
+    public string UserID { get; set; }
+    public string Password { get; set; }
+    public string Parameters { get; set; }
+    public bool UseConnectionString { get; set; }
+    public string GuidID { get; set; }
+}</code></pre>
+
+                    <h3>Connection String Pattern</h3>
+                    <pre><code class="language-csharp">// RDBMS
+var sqlite = new ConnectionProperties
+{
+    ConnectionName = "MyDB",
+    ConnectionString = "Data Source=./app.db",
+    DatabaseType = DataSourceType.SqlLite,
+    Category = DatasourceCategory.RDBMS,
+    DriverName = "SQLite"
+};
+
+// File-based
+var csv = new ConnectionProperties
+{
+    ConnectionName = "MyCSV",
+    ConnectionString = "./data/",
+    FileName = "customers.csv",
+    DatabaseType = DataSourceType.Csv,
+    Category = DatasourceCategory.FileBased
+};
+
+// Web API
+var api = new ConnectionProperties
+{
+    ConnectionName = "MyAPI",
+    ConnectionString = "https://api.example.com/v1",
+    DatabaseType = DataSourceType.WebService,
+    Category = DatasourceCategory.CLOUD
+};</code></pre>
+                </section>
+
+                <section id="default-connection" class="section">
+                    <h2>DefaulDataConnection</h2>
+                    <p>The base connection implementation for standard datasources:</p>
+                    <pre><code class="language-csharp">public class DefaulDataConnection : IDataConnection
+{
+    public DefaulDataConnection();
+    public DefaulDataConnection(IDMEEditor dmEditor);
+
+    public IConnectionProperties ConnectionProp { get; set; }
+    public ConnectionDriversConfig DataSourceDriver { get; set; }
+    public ConnectionState ConnectionStatus { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+    public IDMLogger Logger { get; set; }
+    public IErrorsInfo ErrorObject { get; set; }
+    public bool InMemory { get; set; }
+    public int ID { get; set; }
+    public string GuidID { get; set; }
+
+    public ConnectionState OpenConnection();
+    public ConnectionState OpenConnection(DataSourceType dbtype, string host,
+        int port, string database, string userid, string password, string parameters);
+    public ConnectionState OpenConnection(DataSourceType dbtype, string connectionstring);
+    public ConnectionState CloseConn();
+    public string ReplaceValueFromConnectionString();
+}</code></pre>
+                    <p>This is the <strong>base class</strong> for datasource-specific connections. It automatically initializes <code>ConnectionProp</code>, <code>DataSourceDriver</code>, and a new <code>GuidID</code> on construction.</p>
+                </section>
+
+                <section id="file-connection" class="section">
+                    <h2>FileConnection</h2>
+                    <p>Specialized connection for file-based datasources:</p>
+                    <pre><code class="language-csharp">public class FileConnection : IDataConnection
+{
+    public FileConnection(IDMEEditor dmEditor);
+
+    public IConnectionProperties ConnectionProp { get; set; }
+    public ConnectionDriversConfig DataSourceDriver { get; set; }
+    public ConnectionState ConnectionStatus { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+    public IDbConnection DbConn { get; set; }
+
+    public ConnectionState OpenConnection();
+    public ConnectionState CloseConn();
+    public string ReplaceValueFromConnectionString();
+}</code></pre>
+
+                    <h3>Open Flow</h3>
+                    <ol>
+                        <li>Link ConnectionProperties to driver via <code>ConnectionHelper.LinkConnection2Drivers</code></li>
+                        <li>Resolve dynamic values in connection string</li>
+                        <li>Verify file exists at resolved path</li>
+                        <li>If found: set <code>ConnectionState.Open</code></li>
+                        <li>If not found: set <code>ConnectionState.Broken</code></li>
+                    </ol>
+                </section>
+
+                <section id="driver-config" class="section">
+                    <h2>ConnectionDriversConfig</h2>
+                    <p>Driver metadata registered in ConfigEditor.DataDriversClasses:</p>
+                    <pre><code class="language-csharp">public class ConnectionDriversConfig
+{
+    public string GuidID { get; set; }
+    public string PackageName { get; set; }      // e.g., "SQLite"
+    public string DriverClass { get; set; }       // e.g., "SQLite"
+    public string version { get; set; }           // e.g., "1.0.0"
+    public string DbConnectionType { get; set; }  // e.g., "SQLiteConnection"
+    public string ConnectionString { get; set; }  // Template: "Data Source={Database};"
+    public string classHandler { get; set; }      // e.g., "SQLiteDataSource"
+    public DatasourceCategory DatasourceCategory { get; set; }
+    public DataSourceType DatasourceType { get; set; }
+    public bool ADOType { get; set; }             // true for ADO.NET providers
+}</code></pre>
+
+                    <h3>Driver Registration</h3>
+                    <pre><code class="language-csharp">var driver = new ConnectionDriversConfig
+{
+    PackageName = "PostgreSQL",
+    DriverClass = "Npgsql",
+    version = "7.0.0",
+    DbConnectionType = "NpgsqlConnection",
+    ConnectionString = "Host={Host};Port={Port};Database={Database};Username={UserID};Password={Password}",
+    classHandler = "PostgreDataSource",
+    DatasourceCategory = DatasourceCategory.RDBMS,
+    DatasourceType = DataSourceType.Postgresql,
+    ADOType = true
+};
+
+editor.ConfigEditor.DataDriversClasses.Add(driver);</code></pre>
+                </section>
+
+                <section id="connection-states" class="section">
+                    <h2>Connection States</h2>
+                    <table class="ref-table">
+                        <thead><tr><th>State</th><th>Value</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Closed</code></td><td>0</td><td>Connection is closed</td></tr>
+                            <tr><td><code>Open</code></td><td>1</td><td>Connection is open and ready</td></tr>
+                            <tr><td><code>Connecting</code></td><td>2</td><td>Connection is being established</td></tr>
+                            <tr><td><code>Executing</code></td><td>4</td><td>Executing a command</td></tr>
+                            <tr><td><code>Fetching</code></td><td>8</td><td>Fetching data</td></tr>
+                            <tr><td><code>Broken</code></td><td>16</td><td>Connection is broken and needs repair</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Creating a Connection</h3>
+                    <pre><code class="language-csharp">// Create properties
+var props = new ConnectionProperties
+{
+    ConnectionName = "ProductionDB",
+    DatabaseType = DataSourceType.SqlServer,
+    Category = DatasourceCategory.RDBMS,
+    Host = "prod-server",
+    Port = 1433,
+    Database = "ProductsDB",
+    UserID = "app_user",
+    Password = "secret"
+};
+
+// Add to config
+editor.ConfigEditor.AddDataConnection(props);
+editor.ConfigEditor.SaveDataconnectionsValues();</code></pre>
+
+                    <h3>Opening a Connection</h3>
+                    <pre><code class="language-csharp">var state = editor.OpenDataSource("ProductionDB");
+if (state == ConnectionState.Open)
+{
+    var ds = editor.GetDataSource("ProductionDB");
+    // Use datasource...
+}
+else
+{
+    var error = editor.ErrorObject;
+    Console.WriteLine($"Failed: {error.Message}");
+}</code></pre>
+
+                    <h3>File Connection</h3>
+                    <pre><code class="language-csharp">var fileProps = new ConnectionProperties
+{
+    ConnectionName = "CSVData",
+    ConnectionString = "./data/",
+    FileName = "export_2024.csv",
+    DatabaseType = DataSourceType.Csv,
+    Category = DatasourceCategory.FileBased
+};
+
+editor.ConfigEditor.AddDataConnection(fileProps);
+
+var fileDs = editor.GetDataSource("CSVData");
+// FileConnection checks if ./data/export_2024.csv exists</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="configeditor.html"><i class="bi bi-arrow-left"></i> Previous: ConfigEditor</a>
+                    <a href="dmeeditor.html">Next: DMEEditor <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

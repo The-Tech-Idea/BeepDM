@@ -828,6 +828,142 @@ Console.WriteLine($"View now has {view.JoinDefinitions.Count} joins across {view
     </div><!-- end content-area -->
   </div><!-- end content-wrapper -->
 </div><!-- end main-content -->
+
+<div class="main-content"><div class="content-wrapper"><div class="content-area" style="max-width:100%">
+  <section id="full-api">
+    <h2><i class="bi bi-book"></i> Full API Reference — DataViewDataSource</h2>
+
+    <h3>Core Properties — Complete (17 + inherited)</h3>
+    <table class="ref-table"><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody>
+    <tr><td><code>DatasourceType</code></td><td><code>DataSourceType</code></td><td>DataSource type (e.g. DataView)</td></tr>
+    <tr><td><code>Category</code></td><td><code>DatasourceCategory</code></td><td>Datasource category</td></tr>
+    <tr><td><code>Dataconnection</code></td><td><code>IDataConnection</code></td><td>Connection (often DataViewConnection)</td></tr>
+    <tr><td><code>DatasourceName</code></td><td><code>string</code></td><td>Unique name for this view</td></tr>
+    <tr><td><code>ErrorObject</code></td><td><code>IErrorsInfo</code></td><td>Error state</td></tr>
+    <tr><td><code>Id</code></td><td><code>string</code></td><td>String identity</td></tr>
+    <tr><td><code>ID</code></td><td><code>int</code></td><td>Numeric identity</td></tr>
+    <tr><td><code>GuidID</code></td><td><code>string</code></td><td>GUID (default: Guid.NewGuid())</td></tr>
+    <tr><td><code>Logger</code></td><td><code>IDMLogger</code></td><td>Logger instance</td></tr>
+    <tr><td><code>EntitiesNames</code></td><td><code>List&lt;string&gt;</code></td><td>Entity name list</td></tr>
+    <tr><td><code>DMEEditor</code></td><td><code>IDMEEditor</code></td><td>DME Editor reference</td></tr>
+    <tr><td><code>ConnectionStatus</code></td><td><code>ConnectionState</code></td><td>Delegated to Dataconnection</td></tr>
+    <tr><td><code>SourceEntityData</code></td><td><code>DataTable</code></td><td>Raw source data table</td></tr>
+    <tr><td><code>DataView</code></td><td><code>IDMDataView</code></td><td>DMDataView definition object</td></tr>
+    <tr><td><code>ColumnDelimiter</code></td><td><code>string</code></td><td>Default "''" (escaped quote)</td></tr>
+    <tr><td><code>ParameterDelimiter</code></td><td><code>string</code></td><td>Default ":"</td></tr>
+    <tr><td><code>Entities</code></td><td><code>List&lt;EntityStructure&gt;</code></td><td>Proxied to DataView.Entities</td></tr>
+    <tr><td><code>ViewName</code></td><td><code>string</code></td><td>Human-readable view name</td></tr>
+    </tbody></table>
+
+    <h3>Complete Method Index by Partial File</h3>
+
+    <h4>DataViewDataSource.cs — Core</h4>
+    <pre><code class="language-csharp">// Constructor
+public DataViewDataSource(IDataConnection connection, IDMDataView dmDef,
+    IDMEEditor editor, string name = null, string viewName = null);
+
+// IDataSource passthrough (Open/Close delegate to Dataconnection)
+public ConnectionState Openconnection();
+public ConnectionState Closeconnection();</code></pre>
+
+    <h4>EntityLifecycle.cs</h4>
+    <pre><code class="language-csharp">public IEnumerable&lt;object&gt; GetEntity(string entityName, List&lt;AppFilter&gt; filters);
+public IErrorsInfo InsertEntity(string entityName, object inserted);
+public IErrorsInfo UpdateEntity(string entityName, object updated);
+public IErrorsInfo DeleteEntity(string entityName, object deleted);
+public IErrorsInfo UpdateEntities(string entityName, object data, IProgress&lt;PassedArgs&gt; progress = null);</code></pre>
+
+    <h4>FieldManagement.cs</h4>
+    <pre><code class="language-csharp">public void AddField(DMDataViewField field);
+public void RemoveField(string guidID);
+public void ClearFields();
+public void UpdateField(DMDataViewField field);
+public bool AreAnyFieldsBroken();
+public List&lt;DMDataViewField&gt; GetBrokenFieldsMap();
+public List&lt;DMDataViewField&gt; GetVisibleFields();
+public string ResolveColumnAlias(string entityName, string columnName);
+public string ResolveEntityNameForBroken(string brokenFieldGuidID);</code></pre>
+
+    <h4>Filters.cs</h4>
+    <pre><code class="language-csharp">public void AddFilter(DMFilterCondition filter);
+public void RemoveFilter(string id);
+public void ClearFilters();
+public void UpdateFilter(DMFilterCondition filter);
+public List&lt;DMFilterCondition&gt; GetAllFilters();
+public List&lt;DMFilterCondition&gt; GetFilterByEntity(string entityName);
+public bool AreAnyFiltersBroken();
+public List&lt;DMFilterCondition&gt; GetBrokenFiltersMap();
+public List&lt;AppFilter&gt; BuildAppFilterList();</code></pre>
+
+    <h4>JoinGraph.cs</h4>
+    <pre><code class="language-csharp">public void AddJoin(FederatedJoinDefinition join);
+public void RemoveJoin(string guidID);
+public void ClearJoins();
+public void UpdateJoin(FederatedJoinDefinition join);
+public List&lt;FederatedJoinDefinition&gt; GetJoins();
+public bool AutoDetectJoins();  // Uses FK metadata from entity structures
+public List&lt;FederatedJoinDefinition&gt; FindJoinPath(string fromEntity, string toEntity);  // BFS
+public void BuildJoinGraph();   // Adjacency list from JoinDefinitions
+public bool IsJoinGraphConnected();</code></pre>
+
+    <h4>QueryExecution.cs</h4>
+    <pre><code class="language-csharp">public Task&lt;DataTable&gt; ExecuteViewQueryAsync(string targetEntity,
+    List&lt;AppFilter&gt; filters = null, CancellationToken ct = default);
+public IErrorsInfo RunScript(string scriptName, object script);</code></pre>
+
+    <h4>Validation.cs</h4>
+    <pre><code class="language-csharp">public bool ValidateView();
+public void RefreshHealth();
+public ViewHealthReport GetViewHealthReport();
+public event EventHandler&lt;ViewHealthChangedEventArgs&gt; ViewHealthChanged;</code></pre>
+
+    <h4>ViewUtilities.cs</h4>
+    <pre><code class="language-csharp">public void Save(string filePath);
+public void Load(string filePath);
+public DMDataView CloneView(string newViewName = null);
+public void MergeView(DMDataView otherView);
+public void ResetCache();
+public bool IsCacheExpired();
+public Dictionary&lt;string, object&gt; GetViewMetadata();</code></pre>
+
+    <h3>DataViewConnection — Complete</h3>
+    <pre><code class="language-csharp">public class DataViewConnection : IDataConnection
+{
+    // Properties
+    public bool InMemory { get; set; }
+    public bool IsLogical { get; set; }
+    public IConnectionProperties ConnectionProp { get; set; }
+    public ConnectionDriversConfig DataSourceDriver { get; set; }
+    public ConnectionState ConnectionStatus { get; set; }
+    public IDMEEditor DMEEditor { get; set; }
+    public int ID { get; set; }
+    public string GuidID { get; set; } = Guid.NewGuid().ToString();
+    public IDMLogger Logger { get; set; }
+    public IErrorsInfo ErrorObject { get; set; }
+    public IDbConnection DbConn { get; set; }
+
+    // Methods
+    public ConnectionState OpenConnection();
+    public ConnectionState CloseConn();
+
+    // Logical connection support
+    private ConnectionState OpenConn();  // IsLogical skips filesystem check
+}</code></pre>
+
+    <h3>Source File Map (9 files)</h3>
+    <table class="ref-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+    <tr><td><code>DataViewDataSource.cs</code></td><td>17 core properties, PassEvent, constructor, Openconnection/Closeconnection</td></tr>
+    <tr><td><code>DataViewDataSource.EntityLifecycle.cs</code></td><td>GetEntity, InsertEntity, UpdateEntity, DeleteEntity, UpdateEntities</td></tr>
+    <tr><td><code>DataViewDataSource.FieldManagement.cs</code></td><td>Add/Remove/Clear/Update fields, broken field detection, column alias resolution</td></tr>
+    <tr><td><code>DataViewDataSource.Filters.cs</code></td><td>Add/Remove/Clear/Update filters, broken filter detection, BuildAppFilterList</td></tr>
+    <tr><td><code>DataViewDataSource.JoinGraph.cs</code></td><td>Add/Remove/Clear/Update joins, FK auto-detection, BFS join path finder, graph connectivity</td></tr>
+    <tr><td><code>DataViewDataSource.QueryExecution.cs</code></td><td>ExecuteViewQueryAsync (cached or DirectQuery), RunScript</td></tr>
+    <tr><td><code>DataViewDataSource.Validation.cs</code></td><td>ValidateView, RefreshHealth, ViewHealthReport, ViewHealthChanged event</td></tr>
+    <tr><td><code>DataViewDataSource.ViewUtilities.cs</code></td><td>Save/Load JSON, CloneView, MergeView, ResetCache, IsCacheExpired, GetViewMetadata</td></tr>
+    <tr><td><code>DataViewConnection.cs</code></td><td>IDataConnection impl: InMemory, IsLogical flag, OpenConnection/CloseConn</td></tr>
+    </tbody></table>
+  </section>
+</div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
 <script src="navigation.js"></script>

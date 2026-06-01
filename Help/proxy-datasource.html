@@ -51,6 +51,7 @@
     <li><a href="#error-taxonomy">Error Taxonomy</a></li>
     <li><a href="#cluster">ProxyCluster</a></li>
     <li><a href="#examples">Usage Examples</a></li>
+    <li><a href="#full-api">Full API Reference</a></li>
   </ul>
 </div>
 
@@ -950,16 +951,302 @@ proxy.ApplyPolicy(new ProxyPolicy
 proxy.ApplyPolicy(new ProxyPolicy { Resilience = ProxyResilienceProfile.Balanced });</code></pre>
 </section>
 
-</div><!-- .main-content -->
+  <!-- ═══════════════════════════════════════════════════════════ FULL API REFERENCE -->
+  <section id="full-api">
+    <h2><i class="bi bi-book"></i> Full API Reference</h2>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
-<script src="navigation.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof loadNavigation === 'function') loadNavigation('proxy');
-});
-</script>
+    <h3>IProxyDataSource (complete interface)</h3>
+    <pre><code class="language-csharp">public interface IProxyDataSource : IDataSource, IDisposable
+{
+    // Events
+    event EventHandler&lt;FailoverEventArgs&gt; OnFailover;
+    event EventHandler&lt;RecoveryEventArgs&gt; OnRecovery;
+
+    // Policy
+    void ApplyPolicy(ProxyPolicy policy);
+
+    // Backward-compat knobs
+    int MaxRetries { get; set; }
+    int RetryDelayMilliseconds { get; set; }
+    int HealthCheckIntervalMilliseconds  { get; set; }
+
+    // Load-balanced execution
+    Task&lt;T&gt; ExecuteWithLoadBalancing&lt;T&gt;(Func&lt;IDataSource, Task&lt;T&gt;&gt; operation, bool isWrite = false, CancellationToken cancellationToken = default);
+
+    // Connection pool
+    IDataSource GetPooledConnection(string dsName);
+    void ReturnConnection(string dsName, IDataSource connection);
+    IDataSource GetConnection(string dsName);
+
+    // Cache
+    object GetEntityWithCache(string entityName, List&lt;AppFilter&gt; filter, TimeSpan? expiration = null);
+    void InvalidateCache(string entityName = null);
+
+    // Metrics & SLO
+    IDictionary&lt;string, DataSourceMetrics&gt; GetMetrics();
+    ProxySloSnapshot GetSloSnapshot(string dsName);
+    IReadOnlyList&lt;ProxySloSnapshot&gt; GetAllSloSnapshots();
+
+    // Datasource membership
+    void AddDataSource(string dsName, int weight = 1);
+    void RemoveDataSource(string dsName);
+    void SetRole(string dsName, ProxyDataSourceRole role);
+
+    // Watchdog
+    int WatchdogIntervalMs { get; set; }
+    int WatchdogProbeTimeoutMs { get; set; }
+    int WatchdogFailureThreshold { get; set; }
+    int WatchdogRecoveryThreshold { get; set; }
+    event EventHandler&lt;RoleChangeEventArgs&gt; OnRolePromoted;
+    event EventHandler&lt;RoleChangeEventArgs&gt; OnRoleDemoted;
+    void StartWatchdog();
+    void StopWatchdog();
+    IReadOnlyList&lt;WatchdogNodeStatus&gt; GetWatchdogStatus();
+
+    // Audit
+    IProxyAuditSink AuditSink { get; set; }
+}</code></pre>
+
+    <h3>IProxyCluster (complete interface)</h3>
+    <pre><code class="language-csharp">public interface IProxyCluster : IProxyDataSource
+{
+    // Node management
+    void AddNode(IProxyNode node);
+    void RemoveNode(string nodeId);
+    IReadOnlyList&lt;IProxyNode&gt; GetNodes();
+
+    // Drain / rolling restart
+    void DrainNode(string nodeId, int timeoutMs = 30_000);
+    Task DrainNodeAsync(string nodeId, int timeoutMs = 30_000, CancellationToken ct = default);
+
+    // Policy propagation
+    void ApplyClusterPolicy(ProxyPolicy policy);
+
+    // Aggregate observability
+    IDictionary&lt;string, DataSourceMetrics&gt; GetClusterMetrics();
+    IReadOnlyList&lt;ProxySloSnapshot&gt; GetClusterSloSnapshots();
+
+    // Cluster events
+    event EventHandler&lt;NodeStatusEventArgs&gt;         OnNodeDown;
+    event EventHandler&lt;NodeStatusEventArgs&gt;         OnNodeRestored;
+    event EventHandler&lt;RoleChangeEventArgs&gt;         OnNodePromoted;
+    event EventHandler&lt;RoleChangeEventArgs&gt;         OnNodeDemoted;
+    event EventHandler&lt;ClusterPolicyChangedEventArgs&gt; OnClusterPolicyChanged;
+    event EventHandler&lt;AffinityRebalancedEventArgs&gt; OnAffinityRebalanced;
+
+    // Distributed transaction
+    bool SupportsTwoPhaseCommit => false;
+}</code></pre>
+
+    <h3>IProxyNode (Phase 11)</h3>
+    <pre><code class="language-csharp">public interface IProxyNode
+{
+    string NodeId { get; }
+    int Weight { get; set; }
+    ProxyDataSourceRole NodeRole { get; set; }
+    bool IsAlive { get; }
+    int InFlightCount { get; }
+    DataSourceMetrics Metrics { get; }
+    ConnectionProperties NodeConfig { get; set; }
+}</code></pre>
+
+    <h3>ProxyPolicy — Complete Properties</h3>
+    <div class="table-responsive">
+      <table class="ref-table">
+        <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>Name</code></td><td><code>string</code></td><td><code>"default"</code></td><td>Human-readable policy name</td></tr>
+          <tr><td><code>Version</code></td><td><code>string</code></td><td><code>"1.0"</code></td><td>Semantic version for change tracking</td></tr>
+          <tr><td><code>Environment</code></td><td><code>string</code></td><td><code>"production"</code></td><td>Environment label (production, staging, dev)</td></tr>
+          <tr><td><code>Resilience</code></td><td><code>ProxyResilienceProfile</code></td><td>Balanced</td><td>Retry + circuit-breaker params</td></tr>
+          <tr><td><code>Cache</code></td><td><code>ProxyCacheProfile</code></td><td><code>new()</code></td><td>Cache configuration</td></tr>
+          <tr><td><code>RoutingStrategy</code></td><td><code>ProxyRoutingStrategy</code></td><td><code>WeightedLatency</code></td><td>Candidate selection algorithm</td></tr>
+          <tr><td><code>HealthCheckIntervalMs</code></td><td><code>int</code></td><td>30 000</td><td>Health-check timer interval</td></tr>
+          <tr><td><code>HealthCheckTimeoutSecs</code></td><td><code>int</code></td><td>5</td><td>Timeout per health check</td></tr>
+          <tr><td><code>HealthyThresholdCount</code></td><td><code>int</code></td><td>2</td><td>Consecutive successes to mark healthy</td></tr>
+          <tr><td><code>UnhealthyThresholdCount</code></td><td><code>int</code></td><td>2</td><td>Consecutive failures to mark unhealthy</td></tr>
+          <tr><td><code>EnableLogRedaction</code></td><td><code>bool</code></td><td><code>true</code></td><td>Redact PII in log messages via ProxyLogRedactor</td></tr>
+          <tr><td><code>WriteMode</code></td><td><code>ProxyWriteMode</code></td><td><code>SinglePrimary</code></td><td>SinglePrimary, FanOut, or QuorumWrite</td></tr>
+          <tr><td><code>WriteFanOutQuorum</code></td><td><code>int</code></td><td>1</td><td>Minimum Primaries for QuorumWrite success</td></tr>
+          <tr><td><code>NodeRoutingStrategy</code></td><td><code>ProxyNodeRoutingStrategy</code></td><td><code>LeastConnections</code></td><td>Cluster-tier node selection</td></tr>
+          <tr><td><code>NodeUnhealthyThreshold</code></td><td><code>int</code></td><td>2</td><td>Probes before node marked down</td></tr>
+          <tr><td><code>NodeHealthyThreshold</code></td><td><code>int</code></td><td>1</td><td>Probes before node restored</td></tr>
+          <tr><td><code>NodeProbeIntervalMs</code></td><td><code>int</code></td><td>5 000</td><td>Cluster node probe interval</td></tr>
+          <tr><td><code>NodeProbeTimeoutMs</code></td><td><code>int</code></td><td>2 000</td><td>Timeout per node probe</td></tr>
+          <tr><td><code>EnableNodeAffinity</code></td><td><code>bool</code></td><td><code>false</code></td><td>Session pinning to nodes</td></tr>
+          <tr><td><code>NodeAffinityTtlSeconds</code></td><td><code>int</code></td><td>300</td><td>Session binding expiry (seconds)</td></tr>
+          <tr><td><code>SlowStartDurationMs</code></td><td><code>int</code></td><td>0</td><td>Ramp-up for new nodes (0 = disabled)</td></tr>
+          <tr><td><code>MaxReplicaLagMs</code></td><td><code>long</code></td><td>0</td><td>Max replication lag for replica reads</td></tr>
+          <tr><td><code>EntityAffinity</code></td><td><code>EntityAffinityMap?</code></td><td><code>null</code></td><td>Entity-to-node affinity mapping</td></tr>
+          <tr><td><code>AffinityFallback</code></td><td><code>EntityAffinityFallback</code></td><td><code>RouteToAny</code></td><td>Fallback when affinity node down</td></tr>
+          <tr><td><code>RoutingRules</code></td><td><code>IReadOnlyList&lt;ProxyRoutingRule&gt;</code></td><td><code>empty</code></td><td>Declarative routing rules (first match wins)</td></tr>
+          <tr><td><code>TrafficSplits</code></td><td><code>IReadOnlyList&lt;TrafficSplitRule&gt;</code></td><td><code>empty</code></td><td>Canary deployment traffic splits</td></tr>
+          <tr><td><code>OutlierDetection</code></td><td><code>OutlierDetectionPolicy?</code></td><td><code>null</code></td><td>Envoy-style outlier ejection (null = disabled)</td></tr>
+          <tr><td><code>EnableHedging</code></td><td><code>bool</code></td><td><code>false</code></td><td>Hedged requests for slow nodes</td></tr>
+          <tr><td><code>HedgingThresholdMs</code></td><td><code>int</code></td><td>100</td><td>Delay before issuing hedge request</td></tr>
+          <tr><td><code>MaxHedgeRequests</code></td><td><code>int</code></td><td>2</td><td>Max concurrent copies incl. original</td></tr>
+          <tr><td><code>ReadMode</code></td><td><code>ProxyReadMode</code></td><td><code>SingleNode</code></td><td>SingleNode or ScatterGather</td></tr>
+          <tr><td><code>FaultInjection</code></td><td><code>FaultInjectionPolicy?</code></td><td><code>null</code></td><td>Chaos engineering config (null = disabled)</td></tr>
+          <tr><td><code>NodeRateLimits</code></td><td><code>IReadOnlyList&lt;NodeRateLimit&gt;</code></td><td><code>empty</code></td><td>Per-node RPS caps</td></tr>
+          <tr><td><code>ClusterMaxBackendConnections</code></td><td><code>int</code></td><td>0</td><td>Global connection cap (0 = unlimited)</td></tr>
+          <tr><td><code>ClusterMaxQueueDepth</code></td><td><code>int</code></td><td>100</td><td>Max queued requests when capped</td></tr>
+          <tr><td><code>ClusterQueueTimeoutMs</code></td><td><code>int</code></td><td>5 000</td><td>Queued request timeout</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>ICircuitStateStore (complete)</h3>
+    <pre><code class="language-csharp">public interface ICircuitStateStore
+{
+    bool CanExecute(string dsName);
+    void RecordSuccess(string dsName);
+    void RecordFailure(string dsName, ProxyErrorSeverity severity = ProxyErrorSeverity.Medium);
+    void Initialize(string dsName, int failureThreshold, TimeSpan resetTimeout, int successThreshold = 2);
+    void Remove(string dsName);
+}</code></pre>
+
+    <h3>IProxyAuditSink &amp; IProxyAuditEntry</h3>
+    <pre><code class="language-csharp">public interface IProxyAuditSink
+{
+    /// Must not throw and must complete quickly
+    void Write(IProxyAuditEntry entry);
+}
+
+public interface IProxyAuditEntry
+{
+    string             CorrelationId  { get; }
+    string             OperationName { get; }
+    string             SelectedSource { get; }
+    bool               Succeeded     { get; }
+    int                TotalAttempts { get; }
+    long               ElapsedMs    { get; }
+    ProxyOperationSafety Safety       { get; }
+    IReadOnlyList&lt;ProxyAttemptRecord&gt; Attempts { get; }
+}</code></pre>
+
+    <h3>IProxyNode</h3>
+    <pre><code class="language-csharp">public interface IProxyNode
+{
+    string NodeId { get; }
+    int Weight { get; set; }
+    ProxyDataSourceRole NodeRole { get; set; }
+    bool IsAlive { get; }
+    int InFlightCount { get; }
+    DataSourceMetrics Metrics { get; }
+    ConnectionProperties NodeConfig { get; set; }
+}</code></pre>
+
+    <h3>EntityAffinityMap</h3>
+    <p>File: <code>EntityAffinityMap.cs</code>. Binds entity names to specific cluster nodes.</p>
+    <pre><code class="language-csharp">public class EntityAffinityMap
+{
+    public Dictionary&lt;string, string&gt; Affinities { get; init; } = new();
+}</code></pre>
+    <p>Fallback behavior: <code>RouteToAny</code> | <code>ThrowException</code> | <code>WaitForOwner</code>.</p>
+
+    <h3>ProxyLogRedactor</h3>
+    <p>File: <code>ProxyLogRedactor.cs</code>. Scrubs PII (passwords, tokens, connection strings) from proxy log messages when <code>EnableLogRedaction = true</code>.</p>
+
+    <h3>All Enums Reference</h3>
+    <div class="table-responsive">
+      <table class="ref-table">
+        <thead><tr><th>Enum</th><th>Values</th></tr></thead>
+        <tbody>
+          <tr><td><code>ProxyDataSourceRole</code></td><td><code>Primary</code>, <code>Replica</code>, <code>Standby</code></td></tr>
+          <tr><td><code>ProxyRoutingStrategy</code></td><td><code>WeightedLatency</code>, <code>LeastOutstandingRequests</code>, <code>RoundRobin</code>, <code>HealthWeighted</code></td></tr>
+          <tr><td><code>ProxyNodeRoutingStrategy</code></td><td><code>LeastConnections</code>, <code>WeightedRoundRobin</code>, <code>LowestLatency</code>, <code>PrimaryWithStandby</code>, <code>ConsistentHash</code></td></tr>
+          <tr><td><code>ProxyOperationSafety</code></td><td><code>ReadSafe</code>, <code>IdempotentWrite</code>, <code>NonIdempotentWrite</code></td></tr>
+          <tr><td><code>ProxyErrorCategory</code></td><td><code>Transient</code>, <code>Timeout</code>, <code>AuthFailure</code>, <code>Saturation</code>, <code>Persistent</code>, <code>Unknown</code></td></tr>
+          <tr><td><code>ProxyErrorSeverity</code></td><td><code>Low</code>, <code>Medium</code>, <code>High</code>, <code>Critical</code></td></tr>
+          <tr><td><code>ProxyResilienceProfileType</code></td><td><code>Conservative</code>, <code>Balanced</code>, <code>AggressiveFailover</code>, <code>Custom</code></td></tr>
+          <tr><td><code>ProxyCacheTier</code></td><td><code>None</code>, <code>RequestScope</code>, <code>ShortLived</code>, <code>EntityProfile</code></td></tr>
+          <tr><td><code>ProxyCacheConsistency</code></td><td><code>Eventual</code>, <code>StaleWhileRevalidate</code>, <code>WriteThrough</code></td></tr>
+          <tr><td><code>ProxyWriteMode</code></td><td><code>SinglePrimary</code>, <code>FanOut</code>, <code>QuorumWrite</code></td></tr>
+          <tr><td><code>ProxyReadMode</code></td><td><code>SingleNode</code>, <code>ScatterGather</code></td></tr>
+          <tr><td><code>ProxyRoutingOverrideStrategy</code></td><td><code>RouteToReplica</code>, <code>RouteToPrimary</code>, <code>RouteToAny</code></td></tr>
+          <tr><td><code>ProxySplitScope</code></td><td><code>All</code>, <code>ReadsOnly</code>, <code>WritesOnly</code></td></tr>
+          <tr><td><code>EntityAffinityFallback</code></td><td><code>RouteToAny</code>, <code>ThrowException</code>, <code>WaitForOwner</code></td></tr>
+          <tr><td><code>RateLimitAction</code></td><td><code>RouteElsewhere</code>, <code>Queue</code>, <code>Reject</code></td></tr>
+          <tr><td><code>CircuitBreakerState</code></td><td><code>Closed</code>, <code>Open</code>, <code>HalfOpen</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Class: CircuitBreaker</h3>
+    <p>
+      Thread-safe three-state circuit breaker with severity-weighted failure accumulation.
+      <code>Critical</code> severity immediately breaches the threshold;
+      <code>High</code> counts as 2 failures.
+      Uses separate <code>_successThreshold</code> for HalfOpen → Closed transitions.
+    </p>
+    <pre><code class="language-csharp">public class CircuitBreaker
+{
+    public CircuitBreakerState State { get; }
+    public int FailureCount { get; }
+    public DateTime LastStateChange { get; }
+
+    public CircuitBreaker(int failureThreshold, TimeSpan resetTimeout, int successThreshold = 2);
+
+    public bool CanExecute();                           // Test + transition Open→HalfOpen
+    public void RecordSuccess();                        // HalfOpen successes → Closed
+    public void RecordFailure(ProxyErrorSeverity severity = Medium);
+    public void Reset();                                // Force Closed
+}</code></pre>
+
+    <h3>Source Files Reference</h3>
+    <div class="table-responsive">
+      <table class="ref-table">
+        <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td><code>ProxyDataSource.cs</code></td><td>Core: fields, constructors, IDataSource props, policy bootstrap</td></tr>
+          <tr><td><code>ProxyotherClasses.cs</code></td><td>Enums, error taxonomy, resilience profiles, cache profiles, ProxyPolicy, events, SLO snapshot</td></tr>
+          <tr><td><code>CircuitBreaker.cs</code></td><td>Three-state breaker with severity-weighted failure accumulation</td></tr>
+          <tr><td><code>ProxyDataSource.Routing.cs</code></td><td>Candidate selection: WeightedLatency, RoundRobin, LeastOutstanding, HealthWeighted</td></tr>
+          <tr><td><code>ProxyDataSource.ExecutionHelpers.cs</code></td><td>Read/write loops with retry, jitter, back-off, audit emission</td></tr>
+          <tr><td><code>ProxyDataSource.Caching.cs</code></td><td>Stale-while-revalidate entity cache, invalidation, CacheScope integration</td></tr>
+          <tr><td><code>ProxyDataSource.Observability.cs</code></td><td>500-sample latency buffer, SLO snapshots, runtime ApplyPolicy</td></tr>
+          <tr><td><code>ProxyDataSource.Audit.cs</code></td><td>IProxyAuditSink, NullProxyAuditSink, FileProxyAuditSink, ProxyAuditEntry</td></tr>
+          <tr><td><code>ProxyDataSource.CircuitState.cs</code></td><td>ICircuitStateStore, InProcessCircuitStateStore</td></tr>
+          <tr><td><code>ProxyDataSource.RedisCircuitStateStore.cs</code></td><td>Redis-backed distributed circuit state</td></tr>
+          <tr><td><code>ProxyDataSource.FanOut.cs</code></td><td>Concurrent write fan-out to all Primary nodes</td></tr>
+          <tr><td><code>ProxyDataSource.Transactions.cs</code></td><td>Distributed transaction coordination (2PC/Saga)</td></tr>
+          <tr><td><code>ProxyDataSource.Watchdog.cs</code></td><td>Liveness probe loop, role promotion/demotion auto-recovery</td></tr>
+          <tr><td><code>EntityAffinityMap.cs</code></td><td>Entity-name → datasource affinity routing</td></tr>
+          <tr><td><code>ProxyLogRedactor.cs</code></td><td>PII scrubbing for proxy log messages</td></tr>
+          <tr><td><code>IProxyDataSource.cs</code></td><td>IProxyDataSource + IProxyCluster + IProxyNode interfaces</td></tr>
+          <tr><td><code>ProxyCluster.cs</code></td><td>Multi-node cluster: routing, failover, affinity</td></tr>
+          <tr><td><code>ProxyCluster.NodeManagement.cs</code></td><td>Add/remove/drain nodes, slow-start weight ramp</td></tr>
+          <tr><td><code>ProxyCluster.NodeRouting.cs</code></td><td>Node routing strategies + ConsistentHash ring</td></tr>
+          <tr><td><code>ProxyCluster.NodeProbing.cs</code></td><td>Background liveness probe loop</td></tr>
+          <tr><td><code>ProxyCluster.ScatterGather.cs</code></td><td>Parallel read scatter-gather across nodes</td></tr>
+          <tr><td><code>ProxyCluster.Hedging.cs</code></td><td>Hedged request dispatch with deadline cancellation</td></tr>
+          <tr><td><code>ProxyCluster.RoutingRules.cs</code></td><td>Declarative routing rules + TrafficSplit canary</td></tr>
+          <tr><td><code>ProxyCluster.FaultInjection.cs</code></td><td>Chaos engineering fault + latency injection</td></tr>
+          <tr><td><code>ProxyClusterEvents.cs</code></td><td>Cluster event arg types</td></tr>
+          <tr><td><code>ProxyNode.cs</code></td><td>Cluster node data class</td></tr>
+          <tr><td><code>Remote/HttpProxyTransport.cs</code></td><td>HTTP transport for cross-process proxy calls</td></tr>
+          <tr><td><code>Remote/ProxyRemoteRequestDispatcher.cs</code></td><td>Remote request serialization/deserialization</td></tr>
+          <tr><td><code>Remote/RemoteProxyDataSource.cs</code></td><td>Remote proxy client (sends ops over wire)</td></tr>
+          <tr><td><code>Remote/ProxyRequestSigner.cs</code></td><td>Request signing for secure cross-process calls</td></tr>
+          <tr><td><code>Remote/ProxyRemoteProtocol.cs</code></td><td>Wire protocol definitions</td></tr>
+          <tr><td><code>Remote/IProxyTransport.cs</code></td><td>Transport abstraction interface</td></tr>
+          <tr><td><code>Examples/ProxyDataSourceExamples.cs</code></td><td>ProxyDataSource usage examples</td></tr>
+          <tr><td><code>Examples/ProxyClusterExamples.cs</code></td><td>ProxyCluster usage examples</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  </div><!-- .main-content -->
+ 
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+ <script src="navigation.js"></script>
+ <script>
+ document.addEventListener('DOMContentLoaded', () => {
+   if (typeof loadNavigation === 'function') loadNavigation('proxy');
+ });
+ </script>
 
 <style>
 .feature-grid      { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }

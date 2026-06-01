@@ -20,8 +20,9 @@ Entry point for custom data source driver development in BeepDM.
 - `DataSourcesPluginsCore/JSON/` — JSON file driver example
 
 **AssemblyHandler (for discovery):**
-- `Assembly_helpersStandard/AssemblyHandler.Core.cs` — Discovery mechanism
-- `DataManagementModelsStandard/Addin/AddinAttribute.cs` — Registration attribute
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Core.cs` — Discovery mechanism
+- `DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Scanning.cs` — Scanning logic
+- `DataManagementModelsStandard/Vis/AddinAttribute.cs` — Registration attribute
 
 **Setup Framework Integration:**
 - `DataManagementEngineStandard/SetUp/Steps/DriverProvisionStep.cs` — Load drivers

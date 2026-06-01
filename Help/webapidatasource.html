@@ -42,7 +42,7 @@
 
                 <!-- Page Header -->
                 <div class="page-header">
-                    <h1>ðŸŒ WebAPIDataSource</h1>
+                    <h1>🌐 WebAPIDataSource</h1>
                     <p class="page-subtitle">Complete REST API integration with authentication, caching, and circuit breaker patterns</p>
                 </div>
 
@@ -51,17 +51,42 @@
                     <ul>
                         <li>Core partial files in <code>DataManagementEngineStandard/WebAPI/</code>:
                             <ul>
-                                <li><code>WebAPIDataSource.cs</code> &#8212; properties, constructor, helper wiring</li>
+                                <li><code>WebAPIDataSource.cs</code> &#8212; properties, constructor, helper wiring, dispose</li>
                                 <li><code>WebAPIDataSource.Connection.cs</code> &#8212; <code>Openconnection</code> / <code>Closeconnection</code> / transactions</li>
-                                <li><code>WebAPIDataSource.Data.cs</code> &#8212; CRUD: <code>GetEntity</code>, <code>InsertEntity</code>, <code>UpdateEntity</code>, <code>DeleteEntity</code></li>
                                 <li><code>WebAPIDataSource.Http.cs</code> &#8212; <code>GetAsync</code>, <code>PostAsync</code>, <code>PutAsync</code>, <code>DeleteAsync</code> convenience methods</li>
+                                <li><code>WebAPIDataSource.Data.cs</code> &#8212; CRUD: <code>GetEntity</code>, <code>InsertEntity</code>, <code>UpdateEntity</code>, <code>DeleteEntity</code>, <code>UpdateEntities</code></li>
+                                <li><code>WebAPIDataSource.DataOperations.cs</code> &#8212; extended data retrieval and manipulation</li>
+                                <li><code>WebAPIDataSource.EntityMethods.cs</code> &#8212; entity discovery and CRUD orchestration</li>
                                 <li><code>WebAPIDataSource.Structure.cs</code> &#8212; <code>GetEntitesList</code>, <code>CheckEntityExist</code>, <code>GetEntityStructure</code></li>
-                                <li><code>WebAPIDataSource.Query.cs</code> &#8212; query execution stubs</li>
-                                <li><code>WebAPIDataSource.Scripting.cs</code> &#8212; script transactions</li>
+                                <li><code>WebAPIDataSource.Query.cs</code> &#8212; query execution and scalar retrieval</li>
+                                <li><code>WebAPIDataSource.QueryMethods.cs</code> &#8212; extended query processing</li>
+                                <li><code>WebAPIDataSource.PagingAsync.cs</code> &#8212; pagination and async data retrieval</li>
+                                <li><code>WebAPIDataSource.Bulk.cs</code> &#8212; bulk operation stubs</li>
+                                <li><code>WebAPIDataSource.BulkOperations.cs</code> &#8212; enhanced batch processing</li>
+                                <li><code>WebAPIDataSource.Scripting.cs</code> &#8212; script execution and entity creation</li>
+                                <li><code>WebAPIDataSource.ScriptTransactions.cs</code> &#8212; transaction lifecycle stubs</li>
+                                <li><code>WebAPIDataSource.WebAPI.cs</code> &#8212; <code>IWebAPIDataSource</code>-specific <code>ReadData</code></li>
+                                <li><code>WebAPIDataSource.CoreInterface.cs</code> &#8212; <code>IDataSource</code> interface implementation</li>
+                                <li><code>WebAPIDataSource.CoreInterface.Fixed.cs</code> &#8212; additional interface corrections</li>
+                                <li><code>WebAPIDataSource.Interface.cs</code> &#8212; supplementary interface contracts</li>
+                                <li><code>WebAPIDataSource.Complete.cs</code> &#8212; final assembly members</li>
+                                <li><code>WebAPIDataSource.Main.cs</code> &#8212; orchestration entry points</li>
                             </ul>
                         </li>
-                        <li>Helpers in <code>WebAPI/Helpers/</code>: <code>WebAPIConfigurationHelper</code>, <code>WebAPIAuthenticationHelper</code>, <code>WebAPIRequestHelper</code>, <code>WebAPIDataHelper</code>, <code>WebAPICacheHelper</code>, <code>WebAPIRateLimitHelper</code>, <code>WebAPISchemaHelper</code>, <code>WebAPIErrorHelper</code>.</li>
-                        <li>Connection model: <code>WebAPIConnectionProperties</code> / <code>WebAPIDataConnection</code>.</li>
+                        <li>Helpers in <code>WebAPI/Helpers/</code> (all <code>IDisposable</code>):
+                            <ul>
+                                <li><code>WebAPIConfigurationHelper</code> &#8212; strongly-typed config properties, validation, endpoint/pagination settings</li>
+                                <li><code>WebAPIAuthenticationHelper</code> &#8212; OAuth2/Bearer/API Key/Basic auth with token refresh</li>
+                                <li><code>WebAPIRequestHelper</code> &#8212; centralized <code>HttpClient</code> execution with concurrency semaphore and retry</li>
+                                <li><code>WebAPIDataHelper</code> &#8212; URL construction, JSON parsing, ID extraction, cache-key helpers</li>
+                                <li><code>WebAPICacheHelper</code> &#8212; concurrent in-memory cache with TTL and cleanup timer</li>
+                                <li><code>WebAPIRateLimitHelper</code> &#8212; token bucket algorithm per-endpoint throttling</li>
+                                <li><code>WebAPISchemaHelper</code> &#8212; schema inference from JSON samples, entity validation</li>
+                                <li><code>WebAPIErrorHelper</code> &#8212; circuit breaker pattern, exponential backoff, error categorization</li>
+                                <li><code>WebAPIInterfaces</code> &#8212; <code>IWebAPISchemaHelper</code>, <code>IWebAPIDataHelper</code> contracts</li>
+                            </ul>
+                        </li>
+                        <li>Connection model: <code>WebAPIConnectionProperties</code> (with <code>AuthTypeEnum</code>, <code>ValidateConfiguration()</code>, <code>GetValidationErrors()</code>) / <code>WebAPIDataConnection</code> (normalizes <code>IConnectionProperties</code>).</li>
                         <li>Example connector: <code>BeepDataSources/Connectors/SocialMedia/Twitter/TwitterDataSource.cs</code>.</li>
                     </ul>
                 </div>
@@ -82,7 +107,7 @@
 
                 <!-- Table of Contents -->
                 <div class="toc">
-                    <h3>ðŸ“š Table of Contents</h3>
+                    <h3>📚 Table of Contents</h3>
                     <ul>
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#architecture">Architecture</a></li>
@@ -119,7 +144,7 @@
 
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <h3>ðŸ”„ Database-like Operations</h3>
+                            <h3>🔄 Database-like Operations</h3>
                             <p>Use familiar CRUD operations (Create, Read, Update, Delete) with any REST API</p>
                         </div>
 
@@ -129,7 +154,7 @@
                         </div>
 
                         <div class="feature-card">
-                            <h3>âš¡ Circuit Breaker Pattern</h3>
+                            <h3>⚡ Circuit Breaker Pattern</h3>
                             <p>Automatic failure recovery and resilience for production environments</p>
                         </div>
 
@@ -144,7 +169,7 @@
                         </div>
 
                         <div class="feature-card">
-                            <h3>ðŸ” Schema Inference</h3>
+                            <h3>🔍 Schema Inference</h3>
                             <p>Automatic API schema discovery from JSON responses</p>
                         </div>
                     </div>
@@ -155,31 +180,50 @@
                     <h2>Architecture</h2>
 
                     <h3>Partial Class Structure</h3>
-                    <p>The WebAPIDataSource follows a partial class pattern similar to RDBSource for maintainability:</p>
+                    <p>The WebAPIDataSource follows a partial class pattern (20 files) for maintainability, mirroring the RDBSource approach:</p>
 
                     <div class="code-example">
-                        <pre><code class="language-csharp">WebAPIDataSource.cs              // Main class with properties and constructor
-WebAPIDataSource.Connection.cs   // Connection management and authentication
-WebAPIDataSource.Data.cs         // CRUD operations (Create, Read, Update, Delete)
-WebAPIDataSource.Query.cs        // Query execution and scalar operations
-WebAPIDataSource.Structure.cs    // Entity discovery and schema management
-WebAPIDataSource.Scripting.cs    // Script execution and entity creation
-WebAPIDataSource.WebAPI.cs       // IWebAPIDataSource specific methods</code></pre>
+                        <pre><code class="language-csharp">WebAPIDataSource.cs              // Core state (properties/fields), constructor, dispose
+WebAPIDataSource.CoreInterface.cs       // IDataSource interface + event handling
+WebAPIDataSource.CoreInterface.Fixed.cs // Additional/corrected interface members
+WebAPIDataSource.Interface.cs           // Supplementary interface contracts
+WebAPIDataSource.Connection.cs          // Openconnection/Closeconnection, auth integration
+WebAPIDataSource.Data.cs                // CRUD: GetEntity, InsertEntity, UpdateEntity, DeleteEntity
+WebAPIDataSource.DataOperations.cs      // Extended data manipulation helpers
+WebAPIDataSource.EntityMethods.cs       // Entity discovery and CRUD orchestration
+WebAPIDataSource.Http.cs                // Centralized HTTP execution (GetAsync/PostAsync etc.)
+WebAPIDataSource.Structure.cs           // Schema & entity structure discovery
+WebAPIDataSource.Query.cs               // Query execution and scalar operations
+WebAPIDataSource.QueryMethods.cs        // Extended query processing
+WebAPIDataSource.PagingAsync.cs         // Pagination + async data retrieval
+WebAPIDataSource.Bulk.cs                // Bulk operation stubs
+WebAPIDataSource.BulkOperations.cs      // Enhanced batch processing
+WebAPIDataSource.Scripting.cs           // Script execution and entity creation
+WebAPIDataSource.ScriptTransactions.cs  // Transaction lifecycle stubs
+WebAPIDataSource.WebAPI.cs              // IWebAPIDataSource-specific ReadData
+WebAPIDataSource.Complete.cs            // Final assembly/completion members
+WebAPIDataSource.Main.cs                // Additional orchestration entry points</code></pre>
                     </div>
 
                     <h3>Helper Classes</h3>
-                    <p>The implementation uses specialized helper classes for different concerns:</p>
+                    <p>The implementation uses specialized helper classes for different concerns, all in the <code>WebAPI/Helpers/</code> folder under <code>TheTechIdea.Beep.WebAPI.Helpers</code> namespace:</p>
 
-                    <ul>
-                        <li><strong>WebAPIConfigurationHelper</strong> - Manages API endpoints, timeouts, headers, and pagination settings</li>
-                        <li><strong>WebAPIAuthenticationHelper</strong> - Handles OAuth2, Bearer tokens, API keys, and Basic authentication</li>
-                        <li><strong>WebAPIRequestHelper</strong> - Manages HTTP requests with retry logic and circuit breaker</li>
-                        <li><strong>WebAPICacheHelper</strong> - Implements response caching with TTL and invalidation</li>
-                        <li><strong>WebAPIDataHelper</strong> - Handles data transformation and endpoint URL building</li>
-                        <li><strong>WebAPIRateLimitHelper</strong> - Manages rate limiting and request throttling</li>
-                        <li><strong>WebAPISchemaHelper</strong> - Performs schema inference from API responses</li>
-                        <li><strong>WebAPIErrorHelper</strong> - Provides comprehensive error handling and recovery</li>
-                    </ul>
+                    <table>
+                        <thead><tr><th>Helper</th><th>File</th><th>Key Capabilities</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>WebAPIConfigurationHelper</strong></td><td><code>WebAPIConfigurationHelper.cs</code></td><td>Base URL, auth type, timeout, retry, caching, rate limit, pagination, proxy, SSL, response format — all from <code>IConnectionProperties</code></td></tr>
+                            <tr><td><strong>WebAPIAuthenticationHelper</strong></td><td><code>WebAPIAuthenticationHelper.cs</code></td><td>Token refresh with <code>EnsureAuthenticatedAsync()</code>, header injection for None/ApiKey/Basic/Bearer/OAuth2</td></tr>
+                            <tr><td><strong>WebAPIRequestHelper</strong></td><td><code>WebAPIRequestHelper.cs</code></td><td><code>SendWithRetryAsync</code> with <code>SemaphoreSlim</code> concurrency control, request cloning for retries</td></tr>
+                            <tr><td><strong>WebAPIDataHelper</strong></td><td><code>WebAPIDataHelper.cs</code></td><td><code>BuildEndpointUrl</code>, <code>ProcessApiResponse</code>, <code>ExtractIdFromResponse</code>, <code>GenerateDataCacheKey</code>, <code>ConvertToEntityStructure</code></td></tr>
+                            <tr><td><strong>WebAPICacheHelper</strong></td><td><code>WebAPICacheHelper.cs</code></td><td>Concurrent <code>Dictionary</code>-backed in-memory cache with TTL, cleanup timer, hit/miss stats</td></tr>
+                            <tr><td><strong>WebAPIRateLimitHelper</strong></td><td><code>WebAPIRateLimitHelper.cs</code></td><td>Token bucket algorithm per endpoint with <code>WaitForCapacityAsync</code>, stale bucket cleanup</td></tr>
+                            <tr><td><strong>WebAPISchemaHelper</strong></td><td><code>WebAPISchemaHelper.cs</code></td><td><code>InferSchemaFromJsonAsync</code>, <code>DiscoverEntitiesAsync</code>, schema caching with configurable expiry</td></tr>
+                            <tr><td><strong>WebAPIErrorHelper</strong></td><td><code>WebAPIErrorHelper.cs</code></td><td>Exponential backoff retry, circuit breaker (<code>FailureThreshold</code>/<code>RecoveryTimeoutSeconds</code>), transient error classification</td></tr>
+                            <tr><td><strong>WebAPIInterfaces</strong></td><td><code>WebAPIInterfaces.cs</code></td><td><code>IWebAPISchemaHelper</code>, <code>IWebAPIDataHelper</code>, <code>DataValidationResult</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <p>All helpers are composed in the <code>WebAPIDataSource</code> constructor and disposed in <code>Dispose()</code>.</p>
                 </section>
 
                 <!-- Configuration -->
@@ -826,7 +870,7 @@ public class CustomAuthHelper : WebAPIAuthenticationHelper
                     </div>
 
                     <div class="success">
-                        <h3>âœ… Performance Optimization</h3>
+                        <h3>✅ Performance Optimization</h3>
                         <ul>
                             <li>Enable caching for frequently accessed data</li>
                             <li>Use pagination for large datasets</li>
@@ -1029,34 +1073,476 @@ var customStructure = new EntityStructure
                     </div>
                 </section>
 
-                <!-- API Reference -->
+                <!-- API Reference: WebAPIDataSource -->
                 <section class="section" id="api-reference">
                     <h2>API Reference</h2>
 
-                    <h3>Core Methods</h3>
+                    <h3>Class: WebAPIDataSource</h3>
+                    <p><code>public partial class WebAPIDataSource : IWebAPIDataSource, IDisposable</code> — 20 partial files, 34 implemented methods across 8 files (12 partials are stubs for future implementation).</p>
+
+                    <h4>Properties</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ColumnDelimiter</code></td><td><code>string</code></td><td><code>"</code></td><td>Delimiter used to separate columns</td></tr>
+                            <tr><td><code>ParameterDelimiter</code></td><td><code>string</code></td><td><code>":"</code></td><td>Delimiter used for parameters</td></tr>
+                            <tr><td><code>GuidID</code></td><td><code>string</code></td><td><code>Guid.NewGuid()</code></td><td>Unique identifier</td></tr>
+                            <tr><td><code>DatasourceType</code></td><td><code>DataSourceType</code></td><td><code>WebApi</code></td><td>Type of data source</td></tr>
+                            <tr><td><code>Category</code></td><td><code>DatasourceCategory</code></td><td><code>WEBAPI</code></td><td>Category of data source</td></tr>
+                            <tr><td><code>Dataconnection</code></td><td><code>IDataConnection</code></td><td>—</td><td>Data connection interface</td></tr>
+                            <tr><td><code>DatasourceName</code></td><td><code>string</code></td><td>—</td><td>Name of the data source</td></tr>
+                            <tr><td><code>ErrorObject</code></td><td><code>IErrorsInfo</code></td><td>—</td><td>Error handling object</td></tr>
+                            <tr><td><code>Id</code></td><td><code>string</code></td><td>—</td><td>Secondary identifier</td></tr>
+                            <tr><td><code>Logger</code></td><td><code>IDMLogger</code></td><td>—</td><td>Logger instance</td></tr>
+                            <tr><td><code>EntitiesNames</code></td><td><code>List&lt;string&gt;</code></td><td><code>new()</code></td><td>Entity name list</td></tr>
+                            <tr><td><code>Entities</code></td><td><code>List&lt;EntityStructure&gt;</code></td><td><code>new()</code></td><td>Entity structures</td></tr>
+                            <tr><td><code>DMEEditor</code></td><td><code>IDMEEditor</code></td><td>—</td><td>DME editor reference</td></tr>
+                            <tr><td><code>ConnectionStatus</code></td><td><code>ConnectionState</code></td><td><code>Closed</code></td><td>Current connection state</td></tr>
+                            <tr><td><code>ApiKey</code></td><td><code>string</code></td><td>—</td><td>API key for auth</td></tr>
+                            <tr><td><code>Resource</code></td><td><code>string</code></td><td>—</td><td>Resource endpoint</td></tr>
+                            <tr><td><code>Parameters</code></td><td><code>Dictionary&lt;string,string&gt;</code></td><td><code>new()</code></td><td>Request parameters</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Event</h4>
                     <ul>
-                        <li><code>Openconnection()</code> - Establish connection and authenticate</li>
-                        <li><code>Closeconnection()</code> - Close connection and cleanup</li>
-                        <li><code>GetEntitesList()</code> - Get list of available entities</li>
-                        <li><code>GetEntityStructure(string entityName, bool refresh)</code> - Get entity schema</li>
-                        <li><code>GetEntity(string entityName, List&lt;AppFilter&gt; filters)</code> - Retrieve entity data</li>
-                        <li><code>InsertEntity(string entityName, object data)</code> - Create new record</li>
-                        <li><code>UpdateEntity(string entityName, object data)</code> - Update existing record</li>
-                        <li><code>DeleteEntity(string entityName, object data)</code> - Delete record</li>
-                        <li><code>RunQuery(string query)</code> - Execute custom query</li>
+                        <li><code>event EventHandler&lt;PassedArgs&gt; PassEvent</code> — Raised when a specific action or event is passed</li>
                     </ul>
 
-                    <h3>Async Methods</h3>
+                    <h4>Constructor</h4>
+                    <p><code>WebAPIDataSource(string datasourcename, IDMLogger logger, IDMEEditor dmeEditor, DataSourceType databasetype, IErrorsInfo errorObject)</code></p>
+                    <p>Initializes helpers (<code>WebAPIConfigurationHelper</code>, <code>WebAPIAuthenticationHelper</code>, <code>WebAPIRequestHelper</code>, <code>WebAPICacheHelper</code>, <code>WebAPIDataHelper</code>, <code>WebAPIRateLimitHelper</code>, <code>WebAPISchemaHelper</code>, <code>WebAPIErrorHelper</code>), creates shared <code>HttpClient</code>, loads saved connection from <code>ConfigEditor</code>.</p>
+
+                    <h4>Implemented Methods by Partial File</h4>
+
+                    <h5>Connection.cs (5 methods)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Openconnection()</code></td><td><code>ConnectionState</code></td><td>Opens connection, ensures authentication via <code>_authHelper.EnsureAuthenticatedAsync()</code></td></tr>
+                            <tr><td><code>Closeconnection()</code></td><td><code>ConnectionState</code></td><td>Closes the connection, sets state to Closed</td></tr>
+                            <tr><td><code>BeginTransaction(PassedArgs args)</code></td><td><code>IErrorsInfo</code></td><td>Begins a transaction (stub)</td></tr>
+                            <tr><td><code>EndTransaction(PassedArgs args)</code></td><td><code>IErrorsInfo</code></td><td>Ends a transaction (stub)</td></tr>
+                            <tr><td><code>Commit(PassedArgs args)</code></td><td><code>IErrorsInfo</code></td><td>Commits a transaction (stub)</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Data.cs (7 methods — core CRUD)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetEntity(string, List&lt;AppFilter&gt;)</code></td><td><code>IEnumerable&lt;object&gt;</code></td><td>Retrieves entities with optional filters. Delegates to <code>GetEntityAsync</code></td></tr>
+                            <tr><td><code>GetEntity(string, List&lt;AppFilter&gt;, int, int)</code></td><td><code>PagedResult</code></td><td>Paged entity retrieval with page number and page size</td></tr>
+                            <tr><td><code>GetEntityAsync(string, List&lt;AppFilter&gt;)</code></td><td><code>Task&lt;IEnumerable&lt;object&gt;&gt;</code></td><td>Async entity retrieval with endpoint resolution, rate limiting, and caching</td></tr>
+                            <tr><td><code>InsertEntity(string, object)</code></td><td><code>IErrorsInfo</code></td><td>Creates a new record via POST</td></tr>
+                            <tr><td><code>UpdateEntity(string, object)</code></td><td><code>IErrorsInfo</code></td><td>Updates a record via PUT</td></tr>
+                            <tr><td><code>DeleteEntity(string, object)</code></td><td><code>IErrorsInfo</code></td><td>Deletes a record via DELETE</td></tr>
+                            <tr><td><code>UpdateEntities(string, object, IProgress&lt;PassedArgs&gt;)</code></td><td><code>IErrorsInfo</code></td><td>Batch update with progress reporting</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Http.cs (11 methods — HTTP convenience layer)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetAsync(string, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;HttpResponseMessage&gt;</code></td><td>HTTP GET with optional query params and headers</td></tr>
+                            <tr><td><code>GetAsync&lt;T&gt;(string, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;T&gt;</code></td><td>HTTP GET with deserialization to <code>T</code></td></tr>
+                            <tr><td><code>PostAsync(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;HttpResponseMessage&gt;</code></td><td>HTTP POST with JSON body</td></tr>
+                            <tr><td><code>PostAsync&lt;T&gt;(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;T&gt;</code></td><td>HTTP POST with deserialization</td></tr>
+                            <tr><td><code>PutAsync(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;HttpResponseMessage&gt;</code></td><td>HTTP PUT with JSON body</td></tr>
+                            <tr><td><code>PutAsync&lt;T&gt;(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;T&gt;</code></td><td>HTTP PUT with deserialization</td></tr>
+                            <tr><td><code>PatchAsync(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;HttpResponseMessage&gt;</code></td><td>HTTP PATCH with JSON body</td></tr>
+                            <tr><td><code>PatchAsync&lt;T&gt;(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;T&gt;</code></td><td>HTTP PATCH with deserialization</td></tr>
+                            <tr><td><code>DeleteAsync(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;HttpResponseMessage&gt;</code></td><td>HTTP DELETE with optional query params</td></tr>
+                            <tr><td><code>DeleteAsync&lt;T&gt;(string, object?, Dictionary?, Dictionary?, CancellationToken)</code></td><td><code>Task&lt;T&gt;</code></td><td>HTTP DELETE with deserialization</td></tr>
+                        </tbody>
+                    </table>
+                    <p>All HTTP methods auto-apply auth headers via <code>_authHelper.AddAuthenticationHeaders()</code>, ensure auth state, and add default headers from config. The private helper <code>BuildUrlWithQuery(string, Dictionary)</code> constructs URLs with query string parameters.</p>
+
+                    <h5>Structure.cs (11 methods — schema &amp; entity structure)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetEntitesList()</code></td><td><code>IEnumerable&lt;string&gt;</code></td><td>Returns configured entity names from endpoint config</td></tr>
+                            <tr><td><code>CheckEntityExist(string)</code></td><td><code>bool</code></td><td>Checks if an entity is configured</td></tr>
+                            <tr><td><code>GetEntityIdx(string)</code></td><td><code>int</code></td><td>Gets index of entity in Entities list</td></tr>
+                            <tr><td><code>GetEntityStructure(string, bool)</code></td><td><code>EntityStructure</code></td><td>Gets entity schema, optionally from API response inference</td></tr>
+                            <tr><td><code>GetEntityStructure(EntityStructure, bool)</code></td><td><code>EntityStructure</code></td><td>Overload accepting EntityStructure object</td></tr>
+                            <tr><td><code>GetEntityType(string)</code></td><td><code>Type</code></td><td>Gets CLR type for entity</td></tr>
+                            <tr><td><code>GetEntityforeignkeys(string, string)</code></td><td><code>IEnumerable&lt;RelationShipKeys&gt;</code></td><td>Gets foreign key relationships (stub)</td></tr>
+                            <tr><td><code>GetChildTablesList(string, string, string)</code></td><td><code>IEnumerable&lt;ChildRelation&gt;</code></td><td>Gets child table list (stub)</td></tr>
+                            <tr><td><code>CreateEntityAs(EntityStructure)</code></td><td><code>bool</code></td><td>Creates entity definition</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Query.cs (4 methods)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RunQuery(string)</code></td><td><code>IEnumerable&lt;object&gt;</code></td><td>Executes a query string (delegates to HTTP GET)</td></tr>
+                            <tr><td><code>GetScalar(string)</code></td><td><code>double</code></td><td>Executes scalar query</td></tr>
+                            <tr><td><code>GetScalarAsync(string)</code></td><td><code>Task&lt;double&gt;</code></td><td>Async scalar query</td></tr>
+                            <tr><td><code>ExecuteSql(string)</code></td><td><code>IErrorsInfo</code></td><td>Executes SQL-like command</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Scripting.cs (3 methods)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RunScript(ETLScriptDet)</code></td><td><code>IErrorsInfo</code></td><td>Runs an ETL script</td></tr>
+                            <tr><td><code>GetCreateEntityScript(List&lt;EntityStructure&gt;?)</code></td><td><code>IEnumerable&lt;ETLScriptDet&gt;</code></td><td>Generates create-entity script</td></tr>
+                            <tr><td><code>CreateEntities(List&lt;EntityStructure&gt;)</code></td><td><code>IErrorsInfo</code></td><td>Creates entities from script</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h5>WebAPI.cs (1 method)</h5>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ReadData(bool, int, int)</code></td><td><code>Task&lt;IEnumerable&lt;object&gt;&gt;</code></td><td><code>IWebAPIDataSource</code>-specific data reading with header flag and line range</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Empty / Stub Partial Files (12 files)</h4>
+                    <p>The following partial class files exist for future implementation but currently contain no method bodies:</p>
                     <ul>
-                        <li><code>GetEntityAsync(string entityName, List&lt;AppFilter&gt; filters)</code> - Async entity retrieval</li>
-                        <li><code>GetScalarAsync(string query)</code> - Async scalar query execution</li>
+                        <li><code>WebAPIDataSource.CoreInterface.cs</code></li>
+                        <li><code>WebAPIDataSource.CoreInterface.Fixed.cs</code></li>
+                        <li><code>WebAPIDataSource.Interface.cs</code></li>
+                        <li><code>WebAPIDataSource.DataOperations.cs</code></li>
+                        <li><code>WebAPIDataSource.EntityMethods.cs</code></li>
+                        <li><code>WebAPIDataSource.QueryMethods.cs</code></li>
+                        <li><code>WebAPIDataSource.PagingAsync.cs</code></li>
+                        <li><code>WebAPIDataSource.Bulk.cs</code></li>
+                        <li><code>WebAPIDataSource.BulkOperations.cs</code></li>
+                        <li><code>WebAPIDataSource.ScriptTransactions.cs</code></li>
+                        <li><code>WebAPIDataSource.Complete.cs</code></li>
+                        <li><code>WebAPIDataSource.Main.cs</code></li>
                     </ul>
 
-                    <h3>Pagination Support</h3>
+                    <h3>Class: WebAPIConnectionProperties</h3>
+                    <p><code>public class WebAPIConnectionProperties : IConnectionProperties</code> — 707 lines, 50+ properties with validation.</p>
+
+                    <h4>Core Connection Properties</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ID</code></td><td><code>int</code></td><td>0</td></tr>
+                            <tr><td><code>GuidID</code></td><td><code>string</code></td><td><code>Guid.NewGuid()</code></td></tr>
+                            <tr><td><code>ConnectionName</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>ConnectionString</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>Database</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>DatabaseType</code></td><td><code>DataSourceType</code></td><td><code>WebApi</code></td></tr>
+                            <tr><td><code>Category</code></td><td><code>DatasourceCategory</code></td><td><code>WEBAPI</code></td></tr>
+                            <tr><td><code>DriverName</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>DriverVersion</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>Host</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>Port</code></td><td><code>int</code></td><td>0</td></tr>
+                            <tr><td><code>UserID</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>Password</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>SchemaName</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>Parameters</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>Headers</code></td><td><code>List&lt;WebApiHeader&gt;</code></td><td><code>new()</code> (defaults: Accept, User-Agent)</td></tr>
+                            <tr><td><code>Entities</code></td><td><code>List&lt;EntityStructure&gt;</code></td><td><code>new()</code></td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Web API Specific Properties</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ApiVersion</code></td><td><code>string</code></td><td><code>"v1.0"</code></td><td>API version string</td></tr>
+                            <tr><td><code>AuthType</code></td><td><code>AuthTypeEnum</code></td><td><code>None</code></td><td>Authentication mode (triggers <code>UpdateAuthenticationRequirements()</code>)</td></tr>
+                            <tr><td><code>ClientId</code></td><td><code>string</code></td><td>null</td><td>OAuth2 client ID</td></tr>
+                            <tr><td><code>ClientSecret</code></td><td><code>string</code></td><td>null</td><td>OAuth2 client secret</td></tr>
+                            <tr><td><code>AuthUrl</code></td><td><code>string</code></td><td>null</td><td>OAuth2 authorization URL</td></tr>
+                            <tr><td><code>TokenUrl</code></td><td><code>string</code></td><td>null</td><td>OAuth2 token endpoint</td></tr>
+                            <tr><td><code>Scope</code></td><td><code>string</code></td><td>null</td><td>OAuth2 scope</td></tr>
+                            <tr><td><code>GrantType</code></td><td><code>string</code></td><td><code>"client_credentials"</code></td><td>OAuth2 grant type</td></tr>
+                            <tr><td><code>ApiKeyHeader</code></td><td><code>string</code></td><td><code>"X-API-Key"</code></td><td>Header name for API key auth</td></tr>
+                            <tr><td><code>ApiKey</code></td><td><code>string</code></td><td>null</td><td>API key / bearer token value</td></tr>
+                            <tr><td><code>RedirectUri</code></td><td><code>string</code></td><td>null</td><td>OAuth2 redirect URI</td></tr>
+                            <tr><td><code>AuthCode</code></td><td><code>string</code></td><td>null</td><td>OAuth2 authorization code</td></tr>
+                            <tr><td><code>BearerToken</code></td><td><code>string</code></td><td>null</td><td>Static bearer token</td></tr>
+                            <tr><td><code>AccessToken</code></td><td><code>string</code></td><td>maps to ApiKey</td><td>Instagram compat alias</td></tr>
+                            <tr><td><code>AppId</code></td><td><code>string</code></td><td>maps to ClientId</td><td>Instagram compat alias</td></tr>
+                            <tr><td><code>AppSecret</code></td><td><code>string</code></td><td>maps to ClientSecret</td><td>Instagram compat alias</td></tr>
+                            <tr><td><code>ConsumerKey</code></td><td><code>string</code></td><td>maps to ClientId</td><td>Twitter/OAuth compat alias</td></tr>
+                            <tr><td><code>ConsumerSecret</code></td><td><code>string</code></td><td>maps to ClientSecret</td><td>Twitter/OAuth compat alias</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Configuration Settings</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Range</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>TimeoutMs</code></td><td><code>int</code></td><td>30000</td><td>≥ 1000</td></tr>
+                            <tr><td><code>MaxRetries</code></td><td><code>int</code></td><td>3</td><td>≥ 0</td></tr>
+                            <tr><td><code>RetryIntervalMs</code></td><td><code>int</code></td><td>1000</td><td>≥ 0</td></tr>
+                            <tr><td><code>RetryCount</code></td><td><code>int</code></td><td>3</td><td>≥ 0</td></tr>
+                            <tr><td><code>RetryDelayMs</code></td><td><code>int</code></td><td>1000</td><td>≥ 0</td></tr>
+                            <tr><td><code>CacheExpiryMinutes</code></td><td><code>int</code></td><td>15</td><td>≥ 1</td></tr>
+                            <tr><td><code>MaxConcurrentRequests</code></td><td><code>int</code></td><td>10</td><td>≥ 1</td></tr>
+                            <tr><td><code>EnableCaching</code></td><td><code>bool</code></td><td>true</td><td>—</td></tr>
+                            <tr><td><code>EnableCompression</code></td><td><code>bool</code></td><td>true</td><td>—</td></tr>
+                            <tr><td><code>UserAgent</code></td><td><code>string</code></td><td><code>"BeepDM-WebAPI/1.0"</code></td><td>—</td></tr>
+                            <tr><td><code>RequiresAuthentication</code></td><td><code>bool</code></td><td>false</td><td>Set by AuthType</td></tr>
+                            <tr><td><code>RequiresTokenRefresh</code></td><td><code>bool</code></td><td>false</td><td>true for Bearer/OAuth2</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Proxy Settings</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>UseProxy</code></td><td><code>bool</code></td><td>false</td></tr>
+                            <tr><td><code>ProxyUrl</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>ProxyPort</code></td><td><code>int</code></td><td>0</td></tr>
+                            <tr><td><code>ProxyUser</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>ProxyPassword</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>BypassProxyOnLocal</code></td><td><code>bool</code></td><td>false</td></tr>
+                            <tr><td><code>UseDefaultProxyCredentials</code></td><td><code>bool</code></td><td>false</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>SSL / Certificate Settings</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>IgnoreSSLErrors</code></td><td><code>bool</code></td><td>false</td></tr>
+                            <tr><td><code>ValidateServerCertificate</code></td><td><code>bool</code></td><td>true</td></tr>
+                            <tr><td><code>ClientCertificatePath</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>ClientCertificatePassword</code></td><td><code>string</code></td><td>null</td></tr>
+                            <tr><td><code>CertificatePath</code></td><td><code>string</code></td><td>null</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Rate Limiting</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>RateLimitRequestsPerMinute</code></td><td><code>int</code></td><td>60</td></tr>
+                            <tr><td><code>EnableRateLimit</code></td><td><code>bool</code></td><td>true</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Response Handling</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ResponseFormat</code></td><td><code>string</code></td><td><code>"json"</code></td><td>Expected format: json, xml, csv, text</td></tr>
+                            <tr><td><code>DataPath</code></td><td><code>string</code></td><td>null</td><td>JSONPath/XPath to extract data</td></tr>
+                            <tr><td><code>TotalCountPath</code></td><td><code>string</code></td><td>null</td><td>JSONPath/XPath for total count</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Pagination Settings</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>PageNumberParameter</code></td><td><code>string</code></td><td><code>"page"</code></td></tr>
+                            <tr><td><code>PageSizeParameter</code></td><td><code>string</code></td><td><code>"limit"</code></td></tr>
+                            <tr><td><code>DefaultPageSize</code></td><td><code>int</code></td><td>100</td></tr>
+                            <tr><td><code>MaxPageSize</code></td><td><code>int</code></td><td>1000</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Methods</h4>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ValidateConfiguration()</code></td><td><code>bool</code></td><td>Validates required properties for the current AuthType</td></tr>
+                            <tr><td><code>GetValidationErrors()</code></td><td><code>string</code></td><td>Returns detailed error messages for missing configuration</td></tr>
+                            <tr><td><code>GetParameterValue(string)</code></td><td><code>string?</code></td><td>Gets a parameter from the Parameters string by name</td></tr>
+                            <tr><td><code>SetParameterValue(string, string)</code></td><td><code>void</code></td><td>Sets a parameter in the Parameters string</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>AuthTypeEnum</h4>
+                    <table>
+                        <thead><tr><th>Value</th><th>Requires</th><th>Token Refresh</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>None</code></td><td>—</td><td>No</td></tr>
+                            <tr><td><code>ApiKey</code></td><td><code>ApiKey</code></td><td>No</td></tr>
+                            <tr><td><code>Basic</code></td><td><code>UserID</code> + <code>Password</code></td><td>No</td></tr>
+                            <tr><td><code>Bearer</code></td><td><code>KeyToken</code> or <code>ApiKey</code></td><td>Yes</td></tr>
+                            <tr><td><code>OAuth2</code></td><td><code>ClientId</code> + <code>ClientSecret</code> + <code>TokenUrl</code></td><td>Yes</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Class: WebAPIDataConnection</h3>
+                    <p><code>public class WebAPIDataConnection : IDataConnection</code> — 643 lines, full connection management.</p>
+
+                    <h4>Properties</h4>
+                    <table>
+                        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ConnectionProp</code></td><td><code>IConnectionProperties</code></td><td>Connection properties (cast to <code>WebAPIConnectionProperties</code> via <code>WebAPIProperties</code>)</td></tr>
+                            <tr><td><code>ConnectionStatus</code></td><td><code>ConnectionState</code></td><td>Current state (default: Closed)</td></tr>
+                            <tr><td><code>Logger</code></td><td><code>IDMLogger</code></td><td>Logger instance</td></tr>
+                            <tr><td><code>ErrorObject</code></td><td><code>IErrorsInfo</code></td><td>Error information</td></tr>
+                            <tr><td><code>DMEEditor</code></td><td><code>IDMEEditor</code></td><td>DME editor reference</td></tr>
+                            <tr><td><code>Id</code></td><td><code>string</code></td><td>Unique identifier (Guid)</td></tr>
+                            <tr><td><code>ConnectionString</code></td><td><code>string</code></td><td>Builds from properties / parses into properties</td></tr>
+                            <tr><td><code>DatabaseType</code></td><td><code>DataSourceType</code></td><td><code>WebApi</code></td></tr>
+                            <tr><td><code>WebAPIProperties</code></td><td><code>WebAPIConnectionProperties?</code></td><td>Cast accessor for ConnectionProp</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Methods</h4>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>OpenConnection()</code></td><td><code>ConnectionState</code></td><td>Opens connection with current properties (validates + tests URL)</td></tr>
+                            <tr><td><code>OpenConnection(IConnectionProperties)</code></td><td><code>ConnectionState</code></td><td>Opens connection with specific properties (normalizes to WebAPIConnectionProperties)</td></tr>
+                            <tr><td><code>OpenConnection(DataSourceType, string)</code></td><td><code>ConnectionState</code></td><td>Opens connection from connection string</td></tr>
+                            <tr><td><code>OpenConnection(DataSourceType, string, int, string, string, string, string)</code></td><td><code>ConnectionState</code></td><td>Opens connection with individual parameters</td></tr>
+                            <tr><td><code>CloseConn()</code></td><td><code>ConnectionState</code></td><td>Closes connection, sets state to Closed</td></tr>
+                            <tr><td><code>ReplaceValueFromConnectionString()</code></td><td><code>string</code></td><td>Legacy method, replaces {Host}/{UserID} etc. placeholders</td></tr>
+                        </tbody>
+                    </table>
+
+                    <p><strong>Static method:</strong></p>
                     <ul>
-                        <li><code>GetEntity(string entityName, List&lt;AppFilter&gt; filters, int pageNumber, int pageSize)</code> - Paged entity retrieval</li>
-                        <li><code>PagedResult GetEntity(...)</code> - Returns paginated results with metadata</li>
+                        <li><code>static NormalizeConnectionProperties(IConnectionProperties)</code> — Converts any <code>IConnectionProperties</code> to <code>WebAPIConnectionProperties</code>, preserving all mapped fields</li>
                     </ul>
+
+                    <h3>Helper Classes — Full API Reference</h3>
+                    <p>All helpers reside in <code>TheTechIdea.Beep.WebAPI.Helpers</code> namespace under <code>WebAPI/Helpers/</code>.</p>
+
+                    <h4>WebAPIConfigurationHelper</h4>
+                    <p><code>public class WebAPIConfigurationHelper : IDisposable</code> (813 lines)</p>
+                    <p><strong>Properties:</strong> <code>BaseUrl</code>, <code>ApiVersion</code>, <code>AuthenticationType</code>, <code>TimeoutMs</code>, <code>MaxRetries</code>, <code>RetryDelayMs</code>, <code>CacheEnabled</code>, <code>CacheDurationMinutes</code>, <code>RateLimitEnabled</code>, <code>RequestsPerSecond</code>, <code>PagingEnabled</code>, <code>PageSize</code>, <code>MaxConcurrentRequests</code> — all read-only, driven from <code>WebAPIConnectionProperties</code></p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>GetConfigValue&lt;T&gt;(string key, T defaultValue)</code> — Generic config value retrieval with caching</li>
+                        <li><code>SetConfigValue(string key, object value)</code> — Sets config and updates connection properties</li>
+                        <li><code>GetHeaders()</code> — Returns HTTP headers dict from config</li>
+                        <li><code>GetEndpointConfiguration(string entityName)</code> — Returns <code>EndpointConfiguration</code> (Get/Post/Put/Delete/List endpoints, method, auth, cache, rate limit)</li>
+                        <li><code>GetAuthenticationConfiguration()</code> — Returns the <code>WebAPIConnectionProperties</code> with auth settings</li>
+                        <li><code>GetPaginationConfiguration()</code> — Returns <code>PaginationConfiguration</code> (page/size/offset/limit param names, style)</li>
+                        <li><code>ValidateConfiguration()</code> — Returns <code>ConfigurationValidationResult</code> (BaseUrl, auth, timeout, retry, rate limit, pagination checks)</li>
+                    </ul>
+                    <p><strong>Nested types:</strong> <code>EndpointConfiguration</code>, <code>ConfigurationValidationResult</code>, <code>PaginationConfiguration</code></p>
+
+                    <h4>WebAPIAuthenticationHelper</h4>
+                    <p><code>public class WebAPIAuthenticationHelper : IDisposable</code> (239 lines)</p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>EnsureAuthenticatedAsync()</code> — Validates auth state, triggers OAuth2 token refresh if needed</li>
+                        <li><code>AddAuthenticationHeaders(HttpRequestMessage)</code> — Injects auth headers: Bearer token, API Key (custom header name), Basic (base64 credentials)</li>
+                    </ul>
+                    <p><strong>Auth flow:</strong> Parses <code>AuthType</code> from Parameters string. Supports three OAuth2 grant types: <code>client_credentials</code>, <code>password</code>, <code>authorization_code</code>. Token caching with thread-safe refresh (<code>_tokenLock</code> + <code>_tokenExpiry</code>). Static bearer token fallback chain: <code>KeyToken</code> → <code>BearerToken</code> → <code>ApiKey</code> → Parameters.</p>
+
+                    <h4>WebAPIRequestHelper</h4>
+                    <p><code>public class WebAPIRequestHelper : IDisposable</code> (103 lines)</p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>SendWithRetryAsync(HttpRequestMessage, string? operationName)</code> — Executes HTTP request with semaphore-based concurrency control, delegates retry/backoff to <code>WebAPIErrorHelper</code></li>
+                        <li><code>SendWithRetryAsync&lt;T&gt;(HttpRequestMessage, Func&lt;HttpResponseMessage, Task&lt;T&gt;&gt;, string? operationName)</code> — Typed version with custom response handler</li>
+                    </ul>
+                    <p><strong>Behavior:</strong> Uses <code>SemaphoreSlim(maxConcurrentRequests)</code> for concurrency. Clones requests for retry safety via <code>CloneHttpRequestMessageAsync</code> (copies headers, content, version).</p>
+
+                    <h4>WebAPIDataHelper</h4>
+                    <p><code>public class WebAPIDataHelper</code> (477 lines, no IDisposable)</p>
+                    <p><strong>URL building:</strong></p>
+                    <ul>
+                        <li><code>BuildEndpointUrl(baseUrl, endpoint, filters?, pageNumber?, pageSize?)</code> — Full URL with query params</li>
+                        <li><code>BuildEntityEndpoint(EntityStructure, filters?, pageNumber?, pageSize?)</code> — Entity endpoint from structure</li>
+                        <li><code>BuildEntityEndpoint(entityName, id)</code> — Endpoint with ID path segment</li>
+                    </ul>
+                    <p><strong>Response parsing:</strong></p>
+                    <ul>
+                        <li><code>ProcessApiResponse(jsonResponse, entityStructure)</code> — JSON to <code>IEnumerable&lt;object&gt;</code> (handles array, object, and nested data fields)</li>
+                        <li><code>GetTotalRecordsFromResponse(jsonResponse, headers?)</code> — Extracts total count from X-Total-Count header or JSON fields (total, totalCount, count, etc.)</li>
+                        <li><code>ParseEntitiesFromDiscoveryResponse(jsonResponse)</code> — Parses entity discovery JSON</li>
+                    </ul>
+                    <p><strong>Data utilities:</strong></p>
+                    <ul>
+                        <li><code>CreateRequest(method, endpoint, data?)</code> — Creates <code>HttpRequestMessage</code> with camelCase JSON body</li>
+                        <li><code>AddCustomHeaders(request, headers)</code> — Adds custom headers (with content-header fallback)</li>
+                        <li><code>ExtractIdValue(object data)</code> — Extracts ID from common field names (id, Id, ID, _id, uuid, key)</li>
+                        <li><code>InferEntityStructureFromSample(entityName, JsonElement)</code> — Infers schema from sample data</li>
+                        <li><code>GenerateCacheKey(baseKey, filters?, pageNumber, pageSize)</code> — Cache key generation</li>
+                    </ul>
+
+                    <h4>WebAPICacheHelper</h4>
+                    <p><code>public class WebAPICacheHelper : IDisposable</code> (203 lines)</p>
+                    <p><strong>Storage:</strong> <code>ConcurrentDictionary&lt;string, CacheEntry&gt;</code> with background cleanup timer (every 5 min).</p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>GenerateCacheKey(operation, params[])</code> — Key format: <code>{datasource}:{operation}:{params}</code></li>
+                        <li><code>Get&lt;T&gt;(cacheKey)</code> — Retrieves cached value (null if expired/missing)</li>
+                        <li><code>Set&lt;T&gt;(cacheKey, value, ttl?)</code> — Stores with optional TTL (default from constructor)</li>
+                        <li><code>Remove(cacheKey)</code> — Removes specific entry</li>
+                        <li><code>RemoveByPattern(pattern)</code> — Removes entries matching substring</li>
+                        <li><code>Clear()</code> — Clears all entries</li>
+                        <li><code>GetStatistics()</code> — Returns <code>CacheStatistics</code> (total/valid/expired entries, efficiency %)</li>
+                        <li><code>GetOrSetAsync&lt;T&gt;(cacheKey, factory, ttl?)</code> — Get-or-set pattern with async factory</li>
+                    </ul>
+                    <p><strong>Nested type:</strong> <code>CacheStatistics</code></p>
+
+                    <h4>WebAPIRateLimitHelper</h4>
+                    <p><code>public class WebAPIRateLimitHelper : IDisposable</code> (293 lines)</p>
+                    <p><strong>Algorithm:</strong> Token bucket (per-endpoint buckets in <code>ConcurrentDictionary</code>). Background cleanup of stale buckets.</p>
+                    <p><strong>Properties:</strong> <code>DefaultRequestsPerSecond</code> (10), <code>DefaultBurstCapacity</code> (20), <code>CleanupIntervalMinutes</code> (5)</p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>WaitForPermissionAsync(endpoint, requestsPerSecond?, burstCapacity?, CancellationToken)</code> — Waits until a token is available (delays if rate limited)</li>
+                        <li><code>CanMakeRequest(endpoint, requestsPerSecond?, burstCapacity?)</code> — Non-blocking check</li>
+                        <li><code>GetStatus(endpoint)</code> — Returns <code>RateLimitStatus</code> (tokens available, refill rate, next refill time)</li>
+                    </ul>
+                    <p><strong>Nested type:</strong> <code>RateLimitStatus</code> (Endpont, TokensAvailable, RefillRate, NextRefillTime)</p>
+
+                    <h4>WebAPISchemaHelper</h4>
+                    <p><code>public class WebAPISchemaHelper : IDisposable</code> (621 lines)</p>
+                    <p><strong>Properties:</strong> <code>SchemaCacheExpirationMinutes</code> (60), <code>MaxNestingDepth</code> (5), <code>MinSampleSize</code> (3)</p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>InferEntityStructureAsync(entityName)</code> — Auto-discovers schema by fetching sample data from entity endpoint</li>
+                        <li><code>InferSchemaFromJsonAsync(entityName, jsonData, forceRefresh?)</code> — Infers schema from JSON samples (up to 50)</li>
+                        <li><code>ValidateSchemaAsync(EntityStructure, jsonData)</code> — Validates schema against actual data (field existence, type consistency)</li>
+                        <li><code>UpdateSchemaAsync(EntityStructure, jsonData)</code> — Re-infers schema preserving existing field metadata (IsKey, IsUnique, etc.)</li>
+                        <li><code>TryGetCachedSchema(entityName, out EntityStructure)</code> — Cache lookup with expiration check</li>
+                        <li><code>ClearCache()</code> — Clears cached schemas</li>
+                    </ul>
+                    <p><strong>Nested type:</strong> <code>SchemaValidationResult</code> (EntityName, IsValid, Issues, SuggestedChanges)</p>
+
+                    <h4>WebAPIErrorHelper</h4>
+                    <p><code>public class WebAPIErrorHelper : IDisposable</code> (634 lines)</p>
+                    <p><strong>Properties:</strong> <code>DefaultMaxRetries</code> (3), <code>DefaultBaseDelayMs</code> (1000), <code>DefaultFailureThreshold</code> (5), <code>DefaultRecoveryTimeoutSeconds</code> (60)</p>
+                    <p><strong>Methods:</strong></p>
+                    <ul>
+                        <li><code>ExecuteWithRetryAsync&lt;T&gt;(operation, operationName, maxRetries?, baseDelayMs?, CancellationToken)</code> — Executes with exponential backoff + jitter, circuit breaker protection</li>
+                        <li><code>HandleErrorResponseAsync(HttpResponseMessage)</code> — Logs categorized error from HTTP response</li>
+                        <li><code>CategorizeErrorAsync(HttpResponseMessage)</code> — Returns <code>WebApiError</code> (status code, category, message, content, timestamp)</li>
+                        <li><code>AnalyzeError(Exception)</code> — Returns <code>ErrorAnalysisResult</code> with category, retryability, suggested action</li>
+                        <li><code>GetCircuitBreakerStatus(operationName)</code> — Returns current circuit breaker state</li>
+                        <li><code>ResetCircuitBreaker(operationName)</code> — Manually resets circuit breaker</li>
+                    </ul>
+                    <p><strong>Error categories:</strong> <code>WebApiErrorCategory</code> (ClientError, AuthenticationError, AuthorizationError, ServerError, NetworkError, Unknown), <code>ErrorCategory</code> (Network, Authentication, Configuration, Timeout, Logic, Unknown)</p>
+                    <p><strong>Circuit breaker states:</strong> <code>Closed</code> → <code>Open</code> (after <code>FailureThreshold</code> failures) → <code>HalfOpen</code> (after <code>RecoveryTimeout</code>) → <code>Closed</code> (on success). Per-operation instances.</p>
+
+                    <h4>WebAPIInterfaces</h4>
+                    <p>File: <code>WebAPIInterfaces.cs</code> (35 lines)</p>
+                    <p><strong>IWebAPISchemaHelper</strong> (extends IDisposable):</p>
+                    <ul>
+                        <li><code>DiscoverEntitiesAsync(HttpClient, ConnectionProperties)</code> — <code>Task&lt;List&lt;EntityStructure&gt;&gt;</code></li>
+                        <li><code>InferEntityStructureAsync(entityName, HttpClient, ConnectionProperties)</code> — <code>Task&lt;EntityStructure&gt;</code></li>
+                        <li><code>GetEntityType(entityName)</code> — <code>Type</code></li>
+                        <li><code>ValidateEntityStructure(EntityStructure)</code> — <code>bool</code></li>
+                        <li><code>EntityExistsAsync(entityName)</code> — <code>Task&lt;bool&gt;</code></li>
+                    </ul>
+                    <p><strong>IWebAPIDataHelper</strong> (extends IDisposable):</p>
+                    <ul>
+                        <li><code>CreateDynamicType(entityName)</code> — <code>Type</code></li>
+                        <li><code>ParseJsonToSingleObject(string)</code> — <code>object</code></li>
+                        <li><code>ParseJsonToObjects(string)</code> — <code>List&lt;object&gt;</code></li>
+                        <li><code>TransformToJsonString(object)</code> — <code>string</code></li>
+                        <li><code>ValidateData(object, string)</code> — <code>DataValidationResult</code></li>
+                    </ul>
+                    <p><strong>DataValidationResult:</strong> <code>IsValid</code> (bool), <code>Errors</code> (List&lt;string&gt;)</p>
                 </section>
 
                 <!-- Migration Guide -->

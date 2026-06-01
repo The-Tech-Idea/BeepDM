@@ -454,30 +454,103 @@ host.TrySwitchReader(descriptor.ReaderId, reconfigure: true, out var reason);
                 <section id="filemanager-enterprise" class="section">
                     <h2>Enterprise Contracts</h2>
 
-                    <h3>Governance</h3>
-                    <ul>
-                        <li>Every config from <code>BuildDriverConfig</code> carries a deterministic
-                            <code>GuidID</code> (MD5 of type full name) — safe to persist in
-                            <code>ConnectionConfig.json</code> across restarts without duplication.</li>
-                        <li><code>DatasourceCategory.FILE</code> is always set.</li>
-                        <li><code>NeedDrivers = false</code> — no external ADO driver install required.</li>
-                    </ul>
+                    <h3>Data Classification &amp; Masking (<code>Classification/</code>)</h3>
+                    <pre><code class="language-csharp">public interface IDataClassificationEngine
+{
+    Task&lt;IReadOnlyList&lt;ClassificationHit&gt;&gt; ClassifyColumnAsync(
+        string columnName, IEnumerable&lt;string&gt; sampleValues,
+        int sampleSize = 500, CancellationToken ct = default);
+}
 
-                    <h3>Observability</h3>
-                    <ul>
-                        <li><code>IFileFormatReader.LastDiagnostics</code> — per-reader list of
-                            <code>RowDiagnostic</code> (index, severity, message, raw line).</li>
-                        <li><code>ParseMode.Lenient</code> — skips bad rows and records them;
-                            <code>Strict</code> — throws immediately.</li>
-                        <li>Call <code>ClearDiagnostics()</code> before each read pass.</li>
-                    </ul>
+public sealed record ClassificationHit(
+    string PatternKey, string Category,
+    double Confidence, int MatchedSamples, int TotalSamples);
 
-                    <h3>Resilience</h3>
-                    <ul>
-                        <li><code>GetReader</code> falls back to CSV for unknown types.</li>
-                        <li><code>RegisterWithConfig</code> and <code>RegisterDefaults</code> are idempotent.</li>
-                        <li>Reader switching is blocked during active ingestion.</li>
-                    </ul>
+public enum MaskingStrategy
+    { Redact, PartialMask, Tokenize, FormatPreservingEncrypt, Synthesize, Generalize, None }
+
+public sealed class ColumnMaskingPolicy
+{
+    public string PatternKey { get; init; }
+    public MaskingStrategy Strategy { get; init; }
+    public int PartialMaskRevealChars { get; init; } = 4;
+    public string TokenizationKeyId { get; init; }
+    public double GeneralizeRoundTo { get; init; }
+}
+
+public interface IDataMaskingEngine
+    { string Mask(string value, string patternKey, ColumnMaskingPolicy policy); }
+
+public interface IMaskingPolicyStore
+    { ColumnMaskingPolicy GetPolicy(string key); void SetPolicy(string key, ColumnMaskingPolicy policy); }</code></pre>
+                    <p>Call <code>ClassifyColumnAsync</code> to detect PII patterns (SSN, credit cards, emails) in file columns, then apply <code>ColumnMaskingPolicy</code> to redact/mask/tokenize before export.</p>
+
+                    <h3>Governance (<code>Governance/</code>)</h3>
+                    <pre><code class="language-csharp">public interface IFileAccessPolicies
+{
+    bool CanRead(string fileName, string user, string role);
+    bool CanWrite(string fileName, string user, string role);
+}
+
+public interface IFileAuditLogger
+{
+    Task LogReadAsync(string fileName, string user, int records);
+    Task LogWriteAsync(string fileName, string user, int records);
+}</code></pre>
+                    <p>Configure access policies per file and log all read/write operations for compliance.</p>
+
+                    <h3>Observability (<code>Observability/</code>)</h3>
+                    <pre><code class="language-csharp">public interface IFileReadTelemetry
+{
+    Task RecordReadAsync(string fileName, string readerId,
+        long bytes, long records, TimeSpan elapsed);
+    Task RecordErrorAsync(string fileName, string readerId,
+        string error, Exception ex);
+}
+
+public class FileReadMetrics
+{
+    public long TotalBytesRead { get; set; }
+    public long TotalRecordsRead { get; set; }
+    public int TotalErrors { get; set; }
+    public TimeSpan AccumulatedReadTime { get; set; }
+}</code></pre>
+                    <p>Plus built-in per-row diagnostics via <code>IFileFormatReader.LastDiagnostics</code> and <code>ParseMode</code> (Lenient vs Strict).</p>
+
+                    <h3>Resilience (<code>Resilience/</code>)</h3>
+                    <pre><code class="language-csharp">public interface IFileReadRetryPolicy
+{
+    Task&lt;T&gt; ExecuteAsync&lt;T&gt;(Func&lt;Task&lt;T&gt;&gt; operation,
+        string operationName, CancellationToken ct);
+}
+// Built-in: exponential backoff, 3 retries, jitter</code></pre>
+
+                    <h3>Schema Inference (<code>Schema/</code> &amp; <code>Contracts/</code>)</h3>
+                    <pre><code class="language-csharp">public interface ISchemaInferenceStrategy
+{
+    EntityStructure InferSchema(Stream stream, string fileName);
+}
+
+public interface IIngestionStateStore
+{
+    Task SaveStateAsync(string fileKey, object state);
+    Task&lt;T&gt; LoadStateAsync&lt;T&gt;(string fileKey);
+}
+
+public class InMemoryIngestionStateStore : IIngestionStateStore { }
+
+public static class TypeInferenceHelper
+{
+    public static Type InferColumnType(IEnumerable&lt;string&gt; sampleValues,
+        string columnName);
+}
+
+public static class FileChecksumHelper
+{
+    public static string ComputeHash(string filePath,
+        HashAlgorithm algorithm = HashAlgorithm.SHA256);
+    public static bool VerifyHash(string filePath, string expectedHash);
+}</code></pre>
 
                     <div class="code-example">
                         <h3>Full end-to-end with a plugin Parquet reader</h3>

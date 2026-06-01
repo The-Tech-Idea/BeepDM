@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETL Engine Observability Internals - Beep Data Management Engine Documentation</title>
+    <title>ETL Engine Observability - Beep Data Management Engine Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -15,12 +25,11 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>ETL Engine Observability Internals</span>
+                    <span>ETL Engine Observability</span>
                 </nav>
-
                 <div class="page-header">
-                    <h1>ETL Engine Observability Internals</h1>
-                    <p class="page-subtitle">Signature-verified observability stack for run logs, lineage, metrics, alerts, audit, and dashboard querying.</p>
+                    <h1>ETL Engine Observability</h1>
+                    <p class="page-subtitle">Run logs, lineage, metrics, alerts, audit, and dashboard querying</p>
                 </div>
 
                 <div class="note">
@@ -30,68 +39,395 @@
                         <li><code>DataManagementEngineStandard/Editor/ETL/Observability/MetricsEngine.cs</code></li>
                         <li><code>DataManagementEngineStandard/Editor/ETL/Observability/AlertingEngine.cs</code></li>
                         <li><code>DataManagementEngineStandard/Editor/ETL/Observability/PipelineDashboardApi.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Editor/ETL/Observability/FieldRedactor.cs</code> and <code>CostModel.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/ETL/Observability/FieldRedactor.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Editor/ETL/Observability/CostModel.cs</code></li>
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified Snapshot</h2>
+                <!-- TOC -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#observability-store">ObservabilityStore</a></li>
+                        <li><a href="#metrics-engine">MetricsEngine</a></li>
+                        <li><a href="#alerting-engine">AlertingEngine</a></li>
+                        <li><a href="#dashboard-api">PipelineDashboardApi</a></li>
+                        <li><a href="#data-types">Core Data Types</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p>The observability stack provides comprehensive monitoring for pipeline execution:</p>
+                    <ul>
+                        <li><strong>Run logs</strong> - Complete execution history with timing and status</li>
+                        <li><strong>Data lineage</strong> - Column-level tracking of data flow</li>
+                        <li><strong>Metrics</strong> - Aggregated KPIs with cost modeling</li>
+                        <li><strong>Alerts</strong> - Rule-based alerting with silence windows</li>
+                        <li><strong>Audit</strong> - Tamper-evident audit trail</li>
+                        <li><strong>Dashboard API</strong> - Query interface for dashboards</li>
+                        <li><strong>Field redaction</strong> - Automatic PII masking in logs</li>
+                    </ul>
+                </section>
+
+                <section id="observability-store" class="section">
+                    <h2>ObservabilityStore</h2>
+                    <p>Central storage for all observability data:</p>
                     <pre><code class="language-csharp">public class ObservabilityStore : ILineageStore
 {
     public ObservabilityStore();
 
+    // Run logs
     public Task SaveRunLogAsync(PipelineRunLog log);
     public Task&lt;PipelineRunLog?&gt; GetRunLogAsync(string runId);
     public Task&lt;IReadOnlyList&lt;PipelineRunLog&gt;&gt; QueryRunLogsAsync(RunLogQuery query);
 
+    // Lineage
     public Task AppendLineageAsync(IEnumerable&lt;DataLineageRecord&gt; records);
     public Task&lt;IReadOnlyList&lt;DataLineageRecord&gt;&gt; GetLineageAsync(string runId);
 
+    // Alerts
     public Task AppendAlertEventAsync(AlertEvent evt);
     public Task&lt;IReadOnlyList&lt;AlertEvent&gt;&gt; GetAlertEventsAsync(AlertEventQuery query);
     public Task UpdateAlertAcknowledgementAsync(string eventId, string by, DateTime at);
 
+    // Audit
     public Task AppendAuditAsync(AuditEntry entry);
     public Task&lt;int&gt; VerifyAuditIntegrityAsync();
-}
+}</code></pre>
 
-public class MetricsEngine
+                    <h3>Storage Locations</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Data Type</th><th>Path</th></tr></thead>
+                        <tbody>
+                            <tr><td>Run logs</td><td><code>{BeepDataPath}/Pipelines/History/{pipelineId}/{runId}.run.json</code></td></tr>
+                            <tr><td>Lineage</td><td><code>{BeepDataPath}/Pipelines/Lineage/{runId}.lineage.json</code></td></tr>
+                            <tr><td>Alerts</td><td><code>{BeepDataPath}/Pipelines/Alerts/{date}.alerts.json</code></td></tr>
+                            <tr><td>Audit</td><td><code>{BeepDataPath}/Pipelines/Audit/{date}.audit.json</code></td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="metrics-engine" class="section">
+                    <h2>MetricsEngine</h2>
+                    <p>Computes aggregated KPIs from run logs:</p>
+                    <pre><code class="language-csharp">public class MetricsEngine
 {
     public MetricsEngine(ObservabilityStore store);
     public MetricsEngine(ObservabilityStore store, CostModel costModel);
 
-    public Task&lt;PipelineMetrics&gt; ComputeAsync(string pipelineId, DateTime from, DateTime to);
-    public Task&lt;IReadOnlyList&lt;PipelineMetrics&gt;&gt; ComputeAllAsync(DateTime from, DateTime to);
-    public Task&lt;IReadOnlyList&lt;PipelineMetrics&gt;&gt; ComputeByClassAsync(DateTime from, DateTime to);
-    public Task&lt;IReadOnlyList&lt;MigrationKpiSnapshot&gt;&gt; ComputeByTierAsync(DateTime from, DateTime to);
+    // Historical metrics
+    public Task&lt;PipelineMetrics&gt; ComputeAsync(
+        string pipelineId, DateTime from, DateTime to);
 
+    public Task&lt;IReadOnlyList&lt;PipelineMetrics&gt;&gt; ComputeAllAsync(
+        DateTime from, DateTime to);
+
+    public Task&lt;IReadOnlyList&lt;PipelineMetrics&gt;&gt; ComputeByClassAsync(
+        DateTime from, DateTime to);
+
+    public Task&lt;IReadOnlyList&lt;MigrationKpiSnapshot&gt;&gt; ComputeByTierAsync(
+        DateTime from, DateTime to);
+
+    // Live metrics
     public void RecordStart(string runId, string pipelineId, string pipelineName);
     public void RecordStart(string runId, string pipelineId, string pipelineName, string workloadClass);
     public void RecordCompletion(string runId);
-}
+    public void RecordFailure(string runId, Exception ex);
+    public void RecordRecordsProcessed(string runId, long count);
+    public void RecordRecordsRejected(string runId, long count);
+}</code></pre>
 
-public class AlertingEngine
+                    <h3>PipelineMetrics</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>PipelineId</code></td><td>Pipeline identifier</td></tr>
+                            <tr><td><code>PipelineName</code></td><td>Human-readable name</td></tr>
+                            <tr><td><code>RunCount</code></td><td>Total runs in period</td></tr>
+                            <tr><td><code>SuccessCount</code></td><td>Successful runs</td></tr>
+                            <tr><td><code>FailureCount</code></td><td>Failed runs</td></tr>
+                            <tr><td><code>AverageDuration</code></td><td>Mean execution time</td></tr>
+                            <tr><td><code>MinDuration</code></td><td>Fastest run</td></tr>
+                            <tr><td><code>MaxDuration</code></td><td>Slowest run</td></tr>
+                            <tr><td><code>TotalRecordsProcessed</code></td><td>Sum of all records</td></tr>
+                            <tr><td><code>TotalRecordsRejected</code></td><td>Sum of rejected records</td></tr>
+                            <tr><td><code>SuccessRate</code></td><td>Percentage (0-100)</td></tr>
+                            <tr><td><code>AverageThroughput</code></td><td>Records per second</td></tr>
+                            <tr><td><code>EstimatedCost</code></td><td>Abstract cost units</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="alerting-engine" class="section">
+                    <h2>AlertingEngine</h2>
+                    <p>Rule-based alerting with silence windows:</p>
+                    <pre><code class="language-csharp">public class AlertingEngine
 {
     public event EventHandler&lt;AlertEvent&gt;? AlertFired;
 
-    public AlertingEngine(ObservabilityStore store, Func&lt;string, IPipelineNotifier?&gt; notifierFactory);
+    public AlertingEngine(
+        ObservabilityStore store,
+        Func&lt;string, IPipelineNotifier?&gt; notifierFactory);
+
+    // Rule management
     public void AddRule(AlertRule rule);
     public void RemoveRule(string ruleId);
     public IReadOnlyList&lt;AlertRule&gt; GetRules();
+
+    // Evaluation
     public Task EvaluateAsync(PipelineRunLog runLog, CancellationToken token);
     public Task EvaluateLivenessAsync(CancellationToken token);
     public Task AcknowledgeAsync(string eventId, string acknowledgedBy);
-}
+}</code></pre>
 
-public class PipelineDashboardApi
+                    <h3>AlertRule</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>Id</code></td><td>Unique identifier</td></tr>
+                            <tr><td><code>Name</code></td><td>Human-readable name</td></tr>
+                            <tr><td><code>IsEnabled</code></td><td>Active flag</td></tr>
+                            <tr><td><code>Trigger</code></td><td>OnFailure, OnSuccess, OnNoRunWithin, OnCondition</td></tr>
+                            <tr><td><code>Condition</code></td><td>Expression (e.g., "Duration > 300")</td></tr>
+                            <tr><td><code>Severity</code></td><td>Info, Warning, Error, Critical</td></tr>
+                            <tr><td><code>PipelineIds</code></td><td>Target pipelines (null = all)</td></tr>
+                            <tr><td><code>SilenceMinutes</code></td><td>Minutes between repeats</td></tr>
+                            <tr><td><code>NotifierIds</code></td><td>Notification channels</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>AlertEvent</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>EventId</code></td><td>Unique event ID</td></tr>
+                            <tr><td><code>RuleId</code></td><td>Triggering rule</td></tr>
+                            <tr><td><code>RuleName</code></td><td>Rule name</td></tr>
+                            <tr><td><code>PipelineId</code></td><td>Affected pipeline</td></tr>
+                            <tr><td><code>RunId</code></td><td>Associated run</td></tr>
+                            <tr><td><code>Severity</code></td><td>Alert severity</td></tr>
+                            <tr><td><code>Message</code></td><td>Human-readable message</td></tr>
+                            <tr><td><code>FiredAtUtc</code></td><td>Timestamp</td></tr>
+                            <tr><td><code>AcknowledgedBy</code></td><td>User who acknowledged</td></tr>
+                            <tr><td><code>AcknowledgedAt</code></td><td>Acknowledgment time</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="dashboard-api" class="section">
+                    <h2>PipelineDashboardApi</h2>
+                    <p>Query interface for building dashboards:</p>
+                    <pre><code class="language-csharp">public class PipelineDashboardApi
 {
-    public PipelineDashboardApi(ObservabilityStore store, MetricsEngine metrics, AlertingEngine alerting);
+    public PipelineDashboardApi(
+        ObservabilityStore store,
+        MetricsEngine metrics,
+        AlertingEngine alerting);
+
+    // Summary
     public Task&lt;DashboardSummary&gt; GetSummaryAsync(DateTime from, DateTime to);
-    public Task&lt;PipelineMetrics&gt; GetPipelineMetricsAsync(string pipelineId, DateTime from, DateTime to);
+
+    // Pipeline metrics
+    public Task&lt;PipelineMetrics&gt; GetPipelineMetricsAsync(
+        string pipelineId, DateTime from, DateTime to);
+
+    // Active runs
     public IReadOnlyList&lt;LiveRunStatus&gt; GetActiveRuns();
+
+    // Alerts
     public Task&lt;IReadOnlyList&lt;AlertEvent&gt;&gt; GetRecentAlertsAsync(int limit = 100);
+    public Task&lt;IReadOnlyList&lt;AlertEvent&gt;&gt; GetUnacknowledgedAlertsAsync();
+
+    // Run history
+    public Task&lt;IReadOnlyList&lt;PipelineRunLog&gt;&gt; GetRunHistoryAsync(
+        string pipelineId, int limit = 50);
+
+    // Lineage
+    public Task&lt;LineageReport&gt; GetLineageAsync(string runId);
+}</code></pre>
+
+                    <h3>DashboardSummary</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>TotalPipelines</code></td><td>Number of pipelines</td></tr>
+                            <tr><td><code>ActiveRuns</code></td><td>Currently executing</td></tr>
+                            <tr><td><code>RunsToday</code></td><td>Runs in last 24h</td></tr>
+                            <tr><td><code>SuccessRate</code></td><td>Overall success percentage</td></tr>
+                            <tr><td><code>AverageDuration</code></td><td>Mean execution time</td></tr>
+                            <tr><td><code>TotalRecordsProcessed</code></td><td>Records in period</td></tr>
+                            <tr><td><code>ActiveAlerts</code></td><td>Unacknowledged alerts</td></tr>
+                            <tr><td><code>CriticalAlerts</code></td><td>Critical severity count</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="data-types" class="section">
+                    <h2>Core Data Types</h2>
+
+                    <h3>PipelineRunLog</h3>
+                    <pre><code class="language-csharp">public class PipelineRunLog
+{
+    public string RunId { get; set; }
+    public string PipelineId { get; set; }
+    public string PipelineName { get; set; }
+    public string WorkloadClass { get; set; }
+    public RunStatus Status { get; set; }
+    public DateTime StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public TimeSpan? Duration { get; set; }
+    public long RecordsProcessed { get; set; }
+    public long RecordsRejected { get; set; }
+    public long RecordsFailed { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string? ErrorDetail { get; set; }
+    public Dictionary&lt;string, object&gt; Parameters { get; set; }
+    public List&lt;PipelineStepLog&gt; StepLogs { get; set; }
+}</code></pre>
+
+                    <h3>DataLineageRecord</h3>
+                    <pre><code class="language-csharp">public class DataLineageRecord
+{
+    public string RunId { get; set; }
+    public string RecordId { get; set; }
+    public string SourceEntity { get; set; }
+    public string SourceField { get; set; }
+    public string Transformation { get; set; }
+    public string DestinationEntity { get; set; }
+    public string DestinationField { get; set; }
+    public DateTime Timestamp { get; set; }
+}</code></pre>
+
+                    <h3>AuditEntry</h3>
+                    <pre><code class="language-csharp">public class AuditEntry
+{
+    public string EntryId { get; set; }
+    public string Action { get; set; }
+    public string Actor { get; set; }
+    public string Resource { get; set; }
+    public string Details { get; set; }
+    public DateTime Timestamp { get; set; }
+    public string Hash { get; set; } // Tamper-evident
 }</code></pre>
                 </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Setting Up Observability</h3>
+                    <pre><code class="language-csharp">var store = new ObservabilityStore();
+var metrics = new MetricsEngine(store);
+var alerting = new AlertingEngine(store, notifierId =>
+{
+    if (notifierId == "email") return new EmailNotifier();
+    if (notifierId == "slack") return new SlackNotifier();
+    return null;
+});
+
+var dashboard = new PipelineDashboardApi(store, metrics, alerting);
+
+// Attach to pipeline manager
+manager.ObservabilityStore = store;
+manager.Metrics = metrics;
+manager.Alerting = alerting;</code></pre>
+
+                    <h3>Adding Alert Rules</h3>
+                    <pre><code class="language-csharp">// Alert on failure
+alerting.AddRule(new AlertRule
+{
+    Name = "Pipeline Failure",
+    Trigger = AlertTrigger.OnFailure,
+    Severity = AlertSeverity.Error,
+    SilenceMinutes = 30,
+    NotifierIds = new[] { "email", "slack" }
+});
+
+// Alert on slow runs
+alerting.AddRule(new AlertRule
+{
+    Name = "Slow Pipeline",
+    Trigger = AlertTrigger.OnCondition,
+    Condition = "Duration > 300", // 5 minutes
+    Severity = AlertSeverity.Warning,
+    PipelineIds = new[] { "customer-sync" },
+    SilenceMinutes = 60
+});
+
+// Alert on missing runs
+alerting.AddRule(new AlertRule
+{
+    Name = "Missing Run",
+    Trigger = AlertTrigger.OnNoRunWithin,
+    Condition = "HoursWithoutRun > 2",
+    Severity = AlertSeverity.Critical,
+    PipelineIds = new[] { "critical-pipeline" },
+    NotifierIds = new[] { "pagerduty" }
+});</code></pre>
+
+                    <h3>Querying Metrics</h3>
+                    <pre><code class="language-csharp">// Pipeline metrics
+var metrics = await dashboard.GetPipelineMetricsAsync(
+    "customer-sync",
+    from: DateTime.UtcNow.AddDays(-7),
+    to: DateTime.UtcNow);
+
+Console.WriteLine($"Success rate: {metrics.SuccessRate:F1}%");
+Console.WriteLine($"Avg duration: {metrics.AverageDuration}");
+Console.WriteLine($"Records processed: {metrics.TotalRecordsProcessed:N0}");
+
+// Dashboard summary
+var summary = await dashboard.GetSummaryAsync(
+    DateTime.UtcNow.AddDays(-1),
+    DateTime.UtcNow);
+
+Console.WriteLine($"Active runs: {summary.ActiveRuns}");
+Console.WriteLine($"Active alerts: {summary.ActiveAlerts}");</code></pre>
+
+                    <h3>Monitoring Active Runs</h3>
+                    <pre><code class="language-csharp">var active = dashboard.GetActiveRuns();
+foreach (var run in active)
+{
+    Console.WriteLine($"{run.PipelineName}: {run.Progress}% " +
+        $"({run.RecordsProcessed:N0} records)");
+}</code></pre>
+
+                    <h3>Audit Trail</h3>
+                    <pre><code class="language-csharp">// Log audit event
+await store.AppendAuditAsync(new AuditEntry
+{
+    Action = "PipelineModified",
+    Actor = "admin",
+    Resource = "customer-sync",
+    Details = "Changed batch size from 100 to 500",
+    Timestamp = DateTime.UtcNow
+});
+
+// Verify integrity
+var tamperedCount = await store.VerifyAuditIntegrityAsync();
+if (tamperedCount > 0)
+    Console.WriteLine($"WARNING: {tamperedCount} tampered audit entries detected!");</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="etl-engine-scheduling.html"><i class="bi bi-arrow-left"></i> Previous: ETL Scheduling</a>
+                    <a href="advanced-tools-utilities.html">Next: Advanced Tools <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>

@@ -6,8 +6,18 @@
     <title>Examples - Editor Classes - Beep DME Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -22,24 +32,311 @@
 
                 <div class="page-header">
                     <h1>Examples - Editor Classes</h1>
-                    <p class="page-subtitle">Focused examples for DMEEditor, ETL, Importing, Mapping, Defaults, Sync, and Forms</p>
+                    <p class="page-subtitle">Practical examples for DMEEditor, ETL, Importing, Mapping, Defaults, Sync, and Forms</p>
                 </div>
 
-                <section class="section">
-                    <h2>Example Sections</h2>
+                <!-- TOC -->
+                <div class="toc">
+                    <h3>Table of Contents</h3>
                     <ul>
-                        <li><a href="dmeeditor.html">DMEEditor examples</a></li>
-                        <li><a href="etleditor.html">ETL examples</a></li>
-                        <li><a href="dataimportmanager.html">DataImportManager examples</a></li>
-                        <li><a href="mappingmanager.html">MappingManager examples</a></li>
-                        <li><a href="defaultsmanager.html">DefaultsManager examples</a></li>
-                        <li><a href="datasyncmanager.html">BeepSyncManager examples</a></li>
-                        <li><a href="formsmanager.html">FormsManager examples</a></li>
+                        <li><a href="#dmeeditor">DMEEditor</a></li>
+                        <li><a href="#etl">ETL Operations</a></li>
+                        <li><a href="#importing">Data Import</a></li>
+                        <li><a href="#mapping">Field Mapping</a></li>
+                        <li><a href="#defaults">Default Values</a></li>
+                        <li><a href="#sync">Data Sync</a></li>
+                        <li><a href="#forms">Forms Manager</a></li>
                     </ul>
+                </div>
+
+                <section id="dmeeditor" class="section">
+                    <h2>DMEEditor Examples</h2>
+                    
+                    <h3>Initialize and Open DataSource</h3>
+                    <pre><code class="language-csharp">var editor = new DMEEditor();
+
+// Add connection
+var props = new ConnectionProperties
+{
+    ConnectionName = "MyDB",
+    DatabaseType = DataSourceType.SqlLite,
+    ConnectionString = "Data Source=./app.db"
+};
+editor.ConfigEditor.AddDataConnection(props);
+
+// Open datasource
+var state = editor.OpenDataSource("MyDB");
+if (state != ConnectionState.Open)
+    throw new Exception("Failed to open datasource");
+
+// Get datasource
+var ds = editor.GetDataSource("MyDB");
+var entities = ds.GetEntitesList();</code></pre>
+
+                    <h3>Query Data</h3>
+                    <pre><code class="language-csharp">// Get all records
+var allData = ds.GetEntity("Customers", new List&lt;AppFilter&gt;());
+
+// Filtered query
+var filtered = ds.GetEntity("Customers", new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" },
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Active" }
+});
+
+// Execute SQL
+var result = ds.RunQuery("SELECT * FROM Orders WHERE Total > 1000");</code></pre>
                 </section>
+
+                <section id="etl" class="section">
+                    <h2>ETL Examples</h2>
+                    
+                    <h3>Simple Data Copy</h3>
+                    <pre><code class="language-csharp">var source = editor.GetDataSource("SourceDB");
+var target = editor.GetDataSource("TargetDB");
+
+source.Openconnection();
+target.Openconnection();
+
+var copier = new ETLDataCopier(editor);
+var result = await copier.CopyDataAsync(
+    source, "Customers",
+    target, "Customers",
+    progress: new Progress&lt;PassedArgs&gt;(p =>
+        Console.WriteLine($"Progress: {p.Messege}")));
+
+Console.WriteLine($"Copied {result.RecordsProcessed} records");</code></pre>
+
+                    <h3>Field Mapping</h3>
+                    <pre><code class="language-csharp">var mapping = new Dictionary&lt;string, string&gt;
+{
+    ["OldName"] = "NewName",
+    ["OldEmail"] = "Email",
+    ["PhoneNumber"] = "Phone"
+};
+
+var entityCopy = new ETLEntityCopyHelper(editor);
+var result = await entityCopy.CopyEntityAsync(
+    source, "LegacyCustomers",
+    target, "Customers",
+    fieldMapping: mapping);</code></pre>
+                </section>
+
+                <section id="importing" class="section">
+                    <h2>Data Import Examples</h2>
+                    
+                    <h3>Basic Import</h3>
+                    <pre><code class="language-csharp">using var importer = new DataImportManager(editor);
+
+importer.SourceDataSourceName = "ExternalCRM";
+importer.SourceEntityName = "Contacts";
+importer.DestDataSourceName = "MainDB";
+importer.DestEntityName = "Customers";
+
+// Configure
+importer.LoadDestEntityStructure();
+var result = await importer.RunImportAsync(
+    progress: new Progress&lt;PassedArgs&gt;(p =>
+        Console.WriteLine($"Importing: {p.Messege}")),
+    token: CancellationToken.None,
+    transformation: null,
+    batchSize: 1000);
+
+Console.WriteLine($"Imported {result.RecordsProcessed} records");</code></pre>
+
+                    <h3>Import with Transformation</h3>
+                    <pre><code class="language-csharp">var transform = new DataImportTransformationHelper();
+transform.AddFieldMapping("FirstName", "Name");
+transform.AddFieldMapping("LastName", "Surname");
+transform.AddComputedField("FullName", row => $"{row["FirstName"]} {row["LastName"]}");
+
+var result = await importer.RunImportAsync(
+    progress: progressReporter,
+    token: CancellationToken.None,
+    transformation: transform,
+    batchSize: 500);</code></pre>
+                </section>
+
+                <section id="mapping" class="section">
+                    <h2>Field Mapping Examples</h2>
+                    
+                    <h3>Create Entity Map</h3>
+                    <pre><code class="language-csharp">var (errInfo, mapping) = MappingManager.CreateEntityMap(
+    editor,
+    srcEntityName: "Contacts",
+    srcDataSourceName: "ExternalCRM",
+    destEntityName: "Customers",
+    destDataSourceName: "MainDB");
+
+if (errInfo.Flag == Errors.Ok)
+{
+    // Auto-match by convention
+    MappingManager.AutoMapByConvention(mapping, NameMatchMode.Exact);
+
+    // Manual adjustments
+    mapping.EntityFields[0].FieldMapping.Add(new Mapping_rep_fields
+    {
+        FromFieldName = "Phone",
+        ToFieldName = "PhoneNumber",
+        ToFieldType = "string"
+    });
+
+    // Save
+    MappingManager.SaveEntityMap(editor, mapping);
+}</code></pre>
+
+                    <h3>Apply Mapping</h3>
+                    <pre><code class="language-csharp">var mappedData = MappingManager.ApplyMap(
+    editor,
+    mapping,
+    sourceData,
+    destDataSource: "MainDB");</code></pre>
+                </section>
+
+                <section id="defaults" class="section">
+                    <h2>Default Values Examples</h2>
+                    
+                    <h3>Configure Defaults</h3>
+                    <pre><code class="language-csharp">DefaultsManager.Initialize(editor);
+
+// Set static default
+DefaultsManager.SetDefaultValue("MainDB", "Customers", "Status", "Active");
+
+// Set rule-based default
+DefaultsManager.SetDefaultRule("MainDB", "Customers", "CreatedDate",
+    "TODAY()");
+
+// Set conditional default
+DefaultsManager.SetDefaultRule("MainDB", "Customers", "Discount",
+    "IF(Country='USA', 0.10, 0.05)");
+
+// Save
+DefaultsManager.SaveDefaults("MainDB");</code></pre>
+
+                    <h3>Apply Defaults During Import</h3>
+                    <pre><code class="language-csharp">var config = new DataImportConfiguration
+{
+    ApplyDefaults = true,
+    DefaultValueResolver = DefaultsManager.ResolveDefaultValue
+};
+
+importer.SetImportConfiguration(config);</code></pre>
+                </section>
+
+                <section id="sync" class="section">
+                    <h2>Data Sync Examples</h2>
+                    
+                    <h3>Basic Sync</h3>
+                    <pre><code class="language-csharp">var syncManager = new BeepSyncManager(editor);
+
+var schema = new DataSyncSchema
+{
+    SourceDataSourceName = "SourceDB",
+    DestinationDataSourceName = "TargetDB",
+    SourceEntityName = "Customers",
+    DestinationEntityName = "Customers",
+    SourceSyncDataField = "CustomerId",
+    DestinationSyncDataField = "CustomerId",
+    SyncType = "Incremental",
+    SyncDirection = "SourceToDestination"
+};
+
+// Add field mappings
+schema.MappedFields.Add(new FieldSyncData
+{
+    SourceField = "Name",
+    DestinationField = "CustomerName"
+});
+
+syncManager.AddSyncSchema(schema);
+var result = await syncManager.SyncDataAsync(schema,
+    progress: new Progress&lt;PassedArgs&gt;(p =>
+        Console.WriteLine($"Syncing: {p.Messege}")));
+
+Console.WriteLine($"Synced {result.RecordsProcessed} records");</code></pre>
+
+                    <h3>Conflict Resolution</h3>
+                    <pre><code class="language-csharp">var config = new SyncConfig
+{
+    SourceConnection = "SourceDB",
+    TargetConnection = "TargetDB",
+    ConflictResolution = ConflictResolutionStrategy.Timestamp,
+    EnableCDC = true,
+    BatchSize = 1000
+};
+
+var result = await syncManager.ExecuteSync(config);</code></pre>
+                </section>
+
+                <section id="forms" class="section">
+                    <h2>Forms Manager Examples</h2>
+                    
+                    <h3>Setup Form with Master-Detail</h3>
+                    <pre><code class="language-csharp">var formsManager = new FormsManager(editor);
+
+// Register master block
+formsManager.RegisterBlock(
+    blockName: "Orders",
+    dataSourceName: "MyDB",
+    entityName: "Orders",
+    primaryKey: "OrderId");
+
+// Register detail block
+formsManager.RegisterBlock(
+    blockName: "OrderLines",
+    dataSourceName: "MyDB",
+    entityName: "OrderLines",
+    primaryKey: "LineId");
+
+// Create master-detail relation
+formsManager.CreateMasterDetailRelation(
+    masterBlock: "Orders",
+    detailBlock: "OrderLines",
+    masterField: "OrderId",
+    detailField: "OrderId");
+
+// Open form
+formsManager.OpenForm("OrderEntry");</code></pre>
+
+                    <h3>Navigate and Edit</h3>
+                    <pre><code class="language-csharp">// Navigate records
+formsManager.FirstRecord("Orders");
+formsManager.NextRecord("Orders");
+formsManager.PreviousRecord("Orders");
+formsManager.LastRecord("Orders");
+
+// Enter insert mode
+formsManager.EnterInsert("Orders");
+formsManager.SetFieldValue("Orders", "CustomerId", "CUST001");
+formsManager.SetFieldValue("Orders", "OrderDate", DateTime.Now);
+
+// Commit
+var result = formsManager.Commit("Orders");
+if (result.Flag != Errors.Ok)
+    Console.WriteLine($"Error: {result.Message}");</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="examples.html"><i class="bi bi-arrow-left"></i> Previous: Examples</a>
+                    <a href="examples-runtime-surfaces.html">Next: Runtime Surfaces <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>
     <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
 </html>

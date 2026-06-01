@@ -6,8 +6,18 @@
     <title>AssemblyHandler Loading, NuGet, and Extensions - Beep DME Documentation</title>
     <link rel="stylesheet" href="sphinx-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
     <div class="container">
         <aside class="sidebar" id="sidebar"></aside>
         <main class="content">
@@ -15,29 +25,41 @@
                 <nav class="breadcrumb-nav">
                     <a href="index.html">Home</a>
                     <span>&gt;</span>
-                    <span>AssemblyHandler Loading & NuGet</span>
+                    <span>AssemblyHandler</span>
                 </nav>
-
                 <div class="page-header">
-                    <h1>AssemblyHandler Loading, NuGet, and Extensions</h1>
-                    <p class="page-subtitle">Signature-verified guide for DLL loading, NuGet package flows, loader extensions, and default scanned data contracts.</p>
+                    <h1>AssemblyHandler Loading, NuGet &amp; Extensions</h1>
+                    <p class="page-subtitle">DLL loading, NuGet package management, driver tracking, load statistics, and custom loader extensions</p>
                 </div>
 
                 <div class="note">
                     <strong>Source of truth (2026)</strong>
                     <ul>
-                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Core.cs</code></li>
-                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Loaders.cs</code></li>
-                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Helpers.cs</code></li>
-                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.Scanning.cs</code></li>
-                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.NuGetOperations.cs</code> and <code>AssemblyHandler.NuGetSources.cs</code></li>
-                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblyHandler.DriverTracking.cs</code></li>
-                        <li><code>DataManagementModelsStandard/Tools/IAssemblyHandler.cs</code>, <code>ILoaderExtention.cs</code>, and <code>IDataSource.cs</code></li>
+                        <li><code>DataManagementEngineStandard/AssemblyHandler/AssemblySystem/AssemblyHandler.Core.cs</code></li>
+                        <li><code>.../AssemblyHandler.Loaders.cs</code> | <code>.Scanning.cs</code> | <code>.Helpers.cs</code></li>
+                        <li><code>.../AssemblyHandler.NuGetOperations.cs</code> | <code>.NuGetSources.cs</code></li>
+                        <li><code>.../AssemblyHandler.DriverTracking.cs</code> | <code>.Statistics.cs</code></li>
+                        <li><code>DataManagementEngineStandard/AssemblyHandler/PluginSystem/SharedContextAssemblyHandler.cs</code></li>
                     </ul>
                 </div>
 
-                <section class="section">
-                    <h2>Signature-Verified API Snapshot</h2>
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#api">API Snapshot</a></li>
+                        <li><a href="#loading">DLL Loading &amp; Scanning</a></li>
+                        <li><a href="#nuget">NuGet Management</a></li>
+                        <li><a href="#driver-tracking">Driver Package Tracking</a></li>
+                        <li><a href="#statistics">Load Statistics</a></li>
+                        <li><a href="#extensions">Custom Loader Extensions</a></li>
+                        <li><a href="#scanned-contracts">Scanned Data Contracts</a></li>
+                        <li><a href="#shared-context">SharedContextAssemblyHandler</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="api" class="section">
+                    <h2>API Snapshot</h2>
                     <pre><code class="language-csharp">public interface IAssemblyHandler : IDisposable
 {
     List&lt;assemblies_rep&gt; Assemblies { get; set; }
@@ -47,91 +69,162 @@
     List&lt;ILoaderExtention&gt; LoaderExtensionInstances { get; set; }
     List&lt;AssemblyClassDefinition&gt; DataSourcesClasses { get; set; }
 
+    // Loading
     Assembly LoadAssembly(string path);
     string LoadAssembly(string path, FolderFileTypes fileTypes);
     IErrorsInfo LoadAllAssembly(IProgress&lt;PassedArgs&gt; progress, CancellationToken token);
-    List&lt;Assembly&gt; LoadAssembliesFromFolder(string folderPath, FolderFileTypes folderFileType, bool scanForDataSources = true);
+    List&lt;Assembly&gt; LoadAssembliesFromFolder(string folderPath,
+        FolderFileTypes folderFileType, bool scanForDataSources = true);
 
-    Task&lt;List&lt;NuGetSearchResult&gt;&gt; SearchNuGetPackagesAsync(string searchTerm, int skip = 0, int take = 20,
-        bool includePrerelease = false, CancellationToken token = default);
-    Task&lt;List&lt;string&gt;&gt; GetNuGetPackageVersionsAsync(string packageId, bool includePrerelease = false,
+    // NuGet
+    Task&lt;List&lt;NuGetSearchResult&gt;&gt; SearchNuGetPackagesAsync(string searchTerm,
+        int skip = 0, int take = 20, bool includePrerelease = false,
         CancellationToken token = default);
-    Task&lt;List&lt;Assembly&gt;&gt; LoadNuggetFromNuGetAsync(string packageName, string version = null,
-        IEnumerable&lt;string&gt; sources = null, bool useSingleSharedContext = true, string appInstallPath = null,
-        bool useProcessHost = false);
+    Task&lt;List&lt;string&gt;&gt; GetNuGetPackageVersionsAsync(string packageId,
+        bool includePrerelease = false, CancellationToken token = default);
+    Task&lt;List&lt;Assembly&gt;&gt; LoadNuggetFromNuGetAsync(string packageName,
+        string version = null, IEnumerable&lt;string&gt; sources = null);
 
+    // NuGet Sources
     List&lt;NuGetSourceConfig&gt; GetNuGetSources();
     void AddNuGetSource(string name, string url, bool isEnabled = true);
     void RemoveNuGetSource(string name);
     List&lt;string&gt; GetActiveSourceUrls();
 
-    void TrackDriverPackage(string packageId, string version, string driverClassName, DataSourceType dsType);
+    // Driver Tracking
+    void TrackDriverPackage(string packageId, string version,
+        string driverClassName, DataSourceType dsType);
     List&lt;DriverPackageMapping&gt; GetAllDriverPackageMappings();
     bool IsDriverFromNuGet(string driverClassName);
+
+    // Statistics
+    AssemblyLoadStatistics GetLoadStatistics();
 }</code></pre>
                 </section>
 
-                <section class="section">
-                    <h2>DLL Loading and Full Scan Flow</h2>
-                    <pre><code class="language-csharp">// Typical startup flow
-IAssemblyHandler assemblyHandler = dmeEditor.assemblyHandler;
+                <section id="loading" class="section">
+                    <h2>DLL Loading &amp; Scanning</h2>
+                    <h3>Full Scan Flow</h3>
+                    <pre><code class="language-csharp">IAssemblyHandler handler = dmeEditor.assemblyHandler;
 
-// Full discovery: runtime + folder loads + scans + extension passes
-await Task.Run(() =&gt; assemblyHandler.LoadAllAssembly(progress, cancellationToken));
+// Full discovery pass
+await Task.Run(() => handler.LoadAllAssembly(progress, token));
 
-// Optional: targeted load from a specific DLL path
-Assembly pluginAssembly = assemblyHandler.LoadAssembly(@"C:\Plugins\MySourcePlugin.dll");
+// Targeted single DLL
+var asm = handler.LoadAssembly(@"Plugins\MySourcePlugin.dll");
 
-// Optional: load an entire folder and scan for datasource classes
-var folderAssemblies = assemblyHandler.LoadAssembliesFromFolder(
-    @"C:\Plugins",
-    FolderFileTypes.DataSources,
-    scanForDataSources: true);</code></pre>
-                    <div class="tip">
-                        <strong>Load sequence note</strong>
-                        <p><code>LoadAllAssembly()</code> currently orchestrates builtin/runtime loading, extension discovery, folder loading, driver/datasource scanning, and extension scans in one pass.</p>
-                    </div>
+// Folder scan
+var assemblies = handler.LoadAssembliesFromFolder(
+    @"Plugins", FolderFileTypes.DataSources, scanForDataSources: true);</code></pre>
+
+                    <h3>Load Sequence</h3>
+                    <ol>
+                        <li><strong>Runtime loading</strong> — Load built-in assemblies from current app domain</li>
+                        <li><strong>Extension discovery</strong> — Find and instantiate <code>ILoaderExtention</code> implementations</li>
+                        <li><strong>Folder loading</strong> — Scan configured directories for plugins</li>
+                        <li><strong>Driver scanning</strong> — Discover <code>IDataSource</code> and driver classes</li>
+                        <li><strong>Extension scans</strong> — Run each <code>ILoaderExtention.Scan()</code></li>
+                    </ol>
+
+                    <h3>FolderFileTypes</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Type</th><th>Directory</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DataSources</code></td><td>ProjectClasses/</td></tr>
+                            <tr><td><code>Addins</code></td><td>Addin/</td></tr>
+                            <tr><td><code>ConnectionDrivers</code></td><td>ConnectionDrivers/</td></tr>
+                            <tr><td><code>LoadingExtensions</code></td><td>LoadingExtensions/</td></tr>
+                            <tr><td><code>OtherDLL</code></td><td>OtherDLL/</td></tr>
+                            <tr><td><code>AI</code></td><td>AI/</td></tr>
+                            <tr><td><code>Scripts</code></td><td>Scripts/</td></tr>
+                        </tbody>
+                    </table>
                 </section>
 
-                <section class="section">
-                    <h2>NuGet Management Flow</h2>
-                    <pre><code class="language-csharp">// Search packages
-var packages = await assemblyHandler.SearchNuGetPackagesAsync("postgres", take: 10);
+                <section id="nuget" class="section">
+                    <h2>NuGet Management</h2>
+                    <pre><code class="language-csharp">// Search
+var packages = await handler.SearchNuGetPackagesAsync("postgres", take: 10);
 
-// Inspect versions
-var versions = await assemblyHandler.GetNuGetPackageVersionsAsync("Npgsql");
+// Versions
+var versions = await handler.GetNuGetPackageVersionsAsync("Npgsql");
 
-// Configure custom source if needed
-assemblyHandler.AddNuGetSource("my-feed", "https://my-feed/v3/index.json", isEnabled: true);
-var activeSources = assemblyHandler.GetActiveSourceUrls();
+// Sources
+handler.AddNuGetSource("my-feed", "https://my-feed/v3/index.json");
+var sources = handler.GetActiveSourceUrls();
+handler.RemoveNuGetSource("old-feed");
 
-// Download + load package and dependencies
-var loaded = await assemblyHandler.LoadNuggetFromNuGetAsync(
-    packageName: "MyCompany.CustomDataSource",
-    version: versions.FirstOrDefault(),
-    sources: activeSources);
+// Load from NuGet
+var loaded = await handler.LoadNuggetFromNuGetAsync(
+    "MyCompany.CustomDataSource",
+    version: versions.First());
 
-// Driver provenance lookup
-bool fromNuGet = assemblyHandler.IsDriverFromNuGet("MyCompany.CustomDataSource.CustomDriver");
-var mappings = assemblyHandler.GetAllDriverPackageMappings();</code></pre>
-                    <div class="note">
-                        <strong>Persistence artifacts</strong>
-                        <ul>
-                            <li><code>nuget_sources.json</code>: source list and enabled flags.</li>
-                            <li><code>driver_packages.json</code>: driver to package/version mapping.</li>
-                        </ul>
-                    </div>
+// Persistence files
+// nuget_sources.json    — source list and enabled flags
+// driver_packages.json  — driver to package/version mapping</code></pre>
                 </section>
 
-                <section class="section">
-                    <h2>Create an <code>ILoaderExtention</code> for New Data Classes</h2>
-                    <pre><code class="language-csharp">using System.Reflection;
-using TheTechIdea.Beep.Addin;
-using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Tools;
-using TheTechIdea.Beep.Utilities;
+                <section id="driver-tracking" class="section">
+                    <h2>Driver Package Tracking</h2>
+                    <p>Tracks which NuGet packages provide which drivers for provenance and security audit:</p>
+                    <pre><code class="language-csharp">// Track a driver's package origin
+handler.TrackDriverPackage(
+    packageId: "TheTechIdea.Beep.DataSources.SQLite",
+    version: "2.0.0",
+    driverClassName: "SQLiteDataSource",
+    dsType: DataSourceType.SqlLite);
 
-public sealed class CustomLoaderExtension : ILoaderExtention
+// Query mappings
+var mappings = handler.GetAllDriverPackageMappings();
+foreach (var m in mappings)
+    Console.WriteLine($"{m.DriverClassName} ← {m.PackageId} v{m.Version}");
+
+// Check origin
+bool fromNuGet = handler.IsDriverFromNuGet("SQLiteDataSource");
+
+// Persisted to: driver_packages.json
+// Automatically loaded on startup</code></pre>
+
+                    <h3>DriverPackageMapping</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>PackageId</code></td><td>NuGet package ID</td></tr>
+                            <tr><td><code>Version</code></td><td>Installed version</td></tr>
+                            <tr><td><code>DriverClassName</code></td><td>Full class name of the driver</td></tr>
+                            <tr><td><code>DataSourceType</code></td><td>Type of data source</td></tr>
+                            <tr><td><code>InstalledDate</code></td><td>When the package was installed</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="statistics" class="section">
+                    <h2>Load Statistics</h2>
+                    <p>AssemblyHandler tracks loading performance and outcomes:</p>
+                    <pre><code class="language-csharp">public class AssemblyLoadStatistics
+{
+    public int TotalAssembliesLoaded { get; set; }
+    public TimeSpan TotalLoadTime { get; set; }
+    public DateTime LastLoadTimestamp { get; set; }
+    public int DriversFound { get; set; }
+    public int DataSourcesFound { get; set; }
+    public Dictionary&lt;string, int&gt; AssembliesByFolderType { get; set; }
+}
+
+// Get statistics after loading
+var stats = handler.GetLoadStatistics();
+Console.WriteLine($"Assemblies: {stats.TotalAssembliesLoaded}");
+Console.WriteLine($"Load time: {stats.TotalLoadTime.TotalSeconds:F2}s");
+Console.WriteLine($"Drivers: {stats.DriversFound}");
+Console.WriteLine($"Data sources: {stats.DataSourcesFound}");
+
+foreach (var (folder, count) in stats.AssembliesByFolderType)
+    Console.WriteLine($"  {folder}: {count}");</code></pre>
+                </section>
+
+                <section id="extensions" class="section">
+                    <h2>Custom Loader Extensions</h2>
+                    <pre><code class="language-csharp">public sealed class CustomLoaderExtension : ILoaderExtention
 {
     private readonly AssemblyHandler _handler;
     private readonly IConfigEditor _config;
@@ -144,7 +237,6 @@ public sealed class CustomLoaderExtension : ILoaderExtention
 
     public IErrorsInfo LoadAllAssembly()
     {
-        // Optional: extension-specific bootstrap
         return _handler.ErrorObject;
     }
 
@@ -158,10 +250,10 @@ public sealed class CustomLoaderExtension : ILoaderExtention
     {
         foreach (var type in assembly.GetTypes())
         {
-            var ti = type.GetTypeInfo();
-            if (ti.ImplementedInterfaces.Contains(typeof(IDataSource)))
+            if (type.GetInterfaces().Contains(typeof(IDataSource)))
             {
-                var cls = _handler.GetAssemblyClassDefinition(ti, "IDataSource");
+                var cls = _handler.GetAssemblyClassDefinition(
+                    type.GetTypeInfo(), "IDataSource");
                 _config.DataSourcesClasses.Add(cls);
             }
         }
@@ -170,7 +262,8 @@ public sealed class CustomLoaderExtension : ILoaderExtention
 
     public IErrorsInfo Scan()
     {
-        foreach (var asm in _handler.LoadedAssemblies) _ = Scan(asm);
+        foreach (var asm in _handler.LoadedAssemblies)
+            Scan(asm);
         return _handler.ErrorObject;
     }
 }</code></pre>
@@ -180,29 +273,198 @@ public sealed class CustomLoaderExtension : ILoaderExtention
                     </div>
                 </section>
 
-                <section class="section">
-                    <h2>Default Scanned Data Contracts</h2>
-                    <p>During <code>AssemblyHandler.ScanAssembly()</code>, the handler currently scans known contracts and registers metadata in <code>ConfigEditor</code> collections.</p>
-                    <pre><code class="language-csharp">// Key contracts checked by ProcessTypeInfo(...) in AssemblyHandler.Scanning.cs:
-// IDataSource, ILoaderExtention, IWorkFlowAction, IDM_Addin, IWorkFlowStep,
-// IBeepViewModel, IWorkFlowEditor, IRule, IRuleParser, IFunctionExtension,
-// IPrintManager, IAddinVisSchema, IPipelinePlugin, IFileFormatReader, IDefaultValueResolver</code></pre>
-                    <pre><code class="language-csharp">// IDataSource root contract (excerpt)
-public interface IDataSource : IDisposable
-{
-    DataSourceType DatasourceType { get; set; }
-    string DatasourceName { get; set; }
-    IDMEEditor DMEEditor { get; set; }
-    IErrorsInfo ErrorObject { get; set; }
-    event EventHandler&lt;PassedArgs&gt; PassEvent;
+                <section id="scanned-contracts" class="section">
+                    <h2>Scanned Data Contracts</h2>
+                    <p>During <code>AssemblyHandler.ScanAssembly()</code>, the handler checks these contracts and registers metadata in <code>ConfigEditor</code>:</p>
+                    <pre><code class="language-csharp">// Contracts scanned by ProcessTypeInfo():
+IDataSource, ILoaderExtention, IWorkFlowAction, IDM_Addin,
+IWorkFlowStep, IBeepViewModel, IWorkFlowEditor, IRule,
+IRuleParser, IFunctionExtension, IPrintManager, IAddinVisSchema,
+IPipelinePlugin, IFileFormatReader, IDefaultValueResolver</code></pre>
+                </section>
 
-    IEnumerable&lt;string&gt; GetEntitesList();
-    EntityStructure GetEntityStructure(string EntityName, bool refresh);
-    IErrorsInfo InsertEntity(string EntityName, object InsertedData);
-    IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
-    IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
+                <section id="shared-context" class="section">
+                    <h2>SharedContextAssemblyHandler vs AssemblyHandler</h2>
+                    <p>
+                        <code>SharedContextAssemblyHandler</code> (2,568 lines) is a modern replacement for <code>AssemblyHandler</code> (267 lines)
+                        that uses <code>SharedContextManager</code> as the core loading system. Both implement <code>IAssemblyHandler</code>.
+                    </p>
+
+                    <h3>Architectural Comparison</h3>
+                    <table class="ref-table"><thead><tr><th>Aspect</th><th>AssemblyHandler</th><th>SharedContextAssemblyHandler</th></tr></thead><tbody>
+                    <tr><td><strong>Core engine</strong></td><td>Direct <code>Assembly.LoadFrom</code></td><td><code>SharedContextManager</code> with <code>AssemblyLoadContext</code> isolation</td></tr>
+                    <tr><td><strong>Plugin discovery</strong></td><td>Manual type scanning (<code>ScanAllAssemblies</code>)</td><td><code>IScanningService</code> abstraction + <code>AssemblyScanningAssistant</code></td></tr>
+                    <tr><td><strong>Driver handling</strong></td><td>Built into scanning</td><td>Dedicated <code>DriverDiscoveryAssistant</code></td></tr>
+                    <tr><td><strong>Plugin registry</strong></td><td>None — manual registration via <code>ConfigEditor</code></td><td><code>PluginRegistry</code> for centralized plugin tracking</td></tr>
+                    <tr><td><strong>Plugin installation</strong></td><td>None — NuGet integrated directly</td><td><code>PluginInstaller</code> for NuGet → extract → register pipeline</td></tr>
+                    <tr><td><strong>Plugin lifecycle</strong></td><td>None — load only</td><td><code>PluginLifecycleManager</code>: Load → Init → Execute → Unload</td></tr>
+                    <tr><td><strong>Plugin health</strong></td><td>None</td><td><code>PluginHealthMonitor</code>: heartbeat, timeout, auto-restart</td></tr>
+                    <tr><td><strong>Isolation</strong></td><td>All in default <code>AssemblyLoadContext</code></td><td><code>PluginIsolationManager</code>: per-plugin ALC when needed</td></tr>
+                    <tr><td><strong>Version mgmt</strong></td><td>None</td><td><code>PluginVersionManager</code>: dependency resolution, compat checks</td></tr>
+                    <tr><td><strong>Plugin messaging</strong></td><td>None</td><td><code>PluginMessageBus</code>: in-process pub/sub</td></tr>
+                    <tr><td><strong>Out-of-process</strong></td><td>None</td><td><code>PluginProcessManager</code>: IPC-based plugin hosting</td></tr>
+                    <tr><td><strong>Assembly tracking</strong></td><td>Manual lists</td><td><code>SharedAssemblyTracker</code>: shared vs isolated context tracking</td></tr>
+                    <tr><td><strong>Unload safety</strong></td><td>No analysis</td><td><code>UnloadAnalysis</code>: dependency chain check before unload</td></tr>
+                    <tr><td><strong>DoNET isolation</strong></td><td>No</td><td><code>PreferDefaultContextDependencies</code>: checks AssemblyLoadContext.Default first</td></tr>
+                    <tr><td><strong>NuGet</strong></td><td>Integrated into handler</td><td><code>NuGetPackageManager</code> + <code>NuggetPackageDownloader</code> + <code>NuggetManager</code></td></tr>
+                    <tr><td><strong>Creating instances</strong></td><td>Manual <code>Activator.CreateInstance</code></td><td><code>InstanceCreationAssistant</code>: DI-aware instantiation</td></tr>
+                    </tbody></table>
+
+                    <h3>When to Use Each</h3>
+                    <table class="ref-table"><thead><tr><th>Scenario</th><th>Handler</th><th>Reason</th></tr></thead><tbody>
+                    <tr><td>Single app, few static plugins</td><td><code>AssemblyHandler</code></td><td>Simpler, no overhead. Direct Assembly.LoadFrom is sufficient.</td></tr>
+                    <tr><td>Multi-tenant, many plugins</td><td><code>SharedContextAssemblyHandler</code></td><td>Shared ALC reduces memory; PluginRegistry centralizes tracking.</td></tr>
+                    <tr><td>Plugins that need unloading</td><td><code>SharedContextAssemblyHandler</code></td><td>ALC isolation enables clean unload; UnloadAnalysis prevents dangling refs.</td></tr>
+                    <tr><td>Plugin health monitoring</td><td><code>SharedContextAssemblyHandler</code></td><td>Heartbeat + timeout + auto-restart via PluginHealthMonitor.</td></tr>
+                    <tr><td>NuGet-heavy plugin loading</td><td><code>SharedContextAssemblyHandler</code></td><td>PluginInstaller pipeline: NuGet → extract → scan → register → init.</td></tr>
+                    <tr><td>Version conflict resolution</td><td><code>SharedContextAssemblyHandler</code></td><td>Per-plugin ALC allows different versions of same dependency.</td></tr>
+                    <tr><td>Out-of-process plugins</td><td><code>SharedContextAssemblyHandler</code></td><td>PluginProcessManager provides IPC isolation for untrusted code.</td></tr>
+                    <tr><td>Inter-plugin communication</td><td><code>SharedContextAssemblyHandler</code></td><td>PluginMessageBus enables decoupled pub/sub between plugins.</td></tr>
+                    </tbody></table>
+
+                    <h3>Configuration</h3>
+                    <pre><code class="language-csharp">// Via BeepService
+var service = new BeepService();
+service.AssemblyHandlerType = AssemblyHandlerType.SharedContext;
+service.Configure(path, "MyApp", BeepConfigType.Application);
+
+// Direct construction
+var handler = new SharedContextAssemblyHandler(
+    configEditor, errorObject, logger, util);
+
+// Plugin pipeline
+handler.PluginInstaller.InstallFromNuGetAsync("MyPlugin", "1.0.0");
+handler.PluginRegistry.Discover();
+handler.PluginLifecycleManager.InitializeAll();
+handler.PluginHealthMonitor.Start();</code></pre>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Complete Startup</h3>
+                    <pre><code class="language-csharp">var handler = editor.assemblyHandler;
+
+// Load all assemblies with progress
+var progress = new Progress&lt;PassedArgs&gt;(args =>
+    Console.WriteLine($"[{args.ParameterInt1}%] {args.Messege}"));
+
+handler.LoadAllAssembly(progress, CancellationToken.None);
+
+// Check results
+var stats = handler.GetLoadStatistics();
+Console.WriteLine($"Loaded {stats.TotalAssembliesLoaded} assemblies " +
+    $"in {stats.TotalLoadTime.TotalSeconds:F1}s");
+Console.WriteLine($"Found {stats.DataSourcesFound} data sources, " +
+    $"{stats.DriversFound} drivers");</code></pre>
+
+                    <h3>NuGet Driver Installation</h3>
+                    <pre><code class="language-csharp">// Search for PostgreSQL driver
+var packages = await handler.SearchNuGetPackagesAsync("postgresql", take: 5);
+
+// Get latest version
+var version = (await handler.GetNuGetPackageVersionsAsync(
+    packages[0].PackageId)).First();
+
+// Install and load
+var assemblies = await handler.LoadNuggetFromNuGetAsync(
+    packages[0].PackageId, version);
+
+// Track provenance
+handler.TrackDriverPackage(
+    packages[0].PackageId, version,
+    "PostgreDataSource", DataSourceType.Postgresql);</code></pre>
+
+                    <h3>Error Handling</h3>
+                    <pre><code class="language-csharp">var result = handler.LoadAllAssembly(progress, token);
+
+if (result.Flag != Errors.Ok)
+{
+    Console.WriteLine($"Load failed: {result.Message}");
+    if (result.Ex != null)
+        Console.WriteLine($"Exception: {result.Ex.Message}");
+}
+
+// Check for load errors
+if (handler.HasLoadErrors)
+{
+    foreach (var error in handler.LoadErrors)
+        Console.WriteLine($"Load Error: {error}");
 }</code></pre>
                 </section>
+
+                <div class="nav-links">
+                    <a href="creating-custom-datasources.html"><i class="bi bi-arrow-left"></i> Previous: Custom DataSources</a>
+                    <a href="filemanager-reader-host.html">Next: FileManager DataSource <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <section id="source-map" class="section">
+                    <h2><i class="bi bi-map"></i> Complete Source File Map (31 files)</h2>
+
+                    <h3>AssemblySystem (8 files)</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>AssemblyHandler.Core.cs</code></td><td>Constructor, fields, Initialize, 16 primary arrays (ScannedDataSources, LoadedAssembliesCompact, etc.)</td></tr>
+                    <tr><td><code>AssemblyHandler.Loaders.cs</code></td><td>Extension loader discovery, ILoaderExtention/ILoaderExtention2, priority-sorted load, LoadExtensionTypes</td></tr>
+                    <tr><td><code>AssemblyHandler.Scanning.cs</code></td><td>ScanAllAssemblies, ScanFolder, ProcessAssembly, manifest-based type scanning</td></tr>
+                    <tr><td><code>AssemblyHandler.Helpers.cs</code></td><td>Type filtering, LoadAssemblySafe, logging helpers</td></tr>
+                    <tr><td><code>AssemblyHandler.NuGetOperations.cs</code></td><td>NuGet package resolution via NuGetPackageManager, driver download/install</td></tr>
+                    <tr><td><code>AssemblyHandler.NuGetLifecycle.cs</code></td><td>NuGet load/unload with SharedContext vs isolated ALC</td></tr>
+                    <tr><td><code>AssemblyHandler.NuGetSources.cs</code></td><td>NuGet source management: nuget_sources.json, add/remove/enable/disable</td></tr>
+                    <tr><td><code>AssemblyHandler.DriverTracking.cs</code></td><td>Driver scan tracking: scanned drivers, version checks, upgrade hints</td></tr>
+                    <tr><td><code>AssemblyHandler.Statistics.cs</code></td><td>Load statistics, assembly count, type count, duration tracking</td></tr>
+                    </tbody></table>
+
+                    <h3>PluginSystem (21 files)</h3>
+                    <table class="ref-table"><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+                    <tr><td><code>SharedContextAssemblyHandler.cs</code></td><td>Shared-ALC assembly loading with type sharing across plugins</td></tr>
+                    <tr><td><code>SharedContextManager.cs</code></td><td>Context lifecycle: create, dispose, type resolution across contexts</td></tr>
+                    <tr><td><code>SharedAssemblyTracker.cs</code></td><td>Tracks which assemblies are loaded in shared vs isolated contexts</td></tr>
+                    <tr><td><code>PluginRegistry.cs</code></td><td>Central plugin registration: discover, register, unregister</td></tr>
+                    <tr><td><code>PluginManifest.cs</code></td><td>Plugin manifest model: Id, Name, Version, Dependencies, EntryPoint</td></tr>
+                    <tr><td><code>PluginLifecycleManager.cs</code></td><td>Plugin lifecycle: Load, Initialize, Execute, Unload, Dispose</td></tr>
+                    <tr><td><code>PluginHealthMonitor.cs</code></td><td>Plugin health checks: heartbeat, timeout detection, auto-restart</td></tr>
+                    <tr><td><code>PluginIsolationManager.cs</code></td><td>AssemblyLoadContext isolation: separate ALC per plugin when needed</td></tr>
+                    <tr><td><code>PluginVersionManager.cs</code></td><td>Version compatibility checks, dependency version resolution</td></tr>
+                    <tr><td><code>PluginServiceManager.cs</code></td><td>DI service registration for plugins: IPluginServiceProvider</td></tr>
+                    <tr><td><code>PluginMessageBus.cs</code></td><td>In-process pub/sub between plugins: publish, subscribe, unsubscribe</td></tr>
+                    <tr><td><code>PluginProcessManager.cs</code></td><td>Out-of-process plugin hosting (IPC) for isolation</td></tr>
+                    <tr><td><code>PluginInstaller.cs</code></td><td>Plugin installation from NuGet: download, extract, register</td></tr>
+                    <tr><td><code>NuggetPluginLoader.cs</code></td><td>Load plugins from installed NuGet packages</td></tr>
+                    <tr><td><code>NuggetPackageDownloader.cs</code></td><td>Downloads NuGet plugin packages via NuGetPackageManager</td></tr>
+                    <tr><td><code>NuggetManager.cs</code></td><td>Aggregate NuGet package tracking for the PluginSystem</td></tr>
+                    <tr><td><code>AssemblyScanningAssistant.cs</code></td><td>Scans assemblies for plugin types (IDM_Addin, IDataSource)</td></tr>
+                    <tr><td><code>AssemblyLoadingAssistant.cs</code></td><td>Safe assembly loading with error isolation per assembly</td></tr>
+                    <tr><td><code>DriverDiscoveryAssistant.cs</code></td><td>Discovers IDataSource / ConnectionDriversConfig types</td></tr>
+                    <tr><td><code>InstanceCreationAssistant.cs</code></td><td>Creates instances from discovered types with DI support</td></tr>
+                    <tr><td><code>UnloadAnalysis.cs</code></td><td>Analyzes assembly dependencies before unload to prevent dangling refs</td></tr>
+                    <tr><td><code>IScanningService.cs</code></td><td>Scanning service contract: ScanFolder, ScanAssembly, ScanPackage</td></tr>
+                    </tbody></table>
+
+                    <h3>NuggetManager</h3>
+                    <pre><code class="language-csharp">public class NuggetManager
+{
+    // Aggregate NuGet package tracking for the PluginSystem
+    public NuggetManager(IDMLogger logger, string packagesDirectory);
+    public List&lt;string&gt; InstalledPackageIds { get; }
+    public Task&lt;bool&gt; InstallAsync(string packageId, string version = null);
+    public Task&lt;bool&gt; UninstallAsync(string packageId);
+    public Task&lt;bool&gt; UpdateAsync(string packageId, string version);
+    public Task&lt;List&lt;string&gt;&gt; GetOutdatedPackagesAsync();
+}</code></pre>
+                </section>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </main>
     </div>
