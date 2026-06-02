@@ -90,17 +90,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
     /// </summary>
     public enum DataBlockMode
     {
-        /// <summary>Query mode - for querying data</summary>
-        Query,
-        
-        /// <summary>CRUD mode - for create, read, update, delete operations</summary>
-        CRUD,
-        
-        /// <summary>Read-only mode</summary>
-        ReadOnly,
-        
-        /// <summary>Insert mode - for adding new records</summary>
-        Insert
+        /// <summary>Normal mode - the block accepts all operations allowed by its configuration.</summary>
+        Normal = 0,
+
+        /// <summary>Enter-Query mode - the user is typing example criteria to filter the next query (Oracle Forms ENTER_QUERY).</summary>
+        EnterQuery = 1,
+
+        /// <summary>Query mode - results are loaded and editable per the block's UpdateAllowed/InsertAllowed flags.</summary>
+        Query = 2,
+
+        /// <summary>CRUD mode - explicit alias for Normal kept for source compatibility with existing call-sites.</summary>
+        CRUD = 3,
+
+        /// <summary>Read-only mode.</summary>
+        ReadOnly = 4,
+
+        /// <summary>Insert mode - the current record is a new record awaiting commit.</summary>
+        Insert = 5
     }
     
     /// <summary>

@@ -221,9 +221,31 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         /// <summary>Key exit (KEY-EXIT)</summary>
         KeyExit = 111,
-        
-        // Reserved 112-119 for future navigation triggers
-        
+
+        /// <summary>Built-in GO_BLOCK raised by IBeepBuiltins.GoBlock.</summary>
+        GoBlock = 112,
+
+        /// <summary>Built-in GO_ITEM raised by IBeepBuiltins.GoItem.</summary>
+        GoItem = 113,
+
+        /// <summary>Built-in SHOW_LOV raised by IBeepBuiltins.ShowLov.</summary>
+        ShowLov = 114,
+
+        /// <summary>Built-in ENTER_QUERY raised by IBeepBuiltins.EnterQuery.</summary>
+        EnterQuery = 115,
+
+        /// <summary>Built-in EXIT_QUERY raised by IBeepBuiltins.ExitQuery.</summary>
+        ExitQuery = 116,
+
+        /// <summary>Built-in SET_BLOCK_MODE raised by IBeepBuiltins.SetBlockMode.</summary>
+        SetBlockMode = 117,
+
+        /// <summary>Built-in SET_ITEM_PROPERTY raised by IBeepBuiltins.SetItemProperty.</summary>
+        SetItemProperty = 118,
+
+        /// <summary>Built-in SET_BLOCK_PROPERTY raised by IBeepBuiltins.SetBlockProperty.</summary>
+        SetBlockProperty = 119,
+
         #endregion
         
         #region Action Triggers (120-149)
@@ -278,9 +300,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         /// <summary>Key menu (KEY-MENU)</summary>
         KeyMenu = 136,
-        
-        // Reserved 137-149 for future action triggers
-        
+
+        /// <summary>Built-in POST raised by IBeepBuiltins.Post (validate and send to DB without committing).</summary>
+        Post = 137,
+
+        /// <summary>Built-in CLEAR_FORM raised by IBeepBuiltins.ClearForm.</summary>
+        ClearForm = 138,
+
         #endregion
         
         #region Function Key Triggers (150-169)
