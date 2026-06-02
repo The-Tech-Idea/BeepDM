@@ -1147,6 +1147,40 @@
             </summary>
             <returns>Dictionary mapping datasource type to capability summary</returns>
         </member>
+        <member name="P:TheTechIdea.Beep.DataBase.EntityStructure.Indexes">
+            <summary>
+            Index descriptors declared on this entity. Populated by callers (e.g. the
+            MigrationManager ORM-interop path) to drive index creation during
+            schema apply. The migration manager honors this list when callers opt
+            into <c>applyIndexes=true</c>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.EntityIndex">
+            <summary>
+            Index descriptor associated with an <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>.
+            Populated by callers (e.g. the MigrationManager ORM-interop path) to drive
+            index creation during schema apply. The migration manager honors this list
+            when callers opt into <c>applyIndexes=true</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.EntityIndex.Options">
+            <summary>Optional opaque options dictionary passed through to <c>IDataSourceHelper</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.RelationShipKeys.OnDeleteBehavior">
+            <summary>
+            On-delete behavior for this relation. Valid values: "Cascade", "Restrict",
+            "SetNull", "NoAction", "ClientCascade", "ClientNoAction", "ClientSetNull",
+            or empty when not specified. Surfaced from EF Core's
+            <c>OnDelete()</c> Fluent API and used to drive FK constraint generation
+            when the migration manager applies relations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.RelationShipKeys.OnUpdateBehavior">
+            <summary>
+            On-update behavior for this relation. Same vocabulary as
+            <see cref="P:TheTechIdea.Beep.DataBase.RelationShipKeys.OnDeleteBehavior"/>.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataBase.IDataViewOperations">
              <summary>
              Defines the runtime operations of a federated DataView engine — i.e. HOW the DataView WORKS.
@@ -14244,6 +14278,24 @@
         <member name="M:TheTechIdea.Beep.Tools.IClassCreator.ToCamelCase(System.String)">
             <summary>
             Converts a name to camelCase
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.IsEfDecoratedType(System.Type)">
+            <summary>
+            Returns true when the CLR type carries EF Core data annotations
+            (Table, Column, Key, ForeignKey, etc.) and is therefore a valid
+            candidate for EF Core → EntityStructure conversion even if it does
+            not inherit from <c>Entity</c> or implement <c>IEntity</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.IClassCreator.IsDiscoverablePoco(System.Type)">
+            <summary>
+            Returns true when the type passes basic POCO eligibility checks
+            (concrete, public, non-generic, non-static, has parameterless
+            constructor or is a record type). Used by the MigrationManager
+            discovery pipeline when <c>IsEntityType</c> returned false but the
+            caller wants to surface plain POCOs/EF Core types that look
+            migratable.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
