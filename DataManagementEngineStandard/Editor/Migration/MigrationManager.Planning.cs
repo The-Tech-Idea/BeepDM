@@ -14,7 +14,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// <summary>
         /// Builds a non-destructive migration plan using discovery-based entity resolution.
         /// </summary>
-        public MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true)
+        public MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreatePlanArtifactWithError(usesDiscovery: true, "datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before generating a migration plan.");
@@ -33,13 +33,13 @@ namespace TheTechIdea.Beep.Editor.Migration
                     "Register the required assemblies explicitly or use BuildMigrationPlanForTypes.");
             }
 
-            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: true);
+            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: true, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
         }
 
         /// <summary>
         /// Builds a non-destructive migration plan using explicit entity types.
         /// </summary>
-        public MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true)
+        public MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreatePlanArtifactWithError(usesDiscovery: false, "datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before generating a migration plan.");
@@ -47,10 +47,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (entityTypes == null)
                 return CreatePlanArtifactWithError(usesDiscovery: false, "entity-types-null", "Entity types collection cannot be null", "Pass explicit entity types or use discovery-based planning.");
 
-            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: false);
+            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: false, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
         }
 
-        private MigrationPlanArtifact BuildMigrationPlanInternal(IEnumerable<Type> entityTypes, bool usesDiscovery)
+        private MigrationPlanArtifact BuildMigrationPlanInternal(IEnumerable<Type> entityTypes, bool usesDiscovery, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             var plan = CreateBasePlanArtifact(usesDiscovery);
             var typeList = entityTypes
@@ -93,7 +93,22 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 foreach (var entityType in typeList)
                 {
-                    plan.Operations.Add(BuildPlanOperation(entityType, plan.DataSourceCategory, plan.DataSourceType, plan.ProviderCapabilities));
+                    var op = BuildPlanOperation(entityType, plan.DataSourceCategory, plan.DataSourceType, plan.ProviderCapabilities);
+                    plan.Operations.Add(op);
+
+                    // Emit FK/Index plan ops alongside the entity op when the caller
+                    // opted in. This ensures the dry-run previews them, the policy
+                    // lints them, and the execution orchestrator can apply them.
+                    // The structures used here are the same ones TryGetEntityStructure
+                    // returns (which honors the model-interop cache), so EF Core-shaped
+                    // FKs/indexes are also picked up when applicable.
+                    if (op.EntityTypeName != null)
+                    {
+                        var structure = TryGetEntityStructure(entityType);
+                        if (structure != null && !string.IsNullOrWhiteSpace(op.EntityName))
+                            structure.EntityName = op.EntityName;
+                        EmitRelationalArtifactsForEntity(structure, plan.Operations, applyForeignKeys, applyIndexes);
+                    }
                 }
             }
 
@@ -371,6 +386,17 @@ namespace TheTechIdea.Beep.Editor.Migration
                     .Append(operation.RiskLevel).Append(':')
                     .Append(operation.Note);
 
+                // Include the constraint/index name in the hash so two plans
+                // that differ only by an FK/index name produce different hashes.
+                // Without this, DetectSchemaDrift and the CI plan-diff can't
+                // tell whether a rename happened between runs.
+                var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                     operation.Kind == MigrationPlanOperationKind.DropIndex;
+                if (isRelationalOp && !string.IsNullOrWhiteSpace(operation.TargetName))
+                    builder.Append(":T:").Append(operation.TargetName);
+
                 foreach (var column in operation.MissingColumns.OrderBy(name => name, StringComparer.OrdinalIgnoreCase))
                 {
                     builder.Append(":C:").Append(column);
@@ -391,6 +417,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     .Append(plan.ProviderCapabilities.SupportsRenameEntity).Append(':')
                     .Append(plan.ProviderCapabilities.SupportsRenameColumn).Append(':')
                     .Append(plan.ProviderCapabilities.SupportsTransactionalDdl).Append(':')
+                    .Append(plan.ProviderCapabilities.SupportsForeignKeys).Append(':')
+                    .Append(plan.ProviderCapabilities.SupportsIndexes).Append(':')
                     .Append(plan.ProviderCapabilities.RequiresOfflineWindowForSchemaChanges).Append(':')
                     .Append(plan.ProviderCapabilities.PortabilityWarning);
             }
@@ -453,7 +481,9 @@ namespace TheTechIdea.Beep.Editor.Migration
             bool usesDiscovery,
             EntityMigrationSource source,
             bool addMissingColumns,
-            IProgress<PassedArgs> progress = null)
+            IProgress<PassedArgs> progress = null,
+            bool applyForeignKeys = false,
+            bool applyIndexes = false)
         {
             var pipelineResult = new EntityPipelineResult
             {
@@ -474,7 +504,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                 {
                     progress?.Report(new PassedArgs { Messege = $"Migrating: {entityType.Name}" });
 
-                    var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
+                    // Use TryGetEntityStructure (not _editor.classCreator directly) so
+                    // the model-interop cache populated by BuildMigrationPlanForModel is
+                    // honored. EF Core callers that populated MigrationModel then
+                    // BuildMigrationPlanForModel have already primed the cache with
+                    // ORM-shaped structures (with table name from GetTableName(), etc.).
+                    var entityStructure = TryGetEntityStructure(entityType);
                     if (entityStructure == null)
                     {
                         entry.Decision = EntityMigrationDecision.Error;
@@ -496,7 +531,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     try { existed = MigrateDataSource.CheckEntityExist(entityStructure.EntityName); }
                     catch { existed = false; }
 
-                    var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: addMissingColumns);
+                    var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: addMissingColumns,
+                        applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
 
                     if (result.Flag == Errors.Ok)
                     {

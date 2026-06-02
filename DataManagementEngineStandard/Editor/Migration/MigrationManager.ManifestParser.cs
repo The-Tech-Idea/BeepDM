@@ -244,10 +244,17 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Applies migrations sourced from a manifest file.
         /// Parses the manifest, resolves types, and runs them through the shared entity pipeline.
         /// </summary>
+        /// <param name="applyForeignKeys">When true, FKs declared on the entity structures (and any
+        /// model-interop-sourced ORM FKs already cached on the manager) are created after their
+        /// dependent tables. Defaults to false to preserve prior behavior.</param>
+        /// <param name="applyIndexes">When true, indexes declared on the entity structures are
+        /// created after their tables. Defaults to false to preserve prior behavior.</param>
         public IErrorsInfo ApplyMigrationsFromManifest(
             string manifestFilePath,
             bool addMissingColumns = true,
-            IProgress<PassedArgs> progress = null)
+            IProgress<PassedArgs> progress = null,
+            bool applyForeignKeys = false,
+            bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
@@ -283,7 +290,74 @@ namespace TheTechIdea.Beep.Editor.Migration
                 usesDiscovery: true,
                 source: EntityMigrationSource.DiscoveryFileSystem,
                 addMissingColumns: addMissingColumns,
-                progress: progress);
+                progress: progress,
+                applyForeignKeys: applyForeignKeys,
+                applyIndexes: applyIndexes);
+
+            return pipelineResult.HasBlockingReasons
+                ? CreateErrorsInfo(Errors.Failed, $"{pipelineResult.ToSummaryString()}. Blocking: {string.Join("; ", pipelineResult.BlockingReasons)}")
+                : CreateErrorsInfo(pipelineResult.ErrorCount > 0 ? Errors.Failed : Errors.Ok, pipelineResult.ToSummaryString());
+        }
+
+        /// <summary>
+        /// Ensures that the migration datasource contains every entity declared in the
+        /// manifest file. Mirrors <see cref="ApplyMigrationsFromManifest"/> but never
+        /// adds missing columns and never fails on a column-shape mismatch — it only
+        /// creates entities that are missing and, when the corresponding opt-in flags
+        /// are set, applies the indexes and foreign keys declared on each entity.
+        /// </summary>
+        /// <param name="applyForeignKeys">When true, FKs declared on the entity structures are
+        /// created after their dependent tables. Defaults to false.</param>
+        /// <param name="applyIndexes">When true, indexes declared on the entity structures are
+        /// created after their tables. Defaults to false.</param>
+        public IErrorsInfo EnsureDatabaseCreatedFromManifest(
+            string manifestFilePath,
+            IProgress<PassedArgs> progress = null,
+            bool applyForeignKeys = false,
+            bool applyIndexes = false)
+        {
+            if (MigrateDataSource == null)
+                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
+
+            if (string.IsNullOrWhiteSpace(manifestFilePath))
+                return CreateErrorsInfo(Errors.Failed, "Manifest file path cannot be null or empty");
+
+            var parseResult = ParseManifestFile(manifestFilePath);
+
+            if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002"))
+            {
+                var fatalErrors = parseResult.Errors
+                    .Where(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002")
+                    .Select(e => e.Message);
+                return CreateErrorsInfo(Errors.Failed, $"Manifest parse failed: {string.Join("; ", fatalErrors)}");
+            }
+
+            var resolved = ResolveManifestTypes(parseResult);
+            if (parseResult.Errors.Count > 0)
+            {
+                var errMsgs = parseResult.Errors.Select(e => $"Line {e.LineNumber}: [{e.Code}] {e.Message}");
+                _editor?.AddLogMessage("Beep",
+                    $"MigrationManager.EnsureDatabaseCreatedFromManifest: {parseResult.Errors.Count} manifest warning(s): {string.Join(" | ", errMsgs)}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
+
+            if (resolved.Count == 0)
+                return CreateErrorsInfo(Errors.Warning, $"No entity types could be resolved from manifest '{manifestFilePath}'");
+
+            var typeList = resolved.Select(r => r.ResolvedType).ToList();
+
+            // Run the same shared pipeline as the explicit-type path. addMissingColumns=false
+            // mirrors the contract of EnsureDatabaseCreatedForTypes: never add columns that
+            // aren't already on the target schema, just create missing entities and (when
+            // opted in) their relational artifacts.
+            var pipelineResult = ExecuteEntityMigrationPipeline(
+                typeList,
+                usesDiscovery: true,
+                source: EntityMigrationSource.DiscoveryFileSystem,
+                addMissingColumns: false,
+                progress: progress,
+                applyForeignKeys: applyForeignKeys,
+                applyIndexes: applyIndexes);
 
             return pipelineResult.HasBlockingReasons
                 ? CreateErrorsInfo(Errors.Failed, $"{pipelineResult.ToSummaryString()}. Blocking: {string.Join("; ", pipelineResult.BlockingReasons)}")

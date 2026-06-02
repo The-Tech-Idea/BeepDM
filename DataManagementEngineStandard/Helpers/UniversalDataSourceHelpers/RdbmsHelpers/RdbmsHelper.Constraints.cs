@@ -44,12 +44,44 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
 
         /// <summary>
         /// Generates SQL to add a foreign key constraint between tables.
+        /// Defaults to ON DELETE CASCADE / ON UPDATE CASCADE for backward compatibility.
         /// </summary>
         public (string Sql, bool Success, string ErrorMessage) GenerateAddForeignKeySql(
             string tableName,
             string[] columnNames,
             string referencedTableName,
             string[] referencedColumnNames)
+        {
+            return GenerateAddForeignKeySql(tableName, columnNames, referencedTableName, referencedColumnNames,
+                onDeleteBehavior: "Cascade", onUpdateBehavior: "Cascade", constraintName: null);
+        }
+
+        /// <summary>
+        /// Generates SQL to add a foreign key constraint between tables with explicit
+        /// ON DELETE / ON UPDATE referential actions and an optional constraint name.
+        /// </summary>
+        /// <param name="tableName">Dependent table name.</param>
+        /// <param name="columnNames">Foreign-key column(s) on the dependent table.</param>
+        /// <param name="referencedTableName">Referenced (principal) table name.</param>
+        /// <param name="referencedColumnNames">Referenced column(s) on the principal table.</param>
+        /// <param name="onDeleteBehavior">
+        /// One of: "Cascade", "Restrict", "SetNull", "NoAction". Defaults to "Cascade".
+        /// </param>
+        /// <param name="onUpdateBehavior">
+        /// One of: "Cascade", "Restrict", "SetNull", "NoAction". Defaults to "Cascade".
+        /// </param>
+        /// <param name="constraintName">
+        /// Optional explicit constraint name. When null/empty, a default of
+        /// FK_{table}_{refTable}_{columns} is generated.
+        /// </param>
+        public (string Sql, bool Success, string ErrorMessage) GenerateAddForeignKeySql(
+            string tableName,
+            string[] columnNames,
+            string referencedTableName,
+            string[] referencedColumnNames,
+            string onDeleteBehavior,
+            string onUpdateBehavior,
+            string constraintName = null)
         {
             try
             {
@@ -72,17 +104,95 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                 var quotedRefTable = QuoteIdentifier(referencedTableName);
                 var quotedColumns = string.Join(", ", columnNames.Select(c => QuoteIdentifier(c)));
                 var quotedRefColumns = string.Join(", ", referencedColumnNames.Select(c => QuoteIdentifier(c)));
-                var fkName = $"FK_{tableName}_{referencedTableName}_{string.Join("_", columnNames)}";
+                var fkName = string.IsNullOrWhiteSpace(constraintName)
+                    ? $"FK_{tableName}_{referencedTableName}_{string.Join("_", columnNames)}"
+                    : constraintName;
+
+                var onDelete = NormalizeReferentialAction(onDeleteBehavior, "Cascade");
+                var onUpdate = NormalizeReferentialAction(onUpdateBehavior, "Cascade");
 
                 var sql = $@"
 ALTER TABLE {quotedTable}
 ADD CONSTRAINT {QuoteIdentifier(fkName)}
 FOREIGN KEY ({quotedColumns})
 REFERENCES {quotedRefTable} ({quotedRefColumns})
-ON DELETE CASCADE
-ON UPDATE CASCADE";
+ON DELETE {onDelete}
+ON UPDATE {onUpdate}";
 
                 return (sql.Trim(), true, "");
+            }
+            catch (Exception ex)
+            {
+                return ("", false, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Normalizes a referential-action string (e.g. "Cascade", "SetNull") into
+        /// the SQL keyword form ("CASCADE", "SET NULL"). Returns the supplied default
+        /// when the input is null/whitespace or unrecognized.
+        /// </summary>
+        private static string NormalizeReferentialAction(string action, string defaultAction)
+        {
+            if (string.IsNullOrWhiteSpace(action))
+                action = defaultAction;
+
+            switch (action.Trim().Replace("_", "").Replace("-", "").ToLowerInvariant())
+            {
+                case "cascade": return "CASCADE";
+                case "restrict": return "RESTRICT";
+                case "setnull": return "SET NULL";
+                case "noaction": return "NO ACTION";
+                default: return defaultAction.Equals("Cascade", StringComparison.OrdinalIgnoreCase) ? "CASCADE" : "NO ACTION";
+            }
+        }
+
+        /// <summary>
+        /// Generates SQL to drop a foreign key constraint.
+        /// When <paramref name="constraintName"/> is null/empty, a default name of
+        /// FK_{table}_{refTable}_{columns} is assumed.
+        /// </summary>
+        public (string Sql, bool Success, string ErrorMessage) GenerateDropForeignKeySql(
+            string tableName,
+            string constraintName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(tableName))
+                    return ("", false, "Table name is required");
+
+                if (string.IsNullOrWhiteSpace(constraintName))
+                    return ("", false, "Constraint name is required");
+
+                var quotedTable = QuoteIdentifier(tableName);
+                var quotedConstraint = QuoteIdentifier(constraintName);
+                var sql = $"ALTER TABLE {quotedTable} DROP CONSTRAINT {quotedConstraint}";
+                return (sql, true, "");
+            }
+            catch (Exception ex)
+            {
+                return ("", false, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Generates SQL to drop an index. The default form is a portable
+        /// <c>DROP INDEX &lt;name&gt;</c> statement — most RDBMS engines accept it
+        /// directly. Providers that require <c>DROP INDEX &lt;name&gt; ON &lt;table&gt;</c>
+        /// (e.g. MySQL/MariaDB) can be extended later by routing through a
+        /// <see cref="DataSourceType"/> switch.
+        /// </summary>
+        public (string Sql, bool Success, string ErrorMessage) GenerateDropIndexSql(
+            string tableName,
+            string indexName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(indexName))
+                    return ("", false, "Index name is required");
+
+                var quotedIndex = QuoteIdentifier(indexName);
+                return ($"DROP INDEX {quotedIndex}", true, "");
             }
             catch (Exception ex)
             {

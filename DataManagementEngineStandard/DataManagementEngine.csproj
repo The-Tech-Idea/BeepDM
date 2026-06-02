@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
 	  <TargetFrameworks> net8.0;net9.0;net10.0</TargetFrameworks>
@@ -70,8 +70,12 @@
     <PackageReference Include="NuGet.Protocol" Version="7.6.0" />
     <PackageReference Include="NuGet.Versioning" Version="7.6.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
+    <!-- Migration interop with EF Core (and any other ORM) is brokered through the
+         BeepDM-owned MigrationModel POCO abstraction. No EF Core package is referenced
+         here. A separate companion package can translate IModel/DbContext into
+         MigrationModel at the call site. -->
     <!-- Switched from NuGet to ProjectReference for local development to pick up OBL enhancements -->
-    <!-- <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.125" /> -->
+    <!-- <PackageReference Include="TheTechIdea.Beep.DataManagementModels" Version="2.0.125" -->
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

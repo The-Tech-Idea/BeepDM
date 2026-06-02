@@ -21,13 +21,28 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return compensation;
 
             var sequence = 1;
+            var dataSourceCategory = plan.DataSourceCategory;
             foreach (var operation in plan.Operations.Where(item => item != null))
             {
+                var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                     operation.Kind == MigrationPlanOperationKind.DropIndex;
+
+                // FK/Index ops are RiskLevel.Low by default but still touch the
+                // relational integrity surface of a critical datasource. On
+                // RDBMS targets, treat them as compensation-worthy so a partial
+                // apply can drop a partially-created constraint or index. On
+                // non-RDBMS targets (File/NoSQL/API/etc.) the relational
+                // surface is emulated or non-existent, so we still skip them.
+                var includeRelationalOps = isRelationalOp && dataSourceCategory == DatasourceCategory.RDBMS;
+
                 var highRisk = operation.RiskLevel == MigrationPlanRiskLevel.High ||
                                operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
                                operation.IsDestructive ||
                                operation.IsTypeNarrowing ||
-                               operation.HasNullabilityTightening;
+                               operation.HasNullabilityTightening ||
+                               includeRelationalOps;
                 if (!highRisk)
                     continue;
 
@@ -37,11 +52,16 @@ namespace TheTechIdea.Beep.Editor.Migration
                     Sequence = sequence,
                     EntityName = operation.EntityName,
                     OperationKind = operation.Kind,
-                    IsHighRisk = true,
+                    IsHighRisk = operation.RiskLevel == MigrationPlanRiskLevel.High ||
+                                 operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
+                                 operation.IsDestructive ||
+                                 operation.IsTypeNarrowing ||
+                                 operation.HasNullabilityTightening,
                     IsRequiredBeforeApply = true,
                     RollbackMode = ResolveRollbackMode(operation.Kind),
                     RollbackSqlPreview = BuildRollbackSqlPreview(operation),
-                    CompensationPlaybook = BuildCompensationPlaybook(operation)
+                    CompensationPlaybook = BuildCompensationPlaybook(operation),
+                    TargetName = operation.TargetName ?? string.Empty
                 };
                 compensation.Actions.Add(action);
                 sequence++;
@@ -190,22 +210,71 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 if (dryRun)
                 {
-                    result.ExecutedActions.Add($"[dry-run] {action.ActionId} {action.RollbackMode} {action.EntityName}: {action.CompensationPlaybook}");
+                    var line = $"[dry-run] {action.ActionId} {action.RollbackMode} {action.EntityName}: {action.CompensationPlaybook}";
+                    if (!string.IsNullOrWhiteSpace(action.RollbackSqlPreview))
+                        line += $" | sql: {action.RollbackSqlPreview}";
+                    result.ExecutedActions.Add(line);
                     continue;
                 }
 
-                if (action.RollbackMode == MigrationRollbackMode.ReversibleDdl &&
-                    action.OperationKind == MigrationPlanOperationKind.CreateEntity &&
-                    !string.IsNullOrWhiteSpace(action.EntityName))
+                if (action.RollbackMode == MigrationRollbackMode.ReversibleDdl)
                 {
-                    var dropResult = DropEntity(action.EntityName);
-                    if (dropResult.Flag == Errors.Ok || dropResult.Flag == Errors.Warning)
+                    IErrorsInfo dropResult = null;
+                    var executed = false;
+
+                    switch (action.OperationKind)
                     {
-                        result.ExecutedActions.Add($"{action.ActionId} rollback executed for '{action.EntityName}'.");
+                        case MigrationPlanOperationKind.CreateEntity:
+                            if (!string.IsNullOrWhiteSpace(action.EntityName))
+                            {
+                                dropResult = DropEntity(action.EntityName);
+                                executed = true;
+                            }
+                            break;
+
+                        case MigrationPlanOperationKind.DropForeignKey:
+                        case MigrationPlanOperationKind.AddForeignKey:
+                            // For both FK ops the rollback direction is "drop the
+                            // constraint" (the forward op added it; the reverse
+                            // removes it). We rely on the action's TargetName —
+                            // which mirrors the original plan op's TargetName —
+                            // rather than re-deriving from a desired structure.
+                            if (!string.IsNullOrWhiteSpace(action.EntityName) &&
+                                !string.IsNullOrWhiteSpace(action.TargetName))
+                            {
+                                dropResult = DropForeignKey(action.EntityName, action.TargetName);
+                                executed = true;
+                            }
+                            break;
+
+                        case MigrationPlanOperationKind.CreateIndex:
+                        case MigrationPlanOperationKind.DropIndex:
+                            // For both index ops the rollback direction is "drop
+                            // the index". The plan op's TargetName is the actual
+                            // index name (not the synthetic step-N identifier).
+                            if (!string.IsNullOrWhiteSpace(action.EntityName) &&
+                                !string.IsNullOrWhiteSpace(action.TargetName))
+                            {
+                                dropResult = DropIndex(action.EntityName, action.TargetName);
+                                executed = true;
+                            }
+                            break;
+                    }
+
+                    if (executed && dropResult != null)
+                    {
+                        if (dropResult.Flag == Errors.Ok || dropResult.Flag == Errors.Warning)
+                        {
+                            result.ExecutedActions.Add($"{action.ActionId} rollback executed for '{action.EntityName}' [{action.OperationKind} '{action.TargetName}'].");
+                        }
+                        else
+                        {
+                            failed.Add($"{action.ActionId}: {dropResult.Message}");
+                        }
                     }
                     else
                     {
-                        failed.Add($"{action.ActionId}: {dropResult.Message}");
+                        result.ExecutedActions.Add($"{action.ActionId} requires manual compensation: {action.CompensationPlaybook}");
                     }
                 }
                 else
@@ -245,7 +314,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                 ? MigrationRollbackMode.ReversibleDdl
                 : kind == MigrationPlanOperationKind.AddMissingColumns
                     ? MigrationRollbackMode.ForwardFixWithCompensation
-                    : MigrationRollbackMode.ManualOnly;
+                    : kind == MigrationPlanOperationKind.AddForeignKey
+                        || kind == MigrationPlanOperationKind.DropForeignKey
+                        || kind == MigrationPlanOperationKind.CreateIndex
+                        || kind == MigrationPlanOperationKind.DropIndex
+                            ? MigrationRollbackMode.ReversibleDdl
+                            : MigrationRollbackMode.ManualOnly;
         }
 
         private static string BuildRollbackSqlPreview(MigrationPlanOperation operation)
@@ -258,6 +332,30 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             if (operation.Kind == MigrationPlanOperationKind.AddMissingColumns && operation.MissingColumns.Count > 0)
                 return $"-- Provider-specific drop-column/forward-fix required for {operation.EntityName}: {string.Join(", ", operation.MissingColumns)}";
+
+            if (operation.Kind == MigrationPlanOperationKind.AddForeignKey && !string.IsNullOrWhiteSpace(operation.EntityName))
+            {
+                var constraint = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-FK>";
+                return $"ALTER TABLE {operation.EntityName} DROP CONSTRAINT {constraint};";
+            }
+
+            if (operation.Kind == MigrationPlanOperationKind.DropForeignKey && !string.IsNullOrWhiteSpace(operation.EntityName))
+            {
+                var constraint = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-FK>";
+                return $"ALTER TABLE {operation.EntityName} ADD CONSTRAINT {constraint} ...; -- restore from backup or original spec";
+            }
+
+            if (operation.Kind == MigrationPlanOperationKind.CreateIndex && !string.IsNullOrWhiteSpace(operation.EntityName))
+            {
+                var index = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-IX>";
+                return $"DROP INDEX {index} ON {operation.EntityName};";
+            }
+
+            if (operation.Kind == MigrationPlanOperationKind.DropIndex && !string.IsNullOrWhiteSpace(operation.EntityName))
+            {
+                var index = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-IX>";
+                return $"-- Provider-specific CREATE INDEX required for {operation.EntityName}; restore index '{index}' per original spec";
+            }
 
             return "-- Manual rollback required";
         }
@@ -273,6 +371,30 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (operation.Kind == MigrationPlanOperationKind.AddMissingColumns)
                 return "Use forward-fix migration: patch consumers, backfill values, and mark deprecated columns in a follow-up release.";
 
+            if (operation.Kind == MigrationPlanOperationKind.AddForeignKey)
+            {
+                var constraint = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-FK>";
+                return $"If the FK constraint '{constraint}' blocks the dependent workload, defer the FK creation in a follow-up migration after data backfill completes.";
+            }
+
+            if (operation.Kind == MigrationPlanOperationKind.DropForeignKey)
+            {
+                var constraint = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-FK>";
+                return $"Re-add the constraint '{constraint}' in a follow-up release; record cascading-impact rows in the audit trail before re-applying.";
+            }
+
+            if (operation.Kind == MigrationPlanOperationKind.CreateIndex)
+            {
+                var index = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-IX>";
+                return $"If the index build for '{index}' fails, drop the partial index and rebuild online during off-peak hours; re-collect statistics before retrying.";
+            }
+
+            if (operation.Kind == MigrationPlanOperationKind.DropIndex)
+            {
+                var index = !string.IsNullOrWhiteSpace(operation.TargetName) ? operation.TargetName : "<unnamed-IX>";
+                return $"Restore the index '{index}' via CREATE INDEX; capture query-plan regression evidence before and after.";
+            }
+
             return "Execute manual operator playbook with restore verification evidence.";
         }
 
@@ -282,10 +404,31 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return ("Rollback unavailable.", "Compensation unavailable.");
 
             plan.CompensationPlan ??= BuildCompensationPlan(plan);
-            var action = plan.CompensationPlan.Actions
-                .FirstOrDefault(item =>
+
+            // For FK/Index ops a single entity can host multiple constraints or
+            // indexes, so prefer matching by TargetName when it is set; otherwise
+            // fall back to EntityName + OperationKind which is sufficient for
+            // single-op plans.
+            var isRelationalOp = failedStep.OperationKind == MigrationPlanOperationKind.AddForeignKey ||
+                                 failedStep.OperationKind == MigrationPlanOperationKind.DropForeignKey ||
+                                 failedStep.OperationKind == MigrationPlanOperationKind.CreateIndex ||
+                                 failedStep.OperationKind == MigrationPlanOperationKind.DropIndex;
+
+            MigrationCompensationAction action = null;
+            if (isRelationalOp && !string.IsNullOrWhiteSpace(failedStep.TargetName))
+            {
+                action = plan.CompensationPlan.Actions.FirstOrDefault(item =>
+                    string.Equals(item.EntityName, failedStep.EntityName, StringComparison.OrdinalIgnoreCase) &&
+                    item.OperationKind == failedStep.OperationKind &&
+                    string.Equals(item.TargetName, failedStep.TargetName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (action == null)
+            {
+                action = plan.CompensationPlan.Actions.FirstOrDefault(item =>
                     string.Equals(item.EntityName, failedStep.EntityName, StringComparison.OrdinalIgnoreCase) &&
                     item.OperationKind == failedStep.OperationKind);
+            }
 
             if (action == null)
                 return ("No direct rollback action mapped.", "No compensation action mapped.");

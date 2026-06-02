@@ -42,14 +42,24 @@ Primary contracts live in `IMigrationManager.cs`:
 ## API Surface Summary
 - entity operations:
   - `EnsureEntity(...)`, `CreateEntity(...)`, `AddColumn(...)`, `DropColumn(...)`, `AlterColumn(...)`
+  - `CreateIndex(...)`, `AddForeignKey(...)`, `DropForeignKey(...)` (opt-in relational DDL)
 - discovery and explicit migration:
   - `DiscoverEntityTypes(...)`, `EnsureDatabaseCreated(...)`, `ApplyMigrations(...)`
   - `EnsureDatabaseCreatedForTypes(...)`, `ApplyMigrationsForTypes(...)`
+  - `ApplyMigrationsFromManifest(...)`, `EnsureDatabaseCreatedFromManifest(...)` (file-based discovery)
+- ORM/model interop (EF Core, NHibernate, hand-rolled — ORM-agnostic POCO model):
+  - `BuildMigrationPlanForModel(...)`, `BuildMigrationPlanForTypesAnnotated(...)`
+  - `EnsureDatabaseCreatedForModel(..., applyForeignKeys, applyIndexes)`
+  - `ApplyMigrationsForModel(..., applyForeignKeys, applyIndexes)` — topologically orders by FK dependencies
+  - `GetMigrationReadinessForModel(...)`, `GetMigrationSummaryForModel(...)`
+  - `GetMigrationModelEvidence()` (stable hash + per-entity reflection records)
 - planning and policy:
-  - `BuildMigrationPlan(...)`, `BuildMigrationPlanForTypes(...)`
+  - `BuildMigrationPlan(..., applyForeignKeys, applyIndexes)`, `BuildMigrationPlanForTypes(..., applyForeignKeys, applyIndexes)`
   - `EvaluateMigrationPlanPolicy(...)`
   - `GenerateDryRunReport(...)`, `RunPreflightChecks(...)`, `BuildImpactReport(...)`
   - `BuildPerformancePlan(...)`
+- entity operations:
+  - `CreateIndex(...)`, `DropIndex(...)`, `AddForeignKey(...)`, `DropForeignKey(...)`
 - execution:
   - `CreateExecutionCheckpoint(...)`, `ExecuteMigrationPlan(...)`, `ResumeMigrationPlan(...)`
   - `GetExecutionCheckpoint(...)`

@@ -1472,6 +1472,12 @@ namespace TheTechIdea.Beep.Tools
 
         #region EF Core Dedicated Conversion (EfCoreToEntityGeneratorHelper)
 
+        public bool IsEfDecoratedType(Type type)
+            => _efCoreToEntityHelper.IsEfDecoratedType(type);
+
+        public bool IsDiscoverablePoco(Type type)
+            => _pocoToEntityHelper.IsDiscoverablePoco(type);
+
         public List<Type> ScanNamespaceForEfCoreClasses(string namespaceName, Assembly assembly = null)
             => _efCoreToEntityHelper.ScanNamespaceForEfCoreClasses(namespaceName, assembly);
 

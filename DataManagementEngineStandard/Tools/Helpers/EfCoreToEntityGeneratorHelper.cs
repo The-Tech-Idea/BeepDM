@@ -352,7 +352,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
         #region Internal mapping/parsing helpers
 
-        private bool IsEfDecoratedType(Type type)
+        public bool IsEfDecoratedType(Type type)
         {
             if (type == null || !type.IsClass || type.IsAbstract) return false;
             if (type.GetCustomAttribute<TableAttribute>(inherit: false) != null) return true;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Core;
 using TheTechIdea.Beep.DataBase;
@@ -17,6 +18,8 @@ namespace TheTechIdea.Beep.Editor.Migration
             var renameEntityProbe = ProbeRenameEntitySupport(helper);
             var renameColumnProbe = ProbeRenameColumnSupport(helper);
             var transactionProbe = ProbeTransactionalDdlSupport(helper);
+            var foreignKeyProbe = ProbeForeignKeySupport(helper);
+            var indexProbe = ProbeIndexSupport(helper);
 
             var profile = new MigrationProviderCapabilityProfile
             {
@@ -26,6 +29,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                 SupportsRenameEntity = renameEntityProbe.IsSupported,
                 SupportsRenameColumn = renameColumnProbe.IsSupported,
                 SupportsTransactionalDdl = transactionProbe.IsSupported,
+                SupportsForeignKeys = foreignKeyProbe.IsSupported,
+                SupportsIndexes = indexProbe.IsSupported,
                 RequiresOfflineWindowForSchemaChanges = category == DatasourceCategory.RDBMS &&
                                                         (type == DataSourceType.Oracle || type == DataSourceType.SqlLite || !transactionProbe.IsSupported),
                 PortabilityWarning = BuildPortabilityWarning(type, category),
@@ -43,6 +48,12 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             if (!transactionProbe.IsSupported && !string.IsNullOrWhiteSpace(transactionProbe.Reason))
                 profile.Constraints.Add($"Transactional DDL probe: {transactionProbe.Reason}");
+
+            if (!foreignKeyProbe.IsSupported && !string.IsNullOrWhiteSpace(foreignKeyProbe.Reason))
+                profile.Constraints.Add($"Foreign-key support probe: {foreignKeyProbe.Reason}");
+
+            if (!indexProbe.IsSupported && !string.IsNullOrWhiteSpace(indexProbe.Reason))
+                profile.Constraints.Add($"Index support probe: {indexProbe.Reason}");
 
             return profile;
         }
@@ -89,6 +100,16 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (!capabilities.SupportsTransactions)
             {
                 constraints.Add("Transactional safety is limited; rollback/compensation must be explicit.");
+            }
+
+            if (!capabilities.SupportsIndexes)
+            {
+                constraints.Add("Index DDL is not supported; CreateIndex/DropIndex plans must include a fallback (e.g. add-index-on-next-deploy or operator runbook).");
+            }
+
+            if (category != DatasourceCategory.RDBMS)
+            {
+                constraints.Add("Foreign-key DDL is not supported outside RDBMS providers; AddForeignKey/DropForeignKey plans require explicit fallback or skip.");
             }
 
             if (constraints.Count == 0)
@@ -151,6 +172,46 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(reason))
                 reason = "Transaction SQL generation is not supported.";
             return (false, reason);
+        }
+
+        private static (bool IsSupported, string Reason) ProbeForeignKeySupport(IDataSourceHelper helper)
+        {
+            if (helper == null)
+                return (false, "No helper available.");
+
+            // RDBMS is the only category that legitimately supports FKs; everything
+            // else returns a no-op with an error message we can surface.
+            var result = helper.GenerateAddForeignKeySql(
+                tableName: "__probe_src__",
+                columnNames: new[] { "__probe_col__" },
+                referencedTableName: "__probe_tgt__",
+                referencedColumnNames: new[] { "__probe_pk__" });
+            if (result.Success)
+                return (true, string.Empty);
+
+            // The helper acknowledged the call but did not return SQL — likely
+            // because it requires a real EntityField, or the FK is generated as
+            // part of CREATE TABLE. RDBMS-typed helpers are trusted to support
+            // FKs even if the synthetic probe does not return SQL.
+            if (helper.GetType().Name.IndexOf("Rdbms", StringComparison.OrdinalIgnoreCase) >= 0)
+                return (true, "Helper did not return SQL for synthetic probe but is RDBMS-typed; assumed supported.");
+
+            return NormalizeProbeResult(false, result.ErrorMessage);
+        }
+
+        private static (bool IsSupported, string Reason) ProbeIndexSupport(IDataSourceHelper helper)
+        {
+            if (helper == null)
+                return (false, "No helper available.");
+
+            if (helper.Capabilities != null && helper.Capabilities.SupportsIndexes)
+                return (true, "Capability matrix reports index support.");
+
+            var result = helper.GenerateCreateIndexSql(
+                tableName: "__probe_entity__",
+                indexName: "__probe_ix__",
+                columns: new[] { "__probe_col__" });
+            return NormalizeProbeResult(result.Success, result.ErrorMessage);
         }
 
         private static (bool IsSupported, string Reason) NormalizeProbeResult(bool success, string errorMessage)

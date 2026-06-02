@@ -4017,9 +4017,11 @@
             Finds a specific class by name in a namespace
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.IsPocoClass(System.Type)">
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.IsDiscoverablePoco(System.Type)">
             <summary>
-            Checks if a type is a valid POCO class (not interface, abstract, static, etc.)
+            Checks if a type is a valid POCO class (not interface, abstract, static, etc.).
+            Returns true for concrete non-generic public classes that have a parameterless
+            constructor or are record types.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper.GetSearchableAssemblies">
@@ -32887,9 +32889,45 @@
             List of errors encountered during migration summary generation.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.Diagnostics">
+            <summary>
+            Non-error diagnostics and intent annotations recorded alongside the
+            summary (e.g. <c>applyForeignKeys=true</c> when the caller opted in).
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.TotalPendingMigrations">
             <summary>
             Total count of entities that need migration.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.ForeignKeyCount">
+            <summary>
+            Number of foreign-key relations discovered across the surveyed
+            entities. Only meaningful when the caller opted into FK
+            generation (see <see cref="!:GetMigrationSummary(string, Assembly, bool, bool, bool)"/>).
+            Counts both AddForeignKey and DropForeignKey operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.IndexCount">
+            <summary>
+            Number of indexes discovered across the surveyed entities. Only
+            meaningful when the caller opted into index generation.
+            Counts both CreateIndex and DropIndex operations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.ProviderSupportsForeignKeys">
+            <summary>
+            True when the active provider can express AddForeignKey/DropForeignKey
+            DDL. False for file-based and NoSQL datasources. Operators should
+            inspect this together with <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.ForeignKeyCount"/> before
+            relying on a plan to apply constraints.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.ProviderSupportsIndexes">
+            <summary>
+            True when the active provider can express CreateIndex/DropIndex DDL.
+            False for file-based datasources and some embedded engines that
+            emulate index DDL via table copy.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.HasPendingMigrations">
@@ -32959,13 +32997,89 @@
             A single planned operation generated during migration planning.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.TargetName">
+            <summary>
+            Stable identifier for the target object of this operation (e.g. constraint
+            name for AddForeignKey/DropForeignKey, index name for CreateIndex/DropIndex).
+            Threaded through to <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationExecutionStep.TargetName"/> so the
+            execution step can run the right drop/add DDL without re-deriving it from
+            the desired structure's metadata (which may not round-trip cleanly for
+            indexes, where the plan emitter also synthesizes the name).
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact">
             <summary>
             First-class migration plan artifact generated before applying schema changes.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationDryRunOperation.TargetName">
+            <summary>
+            For AddForeignKey / DropForeignKey, the constraint name. For
+            CreateIndex / DropIndex, the index name. Empty for non-relational
+            op kinds. Mirrors <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.TargetName"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationImpactEntry.TargetName">
+            <summary>
+            For AddForeignKey / DropForeignKey, the constraint name. For
+            CreateIndex / DropIndex, the index name. Empty for non-relational
+            op kinds. Mirrors <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.TargetName"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationExecutionStep.TargetName">
+            <summary>
+            Stable identifier for the target object of this step (constraint name for
+            AddForeignKey/DropForeignKey, index name for CreateIndex/DropIndex). When
+            empty the executor falls back to <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationExecutionStep.StepId"/>, which is the
+            synthetic "step-N" identifier.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationCompensationAction.TargetName">
+            <summary>
+            Stable identifier for the target object of this compensation (constraint
+            name for AddForeignKey/DropForeignKey, index name for CreateIndex/DropIndex).
+            Mirrors <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.TargetName"/>; populated when
+            the action wraps a FK/Index op so the executor can run the right DDL
+            without re-deriving the name from the original plan.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationTelemetryMetrics.OperationKindCounts">
+            <summary>
+            Per-operation-kind completion counts since process start. Keys are
+            the <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind"/> string (e.g. "AddForeignKey",
+            "CreateIndex"). Values are total completions (success + failure).
+            Operators can correlate spike in CreateIndex failures with a recent
+            platform upgrade or a large table.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationTelemetryMetrics.OperationKindFailureCounts">
+            <summary>
+            Per-operation-kind failure counts since process start. Same key
+            shape as <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationTelemetryMetrics.OperationKindCounts"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationOperationScaleAnnotation.TargetName">
+            <summary>
+            For AddForeignKey / DropForeignKey, the constraint name. For
+            CreateIndex / DropIndex, the index name. Empty for non-relational
+            op kinds. Mirrors <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.TargetName"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationOperationScaleAnnotation.RiskLevel">
+            <summary>
+            Risk level copied from <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.RiskLevel"/>.
+            Useful when correlating a high lock score with the operation's
+            intrinsic risk classification.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.EntityMigrationSource">
             <summary>Which source channel supplied a particular entity type to the pipeline.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Migration.EntityMigrationSource.DiscoveryEFCoreModel">
+            <summary>
+            Entity types resolved from an Entity Framework Core <see cref="!:Microsoft.EntityFrameworkCore.Metadata.IModel"/>
+            (typically via a <see cref="!:Microsoft.EntityFrameworkCore.DbContext"/>).
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.EntityMigrationDecision">
             <summary>Per-entity outcome from the migration pipeline.</summary>
@@ -33110,6 +33224,107 @@
         <member name="P:TheTechIdea.Beep.Editor.Migration.AssemblyDiscoveryEvidence.NamespaceScopeDiagnostics">
             <summary>Diagnostics produced when zero entities are found for a non-null namespace filter.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModel">
+            <summary>
+            BeepDM-owned, ORM-agnostic description of a model shape that an external
+            framework (typically an ORM such as EF Core) has produced. Callers populate
+            this POCO themselves and hand it to MigrationManager; the engine does not
+            import or reference any ORM package.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModel.Source">
+            <summary>Logical name of the originating framework, e.g. "EntityFrameworkCore", "NHibernate", "Manual".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModel.SourceVersion">
+            <summary>Semantic version of the originating framework, if known (e.g. "9.0.0").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModel.SourceId">
+            <summary>Caller-defined opaque identifier, e.g. a DbContext type name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModel.Entities">
+            <summary>Entities in the model, keyed by CLR type full name for fast lookup.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity">
+            <summary>
+            A single entity inside a <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>. Maps to one logical
+            table on the target datasource.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.ClrTypeFullName">
+            <summary>CLR type full name (used as the stable lookup key).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.TableName">
+            <summary>Target table name (e.g. "Customers").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.Schema">
+            <summary>Target schema/owner/database; empty when the default applies.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.IsKeyless">
+            <summary>True for query / keyless types that have no table backing them.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.IsAbstract">
+            <summary>True for abstract types that are not migrated directly.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.Properties">
+            <summary>Properties in declaration order (the order callers intend to map).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.Indexes">
+            <summary>Indexes declared on this entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity.ForeignKeys">
+            <summary>Foreign keys declared on this entity.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModelProperty">
+            <summary>
+            A single property / column on a <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelProperty.PropertyName">
+            <summary>CLR property name (used as the stable lookup key on the entity).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelProperty.ColumnName">
+            <summary>Target column name (defaults to PropertyName when blank).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelProperty.FieldType">
+            <summary>.NET type full name (e.g. "System.String", "System.Int32", "System.DateTime").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelProperty.ColumnType">
+            <summary>Native SQL type hint (e.g. "nvarchar(255)", "decimal(18,2)").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelProperty.FieldCategoryHint">
+            <summary>Optional BeepDM DbFieldCategory override. When zero, BeepDM infers it from FieldType.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModelIndex">
+            <summary>Index descriptor inside a <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModelForeignKey">
+            <summary>Foreign key descriptor inside a <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelForeignKey.OnDeleteBehavior">
+            <summary>String form of the on-delete behaviour ("Cascade", "Restrict", "SetNull", "NoAction", "ClientCascade", "ClientNoAction", "ClientSetNull").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelForeignKey.OnUpdateBehavior">
+            <summary>String form of the on-update behaviour (same vocabulary as <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationModelForeignKey.OnDeleteBehavior"/>).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEvidence">
+            <summary>
+            Evidence captured during the most recent
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)"/> call. Includes the
+            per-entity reflection record, the model fingerprint, and any cross-cutting diagnostics.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEvidence.Entities">
+            <summary>Entity CLR type name → record map for the model that was reflected.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEvidence.ModelHash">
+            <summary>Stable hash of the entire model evidence (table+schema+column shape across all entities).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationModelEvidence.Diagnostics">
+            <summary>Cross-cutting warnings emitted while reflecting the model (e.g. duplicate table mapping).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEntityRecord">
+            <summary>Per-entity record produced while reflecting a <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModelEntity"/>.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.RecommendationSeverity">
             <summary>Severity level for a structured recommendation entry.</summary>
         </member>
@@ -33133,6 +33348,29 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.RecommendationProfile.PolicyOverlays">
             <summary>Organization-specific overrides: recommendation id → override text.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.DropIndex(System.String,System.String)">
+            <summary>
+            Drops an index by name. Mirrors <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.CreateIndex(System.String,System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.Object})"/> for the
+            <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind.DropIndex"/> plan operation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.AddForeignKey(System.String,System.String[],System.String,System.String[],System.String,System.String,System.String)">
+            <summary>
+            Adds a foreign key constraint between two entities on the migration datasource.
+            </summary>
+            <param name="entityName">Dependent (child) table.</param>
+            <param name="columnNames">Foreign-key column(s) on the dependent table.</param>
+            <param name="referencedEntityName">Referenced (principal) table.</param>
+            <param name="referencedColumnNames">Referenced column(s) on the principal table.</param>
+            <param name="onDeleteBehavior">One of "Cascade", "Restrict", "SetNull", "NoAction". Default: "Cascade".</param>
+            <param name="onUpdateBehavior">One of "Cascade", "Restrict", "SetNull", "NoAction". Default: "Cascade".</param>
+            <param name="constraintName">Optional explicit constraint name.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.DropForeignKey(System.String,System.String)">
+            <summary>
+            Drops a foreign key constraint by name.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.RegisterAssembly(System.Reflection.Assembly)">
             <summary>
@@ -33165,34 +33403,54 @@
             Scans registered assemblies, AppDomain, entry assembly references, and DMEEditor's assembly handler.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Ensures database is created with all discovered Entity types.
             Similar to EF Core's Database.EnsureCreated().
             Creates entities for all classes that inherit from Entity in the given namespace/assembly.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Applies migrations for all discovered Entity types.
             Compares Entity classes with database schema and applies changes.
             Similar to EF Core's Database.Migrate().
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Gets migration summary comparing Entity classes with current database state.
             Returns list of entities that need creation or updates.
+            <para>
+            <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+            stamped on the returned <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationSummary.Diagnostics"/> as
+            informational entries (the summary itself never applies schema changes).
+            </para>
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationReadiness(System.String,System.Reflection.Assembly,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationSummaryForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Gets migration summary comparing the supplied entity types with the current
+            database state. Bypasses discovery — this is the type-driven counterpart of
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)"/>.
+            </summary>
+            <param name="applyForeignKeys">Record the intended apply-foreign-keys flag on the summary for downstream consumers.</param>
+            <param name="applyIndexes">Record the intended apply-indexes flag on the summary for downstream consumers.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationReadiness(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a datasource-aware readiness report for discovery-based migrations.
             Use this before running migrations in enterprise environments where platform behavior,
             naming standards, and operational risk need explicit review.
+            <para>
+            <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+            stamped on the returned <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationReadinessReport.Issues"/> as
+            <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationIssueSeverity.Info"/> entries so consumers can audit the
+            intended apply behavior. The report itself never applies schema changes.
+            </para>
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Ensures database is created for the given entity types.
             Use this when you know exactly which types to create — bypasses assembly discovery entirely.
@@ -33204,15 +33462,21 @@
                 progress: progressReporter);
             </example>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Applies migrations for the given entity types.
             Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationReadinessForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationReadinessForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a datasource-aware readiness report for explicit-type migrations.
+            <para>
+            <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+            stamped on the returned <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationReadinessReport.Issues"/> as
+            <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationIssueSeverity.Info"/> entries so consumers can audit the
+            intended apply behavior. The report itself never applies schema changes.
+            </para>
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationBestPractices(System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType},System.Nullable{TheTechIdea.Beep.Utilities.DatasourceCategory})">
@@ -33226,16 +33490,30 @@
             Backward-compatible alias for older provider-named guidance calls.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a migration plan artifact (preview only) from discovery-based entity resolution.
             This method does not apply schema changes.
+            <para>
+            <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are recorded on
+            the plan as informational AddForeignKey / CreateIndex operations alongside the entity
+            operations, so dry-run, policy, and preflight reports preview them. The plan itself
+            remains read-only; the flags take effect on
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/>.
+            </para>
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a migration plan artifact (preview only) from explicit entity types.
             This method does not apply schema changes.
+            <para>
+            <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are recorded on
+            the plan as informational AddForeignKey / CreateIndex operations alongside the entity
+            operations, so dry-run, policy, and preflight reports preview them. The plan itself
+            remains read-only; the flags take effect on
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/>.
+            </para>
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EvaluateMigrationPlanPolicy(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
@@ -33367,6 +33645,73 @@
             Each recommendation has a stable id, rationale, and capability provenance markers.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Builds a non-destructive migration plan from a pre-built
+            <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>. Use this overload when an ORM (or any other
+            source) has already produced the model — BeepDM does not need to know about
+            the originating ORM.
+            <para>
+            <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+            recorded on the plan's operations as a hint to consumers about whether the
+            apply pipeline should generate FK / index DDL. The plan itself remains
+            read-only; the flags take effect on <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForTypesAnnotated(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Builds a non-destructive migration plan from a set of CLR types whose
+            migration shape is read via data annotations
+            (<c>System.ComponentModel.DataAnnotations.Schema.TableAttribute</c> and friends).
+            This is the no-ORM package path: pure reflection, no hard dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.EnsureDatabaseCreatedForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
+            <summary>
+            Ensures that the connected migration datasource contains every entity described
+            by the supplied <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
+            <summary>
+            Applies schema changes for every entity described by the supplied
+            <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>.
+            <para>
+            When <paramref name="applyForeignKeys"/> is true, foreign keys discovered in
+            the model are created via <c>AddForeignKey</c> after the dependent table is
+            created. When <paramref name="applyIndexes"/> is true, indexes are created
+            via <c>CreateIndex</c>. Both default to false, preserving prior behavior of
+            leaving relational artifacts to the ORM or to manual DDL.
+            </para>
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationReadinessForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Builds a datasource-aware readiness report for the supplied
+            <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>.
+            </summary>
+            <param name="model">ORM-supplied migration model.</param>
+            <param name="detectRelationships">When true, foreign-key and index shapes are reflected.</param>
+            <param name="applyForeignKeys">Record the intended apply-foreign-keys flag on the report for downstream consumers (no schema changes here).</param>
+            <param name="applyIndexes">Record the intended apply-indexes flag on the report for downstream consumers (no schema changes here).</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationSummaryForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Returns a migration summary comparing the supplied <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>
+            with the current database state.
+            </summary>
+            <param name="model">ORM-supplied migration model.</param>
+            <param name="detectRelationships">When true, foreign-key and index shapes are reflected.</param>
+            <param name="applyForeignKeys">Record the intended apply-foreign-keys flag on the summary for downstream consumers.</param>
+            <param name="applyIndexes">Record the intended apply-indexes flag on the summary for downstream consumers.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.GetMigrationModelEvidence">
+            <summary>
+            Returns the model evidence captured during the most recent
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)"/> call.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationManager">
             <summary>
             Core MigrationManager shell.
@@ -33389,6 +33734,23 @@
               <item>MIG-MANIFEST-003 — unresolved type after resolution pipeline</item>
               <item>MIG-MANIFEST-004 — duplicate entity declaration</item>
             </list>
+            </summary>
+            <summary>
+            ORM/framework-agnostic interop partial.
+            <para>
+            Bridges externally-supplied migration models (e.g. an EF Core <c>IModel</c>
+            translated to a POCO at the call site, an NHibernate model, a hand-rolled
+            dictionary, or a snapshot loaded from disk) into the existing migration
+            plan / readiness / apply pipeline. BeepDM does not import any ORM package —
+            the engine accepts a populated <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/> POCO and does the rest.
+            </para>
+            <para>
+            For the canonical "EF Core" path, populate <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/> from
+            <c>dbContext.Model</c> at the call site (typically a few dozen lines) and pass it
+            to <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)"/>. A future companion NuGet package
+            (<c>TheTechIdea.Beep.DataManagementEngine.EFCore</c>) can ship that adapter as a
+            reusable helper without forcing every BeepDM consumer to take a hard EF Core dep.
+            </para>
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RegisterAssembly(System.Reflection.Assembly)">
@@ -33437,32 +33799,39 @@
             Scans registered assemblies, AppDomain, entry assembly references, and DMEEditor's assembly handler.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreated(System.String,System.Reflection.Assembly,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Ensures database is created with all discovered Entity types.
             Similar to EF Core's Database.EnsureCreated().
             Creates entities for all classes that inherit from Entity.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Applies migrations for all discovered Entity types.
             Compares Entity classes with database schema and applies changes.
             Similar to EF Core's Database.Migrate().
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Gets migration summary comparing Entity classes with current database state.
             Returns list of entities that need creation or updates.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationReadiness(System.String,System.Reflection.Assembly,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationSummaryForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Gets migration summary comparing the supplied entity types with the current
+            database state. Bypasses discovery — this is the type-driven counterpart of
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationSummary(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationReadiness(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a datasource-aware readiness report for discovery-based migrations.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationReadinessForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationReadinessForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a datasource-aware readiness report for explicit-type migrations.
             </summary>
@@ -33493,6 +33862,19 @@
             Used by Phase 4 discovery evidence.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIndexesForEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Applies all indexes declared on an entity. Returns null when the entity
+            has no indexes; otherwise returns a list of failure messages.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyForeignKeysForEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Applies all foreign-key relations declared on an entity. Returns null
+            when the entity has no relations; otherwise returns a list of failure
+            messages. Each <see cref="T:TheTechIdea.Beep.DataBase.RelationShipKeys"/> produces one FK.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ParseManifestFile(System.String)">
             <inheritdoc/>
         </member>
@@ -33503,23 +33885,107 @@
             Returns only the successfully resolved types.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsFromManifest(System.String,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsFromManifest(System.String,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Applies migrations sourced from a manifest file.
             Parses the manifest, resolves types, and runs them through the shared entity pipeline.
             </summary>
+            <param name="applyForeignKeys">When true, FKs declared on the entity structures (and any
+            model-interop-sourced ORM FKs already cached on the manager) are created after their
+            dependent tables. Defaults to false to preserve prior behavior.</param>
+            <param name="applyIndexes">When true, indexes declared on the entity structures are
+            created after their tables. Defaults to false to preserve prior behavior.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedFromManifest(System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
+            <summary>
+            Ensures that the migration datasource contains every entity declared in the
+            manifest file. Mirrors <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsFromManifest(System.String,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/> but never
+            adds missing columns and never fails on a column-shape mismatch — it only
+            creates entities that are missing and, when the corresponding opt-in flags
+            are set, applies the indexes and foreign keys declared on each entity.
+            </summary>
+            <param name="applyForeignKeys">When true, FKs declared on the entity structures are
+            created after their dependent tables. Defaults to false.</param>
+            <param name="applyIndexes">When true, indexes declared on the entity structures are
+            created after their tables. Defaults to false.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForTypesAnnotated(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationReadinessForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationSummaryForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetMigrationModelEvidence">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TopologicallyOrderByForeignKeys(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure},System.String@)">
+            <summary>
+            Topologically orders the supplied entity structures so that every
+            principal table appears before any dependent table that references it
+            via a foreign key. When a cycle is detected, falls back to source order
+            and returns a non-empty warning describing the cycle.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.IsModelInteropSourcedEntity(System.Type)">
+            <summary>
+            Returns true when the supplied type's <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>
+            representation was primed by <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.Boolean)"/>
+            (i.e. it is an ORM-model-sourced entity, not a classCreator-only entity).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EmitRelationalArtifactsForEntity(TheTechIdea.Beep.DataBase.EntityStructure,System.Collections.Generic.List{TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation},System.Boolean,System.Boolean)">
+            <summary>
+            Emits one <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind.AddForeignKey"/> op per
+            <see cref="T:TheTechIdea.Beep.DataBase.RelationShipKeys"/> on the supplied entity, plus one
+            <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind.CreateIndex"/> op per
+            <see cref="T:TheTechIdea.Beep.DataBase.EntityIndex"/>. The emitted ops carry their own
+            <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.MissingColumns"/> slots to thread
+            the relation columns / index columns through the execution pipeline
+            without redefining the operation data shape, and a
+            <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.TargetName"/> carrying the constraint
+            / index name so the execution step can run the matching drop or add DDL
+            without re-synthesizing the name.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIntentFlags(TheTechIdea.Beep.Editor.Migration.MigrationReadinessReport,System.Boolean,System.Boolean)">
+            <summary>
+            Stamps the apply-foreign-keys / apply-indexes intent on a readiness
+            report so consumers can audit the caller's intent. Uses the Issues
+            list at Info severity (which is informational, not a finding).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RecordOperationKindCompleted(TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind,System.Boolean)">
+            <summary>
+            Increments the per-op-kind completion counter (and the failure
+            counter when <paramref name="success"/> is false). Called from the
+            execution orchestrator at the end of each step so the telemetry
+            snapshot can report "AddForeignKey: 12 completed, 1 failed" without
+            requiring callers to walk audit events.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a non-destructive migration plan using discovery-based entity resolution.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a non-destructive migration plan using explicit entity types.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ExecuteEntityMigrationPipeline(System.Collections.Generic.IReadOnlyList{System.Type},System.Boolean,TheTechIdea.Beep.Editor.Migration.EntityMigrationSource,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ExecuteEntityMigrationPipeline(System.Collections.Generic.IReadOnlyList{System.Type},System.Boolean,TheTechIdea.Beep.Editor.Migration.EntityMigrationSource,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Shared internal pipeline used by all migration-apply paths (explicit and discovery).
             Emits a <see cref="T:TheTechIdea.Beep.Editor.Migration.EntityPipelineResult"/> with normalized scanned/created/updated/skipped/error counts
@@ -33532,7 +33998,7 @@
             Enables diff between runs without string parsing.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Ensures database is created for the given entity types.
             Use this when you know exactly which types to create — bypasses assembly discovery entirely.
@@ -33544,7 +34010,7 @@
                 progress: progressReporter);
             </example>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Applies migrations for the given entity types.
             Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
@@ -45608,6 +46074,50 @@
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[])">
             <summary>
             Generates SQL to add a foreign key constraint between tables.
+            Defaults to ON DELETE CASCADE / ON UPDATE CASCADE for backward compatibility.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddForeignKeySql(System.String,System.String[],System.String,System.String[],System.String,System.String,System.String)">
+            <summary>
+            Generates SQL to add a foreign key constraint between tables with explicit
+            ON DELETE / ON UPDATE referential actions and an optional constraint name.
+            </summary>
+            <param name="tableName">Dependent table name.</param>
+            <param name="columnNames">Foreign-key column(s) on the dependent table.</param>
+            <param name="referencedTableName">Referenced (principal) table name.</param>
+            <param name="referencedColumnNames">Referenced column(s) on the principal table.</param>
+            <param name="onDeleteBehavior">
+            One of: "Cascade", "Restrict", "SetNull", "NoAction". Defaults to "Cascade".
+            </param>
+            <param name="onUpdateBehavior">
+            One of: "Cascade", "Restrict", "SetNull", "NoAction". Defaults to "Cascade".
+            </param>
+            <param name="constraintName">
+            Optional explicit constraint name. When null/empty, a default of
+            FK_{table}_{refTable}_{columns} is generated.
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.NormalizeReferentialAction(System.String,System.String)">
+            <summary>
+            Normalizes a referential-action string (e.g. "Cascade", "SetNull") into
+            the SQL keyword form ("CASCADE", "SET NULL"). Returns the supplied default
+            when the input is null/whitespace or unrecognized.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropForeignKeySql(System.String,System.String)">
+            <summary>
+            Generates SQL to drop a foreign key constraint.
+            When <paramref name="constraintName"/> is null/empty, a default name of
+            FK_{table}_{refTable}_{columns} is assumed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropIndexSql(System.String,System.String)">
+            <summary>
+            Generates SQL to drop an index. The default form is a portable
+            <c>DROP INDEX &lt;name&gt;</c> statement — most RDBMS engines accept it
+            directly. Providers that require <c>DROP INDEX &lt;name&gt; ON &lt;table&gt;</c>
+            (e.g. MySQL/MariaDB) can be extended later by routing through a
+            <see cref="T:TheTechIdea.Beep.Utilities.DataSourceType"/> switch.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAddConstraintSql(System.String,System.String,System.String)">

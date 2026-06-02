@@ -129,6 +129,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     {
                         step.Status = MigrationExecutionStepStatus.Failed;
                         step.Message = "Dependency steps are not complete.";
+                        RecordOperationKindCompleted(step.OperationKind, success: false);
                         checkpoint.HasFailed = true;
                         checkpoint.FailureCategory = "Dependency";
                         checkpoint.FailureReason = step.Message;
@@ -182,6 +183,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     {
                         step.Status = MigrationExecutionStepStatus.Failed;
                         step.Message = stepResult?.Message ?? "Failed.";
+                        RecordOperationKindCompleted(step.OperationKind, success: false);
                         checkpoint.HasFailed = true;
                         checkpoint.FailureCategory = decision == "hard" ? "HardFail" : "Failure";
                         checkpoint.FailureReason = step.Message;
@@ -213,6 +215,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
                 RecordStepDuration(stepWatch.ElapsedMilliseconds);
+                RecordOperationKindCompleted(step.OperationKind, success: true);
                 checkpoint.UpdatedOnUtc = DateTime.UtcNow;
                 PersistExecutionCheckpoint(checkpoint);
 
@@ -341,6 +344,13 @@ namespace TheTechIdea.Beep.Editor.Migration
                     EntityTypeName = operation.EntityTypeName ?? string.Empty,
                     OperationKind = operation.Kind,
                     MissingColumns = operation.MissingColumns?.ToList() ?? new List<string>(),
+                    // Carry the actual constraint / index name from the plan op. The
+                    // executor uses this for DropForeignKey and DropIndex steps so it
+                    // does not need to re-derive the name from a (possibly missing)
+                    // desired structure. Empty when the plan op is for a Create or for
+                    // generic Add operations where the executor re-derives from the
+                    // desired structure.
+                    TargetName = operation.TargetName ?? string.Empty,
                     Status = operation.Kind == MigrationPlanOperationKind.UpToDate
                         ? MigrationExecutionStepStatus.Skipped
                         : MigrationExecutionStepStatus.Pending
@@ -407,6 +417,51 @@ namespace TheTechIdea.Beep.Editor.Migration
                         return CreateErrorsInfo(Errors.Failed, string.Join("; ", failures));
                     return CreateErrorsInfo(Errors.Ok, $"Added {step.MissingColumns.Count} column(s) to '{step.EntityName}'.");
 
+                case MigrationPlanOperationKind.AddForeignKey:
+                    if (desired == null)
+                        return CreateErrorsInfo(Errors.Failed, $"Cannot resolve entity metadata for '{step.EntityName}'.");
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "AddForeignKey step is missing the entity name.");
+                    var fkFailures = ApplyForeignKeysForEntity(desired);
+                    if (fkFailures != null && fkFailures.Count > 0)
+                        return CreateErrorsInfo(Errors.Failed, $"Foreign-key apply failed for '{step.EntityName}': {string.Join("; ", fkFailures)}");
+                    return CreateErrorsInfo(Errors.Ok, $"Foreign keys applied to '{step.EntityName}'.");
+
+                case MigrationPlanOperationKind.DropForeignKey:
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "DropForeignKey step is missing the entity name.");
+                    // Prefer the actual constraint name carried on the plan op
+                    // (via TargetName). Fall back to StepId for older plans that
+                    // synthesized the name there.
+                    var fkConstraintName = !string.IsNullOrWhiteSpace(step.TargetName)
+                        ? step.TargetName
+                        : step.StepId;
+                    if (string.IsNullOrWhiteSpace(fkConstraintName))
+                        return CreateErrorsInfo(Errors.Failed, "DropForeignKey step is missing the constraint name.");
+                    return DropForeignKey(step.EntityName, fkConstraintName);
+
+                case MigrationPlanOperationKind.CreateIndex:
+                    if (desired == null)
+                        return CreateErrorsInfo(Errors.Failed, $"Cannot resolve entity metadata for '{step.EntityName}'.");
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "CreateIndex step is missing the entity name.");
+                    var indexFailures = ApplyIndexesForEntity(desired);
+                    if (indexFailures != null && indexFailures.Count > 0)
+                        return CreateErrorsInfo(Errors.Failed, $"Index apply failed for '{step.EntityName}': {string.Join("; ", indexFailures)}");
+                    return CreateErrorsInfo(Errors.Ok, $"Indexes applied to '{step.EntityName}'.");
+
+                case MigrationPlanOperationKind.DropIndex:
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "DropIndex step is missing the entity name.");
+                    // Prefer the actual index name carried on the plan op
+                    // (via TargetName). Fall back to StepId for older plans.
+                    var indexName = !string.IsNullOrWhiteSpace(step.TargetName)
+                        ? step.TargetName
+                        : step.StepId;
+                    if (string.IsNullOrWhiteSpace(indexName))
+                        return CreateErrorsInfo(Errors.Failed, "DropIndex step is missing the index name.");
+                    return DropIndex(step.EntityName, indexName);
+
                 default:
                     return CreateErrorsInfo(Errors.Failed, $"Operation '{step.OperationKind}' is not yet supported by execution orchestration.");
             }
@@ -462,6 +517,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                     EntityTypeName = step.EntityTypeName,
                     Kind = step.OperationKind,
                     MissingColumns = step.MissingColumns?.ToList() ?? new List<string>(),
+                    // Carry the constraint/index name through so resume can
+                    // re-derive the right DDL for DropForeignKey / DropIndex
+                    // without re-running planning. Without this, a resumed
+                    // plan loses the FK/Index name and falls back to the
+                    // synthetic step-N identifier in ExecuteStep.
+                    TargetName = step.TargetName ?? string.Empty,
                     Note = step.Message
                 });
             }

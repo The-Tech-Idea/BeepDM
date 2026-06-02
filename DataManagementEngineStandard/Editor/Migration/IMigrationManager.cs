@@ -37,12 +37,48 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// List of errors encountered during migration summary generation.
         /// </summary>
         public List<string> Errors { get; set; } = new List<string>();
-        
+
+        /// <summary>
+        /// Non-error diagnostics and intent annotations recorded alongside the
+        /// summary (e.g. <c>applyForeignKeys=true</c> when the caller opted in).
+        /// </summary>
+        public List<string> Diagnostics { get; set; } = new List<string>();
+
         /// <summary>
         /// Total count of entities that need migration.
         /// </summary>
         public int TotalPendingMigrations => EntitiesToCreate.Count + EntitiesToUpdate.Count;
-        
+
+        /// <summary>
+        /// Number of foreign-key relations discovered across the surveyed
+        /// entities. Only meaningful when the caller opted into FK
+        /// generation (see <see cref="GetMigrationSummary(string, Assembly, bool, bool, bool)"/>).
+        /// Counts both AddForeignKey and DropForeignKey operations.
+        /// </summary>
+        public int ForeignKeyCount { get; set; }
+
+        /// <summary>
+        /// Number of indexes discovered across the surveyed entities. Only
+        /// meaningful when the caller opted into index generation.
+        /// Counts both CreateIndex and DropIndex operations.
+        /// </summary>
+        public int IndexCount { get; set; }
+
+        /// <summary>
+        /// True when the active provider can express AddForeignKey/DropForeignKey
+        /// DDL. False for file-based and NoSQL datasources. Operators should
+        /// inspect this together with <see cref="ForeignKeyCount"/> before
+        /// relying on a plan to apply constraints.
+        /// </summary>
+        public bool ProviderSupportsForeignKeys { get; set; } = true;
+
+        /// <summary>
+        /// True when the active provider can express CreateIndex/DropIndex DDL.
+        /// False for file-based datasources and some embedded engines that
+        /// emulate index DDL via table copy.
+        /// </summary>
+        public bool ProviderSupportsIndexes { get; set; } = true;
+
         /// <summary>
         /// Indicates if there are any pending migrations.
         /// </summary>
@@ -149,6 +185,10 @@ namespace TheTechIdea.Beep.Editor.Migration
         RenameEntity,
         RenameColumn,
         TruncateEntity,
+        AddForeignKey,
+        DropForeignKey,
+        CreateIndex,
+        DropIndex,
         UpToDate,
         Error
     }
@@ -180,6 +220,15 @@ namespace TheTechIdea.Beep.Editor.Migration
         public List<string> FallbackTasks { get; set; } = new List<string>();
         public List<string> MissingColumns { get; set; } = new List<string>();
         public string Note { get; set; } = string.Empty;
+        /// <summary>
+        /// Stable identifier for the target object of this operation (e.g. constraint
+        /// name for AddForeignKey/DropForeignKey, index name for CreateIndex/DropIndex).
+        /// Threaded through to <see cref="MigrationExecutionStep.TargetName"/> so the
+        /// execution step can run the right drop/add DDL without re-deriving it from
+        /// the desired structure's metadata (which may not round-trip cleanly for
+        /// indexes, where the plan emitter also synthesizes the name).
+        /// </summary>
+        public string TargetName { get; set; } = string.Empty;
     }
 
     public class MigrationProviderCapabilityProfile
@@ -190,6 +239,8 @@ namespace TheTechIdea.Beep.Editor.Migration
         public bool SupportsRenameEntity { get; set; }
         public bool SupportsRenameColumn { get; set; }
         public bool SupportsTransactionalDdl { get; set; }
+        public bool SupportsForeignKeys { get; set; }
+        public bool SupportsIndexes { get; set; }
         public bool RequiresOfflineWindowForSchemaChanges { get; set; }
         public string PortabilityWarning { get; set; } = string.Empty;
         public List<string> Constraints { get; set; } = new List<string>();
@@ -282,6 +333,12 @@ namespace TheTechIdea.Beep.Editor.Migration
         public string EntityName { get; set; } = string.Empty;
         public MigrationPlanOperationKind Kind { get; set; } = MigrationPlanOperationKind.None;
         public MigrationPlanRiskLevel RiskLevel { get; set; } = MigrationPlanRiskLevel.Low;
+        /// <summary>
+        /// For AddForeignKey / DropForeignKey, the constraint name. For
+        /// CreateIndex / DropIndex, the index name. Empty for non-relational
+        /// op kinds. Mirrors <see cref="MigrationPlanOperation.TargetName"/>.
+        /// </summary>
+        public string TargetName { get; set; } = string.Empty;
         public List<string> DdlPreview { get; set; } = new List<string>();
         public List<string> RiskTags { get; set; } = new List<string>();
         public List<string> Diagnostics { get; set; } = new List<string>();
@@ -326,6 +383,12 @@ namespace TheTechIdea.Beep.Editor.Migration
     {
         public string EntityName { get; set; } = string.Empty;
         public MigrationPlanOperationKind Kind { get; set; } = MigrationPlanOperationKind.None;
+        /// <summary>
+        /// For AddForeignKey / DropForeignKey, the constraint name. For
+        /// CreateIndex / DropIndex, the index name. Empty for non-relational
+        /// op kinds. Mirrors <see cref="MigrationPlanOperation.TargetName"/>.
+        /// </summary>
+        public string TargetName { get; set; } = string.Empty;
         public MigrationImpactSensitivity Sensitivity { get; set; } = MigrationImpactSensitivity.Low;
         public List<string> UsageHints { get; set; } = new List<string>();
         public List<string> DataVolumeIndicators { get; set; } = new List<string>();
@@ -361,6 +424,13 @@ namespace TheTechIdea.Beep.Editor.Migration
         public int AttemptCount { get; set; }
         public long ElapsedMilliseconds { get; set; }
         public string Message { get; set; } = string.Empty;
+        /// <summary>
+        /// Stable identifier for the target object of this step (constraint name for
+        /// AddForeignKey/DropForeignKey, index name for CreateIndex/DropIndex). When
+        /// empty the executor falls back to <see cref="StepId"/>, which is the
+        /// synthetic "step-N" identifier.
+        /// </summary>
+        public string TargetName { get; set; } = string.Empty;
     }
 
     public class MigrationExecutionCheckpoint
@@ -420,6 +490,14 @@ namespace TheTechIdea.Beep.Editor.Migration
         public bool IsRequiredBeforeApply { get; set; }
         public string RollbackSqlPreview { get; set; } = string.Empty;
         public string CompensationPlaybook { get; set; } = string.Empty;
+        /// <summary>
+        /// Stable identifier for the target object of this compensation (constraint
+        /// name for AddForeignKey/DropForeignKey, index name for CreateIndex/DropIndex).
+        /// Mirrors <see cref="MigrationPlanOperation.TargetName"/>; populated when
+        /// the action wraps a FK/Index op so the executor can run the right DDL
+        /// without re-deriving the name from the original plan.
+        /// </summary>
+        public string TargetName { get; set; } = string.Empty;
     }
 
     public class MigrationCompensationPlan
@@ -506,6 +584,19 @@ namespace TheTechIdea.Beep.Editor.Migration
         public long StepDurationSamples { get; set; }
         public double AverageStepDurationMilliseconds => StepDurationSamples <= 0 ? 0 : (double)TotalStepDurationMilliseconds / StepDurationSamples;
         public double PolicyBlockRatio => PlanCount <= 0 ? 0 : (double)PolicyBlockCount / PlanCount;
+        /// <summary>
+        /// Per-operation-kind completion counts since process start. Keys are
+        /// the <see cref="MigrationPlanOperationKind"/> string (e.g. "AddForeignKey",
+        /// "CreateIndex"). Values are total completions (success + failure).
+        /// Operators can correlate spike in CreateIndex failures with a recent
+        /// platform upgrade or a large table.
+        /// </summary>
+        public Dictionary<string, long> OperationKindCounts { get; set; } = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Per-operation-kind failure counts since process start. Same key
+        /// shape as <see cref="OperationKindCounts"/>.
+        /// </summary>
+        public Dictionary<string, long> OperationKindFailureCounts { get; set; } = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
     }
 
     public class MigrationTelemetrySnapshot
@@ -529,6 +620,18 @@ namespace TheTechIdea.Beep.Editor.Migration
     {
         public string EntityName { get; set; } = string.Empty;
         public MigrationPlanOperationKind OperationKind { get; set; } = MigrationPlanOperationKind.None;
+        /// <summary>
+        /// For AddForeignKey / DropForeignKey, the constraint name. For
+        /// CreateIndex / DropIndex, the index name. Empty for non-relational
+        /// op kinds. Mirrors <see cref="MigrationPlanOperation.TargetName"/>.
+        /// </summary>
+        public string TargetName { get; set; } = string.Empty;
+        /// <summary>
+        /// Risk level copied from <see cref="MigrationPlanOperation.RiskLevel"/>.
+        /// Useful when correlating a high lock score with the operation's
+        /// intrinsic risk classification.
+        /// </summary>
+        public MigrationPlanRiskLevel RiskLevel { get; set; } = MigrationPlanRiskLevel.Low;
         public MigrationExecutionWindowMode WindowMode { get; set; } = MigrationExecutionWindowMode.OnlinePreferred;
         public int EstimatedRuntimeSeconds { get; set; }
         public int EstimatedLockImpactScore { get; set; }
@@ -663,7 +766,12 @@ namespace TheTechIdea.Beep.Editor.Migration
     {
         Explicit,
         DiscoveryAssembly,
-        DiscoveryFileSystem
+        DiscoveryFileSystem,
+        /// <summary>
+        /// Entity types resolved from an Entity Framework Core <see cref="Microsoft.EntityFrameworkCore.Metadata.IModel"/>
+        /// (typically via a <see cref="Microsoft.EntityFrameworkCore.DbContext"/>).
+        /// </summary>
+        DiscoveryEFCoreModel
     }
 
     /// <summary>Per-entity outcome from the migration pipeline.</summary>
@@ -896,6 +1004,146 @@ namespace TheTechIdea.Beep.Editor.Migration
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Phase 6 – ORM-shaped MigrationModel POCO
+    // ─────────────────────────────────────────────────────────────────────────
+    //
+    // BeepDM does not depend on any ORM package. Instead it accepts a populated
+    // MigrationModel POCO from the caller. The caller is free to populate it from
+    // EF Core, NHibernate, Dapper, hand-rolled code, or a JSON file — BeepDM only
+    // sees the POCO.
+
+    /// <summary>
+    /// BeepDM-owned, ORM-agnostic description of a model shape that an external
+    /// framework (typically an ORM such as EF Core) has produced. Callers populate
+    /// this POCO themselves and hand it to MigrationManager; the engine does not
+    /// import or reference any ORM package.
+    /// </summary>
+    public class MigrationModel
+    {
+        /// <summary>Logical name of the originating framework, e.g. "EntityFrameworkCore", "NHibernate", "Manual".</summary>
+        public string Source { get; set; } = "Manual";
+        /// <summary>Semantic version of the originating framework, if known (e.g. "9.0.0").</summary>
+        public string SourceVersion { get; set; } = string.Empty;
+        /// <summary>Caller-defined opaque identifier, e.g. a DbContext type name.</summary>
+        public string SourceId { get; set; } = string.Empty;
+        /// <summary>Entities in the model, keyed by CLR type full name for fast lookup.</summary>
+        public Dictionary<string, MigrationModelEntity> Entities { get; set; }
+            = new Dictionary<string, MigrationModelEntity>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// A single entity inside a <see cref="MigrationModel"/>. Maps to one logical
+    /// table on the target datasource.
+    /// </summary>
+    public class MigrationModelEntity
+    {
+        /// <summary>CLR type full name (used as the stable lookup key).</summary>
+        public string ClrTypeFullName { get; set; } = string.Empty;
+        /// <summary>Target table name (e.g. "Customers").</summary>
+        public string TableName { get; set; } = string.Empty;
+        /// <summary>Target schema/owner/database; empty when the default applies.</summary>
+        public string Schema { get; set; } = string.Empty;
+        /// <summary>True for query / keyless types that have no table backing them.</summary>
+        public bool IsKeyless { get; set; }
+        /// <summary>True for abstract types that are not migrated directly.</summary>
+        public bool IsAbstract { get; set; }
+        /// <summary>Properties in declaration order (the order callers intend to map).</summary>
+        public List<MigrationModelProperty> Properties { get; set; } = new List<MigrationModelProperty>();
+        /// <summary>Indexes declared on this entity.</summary>
+        public List<MigrationModelIndex> Indexes { get; set; } = new List<MigrationModelIndex>();
+        /// <summary>Foreign keys declared on this entity.</summary>
+        public List<MigrationModelForeignKey> ForeignKeys { get; set; } = new List<MigrationModelForeignKey>();
+    }
+
+    /// <summary>
+    /// A single property / column on a <see cref="MigrationModelEntity"/>.
+    /// </summary>
+    public class MigrationModelProperty
+    {
+        /// <summary>CLR property name (used as the stable lookup key on the entity).</summary>
+        public string PropertyName { get; set; } = string.Empty;
+        /// <summary>Target column name (defaults to PropertyName when blank).</summary>
+        public string ColumnName { get; set; } = string.Empty;
+        /// <summary>.NET type full name (e.g. "System.String", "System.Int32", "System.DateTime").</summary>
+        public string FieldType { get; set; } = string.Empty;
+        /// <summary>Native SQL type hint (e.g. "nvarchar(255)", "decimal(18,2)").</summary>
+        public string ColumnType { get; set; } = string.Empty;
+        public bool IsNullable { get; set; } = true;
+        public int? MaxLength { get; set; }
+        public byte? Precision { get; set; }
+        public byte? Scale { get; set; }
+        public bool IsPrimaryKey { get; set; }
+        public bool IsIdentity { get; set; }
+        public bool IsRowVersion { get; set; }
+        public bool IsUnique { get; set; }
+        public bool IsIndexed { get; set; }
+        public string DefaultValueSql { get; set; } = string.Empty;
+        public string ComputedColumnSql { get; set; } = string.Empty;
+        /// <summary>Optional BeepDM DbFieldCategory override. When zero, BeepDM infers it from FieldType.</summary>
+        public DbFieldCategory FieldCategoryHint { get; set; }
+    }
+
+    /// <summary>Index descriptor inside a <see cref="MigrationModelEntity"/>.</summary>
+    public class MigrationModelIndex
+    {
+        public string Name { get; set; } = string.Empty;
+        public List<string> Columns { get; set; } = new List<string>();
+        public bool IsUnique { get; set; }
+    }
+
+    /// <summary>Foreign key descriptor inside a <see cref="MigrationModelEntity"/>.</summary>
+    public class MigrationModelForeignKey
+    {
+        public string ConstraintName { get; set; } = string.Empty;
+        public List<string> Columns { get; set; } = new List<string>();
+        public string PrincipalTable { get; set; } = string.Empty;
+        public string PrincipalSchema { get; set; } = string.Empty;
+        public List<string> PrincipalColumns { get; set; } = new List<string>();
+        /// <summary>String form of the on-delete behaviour ("Cascade", "Restrict", "SetNull", "NoAction", "ClientCascade", "ClientNoAction", "ClientSetNull").</summary>
+        public string OnDeleteBehavior { get; set; } = string.Empty;
+        /// <summary>String form of the on-update behaviour (same vocabulary as <see cref="OnDeleteBehavior"/>).</summary>
+        public string OnUpdateBehavior { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Evidence captured during the most recent
+    /// <see cref="IMigrationManager.BuildMigrationPlanForModel"/> call. Includes the
+    /// per-entity reflection record, the model fingerprint, and any cross-cutting diagnostics.
+    /// </summary>
+    public class MigrationModelEvidence
+    {
+        public int EntityTypeCount { get; set; }
+        public int KeylessTypeCount { get; set; }
+        public int ForeignKeyCount { get; set; }
+        public int IndexCount { get; set; }
+        public string Source { get; set; } = string.Empty;
+        public string SourceVersion { get; set; } = string.Empty;
+        public string SourceId { get; set; } = string.Empty;
+        /// <summary>Entity CLR type name → record map for the model that was reflected.</summary>
+        public Dictionary<string, MigrationModelEntityRecord> Entities { get; set; }
+            = new Dictionary<string, MigrationModelEntityRecord>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Stable hash of the entire model evidence (table+schema+column shape across all entities).</summary>
+        public string ModelHash { get; set; } = string.Empty;
+        /// <summary>Cross-cutting warnings emitted while reflecting the model (e.g. duplicate table mapping).</summary>
+        public List<string> Diagnostics { get; set; } = new List<string>();
+    }
+
+    /// <summary>Per-entity record produced while reflecting a <see cref="MigrationModelEntity"/>.</summary>
+    public class MigrationModelEntityRecord
+    {
+        public string ClrTypeFullName { get; set; } = string.Empty;
+        public string TableName { get; set; } = string.Empty;
+        public string Schema { get; set; } = string.Empty;
+        public List<string> PropertyNames { get; set; } = new List<string>();
+        public List<string> PrimaryKey { get; set; } = new List<string>();
+        public List<MigrationModelIndex> Indexes { get; set; } = new List<MigrationModelIndex>();
+        public List<MigrationModelForeignKey> ForeignKeys { get; set; } = new List<MigrationModelForeignKey>();
+        public string RecordHash { get; set; } = string.Empty;
+        public List<string> Warnings { get; set; } = new List<string>();
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Phase 5 – Recommendation Profiles (versioned best-practice intelligence)
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -947,8 +1195,8 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         // ── Entity-level operations ──
 
-        IErrorsInfo EnsureEntity(EntityStructure entity, bool createIfMissing = true, bool addMissingColumns = true);
-        IErrorsInfo EnsureEntity(Type pocoType, bool createIfMissing = true, bool addMissingColumns = true, bool detectRelationships = true);
+        IErrorsInfo EnsureEntity(EntityStructure entity, bool createIfMissing = true, bool addMissingColumns = true, bool applyForeignKeys = false, bool applyIndexes = false);
+        IErrorsInfo EnsureEntity(Type pocoType, bool createIfMissing = true, bool addMissingColumns = true, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
         IReadOnlyList<EntityField> GetMissingColumns(EntityStructure current, EntityStructure desired);
 
         IErrorsInfo CreateEntity(EntityStructure entity);
@@ -959,6 +1207,36 @@ namespace TheTechIdea.Beep.Editor.Migration
         IErrorsInfo DropColumn(string entityName, string columnName);
         IErrorsInfo RenameColumn(string entityName, string oldColumnName, string newColumnName);
         IErrorsInfo CreateIndex(string entityName, string indexName, string[] columns, Dictionary<string, object> options = null);
+
+        /// <summary>
+        /// Drops an index by name. Mirrors <see cref="CreateIndex"/> for the
+        /// <see cref="MigrationPlanOperationKind.DropIndex"/> plan operation.
+        /// </summary>
+        IErrorsInfo DropIndex(string entityName, string indexName);
+
+        /// <summary>
+        /// Adds a foreign key constraint between two entities on the migration datasource.
+        /// </summary>
+        /// <param name="entityName">Dependent (child) table.</param>
+        /// <param name="columnNames">Foreign-key column(s) on the dependent table.</param>
+        /// <param name="referencedEntityName">Referenced (principal) table.</param>
+        /// <param name="referencedColumnNames">Referenced column(s) on the principal table.</param>
+        /// <param name="onDeleteBehavior">One of "Cascade", "Restrict", "SetNull", "NoAction". Default: "Cascade".</param>
+        /// <param name="onUpdateBehavior">One of "Cascade", "Restrict", "SetNull", "NoAction". Default: "Cascade".</param>
+        /// <param name="constraintName">Optional explicit constraint name.</param>
+        IErrorsInfo AddForeignKey(
+            string entityName,
+            string[] columnNames,
+            string referencedEntityName,
+            string[] referencedColumnNames,
+            string onDeleteBehavior = "Cascade",
+            string onUpdateBehavior = "Cascade",
+            string constraintName = null);
+
+        /// <summary>
+        /// Drops a foreign key constraint by name.
+        /// </summary>
+        IErrorsInfo DropForeignKey(string entityName, string constraintName);
 
         // ── Assembly registration for cross-project discovery ──
 
@@ -1002,27 +1280,47 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Similar to EF Core's Database.EnsureCreated().
         /// Creates entities for all classes that inherit from Entity in the given namespace/assembly.
         /// </summary>
-        IErrorsInfo EnsureDatabaseCreated(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, IProgress<PassedArgs> progress = null);
+        IErrorsInfo EnsureDatabaseCreated(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Applies migrations for all discovered Entity types.
         /// Compares Entity classes with database schema and applies changes.
         /// Similar to EF Core's Database.Migrate().
         /// </summary>
-        IErrorsInfo ApplyMigrations(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null);
+        IErrorsInfo ApplyMigrations(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Gets migration summary comparing Entity classes with current database state.
         /// Returns list of entities that need creation or updates.
+        /// <para>
+        /// <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+        /// stamped on the returned <see cref="MigrationSummary.Diagnostics"/> as
+        /// informational entries (the summary itself never applies schema changes).
+        /// </para>
         /// </summary>
-        MigrationSummary GetMigrationSummary(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true);
+        MigrationSummary GetMigrationSummary(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Gets migration summary comparing the supplied entity types with the current
+        /// database state. Bypasses discovery — this is the type-driven counterpart of
+        /// <see cref="GetMigrationSummary(string, Assembly, bool, bool, bool)"/>.
+        /// </summary>
+        /// <param name="applyForeignKeys">Record the intended apply-foreign-keys flag on the summary for downstream consumers.</param>
+        /// <param name="applyIndexes">Record the intended apply-indexes flag on the summary for downstream consumers.</param>
+        MigrationSummary GetMigrationSummaryForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Builds a datasource-aware readiness report for discovery-based migrations.
         /// Use this before running migrations in enterprise environments where platform behavior,
         /// naming standards, and operational risk need explicit review.
+        /// <para>
+        /// <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+        /// stamped on the returned <see cref="MigrationReadinessReport.Issues"/> as
+        /// <see cref="MigrationIssueSeverity.Info"/> entries so consumers can audit the
+        /// intended apply behavior. The report itself never applies schema changes.
+        /// </para>
         /// </summary>
-        MigrationReadinessReport GetMigrationReadiness(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true);
+        MigrationReadinessReport GetMigrationReadiness(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
 
         // ── Database-level migration (explicit types — no discovery needed) ──
 
@@ -1036,18 +1334,24 @@ namespace TheTechIdea.Beep.Editor.Migration
         ///     new[] { typeof(Customer), typeof(Product), typeof(Invoice) },
         ///     progress: progressReporter);
         /// </example>
-        IErrorsInfo EnsureDatabaseCreatedForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, IProgress<PassedArgs> progress = null);
+        IErrorsInfo EnsureDatabaseCreatedForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Applies migrations for the given entity types.
         /// Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
         /// </summary>
-        IErrorsInfo ApplyMigrationsForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null);
+        IErrorsInfo ApplyMigrationsForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Builds a datasource-aware readiness report for explicit-type migrations.
+        /// <para>
+        /// <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+        /// stamped on the returned <see cref="MigrationReadinessReport.Issues"/> as
+        /// <see cref="MigrationIssueSeverity.Info"/> entries so consumers can audit the
+        /// intended apply behavior. The report itself never applies schema changes.
+        /// </para>
         /// </summary>
-        MigrationReadinessReport GetMigrationReadinessForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true);
+        MigrationReadinessReport GetMigrationReadinessForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Returns datasource-aware migration best-practice guidance for the current migration datasource
@@ -1064,14 +1368,28 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// <summary>
         /// Builds a migration plan artifact (preview only) from discovery-based entity resolution.
         /// This method does not apply schema changes.
+        /// <para>
+        /// <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are recorded on
+        /// the plan as informational AddForeignKey / CreateIndex operations alongside the entity
+        /// operations, so dry-run, policy, and preflight reports preview them. The plan itself
+        /// remains read-only; the flags take effect on
+        /// <see cref="ApplyMigrations(string, Assembly, bool, bool, IProgress{PassedArgs}, bool, bool)"/>.
+        /// </para>
         /// </summary>
-        MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true);
+        MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Builds a migration plan artifact (preview only) from explicit entity types.
         /// This method does not apply schema changes.
+        /// <para>
+        /// <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are recorded on
+        /// the plan as informational AddForeignKey / CreateIndex operations alongside the entity
+        /// operations, so dry-run, policy, and preflight reports preview them. The plan itself
+        /// remains read-only; the flags take effect on
+        /// <see cref="ApplyMigrationsForTypes(IEnumerable{Type}, bool, bool, IProgress{PassedArgs}, bool, bool)"/>.
+        /// </para>
         /// </summary>
-        MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true);
+        MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
 
         /// <summary>
         /// Evaluates a migration plan against compatibility and safety policies.
@@ -1209,5 +1527,92 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Each recommendation has a stable id, rationale, and capability provenance markers.
         /// </summary>
         RecommendationProfile GetRecommendationProfile(DataSourceType? dataSourceType = null, DatasourceCategory? dataSourceCategory = null);
+
+        // ── Phase 6 – ORM interop (POCO model abstraction) ──
+        //
+        // These methods bridge ORM-shaped models (e.g. EF Core IModel, NHibernate model,
+        // a hand-rolled dictionary, or a snapshot loaded from disk) into the existing
+        // migration plan / readiness / apply pipeline. The bridge is intentionally
+        // framework-agnostic: callers populate a BeepDM-owned MigrationModel POCO and
+        // BeepDM does the rest.
+        //
+        // The engine ships with a built-in MigrationModelBuilder that reads data
+        // annotations ([Table], [Column], [Key], [ForeignKey], [Index], [Required],
+        // [MaxLength], [StringLength], etc.) from CLR types — no ORM package required.
+        // A separate companion package (or user code) can translate an EF Core IModel
+        // into the same MigrationModel shape without BeepDM taking a hard EF Core dep.
+        //
+        // Retrieved entity types are tagged with EntityMigrationSource.DiscoveryEFCoreModel
+        // for provenance and benefit from the same plan / policy / dry-run / preflight /
+        // compensation / governance machinery as the explicit and discovery paths.
+        //
+        // Implementations are sourced from MigrationManager.EFCore.cs.
+
+        /// <summary>
+        /// Builds a non-destructive migration plan from a pre-built
+        /// <see cref="MigrationModel"/>. Use this overload when an ORM (or any other
+        /// source) has already produced the model — BeepDM does not need to know about
+        /// the originating ORM.
+        /// <para>
+        /// <paramref name="applyForeignKeys"/> and <paramref name="applyIndexes"/> are
+        /// recorded on the plan's operations as a hint to consumers about whether the
+        /// apply pipeline should generate FK / index DDL. The plan itself remains
+        /// read-only; the flags take effect on <see cref="ApplyMigrationsForModel"/>.
+        /// </para>
+        /// </summary>
+        MigrationPlanArtifact BuildMigrationPlanForModel(MigrationModel model, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Builds a non-destructive migration plan from a set of CLR types whose
+        /// migration shape is read via data annotations
+        /// (<c>System.ComponentModel.DataAnnotations.Schema.TableAttribute</c> and friends).
+        /// This is the no-ORM package path: pure reflection, no hard dependencies.
+        /// </summary>
+        MigrationPlanArtifact BuildMigrationPlanForTypesAnnotated(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Ensures that the connected migration datasource contains every entity described
+        /// by the supplied <see cref="MigrationModel"/>.
+        /// </summary>
+        IErrorsInfo EnsureDatabaseCreatedForModel(MigrationModel model, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Applies schema changes for every entity described by the supplied
+        /// <see cref="MigrationModel"/>.
+        /// <para>
+        /// When <paramref name="applyForeignKeys"/> is true, foreign keys discovered in
+        /// the model are created via <c>AddForeignKey</c> after the dependent table is
+        /// created. When <paramref name="applyIndexes"/> is true, indexes are created
+        /// via <c>CreateIndex</c>. Both default to false, preserving prior behavior of
+        /// leaving relational artifacts to the ORM or to manual DDL.
+        /// </para>
+        /// </summary>
+        IErrorsInfo ApplyMigrationsForModel(MigrationModel model, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Builds a datasource-aware readiness report for the supplied
+        /// <see cref="MigrationModel"/>.
+        /// </summary>
+        /// <param name="model">ORM-supplied migration model.</param>
+        /// <param name="detectRelationships">When true, foreign-key and index shapes are reflected.</param>
+        /// <param name="applyForeignKeys">Record the intended apply-foreign-keys flag on the report for downstream consumers (no schema changes here).</param>
+        /// <param name="applyIndexes">Record the intended apply-indexes flag on the report for downstream consumers (no schema changes here).</param>
+        MigrationReadinessReport GetMigrationReadinessForModel(MigrationModel model, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Returns a migration summary comparing the supplied <see cref="MigrationModel"/>
+        /// with the current database state.
+        /// </summary>
+        /// <param name="model">ORM-supplied migration model.</param>
+        /// <param name="detectRelationships">When true, foreign-key and index shapes are reflected.</param>
+        /// <param name="applyForeignKeys">Record the intended apply-foreign-keys flag on the summary for downstream consumers.</param>
+        /// <param name="applyIndexes">Record the intended apply-indexes flag on the summary for downstream consumers.</param>
+        MigrationSummary GetMigrationSummaryForModel(MigrationModel model, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+
+        /// <summary>
+        /// Returns the model evidence captured during the most recent
+        /// <see cref="BuildMigrationPlanForModel"/> call.
+        /// </summary>
+        MigrationModelEvidence GetMigrationModelEvidence();
     }
 }

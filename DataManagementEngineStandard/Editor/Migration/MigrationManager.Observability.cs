@@ -17,6 +17,12 @@ namespace TheTechIdea.Beep.Editor.Migration
         private static long _policyBlockCount;
         private static long _totalStepDurationMs;
         private static long _stepDurationSamples;
+        // Per-op-kind completion/failure counters keyed by MigrationPlanOperationKind
+        // string. We use a dictionary rather than a fixed field per kind so the
+        // telemetry stays forward-compatible as new op kinds are added in later
+        // passes.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _opKindCompletionCounts = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _opKindFailureCounts = new(StringComparer.OrdinalIgnoreCase);
 
         private static readonly ConcurrentDictionary<string, ConcurrentQueue<MigrationDiagnosticEntry>> DiagnosticStore = new(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, ConcurrentQueue<MigrationAuditEvent>> AuditStore = new(StringComparer.OrdinalIgnoreCase);
@@ -75,6 +81,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             snapshot.DiagnosticsBySeverity = diagnostics
                 .GroupBy(item => item.Severity.ToString())
                 .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+
+            // Copy the per-op-kind counters into a snapshot-local dictionary so
+            // callers can read a consistent view without contending on the
+            // static dictionaries. The dictionaries themselves remain live and
+            // process-scoped; this is a point-in-time read.
+            foreach (var pair in _opKindCompletionCounts)
+                snapshot.Metrics.OperationKindCounts[pair.Key] = pair.Value;
+            foreach (var pair in _opKindFailureCounts)
+                snapshot.Metrics.OperationKindFailureCounts[pair.Key] = pair.Value;
 
             return snapshot;
         }
@@ -252,6 +267,21 @@ namespace TheTechIdea.Beep.Editor.Migration
                 elapsedMs = 0;
             Interlocked.Add(ref _totalStepDurationMs, elapsedMs);
             Interlocked.Increment(ref _stepDurationSamples);
+        }
+
+        /// <summary>
+        /// Increments the per-op-kind completion counter (and the failure
+        /// counter when <paramref name="success"/> is false). Called from the
+        /// execution orchestrator at the end of each step so the telemetry
+        /// snapshot can report "AddForeignKey: 12 completed, 1 failed" without
+        /// requiring callers to walk audit events.
+        /// </summary>
+        internal static void RecordOperationKindCompleted(MigrationPlanOperationKind kind, bool success)
+        {
+            var key = kind.ToString();
+            _opKindCompletionCounts.AddOrUpdate(key, 1, (_, value) => value + 1);
+            if (!success)
+                _opKindFailureCounts.AddOrUpdate(key, 1, (_, value) => value + 1);
         }
 
         private static void RecordDiagnostic(

@@ -197,6 +197,18 @@ private int _id;
             get { return _relations; }
             set { SetProperty(ref _relations, value); }
         }
+        private List<EntityIndex> _indexes;
+        /// <summary>
+        /// Index descriptors declared on this entity. Populated by callers (e.g. the
+        /// MigrationManager ORM-interop path) to drive index creation during
+        /// schema apply. The migration manager honors this list when callers opt
+        /// into <c>applyIndexes=true</c>.
+        /// </summary>
+        public List<EntityIndex> Indexes
+        {
+            get { return _indexes; }
+            set { SetProperty(ref _indexes, value); }
+        }
         private string _primarykeystring;
         public string PrimaryKeyString
         {
@@ -303,6 +315,7 @@ private int _id;
         Fields = new List<EntityField>();
         Parameters = new List<EntityParameters>();
         Relations = new List<RelationShipKeys>();
+        Indexes = new List<EntityIndex>();
         PrimaryKeys = new List<EntityField>();
         Filters = new List<AppFilter>();
     }
@@ -711,6 +724,27 @@ private int _id;
         public string DestField { get; set; }
         public string SourceValue { get; set; }
         public Type FieldType { get; set; }
+    }
+
+    /// <summary>
+    /// Index descriptor associated with an <see cref="EntityStructure"/>.
+    /// Populated by callers (e.g. the MigrationManager ORM-interop path) to drive
+    /// index creation during schema apply. The migration manager honors this list
+    /// when callers opt into <c>applyIndexes=true</c>.
+    /// </summary>
+    public class EntityIndex
+    {
+        public EntityIndex() { GuidID = Guid.NewGuid().ToString(); }
+
+        public int id { get; set; }
+        public string GuidID { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string EntityName { get; set; } = string.Empty;
+        public List<string> Columns { get; set; } = new List<string>();
+        public bool IsUnique { get; set; }
+        public bool IsClustered { get; set; }
+        /// <summary>Optional opaque options dictionary passed through to <c>IDataSourceHelper</c>.</summary>
+        public Dictionary<string, object> Options { get; set; } = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
     }
 
 }

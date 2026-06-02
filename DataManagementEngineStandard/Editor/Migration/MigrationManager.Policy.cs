@@ -142,7 +142,9 @@ namespace TheTechIdea.Beep.Editor.Migration
         {
             return kind == MigrationPlanOperationKind.DropEntity ||
                    kind == MigrationPlanOperationKind.DropColumn ||
-                   kind == MigrationPlanOperationKind.TruncateEntity;
+                   kind == MigrationPlanOperationKind.TruncateEntity ||
+                   kind == MigrationPlanOperationKind.DropForeignKey ||
+                   kind == MigrationPlanOperationKind.DropIndex;
         }
 
         private static bool HasApprovalOverride(MigrationPolicyOptions options)
@@ -183,6 +185,40 @@ namespace TheTechIdea.Beep.Editor.Migration
                         Decision = MigrationPolicyDecision.Block,
                         Message = $"Operation '{operation.Kind}' for '{operation.EntityName}' requires fallback tasks because provider alter support is limited.",
                         Recommendation = "Add explicit fallback tasks (copy-table/swap flow) before apply.",
+                        EntityName = operation.EntityName,
+                        OperationKind = operation.Kind,
+                        RiskLevel = operation.RiskLevel
+                    });
+                }
+
+                if ((operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                     operation.Kind == MigrationPlanOperationKind.DropForeignKey) &&
+                    !profile.SupportsForeignKeys &&
+                    (operation.FallbackTasks == null || operation.FallbackTasks.Count == 0))
+                {
+                    evaluation.Findings.Add(new MigrationPolicyFinding
+                    {
+                        RuleId = "provider-fallback-missing-foreign-key",
+                        Decision = MigrationPolicyDecision.Block,
+                        Message = $"Operation '{operation.Kind}' for '{operation.EntityName}' cannot run because the provider does not support foreign keys.",
+                        Recommendation = "Either target an RDBMS provider that supports foreign keys or add explicit fallback tasks (manual SQL via operator runbook) before apply.",
+                        EntityName = operation.EntityName,
+                        OperationKind = operation.Kind,
+                        RiskLevel = operation.RiskLevel
+                    });
+                }
+
+                if ((operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                     operation.Kind == MigrationPlanOperationKind.DropIndex) &&
+                    !profile.SupportsIndexes &&
+                    (operation.FallbackTasks == null || operation.FallbackTasks.Count == 0))
+                {
+                    evaluation.Findings.Add(new MigrationPolicyFinding
+                    {
+                        RuleId = "provider-fallback-missing-index",
+                        Decision = MigrationPolicyDecision.Block,
+                        Message = $"Operation '{operation.Kind}' for '{operation.EntityName}' cannot run because the provider does not support index DDL.",
+                        Recommendation = "Either target a provider that supports indexes or add explicit fallback tasks (defer to next deploy, no-op on the target engine) before apply.",
                         EntityName = operation.EntityName,
                         OperationKind = operation.Kind,
                         RiskLevel = operation.RiskLevel

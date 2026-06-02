@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -66,6 +66,19 @@ namespace TheTechIdea.Beep.DataBase
             get { return _guidid; }
             set { SetProperty(ref _guidid, value); }
         }
+        /// <summary>
+        /// On-delete behavior for this relation. Valid values: "Cascade", "Restrict",
+        /// "SetNull", "NoAction", "ClientCascade", "ClientNoAction", "ClientSetNull",
+        /// or empty when not specified. Surfaced from EF Core's
+        /// <c>OnDelete()</c> Fluent API and used to drive FK constraint generation
+        /// when the migration manager applies relations.
+        /// </summary>
+        public string OnDeleteBehavior { get; set; } = string.Empty;
+        /// <summary>
+        /// On-update behavior for this relation. Same vocabulary as
+        /// <see cref="OnDeleteBehavior"/>.
+        /// </summary>
+        public string OnUpdateBehavior { get; set; } = string.Empty;
         public RelationShipKeys()
         {
             GuidID = Guid.NewGuid().ToString();

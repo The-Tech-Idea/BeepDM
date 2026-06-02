@@ -541,6 +541,24 @@ namespace TheTechIdea.Beep.Tools
 
         #endregion
 
+        /// <summary>
+        /// Returns true when the CLR type carries EF Core data annotations
+        /// (Table, Column, Key, ForeignKey, etc.) and is therefore a valid
+        /// candidate for EF Core → EntityStructure conversion even if it does
+        /// not inherit from <c>Entity</c> or implement <c>IEntity</c>.
+        /// </summary>
+        bool IsEfDecoratedType(Type type);
+
+        /// <summary>
+        /// Returns true when the type passes basic POCO eligibility checks
+        /// (concrete, public, non-generic, non-static, has parameterless
+        /// constructor or is a record type). Used by the MigrationManager
+        /// discovery pipeline when <c>IsEntityType</c> returned false but the
+        /// caller wants to surface plain POCOs/EF Core types that look
+        /// migratable.
+        /// </summary>
+        bool IsDiscoverablePoco(Type type);
+
         string GenerateBlazorComponent(EntityStructure entity, string outputPath,
                                       string namespaceName = "TheTechIdea.ProjectComponents");
 

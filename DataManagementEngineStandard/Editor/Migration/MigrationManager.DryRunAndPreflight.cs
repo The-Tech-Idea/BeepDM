@@ -35,7 +35,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 {
                     EntityName = operation.EntityName,
                     Kind = operation.Kind,
-                    RiskLevel = operation.RiskLevel
+                    RiskLevel = operation.RiskLevel,
+                    // Surface the constraint/index name on the dry-run entry
+                    // so reviewers can match the DDL preview back to a named
+                    // constraint without re-walking the EntityStructure.
+                    TargetName = operation.TargetName ?? string.Empty
                 };
 
                 AddRiskTags(operation, dryRunOperation);
@@ -112,13 +116,20 @@ namespace TheTechIdea.Beep.Editor.Migration
                     : "Current plan remains aligned with observed schema state."
             });
 
-            // Operational lock/session estimate heuristic
+            // Operational lock/session estimate heuristic. AddForeignKey and
+            // CreateIndex are included because they can hold a SHARE/EXCLUSIVE
+            // lock on the referencing table for the duration of the row scan
+            // or index build. Without them, a plan with many FK/Index ops
+            // would report "low lock/session impact" and skip the maintenance
+            // window recommendation.
             var heavyOps = plan.Operations.Count(operation =>
                 operation != null &&
                 (operation.Kind == MigrationPlanOperationKind.AddMissingColumns ||
                  operation.Kind == MigrationPlanOperationKind.AlterColumn ||
                  operation.Kind == MigrationPlanOperationKind.DropColumn ||
-                 operation.Kind == MigrationPlanOperationKind.DropEntity));
+                 operation.Kind == MigrationPlanOperationKind.DropEntity ||
+                 operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                 operation.Kind == MigrationPlanOperationKind.CreateIndex));
             var lockDecision = heavyOps >= 5 || plan.ProviderCapabilities.RequiresOfflineWindowForSchemaChanges
                 ? MigrationPolicyDecision.Warn
                 : MigrationPolicyDecision.Pass;
@@ -174,6 +185,10 @@ namespace TheTechIdea.Beep.Editor.Migration
                 {
                     EntityName = operation.EntityName,
                     Kind = operation.Kind,
+                    // Surface the constraint/index name for FK/Index ops so
+                    // a reviewer can tell which constraint "AddForeignKey on
+                    // Orders" refers to without re-walking the EntityStructure.
+                    TargetName = operation.TargetName ?? string.Empty,
                     Sensitivity = ClassifyImpactSensitivity(operation)
                 };
 
@@ -234,7 +249,19 @@ namespace TheTechIdea.Beep.Editor.Migration
                 .Where(operation => operation != null)
                 .OrderBy(operation => operation.EntityName, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(operation => operation.Kind)
-                .Select(operation => $"{operation.EntityName}:{operation.Kind}:{operation.MissingColumns.Count}"));
+                .Select(operation =>
+                {
+                    // Include the constraint/index name for FK/Index ops so a rename
+                    // produces a different signature. Without this, DetectSchemaDrift
+                    // would miss a rename of FK_Orders_Customers -> FK_Orders_Customers_v2
+                    // because the same EntityName+Kind+ColumnCount would still match.
+                    var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                         operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                         operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                         operation.Kind == MigrationPlanOperationKind.DropIndex;
+                    var target = isRelationalOp ? (operation.TargetName ?? string.Empty) : string.Empty;
+                    return $"{operation.EntityName}:{operation.Kind}:{operation.MissingColumns.Count}:{target}";
+                }));
         }
 
         private Type ResolveType(string typeName)
@@ -323,6 +350,109 @@ namespace TheTechIdea.Beep.Editor.Migration
                         dryRun.Diagnostics.Add($"{columnName}: {preview.ErrorMessage}");
                 }
             }
+            else if (operation.Kind == MigrationPlanOperationKind.AddForeignKey)
+            {
+                var desired = ResolveDesiredEntityStructure(operation);
+                if (desired?.Relations == null) return;
+
+                var universalHelper = helper as TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper;
+                foreach (var rel in desired.Relations)
+                {
+                    if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID) || string.IsNullOrWhiteSpace(rel.RelatedEntityID))
+                        continue;
+
+                    if (universalHelper != null)
+                    {
+                        var (sql, success, err) = universalHelper.GenerateAddForeignKeySql(
+                            desired.EntityName,
+                            new[] { rel.EntityColumnID },
+                            rel.RelatedEntityID,
+                            new[] { rel.RelatedEntityColumnID },
+                            rel.OnDeleteBehavior,
+                            rel.OnUpdateBehavior,
+                            rel.RalationName);
+                        if (!string.IsNullOrWhiteSpace(sql))
+                            dryRun.DdlPreview.Add(sql);
+                        else if (!string.IsNullOrWhiteSpace(err))
+                            dryRun.Diagnostics.Add($"FK '{rel.RalationName}': {err}");
+                    }
+                    else
+                    {
+                        dryRun.Diagnostics.Add($"FK preview unavailable for helper '{helper.GetType().Name}'.");
+                    }
+                }
+            }
+            else if (operation.Kind == MigrationPlanOperationKind.DropForeignKey)
+            {
+                // Prefer the actual FK name carried in TargetName (the modern
+                // path that threads the name through plan op -> step ->
+                // compensation action). Fall back to Note for older plans that
+                // synthesized the name there.
+                var fkName = !string.IsNullOrWhiteSpace(operation.TargetName)
+                    ? operation.TargetName
+                    : operation.Note;
+                if (string.IsNullOrWhiteSpace(fkName))
+                {
+                    dryRun.Diagnostics.Add("DropForeignKey preview requires the constraint name to be carried in operation.TargetName (or operation.Note for older plans).");
+                    return;
+                }
+
+                var universalHelper = helper as TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper;
+                if (universalHelper != null)
+                {
+                    var (sql, success, err) = universalHelper.GenerateDropForeignKeySql(operation.EntityName, fkName);
+                    if (!string.IsNullOrWhiteSpace(sql))
+                        dryRun.DdlPreview.Add(sql);
+                    else if (!string.IsNullOrWhiteSpace(err))
+                        dryRun.Diagnostics.Add($"drop FK: {err}");
+                }
+            }
+            else if (operation.Kind == MigrationPlanOperationKind.CreateIndex)
+            {
+                var desired = ResolveDesiredEntityStructure(operation);
+                if (desired?.Indexes == null) return;
+
+                foreach (var idx in desired.Indexes)
+                {
+                    if (idx == null || idx.Columns == null || idx.Columns.Count == 0) continue;
+                    var name = string.IsNullOrWhiteSpace(idx.Name)
+                        ? $"IX_{desired.EntityName}_{string.Join("_", idx.Columns)}"
+                        : idx.Name;
+                    var (sql, success, err) = helper.GenerateCreateIndexSql(desired.EntityName, name, idx.Columns.ToArray(),
+                        idx.Options != null && idx.Options.Count > 0 ? new Dictionary<string, object>(idx.Options) : null);
+                    if (!string.IsNullOrWhiteSpace(sql))
+                        dryRun.DdlPreview.Add(sql);
+                    else if (!string.IsNullOrWhiteSpace(err))
+                        dryRun.Diagnostics.Add($"index '{name}': {err}");
+                }
+            }
+            else if (operation.Kind == MigrationPlanOperationKind.DropIndex)
+            {
+                // Prefer the actual index name carried in TargetName; fall back to
+                // Note for older plans that synthesized the name there.
+                var indexName = !string.IsNullOrWhiteSpace(operation.TargetName)
+                    ? operation.TargetName
+                    : operation.Note;
+                if (string.IsNullOrWhiteSpace(indexName))
+                {
+                    dryRun.Diagnostics.Add("DropIndex preview requires the index name to be carried in operation.TargetName (or operation.Note for older plans).");
+                    return;
+                }
+
+                var universalHelper = helper as TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper;
+                if (universalHelper != null)
+                {
+                    var (sql, success, err) = universalHelper.GenerateDropIndexSql(operation.EntityName, indexName);
+                    if (!string.IsNullOrWhiteSpace(sql))
+                        dryRun.DdlPreview.Add(sql);
+                    else if (!string.IsNullOrWhiteSpace(err))
+                        dryRun.Diagnostics.Add($"drop index: {err}");
+                }
+                else
+                {
+                    dryRun.DdlPreview.Add($"DROP INDEX {indexName} ON {operation.EntityName}; -- helper-specific");
+                }
+            }
         }
 
         private EntityStructure ResolveDesiredEntityStructure(MigrationPlanOperation operation)
@@ -342,7 +472,20 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (operation.RiskLevel == MigrationPlanRiskLevel.High || operation.MissingColumns.Count >= 6)
                 return MigrationImpactSensitivity.High;
 
-            if (operation.RiskLevel == MigrationPlanRiskLevel.Medium || operation.MissingColumns.Count >= 2)
+            // FK/Index ops are RiskLevel.Low by default but still touch the
+            // relational integrity surface. AddForeignKey validates every
+            // existing row against the referenced PK; CreateIndex can lock
+            // a large table for a long time. Surface them as Medium so the
+            // operator review doesn't classify a 12-AddForeignKey plan as
+            // "low impact" by default.
+            var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                 operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                 operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                 operation.Kind == MigrationPlanOperationKind.DropIndex;
+
+            if (operation.RiskLevel == MigrationPlanRiskLevel.Medium ||
+                operation.MissingColumns.Count >= 2 ||
+                isRelationalOp)
                 return MigrationImpactSensitivity.Medium;
 
             return MigrationImpactSensitivity.Low;
@@ -355,6 +498,18 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             if (operation.Kind == MigrationPlanOperationKind.AddMissingColumns)
                 yield return "Added columns can require application serialization and projection updates.";
+
+            if (operation.Kind == MigrationPlanOperationKind.AddForeignKey)
+                yield return "New foreign keys may affect insert/update ordering and require data validation before constraint enforcement.";
+
+            if (operation.Kind == MigrationPlanOperationKind.DropForeignKey)
+                yield return "Dropping foreign keys can orphan dependent rows; verify referential integrity is enforced at the application layer.";
+
+            if (operation.Kind == MigrationPlanOperationKind.CreateIndex)
+                yield return "Index creation locks the affected table on most providers; consider CONCURRENTLY or scheduled windows for large tables.";
+
+            if (operation.Kind == MigrationPlanOperationKind.DropIndex)
+                yield return "Dropping indexes can regress query performance; capture EXPLAIN plans before and after.";
 
             if (operation.IsDestructive)
                 yield return "Destructive operation likely impacts dependent queries, views, and integration contracts.";
@@ -373,6 +528,31 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             if (profile != null && !profile.SupportsTransactionalDdl)
                 yield return "Non-transactional DDL profile increases recovery complexity under load.";
+
+            // FK/Index impact scales with row count, not with the op itself.
+            // Operators reading the impact report should not have to remember
+            // that AddForeignKey does a full table scan on the referencing side.
+            if (operation.Kind == MigrationPlanOperationKind.AddForeignKey)
+                yield return "AddForeignKey validates every existing row in the referencing table against the referenced key; expect O(N) scan time on large tables.";
+
+            if (operation.Kind == MigrationPlanOperationKind.CreateIndex)
+                yield return "CreateIndex rebuilds or populates the index from existing rows; expect long lock window or background-rebuild time on large tables.";
+
+            if (operation.Kind == MigrationPlanOperationKind.DropIndex)
+                yield return "DropIndex invalidates dependent query plans; capture EXPLAIN baselines before execution to validate post-drop performance.";
+
+            if (operation.Kind == MigrationPlanOperationKind.DropForeignKey)
+                yield return "DropForeignKey can orphan dependent rows; ensure referential integrity is enforced at the application layer before the drop.";
+
+            if (profile != null && !profile.SupportsIndexes && (
+                operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                operation.Kind == MigrationPlanOperationKind.DropIndex))
+                yield return "Provider does not advertise index DDL support; this op will likely be a no-op or require a manual fallback.";
+
+            if (profile != null && !profile.SupportsForeignKeys && (
+                operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                operation.Kind == MigrationPlanOperationKind.DropForeignKey))
+                yield return "Provider does not advertise foreign-key DDL support; this op will likely be a no-op or require a manual fallback.";
         }
     }
 }

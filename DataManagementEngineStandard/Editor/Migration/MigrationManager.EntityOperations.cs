@@ -11,7 +11,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 {
     public partial class MigrationManager
     {
-        public IErrorsInfo EnsureEntity(EntityStructure entity, bool createIfMissing = true, bool addMissingColumns = true)
+        public IErrorsInfo EnsureEntity(EntityStructure entity, bool createIfMissing = true, bool addMissingColumns = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (entity == null)
                 return CreateErrorsInfo(Errors.Failed, "Entity structure cannot be null");
@@ -56,9 +56,15 @@ namespace TheTechIdea.Beep.Editor.Migration
                 try
                 {
                     var created = MigrateDataSource.CreateEntityAs(entity);
-                    var result = created
-                        ? CreateErrorsInfo(Errors.Ok, $"Entity '{entity.EntityName}' created successfully")
-                        : CreateErrorsInfo(Errors.Failed, $"Failed to create entity '{entity.EntityName}'. Check ErrorObject for details.");
+                    IErrorsInfo result;
+                    if (created)
+                    {
+                        result = CreateErrorsInfo(Errors.Ok, $"Entity '{entity.EntityName}' created successfully");
+                    }
+                    else
+                    {
+                        result = CreateErrorsInfo(Errors.Failed, $"Failed to create entity '{entity.EntityName}'. Check ErrorObject for details.");
+                    }
 
                     // Check ErrorObject for additional details
                     if (!created && MigrateDataSource.ErrorObject != null)
@@ -68,6 +74,36 @@ namespace TheTechIdea.Beep.Editor.Migration
                     }
 
                     TrackMigration("CreateEntityAs", entity.EntityName, null, string.Empty, result);
+                    if (!created)
+                        return result;
+
+                    // Entity was just created. Apply indexes and FKs if requested.
+                    // The create path bypasses the addMissingColumns branch, so
+                    // we must apply relational artifacts here to honor the
+                    // applyForeignKeys / applyIndexes opt-in contract.
+                    if (applyIndexes || applyForeignKeys)
+                    {
+                        var postCreateFailures = new List<string>();
+                        if (applyIndexes)
+                        {
+                            var indexFailures = ApplyIndexesForEntity(entity);
+                            if (indexFailures != null) postCreateFailures.AddRange(indexFailures);
+                        }
+                        if (applyForeignKeys)
+                        {
+                            var fkFailures = ApplyForeignKeysForEntity(entity);
+                            if (fkFailures != null) postCreateFailures.AddRange(fkFailures);
+                        }
+
+                        if (postCreateFailures.Count > 0)
+                        {
+                            var msg = $"Entity '{entity.EntityName}' was created, but relational artifacts failed: {string.Join("; ", postCreateFailures)}";
+                            var partial = CreateErrorsInfo(Errors.Failed, msg);
+                            TrackMigration("EnsureEntity.PostCreate", entity.EntityName, null, string.Empty, partial);
+                            return partial;
+                        }
+                    }
+
                     return result;
                 }
                 catch (Exception ex)
@@ -79,49 +115,100 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
 
             if (!addMissingColumns)
+            {
+                // Even when not adding missing columns, the caller may still
+                // want the relational artifacts applied. Honor that.
+                if (applyForeignKeys || applyIndexes)
+                {
+                    var postExistFailures = new List<string>();
+                    if (applyIndexes)
+                    {
+                        var indexFailures = ApplyIndexesForEntity(entity);
+                        if (indexFailures != null) postExistFailures.AddRange(indexFailures);
+                    }
+                    if (applyForeignKeys)
+                    {
+                        var fkFailures = ApplyForeignKeysForEntity(entity);
+                        if (fkFailures != null) postExistFailures.AddRange(fkFailures);
+                    }
+                    if (postExistFailures.Count > 0)
+                    {
+                        var msg = $"Entity '{entity.EntityName}' exists, but relational artifacts failed: {string.Join("; ", postExistFailures)}";
+                        var partial = CreateErrorsInfo(Errors.Failed, msg);
+                        TrackMigration("EnsureEntity.PostExist", entity.EntityName, null, string.Empty, partial);
+                        return partial;
+                    }
+                }
                 return CreateErrorsInfo(Errors.Ok, $"Entity '{entity.EntityName}' already exists");
+            }
 
             var current = MigrateDataSource.GetEntityStructure(entity.EntityName, true);
             if (current == null)
                 return CreateErrorsInfo(Errors.Failed, $"Failed to load structure for '{entity.EntityName}'");
 
             var missingColumns = GetMissingColumns(current, entity);
-            if (missingColumns.Count == 0)
-                return CreateErrorsInfo(Errors.Ok, $"Entity '{entity.EntityName}' is up to date");
-
             var failures = new List<string>();
-            foreach (var column in missingColumns)
+            if (missingColumns.Count > 0)
             {
-                var addResult = AddColumn(entity, column);
-                if (addResult.Flag != Errors.Ok)
-                    failures.Add($"{column.FieldName}: {addResult.Message}");
+                foreach (var column in missingColumns)
+                {
+                    var addResult = AddColumn(entity, column);
+                    if (addResult.Flag != Errors.Ok)
+                        failures.Add($"{column.FieldName}: {addResult.Message}");
+                }
+            }
+
+            // After schema is in sync, optionally apply relational artifacts.
+            // These are opt-in because the caller (especially EF Core adapters)
+            // may have already created them via the datasource's own provisioning.
+            if (applyIndexes)
+            {
+                var indexFailures = ApplyIndexesForEntity(entity);
+                if (indexFailures != null) failures.AddRange(indexFailures);
+            }
+
+            if (applyForeignKeys)
+            {
+                var fkFailures = ApplyForeignKeysForEntity(entity);
+                if (fkFailures != null) failures.AddRange(fkFailures);
             }
 
             if (failures.Count > 0)
             {
                 return CreateErrorsInfo(
                     Errors.Failed,
-                    $"Failed to add {failures.Count} column(s) to '{entity.EntityName}': {string.Join("; ", failures)}");
+                    $"Failed schema sync for '{entity.EntityName}': {string.Join("; ", failures)}");
             }
+
+            if (missingColumns.Count == 0 && !applyForeignKeys && !applyIndexes)
+                return CreateErrorsInfo(Errors.Ok, $"Entity '{entity.EntityName}' is up to date");
 
             return CreateErrorsInfo(
                 Errors.Ok,
-                $"Added {missingColumns.Count} column(s) to '{entity.EntityName}' successfully");
+                $"Entity '{entity.EntityName}' synchronized ({missingColumns.Count} new column(s)" +
+                (applyIndexes ? ", indexes applied" : string.Empty) +
+                (applyForeignKeys ? ", foreign keys applied" : string.Empty) + ")");
         }
 
-        public IErrorsInfo EnsureEntity(Type pocoType, bool createIfMissing = true, bool addMissingColumns = true, bool detectRelationships = true)
+        public IErrorsInfo EnsureEntity(Type pocoType, bool createIfMissing = true, bool addMissingColumns = true, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (pocoType == null)
                 return CreateErrorsInfo(Errors.Failed, "POCO type cannot be null");
 
-            if (_editor?.classCreator == null)
-                return CreateErrorsInfo(Errors.Failed, "Class creator is not available");
-
-            var entity = _editor.classCreator.ConvertToEntityStructure(pocoType);
+            // Use TryGetEntityStructure (not classCreator directly) so the
+            // model-interop cache populated by BuildMigrationPlanForModel is
+            // honored. EF Core callers that populated MigrationModel then
+            // BuildMigrationPlanForModel have already primed the cache with
+            // ORM-shaped structures (with table name from GetTableName(), etc.).
+            var entity = TryGetEntityStructure(pocoType);
             if (entity == null)
+            {
+                if (_editor?.classCreator == null)
+                    return CreateErrorsInfo(Errors.Failed, "Class creator is not available");
                 return CreateErrorsInfo(Errors.Failed, $"Failed to convert POCO '{pocoType.Name}' to EntityStructure");
+            }
 
-            return EnsureEntity(entity, createIfMissing, addMissingColumns);
+            return EnsureEntity(entity, createIfMissing, addMissingColumns, applyForeignKeys, applyIndexes);
         }
 
         public IReadOnlyList<EntityField> GetMissingColumns(EntityStructure current, EntityStructure desired)
@@ -500,6 +587,264 @@ namespace TheTechIdea.Beep.Editor.Migration
             return indexResult;
         }
 
+        public IErrorsInfo DropIndex(string entityName, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(entityName))
+                return CreateErrorsInfo(Errors.Failed, "Entity name is missing");
+
+            if (string.IsNullOrWhiteSpace(indexName))
+                return CreateErrorsInfo(Errors.Failed, "Index name is required");
+
+            if (MigrateDataSource == null)
+                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
+
+            if (IsFileDataSource(MigrateDataSource))
+                return CreateErrorsInfo(Errors.Failed, "Indexes are not supported for file datasources");
+
+            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
+            if (helper == null)
+            {
+                EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
+                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
+                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
+            }
+
+            // The universal RDBMS helper exposes GenerateDropIndexSql; check there first
+            // and fall back to IDataSourceHelper via reflection for custom helpers.
+            (string Sql, bool Success, string ErrorMessage) genResult = helper switch
+            {
+                Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper rh
+                    => rh.GenerateDropIndexSql(entityName, indexName),
+                _ => TryGenerateDropIndexViaInterface(helper, entityName, indexName)
+            };
+
+            if (!genResult.Success)
+            {
+                EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
+                    DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-GEN-FAILED");
+                return CreateErrorsInfo(Errors.Failed, $"Failed to generate drop-index SQL: {genResult.ErrorMessage}");
+            }
+
+            if (string.IsNullOrWhiteSpace(genResult.Sql))
+            {
+                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
+                TrackMigration("DropIndex", entityName, indexName, string.Empty, noDdlResult);
+                EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
+                    DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
+                return noDdlResult;
+            }
+
+            var dropResult = ExecuteSql(genResult.Sql);
+            TrackMigration("DropIndex", entityName, indexName, genResult.Sql, dropResult);
+            EmitDdlEvidence("DropIndex", entityName, null, indexName, genResult.Sql,
+                dropResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
+                DdlHelperSource.UniversalRdbmsHelper, dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            return dropResult;
+        }
+
+        // Reflection-based fallback for custom IDataSourceHelper implementations that
+        // expose their own GenerateDropIndexSql method.
+        private static (string Sql, bool Success, string ErrorMessage) TryGenerateDropIndexViaInterface(
+            IDataSourceHelper helper,
+            string tableName, string indexName)
+        {
+            try
+            {
+                var mi = helper.GetType().GetMethod("GenerateDropIndexSql",
+                    new[] { typeof(string), typeof(string) });
+                if (mi != null)
+                {
+                    var result = mi.Invoke(helper, new object[] { tableName, indexName });
+                    if (result is ValueTuple<string, bool, string> tuple)
+                        return tuple;
+                }
+                return ("", false, "Helper does not support index drop");
+            }
+            catch (Exception ex)
+            {
+                return ("", false, ex.Message);
+            }
+        }
+
+        public IErrorsInfo AddForeignKey(
+            string entityName,
+            string[] columnNames,
+            string referencedEntityName,
+            string[] referencedColumnNames,
+            string onDeleteBehavior = "Cascade",
+            string onUpdateBehavior = "Cascade",
+            string constraintName = null)
+        {
+            if (string.IsNullOrWhiteSpace(entityName))
+                return CreateErrorsInfo(Errors.Failed, "Dependent entity name is missing");
+
+            if (columnNames == null || columnNames.Length == 0)
+                return CreateErrorsInfo(Errors.Failed, "At least one foreign-key column must be specified");
+
+            if (string.IsNullOrWhiteSpace(referencedEntityName))
+                return CreateErrorsInfo(Errors.Failed, "Referenced entity name is missing");
+
+            if (referencedColumnNames == null || referencedColumnNames.Length == 0)
+                return CreateErrorsInfo(Errors.Failed, "At least one referenced column must be specified");
+
+            if (columnNames.Length != referencedColumnNames.Length)
+                return CreateErrorsInfo(Errors.Failed, "Number of foreign-key columns must match referenced columns");
+
+            if (MigrateDataSource == null)
+                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
+
+            if (IsFileDataSource(MigrateDataSource))
+                return CreateErrorsInfo(Errors.Failed, "Foreign keys are not supported for file datasources");
+
+            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
+            if (helper == null)
+            {
+                EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
+                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
+                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
+            }
+
+            // The universal RDBMS helper is the only one that currently exposes
+            // GenerateAddForeignKeySql with the full action set; check there first
+            // and fall back to IDataSourceHelper if the helper is a custom one.
+            (string Sql, bool Success, string ErrorMessage) genResult = helper switch
+            {
+                Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper rh
+                    => rh.GenerateAddForeignKeySql(entityName, columnNames, referencedEntityName,
+                        referencedColumnNames, onDeleteBehavior, onUpdateBehavior, constraintName),
+                _ => TryGenerateAddForeignKeyViaInterface(helper, entityName, columnNames,
+                        referencedEntityName, referencedColumnNames, onDeleteBehavior,
+                        onUpdateBehavior, constraintName)
+            };
+
+            if (!genResult.Success)
+            {
+                EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
+                    DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-GEN-FAILED");
+                return CreateErrorsInfo(Errors.Failed, $"Failed to generate add-FK SQL: {genResult.ErrorMessage}");
+            }
+
+            if (string.IsNullOrWhiteSpace(genResult.Sql))
+            {
+                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No FK DDL required for '{MigrateDataSource.DatasourceType}'");
+                TrackMigration("AddForeignKey", entityName, constraintName ?? string.Join(",", columnNames),
+                    string.Empty, noDdlResult);
+                EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
+                    DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
+                return noDdlResult;
+            }
+
+            var fkResult = ExecuteSql(genResult.Sql);
+            TrackMigration("AddForeignKey", entityName, constraintName ?? string.Join(",", columnNames),
+                genResult.Sql, fkResult);
+            EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, genResult.Sql,
+                fkResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
+                DdlHelperSource.UniversalRdbmsHelper, fkResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            return fkResult;
+        }
+
+        public IErrorsInfo DropForeignKey(string entityName, string constraintName)
+        {
+            if (string.IsNullOrWhiteSpace(entityName))
+                return CreateErrorsInfo(Errors.Failed, "Entity name is missing");
+
+            if (string.IsNullOrWhiteSpace(constraintName))
+                return CreateErrorsInfo(Errors.Failed, "Constraint name is required");
+
+            if (MigrateDataSource == null)
+                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
+
+            if (IsFileDataSource(MigrateDataSource))
+                return CreateErrorsInfo(Errors.Failed, "Foreign keys are not supported for file datasources");
+
+            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
+            if (helper == null)
+            {
+                EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
+                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
+                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
+            }
+
+            (string Sql, bool Success, string ErrorMessage) genResult = helper switch
+            {
+                Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper rh
+                    => rh.GenerateDropForeignKeySql(entityName, constraintName),
+                _ => TryGenerateDropForeignKeyViaInterface(helper, entityName, constraintName)
+            };
+
+            if (!genResult.Success)
+            {
+                EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
+                    DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-GEN-FAILED");
+                return CreateErrorsInfo(Errors.Failed, $"Failed to generate drop-FK SQL: {genResult.ErrorMessage}");
+            }
+
+            if (string.IsNullOrWhiteSpace(genResult.Sql))
+            {
+                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No FK DDL required for '{MigrateDataSource.DatasourceType}'");
+                TrackMigration("DropForeignKey", entityName, constraintName, string.Empty, noDdlResult);
+                EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
+                    DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
+                return noDdlResult;
+            }
+
+            var dropResult = ExecuteSql(genResult.Sql);
+            TrackMigration("DropForeignKey", entityName, constraintName, genResult.Sql, dropResult);
+            EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, genResult.Sql,
+                dropResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
+                DdlHelperSource.UniversalRdbmsHelper, dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            return dropResult;
+        }
+
+        // Fallback for non-RdbmsHelper IDataSourceHelper implementations that already
+        // expose GenerateAddForeignKeySql through the interface.
+        private static (string Sql, bool Success, string ErrorMessage) TryGenerateAddForeignKeyViaInterface(
+            IDataSourceHelper helper,
+            string tableName, string[] columnNames, string referencedTableName, string[] referencedColumnNames,
+            string onDeleteBehavior, string onUpdateBehavior, string constraintName)
+        {
+            try
+            {
+                // Most custom helpers expose only the 4-arg signature; the constraint name
+                // and behavior are ignored in that case (helpers return CASCADE behavior).
+                var mi = helper.GetType().GetMethod("GenerateAddForeignKeySql",
+                    new[] { typeof(string), typeof(string[]), typeof(string), typeof(string[]) });
+                if (mi != null)
+                {
+                    var result = mi.Invoke(helper, new object[] { tableName, columnNames, referencedTableName, referencedColumnNames });
+                    if (result is ValueTuple<string, bool, string> tuple)
+                        return tuple;
+                }
+                return ("", false, "Helper does not support foreign-key generation");
+            }
+            catch (Exception ex)
+            {
+                return ("", false, ex.Message);
+            }
+        }
+
+        private static (string Sql, bool Success, string ErrorMessage) TryGenerateDropForeignKeyViaInterface(
+            IDataSourceHelper helper,
+            string tableName, string constraintName)
+        {
+            try
+            {
+                var mi = helper.GetType().GetMethod("GenerateDropForeignKeySql",
+                    new[] { typeof(string), typeof(string) });
+                if (mi != null)
+                {
+                    var result = mi.Invoke(helper, new object[] { tableName, constraintName });
+                    if (result is ValueTuple<string, bool, string> tuple)
+                        return tuple;
+                }
+                return ("", false, "Helper does not support foreign-key drop");
+            }
+            catch (Exception ex)
+            {
+                return ("", false, ex.Message);
+            }
+        }
+
         private IErrorsInfo AddColumn(EntityStructure entity, EntityField column)
         {
             if (MigrateDataSource == null)
@@ -591,6 +936,82 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return CreateErrorsInfo(Errors.Failed, "Datasource returned no result for SQL execution");
 
             return result.Flag == Errors.Ok ? CreateErrorsInfo(Errors.Ok, "DDL executed successfully") : result;
+        }
+
+        /// <summary>
+        /// Applies all indexes declared on an entity. Returns null when the entity
+        /// has no indexes; otherwise returns a list of failure messages.
+        /// </summary>
+        private List<string> ApplyIndexesForEntity(EntityStructure entity)
+        {
+            var failures = new List<string>();
+            if (entity?.Indexes == null || entity.Indexes.Count == 0)
+                return null;
+
+            // Field-level unique/indexed markers create implicit indexes that the
+            // DDL layer may have already emitted. Track them here only when an
+            // explicit EntityIndex row is present.
+            foreach (var idx in entity.Indexes)
+            {
+                if (idx == null || idx.Columns == null || idx.Columns.Count == 0)
+                    continue;
+
+                var name = string.IsNullOrWhiteSpace(idx.Name)
+                    ? $"IX_{entity.EntityName}_{string.Join("_", idx.Columns)}"
+                    : idx.Name;
+
+                var options = idx.Options != null && idx.Options.Count > 0
+                    ? new Dictionary<string, object>(idx.Options)
+                    : null;
+                if (idx.IsUnique && (options == null || !options.ContainsKey("UNIQUE")))
+                    options ??= new Dictionary<string, object>();
+                if (idx.IsUnique && !options.ContainsKey("UNIQUE"))
+                    options["UNIQUE"] = true;
+
+                var result = CreateIndex(entity.EntityName, name, idx.Columns.ToArray(), options);
+                if (result.Flag != Errors.Ok)
+                    failures.Add($"index '{name}': {result.Message}");
+            }
+
+            return failures.Count == 0 ? null : failures;
+        }
+
+        /// <summary>
+        /// Applies all foreign-key relations declared on an entity. Returns null
+        /// when the entity has no relations; otherwise returns a list of failure
+        /// messages. Each <see cref="RelationShipKeys"/> produces one FK.
+        /// </summary>
+        private List<string> ApplyForeignKeysForEntity(EntityStructure entity)
+        {
+            var failures = new List<string>();
+            if (entity?.Relations == null || entity.Relations.Count == 0)
+                return null;
+
+            foreach (var rel in entity.Relations)
+            {
+                if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID))
+                    continue;
+
+                var parentEntity = rel.RelatedEntityID;
+                var parentColumn = rel.RelatedEntityColumnID;
+                if (string.IsNullOrWhiteSpace(parentEntity) || string.IsNullOrWhiteSpace(parentColumn))
+                    continue;
+
+                var fkName = rel.RalationName;
+                var result = AddForeignKey(
+                    entityName: entity.EntityName,
+                    columnNames: new[] { rel.EntityColumnID },
+                    referencedEntityName: parentEntity,
+                    referencedColumnNames: new[] { parentColumn },
+                    onDeleteBehavior: rel.OnDeleteBehavior ?? "Cascade",
+                    onUpdateBehavior: rel.OnUpdateBehavior ?? "Cascade",
+                    constraintName: fkName);
+
+                if (result.Flag != Errors.Ok)
+                    failures.Add($"FK '{fkName}': {result.Message}");
+            }
+
+            return failures.Count == 0 ? null : failures;
         }
 
         private IErrorsInfo CreateFileFromEntity(EntityStructure entity)

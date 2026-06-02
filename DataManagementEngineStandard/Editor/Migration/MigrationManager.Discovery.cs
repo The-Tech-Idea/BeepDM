@@ -166,7 +166,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Similar to EF Core's Database.EnsureCreated().
         /// Creates entities for all classes that inherit from Entity.
         /// </summary>
-        public IErrorsInfo EnsureDatabaseCreated(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, IProgress<PassedArgs> progress = null)
+        public IErrorsInfo EnsureDatabaseCreated(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
@@ -204,8 +204,14 @@ namespace TheTechIdea.Beep.Editor.Migration
                     {
                         progress?.Report(new PassedArgs { Messege = $"Processing Entity type: {entityType.Name}" });
 
-                        // Convert Entity type to EntityStructure
-                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
+                        // Use TryGetEntityStructure (not classCreator directly) so
+                        // the model-interop cache populated by BuildMigrationPlanForModel
+                        // is honored. EF Core callers that populated MigrationModel then
+                        // BuildMigrationPlanForModel have already primed the cache with
+                        // ORM-shaped structures (with table name from GetTableName(), etc.).
+                        // Without this, the discovery-based EnsureDatabaseCreated would
+                        // shadow the ORM shape with the classCreator annotation-only view.
+                        var entityStructure = TryGetEntityStructure(entityType);
                         if (entityStructure == null)
                         {
                             errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
@@ -219,8 +225,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                             entityStructure.EntityName = tableAttr.Name;
                         }
 
-                        // Ensure entity exists (create if missing)
-                        var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: false);
+                        // Ensure entity exists (create if missing). applyForeignKeys
+                        // and applyIndexes default to false so callers can opt in
+                        // to have the migration manager own the relational DDL.
+                        var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: false,
+                            applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
                         if (result.Flag == Errors.Ok)
                         {
                             created++;
@@ -260,7 +269,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Compares Entity classes with database schema and applies changes.
         /// Similar to EF Core's Database.Migrate().
         /// </summary>
-        public IErrorsInfo ApplyMigrations(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null)
+        public IErrorsInfo ApplyMigrations(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
@@ -293,6 +302,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     usesDiscovery: true,
                     source: EntityMigrationSource.DiscoveryAssembly,
                     addMissingColumns: addMissingColumns,
+                    applyForeignKeys: applyForeignKeys,
+                    applyIndexes: applyIndexes,
                     progress: progress);
 
                 var summary = pipelineResult.ToSummaryString();
@@ -311,7 +322,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Gets migration summary comparing Entity classes with current database state.
         /// Returns list of entities that need creation or updates.
         /// </summary>
-        public MigrationSummary GetMigrationSummary(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true)
+        public MigrationSummary GetMigrationSummary(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             var summary = new MigrationSummary
             {
@@ -330,6 +341,21 @@ namespace TheTechIdea.Beep.Editor.Migration
             summary.DataSourceType = MigrateDataSource.DatasourceType;
             summary.DataSourceCategory = MigrateDataSource.Category;
 
+            // Stamp the apply-intent flags on the summary so consumers can audit
+            // the caller's intent. Mirrors GetMigrationSummaryForModel.
+            if (applyForeignKeys) summary.Diagnostics.Add("applyForeignKeys=true");
+            if (applyIndexes) summary.Diagnostics.Add("applyIndexes=true");
+
+            // Reflect the active provider's ability to actually emit FK/Index DDL on
+            // the summary so a UI can show "5 FKs would be emitted but the provider
+            // cannot express them" without re-querying capabilities. DataSourceCapabilities
+            // has SupportsIndexes but not SupportsForeignKeys; for FKs we use the category
+            // (RDBMS only) which is a conservative approximation used elsewhere in the
+            // manager for the same decision.
+            var dsCapabilities = GetCapabilities(summary.DataSourceType, summary.DataSourceCategory);
+            summary.ProviderSupportsForeignKeys = summary.DataSourceCategory == DatasourceCategory.RDBMS;
+            summary.ProviderSupportsIndexes = dsCapabilities?.SupportsIndexes ?? false;
+
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
@@ -339,8 +365,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 {
                     try
                     {
-                        // Convert Entity type to EntityStructure
-                        var entityStructure = _editor?.classCreator?.ConvertToEntityStructure(entityType);
+                        // Use TryGetEntityStructure (not classCreator directly) so
+                        // the model-interop cache populated by BuildMigrationPlanForModel
+                        // is honored. Without this, the discovery-based summary would
+                        // shadow the ORM shape with the classCreator annotation-only view.
+                        var entityStructure = TryGetEntityStructure(entityType);
                         if (entityStructure == null)
                         {
                             summary.Errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
@@ -413,6 +442,34 @@ namespace TheTechIdea.Beep.Editor.Migration
                     }
                 }
 
+                // Count the FK and Index relations across the surveyed entities so
+                // the summary can report "this plan will add N FKs and M indexes"
+                // without forcing the caller to re-walk every EntityStructure.
+                // The counts are only populated when the corresponding opt-in flag
+                // is set; otherwise a diagnostic notes that the flag was off.
+                if (applyForeignKeys || applyIndexes)
+                {
+                    foreach (var entityType in entityTypes)
+                    {
+                        var structure = TryGetEntityStructure(entityType);
+                        if (structure == null) continue;
+                        if (applyForeignKeys && structure.Relations != null)
+                            summary.ForeignKeyCount += structure.Relations.Count(rel => rel != null && !string.IsNullOrWhiteSpace(rel.EntityColumnID));
+                        if (applyIndexes && structure.Indexes != null)
+                            summary.IndexCount += structure.Indexes.Count(idx => idx != null && idx.Columns != null && idx.Columns.Count > 0);
+                    }
+
+                    if (applyForeignKeys && summary.ForeignKeyCount == 0)
+                        summary.Diagnostics.Add("applyForeignKeys=true: no relations found on the surveyed entities.");
+                    if (applyIndexes && summary.IndexCount == 0)
+                        summary.Diagnostics.Add("applyIndexes=true: no indexes declared on the surveyed entities.");
+
+                    if (applyForeignKeys && !summary.ProviderSupportsForeignKeys)
+                        summary.Diagnostics.Add("applyForeignKeys=true but provider does not support foreign keys; plan will not emit AddForeignKey ops.");
+                    if (applyIndexes && !summary.ProviderSupportsIndexes)
+                        summary.Diagnostics.Add("applyIndexes=true but provider does not support index DDL; plan will not emit CreateIndex ops.");
+                }
+
                 // Phase 2: Compute stable report hash
                 summary.ReportHash = ComputeReadinessReportHash(
                     MigrateDataSource.DatasourceName,
@@ -436,19 +493,195 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         /// <summary>
+        /// Gets migration summary comparing the supplied entity types with the current
+        /// database state. Bypasses discovery — this is the type-driven counterpart of
+        /// <see cref="GetMigrationSummary(string, Assembly, bool, bool, bool)"/>.
+        /// </summary>
+        public MigrationSummary GetMigrationSummaryForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
+        {
+            var summary = new MigrationSummary
+            {
+                EntitiesToCreate = new List<string>(),
+                EntitiesToUpdate = new List<string>(),
+                EntitiesUpToDate = new List<string>(),
+                Errors = new List<string>()
+            };
+
+            if (MigrateDataSource == null)
+            {
+                summary.Errors.Add("Migration data source is not set");
+                return summary;
+            }
+
+            summary.DataSourceType = MigrateDataSource.DatasourceType;
+            summary.DataSourceCategory = MigrateDataSource.Category;
+
+            // Stamp the apply-intent flags on the summary so consumers can audit
+            // the caller's intent. Mirrors GetMigrationSummaryForModel.
+            if (applyForeignKeys) summary.Diagnostics.Add("applyForeignKeys=true");
+            if (applyIndexes) summary.Diagnostics.Add("applyIndexes=true");
+
+            // Mirror the discovery-based summary: surface provider support and
+            // the count of FK/Index rows the plan would emit when the opt-in
+            // flags are set. Same conservative approximation for FK support
+            // (RDBMS only) used in the discovery path.
+            var dsCapabilities = GetCapabilities(summary.DataSourceType, summary.DataSourceCategory);
+            summary.ProviderSupportsForeignKeys = summary.DataSourceCategory == DatasourceCategory.RDBMS;
+            summary.ProviderSupportsIndexes = dsCapabilities?.SupportsIndexes ?? false;
+
+            try
+            {
+                if (entityTypes == null)
+                {
+                    summary.Errors.Add("Entity types collection is null");
+                    return summary;
+                }
+
+                var typeList = entityTypes.Where(t => t != null).Distinct().ToList();
+                var capabilities = GetCapabilities(summary.DataSourceType, summary.DataSourceCategory);
+
+                foreach (var entityType in typeList)
+                {
+                    try
+                    {
+                        // TryGetEntityStructure honors the model-interop cache populated
+                        // by BuildMigrationPlanForModel — same provenance as the
+                        // discovery-based GetMigrationSummary.
+                        var entityStructure = TryGetEntityStructure(entityType);
+                        if (entityStructure == null)
+                        {
+                            summary.Errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
+                            continue;
+                        }
+
+                        var tableAttr = entityType.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
+                        if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+                        {
+                            entityStructure.EntityName = tableAttr.Name;
+                        }
+
+                        var exists = MigrateDataSource.CheckEntityExist(entityStructure.EntityName);
+
+                        var decisionRecord = new EntityDecisionRecord
+                        {
+                            EntityName = entityStructure.EntityName,
+                            Source = EntityMigrationSource.Explicit,
+                            AssemblyName = entityType.Assembly?.GetName().Name ?? string.Empty,
+                            CapabilityContextSnapshot =
+                            {
+                                ["SupportsSchemaEvolution"] = capabilities.SupportsSchemaEvolution.ToString(),
+                                ["IsSchemaEnforced"] = capabilities.IsSchemaEnforced.ToString(),
+                                ["SupportsTransactions"] = capabilities.SupportsTransactions.ToString(),
+                                ["HelperAvailable"] = TryHasHelper(summary.DataSourceType).ToString()
+                            }
+                        };
+
+                        if (!exists)
+                        {
+                            summary.EntitiesToCreate.Add(entityStructure.EntityName);
+                            decisionRecord.Decision = EntityMigrationDecision.Create;
+                            decisionRecord.DecisionReasonCode = "ENTITY-MISSING";
+                        }
+                        else
+                        {
+                            var current = MigrateDataSource.GetEntityStructure(entityStructure.EntityName, true);
+                            if (current != null)
+                            {
+                                var missingColumns = GetMissingColumns(current, entityStructure);
+                                if (missingColumns.Count > 0)
+                                {
+                                    summary.EntitiesToUpdate.Add($"{entityStructure.EntityName} ({missingColumns.Count} missing column(s))");
+                                    decisionRecord.Decision = EntityMigrationDecision.Update;
+                                    decisionRecord.DecisionReasonCode = "COLUMNS-MISSING";
+                                }
+                                else
+                                {
+                                    summary.EntitiesUpToDate.Add(entityStructure.EntityName);
+                                    decisionRecord.Decision = EntityMigrationDecision.NoChange;
+                                    decisionRecord.DecisionReasonCode = "ENTITY-UP-TO-DATE";
+                                }
+                            }
+                            else
+                            {
+                                summary.EntitiesUpToDate.Add(entityStructure.EntityName);
+                                decisionRecord.Decision = EntityMigrationDecision.NoChange;
+                                decisionRecord.DecisionReasonCode = "ENTITY-UP-TO-DATE";
+                            }
+                        }
+
+                        summary.EntityDecisions.Add(decisionRecord);
+                    }
+                    catch (Exception ex)
+                    {
+                        summary.Errors.Add($"{entityType.Name}: {ex.Message}");
+                    }
+                }
+
+                // Same FK/Index count + provider-support notes as the
+                // discovery-based path so callers get a consistent view
+                // regardless of which summary entry point they used.
+                if (applyForeignKeys || applyIndexes)
+                {
+                    foreach (var entityType in typeList)
+                    {
+                        var structure = TryGetEntityStructure(entityType);
+                        if (structure == null) continue;
+                        if (applyForeignKeys && structure.Relations != null)
+                            summary.ForeignKeyCount += structure.Relations.Count(rel => rel != null && !string.IsNullOrWhiteSpace(rel.EntityColumnID));
+                        if (applyIndexes && structure.Indexes != null)
+                            summary.IndexCount += structure.Indexes.Count(idx => idx != null && idx.Columns != null && idx.Columns.Count > 0);
+                    }
+
+                    if (applyForeignKeys && summary.ForeignKeyCount == 0)
+                        summary.Diagnostics.Add("applyForeignKeys=true: no relations found on the surveyed entities.");
+                    if (applyIndexes && summary.IndexCount == 0)
+                        summary.Diagnostics.Add("applyIndexes=true: no indexes declared on the surveyed entities.");
+
+                    if (applyForeignKeys && !summary.ProviderSupportsForeignKeys)
+                        summary.Diagnostics.Add("applyForeignKeys=true but provider does not support foreign keys; plan will not emit AddForeignKey ops.");
+                    if (applyIndexes && !summary.ProviderSupportsIndexes)
+                        summary.Diagnostics.Add("applyIndexes=true but provider does not support index DDL; plan will not emit CreateIndex ops.");
+                }
+
+                summary.ReportHash = ComputeReadinessReportHash(
+                    MigrateDataSource.DatasourceName,
+                    summary.DataSourceType,
+                    summary.DataSourceCategory,
+                    usesDiscovery: false,
+                    entityTypeCount: summary.EntityDecisions.Count,
+                    issues: summary.EntityDecisions.Select(d => new MigrationReadinessIssue
+                    {
+                        Code = d.DecisionReasonCode,
+                        EntityName = d.EntityName,
+                        Severity = d.Decision == EntityMigrationDecision.Error ? MigrationIssueSeverity.Error : MigrationIssueSeverity.Info
+                    }));
+            }
+            catch (Exception ex)
+            {
+                summary.Errors.Add($"Exception during GetMigrationSummaryForTypes: {ex.Message}");
+            }
+
+            return summary;
+        }
+
+        /// <summary>
         /// Builds a datasource-aware readiness report for discovery-based migrations.
         /// </summary>
-        public MigrationReadinessReport GetMigrationReadiness(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true)
+        public MigrationReadinessReport GetMigrationReadiness(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
             {
-                return CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
+                var empty = CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
+                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes);
+                return empty;
             }
 
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
-                return BuildReadinessReport(entityTypes, usesDiscovery: true);
+                var report = BuildReadinessReport(entityTypes, usesDiscovery: true);
+                ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
+                return report;
             }
             catch (Exception ex)
             {
@@ -460,6 +693,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     Message = $"Could not discover entity types: {ex.Message}",
                     Recommendation = "Register the required assemblies explicitly or use the explicit-type migration APIs."
                 });
+                ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
                 return report;
             }
         }
@@ -467,14 +701,18 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// <summary>
         /// Builds a datasource-aware readiness report for explicit-type migrations.
         /// </summary>
-        public MigrationReadinessReport GetMigrationReadinessForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true)
+        public MigrationReadinessReport GetMigrationReadinessForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
             {
-                return CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
+                var empty = CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
+                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes);
+                return empty;
             }
 
-            return BuildReadinessReport(entityTypes, usesDiscovery: false);
+            var report = BuildReadinessReport(entityTypes, usesDiscovery: false);
+            ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
+            return report;
         }
 
         /// <summary>
@@ -630,6 +868,19 @@ namespace TheTechIdea.Beep.Editor.Migration
                 inheritsFromEntity = interfaces.Any(i =>
                     i.Name == "IEntity" ||
                     i.FullName == "TheTechIdea.Beep.Editor.IEntity");
+            }
+
+            // If the type does not inherit from Entity / IEntity, check whether
+            // the ClassCreator recognises it as an EF Core decorated type or a
+            // discoverable POCO. This lets the discovery pipeline pick up plain
+            // EF Core POCOs (with Table/Column/Key/ForeignKey attributes) and
+            // clean POCOs (concrete, public, parameterless-ctor) without forcing
+            // the caller to subclass Entity.
+            if (!inheritsFromEntity)
+            {
+                var cc = _editor?.classCreator;
+                if (cc != null && (cc.IsEfDecoratedType(type) || cc.IsDiscoverablePoco(type)))
+                    inheritsFromEntity = true;
             }
 
             if (!inheritsFromEntity) return false;

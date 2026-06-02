@@ -55,10 +55,20 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private static MigrationRolloutGovernanceRequest CreateDefaultRolloutRequest(MigrationPlanArtifact plan)
         {
+            // Critical when the plan targets an RDBMS datasource and contains
+            // either an explicitly Critical/Destructive op OR any structural
+            // relational artifact (FK or Index). FK/Index ops are not flagged
+            // Critical by default but still touch the relational integrity
+            // surface of a critical datasource, so Wave 1 is too lenient.
             var isCritical = plan?.DataSourceCategory == DatasourceCategory.RDBMS &&
                              (plan.Operations?.Any(operation =>
-                                 operation != null &&
-                                 (operation.RiskLevel == MigrationPlanRiskLevel.Critical || operation.IsDestructive)) ?? false);
+                                 operation != null && (
+                                     operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
+                                     operation.IsDestructive ||
+                                     operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                     operation.Kind == MigrationPlanOperationKind.DropIndex)) ?? false);
 
             return new MigrationRolloutGovernanceRequest
             {

@@ -35,14 +35,29 @@ namespace TheTechIdea.Beep.Editor.Migration
             };
 
             var requiresMaintenance = performancePlan.OperationAnnotations.Any(item => item.WindowMode == MigrationExecutionWindowMode.MaintenanceWindowRequired);
+
+            // Call out FK/Index ops explicitly so a reviewer who only skims
+            // the guidance sees the relational surface impact. Without this,
+            // a plan with 10 AddForeignKey ops would just say "at least one
+            // operation" without flagging which ones drove the decision.
+            var relationalCount = plan.Operations.Count(item =>
+                item != null && (item.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                 item.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                 item.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                 item.Kind == MigrationPlanOperationKind.DropIndex));
+
             if (requiresMaintenance)
             {
                 performancePlan.MaintenanceWindowGuidance.Add("At least one operation requires maintenance-window execution due to lock/runtime impact.");
                 performancePlan.MaintenanceWindowGuidance.Add("Use throttled mode and batch execution for production safety.");
+                if (relationalCount > 0)
+                    performancePlan.MaintenanceWindowGuidance.Add($"Plan contains {relationalCount} foreign-key / index operation(s); AddForeignKey and CreateIndex are the most common drivers of maintenance-window escalation.");
             }
             else
             {
                 performancePlan.MaintenanceWindowGuidance.Add("Operations are suitable for online-preferred execution with standard monitoring.");
+                if (relationalCount > 0)
+                    performancePlan.MaintenanceWindowGuidance.Add($"Plan contains {relationalCount} foreign-key / index operation(s); verify the target provider supports AddForeignKey and CreateIndex DDL before approval.");
             }
 
             performancePlan.TimeoutGuidance.Add($"Lock timeout policy: {performancePlan.Policy.LockTimeoutMilliseconds} ms.");
@@ -86,6 +101,11 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 EntityName = operation.EntityName,
                 OperationKind = operation.Kind,
+                // Surface the constraint/index name + risk level so the
+                // performance plan can be matched back to specific named
+                // operations without re-walking the original plan.
+                TargetName = operation.TargetName ?? string.Empty,
+                RiskLevel = operation.RiskLevel,
                 WindowMode = windowMode,
                 EstimatedRuntimeSeconds = runtimeSeconds,
                 EstimatedLockImpactScore = lockScore,
@@ -115,9 +135,28 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (operation.Kind == MigrationPlanOperationKind.AddMissingColumns)
                 score += Math.Min(3, operation.MissingColumns.Count / 2);
 
+            // AddForeignKey takes a SHARE lock on the referencing table to
+            // validate existing rows against the referenced key. On large
+            // tables this blocks writers for the duration of the scan. The
+            // drop path is fast and is captured by the IsDestructive bump
+            // above (when applicable).
+            if (operation.Kind == MigrationPlanOperationKind.AddForeignKey)
+                score += 3;
+
+            // CreateIndex is one of the most expensive DDL ops on RDBMS
+            // platforms; it typically requires an exclusive lock or a long
+            // online-rebuild window. DropIndex is the inverse and is cheap.
+            if (operation.Kind == MigrationPlanOperationKind.CreateIndex)
+                score += 4;
+
             if (profile != null && !profile.SupportsTransactionalDdl)
                 score += 1;
             if (profile?.RequiresOfflineWindowForSchemaChanges == true)
+                score += 2;
+            // Some embedded/lightweight engines (SqlLite, DuckDB) emulate
+            // index DDL via table copy. Lift the score so the operator can
+            // see that the rebuild may require downtime.
+            if (profile != null && !profile.SupportsIndexes)
                 score += 2;
 
             return Math.Min(10, Math.Max(1, score));
@@ -127,6 +166,10 @@ namespace TheTechIdea.Beep.Editor.Migration
         {
             var baseline = operation?.Kind == MigrationPlanOperationKind.CreateEntity ? 8 :
                            operation?.Kind == MigrationPlanOperationKind.AddMissingColumns ? 12 :
+                           operation?.Kind == MigrationPlanOperationKind.AddForeignKey ? 18 :
+                           operation?.Kind == MigrationPlanOperationKind.CreateIndex ? 25 :
+                           operation?.Kind == MigrationPlanOperationKind.DropForeignKey ? 6 :
+                           operation?.Kind == MigrationPlanOperationKind.DropIndex ? 4 :
                            operation?.Kind == MigrationPlanOperationKind.UpToDate ? 1 : 15;
 
             var columnFactor = operation?.MissingColumns?.Count ?? 0;

@@ -128,13 +128,19 @@ namespace TheTechIdea.Beep.Editor.Migration
                     ["SupportsTransactions"]    = report.SupportsTransactions.ToString(),
                     ["HelperAvailable"]         = report.HelperAvailable.ToString()
                 };
+                // When the caller is running through the model-interop path, the
+                // TryGetEntityStructure cache has been primed with ORM-shaped
+                // structures. Honor that provenance on the decision record.
+                var sourceTag = IsModelInteropSourcedEntity(type) || (structureSnapshot != null && structureSnapshot.HasDataAnnotations && !string.IsNullOrWhiteSpace(structureSnapshot.Caption))
+                    ? EntityMigrationSource.DiscoveryEFCoreModel
+                    : EntityMigrationSource.Explicit;
                 report.EntityDecisions.Add(new EntityDecisionRecord
                 {
                     EntityName              = entityName,
                     Decision                = hasIssue ? EntityMigrationDecision.Skipped : EntityMigrationDecision.NoChange,
                     DecisionReasonCode      = hasIssue ? "READINESS-BLOCKED" : "READINESS-OK",
                     CapabilityContextSnapshot = capabilitySnapshot,
-                    Source                  = EntityMigrationSource.Explicit,
+                    Source                  = sourceTag,
                     AssemblyName            = type.Assembly?.GetName().Name ?? string.Empty
                 });
             }
@@ -243,6 +249,27 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private EntityStructure TryGetEntityStructure(Type entityType)
         {
+            if (entityType == null)
+                return null;
+
+            // First check the ORM-model cache. BuildMigrationPlanForModel primes
+            // this with structures built from MigrationModel POCOs (which carry
+            // table names, schemas, and FK/index metadata sourced from the ORM).
+            // Without this lookup, the classCreator path would shadow the ORM
+            // shape with its annotation-only view.
+            try
+            {
+                lock (_modelInteropLock)
+                {
+                    if (_modelInteropEntityStructures.TryGetValue(entityType.FullName ?? entityType.Name, out var cached))
+                        return cached;
+                }
+            }
+            catch
+            {
+                // Cache lookup is best-effort; fall through to classCreator.
+            }
+
             try
             {
                 return _editor?.classCreator?.ConvertToEntityStructure(entityType);
@@ -427,7 +454,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         ///     new[] { typeof(Customer), typeof(Product), typeof(Invoice) },
         ///     progress: progressReporter);
         /// </example>
-        public IErrorsInfo EnsureDatabaseCreatedForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, IProgress<PassedArgs> progress = null)
+        public IErrorsInfo EnsureDatabaseCreatedForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
@@ -462,7 +489,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                     usesDiscovery: false,
                     source: EntityMigrationSource.Explicit,
                     addMissingColumns: false,
-                    progress: progress);
+                    progress: progress,
+                    applyForeignKeys: applyForeignKeys,
+                    applyIndexes: applyIndexes);
 
                 var summaryMsg = pipelineResult.ToSummaryString();
                 progress?.Report(new PassedArgs { Messege = summaryMsg });
@@ -485,7 +514,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Applies migrations for the given entity types.
         /// Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
         /// </summary>
-        public IErrorsInfo ApplyMigrationsForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null)
+        public IErrorsInfo ApplyMigrationsForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool addMissingColumns = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
@@ -520,7 +549,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                     usesDiscovery: false,
                     source: EntityMigrationSource.Explicit,
                     addMissingColumns: addMissingColumns,
-                    progress: progress);
+                    progress: progress,
+                    applyForeignKeys: applyForeignKeys,
+                    applyIndexes: applyIndexes);
 
                 var summaryMsg = pipelineResult.ToSummaryString();
                 progress?.Report(new PassedArgs { Messege = summaryMsg });

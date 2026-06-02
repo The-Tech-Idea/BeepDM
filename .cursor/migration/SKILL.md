@@ -26,6 +26,7 @@ Use this skill when planning, validating, executing, or governing schema migrati
 - Register assemblies explicitly for discovery.
 - Ensure a database/schema exists from Entity types or `EntityStructure`.
 - Apply migrations for missing entities or columns.
+- Optionally add foreign keys and indexes on RDBMS targets via opt-in flags.
 - Build immutable migration plan artifacts and hashes.
 - Evaluate plan policy and protected-environment safety decisions.
 - Generate dry-run DDL previews, preflight checks, and impact reports.
@@ -34,6 +35,27 @@ Use this skill when planning, validating, executing, or governing schema migrati
 - Capture telemetry, diagnostics, and auditable lifecycle events.
 - Run CI validation gates and export approval-ready artifacts.
 - Evaluate rollout wave promotion with KPI thresholds and hard-stop rules.
+- Honor ORM/POCO-shaped `EntityStructure` via the model-interop cache for EF Core and other ORM callers.
+- Surface FK/Index target names and counts throughout the artifact chain (plan op, step, dry-run, impact, perf annotation, summary, approval report).
+
+## ClassCreator Integration for Discovery
+
+`IsEntityType` in `MigrationManager.Discovery.cs` now delegates to
+`IClassCreator.IsEfDecoratedType` and `IClassCreator.IsDiscoverablePoco` when a
+type does not inherit from `Entity` or implement `IEntity`. This means the
+discovery pipeline can pick up:
+
+- EF Core POCOs decorated with `Table`, `Column`, `Key`, `ForeignKey`, etc.
+- Plain POCOs that are concrete, public, non-generic, and have a parameterless
+  constructor or are record types
+
+without the user subclassing `Entity`. Both methods are implemented on the helpers
+(`EfCoreToEntityGeneratorHelper` / `PocoToEntityGeneratorHelper`) and surfaced
+through `IClassCreator`.
+
+To add a new kind of discoverable type without touching the MigrationManager,
+implement a new helper method and add a delegation to `ClassCreator.PocoToEntity.cs`
+(which already delegates `ScanNamespaceForEfCoreClasses`, `ConvertEfCoreTypeToEntityStructure`, etc.).
 
 ## Design Rules From Source
 - Pass .NET type names through `EntityStructure`; do not pre-map to provider-native types.
@@ -45,6 +67,11 @@ Use this skill when planning, validating, executing, or governing schema migrati
 - Keep migration planning non-destructive: build/evaluate/approve plan artifacts before execution.
 - Treat destructive, type-narrowing, and nullability-tightening operations as high risk requiring compensation/rollback planning.
 - Use rollout governance for production promotion; do not promote a blocked or hard-stopped wave.
+- Foreign key and index generation is opt-in: pass `applyForeignKeys: true` and/or `applyIndexes: true` on the build/apply API. Default is `false` to preserve pre-FK behavior.
+- FK and index operations are gated by `MigrationProviderCapabilityProfile.SupportsForeignKeys` / `SupportsIndexes`. When the provider cannot express the constraint, policy raises `provider-fallback-missing-foreign-key` / `provider-fallback-missing-index` and the operation is dropped or flagged for fallback.
+- FK and index names are threaded through `MigrationPlanOperation.TargetName` -> `MigrationExecutionStep.TargetName` -> `MigrationCompensationAction.TargetName` so the executor, dry-run DDL, and rollback all use the same identifier.
+- The 4 new `MigrationPlanOperationKind` values are `AddForeignKey`, `DropForeignKey`, `CreateIndex`, `DropIndex`. Plan lint requires `TargetName` for all four. Rollout wave classification treats any plan containing FK/Index ops on RDBMS as `Wave3Critical` unless the caller overrides.
+- The model-interop cache (`BuildMigrationPlanForModel` -> `TryGetEntityStructure`) lets EF Core and other ORMs get ORM-shaped `EntityStructure` (with `Indexes`, navigation FKs, `OnDeleteBehavior`, `OnUpdateBehavior`) instead of reflection-only shapes.
 
 ## Recommended Workflow
 1. Create `MigrationManager(editor, dataSource)` and ensure `MigrateDataSource` is set.
@@ -66,6 +93,12 @@ Use this skill when planning, validating, executing, or governing schema migrati
 - Expect column-level DDL to vary by provider and helper capability.
 - Treat loader/type mismatches during discovery as an assembly-registration or versioning problem first; inspect migration logs before retrying with broader scanning.
 - Require backup/restore-test evidence for protected environments before execute.
+- Plan lint blocks any FK or Index operation with empty `TargetName`; CI must fail the plan.
+- For RDBMS plans containing FK/Index ops, treat the rollout as `Wave3Critical` by default; do not silently downgrade.
+- Approval report must show `target=` and `note` for every FK/Index op so reviewers can audit constraint names.
+- Preflight lock-impact-estimate counts `AddForeignKey` and `CreateIndex` as heavy ops; a plan with many of these will trigger the maintenance-window recommendation, not just plans with column alters.
+- Dry-run and dry-run-rollback output includes the actual SQL preview (for FK/Index ops the constraint/index DDL), not just the playbook text.
+- `MigrationPerformancePlan.MaintenanceWindowGuidance` explicitly calls out FK/Index op counts when they appear in a plan, so the reviewer sees *what* drove the recommendation, not just that one was made.
 
 ## Provider Best Practices
 - Oracle: keep identifiers short and stable, avoid relying on case-sensitive quoted names, and validate sequence/identity expectations before assuming auto-number behavior.
@@ -85,6 +118,9 @@ Use this skill when planning, validating, executing, or governing schema migrati
 - Reusing a migration plan validated on SQL Server for Oracle, SQLite, or another provider without rerunning summary/validation is unsafe.
 - Skipping CI/governance gates causes unsafe promotions and weak release evidence.
 - Executing without rollback readiness makes incident recovery slower and riskier.
+- Default `applyForeignKeys`/`applyIndexes` is `false`; an empty constraint list after a build call usually means the flags were not passed.
+- Resume from checkpoint preserves `step.TargetName` -> `operation.TargetName`; rebuilding the plan without the checkpoint reuses the saved target. Without it, the executor falls back to a synthetic `step-N` identifier and rollback cannot drop the constraint by name.
+- Lock-impact estimates for FK/Index ops (AddForeignKey +3 score, 18s baseline; CreateIndex +4 score, 25s baseline; DropForeignKey +6s; DropIndex +4s) are baseline assumptions; production windows must be sized with row counts.
 
 ## File Locations
 - `DataManagementEngineStandard/Editor/Migration/IMigrationManager.cs`
@@ -117,6 +153,7 @@ if (!execute.Success)
 - Rollback/compensation: `Examples/04-rollback-compensation.md`
 - CI/artifacts: `Examples/05-ci-and-artifacts.md`
 - Rollout governance: `Examples/06-rollout-governance.md`
+- EF Core / ORM interop and the model-interop cache: `Examples/07-efcore-interop.md`
 
 ## Related Skills
 - [`beepdm`](../beepdm/SKILL.md)

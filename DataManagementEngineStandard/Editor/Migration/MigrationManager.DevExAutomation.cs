@@ -30,16 +30,40 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
 
             // Plan lint gate
-            var lintDecision = plan.Operations.Any(operation => operation == null || string.IsNullOrWhiteSpace(operation.EntityName))
-                ? MigrationPolicyDecision.Block
-                : MigrationPolicyDecision.Pass;
+            var lintDecision = MigrationPolicyDecision.Pass;
+            var lintMessage = "Plan lint checks passed.";
+            foreach (var operation in plan.Operations)
+            {
+                if (operation == null || string.IsNullOrWhiteSpace(operation.EntityName))
+                {
+                    lintDecision = MigrationPolicyDecision.Block;
+                    lintMessage = "Plan contains invalid or unnamed operations.";
+                    break;
+                }
+
+                // FK/Index ops must carry a TargetName (the constraint or index
+                // name) so the executor and rollback paths can run the right
+                // DDL without re-deriving it from a possibly-missing desired
+                // structure. A plan that says "DropForeignKey" without naming
+                // the constraint is incomplete and should not pass CI.
+                if (operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                    operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                    operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                    operation.Kind == MigrationPlanOperationKind.DropIndex)
+                {
+                    if (string.IsNullOrWhiteSpace(operation.TargetName))
+                    {
+                        lintDecision = MigrationPolicyDecision.Block;
+                        lintMessage = $"Plan contains {operation.Kind} op for '{operation.EntityName}' without a TargetName (constraint/index name).";
+                        break;
+                    }
+                }
+            }
             report.Gates.Add(new MigrationCiGateResult
             {
                 Gate = "plan-lint",
                 Decision = lintDecision,
-                Message = lintDecision == MigrationPolicyDecision.Pass
-                    ? "Plan lint checks passed."
-                    : "Plan contains invalid or unnamed operations."
+                Message = lintMessage
             });
 
             // Policy gate
@@ -144,7 +168,20 @@ namespace TheTechIdea.Beep.Editor.Migration
             var missing = operation.MissingColumns == null || operation.MissingColumns.Count == 0
                 ? string.Empty
                 : string.Join(",", operation.MissingColumns.OrderBy(value => value, StringComparer.OrdinalIgnoreCase));
-            return $"{operation.EntityName}|{operation.Kind}|{operation.RiskLevel}|{missing}";
+
+            // FK and Index ops are identified by their TargetName (the
+            // constraint or index name). Without it, two distinct constraints
+            // on the same entity would look identical in the diff. We thread
+            // the name into the signature only for the four relational op
+            // kinds to keep the signature shape backward-compatible.
+            var targetName = (operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                              operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                              operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                              operation.Kind == MigrationPlanOperationKind.DropIndex)
+                ? (operation.TargetName ?? string.Empty)
+                : string.Empty;
+
+            return $"{operation.EntityName}|{operation.Kind}|{operation.RiskLevel}|{missing}|{targetName}";
         }
 
         private static string BuildApprovalReportMarkdown(MigrationPlanArtifact plan, MigrationCiValidationReport ciReport)
@@ -157,6 +194,25 @@ namespace TheTechIdea.Beep.Editor.Migration
             builder.AppendLine($"- Pending Operations: `{plan.PendingOperationCount}`");
             builder.AppendLine($"- CI Can Merge: `{ciReport.CanMerge}`");
             builder.AppendLine();
+
+            // Operation count by kind. Reviewers can scan a single line to see
+            // the shape of the plan ("12 CreateEntity, 8 AddMissingColumns,
+            // 3 AddForeignKey, 5 CreateIndex") before reading each op. The
+            // counts use the same OperationKind enum that drives policy and
+            // telemetry, so a spike in CreateIndex also surfaces here.
+            var opCounts = plan.Operations
+                .Where(item => item != null)
+                .GroupBy(item => item.Kind)
+                .OrderBy(group => group.Key)
+                .Select(group => $"{group.Key}={group.Count()}")
+                .ToList();
+            if (opCounts.Count > 0)
+            {
+                builder.AppendLine($"## Operation Counts");
+                builder.AppendLine($"- {string.Join(", ", opCounts)}");
+                builder.AppendLine();
+            }
+
             builder.AppendLine("## CI Gates");
             foreach (var gate in ciReport.Gates)
             {
@@ -166,7 +222,20 @@ namespace TheTechIdea.Beep.Editor.Migration
             builder.AppendLine("## Operations");
             foreach (var operation in plan.Operations.Where(item => item != null))
             {
-                builder.AppendLine($"- `{operation.EntityName}` `{operation.Kind}` `{operation.RiskLevel}`");
+                var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                                     operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                                     operation.Kind == MigrationPlanOperationKind.DropIndex;
+
+                if (isRelationalOp && !string.IsNullOrWhiteSpace(operation.TargetName))
+                {
+                    var note = !string.IsNullOrWhiteSpace(operation.Note) ? $" — {operation.Note}" : string.Empty;
+                    builder.AppendLine($"- `{operation.EntityName}` `{operation.Kind}` `{operation.RiskLevel}` target=`{operation.TargetName}`{note}");
+                }
+                else
+                {
+                    builder.AppendLine($"- `{operation.EntityName}` `{operation.Kind}` `{operation.RiskLevel}`");
+                }
             }
             return builder.ToString();
         }

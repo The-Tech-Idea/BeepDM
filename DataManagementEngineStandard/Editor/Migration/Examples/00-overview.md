@@ -9,6 +9,7 @@ Execution order:
 4. `04-rollback-compensation.md`
 5. `05-ci-and-artifacts.md`
 6. `06-rollout-governance.md`
+7. `07-efcore-interop.md` — bridge an EF Core (or any ORM) `MigrationModel` into the existing pipeline
 
 All examples assume:
 - you already initialized `IDMEEditor`

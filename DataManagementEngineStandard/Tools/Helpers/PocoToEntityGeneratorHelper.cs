@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     var types = asm.GetTypes()
                         .Where(t => t.Namespace != null && 
                                     t.Namespace.Equals(namespaceName, StringComparison.OrdinalIgnoreCase) &&
-                                    IsPocoClass(t))
+                                    IsDiscoverablePoco(t))
                         .ToList();
 
                     pocoTypes.AddRange(types);
@@ -70,7 +70,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     var loadedTypes = ex.Types.Where(t => t != null && 
                         t.Namespace != null && 
                         t.Namespace.Equals(namespaceName, StringComparison.OrdinalIgnoreCase) &&
-                        IsPocoClass(t));
+                        IsDiscoverablePoco(t));
                     pocoTypes.AddRange(loadedTypes);
                 }
                 catch (Exception)
@@ -104,7 +104,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 {
                     // Try exact match first
                     var type = asm.GetType(fullTypeName, throwOnError: false, ignoreCase: true);
-                    if (type != null && IsPocoClass(type))
+                    if (type != null && IsDiscoverablePoco(type))
                         return type;
 
                     // Try searching by class name only if no namespace provided
@@ -112,7 +112,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                     {
                         type = asm.GetTypes()
                             .FirstOrDefault(t => t.Name.Equals(className, StringComparison.OrdinalIgnoreCase) &&
-                                                  IsPocoClass(t));
+                                                  IsDiscoverablePoco(t));
                         if (type != null)
                             return type;
                     }
@@ -127,9 +127,11 @@ namespace TheTechIdea.Beep.Tools.Helpers
         }
 
         /// <summary>
-        /// Checks if a type is a valid POCO class (not interface, abstract, static, etc.)
+        /// Checks if a type is a valid POCO class (not interface, abstract, static, etc.).
+        /// Returns true for concrete non-generic public classes that have a parameterless
+        /// constructor or are record types.
         /// </summary>
-        private bool IsPocoClass(Type type)
+        public bool IsDiscoverablePoco(Type type)
         {
             if (type == null) return false;
             if (!type.IsClass) return false;
