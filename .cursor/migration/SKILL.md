@@ -64,6 +64,8 @@ implement a new helper method and add a delegation to `ClassCreator.PocoToEntity
 - Treat helper support and datasource capabilities as conditional, not guaranteed.
 - Prefer explicit-type migration (`EnsureDatabaseCreatedForTypes` / `ApplyMigrationsForTypes`) for application-owned schemas where the entity list is known at compile time.
 - Use discovery-based migration only when entity ownership is dynamic or plugin-driven, and register assemblies explicitly before relying on broad assembly scanning.
+- Treat `EnsureDatabaseCreated*` as create-if-missing only: existing entities are skipped and missing columns are not added. Use `ApplyMigrations*` when column evolution is required.
+- Resolve manifest types deterministically: prefer `AssemblyHint`, then registered assemblies, then assembly-handler plugin assemblies (`Assemblies[].DllLib` and `LoadedAssemblies`), then broad AppDomain fallback.
 - Keep migration planning non-destructive: build/evaluate/approve plan artifacts before execution.
 - Treat destructive, type-narrowing, and nullability-tightening operations as high risk requiring compensation/rollback planning.
 - Use rollout governance for production promotion; do not promote a blocked or hard-stopped wave.
@@ -90,6 +92,7 @@ implement a new helper method and add a delegation to `ClassCreator.PocoToEntity
 - Prefer `BuildMigrationPlan*` before applying changes.
 - Use `ValidatePlanForCi` and `EvaluateRolloutGovernance` in pipeline-driven environments.
 - Keep `EntityStructure.Fieldtype` values as .NET type names; let the datasource map them.
+- Count existing entities from `EnsureDatabaseCreated*` as skipped, not created; check existence before calling `EnsureEntity` when writing new ensure-created paths.
 - Expect column-level DDL to vary by provider and helper capability.
 - Treat loader/type mismatches during discovery as an assembly-registration or versioning problem first; inspect migration logs before retrying with broader scanning.
 - Require backup/restore-test evidence for protected environments before execute.
@@ -112,6 +115,7 @@ implement a new helper method and add a delegation to `ClassCreator.PocoToEntity
 ## Pitfalls
 - Pre-mapping types breaks `CreateEntityAs` and corrupts datasource-agnostic behavior.
 - Missing or unregistered assemblies cause discovery to return zero entities.
+- Manifest type resolution can bind the wrong version if broad AppDomain scanning is preferred over `AssemblyHint` or `RegisterAssembly`; keep the deterministic resolution order intact.
 - Broad assembly scanning can surface unrelated loader/version conflicts; prefer explicit-type migration to reduce that blast radius.
 - File-based or schema-limited datasources may not support full DDL operations.
 - Assuming every provider supports add/alter/drop column operations creates false confidence.
@@ -128,6 +132,13 @@ implement a new helper method and add a delegation to `ClassCreator.PocoToEntity
 - Telemetry includes per-operation-kind duration totals (`OperationKindTotalDurationMilliseconds`) in addition to the existing completion/failure counts, so operators can see "CreateIndex steps average 4500ms" without computing from audit trails.
 - `PendingOperationCount` now includes all migration operation kinds (AddForeignKey, DropForeignKey, CreateIndex, DropIndex, AlterColumn, DropColumn, RenameEntity, RenameColumn, TruncateEntity), not just CreateEntity and AddMissingColumns. Approval reports and CI dashboards now show accurate pending-op counts for FK/Index-heavy plans.
 - SelectModelInterop methods now have `detectRelationships` wired through rather than dead; the parameter was accepted but never passed.
+- Rollout governance now detects first-run plans (no execution history) and skips KPI gates with a Warn instead of silently passing all of them. A hash-stability gate also blocks plans whose hash has diverged from the checkpointed hash.
+- Rollout wave classification distinguishes Add (non-destructive: Wave2) from Drop (destructive: Wave3) FK/Index ops, rather than lumping all relational ops into Wave3Critical.
+- Self-referencing FKs and excessive FKs per entity (>8) produce policy warnings. FK references to entities not in the plan produce Block-level findings.
+- The readiness report now surfaces the FK and index count per entity, and warns about self-referencing FKs.
+- The approval report shows the operation Note for every kind of operation (not just FK/Index with TargetName), so a `DropEntity` annotation like "archive data first" is visible to reviewers.
+- The plan diff signature excludes RiskLevel, so a risk reclassification (Low→Medium) doesn't cause both an "added" and "removed" entry for the same operation.
+- `ExportMigrationArtifacts` now includes PerformancePlan, CompensationPlan, and RollbackReadiness JSON alongside Plan/DryRun/CI artifacts.
 
 ## File Locations
 - `DataManagementEngineStandard/Editor/Migration/IMigrationManager.cs`

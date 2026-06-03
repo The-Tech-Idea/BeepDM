@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TheTechIdea.Beep.Editor.Migration
 {
@@ -31,6 +33,11 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 EvaluateOperationPolicy(operation, effectiveOptions, evaluation);
             }
+
+            // Cross-entity policy: check FK patterns that require visibility
+            // beyond a single operation (self-referencing FKs, excessive FKs
+            // per entity, FK referencing an entity not in the plan).
+            EvaluateCrossEntityPolicy(plan, evaluation);
 
             EvaluateProviderCapabilityPolicy(plan, evaluation);
 
@@ -154,6 +161,87 @@ namespace TheTechIdea.Beep.Editor.Migration
                     EntityName = entityName,
                     OperationKind = operation.Kind,
                     RiskLevel = operation.RiskLevel
+                });
+            }
+        }
+
+        /// <summary>
+        /// Cross-entity FK policy checks that require visibility across
+        /// multiple operations.
+        /// </summary>
+        private static void EvaluateCrossEntityPolicy(MigrationPlanArtifact plan, MigrationPolicyEvaluation evaluation)
+        {
+            var fkOps = plan?.Operations?.Where(op =>
+                op != null && op.Kind == MigrationPlanOperationKind.AddForeignKey).ToList();
+            if (fkOps == null || fkOps.Count == 0)
+                return;
+
+            var planEntityNames = new HashSet<string>(
+                plan.Operations
+                    .Where(op => op != null && !string.IsNullOrWhiteSpace(op.EntityName))
+                    .Select(op => op.EntityName),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var fkOp in fkOps)
+            {
+                if (string.IsNullOrWhiteSpace(fkOp.TargetName) ||
+                    string.IsNullOrWhiteSpace(fkOp.EntityName))
+                    continue;
+
+                // Self-referencing FK detection via FK name pattern:
+                // FK_{EntityName}_{ReferencedEntity}_{Column}
+                var segments = fkOp.TargetName.Split('_');
+                if (segments.Length >= 3 &&
+                    string.Equals(segments[1], fkOp.EntityName, StringComparison.OrdinalIgnoreCase))
+                {
+                    evaluation.Findings.Add(new MigrationPolicyFinding
+                    {
+                        RuleId = "policy-fk-self-referencing",
+                        Decision = MigrationPolicyDecision.Warn,
+                        Message = $"Self-referencing FK '{fkOp.TargetName}' on '{fkOp.EntityName}' creates a hierarchical dependency. Ensure data is inserted parent-before-child.",
+                        Recommendation = "Consider deferring FK enforcement until after data load.",
+                        EntityName = fkOp.EntityName,
+                        OperationKind = fkOp.Kind,
+                        RiskLevel = fkOp.RiskLevel
+                    });
+                }
+
+                // FK referencing entity not in plan — the DDL will fail if
+                // the referenced table does not already exist in the DB.
+                if (segments.Length >= 3)
+                {
+                    var refEntity = segments[2];
+                    if (!planEntityNames.Contains(refEntity))
+                    {
+                        evaluation.Findings.Add(new MigrationPolicyFinding
+                        {
+                            RuleId = "policy-fk-reference-not-in-plan",
+                            Decision = MigrationPolicyDecision.Block,
+                            Message = $"AddForeignKey '{fkOp.TargetName}' on '{fkOp.EntityName}' references '{refEntity}' which is not in this plan and may not exist in the DB.",
+                            Recommendation = "Verify the referenced table exists before execution.",
+                            EntityName = fkOp.EntityName,
+                            OperationKind = fkOp.Kind,
+                            RiskLevel = fkOp.RiskLevel
+                        });
+                    }
+                }
+            }
+
+            // Excessive FKs per entity (threshold: 8)
+            var fkCountsByEntity = fkOps
+                .GroupBy(op => op.EntityName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 8);
+            foreach (var group in fkCountsByEntity)
+            {
+                evaluation.Findings.Add(new MigrationPolicyFinding
+                {
+                    RuleId = "policy-excessive-foreign-keys",
+                    Decision = MigrationPolicyDecision.Warn,
+                    Message = $"Entity '{group.Key}' has {group.Count()} FK operations (>8). Excessive FKs slow writes and complicate rollback.",
+                    Recommendation = "Review FK surface; consider vertical partitioning or application-level checks.",
+                    EntityName = group.Key,
+                    OperationKind = MigrationPlanOperationKind.AddForeignKey,
+                    RiskLevel = MigrationPlanRiskLevel.Medium
                 });
             }
         }

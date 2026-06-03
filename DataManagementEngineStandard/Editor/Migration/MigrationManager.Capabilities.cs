@@ -179,6 +179,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (helper == null)
                 return (false, "No helper available.");
 
+            // DataSourceCapabilities does not expose a SupportsForeignKeys
+            // flag (unlike SupportsIndexes), so we rely on the synthetic
+            // probe and a conservative RDBMS type-name fallback.
+
             // RDBMS is the only category that legitimately supports FKs; everything
             // else returns a no-op with an error message we can surface.
             var result = helper.GenerateAddForeignKeySql(

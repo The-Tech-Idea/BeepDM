@@ -194,45 +194,53 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 progress?.Report(new PassedArgs { Messege = $"Found {entityTypes.Count} Entity type(s) to migrate" });
 
+                // Resolve all structures up front so we can topologically sort
+                // by FK dependency. Without this, an entity with an FK
+                // referencing a principal entity that appears later in
+                // discovery order would fail because the referenced table
+                // doesn't exist yet.
                 var errors = new List<string>();
-                int created = 0;
-                int skipped = 0;
-
+                var created = 0;
+                var skipped = 0;
+                var structures = new List<EntityStructure>();
                 foreach (var entityType in entityTypes)
+                {
+                    var s = TryGetEntityStructure(entityType);
+                    if (s == null)
+                    {
+                        errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
+                        continue;
+                    }
+                    var tableAttr = entityType.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
+                    if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
+                        s.EntityName = tableAttr.Name;
+                    structures.Add(s);
+                }
+
+                if (applyForeignKeys)
+                {
+                    var ordered = TopologicallyOrderByForeignKeys(structures, out _);
+                    structures = ordered;
+                }
+
+                foreach (var entityStructure in structures)
                 {
                     try
                     {
-                        progress?.Report(new PassedArgs { Messege = $"Processing Entity type: {entityType.Name}" });
+                        progress?.Report(new PassedArgs { Messege = $"Processing entity: {entityStructure.EntityName}" });
 
-                        // Use TryGetEntityStructure (not classCreator directly) so
-                        // the model-interop cache populated by BuildMigrationPlanForModel
-                        // is honored. EF Core callers that populated MigrationModel then
-                        // BuildMigrationPlanForModel have already primed the cache with
-                        // ORM-shaped structures (with table name from GetTableName(), etc.).
-                        // Without this, the discovery-based EnsureDatabaseCreated would
-                        // shadow the ORM shape with the classCreator annotation-only view.
-                        var entityStructure = TryGetEntityStructure(entityType);
-                        if (entityStructure == null)
-                        {
-                            errors.Add($"Failed to convert {entityType.Name} to EntityStructure");
-                            continue;
-                        }
+                        bool existed;
+                        try { existed = MigrateDataSource.CheckEntityExist(entityStructure.EntityName); }
+                        catch { existed = false; }
 
-                        // Use table name from type name or Table attribute if present
-                        var tableAttr = entityType.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>();
-                        if (tableAttr != null && !string.IsNullOrWhiteSpace(tableAttr.Name))
-                        {
-                            entityStructure.EntityName = tableAttr.Name;
-                        }
-
-                        // Ensure entity exists (create if missing). applyForeignKeys
-                        // and applyIndexes default to false so callers can opt in
-                        // to have the migration manager own the relational DDL.
                         var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: false,
                             applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
                         if (result.Flag == Errors.Ok)
                         {
-                            created++;
+                            if (existed)
+                                skipped++;
+                            else
+                                created++;
                         }
                         else if (result.Flag == Errors.Warning && result.Message.Contains("already exists"))
                         {
@@ -240,12 +248,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                         }
                         else
                         {
-                            errors.Add($"{entityType.Name}: {result.Message}");
+                            errors.Add($"{entityStructure.EntityName}: {result.Message}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        errors.Add($"{entityType.Name}: {ex.Message}");
+                        errors.Add($"{entityStructure.EntityName}: {ex.Message}");
                     }
                 }
 
@@ -988,7 +996,13 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (_editor?.assemblyHandler?.Assemblies != null)
             {
                 foreach (var asmInfo in _editor.assemblyHandler.Assemblies)
-                    TryAdd(asmInfo.DllLib, AssemblySourceKind.AssemblyHandlerPlugin);
+                    TryAdd(asmInfo?.DllLib, AssemblySourceKind.AssemblyHandlerPlugin);
+            }
+
+            if (_editor?.assemblyHandler?.LoadedAssemblies != null)
+            {
+                foreach (var asm in _editor.assemblyHandler.LoadedAssemblies)
+                    TryAdd(asm, AssemblySourceKind.AssemblyHandlerPlugin);
             }
 
             return assemblies;

@@ -159,8 +159,10 @@ namespace TheTechIdea.Beep.Editor.Migration
         // ────────────────────────────────────────────────────────────────────
         // Type resolution — used by filesystem discovery path
         // Resolution order:
-        //   1. Try already-loaded assemblies (no I/O)
-        //   2. Try AssemblyHint (load by name if not loaded)
+        //   1. Try AssemblyHint when provided
+        //   2. Try manually registered assemblies
+        //   3. Try assembly-handler plugin assemblies
+        //   4. Try already-loaded AppDomain assemblies as a broad fallback
         //   First-wins policy.
         // ────────────────────────────────────────────────────────────────────
 
@@ -169,19 +171,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (entry == null || string.IsNullOrWhiteSpace(entry.TypeFullName))
                 return (null, "MIG-MANIFEST-002: type name is empty");
 
-            // Pass 1 — loaded assemblies (deterministic, no disk I/O)
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (asm.IsDynamic) continue;
-                try
-                {
-                    var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
-                    if (t != null) return (t, null);
-                }
-                catch { }
-            }
-
-            // Pass 2 — AssemblyHint load (policy-controlled: only when hint is provided)
+            // Pass 1 — AssemblyHint load (policy-controlled: only when hint is provided)
             if (!string.IsNullOrWhiteSpace(entry.AssemblyHint))
             {
                 try
@@ -192,6 +182,63 @@ namespace TheTechIdea.Beep.Editor.Migration
                         var t = hinted.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
                         if (t != null) return (t, null);
                     }
+                }
+                catch { }
+            }
+
+            // Pass 2 — registered assemblies (RegisterAssembly / RegisterAssemblies)
+            // before broad AppDomain scanning. This mirrors discovery priority and
+            // avoids resolving an older type version that happens to be loaded.
+            foreach (var asm in GetRegisteredAssemblies())
+            {
+                if (asm == null || asm.IsDynamic) continue;
+                try
+                {
+                    var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
+                    if (t != null) return (t, null);
+                }
+                catch { }
+            }
+
+            // Pass 3 — editor's assembly handler (plugin assemblies). These are
+            // runtime plugin sources used by DiscoverEntityTypes.
+            if (_editor?.assemblyHandler?.Assemblies != null)
+            {
+                foreach (var asmRef in _editor.assemblyHandler.Assemblies)
+                {
+                    var asm = asmRef?.DllLib;
+                    if (asm == null || asm.IsDynamic) continue;
+                    try
+                    {
+                        var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
+                        if (t != null) return (t, null);
+                    }
+                    catch { }
+                }
+            }
+
+            if (_editor?.assemblyHandler?.LoadedAssemblies != null)
+            {
+                foreach (var asm in _editor.assemblyHandler.LoadedAssemblies)
+                {
+                    if (asm == null || asm.IsDynamic) continue;
+                    try
+                    {
+                        var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
+                        if (t != null) return (t, null);
+                    }
+                    catch { }
+                }
+            }
+
+            // Pass 4 — loaded assemblies (broad fallback, no disk I/O).
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (asm == null || asm.IsDynamic) continue;
+                try
+                {
+                    var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
+                    if (t != null) return (t, null);
                 }
                 catch { }
             }
@@ -241,6 +288,53 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         /// <summary>
+        /// Shared preamble for manifest-based migration methods. Parses the
+        /// manifest file, resolves all entries to runtime Types, logs
+        /// warnings, and validates that at least one type was found. Returns
+        /// the resolved type list on success, or an ErrorsInfo on failure
+        /// (null resolved list).
+        /// </summary>
+        private (IErrorsInfo Error, List<Type> ResolvedTypes) ParseAndResolveManifestEntities(
+            string manifestFilePath,
+            string callerName,
+            bool addMissingColumns,
+            IProgress<PassedArgs> progress,
+            bool applyForeignKeys,
+            bool applyIndexes)
+        {
+            if (MigrateDataSource == null)
+                return (CreateErrorsInfo(Errors.Failed, "Migration data source is not set"), null);
+
+            if (string.IsNullOrWhiteSpace(manifestFilePath))
+                return (CreateErrorsInfo(Errors.Failed, "Manifest file path cannot be null or empty"), null);
+
+            var parseResult = ParseManifestFile(manifestFilePath);
+
+            if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002"))
+            {
+                var fatalErrors = parseResult.Errors
+                    .Where(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002")
+                    .Select(e => e.Message);
+                return (CreateErrorsInfo(Errors.Failed, $"Manifest parse failed: {string.Join("; ", fatalErrors)}"), null);
+            }
+
+            var resolved = ResolveManifestTypes(parseResult);
+            if (parseResult.Errors.Count > 0)
+            {
+                var errMsgs = parseResult.Errors.Select(e => $"Line {e.LineNumber}: [{e.Code}] {e.Message}");
+                _editor?.AddLogMessage("Beep",
+                    $"MigrationManager.{callerName}: {parseResult.Errors.Count} manifest warning(s): {string.Join(" | ", errMsgs)}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
+
+            if (resolved.Count == 0)
+                return (CreateErrorsInfo(Errors.Warning, $"No entity types could be resolved from manifest '{manifestFilePath}'"), null);
+
+            var typeList = resolved.Select(r => r.ResolvedType).ToList();
+            return (null, typeList);
+        }
+
+        /// <summary>
         /// Applies migrations sourced from a manifest file.
         /// Parses the manifest, resolves types, and runs them through the shared entity pipeline.
         /// </summary>
@@ -256,35 +350,11 @@ namespace TheTechIdea.Beep.Editor.Migration
             bool applyForeignKeys = false,
             bool applyIndexes = false)
         {
-            if (MigrateDataSource == null)
-                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
-
-            if (string.IsNullOrWhiteSpace(manifestFilePath))
-                return CreateErrorsInfo(Errors.Failed, "Manifest file path cannot be null or empty");
-
-            var parseResult = ParseManifestFile(manifestFilePath);
-
-            if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002"))
-            {
-                var fatalErrors = parseResult.Errors
-                    .Where(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002")
-                    .Select(e => e.Message);
-                return CreateErrorsInfo(Errors.Failed, $"Manifest parse failed: {string.Join("; ", fatalErrors)}");
-            }
-
-            var resolved = ResolveManifestTypes(parseResult);
-            if (parseResult.Errors.Count > 0)
-            {
-                var errMsgs = parseResult.Errors.Select(e => $"Line {e.LineNumber}: [{e.Code}] {e.Message}");
-                _editor?.AddLogMessage("Beep",
-                    $"MigrationManager.ApplyMigrationsFromManifest: {parseResult.Errors.Count} manifest warning(s): {string.Join(" | ", errMsgs)}",
-                    DateTime.Now, 0, null, Errors.Warning);
-            }
-
-            if (resolved.Count == 0)
-                return CreateErrorsInfo(Errors.Warning, $"No entity types could be resolved from manifest '{manifestFilePath}'");
-
-            var typeList = resolved.Select(r => r.ResolvedType).ToList();
+            var (parseError, typeList) = ParseAndResolveManifestEntities(
+                manifestFilePath, nameof(ApplyMigrationsFromManifest),
+                addMissingColumns, progress, applyForeignKeys, applyIndexes);
+            if (parseError != null)
+                return parseError;
             var pipelineResult = ExecuteEntityMigrationPipeline(
                 typeList,
                 usesDiscovery: true,
@@ -316,35 +386,11 @@ namespace TheTechIdea.Beep.Editor.Migration
             bool applyForeignKeys = false,
             bool applyIndexes = false)
         {
-            if (MigrateDataSource == null)
-                return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
-
-            if (string.IsNullOrWhiteSpace(manifestFilePath))
-                return CreateErrorsInfo(Errors.Failed, "Manifest file path cannot be null or empty");
-
-            var parseResult = ParseManifestFile(manifestFilePath);
-
-            if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002"))
-            {
-                var fatalErrors = parseResult.Errors
-                    .Where(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002")
-                    .Select(e => e.Message);
-                return CreateErrorsInfo(Errors.Failed, $"Manifest parse failed: {string.Join("; ", fatalErrors)}");
-            }
-
-            var resolved = ResolveManifestTypes(parseResult);
-            if (parseResult.Errors.Count > 0)
-            {
-                var errMsgs = parseResult.Errors.Select(e => $"Line {e.LineNumber}: [{e.Code}] {e.Message}");
-                _editor?.AddLogMessage("Beep",
-                    $"MigrationManager.EnsureDatabaseCreatedFromManifest: {parseResult.Errors.Count} manifest warning(s): {string.Join(" | ", errMsgs)}",
-                    DateTime.Now, 0, null, Errors.Warning);
-            }
-
-            if (resolved.Count == 0)
-                return CreateErrorsInfo(Errors.Warning, $"No entity types could be resolved from manifest '{manifestFilePath}'");
-
-            var typeList = resolved.Select(r => r.ResolvedType).ToList();
+            var (parseError, typeList) = ParseAndResolveManifestEntities(
+                manifestFilePath, nameof(EnsureDatabaseCreatedFromManifest),
+                addMissingColumns: false, progress, applyForeignKeys, applyIndexes);
+            if (parseError != null)
+                return parseError;
 
             // Run the same shared pipeline as the explicit-type path. addMissingColumns=false
             // mirrors the contract of EnsureDatabaseCreatedForTypes: never add columns that

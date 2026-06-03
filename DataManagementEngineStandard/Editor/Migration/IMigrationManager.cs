@@ -578,6 +578,9 @@ namespace TheTechIdea.Beep.Editor.Migration
         public string ExecutedBy { get; set; } = string.Empty;
         public string Result { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
+        public string EntityName { get; set; } = string.Empty;
+        public MigrationPlanOperationKind OperationKind { get; set; } = MigrationPlanOperationKind.None;
+        public string TargetName { get; set; } = string.Empty;
     }
 
     public class MigrationTelemetryMetrics
@@ -707,6 +710,9 @@ namespace TheTechIdea.Beep.Editor.Migration
         public string DryRunJson { get; set; } = string.Empty;
         public string CiValidationJson { get; set; } = string.Empty;
         public string ApprovalReportMarkdown { get; set; } = string.Empty;
+        public string PerformancePlanJson { get; set; } = string.Empty;
+        public string CompensationPlanJson { get; set; } = string.Empty;
+        public string RollbackReadinessJson { get; set; } = string.Empty;
     }
 
     public enum MigrationRolloutWave
@@ -1295,6 +1301,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Ensures database is created with all discovered Entity types.
         /// Similar to EF Core's Database.EnsureCreated().
         /// Creates entities for all classes that inherit from Entity in the given namespace/assembly.
+        /// Existing entities are counted as skipped; missing columns are not added by this ensure-created path.
         /// </summary>
         IErrorsInfo EnsureDatabaseCreated(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
 
@@ -1589,6 +1596,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// <summary>
         /// Ensures that the connected migration datasource contains every entity described
         /// by the supplied <see cref="MigrationModel"/>.
+        /// Existing entities are left as-is; use <see cref="ApplyMigrationsForModel"/> to add missing columns.
         /// </summary>
         IErrorsInfo EnsureDatabaseCreatedForModel(MigrationModel model, bool detectRelationships = true, IProgress<PassedArgs> progress = null, bool applyForeignKeys = false, bool applyIndexes = false);
 

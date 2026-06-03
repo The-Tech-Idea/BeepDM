@@ -155,11 +155,17 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             ciReport ??= plan.CiValidationReport ?? ValidatePlanForCi(plan);
             plan.DryRunReport ??= GenerateDryRunReport(plan);
+            plan.PerformancePlan ??= BuildPerformancePlan(plan);
+            plan.CompensationPlan ??= BuildCompensationPlan(plan);
+            plan.RollbackReadinessReport ??= CheckRollbackReadiness(plan, false, false, null);
 
             bundle.PlanJson = JsonSerializer.Serialize(plan, new JsonSerializerOptions { WriteIndented = true });
             bundle.DryRunJson = JsonSerializer.Serialize(plan.DryRunReport, new JsonSerializerOptions { WriteIndented = true });
             bundle.CiValidationJson = JsonSerializer.Serialize(ciReport, new JsonSerializerOptions { WriteIndented = true });
             bundle.ApprovalReportMarkdown = BuildApprovalReportMarkdown(plan, ciReport);
+            bundle.PerformancePlanJson = JsonSerializer.Serialize(plan.PerformancePlan, new JsonSerializerOptions { WriteIndented = true });
+            bundle.CompensationPlanJson = JsonSerializer.Serialize(plan.CompensationPlan, new JsonSerializerOptions { WriteIndented = true });
+            bundle.RollbackReadinessJson = JsonSerializer.Serialize(plan.RollbackReadinessReport, new JsonSerializerOptions { WriteIndented = true });
             return bundle;
         }
 
@@ -181,7 +187,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 ? (operation.TargetName ?? string.Empty)
                 : string.Empty;
 
-            return $"{operation.EntityName}|{operation.Kind}|{operation.RiskLevel}|{missing}|{targetName}";
+            return $"{operation.EntityName}|{operation.Kind}|{missing}|{targetName}";
         }
 
         private static string BuildApprovalReportMarkdown(MigrationPlanArtifact plan, MigrationCiValidationReport ciReport)
@@ -227,15 +233,10 @@ namespace TheTechIdea.Beep.Editor.Migration
                                      operation.Kind == MigrationPlanOperationKind.CreateIndex ||
                                      operation.Kind == MigrationPlanOperationKind.DropIndex;
 
-                if (isRelationalOp && !string.IsNullOrWhiteSpace(operation.TargetName))
-                {
-                    var note = !string.IsNullOrWhiteSpace(operation.Note) ? $" — {operation.Note}" : string.Empty;
-                    builder.AppendLine($"- `{operation.EntityName}` `{operation.Kind}` `{operation.RiskLevel}` target=`{operation.TargetName}`{note}");
-                }
-                else
-                {
-                    builder.AppendLine($"- `{operation.EntityName}` `{operation.Kind}` `{operation.RiskLevel}`");
-                }
+                var targetPart = (isRelationalOp && !string.IsNullOrWhiteSpace(operation.TargetName))
+                    ? $" target=`{operation.TargetName}`" : string.Empty;
+                var note = !string.IsNullOrWhiteSpace(operation.Note) ? $" — {operation.Note}" : string.Empty;
+                builder.AppendLine($"- `{operation.EntityName}` `{operation.Kind}` `{operation.RiskLevel}`{targetPart}{note}");
             }
             return builder.ToString();
         }

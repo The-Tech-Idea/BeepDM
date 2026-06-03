@@ -122,7 +122,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             string approvedBy,
             string executedBy,
             string result,
-            string notes)
+            string notes,
+            string entityName = null,
+            MigrationPlanOperationKind operationKind = MigrationPlanOperationKind.None,
+            string targetName = null)
         {
             return new MigrationAuditEvent
             {
@@ -135,7 +138,10 @@ namespace TheTechIdea.Beep.Editor.Migration
                 ApprovedBy = approvedBy ?? string.Empty,
                 ExecutedBy = executedBy ?? string.Empty,
                 Result = result ?? string.Empty,
-                Notes = notes ?? string.Empty
+                Notes = notes ?? string.Empty,
+                EntityName = entityName ?? string.Empty,
+                OperationKind = operationKind,
+                TargetName = targetName ?? string.Empty
             };
         }
 

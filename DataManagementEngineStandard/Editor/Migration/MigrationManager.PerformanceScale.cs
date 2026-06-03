@@ -137,17 +137,26 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             // AddForeignKey takes a SHARE lock on the referencing table to
             // validate existing rows against the referenced key. On large
-            // tables this blocks writers for the duration of the scan. The
-            // drop path is fast and is captured by the IsDestructive bump
-            // above (when applicable).
+            // tables this blocks writers for the duration of the scan.
             if (operation.Kind == MigrationPlanOperationKind.AddForeignKey)
                 score += 3;
 
+            // DropForeignKey requires a schema-modification lock that can
+            // conflict with active transactions. Less than AddForeignKey but
+            // worth surfacing separately from the generic IsDestructive bump.
+            if (operation.Kind == MigrationPlanOperationKind.DropForeignKey)
+                score += 2;
+
             // CreateIndex is one of the most expensive DDL ops on RDBMS
             // platforms; it typically requires an exclusive lock or a long
-            // online-rebuild window. DropIndex is the inverse and is cheap.
+            // online-rebuild window.
             if (operation.Kind == MigrationPlanOperationKind.CreateIndex)
                 score += 4;
+
+            // DropIndex may require a schema-modification lock. Cheap
+            // compared to CreateIndex, but still impactful.
+            if (operation.Kind == MigrationPlanOperationKind.DropIndex)
+                score += 1;
 
             if (profile != null && !profile.SupportsTransactionalDdl)
                 score += 1;

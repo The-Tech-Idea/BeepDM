@@ -382,6 +382,49 @@ namespace TheTechIdea.Beep.Editor.Migration
                     });
                 }
             }
+
+            // -- FK validation -------------------------------------------------
+            if (entityStructure.Relations != null && entityStructure.Relations.Count > 0)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "entity-has-foreign-keys",
+                    Severity = MigrationIssueSeverity.Info,
+                    Message = $"Entity '{entityName}' declares {entityStructure.Relations.Count} foreign key(s).",
+                    Recommendation = "Review FK ordering: referenced entities must exist before the constraint can be applied.",
+                    EntityName = entityName
+                });
+
+                // Check for self-referencing FKs
+                foreach (var rel in entityStructure.Relations)
+                {
+                    if (rel != null && !string.IsNullOrWhiteSpace(rel.RelatedEntityID) &&
+                        string.Equals(rel.RelatedEntityID, entityName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        report.Issues.Add(new MigrationReadinessIssue
+                        {
+                            Code = "fk-self-referencing",
+                            Severity = MigrationIssueSeverity.Warning,
+                            Message = $"Entity '{entityName}' has a self-referencing FK on column '{rel.EntityColumnID}'. Data must be loaded in parent-before-child order.",
+                            Recommendation = "Load parent rows first, then apply the FK constraint.",
+                            EntityName = entityName
+                        });
+                    }
+                }
+            }
+
+            // -- Index validation ----------------------------------------------
+            if (entityStructure.Indexes != null && entityStructure.Indexes.Count > 0)
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "entity-has-indexes",
+                    Severity = MigrationIssueSeverity.Info,
+                    Message = $"Entity '{entityName}' declares {entityStructure.Indexes.Count} index(es).",
+                    Recommendation = "Validate that indexed columns exist in the entity's field list.",
+                    EntityName = entityName
+                });
+            }
         }
 
         private static DataSourceCapabilities GetCapabilities(DataSourceType dataSourceType, DatasourceCategory dataSourceCategory)

@@ -246,7 +246,44 @@ foreach (var d in s.Metrics.OperationKindTotalDurationMilliseconds)
     Console.WriteLine($"{d.Key}: {d.Value}ms");
 ```
 
-## Rollback Readiness for Relational Ops
+## Rollout Governance: Hash Stability & First-Run Detection
+
+`EvaluateRolloutGovernance` now includes a `plan-hash-stability` gate that
+blocks when the governance-time hash diverges from the checkpointed hash.
+First-run plans (no execution history) get a `kpi-no-history` Warn gate
+instead of misleadingly passing all KPI thresholds with zero values.
+
+## Rollout Wave: Add vs Drop FK/Index
+
+`CreateDefaultRolloutRequest` now splits FK/Index classification:
+- `AddForeignKey` / `CreateIndex` → Wave2StandardProduction (non-destructive)
+- `DropForeignKey` / `DropIndex` → Wave3Critical (destructive)
+
+Previously all four were Wave3Critical.
+
+## Cross-Entity Policy Checks
+
+`EvaluateCrossEntityPolicy` runs after per-operation policy:
+- `policy-fk-self-referencing` (Warn): FK where entity == referenced
+- `policy-fk-reference-not-in-plan` (Block): FK references entity not in plan
+- `policy-excessive-foreign-keys` (Warn): >8 FKs on a single entity
+
+## Readiness FK/Index Validation
+
+`AnalyzeEntityStructure` now reports `entity-has-foreign-keys` and
+`entity-has-indexes` Info entries per entity, and `fk-self-referencing`
+Warnings when an entity references itself.
+
+## Plan Diff Stability
+
+`ToOperationSignature` no longer includes `RiskLevel`. A risk reclassification
+(Low→Medium) no longer produces spurious added/removed entries.
+
+## Export Artifacts Completeness
+
+`ExportMigrationArtifacts` now includes `PerformancePlanJson`,
+`CompensationPlanJson`, and `RollbackReadinessJson` in the
+`MigrationDevExArtifactBundle`.
 
 `CheckRollbackReadiness` reports `rollback-relational-compensation-present`
 when the plan has FK/Index ops on RDBMS, even at RiskLevel.Low. Previously

@@ -33484,6 +33484,7 @@
             Ensures database is created with all discovered Entity types.
             Similar to EF Core's Database.EnsureCreated().
             Creates entities for all classes that inherit from Entity in the given namespace/assembly.
+            Existing entities are counted as skipped; missing columns are not added by this ensure-created path.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrations(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
@@ -33747,6 +33748,7 @@
             <summary>
             Ensures that the connected migration datasource contains every entity described
             by the supplied <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationModel"/>.
+            Existing entities are left as-is; use <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/> to add missing columns.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ApplyMigrationsForModel(TheTechIdea.Beep.Editor.Migration.MigrationModel,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
@@ -33979,6 +33981,15 @@
             Returns only the successfully resolved types.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ParseAndResolveManifestEntities(System.String,System.String,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
+            <summary>
+            Shared preamble for manifest-based migration methods. Parses the
+            manifest file, resolves all entries to runtime Types, logs
+            warnings, and validates that at least one type was found. Returns
+            the resolved type list on success, or an ErrorsInfo on failure
+            (null resolved list).
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyMigrationsFromManifest(System.String,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Applies migrations sourced from a manifest file.
@@ -34105,6 +34116,12 @@
             <summary>
             Computes a stable SHA-256 hash string for use as a readiness report fingerprint.
             Enables diff between runs without string parsing.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EvaluateCrossEntityPolicy(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationPolicyEvaluation)">
+            <summary>
+            Cross-entity FK policy checks that require visibility across
+            multiple operations.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">

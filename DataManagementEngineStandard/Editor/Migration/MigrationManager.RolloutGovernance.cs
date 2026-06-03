@@ -28,8 +28,41 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return report;
             }
 
+            // Plan hash stability: the hash at governance-time must match the
+            // hash that was recorded in the execution checkpoint (or the plan
+            // itself, for a cold-start). A mismatch means the plan was
+            // regenerated or tampered with after checkpoint — the governance
+            // review must re-evaluate or block.
+            var recordedHash = !string.IsNullOrWhiteSpace(plan.ExecutionCheckpoint?.PlanHash)
+                ? plan.ExecutionCheckpoint.PlanHash
+                : plan.PlanHash;
+            if (!string.IsNullOrWhiteSpace(plan.ExecutionCheckpoint?.PlanHash) &&
+                !string.Equals(plan.PlanHash, recordedHash, StringComparison.Ordinal))
+            {
+                report.Gates.Add(new MigrationRolloutGateResult
+                {
+                    Gate = "plan-hash-stability",
+                    Decision = MigrationPolicyDecision.Block,
+                    Observed = plan.PlanHash ?? string.Empty,
+                    Threshold = $"== {recordedHash}",
+                    Message = "Plan hash mismatch: the plan has been modified or regenerated since the last execution checkpoint. Re-run CI and policy evaluation."
+                });
+                report.CanPromote = false;
+                plan.RolloutGovernanceReport = report;
+                return report;
+            }
+            report.Gates.Add(new MigrationRolloutGateResult
+            {
+                Gate = "plan-hash-stability",
+                Decision = MigrationPolicyDecision.Pass,
+                Observed = plan.PlanHash ?? string.Empty,
+                Threshold = string.Empty,
+                Message = "Plan hash is stable."
+            });
+
             var snapshot = GetMigrationTelemetrySnapshot(plan.ExecutionCheckpoint?.ExecutionToken);
-            var executionCount = Math.Max(1, snapshot.Metrics.ExecutionCount);
+            var actualExecutionCount = snapshot.Metrics.ExecutionCount;
+            var executionCount = Math.Max(1, actualExecutionCount);
             var kpis = new MigrationRolloutKpiSnapshot
             {
                 SuccessRate = snapshot.SuccessRate,
@@ -40,10 +73,29 @@ namespace TheTechIdea.Beep.Editor.Migration
             report.Kpis = kpis;
 
             AddWaveEligibilityGate(report, resolvedRequest);
-            AddSuccessRateGate(report, resolvedRequest, kpis.SuccessRate);
-            AddDurationGate(report, resolvedRequest, kpis.MeanExecutionDurationMilliseconds);
-            AddRollbackRateGate(report, resolvedRequest, kpis.RollbackInvocationRate);
-            AddPolicyBlockGate(report, resolvedRequest, kpis.PolicyBlockRatio);
+
+            // When there is no execution history (first-run plan), KPI gates
+            // would all pass because zero division-by-1 produces 0 values that
+            // satisfy all thresholds. Instead, mark them as Warn and note that
+            // no history exists so the operator can decide manually.
+            if (actualExecutionCount == 0)
+            {
+                report.Gates.Add(new MigrationRolloutGateResult
+                {
+                    Gate = "kpi-no-history",
+                    Decision = MigrationPolicyDecision.Warn,
+                    Observed = "N/A",
+                    Threshold = "N/A",
+                    Message = "No prior execution history exists for this plan. KPI gates (success rate, duration, rollback, policy-block) are deferred to the operator."
+                });
+            }
+            else
+            {
+                AddSuccessRateGate(report, resolvedRequest, kpis.SuccessRate);
+                AddDurationGate(report, resolvedRequest, kpis.MeanExecutionDurationMilliseconds);
+                AddRollbackRateGate(report, resolvedRequest, kpis.RollbackInvocationRate);
+                AddPolicyBlockGate(report, resolvedRequest, kpis.PolicyBlockRatio);
+            }
 
             EvaluateHardStopPolicy(report, resolvedRequest, plan, snapshot);
             report.CanPromote = !report.HardStopTriggered && report.Gates.All(gate => gate.Decision != MigrationPolicyDecision.Block);
@@ -55,24 +107,45 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private static MigrationRolloutGovernanceRequest CreateDefaultRolloutRequest(MigrationPlanArtifact plan)
         {
-            // Critical when the plan targets an RDBMS datasource and contains
-            // either an explicitly Critical/Destructive op OR any structural
-            // relational artifact (FK or Index). FK/Index ops are not flagged
-            // Critical by default but still touch the relational integrity
-            // surface of a critical datasource, so Wave 1 is too lenient.
-            var isCritical = plan?.DataSourceCategory == DatasourceCategory.RDBMS &&
-                             (plan.Operations?.Any(operation =>
-                                 operation != null && (
-                                     operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
-                                     operation.IsDestructive ||
-                                     operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
-                                     operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
-                                     operation.Kind == MigrationPlanOperationKind.CreateIndex ||
-                                     operation.Kind == MigrationPlanOperationKind.DropIndex)) ?? false);
+            var isRdbms = plan?.DataSourceCategory == DatasourceCategory.RDBMS;
+            if (!isRdbms)
+                return new MigrationRolloutGovernanceRequest
+                {
+                    Wave = MigrationRolloutWave.Wave1NonCritical,
+                    IsCriticalDataSource = false,
+                    ReviewedBy = Environment.UserName,
+                    Notes = "Auto-generated governance request."
+                };
+
+            // Destructive relational ops (DropFK, DropIndex) on RDBMS are
+            // Wave3Critical — they remove referential integrity or query
+            // performance contracts. Additive FK/Index ops are Wave2Standard
+            // — they are non-destructive and can be safely phased.
+            var hasDestructiveRelOp = plan.Operations?.Any(operation =>
+                operation != null &&
+                (operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                 operation.Kind == MigrationPlanOperationKind.DropIndex)) ?? false;
+
+            var hasCriticalOp = plan.Operations?.Any(operation =>
+                operation != null &&
+                (operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
+                 operation.IsDestructive)) ?? false;
+
+            var hasAddRelOp = plan.Operations?.Any(operation =>
+                operation != null &&
+                (operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                 operation.Kind == MigrationPlanOperationKind.CreateIndex)) ?? false;
+
+            var isCritical = hasCriticalOp || hasDestructiveRelOp;
+            var wave = hasCriticalOp || hasDestructiveRelOp
+                ? MigrationRolloutWave.Wave3Critical
+                : hasAddRelOp
+                    ? MigrationRolloutWave.Wave2StandardProduction
+                    : MigrationRolloutWave.Wave1NonCritical;
 
             return new MigrationRolloutGovernanceRequest
             {
-                Wave = isCritical ? MigrationRolloutWave.Wave3Critical : MigrationRolloutWave.Wave1NonCritical,
+                Wave = wave,
                 IsCriticalDataSource = isCritical,
                 ReviewedBy = Environment.UserName,
                 Notes = "Auto-generated governance request."

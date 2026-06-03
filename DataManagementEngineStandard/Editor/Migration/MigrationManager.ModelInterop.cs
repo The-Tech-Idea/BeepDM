@@ -169,7 +169,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 var entity = ordered[i];
                 progress?.Report(new PassedArgs { ParameterString1 = $"Ensuring '{entity.EntityName}'", Messege = $"EnsureDatabaseCreatedForModel: {i + 1}/{ordered.Count}" });
-                var result = EnsureEntity(entity, createIfMissing: true, addMissingColumns: true, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+                var result = EnsureEntity(entity, createIfMissing: true, addMissingColumns: false, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
                 if (result.Flag == Errors.Failed)
                 {
                     if (firstError == null)
@@ -246,7 +246,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             MigrationReadinessReport report;
             if (resolvedTypes.Count == model.Entities.Count)
             {
-                report = GetMigrationReadinessForTypes(resolvedTypes);
+                report = GetMigrationReadinessForTypes(resolvedTypes, detectRelationships, applyForeignKeys, applyIndexes);
             }
             else
             {
