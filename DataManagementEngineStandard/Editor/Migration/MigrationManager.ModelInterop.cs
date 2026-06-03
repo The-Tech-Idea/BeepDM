@@ -110,19 +110,21 @@ namespace TheTechIdea.Beep.Editor.Migration
                 }
                 finally
                 {
-                    // Clear the cache so subsequent explicit-type / discovery plans are not
-                    // contaminated by the previous ORM-model EntityStructures.
-                    lock (_modelInteropLock)
-                    {
-                        foreach (var structure in entityStructures)
-                        {
-                            var key = !string.IsNullOrWhiteSpace(structure.Caption)
-                                ? structure.Caption
-                                : structure.EntityName;
-                            if (!string.IsNullOrWhiteSpace(key))
-                                _modelInteropEntityStructures.Remove(key);
-                        }
-                    }
+                    // The cache is deliberately NOT cleared here.
+                    //
+                    // During execution the executor calls TryGetEntityStructure for
+                    // each entity, and for FK/Index operations it reads Relations
+                    // and Indexes from the returned structure.  If the cache were
+                    // cleared, the executor would get the classCreator (annotation-
+                    // only) view, which is missing the FKs and indexes the ORM
+                    // model contributed — causing a silent no-op for every
+                    // AddForeignKey / CreateIndex step.
+                    //
+                    // The cache keys are CLR type full names, and the ORM-shaped
+                    // structure is a superset of the classCreator view (it carries
+                    // the same fields and table name, plus Relations / Indexes).
+                    // A subsequent explicit-type or discovery plan for the same type
+                    // therefore sees a richer structure, not a corrupted one.
                 }
             }
 

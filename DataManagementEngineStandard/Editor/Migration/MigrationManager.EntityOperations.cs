@@ -977,6 +977,49 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         /// <summary>
+        /// Applies only the index whose canonical name matches
+        /// <paramref name="targetIndexName"/>. The canonical name is
+        /// <c>idx.Name</c> or the auto-generated fallback
+        /// <c>IX_{EntityName}_{Column1}_{Column2}</c> — the same naming
+        /// convention used by the plan builder to populate TargetName.
+        /// </summary>
+        private List<string> ApplyIndexesForEntity(EntityStructure entity, string targetIndexName)
+        {
+            var failures = new List<string>();
+            if (entity?.Indexes == null || entity.Indexes.Count == 0)
+                return null;
+            if (string.IsNullOrWhiteSpace(targetIndexName))
+                return ApplyIndexesForEntity(entity);
+
+            foreach (var idx in entity.Indexes)
+            {
+                if (idx == null || idx.Columns == null || idx.Columns.Count == 0)
+                    continue;
+
+                var name = string.IsNullOrWhiteSpace(idx.Name)
+                    ? $"IX_{entity.EntityName}_{string.Join("_", idx.Columns)}"
+                    : idx.Name;
+
+                if (!string.Equals(name, targetIndexName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var options = idx.Options != null && idx.Options.Count > 0
+                    ? new Dictionary<string, object>(idx.Options)
+                    : null;
+                if (idx.IsUnique && (options == null || !options.ContainsKey("UNIQUE")))
+                    options ??= new Dictionary<string, object>();
+                if (idx.IsUnique && !options.ContainsKey("UNIQUE"))
+                    options["UNIQUE"] = true;
+
+                var result = CreateIndex(entity.EntityName, name, idx.Columns.ToArray(), options);
+                if (result.Flag != Errors.Ok)
+                    failures.Add($"index '{name}': {result.Message}");
+            }
+
+            return failures.Count == 0 ? null : failures;
+        }
+
+        /// <summary>
         /// Applies all foreign-key relations declared on an entity. Returns null
         /// when the entity has no relations; otherwise returns a list of failure
         /// messages. Each <see cref="RelationShipKeys"/> produces one FK.
@@ -998,6 +1041,53 @@ namespace TheTechIdea.Beep.Editor.Migration
                     continue;
 
                 var fkName = rel.RalationName;
+                var result = AddForeignKey(
+                    entityName: entity.EntityName,
+                    columnNames: new[] { rel.EntityColumnID },
+                    referencedEntityName: parentEntity,
+                    referencedColumnNames: new[] { parentColumn },
+                    onDeleteBehavior: rel.OnDeleteBehavior ?? "Cascade",
+                    onUpdateBehavior: rel.OnUpdateBehavior ?? "Cascade",
+                    constraintName: fkName);
+
+                if (result.Flag != Errors.Ok)
+                    failures.Add($"FK '{fkName}': {result.Message}");
+            }
+
+            return failures.Count == 0 ? null : failures;
+        }
+
+        /// <summary>
+        /// Applies only the foreign key whose canonical name matches
+        /// <paramref name="targetForeignKeyName"/>. The canonical name is
+        /// <c>rel.RalationName</c> or the auto-generated fallback
+        /// <c>FK_{EntityName}_{RelatedEntityID}_{EntityColumnID}</c> — the
+        /// same naming convention used by the plan builder.
+        /// </summary>
+        private List<string> ApplyForeignKeysForEntity(EntityStructure entity, string targetForeignKeyName)
+        {
+            var failures = new List<string>();
+            if (entity?.Relations == null || entity.Relations.Count == 0)
+                return null;
+            if (string.IsNullOrWhiteSpace(targetForeignKeyName))
+                return ApplyForeignKeysForEntity(entity);
+
+            foreach (var rel in entity.Relations)
+            {
+                if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID))
+                    continue;
+
+                var parentEntity = rel.RelatedEntityID;
+                var parentColumn = rel.RelatedEntityColumnID;
+                if (string.IsNullOrWhiteSpace(parentEntity) || string.IsNullOrWhiteSpace(parentColumn))
+                    continue;
+
+                var fkName = rel.RalationName
+                    ?? $"FK_{entity.EntityName}_{parentEntity}_{rel.EntityColumnID}";
+
+                if (!string.Equals(fkName, targetForeignKeyName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 var result = AddForeignKey(
                     entityName: entity.EntityName,
                     columnNames: new[] { rel.EntityColumnID },

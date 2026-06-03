@@ -203,3 +203,52 @@ var bundle = migration.ExportMigrationArtifacts(plan, ciReport);
 Console.WriteLine(bundle.ApprovalReportMarkdown);
 // "## Operation Counts\n- AddForeignKey=3, CreateIndex=5, CreateEntity=12, ..."
 ```
+
+## Scoped FK/Index Application
+
+The executor applies only the TargetName-matched FK or index, not all
+relations/indexes on the entity. A plan with 5 FK ops on the same entity
+applies one at a time.
+
+## Dry-Run FK/Index Scoping
+
+Dry-run DDL preview is now scoped by TargetName. An `AddForeignKey` op
+with `TargetName=FK_Orders_Customers` previews only that one FK statement,
+not all FKs on the entity. Same for `CreateIndex`.
+
+## Policy: Empty TargetName on FK/Index
+
+Policy rule `policy-fk-index-missing-target-name` (Block) fires when an
+FK/Index operation lacks TargetName. Populate `RalationName` on
+`RelationShipKeys` or `IndexName` on `EntityIndex` before building the plan.
+
+## Model-Interop Cache Stability
+
+The model-interop cache is NOT cleared after `BuildMigrationPlanForModel`
+returns. The executor needs the ORM-shaped `EntityStructure` for FK/Index
+step execution. Without the cache, the executor falls back to the
+annotation-only classCreator view and silently applies no FKs/indexes.
+
+## Topological Sort for Type-Based Plans
+
+`BuildMigrationPlanInternal` reorders operations so CreateEntity ops appear
+before any AddForeignKey ops that reference them. The model-interop path
+already sorted entity structures by FK dependency; the type-discovery path
+now has parity.
+
+## Per-Kind Duration Telemetry
+
+`MigrationTelemetryMetrics.OperationKindTotalDurationMilliseconds` buckets
+elapsed time by operation kind. Call `GetMigrationTelemetrySnapshot`:
+```csharp
+var s = migration.GetMigrationTelemetrySnapshot(token);
+foreach (var d in s.Metrics.OperationKindTotalDurationMilliseconds)
+    Console.WriteLine($"{d.Key}: {d.Value}ms");
+```
+
+## Rollback Readiness for Relational Ops
+
+`CheckRollbackReadiness` reports `rollback-relational-compensation-present`
+when the plan has FK/Index ops on RDBMS, even at RiskLevel.Low. Previously
+the report said "No high-risk ops" while compensation actions existed —
+misleading operators into skipping rollback prep.

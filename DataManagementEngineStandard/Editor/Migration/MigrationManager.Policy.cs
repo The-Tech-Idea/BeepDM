@@ -131,6 +131,31 @@ namespace TheTechIdea.Beep.Editor.Migration
                     RiskLevel = operation.RiskLevel
                 });
             }
+
+            // FK / Index operations must carry the constraint or index name
+            // in TargetName so the executor and rollback can operate on the
+            // right object. A missing TargetName means the DDL step lacks a
+            // name and will fail at execution time (or produce an unnamed
+            // constraint that cannot be targeted for drops).
+            var isRelationalOp =
+                operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+                operation.Kind == MigrationPlanOperationKind.DropIndex;
+
+            if (isRelationalOp && string.IsNullOrWhiteSpace(operation.TargetName))
+            {
+                evaluation.Findings.Add(new MigrationPolicyFinding
+                {
+                    RuleId = "policy-fk-index-missing-target-name",
+                    Decision = MigrationPolicyDecision.Block,
+                    Message = $"Operation '{operation.Kind}' on '{entityName}' is missing the constraint/index name (TargetName). The plan must supply a name via RalationName on the RelationShipKeys or IndexName on the EntityIndex.",
+                    Recommendation = "Populate RalationName (for FK) or IndexName (for Index) on the EntityStructure before building the plan, or supply the name on the MigrationPlanOperation.TargetName property.",
+                    EntityName = entityName,
+                    OperationKind = operation.Kind,
+                    RiskLevel = operation.RiskLevel
+                });
+            }
         }
 
         private static bool IsProtectedEnvironment(MigrationEnvironmentTier tier)

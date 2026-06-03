@@ -33126,6 +33126,14 @@
             shape as <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationTelemetryMetrics.OperationKindCounts"/>.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationTelemetryMetrics.OperationKindTotalDurationMilliseconds">
+            <summary>
+            Per-operation-kind total execution duration in milliseconds since
+            process start. Keyed by <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind"/>
+            string. Operators can identify whether AddForeignKey steps
+            average 18ms or 18000ms, and compare against baseline estimates.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationOperationScaleAnnotation.TargetName">
             <summary>
             For AddForeignKey / DropForeignKey, the constraint name. For
@@ -33936,11 +33944,29 @@
             has no indexes; otherwise returns a list of failure messages.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIndexesForEntity(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Applies only the index whose canonical name matches
+            <paramref name="targetIndexName"/>. The canonical name is
+            <c>idx.Name</c> or the auto-generated fallback
+            <c>IX_{EntityName}_{Column1}_{Column2}</c> — the same naming
+            convention used by the plan builder to populate TargetName.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyForeignKeysForEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>
             Applies all foreign-key relations declared on an entity. Returns null
             when the entity has no relations; otherwise returns a list of failure
             messages. Each <see cref="T:TheTechIdea.Beep.DataBase.RelationShipKeys"/> produces one FK.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyForeignKeysForEntity(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
+            <summary>
+            Applies only the foreign key whose canonical name matches
+            <paramref name="targetForeignKeyName"/>. The canonical name is
+            <c>rel.RalationName</c> or the auto-generated fallback
+            <c>FK_{EntityName}_{RelatedEntityID}_{EntityColumnID}</c> — the
+            same naming convention used by the plan builder.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ParseManifestFile(System.String)">
@@ -34034,6 +34060,14 @@
             list at Info severity (which is informational, not a finding).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RecordStepDuration(System.Int64,TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind)">
+            <summary>
+            Same as <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RecordStepDuration(System.Int64)"/> but also buckets
+            the duration by operation kind so the telemetry snapshot can show
+            per-kind averages (e.g. CreateIndex avg 4500ms vs AddMissingColumns
+            avg 42ms).
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RecordOperationKindCompleted(TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind,System.Boolean)">
             <summary>
             Increments the per-op-kind completion counter (and the failure
@@ -34058,6 +34092,13 @@
             Shared internal pipeline used by all migration-apply paths (explicit and discovery).
             Emits a <see cref="T:TheTechIdea.Beep.Editor.Migration.EntityPipelineResult"/> with normalized scanned/created/updated/skipped/error counts
             and per-entity <see cref="T:TheTechIdea.Beep.Editor.Migration.EntityMigrationResultEntry"/> for CI consumption.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureCreateEntityBeforeForeignKey(System.Collections.Generic.List{TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation})">
+            <summary>
+            Reorders <paramref name="operations"/> in place so that a
+            CreateEntity operation for entity X always appears before any
+            AddForeignKey operation that references X.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ComputeReadinessReportHash(System.String,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Utilities.DatasourceCategory,System.Boolean,System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.Migration.MigrationReadinessIssue})">

@@ -234,7 +234,18 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (types.Count == 0)
                 return false;
 
-            var currentPlan = BuildMigrationPlanForTypes(types);
+            // Derive the intent flags from the original plan's operation list.
+            // Without them the rebuilt plan would omit FK/Index ops and the
+            // signature would always diverge from the original, producing a
+            // perpetual false-positive drift that blocks every preflight run.
+            var hasRelOps = plan.Operations.Any(op =>
+                op != null && (op.Kind == MigrationPlanOperationKind.AddForeignKey ||
+                               op.Kind == MigrationPlanOperationKind.DropForeignKey ||
+                               op.Kind == MigrationPlanOperationKind.CreateIndex ||
+                               op.Kind == MigrationPlanOperationKind.DropIndex));
+            var afk = hasRelOps;
+            var aix = hasRelOps;
+            var currentPlan = BuildMigrationPlanForTypes(types, detectRelationships: true, applyForeignKeys: afk, applyIndexes: aix);
             if (currentPlan == null)
                 return true;
 
@@ -356,10 +367,25 @@ namespace TheTechIdea.Beep.Editor.Migration
                 if (desired?.Relations == null) return;
 
                 var universalHelper = helper as TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper;
+                // When TargetName is set, preview only the one FK the plan
+                // operation targets. Without this, a plan with 5 FK ops on
+                // the same entity previews the same 5 SQL lines 5 times,
+                // each time under a different operation but with identical
+                // DDL — confusing reviewers.
+                string targetFk = !string.IsNullOrWhiteSpace(operation.TargetName)
+                    ? operation.TargetName.Trim() : null;
                 foreach (var rel in desired.Relations)
                 {
                     if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID) || string.IsNullOrWhiteSpace(rel.RelatedEntityID))
                         continue;
+
+                    if (targetFk != null)
+                    {
+                        var candidate = rel.RalationName
+                            ?? $"FK_{desired.EntityName}_{rel.RelatedEntityID}_{rel.EntityColumnID}";
+                        if (!string.Equals(candidate, targetFk, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                    }
 
                     if (universalHelper != null)
                     {
@@ -412,12 +438,18 @@ namespace TheTechIdea.Beep.Editor.Migration
                 var desired = ResolveDesiredEntityStructure(operation);
                 if (desired?.Indexes == null) return;
 
+                // Same scoping as AddForeignKey: when TargetName is set,
+                // preview only the index the plan operation targets.
+                string targetIx = !string.IsNullOrWhiteSpace(operation.TargetName)
+                    ? operation.TargetName.Trim() : null;
                 foreach (var idx in desired.Indexes)
                 {
                     if (idx == null || idx.Columns == null || idx.Columns.Count == 0) continue;
                     var name = string.IsNullOrWhiteSpace(idx.Name)
                         ? $"IX_{desired.EntityName}_{string.Join("_", idx.Columns)}"
                         : idx.Name;
+                    if (targetIx != null && !string.Equals(name, targetIx, StringComparison.OrdinalIgnoreCase))
+                        continue;
                     var (sql, success, err) = helper.GenerateCreateIndexSql(desired.EntityName, name, idx.Columns.ToArray(),
                         idx.Options != null && idx.Options.Count > 0 ? new Dictionary<string, object>(idx.Options) : null);
                     if (!string.IsNullOrWhiteSpace(sql))

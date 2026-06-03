@@ -23,6 +23,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         // passes.
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _opKindCompletionCounts = new(StringComparer.OrdinalIgnoreCase);
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _opKindFailureCounts = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _opKindDurations = new(StringComparer.OrdinalIgnoreCase);
 
         private static readonly ConcurrentDictionary<string, ConcurrentQueue<MigrationDiagnosticEntry>> DiagnosticStore = new(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, ConcurrentQueue<MigrationAuditEvent>> AuditStore = new(StringComparer.OrdinalIgnoreCase);
@@ -90,6 +91,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                 snapshot.Metrics.OperationKindCounts[pair.Key] = pair.Value;
             foreach (var pair in _opKindFailureCounts)
                 snapshot.Metrics.OperationKindFailureCounts[pair.Key] = pair.Value;
+            foreach (var pair in _opKindDurations)
+                snapshot.Metrics.OperationKindTotalDurationMilliseconds[pair.Key] = pair.Value;
 
             return snapshot;
         }
@@ -267,6 +270,19 @@ namespace TheTechIdea.Beep.Editor.Migration
                 elapsedMs = 0;
             Interlocked.Add(ref _totalStepDurationMs, elapsedMs);
             Interlocked.Increment(ref _stepDurationSamples);
+        }
+
+        /// <summary>
+        /// Same as <see cref="RecordStepDuration(long)"/> but also buckets
+        /// the duration by operation kind so the telemetry snapshot can show
+        /// per-kind averages (e.g. CreateIndex avg 4500ms vs AddMissingColumns
+        /// avg 42ms).
+        /// </summary>
+        internal static void RecordStepDuration(long elapsedMs, MigrationPlanOperationKind kind)
+        {
+            RecordStepDuration(elapsedMs);
+            if (elapsedMs < 0) elapsedMs = 0;
+            _opKindDurations.AddOrUpdate(kind.ToString(), elapsedMs, (_, value) => value + elapsedMs);
         }
 
         /// <summary>

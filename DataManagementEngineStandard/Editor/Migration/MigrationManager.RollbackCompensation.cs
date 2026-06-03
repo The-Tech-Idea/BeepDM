@@ -104,6 +104,28 @@ namespace TheTechIdea.Beep.Editor.Migration
                  operation.IsTypeNarrowing ||
                  operation.HasNullabilityTightening));
 
+            // BuildCompensationPlan includes FK/Index ops on RDBMS targets
+            // even when RiskLevel is Low (they touch the relational integrity
+            // surface). Surface this in the readiness check so the operator
+            // isn't told "no high-risk ops" when compensation actions exist.
+            var hasRelationalCompensation = plan.DataSourceCategory == DatasourceCategory.RDBMS &&
+                (plan.CompensationPlan.Actions?.Any(a =>
+                    a.OperationKind == MigrationPlanOperationKind.AddForeignKey ||
+                    a.OperationKind == MigrationPlanOperationKind.DropForeignKey ||
+                    a.OperationKind == MigrationPlanOperationKind.CreateIndex ||
+                    a.OperationKind == MigrationPlanOperationKind.DropIndex) ?? false);
+
+            if (hasRelationalCompensation && !hasHighRisk && (plan.CompensationPlan.Actions?.Count ?? 0) <= 4)
+            {
+                report.Checks.Add(new MigrationRollbackReadinessCheck
+                {
+                    Code = "rollback-relational-compensation-present",
+                    Decision = MigrationPolicyDecision.Pass,
+                    Message = "Relational FK/Index compensation actions exist for this RDBMS plan. These are Low-risk individually but affect referential integrity.",
+                    Recommendation = "Review FK/Index rollback actions and validate they match the constraint/index names in the plan."
+                });
+            }
+
             if (hasHighRisk && (plan.CompensationPlan.Actions == null || plan.CompensationPlan.Actions.Count == 0))
             {
                 report.Checks.Add(new MigrationRollbackReadinessCheck

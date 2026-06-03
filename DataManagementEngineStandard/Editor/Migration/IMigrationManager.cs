@@ -278,7 +278,16 @@ namespace TheTechIdea.Beep.Editor.Migration
         public MigrationRolloutGovernanceReport RolloutGovernanceReport { get; set; } = new MigrationRolloutGovernanceReport();
         public int PendingOperationCount => Operations.FindAll(operation =>
             operation.Kind == MigrationPlanOperationKind.CreateEntity ||
-            operation.Kind == MigrationPlanOperationKind.AddMissingColumns).Count;
+            operation.Kind == MigrationPlanOperationKind.AddMissingColumns ||
+            operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
+            operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
+            operation.Kind == MigrationPlanOperationKind.CreateIndex ||
+            operation.Kind == MigrationPlanOperationKind.DropIndex ||
+            operation.Kind == MigrationPlanOperationKind.AlterColumn ||
+            operation.Kind == MigrationPlanOperationKind.DropColumn ||
+            operation.Kind == MigrationPlanOperationKind.RenameEntity ||
+            operation.Kind == MigrationPlanOperationKind.RenameColumn ||
+            operation.Kind == MigrationPlanOperationKind.TruncateEntity).Count;
     }
 
     public enum MigrationPolicyDecision
@@ -597,6 +606,13 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// shape as <see cref="OperationKindCounts"/>.
         /// </summary>
         public Dictionary<string, long> OperationKindFailureCounts { get; set; } = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Per-operation-kind total execution duration in milliseconds since
+        /// process start. Keyed by <see cref="MigrationPlanOperationKind"/>
+        /// string. Operators can identify whether AddForeignKey steps
+        /// average 18ms or 18000ms, and compare against baseline estimates.
+        /// </summary>
+        public Dictionary<string, long> OperationKindTotalDurationMilliseconds { get; set; } = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
     }
 
     public class MigrationTelemetrySnapshot

@@ -214,7 +214,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 }
 
                 step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
-                RecordStepDuration(stepWatch.ElapsedMilliseconds);
+                RecordStepDuration(stepWatch.ElapsedMilliseconds, step.OperationKind);
                 RecordOperationKindCompleted(step.OperationKind, success: true);
                 checkpoint.UpdatedOnUtc = DateTime.UtcNow;
                 PersistExecutionCheckpoint(checkpoint);
@@ -422,45 +422,52 @@ namespace TheTechIdea.Beep.Editor.Migration
                         return CreateErrorsInfo(Errors.Failed, $"Cannot resolve entity metadata for '{step.EntityName}'.");
                     if (string.IsNullOrWhiteSpace(step.EntityName))
                         return CreateErrorsInfo(Errors.Failed, "AddForeignKey step is missing the entity name.");
-                    var fkFailures = ApplyForeignKeysForEntity(desired);
+                    // When the step carries a specific TargetName, apply only
+                    // the matching FK rather than every relation on the entity.
+                    // Without this, a plan with 3 FK ops on the same entity
+                    // would apply all 3 on the first step (duplicating work or
+                    // tripping over already-existing constraints).
+                    var fkFailures = !string.IsNullOrWhiteSpace(step.TargetName)
+                        ? ApplyForeignKeysForEntity(desired, step.TargetName)
+                        : ApplyForeignKeysForEntity(desired);
                     if (fkFailures != null && fkFailures.Count > 0)
                         return CreateErrorsInfo(Errors.Failed, $"Foreign-key apply failed for '{step.EntityName}': {string.Join("; ", fkFailures)}");
-                    return CreateErrorsInfo(Errors.Ok, $"Foreign keys applied to '{step.EntityName}'.");
+                    return CreateErrorsInfo(Errors.Ok, $"Foreign key applied to '{step.EntityName}'.");
 
                 case MigrationPlanOperationKind.DropForeignKey:
                     if (string.IsNullOrWhiteSpace(step.EntityName))
                         return CreateErrorsInfo(Errors.Failed, "DropForeignKey step is missing the entity name.");
-                    // Prefer the actual constraint name carried on the plan op
-                    // (via TargetName). Fall back to StepId for older plans that
-                    // synthesized the name there.
-                    var fkConstraintName = !string.IsNullOrWhiteSpace(step.TargetName)
-                        ? step.TargetName
-                        : step.StepId;
-                    if (string.IsNullOrWhiteSpace(fkConstraintName))
-                        return CreateErrorsInfo(Errors.Failed, "DropForeignKey step is missing the constraint name.");
-                    return DropForeignKey(step.EntityName, fkConstraintName);
+                    // TargetName carries the actual constraint name from the
+                    // plan op. When it's missing the plan was built without
+                    // the name — usually a pre-pass-6 plan or a tool that
+                    // didn't populate RalationName on the RelationShipKeys.
+                    // Diagnostic is clearer than falling back to step.StepId
+                    // (e.g. "step-5") which is never a valid DB constraint name.
+                    if (string.IsNullOrWhiteSpace(step.TargetName))
+                        return CreateErrorsInfo(Errors.Failed, $"DropForeignKey step is missing the constraint name (TargetName) for entity '{step.EntityName}'; the plan must supply the FK name.");
+                    return DropForeignKey(step.EntityName, step.TargetName);
 
                 case MigrationPlanOperationKind.CreateIndex:
                     if (desired == null)
                         return CreateErrorsInfo(Errors.Failed, $"Cannot resolve entity metadata for '{step.EntityName}'.");
                     if (string.IsNullOrWhiteSpace(step.EntityName))
                         return CreateErrorsInfo(Errors.Failed, "CreateIndex step is missing the entity name.");
-                    var indexFailures = ApplyIndexesForEntity(desired);
+                    // Same scoping as AddForeignKey: when TargetName is set,
+                    // apply only the targeted index.
+                    var indexFailures = !string.IsNullOrWhiteSpace(step.TargetName)
+                        ? ApplyIndexesForEntity(desired, step.TargetName)
+                        : ApplyIndexesForEntity(desired);
                     if (indexFailures != null && indexFailures.Count > 0)
                         return CreateErrorsInfo(Errors.Failed, $"Index apply failed for '{step.EntityName}': {string.Join("; ", indexFailures)}");
-                    return CreateErrorsInfo(Errors.Ok, $"Indexes applied to '{step.EntityName}'.");
+                    return CreateErrorsInfo(Errors.Ok, $"Index applied to '{step.EntityName}'.");
 
                 case MigrationPlanOperationKind.DropIndex:
                     if (string.IsNullOrWhiteSpace(step.EntityName))
                         return CreateErrorsInfo(Errors.Failed, "DropIndex step is missing the entity name.");
-                    // Prefer the actual index name carried on the plan op
-                    // (via TargetName). Fall back to StepId for older plans.
-                    var indexName = !string.IsNullOrWhiteSpace(step.TargetName)
-                        ? step.TargetName
-                        : step.StepId;
-                    if (string.IsNullOrWhiteSpace(indexName))
-                        return CreateErrorsInfo(Errors.Failed, "DropIndex step is missing the index name.");
-                    return DropIndex(step.EntityName, indexName);
+                    // Same diagnostic-fail pattern as DropForeignKey.
+                    if (string.IsNullOrWhiteSpace(step.TargetName))
+                        return CreateErrorsInfo(Errors.Failed, $"DropIndex step is missing the index name (TargetName) for entity '{step.EntityName}'; the plan must supply the index name.");
+                    return DropIndex(step.EntityName, step.TargetName);
 
                 default:
                     return CreateErrorsInfo(Errors.Failed, $"Operation '{step.OperationKind}' is not yet supported by execution orchestration.");

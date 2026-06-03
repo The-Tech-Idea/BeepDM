@@ -121,6 +121,13 @@ implement a new helper method and add a delegation to `ClassCreator.PocoToEntity
 - Default `applyForeignKeys`/`applyIndexes` is `false`; an empty constraint list after a build call usually means the flags were not passed.
 - Resume from checkpoint preserves `step.TargetName` -> `operation.TargetName`; rebuilding the plan without the checkpoint reuses the saved target. Without it, the executor falls back to a synthetic `step-N` identifier and rollback cannot drop the constraint by name.
 - Lock-impact estimates for FK/Index ops (AddForeignKey +3 score, 18s baseline; CreateIndex +4 score, 25s baseline; DropForeignKey +6s; DropIndex +4s) are baseline assumptions; production windows must be sized with row counts.
+- The model-interop cache is NOT cleared after `BuildMigrationPlanForModel` returns. The executor needs the ORM-shaped `EntityStructure` (with Relations/Indexes) for FK/Index step execution; clearing the cache would cause the executor to fall back to the classCreator view, silently applying no FKs or indexes.
+- FK/Index execution is scoped by TargetName: `ApplyForeignKeysForEntity(desired, targetName)` and `ApplyIndexesForEntity(desired, targetName)` only apply the one FK/index the plan step targets, not every relation on the entity. The full-apply overloads still exist for callers that opt to apply all at once.
+- Type-based plans (`BuildMigrationPlanForTypes`) now topologically sort operations so that a CreateEntity for entity A appears before any AddForeignKey that references A. The model-interop path already sorted by entity structure order; this brings the type-discovery path to parity.
+- DropForeignKey/DropIndex steps without a TargetName now fail with a clear diagnostic rather than silently falling back to the synthetic `step-N` identifier, which was never a valid database constraint/index name.
+- Telemetry includes per-operation-kind duration totals (`OperationKindTotalDurationMilliseconds`) in addition to the existing completion/failure counts, so operators can see "CreateIndex steps average 4500ms" without computing from audit trails.
+- `PendingOperationCount` now includes all migration operation kinds (AddForeignKey, DropForeignKey, CreateIndex, DropIndex, AlterColumn, DropColumn, RenameEntity, RenameColumn, TruncateEntity), not just CreateEntity and AddMissingColumns. Approval reports and CI dashboards now show accurate pending-op counts for FK/Index-heavy plans.
+- SelectModelInterop methods now have `detectRelationships` wired through rather than dead; the parameter was accepted but never passed.
 
 ## File Locations
 - `DataManagementEngineStandard/Editor/Migration/IMigrationManager.cs`

@@ -107,9 +107,17 @@ namespace TheTechIdea.Beep.Editor.Migration
                         var structure = TryGetEntityStructure(entityType);
                         if (structure != null && !string.IsNullOrWhiteSpace(op.EntityName))
                             structure.EntityName = op.EntityName;
-                        EmitRelationalArtifactsForEntity(structure, plan.Operations, applyForeignKeys, applyIndexes);
+                    EmitRelationalArtifactsForEntity(structure, plan.Operations, applyForeignKeys, applyIndexes);
                     }
                 }
+
+                // Reorder operations so that each entity's CreateEntity op
+                // appears before any FK op that references it. Without this
+                // an FK referencing entity B could be emitted (and, at
+                // execution time, attempted) before entity B's table exists.
+                // The model-interop path already calls TopologicallyOrderByForeignKeys,
+                // but the type-discovery path skips it.
+                EnsureCreateEntityBeforeForeignKey(plan.Operations);
             }
 
             plan.PolicyEvaluation = EvaluateMigrationPlanPolicy(plan, CreateDefaultPolicyOptions());
@@ -583,6 +591,91 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
 
             return pipelineResult;
+        }
+
+        /// <summary>
+        /// Reorders <paramref name="operations"/> in place so that a
+        /// CreateEntity operation for entity X always appears before any
+        /// AddForeignKey operation that references X.
+        /// </summary>
+        internal static void EnsureCreateEntityBeforeForeignKey(List<MigrationPlanOperation> operations)
+        {
+            if (operations == null || operations.Count < 2)
+                return;
+
+            // Build a lookup: entity name -> index of its CreateEntity operation.
+            var createIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < operations.Count; i++)
+            {
+                var op = operations[i];
+                if (op != null &&
+                    op.Kind == MigrationPlanOperationKind.CreateEntity &&
+                    !string.IsNullOrWhiteSpace(op.EntityName))
+                {
+                    createIndex[op.EntityName] = i;
+                }
+            }
+
+            if (createIndex.Count == 0)
+                return;
+
+            // Walk FK ops and insert a synthetic dependency: if an FK op's
+            // referenced virtual entity doesn't have a CreateEntity op before
+            // it, move the CreateEntity op to just before the FK op.
+            //
+            // We iterate backwards and use Move-Insert so each move shifts
+            // indices predictably.
+            for (int i = operations.Count - 1; i >= 0; i--)
+            {
+                var fkOp = operations[i];
+                if (fkOp == null ||
+                    fkOp.Kind != MigrationPlanOperationKind.AddForeignKey)
+                    continue;
+
+                var referencedEntity = fkOp.TargetName;
+                if (string.IsNullOrWhiteSpace(referencedEntity))
+                    continue;
+
+                // Try to extract the referenced entity name from the FK name.
+                // FK names follow the pattern FK_{EntityName}_{RefEntity}_{Col},
+                // e.g. "FK_Orders_Customers_CustomerId". Split on _ to get segments,
+                // then try to find the segment that matches a known entity.
+                //
+                // A more precise approach uses the Relationship on the
+                // EntityStructure, but that's unavailable at this stage.
+                // We do a best-effort scan: any entity whose name appears as
+                // a substring that is itself a suffix is a candidate.
+                foreach (var entityName in createIndex.Keys.ToList())
+                {
+                    if (string.Equals(entityName, referencedEntity, StringComparison.OrdinalIgnoreCase))
+                        continue; // Self-referencing FK — no ordering issue.
+
+                    // Check whether the FK name contains the entity name
+                    // as a distinct underscore-delimited segment.
+                    var segments = referencedEntity.Split('_');
+                    if (!segments.Any(s => string.Equals(s, entityName, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    if (!createIndex.TryGetValue(entityName, out var createPos))
+                        continue;
+
+                    if (createPos < i)
+                        continue; // Already before the FK op — correct ordering.
+
+                    // Move the CreateEntity op just before the FK op.
+                    var createOp = operations[createPos];
+                    operations.RemoveAt(createPos);
+                    // After removal, the target position might have shifted.
+                    // We insert before the original `i` position, but since
+                    // we're iterating backwards and the removal was at a
+                    // higher index, `i` is still valid.
+                    if (createPos > i)
+                        operations.Insert(i, createOp);
+                    else
+                        operations.Insert(i - 1, createOp);
+                    break;
+                }
+            }
         }
 
         /// <summary>
