@@ -305,9 +305,6 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return (CreateErrorsInfo(Errors.Failed, "Migration data source is not set"), null);
 
-            if (string.IsNullOrWhiteSpace(manifestFilePath))
-                return (CreateErrorsInfo(Errors.Failed, "Manifest file path cannot be null or empty"), null);
-
             var parseResult = ParseManifestFile(manifestFilePath);
 
             if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002"))
