@@ -22,6 +22,7 @@ namespace TheTechIdea.Beep.Editor.Migration
     ///   <item>MIG-MANIFEST-002 — empty type name segment</item>
     ///   <item>MIG-MANIFEST-003 — unresolved type after resolution pipeline</item>
     ///   <item>MIG-MANIFEST-004 — duplicate entity declaration</item>
+    ///   <item>MIG-MANIFEST-005 — null or empty manifest file path</item>
     /// </list>
     /// </summary>
     public partial class MigrationManager
@@ -44,7 +45,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 result.Errors.Add(new MigrationManifestParseError
                 {
-                    Code = "MIG-MANIFEST-002",
+                    Code = "MIG-MANIFEST-005",
                     LineNumber = 0,
                     LineContent = string.Empty,
                     Message = "Manifest file path cannot be null or empty."
@@ -307,10 +308,10 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             var parseResult = ParseManifestFile(manifestFilePath);
 
-            if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002"))
+            if (parseResult.Errors.Any(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002" || e.Code == "MIG-MANIFEST-005"))
             {
                 var fatalErrors = parseResult.Errors
-                    .Where(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002")
+                    .Where(e => e.Code == "MIG-MANIFEST-001" || e.Code == "MIG-MANIFEST-002" || e.Code == "MIG-MANIFEST-005")
                     .Select(e => e.Message);
                 return (CreateErrorsInfo(Errors.Failed, $"Manifest parse failed: {string.Join("; ", fatalErrors)}"), null);
             }

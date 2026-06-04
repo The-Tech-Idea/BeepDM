@@ -11,7 +11,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 {
     public partial class MigrationManager
     {
-        private MigrationReadinessReport BuildReadinessReport(IEnumerable<Type> entityTypes, bool usesDiscovery)
+        private MigrationReadinessReport BuildReadinessReport(IEnumerable<Type> entityTypes, bool usesDiscovery, bool detectRelationships = true)
         {
             var report = CreateBaseReadinessReport(usesDiscovery);
 
@@ -88,7 +88,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 mappedTypes.Add(entityType.FullName ?? entityType.Name);
 
                 AnalyzeEntityName(report, entityName, entityType);
-                AnalyzeEntityStructure(report, entityName, entityStructure);
+                AnalyzeEntityStructure(report, entityName, entityStructure, detectRelationships);
             }
 
             foreach (var duplicate in entityNames.Where(item => item.Value.Count > 1))
@@ -321,7 +321,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
-        private void AnalyzeEntityStructure(MigrationReadinessReport report, string entityName, EntityStructure entityStructure)
+        private void AnalyzeEntityStructure(MigrationReadinessReport report, string entityName, EntityStructure entityStructure, bool detectRelationships = true)
         {
             if (entityStructure == null)
             {
@@ -382,6 +382,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                     });
                 }
             }
+
+            if (!detectRelationships)
+                return;
 
             // -- FK validation -------------------------------------------------
             if (entityStructure.Relations != null && entityStructure.Relations.Count > 0)
@@ -511,7 +514,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             try
             {
-                var readiness = BuildReadinessReport(typeList, usesDiscovery: false);
+                var readiness = BuildReadinessReport(typeList, usesDiscovery: false, detectRelationships);
                 LogReadinessReport(nameof(EnsureDatabaseCreatedForTypes), readiness, progress);
                 if (readiness.HasBlockingIssues)
                 {
@@ -533,8 +536,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     source: EntityMigrationSource.Explicit,
                     addMissingColumns: false,
                     progress: progress,
-                    applyForeignKeys: applyForeignKeys,
-                    applyIndexes: applyIndexes);
+                    applyForeignKeys: detectRelationships && applyForeignKeys,
+                    applyIndexes: detectRelationships && applyIndexes);
 
                 var summaryMsg = pipelineResult.ToSummaryString();
                 progress?.Report(new PassedArgs { Messege = summaryMsg });
@@ -571,7 +574,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             try
             {
-                var readiness = BuildReadinessReport(typeList, usesDiscovery: false);
+                var readiness = BuildReadinessReport(typeList, usesDiscovery: false, detectRelationships);
                 LogReadinessReport(nameof(ApplyMigrationsForTypes), readiness, progress);
                 if (readiness.HasBlockingIssues)
                 {
@@ -593,8 +596,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     source: EntityMigrationSource.Explicit,
                     addMissingColumns: addMissingColumns,
                     progress: progress,
-                    applyForeignKeys: applyForeignKeys,
-                    applyIndexes: applyIndexes);
+                    applyForeignKeys: detectRelationships && applyForeignKeys,
+                    applyIndexes: detectRelationships && applyIndexes);
 
                 var summaryMsg = pipelineResult.ToSummaryString();
                 progress?.Report(new PassedArgs { Messege = summaryMsg });

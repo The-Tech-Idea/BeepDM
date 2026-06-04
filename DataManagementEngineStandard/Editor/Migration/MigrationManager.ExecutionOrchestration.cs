@@ -379,7 +379,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return CreateErrorsInfo(Errors.Failed, "Step is marked as plan error and cannot be executed.");
 
             var entityType = ResolveType(step.EntityTypeName);
-            var desired = entityType != null ? TryGetEntityStructure(entityType) : null;
+            var desired = entityType != null
+                ? TryGetEntityStructure(entityType)
+                : ResolveCachedEntityStructure(step.EntityTypeName, step.EntityName);
             if (desired != null && !string.IsNullOrWhiteSpace(step.EntityName))
                 desired.EntityName = step.EntityName;
 

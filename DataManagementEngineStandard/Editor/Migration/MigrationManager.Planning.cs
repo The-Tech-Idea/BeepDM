@@ -33,7 +33,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     "Register the required assemblies explicitly or use BuildMigrationPlanForTypes.");
             }
 
-            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: true, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: true, detectRelationships: detectRelationships, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
         }
 
         /// <summary>
@@ -47,10 +47,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (entityTypes == null)
                 return CreatePlanArtifactWithError(usesDiscovery: false, "entity-types-null", "Entity types collection cannot be null", "Pass explicit entity types or use discovery-based planning.");
 
-            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: false, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: false, detectRelationships: detectRelationships, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
         }
 
-        private MigrationPlanArtifact BuildMigrationPlanInternal(IEnumerable<Type> entityTypes, bool usesDiscovery, bool applyForeignKeys = false, bool applyIndexes = false)
+        private MigrationPlanArtifact BuildMigrationPlanInternal(IEnumerable<Type> entityTypes, bool usesDiscovery, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
         {
             var plan = CreateBasePlanArtifact(usesDiscovery);
             var typeList = entityTypes
@@ -59,8 +59,10 @@ namespace TheTechIdea.Beep.Editor.Migration
                 .ToList();
 
             plan.EntityTypeCount = typeList.Count;
+            var effectiveApplyForeignKeys = detectRelationships && applyForeignKeys;
+            var effectiveApplyIndexes = detectRelationships && applyIndexes;
 
-            var readiness = BuildReadinessReport(typeList, usesDiscovery);
+            var readiness = BuildReadinessReport(typeList, usesDiscovery, detectRelationships);
             plan.ReadinessIssues.AddRange(readiness.Issues);
             plan.ProviderAssumptions = readiness.MigrationBestPractices
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -102,12 +104,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                     // The structures used here are the same ones TryGetEntityStructure
                     // returns (which honors the model-interop cache), so EF Core-shaped
                     // FKs/indexes are also picked up when applicable.
-                    if (op.EntityTypeName != null)
+                    if (op.EntityTypeName != null && detectRelationships)
                     {
                         var structure = TryGetEntityStructure(entityType);
                         if (structure != null && !string.IsNullOrWhiteSpace(op.EntityName))
                             structure.EntityName = op.EntityName;
-                    EmitRelationalArtifactsForEntity(structure, plan.Operations, applyForeignKeys, applyIndexes);
+                        EmitRelationalArtifactsForEntity(structure, plan.Operations, effectiveApplyForeignKeys, effectiveApplyIndexes);
                     }
                 }
 
@@ -117,7 +119,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // execution time, attempted) before entity B's table exists.
                 // The model-interop path already calls TopologicallyOrderByForeignKeys,
                 // but the type-discovery path skips it.
-                EnsureCreateEntityBeforeForeignKey(plan.Operations);
+                if (effectiveApplyForeignKeys)
+                    EnsureCreateEntityBeforeForeignKey(plan.Operations);
             }
 
             plan.PolicyEvaluation = EvaluateMigrationPlanPolicy(plan, CreateDefaultPolicyOptions());

@@ -69,7 +69,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             // Convert the POCO model into EntityStructures. The resulting structures carry
             // the ORM-resolved table name, schema, columns (with nullability/length/precision
             // captured), keys, indexes, and foreign keys.
-            var entityStructures = ConvertModelToEntityStructures(model);
+            var entityStructures = ConvertModelToEntityStructures(model, detectRelationships);
 
             // Try to resolve CLR type names back to live Type instances. If a Type resolves
             // it can be fed into the rich BuildMigrationPlanForTypes pipeline; if not we
@@ -83,19 +83,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // a cache so the existing TryGetEntityStructure picks up the ORM-shaped
                 // EntityStructure (with table name from GetTableName(), etc.) instead of the
                 // annotation-only EntityStructure the classCreator would otherwise build.
-                lock (_modelInteropLock)
-                {
-                    foreach (var structure in entityStructures)
-                    {
-                        // The cache is keyed by CLR type full name so TryGetEntityStructure
-                        // (which is invoked with a Type) can look it up via entityType.FullName.
-                        var key = !string.IsNullOrWhiteSpace(structure.Caption)
-                            ? structure.Caption
-                            : structure.EntityName;
-                        if (!string.IsNullOrWhiteSpace(key))
-                            _modelInteropEntityStructures[key] = structure;
-                    }
-                }
+                CacheModelEntityStructures(entityStructures);
 
                 try
                 {
@@ -136,6 +124,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 entityStructures,
                 model,
                 unresolvedTypeCount: model.Entities.Count - resolvedTypes.Count,
+                detectRelationships: detectRelationships,
                 applyForeignKeys: applyForeignKeys,
                 applyIndexes: applyIndexes);
         }
@@ -159,7 +148,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set.");
 
-            var structures = ConvertModelToEntityStructures(model);
+            var structures = ConvertModelToEntityStructures(model, detectRelationships);
             // Topologically order so principal tables exist before dependents.
             var ordered = TopologicallyOrderByForeignKeys(structures, out _);
             var aggregate = CreateErrorsInfo(Errors.Ok, $"EnsureDatabaseCreatedForModel: processed {ordered.Count} entity/entities from {model.Source} model.");
@@ -169,7 +158,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 var entity = ordered[i];
                 progress?.Report(new PassedArgs { ParameterString1 = $"Ensuring '{entity.EntityName}'", Messege = $"EnsureDatabaseCreatedForModel: {i + 1}/{ordered.Count}" });
-                var result = EnsureEntity(entity, createIfMissing: true, addMissingColumns: false, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+                var result = EnsureEntity(entity, createIfMissing: true, addMissingColumns: false, applyForeignKeys: detectRelationships && applyForeignKeys, applyIndexes: detectRelationships && applyIndexes);
                 if (result.Flag == Errors.Failed)
                 {
                     if (firstError == null)
@@ -192,7 +181,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set.");
 
-            var structures = ConvertModelToEntityStructures(model);
+            var structures = ConvertModelToEntityStructures(model, detectRelationships);
 
             // Topologically order the entities by FK dependency so that principal
             // tables exist before dependent tables. Cycles fall back to the source
@@ -210,7 +199,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 var entity = ordered[i];
                 progress?.Report(new PassedArgs { ParameterString1 = $"Applying '{entity.EntityName}'", Messege = $"ApplyMigrationsForModel: {i + 1}/{ordered.Count}" });
-                var result = EnsureEntity(entity, createIfMissing: true, addMissingColumns: addMissingColumns, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+                var result = EnsureEntity(entity, createIfMissing: true, addMissingColumns: addMissingColumns, applyForeignKeys: detectRelationships && applyForeignKeys, applyIndexes: detectRelationships && applyIndexes);
                 if (result.Flag == Errors.Failed)
                 {
                     if (firstError == null)
@@ -238,7 +227,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     Message = "Migration model cannot be null.",
                     Recommendation = "Populate a MigrationModel POCO from your ORM (e.g. DbContext.Model) before calling GetMigrationReadinessForModel."
                 });
-                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes);
+                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes, detectRelationships);
                 return empty;
             }
 
@@ -252,12 +241,12 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 // Fallback: build a synthetic readiness from the model directly.
                 report = BuildReadinessReportFromEntityStructures(
-                    ConvertModelToEntityStructures(model),
+                    ConvertModelToEntityStructures(model, detectRelationships),
                     model,
                     unresolvedTypeCount: model.Entities.Count - resolvedTypes.Count);
             }
 
-            ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
+            ApplyIntentFlags(report, applyForeignKeys, applyIndexes, detectRelationships);
             return report;
         }
 
@@ -275,7 +264,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return empty;
             }
 
-            var structures = ConvertModelToEntityStructures(model);
+            var structures = ConvertModelToEntityStructures(model, detectRelationships);
             var summary = new MigrationSummary
             {
                 DataSourceType = MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown,
@@ -370,17 +359,18 @@ namespace TheTechIdea.Beep.Editor.Migration
         // POCO → EntityStructure adapter
         // ───────────────────────────────────────────────────────────────────
 
-        private List<EntityStructure> ConvertModelToEntityStructures(MigrationModel model)
+        private List<EntityStructure> ConvertModelToEntityStructures(MigrationModel model, bool detectRelationships = true)
         {
             var result = new List<EntityStructure>(model.Entities.Count);
             foreach (var entity in model.Entities.Values)
             {
-                result.Add(BuildEntityStructureFromModel(entity));
+                result.Add(BuildEntityStructureFromModel(entity, detectRelationships));
             }
+            CacheModelEntityStructures(result);
             return result;
         }
 
-        private static EntityStructure BuildEntityStructureFromModel(MigrationModelEntity modelEntity)
+        private static EntityStructure BuildEntityStructureFromModel(MigrationModelEntity modelEntity, bool detectRelationships = true)
         {
             var structure = new EntityStructure
             {
@@ -434,7 +424,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             // Indexes: populate EntityStructure.Indexes so the migration manager
             // can apply them when callers opt into applyIndexes=true.
-            if (modelEntity.Indexes != null)
+            if (detectRelationships && modelEntity.Indexes != null)
             {
                 foreach (var idx in modelEntity.Indexes)
                 {
@@ -457,6 +447,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                     structure.Indexes.Add(indexEntry);
                 }
             }
+
+            if (!detectRelationships)
+                return structure;
 
             foreach (var fk in modelEntity.ForeignKeys)
             {
@@ -799,6 +792,47 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
+        private void CacheModelEntityStructures(IEnumerable<EntityStructure> structures)
+        {
+            if (structures == null)
+                return;
+
+            lock (_modelInteropLock)
+            {
+                foreach (var structure in structures)
+                {
+                    if (structure == null)
+                        continue;
+
+                    if (!string.IsNullOrWhiteSpace(structure.Caption))
+                        _modelInteropEntityStructures[structure.Caption] = structure;
+
+                    if (!string.IsNullOrWhiteSpace(structure.EntityName))
+                        _modelInteropEntityStructures[structure.EntityName] = structure;
+                }
+            }
+        }
+
+        private EntityStructure ResolveCachedEntityStructure(string entityTypeName, string entityName)
+        {
+            lock (_modelInteropLock)
+            {
+                if (!string.IsNullOrWhiteSpace(entityTypeName) &&
+                    _modelInteropEntityStructures.TryGetValue(entityTypeName, out var byType))
+                {
+                    return byType;
+                }
+
+                if (!string.IsNullOrWhiteSpace(entityName) &&
+                    _modelInteropEntityStructures.TryGetValue(entityName, out var byEntity))
+                {
+                    return byEntity;
+                }
+            }
+
+            return null;
+        }
+
         private static string AppendProvenanceNote(string existing, string addition)
         {
             if (string.IsNullOrWhiteSpace(existing)) return addition;
@@ -828,25 +862,17 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             if (applyForeignKeys && entity.Relations != null && entity.Relations.Count > 0)
             {
-                foreach (var rel in entity.Relations)
+                foreach (var fk in BuildForeignKeyDefinitions(entity))
                 {
-                    if (rel == null) continue;
-                    if (string.IsNullOrWhiteSpace(rel.EntityColumnID)) continue;
-
-                    var principalColumn = rel.RelatedEntityColumnID;
-                    var principalTable = rel.RelatedEntityID;
-                    if (string.IsNullOrWhiteSpace(principalTable) || string.IsNullOrWhiteSpace(principalColumn))
-                        continue;
-
                     sink.Add(new MigrationPlanOperation
                     {
                         EntityName = entity.EntityName,
                         EntityTypeName = entity.Caption ?? entity.EntityName,
                         Kind = MigrationPlanOperationKind.AddForeignKey,
                         RiskLevel = MigrationPlanRiskLevel.Low,
-                        Note = $"FK '{rel.RalationName}' {entity.EntityName}.{rel.EntityColumnID} -> {principalTable}.{principalColumn} (OnDelete={rel.OnDeleteBehavior}, OnUpdate={rel.OnUpdateBehavior})",
-                        MissingColumns = new List<string> { rel.EntityColumnID },
-                        TargetName = rel.RalationName ?? string.Empty,
+                        Note = $"FK '{fk.ConstraintName}' {entity.EntityName}({string.Join(",", fk.ColumnNames)}) -> {fk.ReferencedEntityName}({string.Join(",", fk.ReferencedColumnNames)}) (OnDelete={fk.OnDeleteBehavior}, OnUpdate={fk.OnUpdateBehavior})",
+                        MissingColumns = new List<string>(fk.ColumnNames),
+                        TargetName = fk.ConstraintName,
                         IsDestructive = false
                     });
                 }
@@ -881,11 +907,30 @@ namespace TheTechIdea.Beep.Editor.Migration
             List<EntityStructure> structures,
             MigrationModel model,
             int unresolvedTypeCount,
+            bool detectRelationships = true,
             bool applyForeignKeys = false,
             bool applyIndexes = false)
         {
             var plan = CreateBasePlanArtifact(usesDiscovery: true);
             plan.EntityTypeCount = structures.Count;
+            var effectiveApplyForeignKeys = detectRelationships && applyForeignKeys;
+            var effectiveApplyIndexes = detectRelationships && applyIndexes;
+            var readiness = BuildReadinessReportFromEntityStructures(structures, model, unresolvedTypeCount);
+            plan.ReadinessIssues.AddRange(readiness.Issues);
+            plan.ProviderAssumptions = readiness.MigrationBestPractices
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            plan.ProviderCapabilities = BuildProviderCapabilityProfile(plan.DataSourceType, plan.DataSourceCategory);
+            if (!string.IsNullOrWhiteSpace(plan.ProviderCapabilities.PortabilityWarning))
+            {
+                plan.ReadinessIssues.Add(new MigrationReadinessIssue
+                {
+                    Code = "provider-portability-warning",
+                    Severity = MigrationIssueSeverity.Warning,
+                    Message = plan.ProviderCapabilities.PortabilityWarning,
+                    Recommendation = "Review provider-specific capability constraints and fallback tasks before execution."
+                });
+            }
 
             foreach (var entity in structures)
             {
@@ -948,19 +993,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // execution orchestrator can apply them when applyForeignKeys /
                 // applyIndexes is true. They are informational — the apply path
                 // also re-derives the same artifacts from the structures.
-                EmitRelationalArtifactsForEntity(entity, plan.Operations, applyForeignKeys, applyIndexes);
+                EmitRelationalArtifactsForEntity(entity, plan.Operations, effectiveApplyForeignKeys, effectiveApplyIndexes);
             }
 
-            if (unresolvedTypeCount > 0)
-            {
-                plan.ReadinessIssues.Add(new MigrationReadinessIssue
-                {
-                    Code = "model-clrtype-unresolved",
-                    Severity = MigrationIssueSeverity.Warning,
-                    Message = $"{unresolvedTypeCount} CLR type name(s) in the supplied model could not be resolved in the current AppDomain.",
-                    Recommendation = "Register the relevant assemblies via MigrationManager.RegisterAssembly or call BuildMigrationPlanForTypesAnnotated with the live Type objects."
-                });
-            }
+            if (effectiveApplyForeignKeys)
+                EnsureCreateEntityBeforeForeignKey(plan.Operations);
 
             plan.PolicyEvaluation = EvaluateMigrationPlanPolicy(plan, CreateDefaultPolicyOptions());
             plan.PlanHash = ComputePlanHash(plan);
@@ -973,7 +1010,16 @@ namespace TheTechIdea.Beep.Editor.Migration
                 CheckedOnUtc = DateTime.UtcNow,
                 CanApply = false
             };
+            plan.CompensationPlan = BuildCompensationPlan(plan);
+            plan.RollbackReadinessReport = CheckRollbackReadiness(
+                plan,
+                backupConfirmed: false,
+                restoreTestEvidenceProvided: false,
+                restoreTestEvidence: "Not provided at planning time.");
+            plan.PerformancePlan = BuildPerformancePlan(plan);
             plan.CiValidationReport = ValidatePlanForCi(plan);
+            plan.RolloutGovernanceReport = EvaluateRolloutGovernance(plan);
+            plan.ExecutionCheckpoint = CreateExecutionCheckpoint(plan);
 
             RecordPlanCreated(plan);
             TryTrackMigrationPlan(plan, nameof(BuildMigrationPlanForModel));
@@ -985,9 +1031,22 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// report so consumers can audit the caller's intent. Uses the Issues
         /// list at Info severity (which is informational, not a finding).
         /// </summary>
-        internal static void ApplyIntentFlags(MigrationReadinessReport report, bool applyForeignKeys, bool applyIndexes)
+        internal static void ApplyIntentFlags(MigrationReadinessReport report, bool applyForeignKeys, bool applyIndexes, bool detectRelationships = true)
         {
             if (report == null) return;
+            if (!detectRelationships && (applyForeignKeys || applyIndexes))
+            {
+                report.Issues.Add(new MigrationReadinessIssue
+                {
+                    Code = "intent-relationships-disabled",
+                    Severity = MigrationIssueSeverity.Info,
+                    Channel = MigrationReportChannel.ReadinessIssue,
+                    Message = "Caller disabled relationship detection; foreign-key and index apply flags will not emit relational DDL.",
+                    Recommendation = "Set detectRelationships=true when FK/index planning or application is required."
+                });
+                return;
+            }
+
             if (applyForeignKeys)
             {
                 report.Issues.Add(new MigrationReadinessIssue

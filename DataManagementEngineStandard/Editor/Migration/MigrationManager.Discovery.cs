@@ -174,7 +174,9 @@ namespace TheTechIdea.Beep.Editor.Migration
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
-                var readiness = BuildReadinessReport(entityTypes, usesDiscovery: true);
+                var effectiveApplyForeignKeys = detectRelationships && applyForeignKeys;
+                var effectiveApplyIndexes = detectRelationships && applyIndexes;
+                var readiness = BuildReadinessReport(entityTypes, usesDiscovery: true, detectRelationships);
                 LogReadinessReport(nameof(EnsureDatabaseCreated), readiness, progress);
                 if (readiness.HasBlockingIssues)
                 {
@@ -217,7 +219,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     structures.Add(s);
                 }
 
-                if (applyForeignKeys)
+                if (effectiveApplyForeignKeys)
                 {
                     var ordered = TopologicallyOrderByForeignKeys(structures, out _);
                     structures = ordered;
@@ -234,7 +236,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         catch { existed = false; }
 
                         var result = EnsureEntity(entityStructure, createIfMissing: true, addMissingColumns: false,
-                            applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+                            applyForeignKeys: effectiveApplyForeignKeys, applyIndexes: effectiveApplyIndexes);
                         if (result.Flag == Errors.Ok)
                         {
                             if (existed)
@@ -285,7 +287,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
-                var readiness = BuildReadinessReport(entityTypes, usesDiscovery: true);
+                var readiness = BuildReadinessReport(entityTypes, usesDiscovery: true, detectRelationships);
                 LogReadinessReport(nameof(ApplyMigrations), readiness, progress);
                 if (readiness.HasBlockingIssues)
                 {
@@ -310,8 +312,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     usesDiscovery: true,
                     source: EntityMigrationSource.DiscoveryAssembly,
                     addMissingColumns: addMissingColumns,
-                    applyForeignKeys: applyForeignKeys,
-                    applyIndexes: applyIndexes,
+                    applyForeignKeys: detectRelationships && applyForeignKeys,
+                    applyIndexes: detectRelationships && applyIndexes,
                     progress: progress);
 
                 var summary = pipelineResult.ToSummaryString();
@@ -455,7 +457,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // without forcing the caller to re-walk every EntityStructure.
                 // The counts are only populated when the corresponding opt-in flag
                 // is set; otherwise a diagnostic notes that the flag was off.
-                if (applyForeignKeys || applyIndexes)
+                if (!detectRelationships && (applyForeignKeys || applyIndexes))
+                {
+                    summary.Diagnostics.Add("detectRelationships=false: foreign-key and index detection disabled; apply flags ignored.");
+                }
+                else if (applyForeignKeys || applyIndexes)
                 {
                     foreach (var entityType in entityTypes)
                     {
@@ -628,7 +634,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // Same FK/Index count + provider-support notes as the
                 // discovery-based path so callers get a consistent view
                 // regardless of which summary entry point they used.
-                if (applyForeignKeys || applyIndexes)
+                if (!detectRelationships && (applyForeignKeys || applyIndexes))
+                {
+                    summary.Diagnostics.Add("detectRelationships=false: foreign-key and index detection disabled; apply flags ignored.");
+                }
+                else if (applyForeignKeys || applyIndexes)
                 {
                     foreach (var entityType in typeList)
                     {
@@ -680,15 +690,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
             {
                 var empty = CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
-                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes);
+                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes, detectRelationships);
                 return empty;
             }
 
             try
             {
                 var entityTypes = DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces: true);
-                var report = BuildReadinessReport(entityTypes, usesDiscovery: true);
-                ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
+                var report = BuildReadinessReport(entityTypes, usesDiscovery: true, detectRelationships);
+                ApplyIntentFlags(report, applyForeignKeys, applyIndexes, detectRelationships);
                 return report;
             }
             catch (Exception ex)
@@ -701,7 +711,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                     Message = $"Could not discover entity types: {ex.Message}",
                     Recommendation = "Register the required assemblies explicitly or use the explicit-type migration APIs."
                 });
-                ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
+                ApplyIntentFlags(report, applyForeignKeys, applyIndexes, detectRelationships);
                 return report;
             }
         }
@@ -714,12 +724,12 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
             {
                 var empty = CreateReadinessReportWithError("datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before running migration readiness checks.");
-                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes);
+                ApplyIntentFlags(empty, applyForeignKeys, applyIndexes, detectRelationships);
                 return empty;
             }
 
-            var report = BuildReadinessReport(entityTypes, usesDiscovery: false);
-            ApplyIntentFlags(report, applyForeignKeys, applyIndexes);
+            var report = BuildReadinessReport(entityTypes, usesDiscovery: false, detectRelationships);
+            ApplyIntentFlags(report, applyForeignKeys, applyIndexes, detectRelationships);
             return report;
         }
 

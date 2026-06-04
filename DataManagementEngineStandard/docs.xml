@@ -33811,6 +33811,7 @@
               <item>MIG-MANIFEST-002 — empty type name segment</item>
               <item>MIG-MANIFEST-003 — unresolved type after resolution pipeline</item>
               <item>MIG-MANIFEST-004 — duplicate entity declaration</item>
+              <item>MIG-MANIFEST-005 — null or empty manifest file path</item>
             </list>
             </summary>
             <summary>
@@ -33959,7 +33960,8 @@
             <summary>
             Applies all foreign-key relations declared on an entity. Returns null
             when the entity has no relations; otherwise returns a list of failure
-            messages. Each <see cref="T:TheTechIdea.Beep.DataBase.RelationShipKeys"/> produces one FK.
+            messages. Relations sharing a constraint name are applied as one
+            composite FK.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyForeignKeysForEntity(TheTechIdea.Beep.DataBase.EntityStructure,System.String)">
@@ -34064,7 +34066,7 @@
             without re-synthesizing the name.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIntentFlags(TheTechIdea.Beep.Editor.Migration.MigrationReadinessReport,System.Boolean,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIntentFlags(TheTechIdea.Beep.Editor.Migration.MigrationReadinessReport,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Stamps the apply-foreign-keys / apply-indexes intent on a readiness
             report so consumers can audit the caller's intent. Uses the Issues

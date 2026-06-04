@@ -238,13 +238,12 @@ namespace TheTechIdea.Beep.Editor.Migration
             // Without them the rebuilt plan would omit FK/Index ops and the
             // signature would always diverge from the original, producing a
             // perpetual false-positive drift that blocks every preflight run.
-            var hasRelOps = plan.Operations.Any(op =>
+            var afk = plan.Operations.Any(op =>
                 op != null && (op.Kind == MigrationPlanOperationKind.AddForeignKey ||
-                               op.Kind == MigrationPlanOperationKind.DropForeignKey ||
-                               op.Kind == MigrationPlanOperationKind.CreateIndex ||
+                               op.Kind == MigrationPlanOperationKind.DropForeignKey));
+            var aix = plan.Operations.Any(op =>
+                op != null && (op.Kind == MigrationPlanOperationKind.CreateIndex ||
                                op.Kind == MigrationPlanOperationKind.DropIndex));
-            var afk = hasRelOps;
-            var aix = hasRelOps;
             var currentPlan = BuildMigrationPlanForTypes(types, detectRelationships: true, applyForeignKeys: afk, applyIndexes: aix);
             if (currentPlan == null)
                 return true;
@@ -374,16 +373,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // DDL — confusing reviewers.
                 string targetFk = !string.IsNullOrWhiteSpace(operation.TargetName)
                     ? operation.TargetName.Trim() : null;
-                foreach (var rel in desired.Relations)
+                foreach (var fk in BuildForeignKeyDefinitions(desired))
                 {
-                    if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID) || string.IsNullOrWhiteSpace(rel.RelatedEntityID))
-                        continue;
-
                     if (targetFk != null)
                     {
-                        var candidate = rel.RalationName
-                            ?? $"FK_{desired.EntityName}_{rel.RelatedEntityID}_{rel.EntityColumnID}";
-                        if (!string.Equals(candidate, targetFk, StringComparison.OrdinalIgnoreCase))
+                        if (!string.Equals(fk.ConstraintName, targetFk, StringComparison.OrdinalIgnoreCase))
                             continue;
                     }
 
@@ -391,16 +385,16 @@ namespace TheTechIdea.Beep.Editor.Migration
                     {
                         var (sql, success, err) = universalHelper.GenerateAddForeignKeySql(
                             desired.EntityName,
-                            new[] { rel.EntityColumnID },
-                            rel.RelatedEntityID,
-                            new[] { rel.RelatedEntityColumnID },
-                            rel.OnDeleteBehavior,
-                            rel.OnUpdateBehavior,
-                            rel.RalationName);
+                            fk.ColumnNames.ToArray(),
+                            fk.ReferencedEntityName,
+                            fk.ReferencedColumnNames.ToArray(),
+                            fk.OnDeleteBehavior,
+                            fk.OnUpdateBehavior,
+                            fk.ConstraintName);
                         if (!string.IsNullOrWhiteSpace(sql))
                             dryRun.DdlPreview.Add(sql);
                         else if (!string.IsNullOrWhiteSpace(err))
-                            dryRun.Diagnostics.Add($"FK '{rel.RalationName}': {err}");
+                            dryRun.Diagnostics.Add($"FK '{fk.ConstraintName}': {err}");
                     }
                     else
                     {
@@ -490,10 +484,10 @@ namespace TheTechIdea.Beep.Editor.Migration
         private EntityStructure ResolveDesiredEntityStructure(MigrationPlanOperation operation)
         {
             var entityType = ResolveType(operation.EntityTypeName);
-            if (entityType == null)
-                return null;
+            if (entityType != null)
+                return TryGetEntityStructure(entityType);
 
-            return TryGetEntityStructure(entityType);
+            return ResolveCachedEntityStructure(operation.EntityTypeName, operation.EntityName);
         }
 
         private static MigrationImpactSensitivity ClassifyImpactSensitivity(MigrationPlanOperation operation)

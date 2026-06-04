@@ -208,7 +208,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return CreateErrorsInfo(Errors.Failed, $"Failed to convert POCO '{pocoType.Name}' to EntityStructure");
             }
 
-            return EnsureEntity(entity, createIfMissing, addMissingColumns, applyForeignKeys, applyIndexes);
+            return EnsureEntity(entity, createIfMissing, addMissingColumns, detectRelationships && applyForeignKeys, detectRelationships && applyIndexes);
         }
 
         public IReadOnlyList<EntityField> GetMissingColumns(EntityStructure current, EntityStructure desired)
@@ -696,6 +696,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (IsFileDataSource(MigrateDataSource))
                 return CreateErrorsInfo(Errors.Failed, "Foreign keys are not supported for file datasources");
 
+            constraintName = string.IsNullOrWhiteSpace(constraintName)
+                ? BuildForeignKeyName(entityName, referencedEntityName, columnNames)
+                : constraintName.Trim();
+
             var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
             if (helper == null)
             {
@@ -1019,17 +1023,23 @@ namespace TheTechIdea.Beep.Editor.Migration
             return failures.Count == 0 ? null : failures;
         }
 
-        /// <summary>
-        /// Applies all foreign-key relations declared on an entity. Returns null
-        /// when the entity has no relations; otherwise returns a list of failure
-        /// messages. Each <see cref="RelationShipKeys"/> produces one FK.
-        /// </summary>
-        private List<string> ApplyForeignKeysForEntity(EntityStructure entity)
+        private sealed class ForeignKeyDefinition
         {
-            var failures = new List<string>();
-            if (entity?.Relations == null || entity.Relations.Count == 0)
-                return null;
+            public string ConstraintName { get; set; } = string.Empty;
+            public string ReferencedEntityName { get; set; } = string.Empty;
+            public List<string> ColumnNames { get; } = new List<string>();
+            public List<string> ReferencedColumnNames { get; } = new List<string>();
+            public string OnDeleteBehavior { get; set; } = "Cascade";
+            public string OnUpdateBehavior { get; set; } = "Cascade";
+        }
 
+        private static List<ForeignKeyDefinition> BuildForeignKeyDefinitions(EntityStructure entity)
+        {
+            var definitions = new List<ForeignKeyDefinition>();
+            if (entity?.Relations == null || entity.Relations.Count == 0)
+                return definitions;
+
+            var byKey = new Dictionary<string, ForeignKeyDefinition>(StringComparer.OrdinalIgnoreCase);
             foreach (var rel in entity.Relations)
             {
                 if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID))
@@ -1040,18 +1050,89 @@ namespace TheTechIdea.Beep.Editor.Migration
                 if (string.IsNullOrWhiteSpace(parentEntity) || string.IsNullOrWhiteSpace(parentColumn))
                     continue;
 
-                var fkName = rel.RalationName;
+                var explicitName = rel.RalationName?.Trim() ?? string.Empty;
+                var groupKey = !string.IsNullOrWhiteSpace(explicitName)
+                    ? $"{entity.EntityName}|{parentEntity}|{explicitName}"
+                    : $"{entity.EntityName}|{parentEntity}|{rel.EntityColumnID}|{parentColumn}";
+
+                if (!byKey.TryGetValue(groupKey, out var definition))
+                {
+                    definition = new ForeignKeyDefinition
+                    {
+                        ConstraintName = explicitName,
+                        ReferencedEntityName = parentEntity,
+                        OnDeleteBehavior = rel.OnDeleteBehavior ?? string.Empty,
+                        OnUpdateBehavior = rel.OnUpdateBehavior ?? string.Empty
+                    };
+                    byKey[groupKey] = definition;
+                    definitions.Add(definition);
+                }
+
+                if (definition.ColumnNames.Any(column => string.Equals(column, rel.EntityColumnID, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                definition.ColumnNames.Add(rel.EntityColumnID);
+                definition.ReferencedColumnNames.Add(parentColumn);
+                if (string.IsNullOrWhiteSpace(definition.OnDeleteBehavior) && !string.IsNullOrWhiteSpace(rel.OnDeleteBehavior))
+                    definition.OnDeleteBehavior = rel.OnDeleteBehavior;
+                if (string.IsNullOrWhiteSpace(definition.OnUpdateBehavior) && !string.IsNullOrWhiteSpace(rel.OnUpdateBehavior))
+                    definition.OnUpdateBehavior = rel.OnUpdateBehavior;
+            }
+
+            foreach (var definition in definitions)
+            {
+                if (string.IsNullOrWhiteSpace(definition.ConstraintName))
+                    definition.ConstraintName = BuildForeignKeyName(entity.EntityName, definition.ReferencedEntityName, definition.ColumnNames);
+                if (string.IsNullOrWhiteSpace(definition.OnDeleteBehavior))
+                    definition.OnDeleteBehavior = "Cascade";
+                if (string.IsNullOrWhiteSpace(definition.OnUpdateBehavior))
+                    definition.OnUpdateBehavior = "Cascade";
+            }
+
+            return definitions;
+        }
+
+        private static string BuildForeignKeyName(string entityName, string referencedEntityName, IEnumerable<string> columnNames)
+        {
+            var columns = columnNames?
+                .Where(column => !string.IsNullOrWhiteSpace(column))
+                .Select(column => column.Trim())
+                .ToList() ?? new List<string>();
+
+            if (columns.Count == 0)
+                columns.Add("Column");
+
+            var entity = string.IsNullOrWhiteSpace(entityName) ? "Entity" : entityName.Trim();
+            var referenced = string.IsNullOrWhiteSpace(referencedEntityName) ? "Referenced" : referencedEntityName.Trim();
+            return $"FK_{entity}_{referenced}_{string.Join("_", columns)}";
+        }
+
+        /// <summary>
+        /// Applies all foreign-key relations declared on an entity. Returns null
+        /// when the entity has no relations; otherwise returns a list of failure
+        /// messages. Relations sharing a constraint name are applied as one
+        /// composite FK.
+        /// </summary>
+        private List<string> ApplyForeignKeysForEntity(EntityStructure entity)
+        {
+            var failures = new List<string>();
+            var foreignKeys = BuildForeignKeyDefinitions(entity);
+            if (foreignKeys.Count == 0)
+                return null;
+
+            foreach (var fk in foreignKeys)
+            {
                 var result = AddForeignKey(
                     entityName: entity.EntityName,
-                    columnNames: new[] { rel.EntityColumnID },
-                    referencedEntityName: parentEntity,
-                    referencedColumnNames: new[] { parentColumn },
-                    onDeleteBehavior: rel.OnDeleteBehavior ?? "Cascade",
-                    onUpdateBehavior: rel.OnUpdateBehavior ?? "Cascade",
-                    constraintName: fkName);
+                    columnNames: fk.ColumnNames.ToArray(),
+                    referencedEntityName: fk.ReferencedEntityName,
+                    referencedColumnNames: fk.ReferencedColumnNames.ToArray(),
+                    onDeleteBehavior: fk.OnDeleteBehavior,
+                    onUpdateBehavior: fk.OnUpdateBehavior,
+                    constraintName: fk.ConstraintName);
 
                 if (result.Flag != Errors.Ok)
-                    failures.Add($"FK '{fkName}': {result.Message}");
+                    failures.Add($"FK '{fk.ConstraintName}': {result.Message}");
             }
 
             return failures.Count == 0 ? null : failures;
@@ -1067,38 +1148,28 @@ namespace TheTechIdea.Beep.Editor.Migration
         private List<string> ApplyForeignKeysForEntity(EntityStructure entity, string targetForeignKeyName)
         {
             var failures = new List<string>();
-            if (entity?.Relations == null || entity.Relations.Count == 0)
+            var foreignKeys = BuildForeignKeyDefinitions(entity);
+            if (foreignKeys.Count == 0)
                 return null;
             if (string.IsNullOrWhiteSpace(targetForeignKeyName))
                 return ApplyForeignKeysForEntity(entity);
 
-            foreach (var rel in entity.Relations)
+            foreach (var fk in foreignKeys)
             {
-                if (rel == null || string.IsNullOrWhiteSpace(rel.EntityColumnID))
-                    continue;
-
-                var parentEntity = rel.RelatedEntityID;
-                var parentColumn = rel.RelatedEntityColumnID;
-                if (string.IsNullOrWhiteSpace(parentEntity) || string.IsNullOrWhiteSpace(parentColumn))
-                    continue;
-
-                var fkName = rel.RalationName
-                    ?? $"FK_{entity.EntityName}_{parentEntity}_{rel.EntityColumnID}";
-
-                if (!string.Equals(fkName, targetForeignKeyName, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(fk.ConstraintName, targetForeignKeyName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 var result = AddForeignKey(
                     entityName: entity.EntityName,
-                    columnNames: new[] { rel.EntityColumnID },
-                    referencedEntityName: parentEntity,
-                    referencedColumnNames: new[] { parentColumn },
-                    onDeleteBehavior: rel.OnDeleteBehavior ?? "Cascade",
-                    onUpdateBehavior: rel.OnUpdateBehavior ?? "Cascade",
-                    constraintName: fkName);
+                    columnNames: fk.ColumnNames.ToArray(),
+                    referencedEntityName: fk.ReferencedEntityName,
+                    referencedColumnNames: fk.ReferencedColumnNames.ToArray(),
+                    onDeleteBehavior: fk.OnDeleteBehavior,
+                    onUpdateBehavior: fk.OnUpdateBehavior,
+                    constraintName: fk.ConstraintName);
 
                 if (result.Flag != Errors.Ok)
-                    failures.Add($"FK '{fkName}': {result.Message}");
+                    failures.Add($"FK '{fk.ConstraintName}': {result.Message}");
             }
 
             return failures.Count == 0 ? null : failures;
