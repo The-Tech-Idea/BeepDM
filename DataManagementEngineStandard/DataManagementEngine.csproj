@@ -70,6 +70,7 @@
     <PackageReference Include="NuGet.Protocol" Version="7.6.0" />
     <PackageReference Include="NuGet.Versioning" Version="7.6.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <!-- Migration interop with EF Core (and any other ORM) is brokered through the
          BeepDM-owned MigrationModel POCO abstraction. No EF Core package is referenced
          here. A separate companion package can translate IModel/DbContext into

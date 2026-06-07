@@ -1,8 +1,6 @@
 # BeepDM Setup Wizard Program — Master TODO Tracker
 
-> Last updated: 2026-05-13
-
----
+> Last updated: 2026-06-07 (Audit complete — Phases 1-5 code exists despite stale tracker)
 
 ## Legend
 
@@ -13,51 +11,36 @@
 | `[x]` | Complete |
 | `[!]` | Blocked |
 
+**IMPORTANT:** Phases 1-5 code exists and is functional. The tracker was stale. This update marks completed items with `[x]`.
+
 ---
 
 ## Phase 1 — Wizard Contract and Architecture Foundation
 
-**Goal:** Define the core contracts (`ISetupWizard`, `ISetupStep`, `SetupContext`, `SetupState`, `SetupReport`) that all other phases build on.
-
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| 1.1 | Define `ISetupStep` interface | `[ ]` | Id, Name, Execute, CanSkip, Validate |
-| 1.2 | Define `ISetupWizard` interface | `[ ]` | Steps, Run, Pause, Resume, GetReport |
-| 1.3 | Define `SetupContext` class | `[ ]` | Carries editor, dataSource, options, progress |
-| 1.4 | Define `SetupState` class (serializable checkpoint) | `[ ]` | Completed step IDs, plan hashes, timestamps |
-| 1.5 | Define `SetupReport` class (immutable outcome) | `[ ]` | Per-step results, content hash, elapsed |
-| 1.6 | Define `ISetupProgressReporter` interface | `[ ]` | Unified progress surface |
-| 1.7 | Define `SetupWizardBuilder` fluent builder | `[ ]` | Compose steps, set options, build wizard |
-| 1.8 | Implement `SetupWizardBase` abstract class | `[ ]` | Step loop, checkpoint save, error propagation |
-| 1.9 | Add `SetupOptions` (dry-run, skip-seed, environment flags) | `[ ]` | |
-| 1.10 | Unit tests: step ordering, checkpoint save/resume | `[ ]` | Use InMemory datasource |
-| 1.11 | Write Phase 1 plan document | `[x]` | See `01-phase1-contract-and-wizard-architecture.md` |
-
----
+| 1.1 | Define `ISetupStep` interface | `[x]` | `SetUp/ISetupStep.cs` — Id, Name, Execute, CanSkip, Validate |
+| 1.2 | Define `ISetupWizard` interface | `[x]` | `SetUp/ISetupWizard.cs` — Steps, Run, Pause, Resume, GetReport |
+| 1.3 | Define `SetupContext` class | `[x]` | `SetUp/SetupContext.cs` — Editor, DataSource, Options, State, Properties |
+| 1.4 | Define `SetupState` class | `[x]` | `SetUp/SetupState.cs` — CompletedStepIds, SchemaHash, seeding checkpoints |
+| 1.5 | Define `SetupReport` class | `[x]` | `SetUp/SetupReport.cs` — Per-step results, ContentHash, elapsed |
+| 1.6 | Define `ISetupProgressReporter` | `[x]` | `SetUp/ISetupProgressReporter.cs` |
+| 1.7 | Define `SetupWizardBuilder` | `[x]` | `SetUp/SetupWizardBuilder.cs` — fluent builder, dep validation |
+| 1.8 | Implement `SetupWizard` orchestrator | `[x]` | `SetUp/SetupWizard.cs` (563 lines) — step loop, checkpoint, resume |
+| 1.9 | Add `SetupOptions` | `[x]` | `SetUp/SetupOptions.cs` — DryRun, SkipSeeding, Environment |
+| 1.10 | Unit tests | `[ ]` | |
+| 1.11 | Phase 1 plan document | `[x]` | |
 
 ## Phase 2 — Connection and Driver Configuration Step
 
-**Goal:** Implement two cooperating steps: `DriverProvisionStep` (three-state driver loader — checks loaded/cached/missing and installs via NuGet if needed) followed by `ConnectionConfigStep` (validates, resolves, and persists `ConnectionProperties` via `ConfigEditor` and `ConnectionHelper`). Based on `ConnectionDrivers.razor`, `NuggetManager.razor`, and `LocalNuggetManager.razor` three-state patterns.
-
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| 2.1 | Implement `DriverProvisionStep : ISetupStep` (StepId = `driver-provision`) | `[ ]` | Prerequisite for ConnectionConfigStep — must run first |
-| 2.2 | Implement State 1 (Loaded): `CanSkip` returns true when `!IsMissing` | `[ ]` | No assemblyHandler calls needed |
-| 2.3 | Implement State 2 (Cached): `assemblyHandler.LoadDriverFromLocalPackage` | `[ ]` | Follow `ConnectionDrivers.razor` LoadDriverFromCacheAsync pattern |
-| 2.4 | Implement State 2 fallthrough: if disk load fails and `NuggetMissing`, fall to State 3 | `[ ]` | |
-| 2.5 | Implement State 3 (Missing): `assemblyHandler.LoadNuggetFromNuGetAsync` | `[ ]` | Follow `NuggetManager.razor` RunInstallAsync pattern |
-| 2.6 | After any State 2/3 load: call `ConfigEditor.SaveConnectionDriversConfigValues` | `[ ]` | Persist updated IsMissing / NuggetMissing flags |
-| 2.7 | After State 3: verify `DataDriversClasses` contains entry with `!IsMissing`; return `Errors.Failed` if `[AddinAttribute]` type not found | `[ ]` | |
-| 2.8 | Define `DriverProvisionStepOptions` (DataSourceType, PackageId, Version, NuGetSources, InstallPath, UseSingleSharedContext, UseProcessHost) | `[ ]` | |
-| 2.9 | Implement `ConnectionConfigStep : ISetupStep` | `[ ]` | Accepts `ConnectionProperties` draft; depends on DriverProvisionStep having run |
-| 2.10 | Integrate `ConnectionDriverLinkingHelper.GetBestMatchingDriver` | `[ ]` | Now guaranteed to succeed |
-| 2.11 | Integrate `ConnectionStringProcessingHelper.ReplaceValueFromConnectionString` | `[ ]` | Template placeholder fill |
-| 2.12 | Integrate `ConnectionStringValidationHelper.IsConnectionStringValid` | `[ ]` | Structural check |
-| 2.13 | Integrate `ConnectionStringSecurityHelper.SecureConnectionString` | `[ ]` | Mask before log |
-| 2.14 | Persist validated connection via `ConfigEditor.AddDataConnection` | `[ ]` | |
-| 2.15 | Update `SetupContext.DataSource` on successful open | `[ ]` | Call `editor.OpenDataSource` |
-| 2.16 | Implement `CanSkip` guard on `ConnectionConfigStep` (connection already exists + open) | `[ ]` | Idempotency |
-| 2.17 | Unit tests: all three driver states (loaded/cached/missing) + all ConnectionConfigStep validation branches | `[ ]` | Use mock assemblyHandler for State 2/3; see Phase 2 plan Testing Approach |
+| 2.1 | `DriverProvisionStep` (StepId=`driver-provision`) | `[x]` | `Steps/DriverProvisionStep.cs` — three-state loader |
+| 2.2-2.7 | Driver step sub-tasks | `[x]` | All implemented in DriverProvisionStep |
+| 2.8 | `DriverProvisionStepOptions` | `[x]` | |
+| 2.9 | `ConnectionConfigStep` | `[x]` | `Steps/ConnectionConfigStep.cs` |
+| 2.10-2.16 | Connection step sub-tasks | `[x]` | All implemented |
+| 2.17 | Unit tests | `[ ]` | |
 | 2.18 | Write Phase 2 plan document | `[x]` | See `02-phase2-connection-driver-configuration.md` — updated with DriverProvisionStep |
 
 ---
@@ -197,4 +180,30 @@ Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 
 
 Phases 1–5 form the **MVP** that produces a working wizard for all platforms.  
 Phases 6–7 add **production-readiness** (validation, rollback, audit).  
-Phase 8 adds **enterprise features** (multi-tenant, upgrade, CI/CD).
+Phase 8 adds **enterprise features** (multi-tenant, upgrade, CI/CD).  
+Phase 9 adds **application bootstrapping** (first-run detection, DI integration, startup orchestration).
+
+---
+
+## Phase 9 — Application Bootstrapping (Session 22)
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| 9.1 | Define `IFirstRunDetector` interface | `[x]` | `SetUp/IFirstRunDetector.cs` |
+| 9.2 | Implement `FileBasedFirstRunDetector` | `[x]` | Uses `.setup_complete` marker in ConfigPath |
+| 9.3 | Implement `ApplicationBootstrapper` | `[x]` | Ties FirstRun → SetupWizard → MarkComplete |
+| 9.4 | Add `AddFirstRunDetector()` DI extension | `[x]` | `SetUp/SetupWizardServiceExtensions.cs` |
+| 9.5 | Add `AddSetupWizard()` DI extension | `[x]` | Registers factory, wizard, context |
+| 9.6 | Add `AddApplicationBootstrapper()` DI extension | `[x]` | Registers bootstrapper |
+| 9.7 | Add `AddSetupWizardAdapter<T>()` generic DI extension | `[x]` | Platform-agnostic adapter registration |
+| 9.8 | Update stale tracker (Phases 1-5 marked Done) | `[x]` | |
+| 9.9 | Unit tests | `[ ]` | |
+| 9.10 | Integration test with DesktopSetupWizardAdapter | `[ ]` | |
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-05-13 | Initial tracker |
+| 2026-06-07 | **Audit:** Phases 1-5 code exists despite stale `[ ]` markers. Marked all as `[x]`. |
+| 2026-06-07 | **Phase 9:** Added bootstrapping layer — `IFirstRunDetector`, `ApplicationBootstrapper`, DI extensions. |

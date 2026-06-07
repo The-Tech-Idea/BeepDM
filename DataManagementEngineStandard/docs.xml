@@ -47525,6 +47525,12 @@
             Marks schema as dirty so it will be persisted on Commit/Close.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Winform.Controls.BeepConnectionRepository">
+            <summary>
+            Centralized connection persistence helper backed by IBeepService.Config_editor.
+            Keeps connection CRUD and save/reload behavior consistent across forms.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfiguration">
             <summary>
             Manages loading and saving NuGetPackageManager configuration.
@@ -56732,7 +56738,13 @@
              The caller provides an <see cref="T:System.Action`1"/> callback that updates the
              application's wait/progress form, plus an optional completion callback.
              Wizard execution runs on a thread-pool thread so the UI remains responsive.
+            
+             For DI registration, use the parameterless constructor and call
+             <see cref="E:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.OnProgress"/> and/or wire the callbacks after construction.
              </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.#ctor">
+            <summary>Parameterless constructor for DI. Wire <see cref="E:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.OnProgress"/> event after resolution.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.#ctor(System.Action{TheTechIdea.Beep.Addin.PassedArgs},System.Action{TheTechIdea.Beep.SetUp.SetupReport})">
             <param name="progressCallback">
@@ -56855,17 +56867,10 @@
              <summary>
              Default <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizardFactory"/> implementation.
             
-             <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)"/> returns an empty wizard (no steps).
-             Applications should register a custom factory that adds their domain steps,
-             or use <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.SetupWizardBuilder})"/> with a configuration callback.
+             <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)"/> returns a wizard pre-wired with the 6 standard steps:
+             DriverProvision → ConnectionConfig → SchemaSetup → Defaults → Seeding → DataImport.
+             Applications can override by calling <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.SetupWizardBuilder})"/> with a configuration callback.
              </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <inheritdoc/>
-            <remarks>
-            Returns a wizard with no steps by default. Applications that need a standard
-            wizard should override this class or register a custom <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizardFactory"/>.
-            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.SetupWizardBuilder})">
             <inheritdoc/>

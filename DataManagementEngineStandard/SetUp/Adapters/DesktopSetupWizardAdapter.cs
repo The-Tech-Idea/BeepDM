@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
@@ -11,11 +12,28 @@ namespace TheTechIdea.Beep.SetUp.Adapters
     /// The caller provides an <see cref="Action{PassedArgs}"/> callback that updates the
     /// application's wait/progress form, plus an optional completion callback.
     /// Wizard execution runs on a thread-pool thread so the UI remains responsive.
+    ///
+    /// For DI registration, use the parameterless constructor and call
+    /// <see cref="OnProgress"/> and/or wire the callbacks after construction.
     /// </summary>
     public class DesktopSetupWizardAdapter : ISetupWizardAdapter
     {
         private readonly Action<PassedArgs> _progressCallback;
         private readonly Action<SetupReport> _completedCallback;
+
+        public event Action<PassedArgs>? OnProgress;
+        public event Action<SetupReport>? OnCompleted;
+
+        /// <summary>Parameterless constructor for DI. Wire <see cref="OnProgress"/> event after resolution.</summary>
+        public DesktopSetupWizardAdapter()
+        {
+            _progressCallback = args =>
+            {
+                OnProgress?.Invoke(args);
+                Debug.WriteLine($"[DesktopSetupWizardAdapter] {args.Messege}");
+            };
+            _completedCallback = report => OnCompleted?.Invoke(report);
+        }
 
         /// <param name="progressCallback">
         /// Called on the thread-pool each time a step reports progress.
