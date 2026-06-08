@@ -19762,6 +19762,27 @@
             by delegating each member to its existing proxy methods.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.IBuiltinHost.PublishMessage(System.String,System.Int32,TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinMessageSeverity)">
+            <summary>Push a status-bar message at the requested severity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.IBuiltinHost.ClearMessage">
+            <summary>Clear the current status-bar message.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.IBuiltinHost.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinAlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Show a modal alert. Returns the button the user clicked (1, 2, or 3).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinMessageSeverity">
+            <summary>
+            Severity for the Oracle Forms <c>MESSAGE</c> built-in. Maps to the
+            status-bar / toast styling.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinAlertStyle">
+            <summary>
+            Style of the Oracle Forms <c>ALERT</c> built-in. Maps to a message-box
+            icon and tone.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Builtins.IBeepBuiltins">
             <summary>
             Oracle Forms-compatible built-in procedures exposed by the BeepForms host.
@@ -19774,6 +19795,13 @@
             <see cref="T:TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinException"/> with a Forms-style error code
             (for example <c>FRM-41003</c>).
             </para>
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.IBeepBuiltins.Message(System.String,System.Int32,TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinMessageSeverity)">
+            <summary>
+            Push a status-bar message at the requested severity. Mirrors
+            <c>MESSAGE(text, severity)</c> where severity 0 = hint, 5 = warning,
+            10 = error and 15 = stop.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.AuditManager">
@@ -29482,6 +29510,65 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PerformanceStatistics.TopPerformanceMetrics">
             <summary>Gets or sets the top performance metrics</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus">
+            <summary>
+            Mirrors Oracle Forms <c>:SYSTEM.RECORD_STATUS</c>. Distinct from
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode"/> which only describes the overall block mode
+            (Normal / Enter-Query / Query).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus.Query">
+            <summary>
+            Default state of a fetched record that has not been changed.
+            Maps to <c>:SYSTEM.RECORD_STATUS = 'QUERY'</c>.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus.New">
+            <summary>
+            Brand new record that has been created with <c>CREATE_RECORD</c> and
+            not yet committed. Maps to <c>:SYSTEM.RECORD_STATUS = 'NEW'</c>.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus.Insert">
+            <summary>
+            New record that was successfully inserted into the database. Maps to
+            <c>:SYSTEM.RECORD_STATUS = 'INSERT'</c>. Beep stores this state so
+            trigger handlers can distinguish "uncommitted new" from
+            "newly inserted" the way Oracle Forms does.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus.Changed">
+            <summary>
+            Fetched record that has at least one field updated and not yet
+            committed. Maps to <c>:SYSTEM.RECORD_STATUS = 'CHANGED'</c>.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus.QueryCriteria">
+            <summary>
+            Record in the query criteria area. Maps to
+            <c>:SYSTEM.RECORD_STATUS = 'QUERY'</c> when the block is in
+            <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode.EnterQuery"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatusExtensions">
+            <summary>
+            Helpers to translate between the various status enums the editor exposes
+            and the string form Oracle Forms queries use.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatusExtensions.IsUnsaved(TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus)">
+            <summary>
+            Returns true when the record has unsaved changes (NEW, INSERT, or
+            CHANGED) the way Oracle Forms would surface "the block has changes".
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatusExtensions.IsNewRow(TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus)">
+            <summary>
+            Returns true when the record was created by a <c>CREATE_RECORD</c>
+            call (NEW or INSERT) and therefore should be reported as a new row
+            by visual indicators (asterisk in the row header, etc.).
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.RecordTriggerEventArgs">
             <summary>
             Event arguments for record-level triggers in Oracle Forms simulation
@@ -29609,202 +29696,32 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables">
             <summary>
-            Oracle Forms :SYSTEM.* equivalent system variables
-            UI-agnostic implementation for FormsManager
+            Plain-data container that mirrors the Oracle Forms <c>:SYSTEM</c>
+            variables. Held by <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.SystemVariablesManager"/>
+            and the wider BeepForms runtime. Two instances are typical per host:
+            a form-level singleton and one per registered block.
             </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURRENT_BLOCK">
-            <summary>
-            Oracle Forms: :SYSTEM.CURRENT_BLOCK
-            Name of the block that currently has focus
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.MASTER_BLOCK">
-            <summary>
-            Oracle Forms: :SYSTEM.MASTER_BLOCK
-            Name of the master block in a master-detail relationship
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TRIGGER_BLOCK">
-            <summary>
-            Oracle Forms: :SYSTEM.TRIGGER_BLOCK
-            Name of the block from which the current trigger fired
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURSOR_RECORD">
-            <summary>
-            Oracle Forms: :SYSTEM.CURSOR_RECORD
-            Current record number (1-based) in the current block
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.LAST_RECORD">
-            <summary>
-            Oracle Forms: :SYSTEM.LAST_RECORD
-            Total number of records in current block
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.RECORDS_DISPLAYED">
-            <summary>
-            Oracle Forms: :SYSTEM.RECORDS_DISPLAYED
-            Number of records currently displayed/loaded
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.RECORD_STATUS">
-            <summary>
-            Oracle Forms: :SYSTEM.RECORD_STATUS
-            Status of current record: "NEW", "INSERT", "QUERY", "CHANGED"
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURSOR_ITEM">
-            <summary>
-            Oracle Forms: :SYSTEM.CURSOR_ITEM
-            Full name of the item that currently has focus (block.item)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TRIGGER_ITEM">
-            <summary>
-            Oracle Forms: :SYSTEM.TRIGGER_ITEM
-            Full name of the item that caused the trigger to fire
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TRIGGER_FIELD">
-            <summary>
-            Oracle Forms: :SYSTEM.TRIGGER_FIELD
-            Field name that caused the trigger to fire (alias for TRIGGER_ITEM)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURRENT_ITEM">
-            <summary>
-            Oracle Forms: :SYSTEM.CURRENT_ITEM
-            Name of the current item (without block prefix)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURSOR_VALUE">
-            <summary>
-            Oracle Forms: :SYSTEM.CURSOR_VALUE
-            Value of the item that currently has focus
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURRENT_FORM">
-            <summary>
-            Oracle Forms: :SYSTEM.CURRENT_FORM
-            Name of the current form
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TRIGGER_FORM">
-            <summary>
-            Oracle Forms: :SYSTEM.TRIGGER_FORM
-            Name of the form from which the current trigger fired
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.MODE">
-            <summary>
-            Oracle Forms: :SYSTEM.MODE
-            Current mode: "NORMAL", "ENTER-QUERY", "QUERY"
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.BLOCK_STATUS">
-            <summary>
-            Oracle Forms: :SYSTEM.BLOCK_STATUS
-            Status of current block: "NEW", "QUERY", "CHANGED"
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.FORM_STATUS">
-            <summary>
-            Oracle Forms: :SYSTEM.FORM_STATUS
-            Status of form: "NEW", "QUERY", "CHANGED"
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.CURRENT_DATETIME">
-            <summary>
-            Oracle Forms: :SYSTEM.CURRENT_DATETIME
-            Current date and time
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.EFFECTIVE_DATE">
-            <summary>
-            Oracle Forms: :SYSTEM.EFFECTIVE_DATE
-            Effective date for database operations
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.LAST_OPERATION_TIME">
-            <summary>
-            Last operation timestamp
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.MESSAGE_LEVEL">
-            <summary>
-            Oracle Forms: :SYSTEM.MESSAGE_LEVEL
-            Message suppression level (0-25)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.SUPPRESS_WORKING">
-            <summary>
-            Oracle Forms: :SYSTEM.SUPPRESS_WORKING
-            Whether to suppress "Working..." message
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.LAST_QUERY">
-            <summary>
-            Oracle Forms: :SYSTEM.LAST_QUERY
-            The last executed query string
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.LAST_ERROR">
-            <summary>
-            Oracle Forms: :SYSTEM.LAST_ERROR
-            Last error message
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.LAST_ERROR_CODE">
-            <summary>
-            Last error code
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.COORDINATION_OPERATION">
-            <summary>
-            Oracle Forms: :SYSTEM.COORDINATION_OPERATION
-            Current coordination operation being performed
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.EVENT_WINDOW">
-            <summary>
-            Oracle Forms: :SYSTEM.EVENT_WINDOW
-            Window where the last event occurred
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TRIGGER_TYPE">
-            <summary>
-            Oracle Forms: :SYSTEM.TRIGGER_TYPE
-            Type of the current trigger being executed
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TRIGGER_RECORD">
-            <summary>
-            Oracle Forms: :SYSTEM.TRIGGER_RECORD
-            Record number that triggered the event
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TAB_NEW_PAGE">
-            <summary>
-            Oracle Forms: :SYSTEM.TAB_NEW_PAGE
-            Name of tab page being navigated to
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.TAB_PREVIOUS_PAGE">
-            <summary>
-            Oracle Forms: :SYSTEM.TAB_PREVIOUS_PAGE
-            Name of tab page being navigated from
-            </summary>
+            <remarks>
+            The class uses <c>UPPER_SNAKE_CASE</c> public fields rather than
+            C#-style properties to match the Oracle Forms naming convention that
+            trigger authors expect when reading <c>:SYSTEM.CURSOR_RECORD</c> etc.
+            All fields are public so reflection-style access from generated
+            trigger code remains straightforward.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.Reset">
             <summary>
-            Reset all system variables to default state
+            Reset the variables back to their initial form. Used by
+            <c>SystemVariablesManager.Reset()</c> when a new form is opened
+            or the host shuts down.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.Clone">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariables.ToSnapshot">
             <summary>
-            Create a snapshot of current system variables
+            Returns the snapshot of every supported variable as a
+            <see cref="T:System.String"/>-keyed dictionary. Useful when
+            passing state to trigger handlers on background threads or to
+            logging surfaces.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariableType">
