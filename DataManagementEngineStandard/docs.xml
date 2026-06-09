@@ -22022,6 +22022,15 @@
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnMessage">
             <summary>On message (ON-MESSAGE)</summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenLogon">
+            <summary>When user logs on (WHEN-LOGON). M5-RUN-002 — connection lifecycle.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.PostLogon">
+            <summary>After user logs on (POST-LOGON). M5-RUN-002 — connection lifecycle.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnLogoff">
+            <summary>Before user logs off (ON-LOGOFF). M5-RUN-002 — connection lifecycle.</summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.PreBlock">
             <summary>Before entering block (PRE-BLOCK)</summary>
         </member>

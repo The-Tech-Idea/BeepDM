@@ -38,8 +38,17 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         /// <summary>On message (ON-MESSAGE)</summary>
         OnMessage = 8,
-        
-        // Reserved 9-19 for future form-level triggers
+
+        /// <summary>When user logs on (WHEN-LOGON). M5-RUN-002 — connection lifecycle.</summary>
+        WhenLogon = 9,
+
+        /// <summary>After user logs on (POST-LOGON). M5-RUN-002 — connection lifecycle.</summary>
+        PostLogon = 10,
+
+        /// <summary>Before user logs off (ON-LOGOFF). M5-RUN-002 — connection lifecycle.</summary>
+        OnLogoff = 11,
+
+        // Reserved 12-19 for future form-level triggers
         
         #endregion
         
