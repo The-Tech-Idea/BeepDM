@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -467,6 +468,14 @@ namespace TheTechIdea.Beep.Editor.Migration
         public List<string> HardFailMarkers { get; set; } = new List<string> { "permission", "syntax", "unsupported", "not supported", "invalid object" };
         public bool RequireOperatorInterventionOnHardFail { get; set; } = true;
         public string OperatorInterventionHint { get; set; } = "Review checkpoint, apply compensation runbook, then resume from token.";
+
+        /// <summary>
+        /// When true (default), the plan aborts on the first non-transient step failure.
+        /// When false, the plan continues to the next step on failure, recording the
+        /// failed step in <see cref="MigrationExecutionResult.FailedSteps"/>. Dependency
+        /// blocks and pre-flight gates always abort regardless of this flag.
+        /// </summary>
+        public bool AbortOnStepFailure { get; set; } = true;
     }
 
     public class MigrationExecutionResult
@@ -480,6 +489,14 @@ namespace TheTechIdea.Beep.Editor.Migration
         public string CompensationOutcome { get; set; } = string.Empty;
         public MigrationExecutionCheckpoint Checkpoint { get; set; } = new MigrationExecutionCheckpoint();
         public int AppliedCount { get; internal set; }
+
+        /// <summary>
+        /// Sequence numbers of steps that failed (after exhausting their retry budget).
+        /// Empty when <c>Success = true</c>. Populated when the plan continues past
+        /// failures (<c>policy.AbortOnStepFailure = false</c>); in the default
+        /// "abort on first failure" policy, this list contains at most one entry.
+        /// </summary>
+        public List<int> FailedSteps { get; internal set; } = new List<int>();
     }
 
     public enum MigrationRollbackMode
@@ -1447,6 +1464,13 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Supports resumable execution via execution token.
         /// </summary>
         MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null);
+
+        /// <summary>
+        /// Async overload of <see cref="ExecuteMigrationPlan"/>. Required by the
+        /// shared <c>IRetryPipeline</c> for per-step retry. New code should prefer
+        /// this method; the sync overload is a thin wrapper for back-compat.
+        /// </summary>
+        Task<MigrationExecutionResult> ExecuteMigrationPlanAsync(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null, CancellationToken token = default);
 
         /// <summary>
         /// Resumes a previously checkpointed execution by token.

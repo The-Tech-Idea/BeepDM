@@ -6,11 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Services;
 
-namespace TheTechIdea.Beep.Editor.Importing.Schema
+namespace TheTechIdea.Beep.Editor.Schema
 {
-    /// <summary>
-    /// Contract for persisting and retrieving <see cref="SchemaSnapshot"/> instances.
-    /// </summary>
+    /// <summary>Contract for persisting and retrieving <see cref="SchemaSnapshot"/> instances.</summary>
     public interface ISchemaSnapshotStore
     {
         Task SaveAsync(SchemaSnapshot snapshot, CancellationToken token = default);
@@ -18,12 +16,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Schema
         Task DeleteAsync(string contextKey, CancellationToken token = default);
     }
 
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// JSON-file backed schema snapshot store.
-    /// Files written to <c>&lt;BeepRoot&gt;/Importing/SchemaSnapshots/</c>.
-    /// </summary>
+    /// <summary>JSON-file backed schema snapshot store. Files under <c>&lt;BeepRoot&gt;/Schema/Snapshots/</c>.</summary>
     public sealed class FileSchemaSnapshotStore : ISchemaSnapshotStore
     {
         private readonly string _folder;
@@ -31,8 +24,8 @@ namespace TheTechIdea.Beep.Editor.Importing.Schema
 
         public FileSchemaSnapshotStore()
         {
-            var root = EnvironmentService.CreateAppfolder("Importing");
-            _folder = Path.Combine(root, "SchemaSnapshots");
+            var root = EnvironmentService.CreateAppfolder("Schema");
+            _folder = Path.Combine(root, "Snapshots");
             Directory.CreateDirectory(_folder);
         }
 
@@ -69,11 +62,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Schema
         }
     }
 
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// In-memory schema snapshot store — for unit tests and ephemeral pipelines.
-    /// </summary>
+    /// <summary>In-memory schema snapshot store — for unit tests and ephemeral pipelines.</summary>
     public sealed class InMemorySchemaSnapshotStore : ISchemaSnapshotStore
     {
         private readonly ConcurrentDictionary<string, SchemaSnapshot> _store = new(StringComparer.OrdinalIgnoreCase);

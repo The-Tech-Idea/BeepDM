@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Rules;
 
@@ -52,7 +53,7 @@ namespace TheTechIdea.Beep.Editor
                             },
                             policy);
 
-                        bool passed = result is bool b ? b : result?.ToString() != "false";
+                        bool passed = SchemaFingerprinter.ReadBoolean(result);
                         if (!passed)
                         {
                             report.RulesPassed = false;
@@ -137,10 +138,10 @@ namespace TheTechIdea.Beep.Editor
         // ── Shared rule-policy builder ─────────────────────────────────────────────
 
         internal static RuleExecutionPolicy BuildRulePolicy(DataSyncSchema schema, int defaultMaxMs = 5000) =>
-            new RuleExecutionPolicy
-            {
-                MaxDepth       = schema.RulePolicy?.MaxDepth > 0 ? schema.RulePolicy.MaxDepth : 10,
-                MaxExecutionMs = schema.RulePolicy?.MaxExecutionMs > 0 ? schema.RulePolicy.MaxExecutionMs : defaultMaxMs
-            };
+            SchemaFingerprinter.BuildRulePolicy(
+                schema?.RulePolicy?.MaxDepth       ?? 0,
+                schema?.RulePolicy?.MaxExecutionMs ?? 0,
+                defaultMaxDepth: 10,
+                defaultMaxMs:    defaultMaxMs);
     }
 }

@@ -448,3 +448,61 @@ foreach (var dsClass in beepService.DMEEditor.ConfigEditor.DataDriversClasses)
 - [Beep.Containers](https://github.com/The-Tech-Idea/Beep.Containers) - DI/Service registration
 - [Beep.Desktop](https://github.com/The-Tech-Idea/Beep.Desktop) - Desktop UI controls and patterns
 - [BeepShell](https://github.com/The-Tech-Idea/Beep.Shell) - CLI implementation reference
+
+## Data-Management Integration Map
+
+These layers are not independent — they hand off to each other. When you change one, expect to touch the next.
+
+| Layer | Owns | Hands off to (→) | Receives from (←) |
+|---|---|---|---|
+| **Setup Framework** (`SetUp/SetupWizard.cs`) | First-run wizard: driver → connection → schema → seed | migration (schema), configuration (persist connection), etl (optional initial load) | — |
+| **Migration Manager** (`Editor/Migration/MigrationManager.cs`) | Plan, dry-run, execute, rollback, rollout governance | configuration (record history) | setup (initial schema), forms (drift reports) |
+| **Schema Manager** (`Editor/Schema/SchemaManager.cs`) | Cross-datasource preflight + sync-draft production + drift/snapshot/structure resolution | beepsync (executing the draft), migration (initial schema + drift) | etl (preflight), importing (delegated shims) |
+| **Configuration** (`ConfigUtil/ConfigEditor.cs`) | Persisted JSON state: connections, queries, mappings, drivers, migration history | — | setup, migration, etl, forms, uow (all read/write through it) |
+| **ETL Engine** (`Editor/ETL/Engine/PipelineEngine.cs`) | Cross-datasource data movement, scheduling, observability | — | setup (initial load), configuration (mappings), workflow (invocation) |
+| **Workflow Engine** (`Editor/ETL/Engine/Workflow/WorkFlowEngine.cs`) | Multi-step business processes | etl, forms (human tasks) | any layer that wants process-level orchestration |
+| **Forms Manager** (`Editor/Forms/FormsManager.cs`) | Master-detail UI lifecycle and mode transitions | uow (every save) | setup (post-init runtime), etl (display output) |
+| **UnitOfWork** (`Editor/UOW/UnitofWork.cs`) | Transactional CRUD for app code | — | forms (UI saves), etl (transactional sinks) |
+
+### Read this as a flow
+
+```
+        ┌──────────┐    first run    ┌──────────┐
+        │  Setup   │ ───────────────▶│Migration │
+        │  Wizard  │                 │ Manager │
+        └────┬─────┘                 └────┬─────┘
+             │ writes connection           │ records history
+             ▼                             ▼
+        ┌──────────────────────────────────────┐
+        │         Configuration (ConfigEditor) │
+        └────┬──────────┬──────────────┬───────┘
+             │ mappings │ history      │ metadata
+             ▼          ▼              ▼
+        ┌────────┐ ┌────────┐    ┌──────────┐
+        │  ETL   │ │  UoW   │◀───│  Forms   │
+        └────┬───┘ └───┬────┘    └──────────┘
+             │         │
+             └────┬────┘
+                  ▼
+            ┌──────────┐
+            │ Workflow │
+            └──────────┘
+```
+
+### Concrete handoffs to remember
+
+- **Setup → Migration**: `SchemaSetupStep` calls into `MigrationManager`; do not duplicate migration logic in setup steps.
+- **Migration ↔ Configuration**: `IsMigrationApplied(ds, name)` is the gate; `RecordMigration(...)` is the write. Both go through `MigrationHistoryManager`.
+- **ETL ← Configuration**: ETL reads `EntityDataMap` from `EntityMappingManager`; ETL does not invent its own mapping store.
+- **Forms → UoW**: Every form save flows through `UnitofWork<T>`. Forms does not write to the datasource directly.
+- **Setup → Configuration**: `ConnectionConfigStep` writes connections through the `ConfigEditor` façade, never ad-hoc JSON.
+- **ETL ← Migration**: ETL assumes the target schema exists; missing columns surface as errors, not auto-migrations.
+
+### Cross-agent skill locations
+
+The same integration map is documented in:
+
+- `.harness/skills/beepdm-{setup,migration,schema,configuration,etl,workflow,forms,unitofwork,importing,retry}/SKILL.md` — Mavis (project skills)
+- `.cursor/{setup,migration,configeditor,etl,forms,unitofwork}/SKILL.md` — Cursor (existing deep-dive skills)
+
+If you change how one layer hands off to another, update **all** three locations to keep the agents consistent.

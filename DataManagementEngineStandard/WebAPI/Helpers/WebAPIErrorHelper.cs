@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Common.Retry;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Report;
 
@@ -146,49 +147,80 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
 
             var retries = maxRetries > 0 ? maxRetries : DefaultMaxRetries;
             var delay = baseDelayMs > 0 ? baseDelayMs : DefaultBaseDelayMs;
-            
+
             var circuitBreaker = GetOrCreateCircuitBreaker(operationName);
 
-            for (int attempt = 0; attempt <= retries; attempt++)
-            {
-                try
-                {
-                    // Check circuit breaker
-                    if (!circuitBreaker.CanExecute())
-                    {
-                        throw new InvalidOperationException($"Circuit breaker is open for {operationName}");
-                    }
+            // Closure-captured so we can re-throw the original exception after the pipeline gives up.
+            // RetryResult only carries FailureMessage; the pipeline swallows the Exception by design.
+            Exception lastException = null;
 
-                    var result = await operation();
-                    
-                    // Success - reset circuit breaker
-                    circuitBreaker.OnSuccess();
-                    return result;
-                }
-                catch (Exception ex)
+            var retryResult = await RetryPipeline.Instance.ExecuteAsync(new RetryPlan<T>
+            {
+                // Original loop was `for (int attempt = 0; attempt <= retries; attempt++)` — that's
+                // retries+1 Run invocations.
+                MaxAttempts = retries + 1,
+                LoggerTag   = "WebAPI",
+
+                // Run = the actual work. Pre-check the breaker here so a "breaker open" failure
+                // flows through the same path as any other transient error.
+                Run = async (ctx, ct) =>
                 {
-                    // Record failure
+                    if (!circuitBreaker.CanExecute())
+                        throw new InvalidOperationException($"Circuit breaker is open for {operationName}");
+                    return await operation().ConfigureAwait(false);
+                },
+
+                // Classify runs on every attempt. The pipeline's Run catches exceptions and exposes
+                // them as ctx.LastError (an IErrorsInfo wrapping the original Exception).
+                // We update the breaker on EVERY failure (not only on giveup) to match the original
+                // for-loop's `circuitBreaker.OnFailure()` placement in the catch block.
+                Classify = ctx =>
+                {
+                    if (ctx.LastError == null)
+                        return RetryDecision.Succeed;
+
+                    lastException = ctx.LastError.Ex;
                     circuitBreaker.OnFailure();
 
-                    var errorInfo = AnalyzeError(ex);
-                    _logger?.WriteLog($"Attempt {attempt + 1} failed for {operationName}: {errorInfo.ErrorMessage}");
+                    var errorInfo = AnalyzeError(lastException);
+                    _logger?.WriteLog($"Attempt {ctx.Attempt} failed for {operationName}: {errorInfo.ErrorMessage}");
 
-                    // Don't retry on certain error types
-                    if (!errorInfo.IsRetryable || attempt >= retries)
-                    {
-                        _logger?.WriteLog($"Operation {operationName} failed permanently: {errorInfo.ErrorMessage}");
-                        throw;
-                    }
+                    // Don't retry when out of attempts, or when the error is non-retryable.
+                    if (ctx.Attempt > retries || !errorInfo.IsRetryable)
+                        return RetryDecision.GiveUp;
 
-                    // Calculate exponential backoff delay
-                    var currentDelay = CalculateDelay(attempt, delay);
-                    _logger?.WriteLog($"Retrying {operationName} in {currentDelay}ms (attempt {attempt + 1}/{retries + 1})");
+                    _logger?.WriteLog($"Retrying {operationName} (attempt {ctx.Attempt}/{retries + 1})");
+                    return RetryDecision.Retry;
+                },
 
-                    await Task.Delay(currentDelay, cancellationToken);
-                }
-            }
+                // OnSuccess runs only after a successful Run. Reset the breaker here, mirroring
+                // the original for-loop's `circuitBreaker.OnSuccess()` placement.
+                OnSuccess = (ctx, value, ct) =>
+                {
+                    circuitBreaker.OnSuccess();
+                    return Task.CompletedTask;
+                },
 
-            throw new InvalidOperationException($"All retry attempts exhausted for {operationName}");
+                // OnGiveUp runs once, when the classifier says GiveUp. Just log the permanent failure;
+                // the breaker has already been updated for this attempt inside Classify.
+                OnGiveUp = (ctx, value, decision, ct) =>
+                {
+                    _logger?.WriteLog($"Operation {operationName} failed permanently: {ctx.FailureMessage}");
+                    return Task.CompletedTask;
+                },
+
+                // Backoff = exponential delay + jitter, matching the original CalculateDelay.
+                // CalculateDelay is 0-indexed by attempt; the pipeline passes 1-indexed.
+                Backoff = attempt => TimeSpan.FromMilliseconds(CalculateDelay(attempt - 1, delay))
+            }, cancellationToken).ConfigureAwait(false);
+
+            if (retryResult.FinalDecision == RetryDecision.Succeed)
+                return retryResult.Value;
+
+            // All attempts exhausted — re-throw the last captured exception to preserve the
+            // original "throw the real error" semantics (the pipeline swallows it internally).
+            throw lastException
+                ?? new InvalidOperationException($"All retry attempts exhausted for {operationName}");
         }
 
         /// <summary>

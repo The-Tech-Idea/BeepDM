@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor
@@ -35,8 +36,8 @@ namespace TheTechIdea.Beep.Editor
                         },
                         BuildRulePolicy(schema));
 
-                    var winner     = outputs?.TryGetValue("winner",     out var w)  == true ? w?.ToString()  : result?.ToString();
-                    var reasonCode = outputs?.TryGetValue("reasonCode", out var rc) == true ? rc?.ToString() : "RULE";
+                    var winner     = SchemaFingerprinter.ReadString(outputs, "winner",     result?.ToString());
+                    var reasonCode = SchemaFingerprinter.ReadString(outputs, "reasonCode", "RULE");
                     var elapsed    = DateTime.UtcNow - started;
 
                     if (cp.CaptureEvidence)

@@ -5,12 +5,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Common.Retry;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Helpers;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
 using TheTechIdea.Beep.Editor.Defaults;
 using TheTechIdea.Beep.Editor.Importing;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Editor.Importing.ErrorStore;
 using TheTechIdea.Beep.Editor.Importing.History;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
@@ -32,6 +34,8 @@ namespace TheTechIdea.Beep.Editor
         private readonly ISyncValidationHelper _validationHelper;
         private readonly ISchemaPersistenceHelper _persistenceHelper;
         private readonly ISyncProgressHelper _progressHelper;
+        private ISchemaManager? _schemaManager;
+        private IRetryPipeline? _retryPipeline;
 
         /// <summary>Optional integration context: Rule Engine, Defaults Manager, mapping-plan state.</summary>
         public SyncIntegrationContext IntegrationContext { get; set; }
@@ -48,6 +52,19 @@ namespace TheTechIdea.Beep.Editor
         public string Filepath { get; set; }
         public IDMEEditor Editor => _editor;
         public ObservableBindingList<DataSyncSchema> SyncSchemas { get; set; }
+
+        /// <summary>
+        /// Schema manager used by <see cref="BeepSyncManager.Sync.cs"/> to run a strict
+        /// destination-acceptance preflight before the import starts. Lazily resolved.
+        /// </summary>
+        protected ISchemaManager SchemaManager => _schemaManager ??= new SchemaManager(_editor);
+
+        /// <summary>
+        /// Retry pipeline used by <see cref="BeepSyncManager.Sync.cs"/> to run the
+        /// whole-sync attempt loop with backoff, classification, and per-attempt
+        /// checkpoint hooks. Lazily resolved.
+        /// </summary>
+        protected IRetryPipeline RetryPipeline => _retryPipeline ??= new RetryPipeline();
 
         public BeepSyncManager(IDMEEditor editor)
         {

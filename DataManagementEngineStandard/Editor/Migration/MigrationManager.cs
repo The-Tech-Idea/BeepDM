@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using TheTechIdea.Beep.Common.Retry;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Core;
 using TheTechIdea.Beep.DataBase;
@@ -88,41 +89,15 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private void TrackMigration(string operation, string entityName, string columnName, string sql, IErrorsInfo result)
         {
-            try
-            {
-                var configEditor = _editor?.ConfigEditor as ConfigEditor;
-                if (configEditor == null)
-                    return;
-
-                var dataSourceName = MigrateDataSource?.DatasourceName ?? string.Empty;
-                var dataSourceType = MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown;
-
-                var record = new MigrationRecord
-                {
-                    MigrationId = Guid.NewGuid().ToString(),
-                    Name = operation,
-                    AppliedOnUtc = DateTime.UtcNow,
-                    Success = result?.Flag == Errors.Ok,
-                    Steps = new List<MigrationStep>
-                    {
-                        new MigrationStep
-                        {
-                            Operation = operation,
-                            EntityName = entityName,
-                            ColumnName = columnName,
-                            Sql = sql ?? string.Empty,
-                            Success = result?.Flag == Errors.Ok,
-                            Message = result?.Message
-                        }
-                    }
-                };
-
-                configEditor.AppendMigrationRecord(dataSourceName, dataSourceType, record);
-            }
-            catch (Exception ex)
-            {
-                _editor?.AddLogMessage("Beep", $"Failed to track migration operation '{operation}': {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
-            }
+            MigrationRecordWriter.WriteOperation(
+                _editor,
+                operation,
+                entityName,
+                columnName,
+                sql,
+                result,
+                MigrateDataSource?.DatasourceName ?? string.Empty,
+                MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown);
         }
     }
 }

@@ -5808,6 +5808,178 @@
             of expired items to prevent memory leaks in long-running applications.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Common.Retry.IRetryPipeline">
+            <summary>
+            Common loop for retrying a unit of work N times with a backoff delay between attempts.
+            The "unit" is whatever the caller wants — a single migration step, a whole sync run,
+            an HTTP call, anything. The loop is agnostic.
+            </summary>
+            <remarks>
+            <para>
+            Typical use:
+            </para>
+            <code>
+            var result = await pipeline.ExecuteAsync(new RetryPlan&lt;MyResult&gt; {
+                MaxAttempts = 3,
+                Backoff     = attempt =&gt; TimeSpan.FromMilliseconds(100 * (1 &lt;&lt; (attempt - 1))),
+                Classify    = ctx =&gt; ctx.LastError?.Flag == Errors.Ok
+                                     ? RetryDecision.Succeed
+                                     : RetryDecision.Retry,
+                Run         = async (ctx, token) =&gt; await DoWorkAsync(ctx.Attempt, token),
+                OnSuccess   = (ctx, value, token) =&gt; FinalizeAsync(value, token),
+            }, token);
+            </code>
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Common.Retry.RetryAttemptContext`1">
+            <summary>
+            Per-attempt context passed to every <see cref="T:TheTechIdea.Beep.Common.Retry.RetryPlan`1"/> callback.
+            Cheap to construct; the pipeline allocates one per attempt and reuses it for
+            <see cref="!:BeforeAttempt"/> → <see cref="!:Run"/> → classify → <see cref="!:OnSuccess"/>/<see cref="!:OnGiveUp"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryAttemptContext`1.Attempt">
+            <summary>1-indexed attempt number.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryAttemptContext`1.LastResult">
+            <summary>Result of the previous attempt, or <c>default</c> on attempt 1.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryAttemptContext`1.LastError">
+            <summary>The last error (or null if the previous attempt did not produce an error object).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryAttemptContext`1.FailureMessage">
+            <summary>The last failure message, useful for keyword / rule classifiers.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Common.Retry.RetryDecision">
+            <summary>
+            The loop's verdict on a single attempt.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Common.Retry.RetryDecision.Succeed">
+            <summary>The attempt succeeded — stop the loop, return <see cref="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.Value"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Common.Retry.RetryDecision.Retry">
+            <summary>Transient failure — sleep + try again (subject to <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.MaxAttempts"/>).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Common.Retry.RetryDecision.GiveUp">
+            <summary>Permanent failure or attempts exhausted — stop the loop, return a GiveUp result.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Common.Retry.RetryPipeline">
+             <summary>
+             Default <see cref="T:TheTechIdea.Beep.Common.Retry.IRetryPipeline"/> implementation. The loop is:
+            
+             <code>
+             for attempt in 1..MaxAttempts:
+                 if cancelled: exit with GiveUp
+                 await BeforeAttempt(ctx, token)     // optional
+                 try { result = await Run(ctx, token) }
+                 catch (OperationCanceledException) { throw }  // pass through
+                 catch (Exception ex) { result = ...; failure = ex.Message }
+                 decision = Classify(ctx)
+                 if decision == Succeed:
+                     await OnSuccess(ctx, result, token)
+                     return RetryResult(value)
+                 if decision == Retry AND attempt &lt; MaxAttempts:
+                     delay = Backoff(attempt)
+                     if delay > 0: await Task.Delay(delay, token)   // cancellable
+                     continue
+                 // GiveUp (or last attempt) — fall through
+                 await OnGiveUp(ctx, result, decision, token)
+                 return RetryResult(giveup, failure=...)
+             </code>
+            
+             <para><b>Edge-case guarantees:</b></para>
+             <list type="bullet">
+               <item><description><c>OperationCanceledException</c> thrown by Run, Backoff, Classify, or any hook always propagates — the pipeline does NOT catch it. This is the cancellable-sleep contract.</description></item>
+               <item><description>Any OTHER exception thrown by a hook is caught and treated as a transient failure (logged, loop continues). This prevents a buggy classifier from hard-failing the run.</description></item>
+               <item><description>Cancellation between attempts: detected before the next attempt; loop exits with <c>FinalDecision = GiveUp</c> and the most recent failure message.</description></item>
+               <item><description>Sleep is <c>Task.Delay(delay, token)</c> — cancellable. Callers that need the old sync <c>Thread.Sleep</c> can override <c>Backoff</c> to call it directly, but the default behavior is cancellable.</description></item>
+             </list>
+             </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Common.Retry.RetryPipeline.Instance">
+            <summary>
+            Process-wide default instance. Stateless and thread-safe; safe to share.
+            Prefer this over <c>new RetryPipeline()</c> at call sites that don't need
+            to inject a custom pipeline (e.g. tests).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Common.Retry.RetryPlan`1">
+            <summary>
+            All the inputs the <see cref="T:TheTechIdea.Beep.Common.Retry.IRetryPipeline"/> needs, pre-resolved by the caller.
+            Construct one per call to <c>ExecuteAsync</c>.
+            </summary>
+            <remarks>
+            Required properties use C# 11 <c>required</c> — the compiler enforces that callers
+            set <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.Run"/>, <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.Classify"/>, and <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.Backoff"/> before the
+            pipeline accepts the plan. <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.BeforeAttempt"/>, <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.OnSuccess"/>, and
+            <see cref="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.OnGiveUp"/> are optional hooks.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.MaxAttempts">
+            <summary>Total attempts including the first one. Must be ≥ 1. Default: 1 (no retry).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.Run">
+            <summary>The work to retry. Runs once per attempt.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.Classify">
+            <summary>
+            Classify the outcome of an attempt. Return <see cref="F:TheTechIdea.Beep.Common.Retry.RetryDecision.Succeed"/>
+            to stop on success, <see cref="F:TheTechIdea.Beep.Common.Retry.RetryDecision.Retry"/> to try again, or
+            <see cref="F:TheTechIdea.Beep.Common.Retry.RetryDecision.GiveUp"/> to stop with the current failure.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.Backoff">
+            <summary>
+            Per-attempt delay. Return <see cref="F:System.TimeSpan.Zero"/> to skip the sleep.
+            Pipeline calls this with the current attempt number (1-indexed).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.BeforeAttempt">
+            <summary>
+            Optional: called BEFORE every attempt (including the first). Use this to save
+            in-progress checkpoints or record "starting attempt N" diagnostics.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.OnSuccess">
+            <summary>
+            Optional: called after a successful attempt. Use this to finalize
+            (advance watermark, mark "Completed", build a success report).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.OnGiveUp">
+            <summary>
+            Optional: called when the loop gives up (non-retryable classification, classifier
+            said <see cref="F:TheTechIdea.Beep.Common.Retry.RetryDecision.GiveUp"/>, attempts exhausted, or cancellation).
+            Use this to mark "Failed" + record diagnostics.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryPlan`1.LoggerTag">
+            <summary>Logger source tag for human-readable retry messages. Default: "RetryPipeline".</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Common.Retry.RetryResult`1">
+            <summary>
+            Result of a <see cref="T:TheTechIdea.Beep.Common.Retry.IRetryPipeline"/> run.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.Value">
+            <summary>
+            The successful unit-of-work result, or <c>default</c> if the loop gave up.
+            Check <see cref="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.FinalDecision"/> before reading this value.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.AttemptsUsed">
+            <summary>Number of attempts the loop made (1..<c>MaxAttempts</c>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.FinalDecision">
+            <summary>The final decision the loop reached.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.FailureMessage">
+            <summary>Failure message, populated when <see cref="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.FinalDecision"/> is <see cref="F:TheTechIdea.Beep.Common.Retry.RetryDecision.GiveUp"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Common.Retry.RetryResult`1.TotalElapsed">
+            <summary>Total wall-clock time the loop spent, including sleeps and classifier overhead.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.ConfigEditor">
             <summary>
             Refactored ConfigEditor with specialized managers for different responsibilities
@@ -17417,6 +17589,19 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunReconciliationReport">
             <summary>Reconciliation report from the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)"/> call.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.SchemaManager">
+            <summary>
+            Schema manager used by <see cref="!:BeepSyncManager.Sync.cs"/> to run a strict
+            destination-acceptance preflight before the import starts. Lazily resolved.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.RetryPipeline">
+            <summary>
+            Retry pipeline used by <see cref="!:BeepSyncManager.Sync.cs"/> to run the
+            whole-sync attempt loop with backoff, classification, and per-attempt
+            checkpoint hooks. Lazily resolved.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.SyncIntegrationContext)">
             <summary>Advanced constructor with pre-built integration context.</summary>
@@ -30382,9 +30567,10 @@
             Supports advanced data import operations with validation, transformation, batch processing, and progress monitoring
             </summary>
             <summary>
-            Phase 3 — Preflight validation and sync-draft generation.
-            Logic previously lived in ImportExportOrchestrator (UI layer); moved here so all
-            callers can use it without taking a dependency on the Winform project.
+            Schema-related entry points exposed on <see cref="T:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager"/>.
+            These are now thin back-compat shims that delegate to the unified
+            <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/> (in <c>Editor/Schema/</c>). New code should call
+            the schema manager directly.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.InitializeDataSources(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
@@ -30650,24 +30836,15 @@
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunMigrationPreflightAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Action{System.String})">
             <summary>
             Validates schema compatibility between source and destination before running a migration.
-            Checks that connections are reachable, entity structures can be read, and
-            (when AddMissingColumns is false) that every source field already exists on the destination.
+            Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.RunPreflightAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Action{System.String},System.Threading.CancellationToken)"/>; kept on
+            <see cref="T:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager"/> for back-compat with existing callers.
             </summary>
-            <param name="config">The import configuration to validate.</param>
-            <param name="log">Optional logger callback for diagnostic messages.</param>
-            <returns>
-            <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Ok"/> if the run can proceed;
-            <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/> with a descriptive message if it cannot.
-            </returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
             <summary>
             Builds a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/> that describes what a sync run would do,
-            without executing any data movement.
-            The draft can be persisted, reviewed, or handed to the wizard summary step.
+            without executing any data movement. Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.
             </summary>
-            <param name="config">The import configuration to build from.</param>
-            <returns>A populated <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/> or null on failure.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayFailedRecordsAsync(System.String,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
             <summary>
@@ -31558,81 +31735,6 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.FailureMessage(System.Object)">
             <summary>Builds a human-readable failure description for error logging.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaComparator">
-            <summary>
-            Compares two <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot"/> instances and produces a <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Schema.SchemaComparator.Compare(TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot,TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot)">
-            <summary>
-            Compares <paramref name="baseline"/> against <paramref name="current"/> and returns
-            a report describing all structural changes.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot">
-            <summary>
-            Immutable snapshot of a data-source entity schema captured at a point in time.
-            Stored as JSON so schema versions can be compared across runs.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot.ContextKey">
-            <summary>Composite key: "{dataSourceName}/{entityName}".</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot.CapturedAt">
-            <summary>UTC timestamp when the snapshot was captured.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot.DataSourceName">
-            <summary>Name of the data source connection.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot.EntityName">
-            <summary>Name of the entity / table.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot.Fields">
-            <summary>Ordered list of fields at the time of capture.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.SnapshotField">
-            <summary>Lightweight representation of a single field in a <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot"/>.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport">
-            <summary>Summary of structural differences between two entity schemas.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.Baseline">
-            <summary>The baseline (older) snapshot used for comparison.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.Current">
-            <summary>The current (newer) snapshot used for comparison.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.AddedFields">
-            <summary>Fields present in <see cref="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.Current"/> but absent in <see cref="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.Baseline"/>.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.RemovedFields">
-            <summary>Fields present in <see cref="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.Baseline"/> but absent in <see cref="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.Current"/>.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.AlteredFields">
-            <summary>Fields present in both snapshots but with changed type, nullability, or length.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport.HasDrift">
-            <summary><c>true</c> when at least one addition, removal, or alteration exists.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.FieldTypeDrift">
-            <summary>Describes a type-level change to a single field.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.ISchemaSnapshotStore">
-            <summary>
-            Contract for persisting and retrieving <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot"/> instances.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.FileSchemaSnapshotStore">
-            <summary>
-            JSON-file backed schema snapshot store.
-            Files written to <c>&lt;BeepRoot&gt;/Importing/SchemaSnapshots/</c>.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Schema.InMemorySchemaSnapshotStore">
-            <summary>
-            In-memory schema snapshot store — for unit tests and ephemeral pipelines.
-            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Staging.StagingOptions">
             <summary>
@@ -33028,6 +33130,22 @@
             synthetic "step-N" identifier.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy.AbortOnStepFailure">
+            <summary>
+            When true (default), the plan aborts on the first non-transient step failure.
+            When false, the plan continues to the next step on failure, recording the
+            failed step in <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationExecutionResult.FailedSteps"/>. Dependency
+            blocks and pre-flight gates always abort regardless of this flag.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationExecutionResult.FailedSteps">
+            <summary>
+            Sequence numbers of steps that failed (after exhausting their retry budget).
+            Empty when <c>Success = true</c>. Populated when the plan continues past
+            failures (<c>policy.AbortOnStepFailure = false</c>); in the default
+            "abort on first failure" policy, this list contains at most one entry.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationCompensationAction.TargetName">
             <summary>
             Stable identifier for the target object of this compensation (constraint
@@ -33552,6 +33670,13 @@
             Supports resumable execution via execution token.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlanAsync(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Async overload of <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlan(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>. Required by the
+            shared <c>IRetryPipeline</c> for per-step retry. New code should prefer
+            this method; the sync overload is a thin wrapper for back-compat.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ResumeMigrationPlan(System.String,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Resumes a previously checkpointed execution by token.
@@ -34070,31 +34195,252 @@
             Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.Migration.SchemaInspector">
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter">
              <summary>
-             High-level service that answers the question
-             "what changed in the schema between the .NET class and the database table?"
+             Single-responsibility helper that builds and appends a
+             <see cref="T:TheTechIdea.Beep.ConfigUtil.MigrationRecord"/> to the config editor's migration history.
             
              <para>
-             EF Core's Migrations model captures a <c>ModelSnapshot</c> file per migration and
-             compares the live model to the latest snapshot to generate a diff. BeepDM now
-             provides the same capability via the
-             <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot"/> +
-             <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaComparator"/> infrastructure already in the engine.
+             Four call sites used to construct the record by hand:
+             </para>
+             <list type="number">
+               <item><description><c>MigrationManager.PersistExecutionCheckpoint</c> — full execution snapshot, with step status.</description></item>
+               <item><description><c>MigrationTrackingService.ExecuteTrackedMigration</c> and <c>DatasourceManagementService.AppendSchemaToHistory</c> — plan + execution mapping, one step per plan operation. The <c>namePrefix</c> parameter distinguishes the call sites in the persisted history (<c>"Migration"</c> vs <c>"Schema"</c>).</description></item>
+               <item><description><c>MigrationManager.TrackMigration</c> — single-operation record, no execution state.</description></item>
+               <item><description><c>MigrationManager.Planning.TryTrackMigrationPlan</c> — plan-only record (no execution result), with deterministic <c>MigrationId = plan.PlanId</c> and plan-metadata <c>Notes</c>.</description></item>
+             </list>
+             <para>
+             All four now go through this writer. Failures are logged via
+             <see cref="M:TheTechIdea.Beep.Editor.IDMEEditor.AddLogMessage(System.String,System.String,System.DateTime,System.Int32,System.String,TheTechIdea.Beep.ConfigUtil.Errors)"/> and swallowed (the same behaviour
+             the inlined code had) — persistence is a side-effect of execution, not a
+             pre-condition for it.
              </para>
             
-             <para>Capabilities:</para>
+             <para><b>MigrationId conventions</b></para>
              <list type="bullet">
-               <item><description><see cref="!:CaptureFromTypeAsync(Type)"/> — snapshot of a POCO / Entity / EF Core class</description></item>
-               <item><description><see cref="!:CaptureFromDataSourceAsync(IDataSource, string)"/> — snapshot of the live database table</description></item>
-               <item><description><see cref="!:InspectAsync(Type, IDataSource, string)"/> — full diff report (added / removed / altered fields)</description></item>
-               <item><description><see cref="!:SaveBaselineAsync(Type, IDataSource, string)"/> — persist a baseline snapshot for future comparisons</description></item>
-               <item><description><see cref="!:DiffAgainstBaselineAsync(Type, IDataSource, string)"/> — current code vs. the persisted baseline</description></item>
+               <item><description><b>Deterministic anchor (lookup key):</b> <c>WriteExecutionSnapshot</c> uses <c>checkpoint.ExecutionToken</c> (the key into <c>ExecutionPlans[token]</c>); <c>WritePlanArtifact</c> uses <c>plan.PlanId</c> (the key for "rerun this plan overwrites the previous snapshot").</description></item>
+               <item><description><b>Plan-prefixed summary (traceable):</b> <c>WritePlanExecution</c> and <c>WriteOperation</c> (when called with a <c>planId</c>) use the format <c>{plan.PlanId}-{rand8}</c>. The prefix makes the record discoverable in the history file by its source plan.</description></item>
+               <item><description><b>Unprefixed summary (one-shot):</b> <c>WriteOperation</c> without a <c>planId</c> uses a full random Guid. This is the noise floor — 38 per-operation call sites in <c>TrackMigration</c> don't have a plan available at the call site.</description></item>
              </list>
              </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.SchemaInspector.BuildKey(System.String,System.String)">
-            <summary>Compute the canonical context key for a (datasource, entity) pair.</summary>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WriteExecutionSnapshot(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint,System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Build and append a record that captures a complete execution checkpoint,
+            with per-step status. Used at every <c>PersistExecutionCheckpoint</c>
+            call site in <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationManager"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WritePlanExecution(TheTechIdea.Beep.Editor.IDMEEditor,System.String,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionResult,System.String)">
+             <summary>
+             Build and append a record that maps plan operations to their execution
+             outcomes, with a top-level message. Used by
+             <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.ExecuteTrackedMigration(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/> (with
+             <c>namePrefix = "Migration"</c>) and
+             <c>DatasourceManagementService.AppendSchemaToHistory</c> (with
+             <c>namePrefix = "Schema"</c>). The prefix appears in the persisted
+             record's <c>Name</c> field so the two call sites are distinguishable
+             in the migration history.
+            
+             <para>The <c>MigrationId</c> is prefixed with <c>plan.PlanId</c> so
+             the summary record is traceable to the plan that produced it (see
+             <see cref="!:MigrationIdConventions"/>).</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WriteOperation(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,System.String,TheTechIdea.Beep.Utilities.DataSourceType,System.String)">
+             <summary>
+             Build and append a minimal record for a single migration operation
+             (no execution state). Used by <c>MigrationManager.TrackMigration</c>.
+            
+             <para>If <paramref name="planId"/> is supplied, the <c>MigrationId</c>
+             is prefixed with it so the per-operation record is traceable to the
+             plan that produced it. The 38 in-tree call sites of
+             <c>TrackMigration</c> don't have a plan available, so they pass
+             <c>null</c> and get an unprefixed random id. Future callers that
+             have a plan should pass it.</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WritePlanArtifact(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,System.String,System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Build and append a plan-only record (no execution result). Used by
+            <c>MigrationManager.Planning.TryTrackMigrationPlan</c> to persist the
+            plan snapshot when a plan is generated but execution has not (yet)
+            happened. <c>MigrationId</c> is deterministic (the plan's
+            <c>PlanId</c>) so re-running the same plan produces a record that
+            overwrites the previous one in the history.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.BuildPlanPrefixedId(System.String)">
+            <summary>
+            Build a <c>MigrationId</c> of the form <c>{planId}-{rand8}</c> where
+            <c>rand8</c> is 8 hex characters from a new Guid. The prefix makes
+            summary records traceable to the plan that produced them; the
+            suffix keeps summary ids unique even when the same plan runs
+            multiple times. See the class doc comment for the full conventions.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager">
+            <summary>
+            Single-responsibility service for ALL schema concerns in BeepDM.
+            Owns:
+            <list type="bullet">
+              <item>Data-source resolution + entity-structure loading (used by everyone).</item>
+              <item>Cross-datasource preflight (will the destination accept the source?).</item>
+              <item>Sync-draft production (DataSyncSchema for downstream execution).</item>
+              <item>Entity existence + creation (thin wrapper over IDataSource.CreateEntityAs).</item>
+              <item>Schema snapshots (capture, persist, compare, drift report).</item>
+            </list>
+            Does NOT: move data (DataImportManager), execute DDL plans (MigrationManager),
+            or run sync pipelines (BeepSyncManager). It only plans and validates.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.InspectManyAsync(System.Collections.Generic.IEnumerable{System.Type},TheTechIdea.Beep.IDataSource,System.Threading.CancellationToken)">
+            <summary>Same as the string-name overload but accepts a pre-resolved <see cref="T:TheTechIdea.Beep.IDataSource"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaResolutionResult">
+            <summary>Result of resolving a data source by name (and auto-opening it if not open).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.RuleAuditScope">
+             <summary>
+             Disposable scope that increments a counter every time the bound rule engine
+             fires <see cref="E:TheTechIdea.Beep.Rules.IRuleEngine.RuleEvaluated"/>. Used by callers that need to
+             report "how many rules fired during this run" without leaking the
+             subscribe / unsubscribe pair across multiple early-exit paths.
+            
+             <para>
+             Usage:
+             </para>
+             <code>
+             int ruleAuditCount = 0;
+             using (RuleAuditScope.Count(ruleEngine, () => Interlocked.Increment(ref ruleAuditCount)))
+             {
+                 // ... invoke rules ...
+             }
+             // ruleAuditCount now reflects the number of evaluations that happened in the scope.
+             </code>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.RuleAuditScope.Count(TheTechIdea.Beep.Rules.IRuleEngine,System.Action)">
+            <summary>
+            Subscribe <paramref name="onEvaluated"/> to the engine's
+            <see cref="E:TheTechIdea.Beep.Rules.IRuleEngine.RuleEvaluated"/> event. The returned
+            <see cref="T:TheTechIdea.Beep.Editor.Schema.RuleAuditScope"/> detaches on dispose. Pass <c>null</c> for
+            <paramref name="onEvaluated"/> to count evaluations without doing anything
+            per-evaluation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.RuleAuditScope.Dispose">
+            <summary>Detach the handler. Safe to call multiple times.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.RuleAuditScope.RuleAuditScopeState.TryDispose">
+            <summary>Returns true on first dispose (caller should detach), false on subsequent disposes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaComparator">
+            <summary>
+            Compares two <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaSnapshot"/> instances and produces a <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaDriftReport"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaFingerprinter">
+             <summary>
+             Stable, comparable fingerprints for BeepDM schema artifacts.
+             Used for change detection, plan-hash stability, mapping drift, and version promotion gates.
+            
+             <para>
+             All fingerprints are SHA-256 over a deterministic, sorted, pipe-separated
+             representation of the relevant fields. Two artifacts with the same
+             fingerprint are considered identical for change-detection purposes.
+             </para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SchemaFingerprinter.ComputeSchemaHash(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Compute a stable SHA-256 hex fingerprint of a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/>.
+            Fingerprint = (SourceDs|DestDs|SourceEntity|DestEntity|Direction|Type)
+                           + ordered MappedFields.
+            </summary>
+            <remarks>
+            On any error the method returns a fresh <see cref="T:System.Guid"/> string,
+            so callers always treat the result as "changed" rather than crashing.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SchemaFingerprinter.BuildRulePolicy(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Build a <see cref="T:TheTechIdea.Beep.Rules.RuleExecutionPolicy"/> from a
+            policy-shape with sensible defaults. Shared by BeepSync's rule-evaluation
+            sites and the schema manager's preflight, so they all share the same depth
+            and timeout interpretation.
+            </summary>
+            <param name="maxDepth">Requested MaxDepth; falls back to <paramref name="defaultMaxDepth"/> when &lt;= 0.</param>
+            <param name="maxExecutionMs">Requested MaxExecutionMs; falls back to <paramref name="defaultMaxMs"/> when &lt;= 0.</param>
+            <param name="defaultMaxDepth">Default MaxDepth when caller did not specify one.</param>
+            <param name="defaultMaxMs">Default MaxExecutionMs when caller did not specify one.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SchemaFingerprinter.ReadString(System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.String,System.String)">
+            <summary>
+            Read a string value from a rule output dictionary. Returns
+            <paramref name="fallback"/> when the key is missing or the value is null.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SchemaFingerprinter.ReadBoolean(System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.String,System.Boolean)">
+            <summary>
+            Read a boolean value from a rule output dictionary. The value is
+            considered <c>true</c> if it's a bool <c>true</c>, or if its string
+            form is anything other than the literal <c>"false"</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SchemaFingerprinter.ReadBoolean(System.Object,System.Boolean)">
+            <summary>
+            Read a boolean value from a rule return value (the second tuple
+            element from <c>IRuleEngine.SolveRule</c>). Treats <c>null</c> as
+            <paramref name="fallback"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaManager">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/> implementation. Owns ALL schema concerns
+            in BeepDM: preflight, draft, drift, snapshot, structure resolution, entity existence,
+            and entity creation. Other services (MigrationManager, BeepSyncManager, DataImportManager,
+            ETLEditor) call into this for any schema work.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaRequest">
+            <summary>
+            Input contract for <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/>.
+            Datasource-agnostic. Any pair of <see cref="T:TheTechIdea.Beep.IDataSource"/> can be source or target.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaPreflightResult">
+            <summary>Output of a preflight run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaDraftResult">
+            <summary>Output of <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaEntityResult">
+            <summary>Output of <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.CreateEntityAsync(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaSnapshot">
+            <summary>
+            Immutable snapshot of a data-source entity schema captured at a point in time.
+            Stored as JSON so schema versions can be compared across runs.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SnapshotField">
+            <summary>Lightweight representation of a single field in a <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaSnapshot"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaDriftReport">
+            <summary>Summary of structural differences between two entity schemas.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.FieldTypeDrift">
+            <summary>Describes a type-level change to a single field.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.ISchemaSnapshotStore">
+            <summary>Contract for persisting and retrieving <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaSnapshot"/> instances.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.FileSchemaSnapshotStore">
+            <summary>JSON-file backed schema snapshot store. Files under <c>&lt;BeepRoot&gt;/Schema/Snapshots/</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.InMemorySchemaSnapshotStore">
+            <summary>In-memory schema snapshot store — for unit tests and ephemeral pipelines.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Examples.UnitofWorkExamples">
             <summary>
@@ -52335,6 +52681,17 @@
             when omitted.
             </param>
         </member>
+        <member name="T:TheTechIdea.Beep.Services.BeepServiceSchemaExtensions">
+            <summary>
+            DI registration for the unified schema manager.
+            Singleton per <see cref="T:TheTechIdea.Beep.Editor.IDMEEditor"/> — holds only a reference to the editor + a snapshot store.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceSchemaExtensions.AddBeepSchemaManager(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/> as a singleton in the service collection.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Services.BeepServiceWebExtensions">
             <summary>
             ASP.NET Core / server-side registration helpers. They lock the
@@ -52374,7 +52731,7 @@
         <member name="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasourceWithInspection(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Same as <see cref="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasource(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> but also returns a per-entity
-            <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>
+            <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaDriftReport"/>
             describing the structural differences between each .NET entity type and the
             live database table BEFORE the migration was applied.
             </summary>
@@ -52390,7 +52747,7 @@
             <summary>
             Result of <see cref="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasourceWithInspection(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>.
             Carries both the legacy <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> (for backward compatibility) and the
-            per-entity <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>s
+            per-entity <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaDriftReport"/>s
             captured before the migration was applied.
             </summary>
         </member>

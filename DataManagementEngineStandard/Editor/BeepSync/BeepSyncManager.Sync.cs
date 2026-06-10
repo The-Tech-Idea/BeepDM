@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Common.Retry;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Helpers;
 using TheTechIdea.Beep.Editor.Importing;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Editor.Importing.ErrorStore;
 using TheTechIdea.Beep.Editor.Importing.History;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
@@ -31,6 +33,38 @@ namespace TheTechIdea.Beep.Editor
             {
                 if (schema != null) { schema.SyncStatus = "Failed"; schema.SyncStatusMessage = validation.Message ?? "Schema validation failed."; }
                 return validation;
+            }
+
+            // Strict destination-acceptance preflight via the schema manager.
+            // Catches "destination doesn't have the column" before the import starts.
+            // Runs after structural validation and before the schema-governance preflight.
+            try
+            {
+                var schemaPre = await SchemaManager.RunPreflightAsync(new SchemaRequest
+                {
+                    SourceDataSourceName         = schema.SourceDataSourceName,
+                    SourceEntityName             = schema.SourceEntityName,
+                    DestinationDataSourceName    = schema.DestinationDataSourceName,
+                    DestinationEntityName        = schema.DestinationEntityName,
+                    AddMissingColumns            = false,   // BeepSync is strict; fail fast
+                    CreateDestinationIfNotExists = false
+                }, msg =>
+                {
+                    _editor.AddLogMessage("BeepSync", $"Schema preflight: {msg}", DateTime.Now, -1, "", Errors.Ok);
+                }, token);
+
+                if (schemaPre?.Status?.Flag == Errors.Failed)
+                {
+                    schema.SyncStatus = "Failed";
+                    schema.SyncStatusMessage = "Schema preflight failed: " + schemaPre.Status.Message;
+                    return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
+                }
+            }
+            catch (Exception preEx)
+            {
+                // Preflight failure is not a sync-killer; log and continue.
+                _editor.AddLogMessage("BeepSync",
+                    $"Schema preflight threw: {preEx.Message}", DateTime.Now, -1, "", Errors.Failed);
             }
 
             // Preflight gate
@@ -97,13 +131,53 @@ namespace TheTechIdea.Beep.Editor
 
             IErrorsInfo lastResult = new ErrorsInfo { Flag = Errors.Failed, Message = "No attempts made." };
 
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                if (token.IsCancellationRequested) break;
+            // Closure-captured state used by BeforeAttempt (in-progress checkpoint) and
+            // OnGiveUp (failure bookkeeping). The pipeline never sees these directly —
+            // they're internal to BeepSync's per-attempt bookkeeping.
+            string? lastCategory = null;
+            string? lastAction   = null;
 
-                lastResult = await ErrorHandlingHelper.ExecuteWithErrorHandlingAsync(async () =>
+            var retryResult = await RetryPipeline.ExecuteAsync(new RetryPlan<IErrorsInfo>
+            {
+                MaxAttempts = maxAttempts,
+                LoggerTag   = "BeepSync",
+
+                Backoff = attempt => TimeSpan.FromMilliseconds(ComputeBackoffMs(rp, baseDelay, attempt)),
+
+                Classify = ctx =>
                 {
-                    var cdcCtx = BuildCdcFilterContext(schema, token);
+                    // Map the previous attempt's result to a decision.
+                    if (ctx.LastResult?.Flag == Errors.Ok)
+                        return RetryDecision.Succeed;
+
+                    var (category, action) = TryClassifyError(schema, ctx.FailureMessage, ctx.Attempt);
+                    bool isNonRetryable = rp?.NonRetryableCategories?.Contains(category, StringComparer.OrdinalIgnoreCase) == true
+                                          || string.Equals(action, "Abort", StringComparison.OrdinalIgnoreCase);
+                    if (isNonRetryable)
+                    {
+                        lastCategory = category;
+                        lastAction   = action;
+                        return RetryDecision.GiveUp;
+                    }
+                    lastCategory = category;
+                    lastAction   = action;
+                    return RetryDecision.Retry;
+                },
+
+                BeforeAttempt = async (ctx, tok) =>
+                {
+                    // Skip on attempt 1: nothing to save yet.
+                    if (ctx.Attempt == 1) return;
+                    int delayMs = ComputeBackoffMs(rp, baseDelay, ctx.Attempt);
+                    _editor.AddLogMessage("BeepSync",
+                        $"Retry {ctx.Attempt}/{maxAttempts} for '{schema.Id}'. Cat='{lastCategory}' Action='{lastAction}'. Delay={delayMs}ms.",
+                        DateTime.Now, -1, "", Errors.Ok);
+                    await SaveInProgressCheckpointAsync(schema, rp, checkpoint, ctx.Attempt, lastCategory ?? "Transient");
+                },
+
+                Run = async (ctx, tok) =>
+                {
+                    var cdcCtx = BuildCdcFilterContext(schema, tok);
                     var config = SyncSchemaTranslator.ToImportConfiguration(schema, errorStore, historyStore);
 
                     if (cdcCtx?.ResolvedFilters?.Count > 0)
@@ -114,7 +188,7 @@ namespace TheTechIdea.Beep.Editor
 
                     var importProgress = CreateProgressAdapter(progress);
                     using var importMgr = new DataImportManager(_editor);
-                    var result = await importMgr.RunImportAsync(config, importProgress, token);
+                    var result = await importMgr.RunImportAsync(config, importProgress, tok);
 
                     if (result.Flag == Errors.Failed)
                     {
@@ -135,8 +209,8 @@ namespace TheTechIdea.Beep.Editor
                             return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
                         }
 
-                        var reverseConfig  = SyncSchemaTranslator.ToReverseImportConfiguration(schema, errorStore, historyStore);
-                        var reverseResult  = await importMgr.RunImportAsync(reverseConfig, importProgress, token);
+                        var reverseConfig = SyncSchemaTranslator.ToReverseImportConfiguration(schema, errorStore, historyStore);
+                        var reverseResult = await importMgr.RunImportAsync(reverseConfig, importProgress, tok);
                         if (reverseResult.Flag == Errors.Failed)
                         {
                             schema.SyncStatus = "Failed";
@@ -162,39 +236,41 @@ namespace TheTechIdea.Beep.Editor
                             $"Watermark advanced to '{cdcCtx.NewWatermarkValue}'.", DateTime.Now, -1, "", Errors.Ok);
                     }
 
-                    await FinalizeCheckpointAsync(schema, rp, checkpoint, attempt);
+                    await FinalizeCheckpointAsync(schema, rp, checkpoint, ctx.Attempt);
 
                     var reconReport = BuildReconReport(schema, checkpoint, dqRejectCount,
                         dqDefaultsFillCount, dqAllFailures, dqRunAborted, runMappingScore, runMappingBand);
                     LastRunReconciliationReport     = reconReport;
                     schema.LastReconciliationReport = reconReport;
 
-                    EmitSloAndAlerts(schema, checkpoint, reconReport, dqRejectCount, attempt,
+                    EmitSloAndAlerts(schema, checkpoint, reconReport, dqRejectCount, ctx.Attempt,
                         ruleAuditCount, runMappingScore);
 
                     LogSyncRun(schema);
                     return result;
-                }, $"SyncDataAsync:{schema?.SourceEntityName}", _editor, new ErrorsInfo { Flag = Errors.Failed });
+                },
 
-                if (lastResult.Flag == Errors.Ok) break;
-
-                var (category, action) = TryClassifyError(schema, lastResult.Message, attempt);
-                bool isNonRetryable = rp?.NonRetryableCategories?.Contains(category, StringComparer.OrdinalIgnoreCase) == true
-                    || string.Equals(action, "Abort", StringComparison.OrdinalIgnoreCase);
-                if (isNonRetryable || attempt >= maxAttempts) break;
-
-                await SaveInProgressCheckpointAsync(schema, rp, checkpoint, attempt, category);
-
-                int delay = rp?.BackoffMode switch
+                OnSuccess = (ctx, result, tok) =>
                 {
-                    "Linear" => baseDelay * attempt,
-                    "Fixed"  => baseDelay,
-                    _        => baseDelay * (1 << (attempt - 1))
+                    lastResult = result;
+                    return Task.CompletedTask;
+                },
+
+                OnGiveUp = (ctx, result, decision, tok) =>
+                {
+                    lastResult = result ?? new ErrorsInfo { Flag = Errors.Failed, Message = ctx.FailureMessage ?? "Sync failed." };
+                    return Task.CompletedTask;
+                }
+            }, token);
+
+            if (lastResult.Flag != Errors.Ok && retryResult.FinalDecision != RetryDecision.Succeed)
+            {
+                // Pipeline gave up — preserve the most informative message we have.
+                lastResult = new ErrorsInfo
+                {
+                    Flag    = Errors.Failed,
+                    Message = lastResult.Message ?? retryResult.FailureMessage ?? "Sync failed."
                 };
-                _editor.AddLogMessage("BeepSync",
-                    $"Retry {attempt}/{maxAttempts} for '{schema.Id}'. Cat='{category}' Action='{action}'. Delay={delay}ms.",
-                    DateTime.Now, -1, "", Errors.Ok);
-                await Task.Delay(delay, token);
             }
 
             // Phase 7: Unsubscribe rule-audit
@@ -264,6 +340,20 @@ namespace TheTechIdea.Beep.Editor
             return null;
         }
 
+        private static int ComputeBackoffMs(RetryPolicy? rp, int baseDelay, int attempt)
+        {
+            // Single source of truth for the BeepSync backoff formula. The
+            // RetryPipeline's Backoff lambda delegates here so the actual sleep
+            // and the "Retry N/M ... Delay=Xms" log message in BeforeAttempt
+            // can never disagree.
+            return rp?.BackoffMode switch
+            {
+                "Linear" => baseDelay * attempt,
+                "Fixed"  => baseDelay,
+                _        => baseDelay * (1 << (attempt - 1))
+            };
+        }
+
         private IErrorsInfo TryCheckDqBatchThreshold(
             DataSyncSchema schema,
             int dqRejectCount,
@@ -287,7 +377,7 @@ namespace TheTechIdea.Beep.Editor
                         ["rejectCount"]   = dqRejectCount,
                         ["maxRejectRate"] = schema.DqPolicy.MaxRejectRatePercent / 100.0
                     },
-                    new RuleExecutionPolicy { MaxDepth = 10, MaxExecutionMs = 5000 });
+                    SyncRuleExecutionPolicies.DefaultSafe);
 
                 var action = outputs?.TryGetValue("action", out var ta) == true ? ta?.ToString() : null;
                 if (!string.Equals(action, "AbortRun", StringComparison.OrdinalIgnoreCase)) return null;

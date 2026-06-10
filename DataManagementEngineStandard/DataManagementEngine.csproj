@@ -50,6 +50,7 @@
     <Folder Include="Editor\BeepSync\Models\" />
     <Folder Include="Editor\ETL\Helpers\" />
     <Folder Include="Examples\" />
+    <Folder Include="Installer\" />
     <Folder Include="Resources\" />
     <Folder Include="Workflow\Models\Helpers\" />
   </ItemGroup>

@@ -51,5 +51,20 @@ Use this skill when working with `ETLEditor` and the ETL runtime.
 - [`migration`](../migration/SKILL.md)
 - [`idatasource`](../idatasource/SKILL.md)
 
+## Integration with the data-management layer
+
+ETL is the **runtime data-mover** of BeepDM. It runs after the system is initialized and uses the persisted config:
+
+| Direction | Layer | What flows |
+|---|---|---|
+| ← **configeditor** | `ConfigEditor` façade | Reads `EntityDataMap` from `EntityMappingManager` for field translation. |
+| ← **migration** | `MigrationManager` | Assumes the target schema exists. If a column is missing, ETL fails fast and reports. |
+| ← **schema** | `ISchemaManager` | `ETLEditor.TryRunImportingPreflightAsync` calls this service directly. Replaces the old "spin up a full `DataImportManager` just for preflight" pattern. |
+| ↔ **unitofwork** | `UnitofWork<T>` | ETL sinks wrap per-record writes in UoW when the target needs transactional semantics. |
+| ← **setup** | Setup Framework (Phase 6) | Setup may invoke a one-shot pipeline to load reference data on first run. |
+| ↔ **forms** | `FormsManager` | ETL produces records; Forms displays them. Forms does not trigger ETL — that's the workflow engine's job. |
+
+The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepdm-etl/SKILL.md`.
+
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for workflows, runtime controls, and operational pitfalls.

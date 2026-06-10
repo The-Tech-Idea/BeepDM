@@ -7,6 +7,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
 using TheTechIdea.Beep.Editor.Defaults;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Rules;
@@ -404,19 +405,16 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
                     var (outputs, dqResult) = ruleEngine.SolveRule(ruleKey, context, rulePolicy);
 
-                    bool passed = dqResult is bool b ? b : dqResult?.ToString() != "false";
+                    bool passed = SchemaFingerprinter.ReadBoolean(dqResult);
                     if (!passed)
                     {
                         failures.Add(new DqGateResult
                         {
                             RuleKey    = ruleKey,
                             Passed     = false,
-                            ReasonCode = outputs?.TryGetValue("reasonCode", out var rc) == true
-                                         ? rc?.ToString() ?? "DQ-FAIL" : "DQ-FAIL",
-                            FieldName  = outputs?.TryGetValue("field", out var fn) == true
-                                         ? fn?.ToString() : null,
-                            Message    = outputs?.TryGetValue("message", out var msg) == true
-                                         ? msg?.ToString() : null,
+                            ReasonCode = SchemaFingerprinter.ReadString(outputs, "reasonCode", "DQ-FAIL"),
+                            FieldName  = SchemaFingerprinter.ReadString(outputs, "field",      null!),
+                            Message    = SchemaFingerprinter.ReadString(outputs, "message",    null!),
                             EntityName = schema.DestinationEntityName,
                             EvaluatedAt = DateTime.UtcNow
                         });

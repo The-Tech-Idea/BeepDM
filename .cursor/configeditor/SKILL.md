@@ -98,5 +98,19 @@ config.SaveMappingValues("Customers", "MyDb", mapping);
 - [`beepdm`](../beepdm/SKILL.md)
 - [`migration`](../migration/SKILL.md)
 
+## Integration with the data-management layer
+
+`ConfigEditor` is the **persisted-state façade**. Every other data-management layer reads or writes through it:
+
+| Direction | Layer | What flows |
+|---|---|---|
+| ← **setup** | Setup Framework (Phase 3) | `ConnectionConfigStep` writes first-run connections through this façade. |
+| ↔ **migration** | `MigrationManager` | Reads `IsMigrationApplied(ds, name)` and calls `RecordMigration(...)` after success. |
+| ↔ **etl** | Pipeline engine | Reads `EntityDataMap` from `EntityMappingManager`; does not invent its own mapping store. |
+| → **unitofwork** | `UnitofWork<T>` | UoW operates against an already-configured datasource; it does not write to config. |
+| → **forms** | `FormsManager` | Forms read entity structure from config cache, falling back to runtime discovery. |
+
+The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepdm-configuration/SKILL.md`.
+
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for quick save/load snippets and manager-specific examples.

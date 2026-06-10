@@ -457,6 +457,15 @@ namespace TheTechIdea.Beep.SetUp
 
             lock (stateLock)
             {
+                // NOTE: Manual retry loop. NOT migrated to IRetryPipeline because the loop
+                // discriminates between three exception types with different control flow
+                // (retry on IOException, retry on UnauthorizedAccessException, return-without-
+                // throw on any other exception to "start fresh"). The classifier would have to
+                // inspect the exception type, decide retry/giveup, AND distinguish "giveup =
+                // return" from "giveup = throw" — that's not what IRetryPipeline models. The
+                // `when (attempt < StateIoRetryCount - 1)` clause on the first two catches is
+                // also load-bearing: it lets the final attempt's IOException fall through to
+                // the generic catch. Translating that into pipeline hooks would obscure it.
                 for (int attempt = 0; attempt < StateIoRetryCount; attempt++)
                 {
                     try
@@ -514,6 +523,14 @@ namespace TheTechIdea.Beep.SetUp
 
                     // Retry replace/move to tolerate short-lived sharing violations when
                     // multiple processes target the same state file concurrently.
+                    //
+                    // NOTE: Manual retry loop. NOT migrated to IRetryPipeline for the same
+                    // reason as LoadPersistedState's loop above: the `when` clauses distinguish
+                    // retry-eligible exceptions from "give up silently" cases, and the
+                    // try/finally block around it (which deletes the temp file regardless of
+                    // retry outcome) is cleaner inline than as pipeline hooks. The persist
+                    // path is best-effort, so a pipeline "giveup = rethrow" semantic would
+                    // actually change behavior here (the outer try/catch swallows throws).
                     for (int attempt = 0; attempt < StateIoRetryCount; attempt++)
                     {
                         try

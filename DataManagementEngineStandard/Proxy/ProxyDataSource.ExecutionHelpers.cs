@@ -44,6 +44,15 @@ namespace TheTechIdea.Beep.Proxy
                 var ds = GetPooledConnection(dsName);
                 if (ds == null) continue;
 
+                // NOTE: Manual retry loop. NOT migrated to IRetryPipeline because the Run body
+                // is entangled with proxy-level state: per-attempt RecordSuccess/RecordFailure
+                // (telemetry), ReturnConnection (connection pool), SafeFailover (next-candidate
+                // handoff inside the foreach), and the saturation-aware backoff override
+                // (`if (category == ProxyErrorCategory.Saturation) DelayWithBackoff(attempt * 2)`).
+                // Translating this into a RetryPlan would force the body into 50+ lines of
+                // lambdas that hide what's actually happening. The current shape is a state
+                // machine that interleaves per-candidate failover with per-attempt retry;
+                // IRetryPipeline models only the latter.
                 for (int attempt = 1; attempt <= _policy.Resilience.MaxRetries; attempt++)
                 {
                     var sw = Stopwatch.StartNew();
@@ -153,6 +162,16 @@ namespace TheTechIdea.Beep.Proxy
                 var ds = GetPooledConnection(dsName);
                 if (ds == null) continue;
 
+                // NOTE: Manual retry loop. NOT migrated to IRetryPipeline because the Run body
+                // is entangled with proxy-level state: per-attempt RecordSuccess/RecordFailure
+                // (telemetry), ReturnConnection (connection pool), and SafeFailover (next-candidate
+                // handoff inside the foreach). Translating this into a RetryPlan would force
+                // the body into 50+ lines of lambdas that hide what's actually happening. The
+                // current shape is a state machine that interleaves per-candidate failover with
+                // per-attempt retry; IRetryPipeline models only the latter.
+                // (The SYNC read-loop above has the same shape PLUS a saturation-aware backoff
+                // override — that one is not present here, but the rest of the entanglement
+                // is the same reason this loop is also not a good pipeline fit.)
                 for (int attempt = 1; attempt <= _policy.Resilience.MaxRetries; attempt++)
                 {
                     var sw = Stopwatch.StartNew();
@@ -267,6 +286,15 @@ namespace TheTechIdea.Beep.Proxy
             string dsName = writeDsName;
             T lastResult = default;
 
+            // NOTE: Manual retry loop. NOT migrated to IRetryPipeline because the Run body
+            // is entangled with proxy-level state: per-attempt RecordSuccess/RecordFailure
+            // (telemetry), audit-sink writes, and an IdempotentWrite-specific classifier
+            // (`safety == IdempotentWrite && IsRetryEligible(category) && attempt < maxAttempts`).
+            // The classifier's safety check makes a clean translation into a RetryPlan
+            // awkward — it depends on the surrounding `safety` parameter, not on the
+            // operation's return value. The current shape is a state machine that owns
+            // the audit/telemetry concerns; IRetryPipeline would have to absorb them
+            // into lambdas that hide the intent.
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 var sw = Stopwatch.StartNew();

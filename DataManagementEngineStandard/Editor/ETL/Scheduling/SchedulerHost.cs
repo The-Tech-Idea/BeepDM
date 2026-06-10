@@ -481,6 +481,12 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
                         watermarkOverrides["__watermark_to"] = window.ToValue;
                 }
 
+                // NOTE: Manual retry loop. NOT migrated to IRetryPipeline because the Run body
+                // captures PipelineRunResult + a `success` flag and short-circuits with `break`
+                // (the pipeline has no equivalent mid-loop exit). Backoff also depends on the
+                // pipeline definition's RetryPolicy (BaseDelayMs × BackoffFactor^(attempt-1)),
+                // which is more legible inline than as a Backoff delegate. The current shape
+                // is closer to a state machine than a "try / classify / retry / give up" loop.
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
                     try

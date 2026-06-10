@@ -76,56 +76,13 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 var result = migration.ExecuteMigrationPlan(plan, null, null, progress);
 
-                var record = new MigrationRecord
-                {
-                    MigrationId = GenerateMigrationId(),
-                    Name = $"Migration_{datasourceName}_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                    AppliedOnUtc = DateTime.UtcNow,
-                    Success = result?.Success ?? false,
-                    Notes = result?.Message ?? string.Empty,
-                    Steps = new List<MigrationStep>()
-                };
-
-                if (plan.Operations != null)
-                {
-                    var completedBySequence = result?.Checkpoint?.Steps?
-                        .GroupBy(step => step.Sequence)
-                        .ToDictionary(group => group.Key, group => group.First())
-                        ?? new Dictionary<int, MigrationExecutionStep>();
-
-                    for (var i = 0; i < plan.Operations.Count; i++)
-                    {
-                        var op = plan.Operations[i];
-                        if (op == null)
-                            continue;
-
-                        completedBySequence.TryGetValue(i + 1, out var executionStep);
-                        var stepSucceeded = executionStep != null
-                            ? executionStep.Status == MigrationExecutionStepStatus.Completed ||
-                              executionStep.Status == MigrationExecutionStepStatus.Skipped
-                            : result?.Success == true;
-
-                        record.Steps.Add(new MigrationStep
-                        {
-                            Operation = op.Kind == MigrationPlanOperationKind.None ? "Unknown" : op.Kind.ToString(),
-                            EntityName = !string.IsNullOrWhiteSpace(op.EntityName) ? op.EntityName : op.TargetName ?? string.Empty,
-                            ColumnName = op.MissingColumns != null && op.MissingColumns.Count > 0
-                                ? string.Join(",", op.MissingColumns)
-                                : string.Empty,
-                            Success = stepSucceeded,
-                            Message = executionStep?.Message ?? op.Note ?? string.Empty
-                        });
-                    }
-                }
-
                 var dataSourceType = DataSourceType.Unknown;
                 var conn = _editor.ConfigEditor?.DataConnections
                     ?.FirstOrDefault(c => string.Equals(c.ConnectionName, datasourceName, StringComparison.OrdinalIgnoreCase));
                 if (conn != null)
                     dataSourceType = conn.DatabaseType;
 
-                var configEditor = _editor.ConfigEditor as ConfigEditor;
-                configEditor?.AppendMigrationRecord(datasourceName, dataSourceType, record);
+                MigrationRecordWriter.WritePlanExecution(_editor, datasourceName, dataSourceType, plan, result);
 
                 _editor.AddLogMessage("MigrationTracker",
                     result?.Success == true

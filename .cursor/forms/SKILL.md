@@ -57,5 +57,19 @@ Use this skill as the top-level entry point for `FormsManager` orchestration.
 - [`forms-helper-managers`](../forms-helper-managers/SKILL.md)
 - [`forms-performance-configuration`](../forms-performance-configuration/SKILL.md)
 
+## Integration with the data-management layer
+
+`FormsManager` is the **runtime UI** of BeepDM. Every save flows down to a transactional layer; every read comes from already-configured state:
+
+| Direction | Layer | What flows |
+|---|---|---|
+| → **unitofwork** | `UnitofWork<T>` | All form saves flow through UoW. Forms does not write to the datasource directly. |
+| ← **configeditor** | `ConfigEditor` façade | Reads entity structure from config cache; falls back to `IDataSource.GetEntityStructure`. |
+| → **migration** | `MigrationManager` | Schema drift detected by Forms is reported, not auto-migrated. |
+| ← **setup** | Setup Framework | Setup is invisible; Forms is visible. After setup runs, Forms is what the user sees. |
+| ↔ **etl** | Pipeline engine | Forms displays ETL output; Forms does not trigger ETL. |
+
+The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepdm-forms/SKILL.md`.
+
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for scenarios and examples.

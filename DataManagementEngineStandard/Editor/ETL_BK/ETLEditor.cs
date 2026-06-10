@@ -17,6 +17,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Rules;
 using TheTechIdea.Beep.Editor.Importing;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Editor.Migration;
 
 namespace TheTechIdea.Beep.Editor.ETL
@@ -988,30 +989,31 @@ namespace TheTechIdea.Beep.Editor.ETL
             try
             {
                 token.ThrowIfCancellationRequested();
-                using var importManager = new DataImportManager(DMEEditor);
-                var config = importManager.CreateImportConfiguration(
-                    step.SourceDataSourceEntityName ?? step.SourceEntityName,
-                    step.SourceDataSourceName,
-                    step.DestinationEntityName,
-                    step.DestinationDataSourceName);
-                config.SourceEntityName = step.SourceDataSourceEntityName ?? step.SourceEntityName;
-                config.DestEntityName = step.DestinationEntityName;
-                config.SourceDataSourceName = step.SourceDataSourceName;
-                config.DestDataSourceName = step.DestinationDataSourceName;
-                config.CreateDestinationIfNotExists = true;
-                config.AddMissingColumns = true;
+                // Use the dedicated schema manager directly — no need to
+                // spin up a full DataImportManager just to run a preflight.
+                var schemaService = new SchemaManager(DMEEditor);
+                var request = new SchemaRequest
+                {
+                    SourceDataSourceName         = step.SourceDataSourceName,
+                    SourceEntityName             = step.SourceDataSourceEntityName ?? step.SourceEntityName,
+                    DestinationDataSourceName    = step.DestinationDataSourceName,
+                    DestinationEntityName        = step.DestinationEntityName,
+                    CreateDestinationIfNotExists = true,
+                    AddMissingColumns            = true
+                };
 
-                var preflight = await importManager.RunMigrationPreflightAsync(
-                    config,
+                var preflight = await schemaService.RunPreflightAsync(
+                    request,
                     msg =>
                     {
-                        LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Importing preflight: {msg}" });
+                        LoadDataLogs.Add(new LoadDataLogResult { InputLine = $"Schema preflight: {msg}" });
                         progress?.Report(new PassedArgs { EventType = "PreflightInfo", Messege = msg });
-                    });
+                    },
+                    token);
 
-                if (preflight?.Flag == Errors.Failed)
+                if (preflight?.Status?.Flag == Errors.Failed)
                 {
-                    return FailPreflight($"Importing preflight failed for entity '{step.DestinationEntityName}': {preflight.Message}", progress);
+                    return FailPreflight($"Schema preflight failed for entity '{step.DestinationEntityName}': {preflight.Status.Message}", progress);
                 }
             }
             catch (OperationCanceledException)

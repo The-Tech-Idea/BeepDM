@@ -8,6 +8,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Migration;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Utilities;
 
@@ -166,7 +167,7 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
 
         /// <summary>
         /// Same as <see cref="ApplySchemaToDatasource"/> but also returns a per-entity
-        /// <see cref="TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>
+        /// <see cref="TheTechIdea.Beep.Editor.Schema.SchemaDriftReport"/>
         /// describing the structural differences between each .NET entity type and the
         /// live database table BEFORE the migration was applied.
         /// </summary>
@@ -210,8 +211,8 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
                 }
 
                 // ── NEW: schema diff BEFORE migration (compares .NET class to live DB table)
-                var inspector = new SchemaInspector(_editor);
-                result.SchemaDrift = await inspector.InspectManyAsync(typesList, ds);
+                var schema = new SchemaManager(_editor);
+                result.SchemaDrift = await schema.InspectManyAsync(typesList, ds);
                 _editor.AddLogMessage("DatasourceMgr",
                     $"Schema drift report: {result.SchemaDrift.Count} entities inspected before migration",
                     DateTime.Now, 0, null, Errors.Ok);
@@ -264,70 +265,40 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
         /// describing the differences between the supplied .NET entity types and the
         /// live database tables.
         /// </summary>
-        public async Task<Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport>> InspectSchemaAsync(
+        public async Task<Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>> InspectSchemaAsync(
             string datasourceName,
             IEnumerable<Type> entityTypes,
             CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(datasourceName))
-                return new Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport>();
-            if (entityTypes == null) return new Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport>();
+                return new Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>();
+            if (entityTypes == null) return new Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>();
 
             var ds = _editor.GetDataSource(datasourceName);
-            if (ds == null) return new Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport>();
+            if (ds == null) return new Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>();
 
             var connState = await DataSourceLifecycleHelper.OpenWithRetryAsync(ds);
             if (connState != ConnectionState.Open)
-                return new Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport>();
+                return new Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>();
 
-            var inspector = new SchemaInspector(_editor);
-            return await inspector.InspectManyAsync(entityTypes, ds, token).ConfigureAwait(false);
+            var schema = new SchemaManager(_editor);
+            return await schema.InspectManyAsync(entityTypes, ds, token).ConfigureAwait(false);
         }
 
         private void AppendSchemaToHistory(string datasourceName, IDataSource ds, MigrationExecutionResult result, MigrationPlanArtifact plan)
         {
-            try
-            {
-                var configEditor = _editor.ConfigEditor as ConfigEditor;
-                if (configEditor == null) return;
-
-                var record = new MigrationRecord
-                {
-                    MigrationId = Guid.NewGuid().ToString("N")[..12],
-                    Name = $"Schema_{datasourceName}_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                    AppliedOnUtc = DateTime.UtcNow,
-                    Success = result?.Success ?? false,
-                    Notes = result?.Message ?? string.Empty,
-                    Steps = new List<MigrationStep>()
-                };
-
-                if (plan?.Operations != null)
-                {
-                    var completedBySequence = result?.Checkpoint?.Steps?
-                        .GroupBy(step => step.Sequence)
-                        .ToDictionary(group => group.Key, group => group.First())
-                        ?? new Dictionary<int, MigrationExecutionStep>();
-
-                    for (var i = 0; i < plan.Operations.Count; i++)
-                    {
-                        var op = plan.Operations[i];
-                        if (op == null) continue;
-
-                        completedBySequence.TryGetValue(i + 1, out var execStep);
-                        record.Steps.Add(new MigrationStep
-                        {
-                            Operation = op.Kind.ToString(),
-                            EntityName = op.EntityName ?? op.TargetName ?? string.Empty,
-                            Success = execStep != null
-                                ? execStep.Status == MigrationExecutionStepStatus.Completed
-                                : result?.Success == true
-                        });
-                    }
-                }
-
-                configEditor.AppendMigrationRecord(datasourceName, ds?.DatasourceType ?? DataSourceType.Unknown, record);
-            }
-            catch { }
+            // Delegated to MigrationRecordWriter.WritePlanExecution. Slight behavior changes:
+            // (1) persistence failures are now logged at Warning level instead of silently
+            //     swallowed (improvement — history-persistence errors should be visible);
+            // (2) the persisted MigrationStep for each operation also carries ColumnName
+            //     and Message (additive — populated when present, empty otherwise).
+            MigrationRecordWriter.WritePlanExecution(
+                _editor,
+                datasourceName,
+                ds?.DatasourceType ?? DataSourceType.Unknown,
+                plan,
+                result,
+                namePrefix: "Schema");
         }
 
         public void SaveConfiguration()
@@ -359,14 +330,14 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
     /// <summary>
     /// Result of <see cref="DatasourceManagementService.ApplySchemaToDatasourceWithInspection"/>.
     /// Carries both the legacy <see cref="IErrorsInfo"/> (for backward compatibility) and the
-    /// per-entity <see cref="TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>s
+    /// per-entity <see cref="TheTechIdea.Beep.Editor.Schema.SchemaDriftReport"/>s
     /// captured before the migration was applied.
     /// </summary>
     public class SchemaApplyResult
     {
         public string DatasourceName { get; set; } = string.Empty;
         public IErrorsInfo MigrationResult { get; set; } = new ErrorsInfo { Flag = Errors.Ok };
-        public Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport> SchemaDrift { get; set; }
-            = new Dictionary<string, TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport> SchemaDrift { get; set; }
+            = new Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>(StringComparer.OrdinalIgnoreCase);
     }
 }

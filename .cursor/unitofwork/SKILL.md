@@ -246,5 +246,19 @@ var result = await wrapper.CommitAsync();
 - [`idatasource`](../idatasource/SKILL.md)
 - [`migration`](../migration/SKILL.md)
 
+## Integration with the data-management layer
+
+`UnitofWork<T>` is the **transactional CRUD API** of BeepDM. It sits in the middle of the data-management layer:
+
+| Direction | Layer | What flows |
+|---|---|---|
+| ← **forms** | `FormsManager` | Every form save flows through UoW. UoW is the transactional back-end; Forms is the UX. |
+| ← **etl** | Pipeline engine | ETL sinks wrap per-record writes in UoW when the target needs a transaction. |
+| ← **configeditor** | `ConfigEditor` façade | UoW reads `EntityStructure` (from config cache or runtime discovery). |
+| ← **migration** | `MigrationManager` | UoW assumes the schema already exists; missing columns surface as errors. |
+| ← **setup** | Setup Framework | After Setup finishes, UoW is the runtime API the app uses for CRUD. |
+
+The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepdm-unitofwork/SKILL.md`.
+
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for method-level examples and OBL passthrough patterns.

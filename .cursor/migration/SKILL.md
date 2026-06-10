@@ -178,5 +178,20 @@ if (!execute.Success)
 - [`idatasource`](../idatasource/SKILL.md)
 - [`configeditor`](../configeditor/SKILL.md)
 
+## Integration with the data-management layer
+
+`MigrationManager` does not run in isolation. Treat it as one node in a chain of responsibilities:
+
+| Direction | Layer | What flows |
+|---|---|---|
+| ← **setup** | Setup Framework (Phase 4, `SchemaSetupStep`) | First-run schema creation. Setup composes migration; it does not duplicate it. |
+| ↔ **configeditor** | `ConfigEditor.MigrationHistoryManager` | `IsMigrationApplied(ds, name)` gates re-runs; `RecordMigration(...)` records success. The persisted history is the source of truth. |
+| ↔ **schema** | `ISchemaManager` | **Distinct service**: `MigrationManager` does DDL on a single datasource; `ISchemaManager` does cross-datasource preflight + sync-draft. They are different jobs. The preflight service may surface the need to run `MigrationManager` when destination columns are missing. |
+| → **etl** | ETL pipelines | Pipelines assume schema exists. If a target entity is missing, ETL fails fast and reports back to migration. |
+| ← **unitofwork** | `UnitofWork<T>` | UoW asserts the entity exists. UoW does not migrate; migration is upstream. |
+| ← **forms** | `FormsManager` | Forms bind to migrated entities. Schema drift detected by Forms is reported, not auto-migrated. |
+
+The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepdm-migration/SKILL.md`.
+
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for API-level call patterns by lifecycle stage.

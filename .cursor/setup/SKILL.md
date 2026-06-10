@@ -180,3 +180,17 @@ Use [`reference.md`](./reference.md) for complete examples and end-to-end scenar
 - [Setup Framework HTML Help](../../Help/setup-framework.html)
 - [AssemblyHandler Skills](../shared-context-assemblyhandler/SKILL.md) — Driver loading
 - [Migration Manager](../migration/SKILL.md) — Schema application
+
+## Integration with the data-management layer
+
+The Setup Framework is the **first-run orchestrator** for BeepDM apps. It sequences the steps and then hands off to the long-lived layers:
+
+| Direction | Layer | What flows |
+|---|---|---|
+| → **migration** | `MigrationManager` (via `SchemaSetupStep`) | Phase 4 delegates schema creation. Setup does not embed migration logic. |
+| ↔ **configeditor** | `ConfigEditor` façade | `ConnectionConfigStep` reads/writes connections through the façade — never ad-hoc JSON. |
+| → **etl** | Pipeline engine | Phase 6 (seeding) may invoke a one-shot pipeline for non-trivial initial loads. |
+| → **unitofwork** | `UnitofWork<T>` | Setup guarantees schema + seed; UoW is what runs CRUD against that schema at runtime. |
+| → **forms** | `FormsManager` | After setup completes, Forms is the visible UI. Forms uses the same `IDataSource` that setup configured. |
+
+The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepdm-setup/SKILL.md`.

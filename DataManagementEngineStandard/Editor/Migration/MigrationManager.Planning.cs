@@ -442,39 +442,15 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private void TryTrackMigrationPlan(MigrationPlanArtifact plan, string operationName)
         {
-            try
-            {
-                var configEditor = _editor?.ConfigEditor as ConfigEditor;
-                if (configEditor == null)
-                    return;
-
-                var record = new MigrationRecord
-                {
-                    MigrationId = plan.PlanId,
-                    Name = operationName,
-                    AppliedOnUtc = DateTime.UtcNow,
-                    Success = !plan.ReadinessIssues.Any(issue => issue.Severity == MigrationIssueSeverity.Error),
-                    Notes = $"planHash={plan.PlanHash}; lifecycle={plan.LifecycleState}; pending={plan.PendingOperationCount}; usesDiscovery={plan.UsesDiscovery}",
-                    Steps = plan.Operations.Select(operation => new MigrationStep
-                    {
-                        Operation = operation.Kind.ToString(),
-                        EntityName = operation.EntityName,
-                        ColumnName = operation.MissingColumns.Count > 0 ? string.Join(",", operation.MissingColumns) : string.Empty,
-                        Sql = string.Empty,
-                        Success = operation.Kind != MigrationPlanOperationKind.Error,
-                        Message = operation.Note
-                    }).ToList()
-                };
-
-                configEditor.AppendMigrationRecord(
-                    plan.DataSourceName ?? string.Empty,
-                    plan.DataSourceType,
-                    record);
-            }
-            catch (Exception ex)
-            {
-                _editor?.AddLogMessage("Beep", $"Failed to track migration plan artifact: {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
-            }
+            // Delegated to MigrationRecordWriter.WritePlanArtifact. The writer
+            // owns the MigrationRecord shape and the try/catch-with-LogMessage
+            // pattern. Behavior is identical to the inlined version.
+            MigrationRecordWriter.WritePlanArtifact(
+                _editor,
+                plan,
+                operationName,
+                plan.DataSourceName ?? string.Empty,
+                plan.DataSourceType);
         }
 
         // ────────────────────────────────────────────────────────────────────────────────

@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace TheTechIdea.Beep.Editor.Importing.Schema
+namespace TheTechIdea.Beep.Editor.Schema
 {
     /// <summary>
     /// Compares two <see cref="SchemaSnapshot"/> instances and produces a <see cref="SchemaDriftReport"/>.
     /// </summary>
     public static class SchemaComparator
     {
-        /// <summary>
-        /// Compares <paramref name="baseline"/> against <paramref name="current"/> and returns
-        /// a report describing all structural changes.
-        /// </summary>
         public static SchemaDriftReport Compare(SchemaSnapshot baseline, SchemaSnapshot current)
         {
             ArgumentNullException.ThrowIfNull(baseline);
@@ -23,21 +17,17 @@ namespace TheTechIdea.Beep.Editor.Importing.Schema
             var baseMap = BuildMap(baseline.Fields);
             var currMap = BuildMap(current.Fields);
 
-            // Added fields
             foreach (var (name, field) in currMap)
                 if (!baseMap.ContainsKey(name))
                     report.AddedFields.Add(field);
 
-            // Removed fields
             foreach (var (name, field) in baseMap)
                 if (!currMap.ContainsKey(name))
                     report.RemovedFields.Add(field);
 
-            // Altered fields
             foreach (var (name, baseField) in baseMap)
             {
                 if (!currMap.TryGetValue(name, out var currField)) continue;
-
                 var drift = Diff(baseField, currField);
                 if (drift != null)
                     report.AlteredFields.Add(drift);
@@ -46,7 +36,6 @@ namespace TheTechIdea.Beep.Editor.Importing.Schema
             return report;
         }
 
-        // ------------------------------------------------------------------
         private static Dictionary<string, SnapshotField> BuildMap(IEnumerable<SnapshotField> fields)
         {
             var map = new Dictionary<string, SnapshotField>(StringComparer.OrdinalIgnoreCase);

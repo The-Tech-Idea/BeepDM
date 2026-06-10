@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Common.Retry;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Core;
 using TheTechIdea.Beep.DataBase;
@@ -43,6 +45,17 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         public MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null)
+        {
+            return ExecuteMigrationPlanAsync(plan, policy, executionToken, progress, CancellationToken.None)
+                .GetAwaiter().GetResult();
+        }
+
+        public async Task<MigrationExecutionResult> ExecuteMigrationPlanAsync(
+            MigrationPlanArtifact plan,
+            MigrationExecutionPolicy policy = null,
+            string executionToken = null,
+            IProgress<PassedArgs> progress = null,
+            CancellationToken token = default)
         {
             var result = new MigrationExecutionResult();
             policy ??= new MigrationExecutionPolicy();
@@ -135,6 +148,11 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             foreach (var step in checkpoint.Steps.OrderBy(item => item.Sequence))
             {
+                // Plan-level cancellation: checked between steps, not within a step's
+                // retry sequence. Cancellation mid-step is the caller's responsibility
+                // (the pipeline already honors a token via its own per-step Run).
+                token.ThrowIfCancellationRequested();
+
                 if (step.Status == MigrationExecutionStepStatus.Completed || step.Status == MigrationExecutionStepStatus.Skipped)
                     continue;
 
@@ -166,70 +184,127 @@ namespace TheTechIdea.Beep.Editor.Migration
                 }
 
                 var stepWatch = Stopwatch.StartNew();
-                var completed = false;
-                while (!completed)
+
+                // ── Per-step retry, delegated to the shared pipeline ─────────────
+                //
+                // The pipeline runs the inner `while (!completed)` loop for us.
+                // On GiveUp, the inner-loop state is captured into closure
+                // variables (giveUpDecision, giveUpMessage, giveUpRequiresIntervention)
+                // so the OUTER code can decide whether to abort the whole plan
+                // (policy.AbortOnStepFailure == true) or continue to the next step.
+                //
+                // The plan-level `token` is passed to the pipeline, so cancelling the
+                // outer token mid-retry will cancel the per-step Backoff sleep (and
+                // any cancellable Run that respects the token).
+                string? giveUpDecision   = null;
+                string? giveUpMessage    = null;
+                bool giveUpRequiresIntervention = false;
+                bool gaveUp = false;
+
+                var stepResult = await RetryPipeline.Instance.ExecuteAsync(new RetryPlan<IErrorsInfo>
                 {
-                    step.AttemptCount++;
-                    step.Status = MigrationExecutionStepStatus.Running;
-                    PersistExecutionCheckpoint(checkpoint);
+                    MaxAttempts = Math.Max(1, policy.MaxTransientRetries + 1),
+                    LoggerTag   = "Migration",
 
-                    var stepResult = ExecuteStep(step);
-                    var decision = ClassifyFailure(stepResult?.Message, policy);
-                    var ok = IsStepSuccess(stepResult);
+                    Backoff = _ => TimeSpan.FromMilliseconds(policy.RetryDelayMilliseconds),
 
-                    if (ok)
+                    Classify = ctx =>
                     {
-                        completed = true;
+                        if (ctx.LastResult == null) return RetryDecision.Retry;     // exception path — retry
+                        if (IsStepSuccess(ctx.LastResult)) return RetryDecision.Succeed;
+                        var decision = ClassifyFailure(ctx.LastResult.Message, policy);
+                        // MaxTransientRetries is on the policy; MaxAttempts already
+                        // encodes it (1 + MaxTransientRetries) in the plan above.
+                        return decision == "transient" ? RetryDecision.Retry : RetryDecision.GiveUp;
+                    },
+
+                    BeforeAttempt = (ctx, tok) =>
+                    {
+                        step.AttemptCount = ctx.Attempt;
+                        step.Status = MigrationExecutionStepStatus.Running;
+                        PersistExecutionCheckpoint(checkpoint);
+                        return Task.CompletedTask;
+                    },
+
+                    Run = (ctx, tok) =>
+                    {
+                        // ExecuteStep is synchronous in the current code; preserve that
+                        // by wrapping the result in Task.FromResult.
+                        return Task.FromResult(ExecuteStep(step));
+                    },
+
+                    OnSuccess = (ctx, result, tok) =>
+                    {
                         step.Status = MigrationExecutionStepStatus.Completed;
-                        step.Message = stepResult?.Message ?? "Completed.";
+                        step.Message = result?.Message ?? "Completed.";
                         checkpoint.LastCompletedStep = step.Sequence;
                         checkpoint.HasFailed = false;
                         checkpoint.FailureCategory = string.Empty;
                         checkpoint.FailureReason = string.Empty;
-                        progress?.Report(new PassedArgs { Messege = $"Migration step {step.Sequence} completed: {step.EntityName} [{step.OperationKind}]" });
-                    }
-                    else if (decision == "transient" && step.AttemptCount <= Math.Max(0, policy.MaxTransientRetries))
+                        progress?.Report(new PassedArgs
+                        {
+                            Messege = $"Migration step {step.Sequence} completed: {step.EntityName} [{step.OperationKind}]"
+                        });
+                        return Task.CompletedTask;
+                    },
+
+                    OnGiveUp = (ctx, result, decision, tok) =>
                     {
-                        step.Message = $"Transient failure attempt {step.AttemptCount}: {stepResult?.Message}";
-                        progress?.Report(new PassedArgs { Messege = $"Retrying step {step.Sequence} after transient failure: {stepResult?.Message}" });
-                        RecordRetryCount();
-                        RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-step-retry", MigrationDiagnosticSeverity.Warning, step.EntityName, step.Message, "Transient failure detected; retry policy applied.");
-                        if (policy.RetryDelayMilliseconds > 0)
-                            Thread.Sleep(policy.RetryDelayMilliseconds);
-                    }
-                    else
-                    {
+                        var lastMessage = result?.Message ?? ctx.FailureMessage ?? "Failed.";
+                        giveUpDecision = ClassifyFailure(lastMessage, policy);
+                        giveUpMessage  = lastMessage;
+                        giveUpRequiresIntervention = giveUpDecision == "hard" && policy.RequireOperatorInterventionOnHardFail;
                         step.Status = MigrationExecutionStepStatus.Failed;
-                        step.Message = stepResult?.Message ?? "Failed.";
+                        step.Message = lastMessage;
                         RecordOperationKindCompleted(step.OperationKind, success: false);
                         checkpoint.HasFailed = true;
-                        checkpoint.FailureCategory = decision == "hard" ? "HardFail" : "Failure";
+                        checkpoint.FailureCategory = giveUpDecision == "hard" ? "HardFail" : "Failure";
                         checkpoint.FailureReason = step.Message;
                         checkpoint.UpdatedOnUtc = DateTime.UtcNow;
                         step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
                         checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
                         PersistExecutionCheckpoint(checkpoint);
 
-                        result.Success = false;
-                        result.RequiresOperatorIntervention = decision == "hard" && policy.RequireOperatorInterventionOnHardFail;
-                        var outcomes = DescribeFailureRollbackOutcomes(plan, step);
-                        result.RollbackOutcome = outcomes.rollbackOutcome;
-                        result.CompensationOutcome = outcomes.compensationOutcome;
                         RecordDiagnostic(
                             checkpoint.ExecutionToken,
                             checkpoint.CorrelationId,
                             "exec-step-failed",
-                            result.RequiresOperatorIntervention ? MigrationDiagnosticSeverity.Critical : MigrationDiagnosticSeverity.Error,
+                            giveUpRequiresIntervention ? MigrationDiagnosticSeverity.Critical : MigrationDiagnosticSeverity.Error,
                             step.EntityName,
                             step.Message,
-                            result.CompensationOutcome);
+                            string.Empty /* compensation outcome filled below */);
+                        gaveUp = true;
+                        return Task.CompletedTask;
+                    }
+                }, token /* per-step retry honors plan-level cancellation */);
+
+                if (gaveUp)
+                {
+                    // The pipeline surfaced a GiveUp. Decide whether to abort the
+                    // whole plan (default behavior, preserved exactly) or continue
+                    // to the next step (new behavior, opt-in via policy).
+                    if (policy.AbortOnStepFailure)
+                    {
+                        // Preserve original semantics: build the failure result
+                        // and return. Same shape as the inlined code used to produce.
+                        result.Success = false;
+                        result.RequiresOperatorIntervention = giveUpRequiresIntervention;
+                        var outcomes = DescribeFailureRollbackOutcomes(plan, step);
+                        result.RollbackOutcome      = outcomes.rollbackOutcome;
+                        result.CompensationOutcome  = outcomes.compensationOutcome;
                         result.Message = result.RequiresOperatorIntervention
                             ? $"Step {step.Sequence} failed and requires operator intervention. {policy.OperatorInterventionHint} {result.RollbackOutcome} {result.CompensationOutcome}"
-                            : $"Step {step.Sequence} failed: {step.Message}. {result.RollbackOutcome} {result.CompensationOutcome}";
+                            : $"Step {step.Sequence} failed: {giveUpMessage}. {result.RollbackOutcome} {result.CompensationOutcome}";
                         result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
+                        result.FailedSteps.Add(step.Sequence);
                         RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
                         return result;
                     }
+
+                    // policy.AbortOnStepFailure == false: continue to the next step.
+                    // The failure is recorded in checkpoint.Steps[].Status = Failed
+                    // and in result.FailedSteps; the final result will reflect it.
+                    result.FailedSteps.Add(step.Sequence);
                 }
 
                 step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
@@ -561,43 +636,14 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private void PersistExecutionCheckpoint(MigrationExecutionCheckpoint checkpoint)
         {
-            try
-            {
-                checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-                ExecutionCheckpoints[checkpoint.ExecutionToken] = checkpoint;
-
-                var configEditor = _editor?.ConfigEditor as ConfigEditor;
-                if (configEditor == null)
-                    return;
-
-                var snapshot = JsonSerializer.Serialize(checkpoint);
-                var record = new MigrationRecord
-                {
-                    MigrationId = checkpoint.ExecutionToken,
-                    Name = "ExecuteMigrationPlan.Checkpoint",
-                    AppliedOnUtc = DateTime.UtcNow,
-                    Success = checkpoint.IsCompleted && !checkpoint.HasFailed,
-                    Notes = snapshot,
-                    Steps = checkpoint.Steps.Select(step => new MigrationStep
-                    {
-                        Operation = step.OperationKind.ToString(),
-                        EntityName = step.EntityName,
-                        ColumnName = step.MissingColumns.Count > 0 ? string.Join(",", step.MissingColumns) : string.Empty,
-                        Success = step.Status == MigrationExecutionStepStatus.Completed || step.Status == MigrationExecutionStepStatus.Skipped,
-                        Message = $"{step.Status} | attempts={step.AttemptCount} | elapsedMs={step.ElapsedMilliseconds} | {step.Message}",
-                        Sql = string.Empty
-                    }).ToList()
-                };
-
-                configEditor.AppendMigrationRecord(
-                    MigrateDataSource?.DatasourceName ?? string.Empty,
-                    MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown,
-                    record);
-            }
-            catch (Exception ex)
-            {
-                _editor?.AddLogMessage("Beep", $"Failed to persist migration checkpoint: {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
-            }
+            if (checkpoint == null) return;
+            checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+            ExecutionCheckpoints[checkpoint.ExecutionToken] = checkpoint;
+            MigrationRecordWriter.WriteExecutionSnapshot(
+                _editor,
+                checkpoint,
+                MigrateDataSource?.DatasourceName ?? string.Empty,
+                MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown);
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor
@@ -33,9 +34,9 @@ namespace TheTechIdea.Beep.Editor
                             ["schemaId"]     = schema.Id
                         });
 
-                    var cat    = outputs?.TryGetValue("category", out var c) == true ? c?.ToString() : "Transient";
-                    var action = outputs?.TryGetValue("action",   out var a) == true ? a?.ToString() : "Retry";
-                    return (cat ?? "Transient", action ?? "Retry");
+                    var cat    = SchemaFingerprinter.ReadString(outputs, "category", "Transient");
+                    var action = SchemaFingerprinter.ReadString(outputs, "action",   "Retry");
+                    return (cat, action);
                 }
                 catch (Exception ex)
                 {

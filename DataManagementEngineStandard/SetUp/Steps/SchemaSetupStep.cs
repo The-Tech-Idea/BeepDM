@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor.Migration;
+using TheTechIdea.Beep.Editor.Schema;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -117,8 +118,8 @@ namespace TheTechIdea.Beep.SetUp.Steps
             // ── C2. NEW: Per-entity schema drift (.NET class vs live DB) ──────
             try
             {
-                var inspector = new SchemaInspector(editor);
-                var drift = inspector.InspectManyAsync(_opts.EntityTypes, ds).GetAwaiter().GetResult();
+                var schema = new SchemaManager(editor);
+                var drift = schema.InspectManyAsync(_opts.EntityTypes, ds).GetAwaiter().GetResult();
                 if (drift != null && drift.Count > 0)
                 {
                     context.Properties["SchemaDrift"] = drift;

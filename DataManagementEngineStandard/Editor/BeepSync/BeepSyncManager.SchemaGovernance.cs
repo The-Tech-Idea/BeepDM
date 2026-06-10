@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Helpers;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor
@@ -107,27 +108,7 @@ namespace TheTechIdea.Beep.Editor
             return report;
         }
 
-        private static string ComputeSchemaHash(DataSyncSchema schema)
-        {
-            try
-            {
-                var fp = $"{schema.SourceDataSourceName}|{schema.DestinationDataSourceName}" +
-                         $"|{schema.SourceEntityName}|{schema.DestinationEntityName}" +
-                         $"|{schema.SyncDirection}|{schema.SyncType}";
-
-                if (schema.MappedFields != null)
-                    fp += "|" + string.Join(",",
-                        schema.MappedFields
-                              .Select(f => $"{f.SourceField}:{f.DestinationField}")
-                              .OrderBy(x => x));
-
-                var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(fp));
-                return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-            }
-            catch
-            {
-                return Guid.NewGuid().ToString();
-            }
-        }
+        private static string ComputeSchemaHash(DataSyncSchema schema) =>
+            SchemaFingerprinter.ComputeSchemaHash(schema);
     }
 }

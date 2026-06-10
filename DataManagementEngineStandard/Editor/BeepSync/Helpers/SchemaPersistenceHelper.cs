@@ -10,6 +10,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Interfaces;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
@@ -339,30 +340,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             }
         }
 
-        private string ComputeSchemaHash(DataSyncSchema schema)
-        {
-            try
-            {
-                var fingerprint =
-                    $"{schema.SourceDataSourceName}|{schema.DestinationDataSourceName}" +
-                    $"|{schema.SourceEntityName}|{schema.DestinationEntityName}" +
-                    $"|{schema.SyncDirection}|{schema.SyncType}";
-
-                if (schema.MappedFields != null)
-                    fingerprint += "|" + string.Join(",",
-                        schema.MappedFields
-                            .Select(f => $"{f.SourceField}:{f.DestinationField}")
-                            .OrderBy(x => x));
-
-                using var sha   = SHA256.Create();
-                var bytes       = sha.ComputeHash(Encoding.UTF8.GetBytes(fingerprint));
-                return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-            }
-            catch
-            {
-                return Guid.NewGuid().ToString(); // fallback: always treat as changed
-            }
-        }
+        private static string ComputeSchemaHash(DataSyncSchema schema) =>
+            SchemaFingerprinter.ComputeSchemaHash(schema);
 
         /// <summary>
         /// Ensure the directory exists for storing schemas
