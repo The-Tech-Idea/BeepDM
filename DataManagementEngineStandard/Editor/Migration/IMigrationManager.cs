@@ -479,6 +479,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         public string RollbackOutcome { get; set; } = string.Empty;
         public string CompensationOutcome { get; set; } = string.Empty;
         public MigrationExecutionCheckpoint Checkpoint { get; set; } = new MigrationExecutionCheckpoint();
+        public int AppliedCount { get; internal set; }
     }
 
     public enum MigrationRollbackMode

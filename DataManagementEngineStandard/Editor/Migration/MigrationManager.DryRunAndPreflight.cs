@@ -244,11 +244,26 @@ namespace TheTechIdea.Beep.Editor.Migration
             var aix = plan.Operations.Any(op =>
                 op != null && (op.Kind == MigrationPlanOperationKind.CreateIndex ||
                                op.Kind == MigrationPlanOperationKind.DropIndex));
-            var currentPlan = BuildMigrationPlanForTypes(types, detectRelationships: true, applyForeignKeys: afk, applyIndexes: aix);
-            if (currentPlan == null)
-                return true;
+            var providerProfile = plan.ProviderCapabilities ??
+                BuildProviderCapabilityProfile(plan.DataSourceType, plan.DataSourceCategory);
 
-            var currentSignature = BuildOperationSignature(currentPlan.Operations);
+            var currentOperations = new List<MigrationPlanOperation>();
+            foreach (var type in types)
+            {
+                var operation = BuildPlanOperation(type, plan.DataSourceCategory, plan.DataSourceType, providerProfile);
+                currentOperations.Add(operation);
+
+                var structure = TryGetEntityStructure(type);
+                if (structure != null && !string.IsNullOrWhiteSpace(operation.EntityName))
+                    structure.EntityName = operation.EntityName;
+
+                EmitRelationalArtifactsForEntity(structure, currentOperations, afk, aix);
+            }
+
+            if (afk)
+                EnsureCreateEntityBeforeForeignKey(currentOperations);
+
+            var currentSignature = BuildOperationSignature(currentOperations);
             var existingSignature = BuildOperationSignature(plan.Operations);
             return !string.Equals(currentSignature, existingSignature, StringComparison.Ordinal);
         }

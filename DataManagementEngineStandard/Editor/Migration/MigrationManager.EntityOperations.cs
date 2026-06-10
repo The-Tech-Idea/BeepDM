@@ -995,6 +995,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(targetIndexName))
                 return ApplyIndexesForEntity(entity);
 
+            var matched = false;
             foreach (var idx in entity.Indexes)
             {
                 if (idx == null || idx.Columns == null || idx.Columns.Count == 0)
@@ -1007,6 +1008,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 if (!string.Equals(name, targetIndexName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                matched = true;
                 var options = idx.Options != null && idx.Options.Count > 0
                     ? new Dictionary<string, object>(idx.Options)
                     : null;
@@ -1019,6 +1021,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                 if (result.Flag != Errors.Ok)
                     failures.Add($"index '{name}': {result.Message}");
             }
+
+            if (!matched)
+                failures.Add($"index '{targetIndexName}' was not found on entity '{entity.EntityName}'.");
 
             return failures.Count == 0 ? null : failures;
         }
@@ -1154,11 +1159,13 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(targetForeignKeyName))
                 return ApplyForeignKeysForEntity(entity);
 
+            var matched = false;
             foreach (var fk in foreignKeys)
             {
                 if (!string.Equals(fk.ConstraintName, targetForeignKeyName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                matched = true;
                 var result = AddForeignKey(
                     entityName: entity.EntityName,
                     columnNames: fk.ColumnNames.ToArray(),
@@ -1172,6 +1179,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                     failures.Add($"FK '{fk.ConstraintName}': {result.Message}");
             }
 
+            if (!matched)
+                failures.Add($"foreign key '{targetForeignKeyName}' was not found on entity '{entity.EntityName}'.");
+
             return failures.Count == 0 ? null : failures;
         }
 
@@ -1183,7 +1193,9 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             var delimiter = GetFileDelimiter(MigrateDataSource);
             var header = string.Join(delimiter, entity.Fields?.Select(f => f.FieldName) ?? Enumerable.Empty<string>());
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+                Directory.CreateDirectory(directory);
             File.WriteAllText(filePath, header + Environment.NewLine);
             return CreateErrorsInfo(Errors.Ok, $"File created at '{filePath}'");
         }

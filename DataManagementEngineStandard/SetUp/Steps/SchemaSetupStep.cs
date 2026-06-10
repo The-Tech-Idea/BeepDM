@@ -114,6 +114,24 @@ namespace TheTechIdea.Beep.SetUp.Steps
             if (dryRun != null)
                 context.Properties["DryRunReportJson"] = JsonSerializer.Serialize(dryRun);
 
+            // ── C2. NEW: Per-entity schema drift (.NET class vs live DB) ──────
+            try
+            {
+                var inspector = new SchemaInspector(editor);
+                var drift = inspector.InspectManyAsync(_opts.EntityTypes, ds).GetAwaiter().GetResult();
+                if (drift != null && drift.Count > 0)
+                {
+                    context.Properties["SchemaDrift"] = drift;
+                    Report(progress, 26, $"Captured {drift.Count} schema drift report(s).");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Schema drift is informational only — never block on it
+                editor.Logger?.WriteLog(
+                    $"[SchemaSetupStep] Schema drift capture failed: {ex.Message}");
+            }
+
             // In DryRun mode stop here — do not modify the datasource
             if (context.Options?.DryRun == true)
                 return Ok("Dry-run complete. Schema not modified (DryRun=true).");

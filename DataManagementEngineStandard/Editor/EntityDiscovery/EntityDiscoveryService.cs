@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Migration;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.EntityDiscovery
 {
@@ -23,16 +24,6 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
             migration.RegisterAssembly(assembly);
             _editor.AddLogMessage("EntityDiscovery",
                 $"Registered assembly '{assembly.GetName().Name}' for entity discovery",
-                DateTime.Now, 0, null, Errors.Ok);
-        }
-
-        public void UnregisterAssembly(Assembly assembly)
-        {
-            if (assembly == null) return;
-            var migration = new MigrationManager(_editor);
-            migration.UnregisterAssembly(assembly);
-            _editor.AddLogMessage("EntityDiscovery",
-                $"Unregistered assembly '{assembly.GetName().Name}' from entity discovery",
                 DateTime.Now, 0, null, Errors.Ok);
         }
 

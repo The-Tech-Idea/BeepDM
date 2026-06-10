@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -22,7 +23,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(datasourceName))
                 return new MigrationHistory();
 
-            var configEditor = _editor.ConfigEditor;
+            var configEditor = _editor.ConfigEditor as ConfigEditor;
             return configEditor?.LoadMigrationHistory(datasourceName) ?? new MigrationHistory();
         }
 
@@ -30,7 +31,9 @@ namespace TheTechIdea.Beep.Editor.Migration
             string datasourceName,
             IEnumerable<Type> entityTypes,
             bool detectRelationships = true,
-            IProgress<PassedArgs> progress = null)
+            IProgress<PassedArgs> progress = null,
+            bool applyForeignKeys = false,
+            bool applyIndexes = false)
         {
             if (string.IsNullOrWhiteSpace(datasourceName))
                 return CreateError("Datasource name is required.");
@@ -47,7 +50,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 if (ds.ConnectionStatus != ConnectionState.Open)
                 {
-                    var state = ds.OpenConnection();
+                    var state = ds.Openconnection();
                     if (state != ConnectionState.Open)
                         return CreateError($"Could not open connection to '{datasourceName}'.");
                 }
@@ -57,7 +60,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                     MigrateDataSource = ds
                 };
 
-                var plan = migration.BuildMigrationPlanForTypes(typesList, detectRelationships);
+                var plan = migration.BuildMigrationPlanForTypes(
+                    typesList,
+                    detectRelationships: detectRelationships,
+                    applyForeignKeys: applyForeignKeys,
+                    applyIndexes: applyIndexes);
                 if (plan == null || plan.Operations == null || plan.Operations.Count == 0)
                 {
                     return new ErrorsInfo
@@ -81,13 +88,32 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 if (plan.Operations != null)
                 {
-                    foreach (var op in plan.Operations)
+                    var completedBySequence = result?.Checkpoint?.Steps?
+                        .GroupBy(step => step.Sequence)
+                        .ToDictionary(group => group.Key, group => group.First())
+                        ?? new Dictionary<int, MigrationExecutionStep>();
+
+                    for (var i = 0; i < plan.Operations.Count; i++)
                     {
+                        var op = plan.Operations[i];
+                        if (op == null)
+                            continue;
+
+                        completedBySequence.TryGetValue(i + 1, out var executionStep);
+                        var stepSucceeded = executionStep != null
+                            ? executionStep.Status == MigrationExecutionStepStatus.Completed ||
+                              executionStep.Status == MigrationExecutionStepStatus.Skipped
+                            : result?.Success == true;
+
                         record.Steps.Add(new MigrationStep
                         {
-                            Operation = op.Kind?.ToString() ?? op.OperationType?.ToString() ?? "Unknown",
-                            EntityName = op.EntityName ?? op.TargetName ?? string.Empty,
-                            Success = result?.Success ?? false
+                            Operation = op.Kind == MigrationPlanOperationKind.None ? "Unknown" : op.Kind.ToString(),
+                            EntityName = !string.IsNullOrWhiteSpace(op.EntityName) ? op.EntityName : op.TargetName ?? string.Empty,
+                            ColumnName = op.MissingColumns != null && op.MissingColumns.Count > 0
+                                ? string.Join(",", op.MissingColumns)
+                                : string.Empty,
+                            Success = stepSucceeded,
+                            Message = executionStep?.Message ?? op.Note ?? string.Empty
                         });
                     }
                 }
@@ -98,7 +124,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                 if (conn != null)
                     dataSourceType = conn.DatabaseType;
 
-                _editor.ConfigEditor?.AppendMigrationRecord(datasourceName, dataSourceType, record);
+                var configEditor = _editor.ConfigEditor as ConfigEditor;
+                configEditor?.AppendMigrationRecord(datasourceName, dataSourceType, record);
 
                 _editor.AddLogMessage("MigrationTracker",
                     result?.Success == true
@@ -161,13 +188,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             preview.LastMigrationId = lastMigration.MigrationId;
             preview.LastMigrationName = lastMigration.Name;
             preview.LastMigrationDate = lastMigration.AppliedOnUtc;
-            preview.PendingSteps = lastMigration.Steps?.Select(s =>
-                new UndoStepInfo
-                {
-                    Operation = s.Operation,
-                    EntityName = s.EntityName,
-                    CompensationSql = GenerateCompensationSql(s.Operation, s.EntityName)
-                }).ToList() ?? new List<UndoStepInfo>();
+            preview.PendingSteps = ResolveCompensationSteps(lastMigration);
             preview.Message = $"Ready to undo migration '{lastMigration.Name}' ({preview.PendingSteps.Count} steps).";
 
             return preview;
@@ -192,15 +213,26 @@ namespace TheTechIdea.Beep.Editor.Migration
                 {
                     try
                     {
+                        var opened = false;
                         if (ds.ConnectionStatus != ConnectionState.Open)
-                            ds.OpenConnection();
+                        {
+                            opened = OpenWithRetrySync(ds);
+                            if (!opened)
+                            {
+                                _editor.AddLogMessage("MigrationTracker",
+                                    $"Undo failed: could not open connection to '{datasourceName}'",
+                                    DateTime.Now, 0, null, Errors.Failed);
+                                return CreateError($"Could not open connection to '{datasourceName}' for undo.");
+                            }
+                        }
 
                         foreach (var step in preview.PendingSteps)
                         {
-                            if (!string.IsNullOrWhiteSpace(step.CompensationSql))
-                            {
-                                ds.ExecuteSql(step.CompensationSql);
-                            }
+                            if (string.IsNullOrWhiteSpace(step.CompensationSql) ||
+                                step.CompensationSql.StartsWith("--"))
+                                continue;
+
+                            ds.ExecuteSql(step.CompensationSql);
                         }
                     }
                     catch (Exception ex)
@@ -211,7 +243,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     }
                 }
 
-                _editor.ConfigEditor?.SaveMigrationHistory(history);
+                var configEditor = _editor.ConfigEditor as ConfigEditor;
+                configEditor?.SaveMigrationHistory(history);
                 _editor.AddLogMessage("MigrationTracker",
                     $"Undid last migration '{lastMigration.Name}' on '{datasourceName}'",
                     DateTime.Now, 0, null, Errors.Ok);
@@ -224,9 +257,130 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
+        private static bool OpenWithRetrySync(IDataSource ds)
+        {
+            const int maxRetries = 3;
+            var attempt = 0;
+            while (attempt < maxRetries)
+            {
+                try
+                {
+                    var state = ds.Openconnection();
+                    if (state == ConnectionState.Open) return true;
+                }
+                catch { }
+                attempt++;
+            }
+            return false;
+        }
+
         public bool CanUndoLastMigration(string datasourceName)
         {
             return CanUndo(datasourceName);
+        }
+
+        private List<UndoStepInfo> ResolveCompensationSteps(MigrationRecord record)
+        {
+            if (record?.Steps == null || record.Steps.Count == 0)
+                return new List<UndoStepInfo>();
+
+            var ops = new List<MigrationPlanOperation>();
+
+            for (int i = 0; i < record.Steps.Count; i++)
+            {
+                var s = record.Steps[i];
+                if (s == null) continue;
+                var kind = ParseOperationKind(s.Operation);
+                ops.Add(new MigrationPlanOperation
+                {
+                    EntityName = s.EntityName ?? string.Empty,
+                    TargetName = s.EntityName ?? string.Empty,
+                    Kind = kind,
+                    RiskLevel = kind == MigrationPlanOperationKind.CreateEntity
+                        ? MigrationPlanRiskLevel.High
+                        : MigrationPlanRiskLevel.Medium,
+                    IsDestructive = kind == MigrationPlanOperationKind.CreateEntity
+                });
+            }
+
+            if (ops.Count == 0)
+                return new List<UndoStepInfo>();
+
+            var category = DatasourceCategory.NONE;
+            DataSourceType dsType = DataSourceType.Unknown;
+            try
+            {
+                var conn = _editor.ConfigEditor?.DataConnections?
+                    .FirstOrDefault(c => string.Equals(c.ConnectionName, record.Name, StringComparison.OrdinalIgnoreCase)
+                                      || (c.ConnectionName != null && record.Name != null && c.ConnectionName.Contains(record.Name)));
+                if (conn != null)
+                {
+                    category = conn.Category;
+                    dsType = conn.DatabaseType;
+                }
+            }
+            catch { }
+
+            var plan = new MigrationPlanArtifact
+            {
+                DataSourceName = record.Name,
+                DataSourceType = dsType,
+                DataSourceCategory = category,
+                Operations = ops
+            };
+
+            var manager = new MigrationManager(_editor);
+            MigrationCompensationPlan compensation;
+            try
+            {
+                compensation = manager.BuildCompensationPlan(plan);
+            }
+            catch
+            {
+                compensation = new MigrationCompensationPlan();
+            }
+
+            var result = new List<UndoStepInfo>();
+            for (int i = 0; i < record.Steps.Count; i++)
+            {
+                var s = record.Steps[i];
+                if (s == null) continue;
+
+                var comp = compensation?.Actions?
+                    .FirstOrDefault(a => string.Equals(a.EntityName, s.EntityName, StringComparison.OrdinalIgnoreCase)
+                                      && a.OperationKind == ParseOperationKind(s.Operation));
+
+                result.Add(new UndoStepInfo
+                {
+                    Operation = s.Operation,
+                    EntityName = s.EntityName ?? string.Empty,
+                    CompensationSql = comp?.RollbackSqlPreview ?? GenerateFallbackCompensationSql(s.Operation, s.EntityName)
+                });
+            }
+
+            return result;
+        }
+
+        private static string GenerateFallbackCompensationSql(string operation, string entityName)
+        {
+            if (string.IsNullOrWhiteSpace(operation) || string.IsNullOrWhiteSpace(entityName))
+                return string.Empty;
+
+            return operation switch
+            {
+                "CreateEntity" => $"DROP TABLE {entityName};",
+                _ => $"-- No automatic undo for operation '{operation}' on '{entityName}'. Manual review required."
+            };
+        }
+
+        private static MigrationPlanOperationKind ParseOperationKind(string operation)
+        {
+            if (string.IsNullOrWhiteSpace(operation))
+                return MigrationPlanOperationKind.None;
+
+            return Enum.TryParse<MigrationPlanOperationKind>(operation, ignoreCase: true, out var kind)
+                ? kind
+                : MigrationPlanOperationKind.None;
         }
 
         private static bool LastMigrationIsUndone(MigrationHistory history)
@@ -239,21 +393,6 @@ namespace TheTechIdea.Beep.Editor.Migration
         private static string GenerateMigrationId()
         {
             return Guid.NewGuid().ToString("N")[..12];
-        }
-
-        private static string GenerateCompensationSql(string operation, string entityName)
-        {
-            if (string.IsNullOrWhiteSpace(operation) || string.IsNullOrWhiteSpace(entityName))
-                return string.Empty;
-
-            return operation switch
-            {
-                "CreateEntity" => $"DROP TABLE IF EXISTS \"{entityName}\"",
-                "AddMissingColumns" => $"-- Cannot undo column additions for '{entityName}'. Manual review required.",
-                "AddForeignKey" => $"-- Cannot undo foreign key additions for '{entityName}'. Manual review required.",
-                "CreateIndex" => $"-- Cannot undo index creation for '{entityName}'. Manual review required.",
-                _ => $"-- No automatic undo for operation '{operation}' on '{entityName}'."
-            };
         }
 
         private static IErrorsInfo CreateError(string message, Exception ex = null)

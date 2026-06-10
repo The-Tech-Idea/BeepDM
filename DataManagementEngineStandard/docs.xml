@@ -34070,6 +34070,32 @@
             Use this when you know exactly which types to migrate — bypasses assembly discovery entirely.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.SchemaInspector">
+             <summary>
+             High-level service that answers the question
+             "what changed in the schema between the .NET class and the database table?"
+            
+             <para>
+             EF Core's Migrations model captures a <c>ModelSnapshot</c> file per migration and
+             compares the live model to the latest snapshot to generate a diff. BeepDM now
+             provides the same capability via the
+             <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaSnapshot"/> +
+             <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaComparator"/> infrastructure already in the engine.
+             </para>
+            
+             <para>Capabilities:</para>
+             <list type="bullet">
+               <item><description><see cref="!:CaptureFromTypeAsync(Type)"/> — snapshot of a POCO / Entity / EF Core class</description></item>
+               <item><description><see cref="!:CaptureFromDataSourceAsync(IDataSource, string)"/> — snapshot of the live database table</description></item>
+               <item><description><see cref="!:InspectAsync(Type, IDataSource, string)"/> — full diff report (added / removed / altered fields)</description></item>
+               <item><description><see cref="!:SaveBaselineAsync(Type, IDataSource, string)"/> — persist a baseline snapshot for future comparisons</description></item>
+               <item><description><see cref="!:DiffAgainstBaselineAsync(Type, IDataSource, string)"/> — current code vs. the persisted baseline</description></item>
+             </list>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.SchemaInspector.BuildKey(System.String,System.String)">
+            <summary>Compute the canonical context key for a (datasource, entity) pair.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Examples.UnitofWorkExamples">
             <summary>
             Examples demonstrating usage of the refactored UnitofWork with DefaultsManager integration
@@ -52343,6 +52369,29 @@
         <member name="M:TheTechIdea.Beep.Services.BeepServiceWebExtensions.AddBeepAuditForWeb(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.String,System.Action{TheTechIdea.Beep.Services.Audit.BeepAuditOptions})">
             <summary>
             Registers the Beep audit feature with web-friendly defaults.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasourceWithInspection(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Same as <see cref="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasource(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> but also returns a per-entity
+            <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>
+            describing the structural differences between each .NET entity type and the
+            live database table BEFORE the migration was applied.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.InspectSchemaAsync(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Threading.CancellationToken)">
+            <summary>
+            Inspects the schema without applying any changes. Returns a drift report
+            describing the differences between the supplied .NET entity types and the
+            live database tables.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.DatasourceManagement.SchemaApplyResult">
+            <summary>
+            Result of <see cref="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasourceWithInspection(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>.
+            Carries both the legacy <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> (for backward compatibility) and the
+            per-entity <see cref="T:TheTechIdea.Beep.Editor.Importing.Schema.SchemaDriftReport"/>s
+            captured before the migration was applied.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Services.EnvironmentService.CreateMainFolder(TheTechIdea.Beep.Editor.IDMEEditor)">

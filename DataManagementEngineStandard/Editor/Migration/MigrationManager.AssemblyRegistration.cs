@@ -43,6 +43,20 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
+        public void UnregisterAssembly(Assembly assembly)
+        {
+            if (assembly == null) return;
+            lock (_assemblyLock)
+            {
+                if (_registeredAssemblies.Remove(assembly))
+                {
+                    _editor?.AddLogMessage("Beep",
+                        $"MigrationManager: Unregistered assembly '{assembly.GetName().Name}' from entity discovery",
+                        DateTime.Now, 0, null, Errors.Ok);
+                }
+            }
+        }
+
         /// <summary>
         /// Gets all currently registered assemblies (manual + auto-discovered).
         /// Useful for diagnostics when entity types are not being found.

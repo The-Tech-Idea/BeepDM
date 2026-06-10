@@ -64,6 +64,23 @@ namespace TheTechIdea.Beep.Editor.Migration
             var checkpoint = CreateExecutionCheckpoint(plan, executionToken);
             result.ExecutionToken = checkpoint.ExecutionToken;
             result.Checkpoint = checkpoint;
+
+            if (!string.IsNullOrWhiteSpace(checkpoint.PlanHash) &&
+                !string.IsNullOrWhiteSpace(plan.PlanHash) &&
+                !string.Equals(checkpoint.PlanHash, plan.PlanHash, StringComparison.Ordinal))
+            {
+                result.Success = false;
+                result.Message = "Execution token belongs to a different migration plan hash. Create a new execution token or resume the original plan.";
+                checkpoint.HasFailed = true;
+                checkpoint.FailureCategory = "PlanHashMismatch";
+                checkpoint.FailureReason = result.Message;
+                checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+                PersistExecutionCheckpoint(checkpoint);
+                RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-plan-hash-mismatch", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Do not reuse an execution token across different plan hashes.");
+                RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                return result;
+            }
+
             RecordExecutionStarted(plan, checkpoint);
             plan.PerformancePlan ??= BuildPerformancePlan(plan);
 
@@ -141,6 +158,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         result.RollbackOutcome = outcomes.rollbackOutcome;
                         result.CompensationOutcome = outcomes.compensationOutcome;
                         result.Message = $"Execution blocked at step {step.Sequence} due to dependency failure. {result.RollbackOutcome} {result.CompensationOutcome}";
+                        result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
                         RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-dependency-failed", MigrationDiagnosticSeverity.Error, step.EntityName, step.Message, "Resolve upstream step failures before resume.");
                         RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
                         return result;
@@ -208,6 +226,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         result.Message = result.RequiresOperatorIntervention
                             ? $"Step {step.Sequence} failed and requires operator intervention. {policy.OperatorInterventionHint} {result.RollbackOutcome} {result.CompensationOutcome}"
                             : $"Step {step.Sequence} failed: {step.Message}. {result.RollbackOutcome} {result.CompensationOutcome}";
+                        result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
                         RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
                         return result;
                     }
@@ -248,6 +267,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             PersistExecutionCheckpoint(checkpoint);
 
             result.Success = true;
+            result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
             result.Message = $"Migration plan executed successfully. Token: {checkpoint.ExecutionToken}";
             RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-complete", MigrationDiagnosticSeverity.Info, string.Empty, result.Message, "Execution completed without blocking failures.");
             RecordExecutionFinished(plan, checkpoint, success: true, notes: result.Message);
