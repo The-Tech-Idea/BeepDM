@@ -37,7 +37,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private readonly IDMEEditor _editor;
         private readonly ConcurrentDictionary<string, DataBlockInfo> _blocks;
         private readonly object _lockObject = new object();
-        private bool _suspended;
+        // volatile: SuspendTriggers / ResumeTriggers may be called from one thread while
+        // Fire*Trigger methods read _suspended on another. Without the volatile barrier,
+        // a thread that just called SuspendTriggers could still see _suspended == false
+        // on a weak memory model (ARM, older x86 with non-temporal stores) for a few
+        // cycles, causing a trigger to fire after the suspend request landed. Marking
+        // the field volatile forces an acquire/release fence on every read/write.
+        private volatile bool _suspended;
         private bool _disposed;
         
         #endregion
@@ -164,33 +170,68 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         }
         
         /// <inheritdoc />
+        /// <remarks>
+        /// Re-registering a trigger with the same <see cref="TriggerDefinition.TriggerId"/>
+        /// is a supported idempotent operation. The previously-registered definition is
+        /// removed from its per-scope list (Form / Block / Item / Global) and the new
+        /// definition takes its place. Without this, the per-scope list would accumulate
+        /// a stale entry for every re-register and the next <c>Fire*</c> call would
+        /// execute BOTH the old and new handler — a silent duplicate-fire bug.
+        /// </remarks>
         public void RegisterTrigger(TriggerDefinition trigger)
         {
             if (trigger == null)
                 throw new ArgumentNullException(nameof(trigger));
-            
-            bool wasReplacement = _triggers.ContainsKey(trigger.TriggerId);
-            _triggers[trigger.TriggerId] = trigger;
-            
-            // Add to appropriate collection based on scope
-            switch (trigger.Scope)
+
+            // B8 (audit pass 4, 2026-06): the previous version released
+            // _lockObject BEFORE calling AddToFormTriggers /
+            // AddToBlockTriggers / etc. A concurrent FireBlockTriggerAsync
+            // that read _triggers[trigger.TriggerId] after the lock was
+            // released would see the new trigger in the global dict,
+            // but the per-scope list still contained the OLD list
+            // (without the new entry). The fire call would walk the
+            // per-scope list, not find the new trigger, and silently
+            // miss it. The new behavior: hold the lock across both the
+            // removal/insert into _triggers AND the per-scope append.
+            // The per-scope Add* helpers take their own inner per-list
+            // lock; we are now nested under _lockObject + per-list lock.
+            // The order is consistent with the pass-1 ClearAllTriggers
+            // fix (same pattern). The lock duration is still small
+            // (the per-scope append is a dictionary insert + a sort).
+            bool wasReplacement = false;
+            TriggerDefinition previous = null;
+            lock (_lockObject)
             {
-                case TriggerScope.Form:
-                    AddToFormTriggers(trigger);
-                    break;
-                case TriggerScope.Block:
-                    AddToBlockTriggers(trigger);
-                    break;
-                case TriggerScope.Item:
-                    AddToItemTriggers(trigger);
-                    break;
-                case TriggerScope.Global:
-                    AddToGlobalTriggers(trigger);
-                    break;
+                if (_triggers.TryGetValue(trigger.TriggerId, out previous) && !ReferenceEquals(previous, trigger))
+                {
+                    wasReplacement = true;
+                    RemoveFromCollections(previous);
+                }
+                _triggers[trigger.TriggerId] = trigger;
+
+                // Add to appropriate collection based on scope, INSIDE
+                // the outer lock. The Add* helpers lock the inner list
+                // (the per-scope List<TriggerDefinition>) internally,
+                // so we are nested under _lockObject + inner lock.
+                switch (trigger.Scope)
+                {
+                    case TriggerScope.Form:
+                        AddToFormTriggers(trigger);
+                        break;
+                    case TriggerScope.Block:
+                        AddToBlockTriggers(trigger);
+                        break;
+                    case TriggerScope.Item:
+                        AddToItemTriggers(trigger);
+                        break;
+                    case TriggerScope.Global:
+                        AddToGlobalTriggers(trigger);
+                        break;
+                }
             }
-            
+
             _editor?.AddLogMessage($"TriggerManager: Registered trigger: {trigger.QualifiedName}");
-            
+
             RaiseTriggerRegistered(trigger, wasReplacement);
         }
         
@@ -368,12 +409,24 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         /// <inheritdoc />
         public void ClearAllTriggers()
         {
-            _triggers.Clear();
-            _formTriggers.Clear();
-            _blockTriggers.Clear();
-            _itemTriggers.Clear();
-            _globalTriggers.Clear();
-            
+            // Serialize the 5 dict clears under _lockObject so a concurrent
+            // RegisterTrigger cannot land a new entry in one of the per-scope dicts
+            // between the time we clear _triggers and the time we clear the per-scope
+            // dict. Without the lock, the sequence
+            //   thread A: _triggers.Clear(); _formTriggers.Clear();
+            //   thread B: RegisterTrigger(...); [adds to _triggers then to _formTriggers]
+            // can leave an orphan in _formTriggers that _triggers no longer knows
+            // about. The lock is taken only for the 5 .Clear() calls (no per-list
+            // locking needed here since we are emptying everything in one go).
+            lock (_lockObject)
+            {
+                _triggers.Clear();
+                _formTriggers.Clear();
+                _blockTriggers.Clear();
+                _itemTriggers.Clear();
+                _globalTriggers.Clear();
+            }
+
             _editor?.AddLogMessage("TriggerManager: Cleared all triggers");
         }
         
@@ -498,12 +551,29 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (string.IsNullOrEmpty(blockName))
                 return Array.Empty<TriggerDefinition>();
-            
+
             if (_blockTriggers.TryGetValue(blockName, out var typeTriggers))
             {
-                return typeTriggers.Values.SelectMany(t => t).ToList().AsReadOnly();
+                // typeTriggers is a ConcurrentDictionary, so .Values is a snapshot of
+                // the value references. We then enumerate each inner List<TriggerDefinition>
+                // under its own lock — without the lock, a concurrent
+                // AddToBlockTriggers / RemoveFromBlockTriggers (which both lock the
+                // inner list) could mutate the list while we are reading it, and
+                // List<T> is not safe for concurrent enumeration. We lock each list
+                // individually rather than taking a global lock so concurrent
+                // registrations on OTHER trigger types for the SAME block are not
+                // blocked.
+                var result = new List<TriggerDefinition>();
+                foreach (var triggers in typeTriggers.Values)
+                {
+                    lock (triggers)
+                    {
+                        result.AddRange(triggers);
+                    }
+                }
+                return result.AsReadOnly();
             }
-            
+
             return Array.Empty<TriggerDefinition>();
         }
         
@@ -532,14 +602,26 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (string.IsNullOrEmpty(blockName) || string.IsNullOrEmpty(itemName))
                 return Array.Empty<TriggerDefinition>();
-            
+
             string key = GetItemKey(blockName, itemName);
-            
+
             if (_itemTriggers.TryGetValue(key, out var typeTriggers))
             {
-                return typeTriggers.Values.SelectMany(t => t).ToList().AsReadOnly();
+                // See GetBlockTriggers(string) for the locking rationale: each inner
+                // List<TriggerDefinition> is locked individually so concurrent
+                // registrations on other TriggerTypes for the same item do not
+                // block this read.
+                var result = new List<TriggerDefinition>();
+                foreach (var triggers in typeTriggers.Values)
+                {
+                    lock (triggers)
+                    {
+                        result.AddRange(triggers);
+                    }
+                }
+                return result.AsReadOnly();
             }
-            
+
             return Array.Empty<TriggerDefinition>();
         }
         
@@ -548,19 +630,40 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (string.IsNullOrEmpty(formName))
                 return Array.Empty<TriggerDefinition>();
-            
+
             if (_formTriggers.TryGetValue(formName, out var typeTriggers))
             {
-                return typeTriggers.Values.SelectMany(t => t).ToList().AsReadOnly();
+                // See GetBlockTriggers(string) for the locking rationale.
+                var result = new List<TriggerDefinition>();
+                foreach (var triggers in typeTriggers.Values)
+                {
+                    lock (triggers)
+                    {
+                        result.AddRange(triggers);
+                    }
+                }
+                return result.AsReadOnly();
             }
-            
+
             return Array.Empty<TriggerDefinition>();
         }
-        
+
         /// <inheritdoc />
         public IReadOnlyList<TriggerDefinition> GetGlobalTriggers()
         {
-            return _globalTriggers.Values.SelectMany(t => t).ToList().AsReadOnly();
+            // _globalTriggers is keyed by TriggerType directly; each value is the
+            // same inner List<TriggerDefinition> pattern as the per-scope dicts.
+            // Lock each list to be safe with concurrent AddToGlobalTriggers /
+            // RemoveFromGlobalTriggers calls.
+            var result = new List<TriggerDefinition>();
+            foreach (var triggers in _globalTriggers.Values)
+            {
+                lock (triggers)
+                {
+                    result.AddRange(triggers);
+                }
+            }
+            return result.AsReadOnly();
         }
         
         /// <inheritdoc />
@@ -977,11 +1080,28 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                             cancelMessage = context.CancelMessage;
                             overallResult = TriggerResult.FormTriggerFailure;
                         }
+                        // B3 (audit pass 4, 2026-06): a trigger that
+                        // returns Cancelled is NOT a FormTriggerFailure.
+                        // The previous code fell into the `else if
+                        // (overallResult == Success)` branch and set
+                        // overallResult to Cancelled, but left the
+                        // `cancelled` flag false — so the
+                        // TriggerChainCompletedEventArgs reported
+                        // WasCancelled = false even though the result
+                        // was a cancellation. Now: set the cancelled
+                        // flag, set the message, and keep
+                        // overallResult as Cancelled.
+                        else if (result == TriggerResult.Cancelled)
+                        {
+                            cancelled = true;
+                            cancelMessage = context.CancelMessage ?? "Trigger returned Cancelled.";
+                            overallResult = TriggerResult.Cancelled;
+                        }
                         else if (overallResult == TriggerResult.Success)
                         {
                             overallResult = result;
                         }
-                        
+
                         // Stop chain if trigger raised failure and not set to continue
                         if (!trigger.ContinueOnFailure && result != TriggerResult.Skipped)
                         {
@@ -990,7 +1110,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                         break;
                 }
             }
-            
+
             // Fire chain completed event
             TriggerChainCompleted?.Invoke(this, new TriggerChainCompletedEventArgs
             {
@@ -1004,10 +1124,10 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 CancelMessage = cancelMessage,
                 OverallResult = overallResult
             });
-            
+
             return overallResult;
         }
-        
+
         private async Task<TriggerResult> ExecuteTriggerChainAsync(List<TriggerDefinition> triggers, TriggerType type, TriggerContext context, CancellationToken cancellationToken)
         {
             if (triggers == null || triggers.Count == 0)
@@ -1096,11 +1216,23 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                             cancelMessage = context.CancelMessage;
                             overallResult = TriggerResult.FormTriggerFailure;
                         }
+                        // B3 (audit pass 4, 2026-06): see the sync
+                        // path for the same fix. The async path had
+                        // the same defect — a Cancelled result fell
+                        // into the `else if (overallResult ==
+                        // Success)` branch and was reported with
+                        // WasCancelled = false.
+                        else if (result == TriggerResult.Cancelled)
+                        {
+                            cancelled = true;
+                            cancelMessage = context.CancelMessage ?? "Trigger returned Cancelled.";
+                            overallResult = TriggerResult.Cancelled;
+                        }
                         else if (overallResult == TriggerResult.Success)
                         {
                             overallResult = result;
                         }
-                        
+
                         // Stop chain if trigger raised failure and not set to continue
                         if (!trigger.ContinueOnFailure && result != TriggerResult.Skipped)
                         {
@@ -1109,7 +1241,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                         break;
                 }
             }
-            
+
             // Fire chain completed event
             TriggerChainCompleted?.Invoke(this, new TriggerChainCompletedEventArgs
             {

@@ -27,7 +27,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Creates a master-detail relationship between blocks
         /// </summary>
-        public void CreateMasterDetailRelation(string masterBlockName, string detailBlockName, 
+        public void CreateMasterDetailRelation(string masterBlockName, string detailBlockName,
             string masterKeyField, string detailForeignKeyField, RelationshipType relationshipType = RelationshipType.OneToMany)
         {
             var masterBlock = GetBlock(masterBlockName)
@@ -37,7 +37,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             ValidateRelationshipParameters(masterBlockName, detailBlockName);
 
-            var resolution = _masterDetailKeyResolver.Resolve(masterBlock, detailBlock, masterKeyField, detailForeignKeyField);
+            // B13 (audit pass 3, 2026-06): the previous version
+            // let any exception from the key resolver propagate
+            // to the caller. The resolver is metadata-driven
+            // (it inspects entity structures and field maps);
+            // a malformed entity structure (e.g. a missing
+            // EntityStructure on the detail block) can throw
+            // NRE deep in the resolver. Now: catch, log, and
+            // re-throw as InvalidOperationException with a
+            // clearer message — the caller (typically a host
+            // UI handler) gets a useful error rather than a
+            // raw NRE.
+            MasterDetailKeyResolution resolution;
+            try
+            {
+                resolution = _masterDetailKeyResolver.Resolve(masterBlock, detailBlock, masterKeyField, detailForeignKeyField);
+            }
+            catch (Exception ex)
+            {
+                LogError(
+                    $"CreateMasterDetailRelation: key resolver threw for ({masterBlockName}.{masterKeyField} -> {detailBlockName}.{detailForeignKeyField})",
+                    ex, detailBlockName);
+                throw new InvalidOperationException(
+                    $"Failed to resolve master/detail keys for {masterBlockName}.{masterKeyField} -> {detailBlockName}.{detailForeignKeyField}: {ex.Message}",
+                    ex);
+            }
+
             if (!resolution.IsResolved)
             {
                 throw new InvalidOperationException(resolution.ErrorMessage);
@@ -95,14 +120,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Synchronizes detail blocks when master record changes.
         /// Fires ON-POPULATE-DETAILS trigger before delegating to the relationship manager.
         /// </summary>
-        public async Task SynchronizeDetailBlocksAsync(string masterBlockName)
+        /// <param name="masterBlockName">Master block whose detail blocks should be synchronized.</param>
+        /// <param name="ct">
+        /// Cancellation token. Propagated through the detail
+        /// hierarchy walk; observed at the start of each
+        /// relationship iteration.
+        /// </param>
+        public async Task SynchronizeDetailBlocksAsync(string masterBlockName, CancellationToken ct = default)
         {
             // Fire ON-POPULATE-DETAILS to allow triggers to intervene
             await _triggerManager.FireBlockTriggerAsync(
                 TriggerType.OnPopulateDetails, masterBlockName,
                 TriggerContext.ForBlock(TriggerType.OnPopulateDetails, masterBlockName, null, _dmeEditor));
 
-            await SynchronizeDetailHierarchyAsync(masterBlockName, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            await SynchronizeDetailHierarchyAsync(
+                masterBlockName,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                ct);
         }
 
         /// <summary>

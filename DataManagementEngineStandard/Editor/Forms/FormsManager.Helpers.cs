@@ -2,12 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOW;
 using TheTechIdea.Beep.Editor.Forms.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Configuration;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Report;
@@ -285,8 +287,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             }
         }
 
-        private async Task SynchronizeDetailHierarchyAsync(string masterBlockName, HashSet<string> visited)
+        private async Task SynchronizeDetailHierarchyAsync(string masterBlockName, HashSet<string> visited, CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             if (!visited.Add(masterBlockName))
                 return;
 
@@ -299,16 +303,36 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (currentItem == null)
             {
                 foreach (var relationship in relationships)
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited);
+                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
                 return;
             }
 
             foreach (var relationship in relationships)
             {
+                ct.ThrowIfCancellationRequested();
+
                 var fieldMappings = GetRelationshipFieldMappings(relationship);
                 if (fieldMappings.Count == 0)
                 {
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited);
+                    // B8 (audit pass 3, 2026-06): silent-fail fix.
+                    // The previous version treated an empty
+                    // mapping list (returned when
+                    // MasterDetailKeyResolver.TryParseMappings
+                    // fails — e.g. malformed composite key like
+                    // "OrderId;LineNumber" with the wrong
+                    // separator) as "no filter, clear the
+                    // detail". The clear still happened, but
+                    // the user had no signal that their
+                    // relationship config was wrong. Log it
+                    // once before the clear so the misconfig
+                    // is visible.
+                    LogError(
+                        $"SynchronizeDetailHierarchyAsync: failed to parse master/detail key mapping for relationship " +
+                        $"({relationship.MasterBlockName}.{relationship.MasterKeyField} -> " +
+                        $"{relationship.DetailBlockName}.{relationship.DetailForeignKeyField}). " +
+                        $"Falling back to clearing the detail block.",
+                        null, relationship.DetailBlockName);
+                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
                     continue;
                 }
 
@@ -328,13 +352,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     {
                         FieldName = mapping.DetailField,
                         Operator = "=",
-                        FilterValue = masterValue.ToString()
+                        // B3 (audit pass 3, 2026-06): culture-invariant
+                        // ToString. The previous version used the
+                        // current culture's default, which
+                        // produced different strings for
+                        // DateTime / float / decimal in
+                        // different locales. The filter value
+                        // round-trips through the UoW's Get
+                        // path, which parses the string back to
+                        // the target type — a culture-mismatched
+                        // string would silently fail to parse
+                        // and the detail query would return
+                        // zero rows. Using InvariantCulture makes
+                        // the round-trip deterministic.
+                        FilterValue = masterValue is IFormattable fmt
+                            ? fmt.ToString(null, System.Globalization.CultureInfo.InvariantCulture)
+                            : masterValue.ToString()
                     });
                 }
 
                 if (hasMissingMasterValue)
                 {
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited);
+                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
                     continue;
                 }
 
@@ -347,17 +386,35 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     await detailBlock.UnitOfWork.Get(filters);
                 }
+                // B4 (audit pass 3, 2026-06): the previous
+                // version had no catch — an exception from
+                // UnitOfWork.Get (e.g. SQL error, disposed
+                // connection) would propagate up and abort
+                // the whole hierarchy sync, leaving the
+                // remaining relationships' detail blocks in
+                // an un-synced state. Now: log, continue to
+                // the next relationship.
+                catch (Exception ex)
+                {
+                    LogError(
+                        $"SynchronizeDetailHierarchyAsync: failed to query detail block '{relationship.DetailBlockName}' for " +
+                        $"master '{relationship.MasterBlockName}' key '{relationship.MasterKeyField}'. " +
+                        $"Detail block left in its previous state.",
+                        ex, relationship.DetailBlockName);
+                }
                 finally
                 {
                     ResumeSync(relationship.DetailBlockName);
                 }
 
-                await SynchronizeDetailHierarchyAsync(relationship.DetailBlockName, visited);
+                await SynchronizeDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
             }
         }
 
-        private async Task ClearDetailHierarchyAsync(string blockName, HashSet<string> visited)
+        private async Task ClearDetailHierarchyAsync(string blockName, HashSet<string> visited, CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             if (!visited.Add(blockName))
                 return;
 
@@ -369,6 +426,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     blockInfo.UnitOfWork.Clear();
                 }
+                // B5 (audit pass 3, 2026-06): same pattern as
+                // B4. UnitOfWork.Clear() on a disposed or
+                // otherwise unhappy UoW throws — the
+                // exception previously aborted the whole
+                // hierarchy clear, leaving downstream
+                // detail blocks uncleared. Now: log,
+                // continue clearing the rest of the
+                // hierarchy.
+                catch (Exception ex)
+                {
+                    LogError(
+                        $"ClearDetailHierarchyAsync: failed to clear block '{blockName}'",
+                        ex, blockName);
+                }
                 finally
                 {
                     ResumeSync(blockName);
@@ -377,43 +448,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             foreach (var detailBlockName in GetDetailBlocks(blockName))
             {
-                await ClearDetailHierarchyAsync(detailBlockName, visited);
+                await ClearDetailHierarchyAsync(detailBlockName, visited, ct);
             }
         }
 
-        private static object GetPropertyValue(object target, string propertyName)
+        private object GetPropertyValue(object target, string propertyName)
         {
-            if (target == null || string.IsNullOrWhiteSpace(propertyName))
-                return null;
-
-            var property = target.GetType().GetProperty(
-                propertyName,
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.IgnoreCase);
-            return property?.GetValue(target);
+            // Delegates to the process-wide, cached RecordPropertyAccessor.
+            // Replaces 5-line reflection block that repeated
+            // target.GetType().GetProperty(...) on every call and silently
+            // returned null on a misconfigured FieldName. The accessor
+            // emits a single throttled warning on miss per (Type, name).
+            // Promoted from `static` to instance so it can pass
+            // `_dmeEditor` to the accessor for diagnostic logging.
+            return RecordPropertyAccessor.GetValue(target, propertyName, _dmeEditor);
         }
 
-        private static bool TrySetPropertyValue(object target, string propertyName, object value)
+        private bool TrySetPropertyValue(object target, string propertyName, object value)
         {
-            if (target == null || string.IsNullOrWhiteSpace(propertyName))
-                return false;
-
-            var property = target.GetType().GetProperty(
-                propertyName,
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.IgnoreCase);
-            if (property == null || !property.CanWrite)
-                return false;
-
-            var targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            var converted = value;
-            if (converted != null && !targetType.IsInstanceOfType(converted))
-                converted = Convert.ChangeType(converted, targetType);
-
-            property.SetValue(target, converted);
-            return true;
+            // Same rationale as GetPropertyValue above: centralized cache
+            // + loud diagnostic on missing/read-only fields. Existing
+            // call sites (Navigation.SetCurrentIndexByKey, etc.) are
+            // unchanged in behavior. Promoted from `static` to instance
+            // so it can pass `_dmeEditor` to the accessor.
+            return RecordPropertyAccessor.TrySetValue(target, propertyName, value, _dmeEditor);
         }
 
         private static bool IsNullOrEmpty(object value) =>

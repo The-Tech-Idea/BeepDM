@@ -115,16 +115,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Must be in Query mode to execute query
-                if (blockInfo.Mode != DataBlockMode.Query)
+                // B2: must be in Query mode OR EnterQuery mode to execute query.
+                // Oracle Forms allows the user to be in EnterQuery (typing criteria)
+                // and then press EXECUTE_QUERY (or F8) to materialize the result
+                // without first leaving EnterQuery. The previous strict
+                // `!= DataBlockMode.Query` check rejected EnterQuery, blocking
+                // that flow and forcing the user to leave EnterQuery first.
+                if (blockInfo.Mode != DataBlockMode.Query && blockInfo.Mode != DataBlockMode.EnterQuery)
                 {
                     result.Flag = Errors.Failed;
-                    result.Message = $"Block '{blockName}' must be in Query mode to execute query. Current mode: {blockInfo.Mode}";
+                    result.Message = $"Block '{blockName}' must be in Query or Enter-Query mode to execute query. Current mode: {blockInfo.Mode}";
                     Status = result.Message;
                     return result;
                 }
 
-                LogOperation($"Executing query and entering CRUD mode for block '{blockName}'", blockName);
+                LogOperation($"Executing query and entering CRUD mode for block '{blockName}' (source mode={blockInfo.Mode})", blockName);
 
                 // Execute the query using enhanced query execution
                 var queryResult = await ExecuteQueryEnhancedAsync(blockName, filters);
@@ -147,8 +152,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     LogOperation($"Query validation warning for block '{blockName}': {validationResult.Message}", blockName);
                 }
 
-                // Transition to CRUD mode (already done in ExecuteQueryEnhancedAsync, but ensure consistency)
-                blockInfo.Mode = DataBlockMode.CRUD;
+                // B3: ExecuteQueryEnhancedAsync has already transitioned the
+                // block to CRUD mode on success. The previous "ensure
+                // consistency" re-assignment was redundant and masked any
+                // inconsistency between the helper and the outer caller.
+                // Trust the helper; if the mode is wrong here, the helper is
+                // broken and a future audit pass will catch it.
+                //
+                // We still update LastModeChange so callers can tell that a
+                // mode transition happened, even if the target mode was
+                // already set by the helper.
                 blockInfo.LastModeChange = DateTime.Now;
 
                 // Navigate to first record if available
@@ -698,8 +711,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var currentRecord = blockInfo.UnitOfWork.CurrentItem;
                 if (currentRecord != null)
                 {
-                    // Validate the current record
-                    if (!ValidateRecordForModeTransition(blockName, currentRecord))
+                    // B20: ValidateRecordForModeTransition no longer takes the
+                    // record parameter — it delegates to ValidateBlock which
+                    // already inspects the UoW's current record (which is
+                    // exactly `currentRecord` here). Passing the record as a
+                    // parameter was misleading: the previous implementation
+                    // ignored the parameter and re-fetched via the block.
+                    if (!ValidateRecordForModeTransition(blockName))
                     {
                         result.IsValid = false;
                         result.Message = $"Current record in block '{blockName}' is invalid";
@@ -808,13 +826,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             }
         }
 
-        private bool ValidateRecordForModeTransition(string blockName, object record)
+        private bool ValidateRecordForModeTransition(string blockName)
         {
+            // B20: the previous signature took a `record` parameter that was
+            // never used — the function delegated straight to
+            // ValidateBlock(blockName), which already inspects the UoW's
+            // current record. We dropped the parameter so the call site
+            // signature matches the actual behavior. The caller is still
+            // responsible for guarding the null-record case (the
+            // `currentRecord != null` check at the call site).
             try
             {
-                if (record == null) return true;
-
-                // Use the existing validation logic
                 return ValidateBlock(blockName);
             }
             catch (Exception ex)
@@ -844,8 +866,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #region Mode Transition Status and Information
 
         /// <summary>
-        /// Gets the current mode of a block
+        /// Gets the current mode of a block.
         /// </summary>
+        /// <remarks>
+        /// B23: if <paramref name="blockName"/> is null/empty or the block is
+        /// not registered, the method returns <see cref="DataBlockMode.Query"/>
+        /// as a silent default. The caller cannot distinguish "block is in
+        /// Query mode" from "block does not exist". This is intentional for
+        /// back-compat with the public <c>IBeepBuiltins</c> contract — host
+        /// code that calls <c>GetBlockMode</c> on a block that may not exist
+        /// keeps working. Callers that need to distinguish the two cases
+        /// should use <see cref="TryGetBlockMode"/> instead, which returns
+        /// <c>false</c> when the block is missing and populates an output
+        /// parameter with the actual mode when it is present.
+        /// </remarks>
         public DataBlockMode GetBlockMode(string blockName)
         {
             try
@@ -857,6 +891,40 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 LogError($"Error getting mode for block '{blockName}'", ex, blockName);
                 return DataBlockMode.Query; // Default to Query mode
+            }
+        }
+
+        /// <summary>
+        /// Try to get the current mode of a block. Returns <c>true</c> when
+        /// the block is registered, populating <paramref name="mode"/> with
+        /// the block's actual mode. Returns <c>false</c> when the block is
+        /// null, empty, or not registered — the caller can then choose
+        /// whether to treat that as "block is in Query mode" or as an error.
+        /// </summary>
+        public bool TryGetBlockMode(string blockName, out DataBlockMode mode)
+        {
+            if (string.IsNullOrEmpty(blockName))
+            {
+                mode = DataBlockMode.Query;
+                return false;
+            }
+
+            try
+            {
+                var blockInfo = GetBlock(blockName);
+                if (blockInfo == null)
+                {
+                    mode = DataBlockMode.Query;
+                    return false;
+                }
+                mode = blockInfo.Mode;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error in TryGetBlockMode for block '{blockName}'", ex, blockName);
+                mode = DataBlockMode.Query;
+                return false;
             }
         }
 

@@ -85,6 +85,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
                     : -1;
 
+                // B10 (audit pass 3, 2026-06): the same-index
+                // no-op short-circuits BEFORE validation and
+                // BEFORE the unsaved-changes check. If a user
+                // modifies a field and then "navigates" to the
+                // same record (e.g. via a programmatic
+                // GoRecord call), the in-memory changes will
+                // NOT be validated and the unsaved-changes
+                // prompt will NOT fire. The previous version
+                // did this too, but without documentation it
+                // looked like a bug. The intentional behavior
+                // is: GO_RECORD(n) when already on n is a true
+                // no-op (matching Oracle Forms); if the host
+                // wants to force validation, call
+                // ValidateBlock explicitly. Documented here.
                 if (previousIndex == recordIndex)
                     return true;
 
@@ -161,6 +175,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Switches to a different block, checking for unsaved changes first
         /// </summary>
+        /// <remarks>
+        /// B4 (audit pass 3, 2026-06): the other navigation paths
+        /// (<see cref="NavigateToRecordInternalAsync"/> and
+        /// <see cref="NavigateWithValidationAsync"/>) honor
+        /// <c>Configuration.Navigation.ValidateBeforeNavigation</c>
+        /// but this method did not. Added the same check so a
+        /// user can opt into "block switch validates the current
+        /// record" without the inconsistency of having to enable
+        /// the flag and find that block switches still skip
+        /// validation. The check is on the **current** block
+        /// (about to be left), matching the other paths' semantics.
+        /// </remarks>
         public async Task<bool> SwitchToBlockAsync(string blockName)
         {
             if (string.IsNullOrWhiteSpace(blockName))
@@ -174,6 +200,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     if (!await CheckAndHandleUnsavedChangesAsync(_currentBlockName))
                     {
                         LogOperation($"Block switch cancelled due to unsaved changes in '{_currentBlockName}'");
+                        return false;
+                    }
+                }
+
+                // B4 (audit pass 3, 2026-06): honor the
+                // ValidateBeforeNavigation config flag for block
+                // switches, matching NavigateToRecordInternalAsync
+                // and NavigateWithValidationAsync. The check is on
+                // the CURRENT block (about to be left) — the
+                // target block's records are validated on the next
+                // operation that touches them.
+                if (Configuration?.Navigation?.ValidateBeforeNavigation == true
+                    && !string.IsNullOrEmpty(_currentBlockName)
+                    && _currentBlockName != blockName)
+                {
+                    if (!ValidateBlock(_currentBlockName))
+                    {
+                        LogOperation(
+                            $"Block switch blocked: validation failed in block '{_currentBlockName}'",
+                            _currentBlockName);
                         return false;
                     }
                 }
@@ -194,12 +240,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Set new current block
                 var previousBlock = _currentBlockName;
-                _currentBlockName = blockName;
 
                 // Fire WHEN-NEW-BLOCK-INSTANCE trigger (Oracle Forms equivalent)
                 await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.WhenNewBlockInstance, blockName,
                     TriggerContext.ForBlock(TriggerType.WhenNewBlockInstance, blockName, null, _dmeEditor));
+
+                // B5 (audit pass 3, 2026-06): assign _currentBlockName
+                // AFTER the triggers fire, so a host subscriber that
+                // reads _currentBlockName from within a
+                // WHEN-NEW-BLOCK-INSTANCE or BlockEnter handler sees
+                // the consistent new value. The previous version set
+                // it BEFORE the trigger, which made the field visible
+                // to handlers in a half-applied state (new value, but
+                // the engine still considered the old block "current"
+                // for some side effects).
+                _currentBlockName = blockName;
 
                 // Trigger block enter for new block
                 _eventManager.TriggerBlockEnter(blockName);
@@ -260,8 +316,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public Dictionary<string, NavigationInfo> GetAllNavigationInfo()
         {
-            var navigationInfo = new Dictionary<string, NavigationInfo>();
-            
+            // B7 (audit pass 3, 2026-06): use case-insensitive
+            // comparer to match the rest of the engine's
+            // block-name handling (Dictionary case-sensitivity in
+            // .NET is opt-in and the default is case-sensitive;
+            // every other block-name dict in this engine is
+            // case-insensitive).
+            var navigationInfo = new Dictionary<string, NavigationInfo>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var blockName in _blocks.Keys)
             {
                 var info = GetCurrentRecordInfo(blockName);
@@ -270,7 +332,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     navigationInfo[blockName] = info;
                 }
             }
-            
+
             return navigationInfo;
         }
 
@@ -296,6 +358,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Fires KEY-NEXT-ITEM or a generic navigation trigger.
         /// Corresponds to Oracle Forms GO_ITEM built-in.
         /// </summary>
+        /// <remarks>
+        /// B9 (audit pass 3, 2026-06): <b>this method does NOT
+        /// actually move focus</b>. It only fires the
+        /// KEY-NEXT-ITEM trigger; the host UI is expected to
+        /// read the trigger and move focus to the named item.
+        /// This is a divergence from the Oracle Forms
+        /// <c>GO_ITEM</c> built-in, which moves focus as a
+        /// side-effect of the trigger. The engine does not have
+        /// a focus model — focus is a host-UI concern — so
+        /// truly matching Oracle Forms would require either
+        /// (a) extending the engine with a focus model, or
+        /// (b) renaming this method to make the trigger-only
+        /// behavior explicit (e.g.
+        /// <c>FireGoItemTriggerAsync</c>). Until one of those
+        /// is done, callers should not assume
+        /// <c>GoItemAsync</c> moved focus; the method returns
+        /// <c>true</c> if the trigger fired without
+        /// cancellation, regardless of whether the host actually
+        /// moved focus.
+        /// </remarks>
         public async Task<bool> GoItemAsync(string blockName, string itemName)
         {
             if (string.IsNullOrWhiteSpace(blockName) || string.IsNullOrWhiteSpace(itemName))
@@ -551,32 +633,57 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #region Navigation Helper Methods (Implementation-specific)
 
+        // The non-generic IUnitofWork.Units is typed `dynamic`; the runtime type is
+        // ObservableBindingList<T> (which extends BindingList<T> : Collection<T> : IList).
+        // We use dynamic dispatch here because the previous GetProperty("Count") /
+        // GetProperty("CurrentIndex") reflection silently no-op'd if the UoW
+        // implementation didn't happen to expose the property name the engine guessed.
+        // The dynamic cast is a single-shot (per call) CachedCallSite, not per-record reflection.
+
         private int GetCurrentIndex(object units)
         {
+            if (units == null) return 0;
             try
             {
-                // Implementation would depend on your collection type
-                // This is a placeholder that would need to be adapted
-                var property = units.GetType().GetProperty("CurrentIndex") ?? 
-                              units.GetType().GetProperty("Position");
-                return property != null ? (int)property.GetValue(units) : 0;
+                // CurrentIndex is set by ObservableBindingList.CurrentAndMovement.cs.
+                // The previous GetProperty("CurrentIndex") reflection silently no-op'd
+                // on a custom Units implementation; dynamic dispatch is louder.
+                dynamic d = units;
+                int? cur = d.CurrentIndex as int?;
+                return cur ?? 0;
             }
-            catch
+            catch (Exception ex)
             {
+                // B2 (audit pass 3, 2026-06): the previous
+                // catch-all silenced the RuntimeBinderException that a
+                // custom Units implementation would raise if it
+                // doesn't expose CurrentIndex. The Debug.WriteLine is
+                // a non-noisy diagnostic for "this shouldn't happen"
+                // cases; the standard RecordPropertyAccessor diagnostic
+                // doesn't fit here because the accessor is for typed
+                // record properties, not for Units metadata.
+                System.Diagnostics.Debug.WriteLine(
+                    $"[Navigation] GetCurrentIndex: dynamic dispatch on '{units.GetType().Name}' failed: {ex.GetType().Name}: {ex.Message}");
                 return 0;
             }
         }
 
         private int GetTotalRecords(object units)
         {
+            if (units == null) return 0;
             try
             {
-                // Implementation would depend on your collection type
-                var property = units.GetType().GetProperty("Count");
-                return property != null ? (int)property.GetValue(units) : 0;
+                dynamic d = units;
+                int? count = d.Count as int?;
+                return count ?? 0;
             }
-            catch
+            catch (Exception ex)
             {
+                // B2: same diagnostic as GetCurrentIndex. The Count
+                // property is standard on IList<T>, so this should
+                // only fire on an exotic Units implementation.
+                System.Diagnostics.Debug.WriteLine(
+                    $"[Navigation] GetTotalRecords: dynamic dispatch on '{units.GetType().Name}' failed: {ex.GetType().Name}: {ex.Message}");
                 return 0;
             }
         }
@@ -595,22 +702,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         private bool SetCurrentIndex(object units, int index)
         {
+            if (units == null) return false;
             try
             {
-                // Implementation would depend on your collection type
-                var property = units.GetType().GetProperty("CurrentIndex") ?? 
-                              units.GetType().GetProperty("Position");
-                              
-                if (property != null && property.CanWrite)
-                {
-                    property.SetValue(units, index);
-                    return true;
-                }
-                
-                return false;
+                dynamic d = units;
+                d.CurrentIndex = index;  // setter on ObservableBindingList calls MoveTo(value)
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                // B3 (audit pass 3, 2026-06): the previous catch-all
+                // swallowed the failure silently. SetCurrentIndex is
+                // called from PerformRecordNavigation in response to
+                // a user-typed index (e.g. GO_RECORD(5)). A failed
+                // MoveTo is a real user-visible bug — log it.
+                LogError(
+                    $"SetCurrentIndex: dynamic MoveTo({index}) on Units type '{units.GetType().Name}' failed",
+                    ex, blockName: null);
                 return false;
             }
         }

@@ -35,17 +35,30 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             {
                 if (string.IsNullOrWhiteSpace(explicitMasterKeyField) || string.IsNullOrWhiteSpace(explicitDetailForeignKeyField))
                 {
-                    resolution.Warnings.Add(
-                        $"Ignoring incomplete explicit relationship mapping between '{masterBlock.BlockName}' and '{detailBlock.BlockName}'.");
+                    // B22 (audit pass 3, 2026-06): the previous version
+                    // added a "ignoring incomplete explicit" warning
+                    // and then FELL THROUGH to the metadata-based
+                    // resolution paths. A user who passes an explicit
+                    // (but incomplete) mapping expected it to be used;
+                    // silently downgrading to a metadata guess hides
+                    // the misconfiguration. The new behavior is to
+                    // fail the resolution: the explicit configuration
+                    // is treated as authoritative, and an incomplete
+                    // explicit is an error rather than a hint.
+                    return Unresolved(
+                        $"Incomplete explicit relationship mapping between " +
+                        $"'{masterBlock.BlockName}' and '{detailBlock.BlockName}': " +
+                        "both MasterKeyField and DetailForeignKeyField must be provided. " +
+                        "Pass empty strings (or omit the parameters) to allow metadata-based resolution.");
                 }
-                else if (TryParseMappings(explicitMasterKeyField, explicitDetailForeignKeyField, out var explicitMappings, out var parseError))
+                if (TryParseMappings(explicitMasterKeyField, explicitDetailForeignKeyField, out var explicitMappings, out var parseError))
                 {
                     return Resolved(MasterDetailKeyResolutionSource.ExplicitConfiguration, explicitMappings, resolution.Warnings);
                 }
-                else
-                {
-                    return Unresolved(parseError);
-                }
+                // Parse failed (mismatched counts, empty field names, etc.) —
+                // fail closed rather than fall through to a metadata guess
+                // the user did not ask for.
+                return Unresolved(parseError);
             }
 
             if (TryResolveFromRelations(masterBlock, detailBlock, detailBlock.EntityStructure?.Relations, MasterDetailKeyResolutionSource.EntityRelations, out var relationResolution))
@@ -244,14 +257,28 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 return false;
             }
 
-            if (primaryKeys.Any(primaryKey => !detailFields.Contains(primaryKey)))
+            // B29 (audit pass 3, 2026-06): the previous version required
+            // EVERY primary key on the master to be present in the
+            // detail (all-or-nothing). A user with a 3-PK master whose
+            // detail legitimately uses only 2 of those PKs (e.g. a
+            // "header" detail that doesn't carry the line number) saw
+            // the fallback fail. The new behavior: require AT LEAST ONE
+            // matching primary key. This is a heuristic (we can't
+            // disambiguate "detail uses 2 of 3 PKs" from "detail has the
+            // same PK name by coincidence"), but it matches the typical
+            // case and is easy to override with an explicit mapping.
+            var matchingKeys = primaryKeys
+                .Where(primaryKey => detailFields.Contains(primaryKey))
+                .ToList();
+
+            if (matchingKeys.Count == 0)
             {
                 return false;
             }
 
             resolution = Resolved(
                 MasterDetailKeyResolutionSource.MatchingPrimaryKeyNames,
-                primaryKeys.Select(primaryKey => new DataBlockFieldMapping
+                matchingKeys.Select(primaryKey => new DataBlockFieldMapping
                 {
                     MasterField = primaryKey,
                     DetailField = primaryKey
@@ -324,8 +351,19 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
 
         private static string[] SplitFields(string fields)
         {
+            // B25 (audit pass 3, 2026-06): support both ',' and ';' as
+            // composite-key separators. The previous version only split
+            // on ',', so a user who passed "OrderId;LineNumber" got a
+            // single-element array, the downstream TryParseMappings count
+            // check passed (1 vs 1), and a single mapping "OrderId;LineNumber"
+            // -> "OrderId;LineNumber" was created. The field-read on the
+            // master record then returned null, the detail query filtered
+            // on a null value, and the relationship silently did nothing.
+            // Both separators are now accepted; pick the more common one
+            // for documentation. (Oracle Forms uses ';' in older versions
+            // and ',' in newer; SQL uses ','; we accept both.)
             return fields?
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(field => field.Trim())
                 .Where(field => !string.IsNullOrWhiteSpace(field))
                 .ToArray() ?? Array.Empty<string>();

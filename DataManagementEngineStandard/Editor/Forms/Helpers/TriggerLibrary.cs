@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -23,42 +22,35 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <summary>
         /// Reads a field or property value from a record using case-insensitive reflection.
         /// </summary>
+        /// <remarks>
+        /// Routes through <see cref="RecordPropertyAccessor"/> so the engine-wide typed
+        /// <c>PropertyInfo</c> catalog handles the lookup. The previous direct
+        /// <c>Type.GetProperty(...)</c> path re-issued a reflection call per read and
+        /// bypassed the case-insensitive / throttle / log-diagnostic plumbing the rest
+        /// of the engine uses.
+        /// </remarks>
         public static object GetFieldValue(object record, string fieldName)
         {
             if (record == null || string.IsNullOrEmpty(fieldName)) return null;
-            try
-            {
-                return record.GetType()
-                    .GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
-                    ?.GetValue(record);
-            }
-            catch { return null; }
+            return RecordPropertyAccessor.TryGetValue(record, fieldName, out var value, logger: null)
+                ? value
+                : null;
         }
 
         /// <summary>
         /// Sets a field or property value on a record using case-insensitive reflection.
         /// </summary>
+        /// <remarks>
+        /// Routes through <see cref="RecordPropertyAccessor.TrySetValue"/>, which handles
+        /// the <see cref="Convert.ChangeType(object, Type)"/> call internally and logs a
+        /// throttled diagnostic on missing/read-only/type-mismatch. The previous inline
+        /// <c>ConvertValue</c> helper (removed) duplicated the conversion logic and
+        /// silently swallowed conversion failures.
+        /// </remarks>
         public static bool SetFieldValue(object record, string fieldName, object value)
         {
             if (record == null || string.IsNullOrEmpty(fieldName)) return false;
-            try
-            {
-                var prop = record.GetType()
-                    .GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (prop == null || !prop.CanWrite) return false;
-                prop.SetValue(record, ConvertValue(value, prop.PropertyType));
-                return true;
-            }
-            catch { return false; }
-        }
-
-        private static object ConvertValue(object value, Type targetType)
-        {
-            if (value == null) return null;
-            if (targetType.IsAssignableFrom(value.GetType())) return value;
-            var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
-            try { return Convert.ChangeType(value, underlying); }
-            catch { return value; }
+            return RecordPropertyAccessor.TrySetValue(record, fieldName, value, logger: null);
         }
 
         // ---------------------------------------------------------------
@@ -311,18 +303,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 Handler = ctx =>
                 {
                     if (ctx?.CurrentRecord == null) return TriggerResult.Success;
-                    try
+                    // Route through RecordPropertyAccessor: it handles the
+                    // case-insensitive property lookup, the type conversion via
+                    // Convert.ChangeType, the read-only check, and the throttled
+                    // diagnostic log. The previous direct GetProperty path was
+                    // case-sensitive (BindingFlags.IgnoreCase missing) and bypassed
+                    // the shared metadata catalog.
+                    var next = sequenceFn();
+                    if (!RecordPropertyAccessor.TrySetValue(ctx.CurrentRecord, fieldName, next, logger: null))
                     {
-                        var prop = ctx.CurrentRecord.GetType().GetProperty(fieldName);
-                        if (prop != null && prop.CanWrite)
-                            prop.SetValue(ctx.CurrentRecord, Convert.ChangeType(sequenceFn(), prop.PropertyType));
-                        return TriggerResult.Success;
-                    }
-                    catch (Exception ex)
-                    {
-                        ctx.ErrorMessage = $"AutoNumber failed: {ex.Message}";
+                        ctx.ErrorMessage = $"AutoNumber: field '{fieldName}' is missing or read-only on {ctx.CurrentRecord.GetType().Name}.";
                         return TriggerResult.Failure;
                     }
+                    return TriggerResult.Success;
                 }
             };
         }
@@ -349,17 +342,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             TriggerResult Stamp(TriggerContext ctx, bool isInsert)
             {
                 if (ctx?.CurrentRecord == null) return TriggerResult.Success;
-                var t    = ctx.CurrentRecord.GetType();
                 var user = getUserFn();
                 var now  = DateTime.Now;
 
+                // Route the per-field set through RecordPropertyAccessor so the
+                // lookup is case-insensitive, the type conversion is centralized,
+                // and missing/read-only fields produce a throttled diagnostic
+                // log instead of a silent no-op. The previous inline Set used a
+                // case-sensitive GetProperty and an empty catch that swallowed
+                // type-mismatch exceptions — meaning a record whose ModifiedAt
+                // property was typed as long instead of DateTime would silently
+                // not get stamped.
                 void Set(string field, object value)
                 {
-                    if (field == null) return;
-                    var p = t.GetProperty(field);
-                    if (p?.CanWrite == true)
-                        try { p.SetValue(ctx.CurrentRecord, Convert.ChangeType(value, p.PropertyType)); }
-                        catch { /* ignore type mismatch */ }
+                    if (string.IsNullOrEmpty(field)) return;
+                    RecordPropertyAccessor.TrySetValue(ctx.CurrentRecord, field, value, logger: null);
                 }
 
                 if (isInsert)
@@ -422,10 +419,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 Handler = ctx =>
                 {
                     if (ctx?.CurrentRecord == null) return TriggerResult.Success;
-                    var pkProp = ctx.CurrentRecord.GetType().GetProperty(primaryKeyField);
-                    if (pkProp == null) return TriggerResult.Success;
+                    // Route the primary-key read through RecordPropertyAccessor so the
+                    // lookup is case-insensitive (caller-supplied "Id" matches a
+                    // property declared as "id" or "ID"). The previous
+                    // Type.GetProperty(primaryKeyField) call had no IgnoreCase flag,
+                    // so a record whose PK property was named differently from the
+                    // cascade registration would silently fail to populate the
+                    // CascadeDelete_PKValue parameter — and downstream handlers
+                    // would then have no PK to filter the detail block on.
+                    if (!RecordPropertyAccessor.TryGetValue(ctx.CurrentRecord, primaryKeyField, out var pkValue, logger: null))
+                    {
+                        // No PK on the record — nothing to cascade. Treat as no-op
+                        // (matches the prior "return TriggerResult.Success" on a
+                        // missing property), but do not invent a null PK.
+                        return TriggerResult.Success;
+                    }
 
-                    var pkValue = pkProp.GetValue(ctx.CurrentRecord);
                     ctx.Parameters["CascadeDelete_Master"]  = masterBlockName;
                     ctx.Parameters["CascadeDelete_Detail"]  = detailBlockName;
                     ctx.Parameters["CascadeDelete_FK"]      = foreignKeyField;
@@ -463,20 +472,38 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 Handler = ctx =>
                 {
                     if (ctx?.CurrentRecord == null) return TriggerResult.Success;
-                    var prop = ctx.CurrentRecord.GetType().GetProperty(itemName);
-                    if (prop == null || !prop.CanRead || !prop.CanWrite) return TriggerResult.Success;
+                    // Route the read/write through RecordPropertyAccessor: the
+                    // previous direct GetProperty had no IgnoreCase flag, so a
+                    // trigger registered for "customerid" would not find a record
+                    // property named "CustomerId". The accessor is also the
+                    // single place that handles the read-only check, type
+                    // conversion, and throttled diagnostic.
+                    if (!RecordPropertyAccessor.TryGetValue(ctx.CurrentRecord, itemName, out var current, logger: null))
+                    {
+                        // No such property on the record — leave it alone. This
+                        // matches the prior "if (prop == null) return Success"
+                        // behavior, but with the case-insensitive catalog and
+                        // throttled warning rather than a silent no-op.
+                        return TriggerResult.Success;
+                    }
 
+                    object formatted;
                     try
                     {
-                        var formatted = formatter(prop.GetValue(ctx.CurrentRecord));
-                        prop.SetValue(ctx.CurrentRecord, formatted);
-                        return TriggerResult.Success;
+                        formatted = formatter(current);
                     }
                     catch (Exception ex)
                     {
-                        ctx.ErrorMessage = $"FormatField '{itemName}' failed: {ex.Message}";
+                        ctx.ErrorMessage = $"FormatField '{itemName}' formatter threw: {ex.Message}";
                         return TriggerResult.Failure;
                     }
+
+                    if (!RecordPropertyAccessor.TrySetValue(ctx.CurrentRecord, itemName, formatted, logger: null))
+                    {
+                        ctx.ErrorMessage = $"FormatField '{itemName}' is read-only or has an incompatible value type.";
+                        return TriggerResult.Failure;
+                    }
+                    return TriggerResult.Success;
                 }
             };
         }

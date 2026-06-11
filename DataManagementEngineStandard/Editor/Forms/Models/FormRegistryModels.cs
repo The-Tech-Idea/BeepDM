@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Editor.Forms.Models
 {
@@ -53,6 +54,26 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
 
         /// <summary>Gets or sets when the call was made.</summary>
         public DateTime CalledAt { get; set; } = DateTime.Now;
+
+        // B1: a TCS that the caller of CallFormAsync awaits. The callee sets it
+        // to true in ReturnToCallerAsync (or false in CloseFormAsync's
+        // "callee closed" branch — a follow-up if needed). Until that happens,
+        // the caller is genuinely suspended. We keep the TCS private and
+        // expose the Task so callers can await it without being able to set
+        // the result from outside the form manager.
+        private readonly TaskCompletionSource<bool> _completion
+            = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>Task that completes when the callee returns (or closes).</summary>
+        public Task Completion => _completion.Task;
+
+        /// <summary>Complete the entry's task. Called by the form manager when
+        /// the callee returns to the caller. Idempotent — subsequent calls are
+        /// silently ignored.</summary>
+        internal void Complete(bool success = true)
+        {
+            _completion.TrySetResult(success);
+        }
     }
 
     /// <summary>A message sent between forms via IFormMessageBus</summary>

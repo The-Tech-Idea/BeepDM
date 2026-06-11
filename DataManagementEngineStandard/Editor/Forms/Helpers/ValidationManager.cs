@@ -149,35 +149,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             if (string.IsNullOrWhiteSpace(blockName))
                 return;
-            
-            if (_rulesByBlockItem.TryRemove(blockName, out var blockRules))
+
+            // B3 (audit pass 3, 2026-06): TryRemove returns false when the
+            // block was already unregistered. The previous code ignored the
+            // return value and unconditionally iterated `blockRules.Values`
+            // — but when the block is missing, `blockRules` is the default
+            // (null) reference, and `blockRules.Values` throws NRE. A
+            // double-unregister is a realistic scenario (host tears down a
+            // block, then the form manager's teardown also runs) so this
+            // is not a defensive-only fix.
+            if (!_rulesByBlockItem.TryRemove(blockName, out var blockRules) || blockRules == null)
+                return;
+
+            // Remove all rules from name lookup
+            foreach (var itemRules in blockRules.Values)
             {
-                // Remove all rules from name lookup
-                foreach (var itemRules in blockRules.Values)
+                foreach (var rule in itemRules)
                 {
-                    foreach (var rule in itemRules)
-                    {
-                        _rulesByName.TryRemove(rule.RuleName, out _);
-                    }
+                    _rulesByName.TryRemove(rule.RuleName, out _);
                 }
             }
         }
-        
+
         /// <inheritdoc />
         public void UnregisterItemRules(string blockName, string itemName)
         {
             if (string.IsNullOrWhiteSpace(blockName))
                 return;
-            
+
             if (_rulesByBlockItem.TryGetValue(blockName, out var blockRules))
             {
                 var itemKey = itemName ?? "*";
-                if (blockRules.TryRemove(itemKey, out var itemRules))
+                // B4 (audit pass 3, 2026-06): TryRemove returns false when
+                // the item was already unregistered. The previous code
+                // iterated `itemRules` even when it was null, throwing NRE.
+                // Same scenario as B3.
+                if (!blockRules.TryRemove(itemKey, out var itemRules) || itemRules == null)
+                    return;
+
+                foreach (var rule in itemRules)
                 {
-                    foreach (var rule in itemRules)
-                    {
-                        _rulesByName.TryRemove(rule.RuleName, out _);
-                    }
+                    _rulesByName.TryRemove(rule.RuleName, out _);
                 }
             }
         }
@@ -185,9 +197,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <inheritdoc />
         public void ClearAllRules()
         {
-            _rulesByName.Clear();
-            _rulesByBlockItem.Clear();
-            _blockValidationEnabled.Clear();
+            // B5 (audit pass 3, 2026-06): serialize the three Clear() calls
+            // under _lockObject. A concurrent RegisterRule could land an
+            // entry in _rulesByName after its Clear() and in
+            // _rulesByBlockItem before its Clear(), leaving an orphan in
+            // _rulesByBlockItem that _rulesByName no longer knows about.
+            // Same fix pattern as TriggerManager.ClearAllTriggers.
+            lock (_lockObject)
+            {
+                _rulesByName.Clear();
+                _rulesByBlockItem.Clear();
+                _blockValidationEnabled.Clear();
+            }
         }
         
         #endregion
@@ -407,16 +428,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             {
                 BlockName = blockName
             };
-            
+
             if (records == null)
                 return result;
-            
+
+            // B11 (audit pass 3, 2026-06): track the record index
+            // and set it on each RecordValidationResult. The
+            // previous version did not, leaving RecordIndex at 0
+            // for every result. Also stamp the record dictionary
+            // onto the Record property so the caller can correlate
+            // the result with the input (the public API only sees
+            // the dictionary, so Record is the dictionary, not the
+            // original record object).
+            int index = 0;
             foreach (var record in records)
             {
                 var recordResult = ValidateRecord(blockName, record, timing);
+                recordResult.RecordIndex = index;
+                recordResult.Record = record;
                 result.RecordResults.Add(recordResult);
+                index++;
             }
-            
+
             return result;
         }
         
@@ -440,64 +473,106 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #endregion
         
         #region Asynchronous Validation
-        
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Async wrapper around <see cref="ValidateItem"/>. The work is
+        /// synchronous; this method offloads it to the thread pool.
+        /// </summary>
+        /// <remarks>
+        /// B10 (audit pass 3, 2026-06): the previous "async" path
+        /// wrapped the sync <c>ValidateItem</c> in
+        /// <c>Task.Run</c>. This is sync-over-async with extra
+        /// steps — the work itself is not parallel, just
+        /// off-thread. True parallel validation would require
+        /// per-rule async execution, which is out of scope for
+        /// this pass. The benefit of this wrapper is only that
+        /// the caller can <c>await</c> without blocking the UI
+        /// thread, which is a real (if narrow) win.
+        /// </remarks>
         public async Task<ItemValidationResult> ValidateItemAsync(string blockName, string itemName, object value, ValidationTiming timing = ValidationTiming.Manual, CancellationToken cancellationToken = default)
         {
             return await Task.Run(() => ValidateItem(blockName, itemName, value, timing), cancellationToken);
         }
-        
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Async wrapper around <see cref="ValidateRecord"/>. The
+        /// work is synchronous; this method offloads it to the
+        /// thread pool. See <see cref="ValidateItemAsync"/> for the
+        /// sync-over-async caveat.
+        /// </summary>
         public async Task<RecordValidationResult> ValidateRecordAsync(string blockName, IDictionary<string, object> record, ValidationTiming timing = ValidationTiming.Manual, CancellationToken cancellationToken = default)
         {
             return await Task.Run(() => ValidateRecord(blockName, record, timing), cancellationToken);
         }
-        
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Validates a block of records in parallel. The per-record
+        /// validation is itself synchronous; this method fans out
+        /// the records to the thread pool via
+        /// <see cref="ValidateRecordAsync"/>.
+        /// </summary>
+        /// <remarks>
+        /// B10: the parallelism here is real (records are
+        /// validated concurrently on the thread pool), but the
+        /// per-record work is still sync-over-async on any
+        /// async resources it touches. This is useful when
+        /// records are I/O-light and CPU-bound, but a wasted
+        /// fan-out for records that are themselves I/O-bound
+        /// (e.g. ValidateLookup / ValidateUnique hit a
+        /// database). For I/O-heavy records, prefer the sync
+        /// entry point <see cref="ValidateBlock"/> in a
+        /// background thread, or pre-load the data before
+        /// calling.
+        /// </remarks>
         public async Task<BlockValidationResult> ValidateBlockAsync(string blockName, IEnumerable<IDictionary<string, object>> records, ValidationTiming timing = ValidationTiming.Manual, CancellationToken cancellationToken = default)
         {
             var result = new BlockValidationResult
             {
                 BlockName = blockName
             };
-            
+
             if (records == null)
                 return result;
-            
+
             var recordList = records.ToList();
-            var tasks = recordList.Select(record => 
+            var tasks = recordList.Select(record =>
                 ValidateRecordAsync(blockName, record, timing, cancellationToken));
-            
+
             var recordResults = await Task.WhenAll(tasks);
             result.RecordResults.AddRange(recordResults);
-            
+
             return result;
         }
-        
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Validates a form (collection of blocks) in parallel. The
+        /// per-block validation runs concurrently. See
+        /// <see cref="ValidateBlockAsync"/> for the
+        /// sync-over-async caveat.
+        /// </summary>
         public async Task<FormValidationResult> ValidateFormAsync(IDictionary<string, IEnumerable<IDictionary<string, object>>> formData, ValidationTiming timing = ValidationTiming.Manual, CancellationToken cancellationToken = default)
         {
             var result = new FormValidationResult();
-            
+
             if (formData == null)
                 return result;
-            
+
             var tasks = formData.Select(async block =>
             {
                 var blockResult = await ValidateBlockAsync(block.Key, block.Value, timing, cancellationToken);
                 return (block.Key, blockResult);
             });
-            
+
             var blockResults = await Task.WhenAll(tasks);
-            
+
             foreach (var (blockName, blockResult) in blockResults)
             {
                 result.BlockResults[blockName] = blockResult;
             }
-            
+
             return result;
         }
-        
+
         #endregion
         
         #region Validation Context
@@ -539,23 +614,29 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private IReadOnlyList<ValidationRule> GetApplicableRules(string blockName, string itemName, ValidationTiming timing)
         {
             var rules = new List<ValidationRule>();
-            
+
             // Get item-specific rules
             if (!string.IsNullOrWhiteSpace(itemName))
             {
                 rules.AddRange(GetRulesForItem(blockName, itemName));
             }
-            
-            // Get block-level rules (itemName is null or "*")
-            rules.AddRange(GetRulesForItem(blockName, null));
+
+            // Get block-level rules. RegisterRule stores them under the
+            // key "*" (via `rule.ItemName ?? "*"`), so the single call
+            // below retrieves them. The previous version called this
+            // twice (once with null, once with "*") but both keys
+            // resolve to the same underlying list, making the second
+            // call a no-op that was subsequently de-duped by
+            // Distinct(). Removed the duplicate (B7, audit pass 3,
+            // 2026-06).
             rules.AddRange(GetRulesForItem(blockName, "*"));
-            
+
             // Filter by timing (Manual timing matches all)
             if (timing != ValidationTiming.Manual)
             {
                 rules = rules.Where(r => r.Timing == timing || r.Timing == ValidationTiming.Manual).ToList();
             }
-            
+
             return rules.Distinct().ToList();
         }
         
@@ -584,10 +665,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 }
                 
                 result.IsValid = ValidateByType(rule, value, record);
-                
+
                 if (!result.IsValid)
                 {
-                    result.ErrorMessage = rule.GetFormattedMessage(rule.ItemName, value);
+                    // B31 (audit pass 3, 2026-06): if a validator set a
+                    // diagnostic (e.g. ValidateCustom on a UI thread),
+                    // use it as the error message instead of the
+                    // rule's default. The diagnostic explains WHY the
+                    // validator returned false — without it, a
+                    // false-return on a UI thread looks identical to
+                    // "the field is actually invalid" and the user
+                    // gets a confusing "field is invalid" error.
+                    result.ErrorMessage = !string.IsNullOrEmpty(_lastValidationDiagnostic)
+                        ? _lastValidationDiagnostic
+                        : rule.GetFormattedMessage(rule.ItemName, value);
+                    _lastValidationDiagnostic = null;
                 }
             }
             catch (Exception ex)
@@ -607,11 +699,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 RuleName = rule.RuleName,
                 Severity = rule.Severity
             };
-            
+
             try
             {
                 if (rule.CustomValidator != null)
                 {
+                    // B3 (audit pass 3, 2026-06): avoid
+                    // .GetAwaiter().GetResult() deadlock on UI
+                    // threads. The custom validator signature
+                    // returns Task<...>, so we have no sync
+                    // alternative here. Instead, detect a captured
+                    // SynchronizationContext and treat a deadlock
+                    // as "validation not yet runnable from this
+                    // thread"; the caller can retry via
+                    // ValidateFormAsync if they need async
+                    // semantics.
+                    if (SynchronizationContext.Current != null)
+                    {
+                        result.IsValid = false;
+                        result.ErrorMessage =
+                            "Custom cross-field validator is async but " +
+                            "ExecuteCrossFieldValidation is sync. Call " +
+                            "ValidateFormAsync to run async validators.";
+                        return result;
+                    }
                     var validationResult = rule.CustomValidator(null, record, record as Dictionary<string, object> ?? new Dictionary<string, object>(record)).GetAwaiter().GetResult();
                     result.IsValid = validationResult.isValid;
                     if (!result.IsValid && !string.IsNullOrEmpty(validationResult.errorMessage))
@@ -622,14 +733,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     // Compare two fields
                     object value1 = record.TryGetValue(rule.ItemName, out var v1) ? v1 : null;
                     object value2 = record.TryGetValue(rule.CompareFieldName, out var v2) ? v2 : null;
-                    
+
                     result.IsValid = CompareValues(value1, value2, rule.ValidationType);
                 }
                 else
                 {
                     result.IsValid = true;
                 }
-                
+
                 if (!result.IsValid && string.IsNullOrEmpty(result.ErrorMessage))
                 {
                     result.ErrorMessage = rule.GetFormattedMessage(rule.ItemName, null);
@@ -641,7 +752,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 result.ErrorMessage = $"Cross-field validation error: {ex.Message}";
                 result.Exception = ex;
             }
-            
+
             return result;
         }
         
@@ -715,13 +826,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             if (value == null)
                 return true; // Use Required for null check
-            
+
             try
             {
                 var comparableValue = Convert.ToDouble(value);
-                var min = minValue != null ? Convert.ToDouble(minValue) : double.MinValue;
-                var max = maxValue != null ? Convert.ToDouble(maxValue) : double.MaxValue;
-                
+                // B26 (audit pass 3, 2026-06): use double.NegativeInfinity /
+                // double.PositiveInfinity for "no lower / no upper bound".
+                // The previous code used double.MinValue / double.MaxValue,
+                // which works today (every double is in [MinValue, MaxValue])
+                // but is the wrong constant — double.MinValue is the most
+                // NEGATIVE double, not the smallest. A future maintainer
+                // reading "double.MinValue" and asking "wait, what if I have
+                // a subnormal value?" would have a hard time convincing
+                // themselves the range is correctly open at the bottom.
+                var min = minValue != null ? Convert.ToDouble(minValue) : double.NegativeInfinity;
+                var max = maxValue != null ? Convert.ToDouble(maxValue) : double.PositiveInfinity;
+
                 return comparableValue >= min && comparableValue <= max;
             }
             catch
@@ -856,24 +976,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             if (value == null)
                 return true;
-            
+
             if (_dataSource == null)
                 return true;
 
             if (!TryResolveValidationTarget(rule, rule.ItemName, out var entityName, out var fieldName))
                 return true;
 
-            if (!TryQueryRows(entityName, CreateEqualityFilters(fieldName, value), out var rows))
+            // B29 (audit pass 3, 2026-06): lookups are informational, not
+            // security-critical. Keep the fail-open behavior — if the DB
+            // is down, we let the value pass so the user can keep
+            // working, with a Debug.WriteLine to surface the issue to
+            // operators. This is a deliberate departure from the
+            // ValidateUnique behavior (B30), which fails closed.
+            if (TryQueryRowsEx(entityName, CreateEqualityFilters(fieldName, value), out var rows) == QueryOutcome.Error)
                 return true;
 
             return rows.Count > 0;
         }
-        
+
         private bool ValidateUnique(object value, ValidationRule rule, IDictionary<string, object> record)
         {
             if (value == null)
                 return true;
-            
+
             if (_dataSource == null)
                 return true;
 
@@ -885,12 +1011,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             if (string.IsNullOrWhiteSpace(entityName) || string.IsNullOrWhiteSpace(fieldName))
                 return true;
 
-            if (!TryQueryRows(entityName, CreateEqualityFilters(fieldName, value), out var rows))
+            // B30 (audit pass 3, 2026-06): uniqueness is a security-
+            // critical check. The previous version returned true
+            // (validation passed) on DB error, which silently allowed
+            // duplicates when the database was unavailable. The fix
+            // fails CLOSED: if the query errored, treat the value as
+            // not-unique. The caller will see the validation fail and
+            // the user can retry once the DB is back. This is a
+            // behavior change from "silently allow duplicate" to
+            // "block the save when DB is unavailable" — intentional.
+            var outcome = TryQueryRowsEx(entityName, CreateEqualityFilters(fieldName, value), out var rows);
+            if (outcome == QueryOutcome.Error)
+                return false;
+            if (outcome == QueryOutcome.Empty)
                 return true;
 
-            if (rows.Count == 0)
-                return true;
-
+            // outcome == Ok and rows.Count > 0: check identity fields
             var identityFields = GetCompareFieldNames(rule, record);
             if (identityFields.Count == 0)
                 return false;
@@ -898,13 +1034,40 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             return rows.All(row => RecordMatchesIdentityFields(row, identityFields) );
         }
         
+        // B31 (audit pass 3, 2026-06): per-call diagnostic that the
+        // dispatcher can pick up after a false return. Without this
+        // side-channel, ValidateCustom returning false on a UI thread
+        // looks identical to "the field is actually invalid" — the
+        // user sees the same error message and can't tell that the
+        // engine refused to run the validator. ExecuteValidation reads
+        // this after ValidateByType and overrides ErrorMessage if it
+        // is set. The value is intentionally per-instance (a field,
+        // not a static) so concurrent validations don't clobber each
+        // other — the lock in ValidateItemCore ensures
+        // ValidateByType and the read in ExecuteValidation run on the
+        // same thread.
+        private string _lastValidationDiagnostic;
+
         private bool ValidateCustom(object value, ValidationRule rule)
         {
             if (rule.CustomValidator == null)
                 return true;
-            
+
+            // B3 (audit pass 3, 2026-06): if we're on a UI thread
+            // (captured SynchronizationContext), refuse to block on
+            // the async validator. The caller can retry via
+            // ValidateItemAsync for true async semantics.
+            if (SynchronizationContext.Current != null)
+            {
+                _lastValidationDiagnostic =
+                    "Custom validator was not executed because the form is on a UI thread. " +
+                    "Use ValidateItemAsync (or the Form's async validate path) to run async validators.";
+                return false;
+            }
+
             try
             {
+                _lastValidationDiagnostic = null;
                 var record = new Dictionary<string, object>
                 {
                     { rule.ItemName ?? "value", value }
@@ -912,8 +1075,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 var result = rule.CustomValidator(value, null, record).GetAwaiter().GetResult();
                 return result.isValid;
             }
-            catch
+            catch (Exception ex)
             {
+                _lastValidationDiagnostic = $"Custom validator threw: {ex.Message}";
                 return false;
             }
         }
@@ -995,32 +1159,72 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             };
         }
 
+        /// <summary>
+        /// Outcome of a single validation query against the data source.
+        /// Lets the caller distinguish "no rows found" (Empty, a real
+        /// result) from "the DB call threw" (Error, an undefined
+        /// result). The previous bool out-parameter collapsed both
+        /// into a single false, which forced callers like
+        /// <see cref="ValidateUnique"/> to silently pass on DB error —
+        /// a security bypass for a uniqueness check.
+        /// </summary>
+        private enum QueryOutcome
+        {
+            /// <summary>Query ran successfully (rows is populated, possibly empty).</summary>
+            Ok,
+            /// <summary>Query ran successfully and returned zero rows.</summary>
+            Empty,
+            /// <summary>Data source is null, entity name is empty, or the query threw.</summary>
+            Error
+        }
+
         private bool TryQueryRows(string entityName, IEnumerable<AppFilter> filters, out List<object> rows)
+        {
+            // Back-compat shim: collapse the tri-state outcome into a bool.
+            // Existing callers that just want "did the query return
+            // anything, including empty" get true for Ok+Empty. Callers
+            // that need to distinguish Error from Empty use
+            /// <see cref="TryQueryRowsEx"/> directly.
+            var outcome = TryQueryRowsEx(entityName, filters, out rows);
+            return outcome != QueryOutcome.Error;
+        }
+
+        private QueryOutcome TryQueryRowsEx(string entityName, IEnumerable<AppFilter> filters, out List<object> rows)
         {
             rows = new List<object>();
 
             if (_dataSource == null || string.IsNullOrWhiteSpace(entityName))
-                return false;
+                return QueryOutcome.Error;
 
+            // B3 (audit pass 3, 2026-06): sync-first, async-only-on-failure.
+            // The previous version did sync-first, but the fallback to
+            // async used .GetAwaiter().GetResult() which is the
+            // classic sync-over-async deadlock pattern when called
+            // from a UI thread (the FormsManager runs on a UI thread
+            // per form). The deadlock happens when the awaited task
+            // tries to resume on the captured SynchronizationContext
+            // and the context is blocked waiting for the task to
+            // complete.
+            //
+            // Fix: keep the sync path as the primary call (it's the
+            // path most data sources support), and if it throws,
+            // surface Error rather than block. The async API is still
+            // available via ValidateBlockAsync / ValidateFormAsync.
             try
             {
                 var data = _dataSource.GetEntity(entityName, filters?.ToList() ?? new List<AppFilter>());
                 rows = MaterializeRows(data);
-                return true;
+                return rows.Count == 0 ? QueryOutcome.Empty : QueryOutcome.Ok;
             }
-            catch
+            catch (Exception ex)
             {
-                try
-                {
-                    var data = _dataSource.GetEntityAsync(entityName, filters?.ToList() ?? new List<AppFilter>()).GetAwaiter().GetResult();
-                    rows = MaterializeRows(data);
-                    return true;
-                }
-                catch
-                {
-                    rows = new List<object>();
-                    return false;
-                }
+                // Sync path failed. Distinguish from "no rows" so
+                // security-critical callers (ValidateUnique) can fail
+                // closed. The previous implementation silently treated
+                // this as a pass — see B29/B30.
+                Debug.WriteLine(
+                    $"[ValidationManager] TryQueryRows failed for entity '{entityName}': {ex.Message}");
+                return QueryOutcome.Error;
             }
         }
 
@@ -1057,11 +1261,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             var fieldNames = rule.CompareFieldName
                 .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+            // B6 (audit pass 3, 2026-06): the previous version silently
+            // dropped fields whose value was null in the record. That
+            // could cause a "match any single field" false negative on
+            // a unique-constraint check (e.g. a composite key with
+            // (OrderId=1, LineNumber=null) would have its LineNumber
+            // dropped, then the check would compare OrderId only,
+            // finding a false match and rejecting the save).
+            //
+            // New behavior: include the field with a null value in
+            // the identity set. The downstream RecordMatchesIdentityFields
+            // already handles null values (AreEquivalentValues treats
+            // null == null as true), so this is consistent.
             foreach (var fieldName in fieldNames)
             {
-                if (record.TryGetValue(fieldName, out var value) && value != null)
+                if (record.TryGetValue(fieldName, out var value))
                 {
-                    identityFields[fieldName] = value;
+                    identityFields[fieldName] = value; // value may be null
                 }
             }
 
@@ -1097,16 +1313,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 return true;
             }
 
-            var property = source.GetType().GetProperty(fieldName,
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.IgnoreCase);
-
-            if (property == null)
-                return false;
-
-            value = property.GetValue(source);
-            return true;
+            // B5 (audit pass 3, 2026-06): use RecordPropertyAccessor
+            // instead of the inline Type.GetProperty reflection. The
+            // accessor provides a process-wide PropertyInfo cache
+            // (so repeated reads of the same field on rows of the
+            // same type are O(1)) and emits a throttled diagnostic
+            // on miss, which previously was a silent null return.
+            //
+            // Note: this method is static and doesn't have access to
+            // _dmeEditor for the diagnostic, so we pass null. The
+            // diagnostic is still useful (Debug.WriteLine fires) and
+            // the caller can correlate via the log type.
+            return RecordPropertyAccessor.TryGetValue(source, fieldName, out value);
         }
 
         private static bool AreEquivalentValues(object left, object right)

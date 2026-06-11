@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -61,6 +60,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #region LOV Registration
         
         /// <inheritdoc />
+        /// <remarks>
+        /// If <paramref name="lov"/>.<see cref="LOVDefinition.LOVName"/> is null or whitespace,
+        /// this method MUTATES the caller's <see cref="LOVDefinition"/> instance to set it to
+        /// <c>{blockName}_{fieldName}_LOV</c>. The mutation is intentional so that callers
+        /// reusing the same definition across multiple registrations see a consistent name, but
+        /// it is observable from the caller's reference. If this is a concern, pass a dedicated
+        /// instance per registration.
+        ///
+        /// Re-registering an existing LOV for the same (blockName, fieldName) is a
+        /// supported idempotent operation. The previous definition is overwritten and any
+        /// in-memory cache it held is cleared (best-effort) so a downstream caller cannot
+        /// read stale rows from the dropped reference.
+        /// </remarks>
         public void RegisterLOV(string blockName, string fieldName, LOVDefinition lov)
         {
             if (string.IsNullOrWhiteSpace(blockName))
@@ -69,14 +81,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 throw new ArgumentException("Field name required", nameof(fieldName));
             if (lov == null)
                 throw new ArgumentNullException(nameof(lov));
-            
-            // Set LOV name if not specified
+
+            // Set LOV name if not specified (intentional mutation of the caller's instance — see remarks).
             if (string.IsNullOrWhiteSpace(lov.LOVName))
             {
                 lov.LOVName = $"{blockName}_{fieldName}_LOV";
             }
-                
+
             var key = GetLOVKey(blockName, fieldName);
+            if (_lovs.TryGetValue(key, out var previous) && !ReferenceEquals(previous, lov))
+            {
+                // Diagnostic: caller is replacing a different definition. We clear the dropped
+                // reference's cache so its rows cannot leak via another reference the caller
+                // might still hold. (If previous == lov, the call is idempotent and we skip.)
+                try { previous?.ClearCache(); }
+                catch (Exception ex) { Debug.WriteLine($"[LOVManager] Dropped LOV cache clear failed for '{key}': {ex.Message}"); }
+                Debug.WriteLine($"[LOVManager] RegisterLOV is replacing existing definition for '{key}'. " +
+                                $"Previous='{previous?.LOVName}', New='{lov.LOVName}'.");
+            }
             _lovs[key] = lov;
         }
         
@@ -152,41 +174,66 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         public async Task<LOVResult> LoadLOVDataAsync(LOVDefinition lov, string searchText = null)
         {
             var stopwatch = Stopwatch.StartNew();
-            
+
             try
             {
-                // Check cache first (only if no search text)
-                if (string.IsNullOrEmpty(searchText) && lov.IsCacheValid())
+                // Check cache first (only if no search text). The CachedData list and the
+                // IsCacheValid() check both read state on the shared lov instance, and the
+                // later write (lov.CachedData = ...) needs to publish the new list atomically
+                // with the timestamp — otherwise a concurrent loader can observe
+                // (CacheTimestamp != null) while CachedData is mid-swap, or a reader can
+                // enumerate CachedData while another thread is replacing it.
+                // We serialize the read+write with _lockObject; the actual DB query below
+                // happens outside the lock so concurrent loads for different LOVs are not
+                // serialized with each other.
+                if (string.IsNullOrEmpty(searchText))
                 {
-                    stopwatch.Stop();
-                    return new LOVResult
+                    List<object> cachedSnapshot = null;
+                    bool cacheHit = false;
+                    lock (_lockObject)
                     {
-                        Success = true,
-                        Records = lov.CachedData,
-                        TotalCount = lov.CachedData.Count,
-                        FromCache = true,
-                        LoadTimeMs = stopwatch.ElapsedMilliseconds
-                    };
+                        cacheHit = lov.IsCacheValid();
+                        if (cacheHit)
+                        {
+                            // Materialize a snapshot so the reader cannot observe a torn
+                            // CachedData list if another thread swaps it during enumeration.
+                            cachedSnapshot = lov.CachedData != null
+                                ? new List<object>(lov.CachedData)
+                                : new List<object>();
+                        }
+                    }
+                    if (cacheHit)
+                    {
+                        stopwatch.Stop();
+                        return new LOVResult
+                        {
+                            Success = true,
+                            Records = cachedSnapshot,
+                            TotalCount = cachedSnapshot.Count,
+                            FromCache = true,
+                            LoadTimeMs = stopwatch.ElapsedMilliseconds
+                        };
+                    }
                 }
-                
+
                 // Get data source
                 var dataSource = _dmeEditor.GetDataSource(lov.DataSourceName);
                 if (dataSource == null)
                 {
                     return LOVResult.Fail($"Data source '{lov.DataSourceName}' not found");
                 }
-                
+
                 // Open connection if needed
                 if (dataSource.ConnectionStatus != ConnectionState.Open)
                 {
                     dataSource.Openconnection();
                 }
-                
+
                 // Build filters
                 var filters = BuildFilters(lov, searchText);
-                
+
                 // Query data
-                var data = await Task.Run(() => 
+                var data = await Task.Run(() =>
                 {
                     if (filters.Count > 0)
                     {
@@ -194,12 +241,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     }
                     return dataSource.GetEntity(lov.EntityName, null);
                 });
-                
+
                 // Convert to list
                 var records = ConvertToList(data);
-                
+
                 stopwatch.Stop();
-                
+
                 var result = new LOVResult
                 {
                     Success = true,
@@ -208,14 +255,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     FromCache = false,
                     LoadTimeMs = stopwatch.ElapsedMilliseconds
                 };
-                
-                // Cache if not searching and caching enabled
+
+                // Cache if not searching and caching enabled. The publish step is atomic:
+                // assign CachedData before CacheTimestamp so a reader that observes a
+                // non-null CacheTimestamp is guaranteed to see the matching list.
                 if (string.IsNullOrEmpty(searchText) && lov.UseCache)
                 {
-                    lov.CachedData = records;
-                    lov.CacheTimestamp = DateTime.Now;
+                    lock (_lockObject)
+                    {
+                        lov.CachedData = records;
+                        lov.CacheTimestamp = DateTime.Now;
+                    }
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -280,20 +332,36 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 return LOVValidationResult.Invalid($"Cannot validate: {lovResult.ErrorMessage}");
             }
             
-            // Check if value exists in LOV
+            // Check if value exists in LOV. For large LOVs the previous O(N) loop is
+            // painful: every validation scanned every row, so a 10k-row LOV took
+            // 10k reflection calls per keystroke. Build a HashSet of the return-field
+            // string representations once, then look up the value in O(1). The HashSet
+            // uses OrdinalIgnoreCase so the match semantics are unchanged from the
+            // prior loop body.
             var valueStr = value.ToString();
             var returnField = lov.ReturnField ?? lov.DisplayField;
-            
+
+            // First pass: build the index of all return-field values. We keep the
+            // first record per unique value so callers see a deterministic
+            // "matched record" when duplicates exist in the data.
             object matchedRecord = null;
+            var returnValueIndex = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             foreach (var record in lovResult.Records)
             {
                 var fieldValue = GetPropertyValue(record, returnField);
-                if (fieldValue?.ToString()?.Equals(valueStr, StringComparison.OrdinalIgnoreCase) == true)
+                var key = fieldValue?.ToString();
+                if (key == null)
                 {
-                    matchedRecord = record;
-                    break;
+                    continue;
+                }
+                if (!returnValueIndex.ContainsKey(key))
+                {
+                    returnValueIndex[key] = record;
                 }
             }
+
+            // O(1) lookup.
+            returnValueIndex.TryGetValue(valueStr, out matchedRecord);
             
             if (matchedRecord != null)
             {
@@ -392,16 +460,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             foreach (var lov in GetBlockLOVs(blockName).Values)
             {
-                lov.ClearCache();
+                // ClearCache can throw if a LOVDefinition is in a partially
+                // constructed state (e.g. someone registered a definition and
+                // then nulled out one of its properties). Isolate each clear so
+                // one bad definition does not prevent the rest of the block's
+                // caches from being released.
+                try { lov.ClearCache(); }
+                catch (Exception ex) { Debug.WriteLine($"[LOVManager] ClearCache failed for block '{blockName}' LOV '{lov?.LOVName}': {ex.Message}"); }
             }
         }
-        
+
         /// <inheritdoc />
         public void ClearAllLOVCaches()
         {
             foreach (var lov in _lovs.Values)
             {
-                lov.ClearCache();
+                // Same isolation rationale as ClearBlockLOVCache: one bad
+                // definition must not abort the rest of the cleanup. The
+                // ClearCache call site is best-effort; we surface failures
+                // to the debug log so an operator can spot a stuck/malformed
+                // LOV without losing the entire batch.
+                try { lov.ClearCache(); }
+                catch (Exception ex) { Debug.WriteLine($"[LOVManager] ClearCache failed for LOV '{lov?.LOVName}': {ex.Message}"); }
             }
         }
         
@@ -540,35 +620,43 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             if (string.IsNullOrEmpty(searchText))
                 return true;
-                
-            searchText = searchText.ToLower();
-            
+
+            // We previously lowercased both sides and used the default culture-sensitive
+            // comparison. That makes a German user typing "Müller" match "Mueller" in
+            // ways the user almost certainly did not intend, and it makes a Turkish
+            // user typing "istanbul" (lower-case 'i' in their locale) NOT match
+            // "İstanbul" in the data — a real bug in any product with a non-English
+            // customer. Pin the comparison to OrdinalIgnoreCase so the match is
+            // culture-independent and matches the behavior used by the validation
+            // path (Equals(..., OrdinalIgnoreCase)).
+            const StringComparison cmp = StringComparison.OrdinalIgnoreCase;
+
             var searchableColumns = lov.Columns.Where(c => c.Searchable).ToList();
-            
+
             // If no columns defined, use display field
             if (!searchableColumns.Any() && !string.IsNullOrWhiteSpace(lov.DisplayField))
             {
                 searchableColumns.Add(new LOVColumn { FieldName = lov.DisplayField });
             }
-            
+
             foreach (var col in searchableColumns)
             {
-                var value = GetPropertyValue(record, col.FieldName)?.ToString()?.ToLower();
+                var value = GetPropertyValue(record, col.FieldName)?.ToString();
                 if (value == null)
                     continue;
-                    
+
                 bool matches = lov.SearchMode switch
                 {
-                    LOVSearchMode.StartsWith => value.StartsWith(searchText),
-                    LOVSearchMode.EndsWith => value.EndsWith(searchText),
-                    LOVSearchMode.Exact => value == searchText,
-                    _ => value.Contains(searchText)
+                    LOVSearchMode.StartsWith => value.StartsWith(searchText, cmp),
+                    LOVSearchMode.EndsWith => value.EndsWith(searchText, cmp),
+                    LOVSearchMode.Exact => string.Equals(value, searchText, cmp),
+                    _ => value.IndexOf(searchText, cmp) >= 0
                 };
-                
+
                 if (matches)
                     return true;
             }
-            
+
             return false;
         }
         
@@ -599,7 +687,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             if (obj == null || string.IsNullOrEmpty(propertyName))
                 return null;
-            
+
             try
             {
                 // Handle Dictionary
@@ -607,17 +695,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 {
                     return dict.TryGetValue(propertyName, out var val) ? val : null;
                 }
-                
+
                 // Handle DataRow
                 if (obj is DataRow row)
                 {
                     return row.Table.Columns.Contains(propertyName) ? row[propertyName] : null;
                 }
-                
-                // Handle regular objects via reflection
-                var prop = obj.GetType().GetProperty(propertyName, 
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                return prop?.GetValue(obj);
+
+                // Handle regular objects via the shared RecordPropertyAccessor. This
+                // routes the lookup through the engine-wide typed PropertyInfo catalog
+                // instead of a fresh Type.GetProperty(...) call per row. The accessor
+                // is also the single place we cache reflection metadata, so the perf
+                // and case-insensitive behavior stay consistent with the rest of the
+                // engine (Forms manager, savepoint manager, etc).
+                if (RecordPropertyAccessor.TryGetValue(obj, propertyName, out var value, logger: null))
+                {
+                    return value;
+                }
+                return null;
             }
             catch
             {

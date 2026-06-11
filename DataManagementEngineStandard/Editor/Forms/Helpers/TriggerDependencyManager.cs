@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -13,6 +14,15 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     public class TriggerDependencyManager : ITriggerDependencyManager
     {
         /// <summary>Orders trigger definitions according to dependency requirements.</summary>
+        /// <remarks>
+        /// If a trigger's <see cref="TriggerDefinition.DependsOn"/> list references a
+        /// <c>TriggerId</c> that is NOT present in <paramref name="triggers"/>, the
+        /// dependency is logged as a warning and the trigger is still added to the
+        /// result in its natural input order. The previous behavior silently dropped
+        /// the missing dep and the dependent trigger ran without its prerequisite —
+        /// a "fire and forget" that surfaced as a runtime no-op. The warning makes
+        /// the misconfiguration visible to the operator.
+        /// </remarks>
         public IReadOnlyList<TriggerDefinition> OrderByDependency(IReadOnlyList<TriggerDefinition> triggers)
         {
             if (triggers == null || triggers.Count == 0)
@@ -30,9 +40,29 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             void Visit(TriggerDefinition t)
             {
                 if (!visited.Add(t.TriggerId)) return;
-                foreach (var depId in t.DependsOn ?? new List<string>())
-                    if (byId.TryGetValue(depId, out var dep))
-                        Visit(dep);
+                if (t.DependsOn != null)
+                {
+                    foreach (var depId in t.DependsOn)
+                    {
+                        if (string.IsNullOrEmpty(depId)) continue;
+                        if (byId.TryGetValue(depId, out var dep))
+                        {
+                            Visit(dep);
+                        }
+                        else
+                        {
+                            // Missing dependency: log a warning so the operator can
+                            // spot the misconfiguration. We do not throw because
+                            // OrderByDependency is also called from non-critical
+                            // paths (e.g. UI inspection), and a missing dep is
+                            // usually a deployment issue rather than a hard error.
+                            Debug.WriteLine(
+                                $"[TriggerDependencyManager] Trigger '{t.TriggerName}' (id={t.TriggerId}) " +
+                                $"depends on '{depId}', but no trigger with that id is in the input set. " +
+                                "The dependent trigger will fire without its prerequisite.");
+                        }
+                    }
+                }
                 result.Add(t);
             }
 

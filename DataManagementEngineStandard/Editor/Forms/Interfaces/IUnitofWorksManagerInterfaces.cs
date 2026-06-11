@@ -113,7 +113,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
             CancellationToken cancellationToken = default);
 
         /// <summary>Synchronizes detail blocks attached to the specified master block.</summary>
-        Task SynchronizeDetailBlocksAsync(string masterBlockName);
+        /// <param name="masterBlockName">Master block whose detail blocks should be synchronized.</param>
+        /// <param name="ct">Cancellation token; observed at each relationship iteration and at the start of each recursive call.</param>
+        Task SynchronizeDetailBlocksAsync(string masterBlockName, CancellationToken ct = default);
 
         /// <summary>Returns the detail block names attached to a master block.</summary>
         List<string> GetDetailBlocks(string masterBlockName);
@@ -370,30 +372,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     }
 
     /// <summary>
-    /// Deprecated legacy helper for the old standalone relationship helper.
-    /// Active master/detail orchestration now lives directly in FormsManager master/detail methods.
-    /// </summary>
-    [Obsolete("IRelationshipManager is deprecated. Use FormsManager master/detail methods instead.")]
-    public interface IRelationshipManager
-    {
-        /// <summary>Creates a master-detail relationship between two blocks.</summary>
-        void CreateMasterDetailRelation(string masterBlockName, string detailBlockName, 
-            string masterKeyField, string detailForeignKeyField, RelationshipType relationshipType = RelationshipType.OneToMany);
-
-        /// <summary>Synchronizes the detail blocks attached to a master block.</summary>
-        Task SynchronizeDetailBlocksAsync(string masterBlockName);
-
-        /// <summary>Returns the detail block names attached to a master block.</summary>
-        List<string> GetDetailBlocks(string masterBlockName);
-
-        /// <summary>Returns the master block name for a detail block.</summary>
-        string GetMasterBlock(string detailBlockName);
-
-        /// <summary>Removes all relationships involving a specific block.</summary>
-        void RemoveBlockRelationships(string blockName);
-    }
-
-    /// <summary>
     /// Interface for dirty state management functionality
     /// </summary>
     public interface IDirtyStateManager
@@ -466,6 +444,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Gets a named property value from an object.</summary>
         object GetPropertyValue(object obj, string propertyName);
+
+        // PR 17 (rev 2): the next two methods were referenced from
+        // FormsManager.FormsSimulation.cs wrappers but were missing from
+        // the interface. FormsSimulationHelper (the implementation) had
+        // them all along, so this is just a contract gap. Adding them here
+        // lets the engine compile.
+
+        /// <summary>Sets a named system variable (e.g. <c>SYSTEM.RECORD_STATUS</c>) on a record.</summary>
+        void SetSystemVariables(object record, SystemVariableType variableType, object value = null);
+
+        /// <summary>Validates a field's value against a set of field constraints. Returns the validation result.</summary>
+        ValidationResult ValidateField(object record, string FieldName, object value, FieldConstraints constraints = null);
     }
 
     /// <summary>
@@ -1714,7 +1704,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         string CreateSavepoint(string blockName, string savepointName = null);
 
         /// <summary>Create a savepoint with full state detail and optional record snapshot</summary>
-        string CreateSavepoint(string blockName, string savepointName, int recordIndex, int recordCount, bool isDirty, Dictionary<string, object> snapshot = null);
+        string CreateSavepoint(string blockName, string savepointName, int recordIndex, int recordCount, bool isDirty, IDictionary<string, object> snapshot = null);
 
         /// <summary>Roll back to a named savepoint; removes later savepoints</summary>
         Task<bool> RollbackToSavepointAsync(string blockName, string savepointName, CancellationToken ct = default);

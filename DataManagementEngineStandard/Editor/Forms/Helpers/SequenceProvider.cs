@@ -64,7 +64,11 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private SequenceEntry GetOrCreate(string sequenceName)
         {
             if (string.IsNullOrWhiteSpace(sequenceName)) throw new ArgumentNullException(nameof(sequenceName));
-            return _sequences.GetOrAdd(sequenceName, _ => new SequenceEntry(1, 1));
+            // B10 (audit pass 3, 2026-06): `static` keyword on
+            // the lambda enables Roslyn's delegate caching (no
+            // closure allocation per call). The factory is
+            // captureless and pure, so this is safe.
+            return _sequences.GetOrAdd(sequenceName, static _ => new SequenceEntry(1, 1));
         }
     }
 }

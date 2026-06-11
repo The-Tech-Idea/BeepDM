@@ -1,16 +1,26 @@
 # FormsManager
 
-FormsManager is the BeepDM form-orchestration runtime in the `TheTechIdea.Beep.Editor.UOWManager` namespace. It is the current concrete implementation behind `IUnitofWorksManager` and coordinates block registration, navigation, mode transitions, master/detail synchronization, triggers, LOVs, validation, auditing, security, paging, and multi-form communication.
+`FormsManager` is the BeepDM form-orchestration runtime in the `TheTechIdea.Beep.Editor.UOWManager` namespace. It is the current concrete implementation behind `IUnitofWorksManager` and coordinates block registration, navigation, mode transitions, master/detail synchronization, triggers, LOVs, validation, auditing, security, paging, and multi-form communication. The intent is to provide an Oracle Forms–compatible runtime surface that UIs (WinForms, Blazor, Razor) can call into without re-implementing the orchestration.
 
 This README replaces the older `UnitofWorksManager` naming found in earlier notes. The public runtime surface is `FormsManager`; the compatibility interface is still named `IUnitofWorksManager`.
 
-## Related documentation
+## Documentation map
 
-- [MIGRATION-GUIDE.md](MIGRATION-GUIDE.md)
-- [ORACLE-FORMS-MAPPING.md](ORACLE-FORMS-MAPPING.md)
-- [Helpers/README.md](Helpers/README.md)
-- [Interfaces/README.md](Interfaces/README.md)
-- [Models/README.md](Models/README.md)
+This folder has multiple documents. Read them in this order for the cleanest introduction:
+
+1. **[`architecture.md`](architecture.md)** — subsystems, layering, request flow, and the host/orchestrator/helper model. Read this first to understand what FormsManager *is* before reading the API.
+2. **[`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md)** — every Oracle Forms concept that has a counterpart here, with the exact FormsManager method and a status (complete / partial / missing). This is the **biggest gap-tracking document** in this folder.
+3. **[`functional-matrix.md`](functional-matrix.md)** — every public type and capability, in tabular form. Use this as a lookup reference.
+4. **[`functionality/`](functionality/)** — per-subsystem deep-dives, one document per major concern (navigation, triggers, validation, LOV, master-detail, security, audit, multi-form, timers, alerts, sequences, performance, builtins).
+5. **[`gaps.md`](gaps.md)** — what the engine does not yet do. Read after the mapping doc.
+6. **[`enhancements.md`](enhancements.md)** — prioritized list of opportunities to close those gaps.
+
+Related documentation outside this folder:
+
+- **[`MIGRATION-GUIDE.md`](MIGRATION-GUIDE.md)** — older legacy migration notes.
+- **[`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md)** — older state-of-the-engine assessment. **Out of date**; do not use as a current reference. See [`gaps.md`](gaps.md) for the current state.
+- **[`Helpers/README.md`](Helpers/README.md)**, **[`Interfaces/README.md`](Interfaces/README.md)**, **[`Models/README.md`](Models/README.md)** — index docs for the three subfolders.
+- **[`plan.instructions.md`](plan.instructions.md)** — historical planning notes.
 
 ## What FormsManager owns
 
@@ -19,11 +29,11 @@ This README replaces the older `UnitofWorksManager` naming found in earlier note
 - Query-mode and CRUD-mode transitions.
 - Navigation history, savepoints, locks, and cross-block validation.
 - Oracle Forms-style built-ins such as alerts, timers, sequences, and block properties.
-- Multi-form registry/message/shared-block plumbing.
+- Multi-form registry / message / shared-block plumbing.
 - Integration of helper managers for validation, LOV, triggers, audit, security, paging, and caching.
 - Runtime trigger metadata and block UoW activity that host UIs may observe only through proxy layers such as `BeepForms` / `IBeepFormsHost`.
 
-## What stays in IUnitofWork
+## What stays in `IUnitofWork`
 
 - Persistence and actual CRUD execution.
 - Dirty-state ownership.
@@ -42,57 +52,9 @@ Integrated WinForms controls should not subscribe to `FormsManager.Triggers` or 
 5. Do not auto-number composite keys.
 6. Never consume sequence values during query, paging, navigation, or cache prefetch.
 
-## Architecture
+## Architecture (one-paragraph version)
 
-### Partial-class surface
-
-| File | Responsibility |
-| --- | --- |
-| `FormsManager.cs` | Core registration, properties, DI wiring, master/detail ownership |
-| `FormsManager.FormOperations.cs` | Open, close, commit, rollback, clear-form behavior |
-| `FormsManager.Navigation.cs` | Record navigation, block switching, history integration |
-| `FormsManager.ModeTransitions.cs` | `ENTER_QUERY`, `EXECUTE_QUERY`, CRUD transition rules |
-| `FormsManager.EnhancedOperations.cs` | Insert, update, delete, duplicate, audit defaults |
-| `FormsManager.DataOperations.cs` | Undo/redo, batch commit, export/import, aggregates, state persistence |
-| `FormsManager.GenericOperations.cs` | Typed registration and `ShowLOVAsync` |
-| `FormsManager.BlockProperties.cs` | `SET_BLOCK_PROPERTY` / `GET_BLOCK_PROPERTY` equivalents |
-| `FormsManager.Alerts.cs` | `MESSAGE`, `SHOW_ALERT`, confirmation helpers |
-| `FormsManager.Sequences.cs` | Sequence, default-value, copy-field helpers |
-| `FormsManager.Timers.cs` | `CREATE_TIMER`, `DELETE_TIMER`, `GET_TIMER` |
-| `FormsManager.MultiFormNavigation.cs` | `CALL_FORM`, modeless `OPEN_FORM`, `NEW_FORM`, return-to-caller |
-| `FormsManager.InterFormComm.cs` | `:GLOBAL.*`, message bus, shared blocks |
-| `FormsManager.Security.cs` | Security context, block security, field security, masking |
-| `FormsManager.Audit.cs` | Audit capture, export, purge, underlying manager access |
-| `FormsManager.Performance.cs` | Paging, lazy loading, cache invalidation, fetch-ahead |
-| `FormsManager.KeyTriggers.cs` | KEY-* trigger wrappers and default keyboard actions |
-| `FormsManager.TriggerChaining.cs` | Trigger execution graph and dependency logging |
-
-### Helper-manager surface
-
-FormsManager exposes helper managers as properties so callers can opt into lower-level behavior without reimplementing orchestration.
-
-- `DirtyStateManager`
-- `SystemVariables`
-- `Validation`
-- `LOV`
-- `ItemProperties`
-- `Triggers`
-- `Savepoints`
-- `Locking`
-- `QueryBuilder`
-- `ErrorLog`
-- `Messages`
-- `BlockFactory`
-- `BlockProperties`
-- `AlertProvider`
-- `Sequences`
-- `Timers`
-- `Registry`
-- `MessageBus`
-- `SharedBlocks`
-- `AuditManager`
-- `Security`
-- `Paging`
+`FormsManager` is a partial-class orchestrator that owns no significant logic itself. It composes 24 helper managers (one per concern: validation, LOV, triggers, security, audit, paging, etc.), exposes them as properties (`manager.LOV`, `manager.Triggers`, `manager.Validation`, …), and routes every public method to the right helper. The winforms / blazor / razor host implements `IBuiltinHost` and gets the `IBeepBuiltins` Oracle-style built-in surface. Persistence stays in `IUnitofWork`; orchestration is the FormsManager's job. Full detail in [`architecture.md`](architecture.md).
 
 ## Quick start
 
@@ -270,26 +232,39 @@ var page = await manager.LoadPageAsync("ORDERS", 3);
 var auditEntries = manager.GetAuditLog("ORDERS");
 ```
 
-## Oracle Forms coverage snapshot
+## Oracle Forms coverage snapshot (high-level)
 
-| Oracle Forms concept | FormsManager API | Notes |
+| Oracle Forms concept | FormsManager API | Status |
 | --- | --- | --- |
-| `ENTER_QUERY` | `EnterQueryModeAsync` | Moves a block into query mode with unsaved-change checks |
-| `EXECUTE_QUERY` | `ExecuteQueryAndEnterCrudModeAsync`, `ExecuteQueryAsync` | Query execution returns to CRUD mode when appropriate |
-| `COMMIT_FORM` | `CommitFormAsync` | Validates, saves dirty blocks, and coordinates locks/audit |
-| `ROLLBACK_FORM` | `RollbackFormAsync` | Rolls back dirty blocks and clears transient state |
-| `CLEAR_FORM` | `ClearAllBlocksAsync` | Clears all registered blocks |
-| `GO_BLOCK` | `SwitchToBlockAsync` | Current block selection stays in FormsManager |
-| `GO_RECORD` | `NavigateToRecordAsync` | Also backed by history helpers |
-| `SHOW_LOV` | `ShowLOVAsync` plus `LOV.RegisterLOV` | UI rendering stays outside FormsManager |
-| `SET_BLOCK_PROPERTY` | `SetBlockProperty`, `SetDefaultWhere`, `SetOrderBy` | Block metadata is stored on `DataBlockInfo` |
-| `MESSAGE` / `SHOW_ALERT` | `SetMessage`, `ShowAlertAsync`, `ConfirmAsync` | UI provider is injected through `IAlertProvider` |
-| `:SEQUENCE.NEXTVAL` | `GetNextSequence` | Use datasource-backed sequences first when available |
-| `CREATE_TIMER` | `CreateTimer` | Expiry raises `WHEN-TIMER-EXPIRED` |
-| `CALL_FORM` / `OPEN_FORM` / `NEW_FORM` | `CallFormAsync`, `OpenFormAsync`, `NewFormAsync` | Registry-backed, UI-agnostic multi-form behavior |
-| `:GLOBAL.*` | `SetGlobalVariable`, `GetGlobalVariable` | Shared global state across forms |
+| `ENTER_QUERY` | `EnterQueryModeAsync` | ✅ complete |
+| `EXECUTE_QUERY` | `ExecuteQueryAndEnterCrudModeAsync`, `ExecuteQueryAsync` | ✅ complete |
+| `COMMIT_FORM` | `CommitFormAsync` | ✅ complete |
+| `ROLLBACK_FORM` | `RollbackFormAsync` | ✅ complete |
+| `CLEAR_FORM` / `CLEAR_BLOCK` / `CLEAR_RECORD` | `ClearAllBlocksAsync`, `ClearBlockAsync` | ✅ complete |
+| `GO_BLOCK` / `GO_ITEM` / `GO_RECORD` | `SwitchToBlockAsync`, `GoItemAsync`, `NavigateToRecordAsync` | ✅ complete |
+| `NEXT_RECORD` / `PREVIOUS_RECORD` | `NextRecordAsync`, `PreviousRecordAsync` | ✅ complete |
+| `SHOW_LOV` | `ShowLOVAsync` plus `LOV.RegisterLOV` | ✅ complete |
+| `SET_BLOCK_PROPERTY` | `SetBlockProperty`, `SetDefaultWhere`, `SetOrderBy` | ✅ complete |
+| `MESSAGE` / `SHOW_ALERT` | `SetMessage`, `ShowAlertAsync`, `ConfirmAsync` | ✅ complete |
+| `:SEQUENCE.NEXTVAL` | `GetNextSequence` | ✅ complete |
+| `CREATE_TIMER` | `CreateTimer` | ✅ complete |
+| `CALL_FORM` / `OPEN_FORM` / `NEW_FORM` | `CallFormAsync`, `OpenFormAsync`, `NewFormAsync` | ✅ complete |
+| `:GLOBAL.*` | `SetGlobalVariable`, `GetGlobalVariable` | ✅ complete |
+| `POST` (record-level commit) | `PostAsync` (via `IBeepBuiltins`) | ✅ complete |
+| `KEY-` triggers | `RegisterKeyTrigger` | ✅ complete |
+| WHEN-NEW-BLOCK-INSTANCE / WHEN-NEW-RECORD-INSTANCE | Trigger system | ✅ complete |
+| WHEN-VALIDATE-RECORD / WHEN-VALIDATE-ITEM | Trigger system + validation hooks | ✅ complete |
+| `RAISE_FORM_TRIGGER_FAILURE` | `RaiseFormTriggerFailure` (via `IBeepBuiltins`) | ✅ complete |
+| `POPUP_LOV` / `LIST_VALUES` | `PopupLov`, `ListValues` (via `IBeepBuiltins`) | ✅ complete |
+| `SET_APPLICATION_PROPERTY` / `GET_APPLICATION_PROPERTY` | `SetApplicationProperty` / `GetApplicationProperty` (via `IBeepBuiltins`) | ✅ complete |
+| `ENTER_QUERY` with multiple filter criteria | `ExecuteQueryAsync` accepts a filter list | ✅ complete |
+| Visual attributes / font / color | ❌ **not in this layer** — UI-specific, owned by host | n/a |
+| `PL/SQL` library procedures | ❌ not emulated | ❌ missing |
+| `LOV`-column properties (display width, return-item, etc.) | ✅ partial — width/return only | ⚠️ partial |
+| Multi-form transactional rollback | ⚠️ partial — single-form rollback works; cross-form rollback not coordinated | ⚠️ partial |
+| `WHEN-CUSTOM-ITEM-EVENT` | ⚠️ partial — wired via `EventManager` but no canonical custom-item event type | ⚠️ partial |
 
-For a fuller mapping, see [ORACLE-FORMS-MAPPING.md](ORACLE-FORMS-MAPPING.md).
+For the **full** mapping including items NOT in this summary, see [`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md).
 
 ## Current test coverage
 
@@ -322,3 +297,9 @@ The LOV integration slice exposed a real orchestration bug: the selected LOV ret
 - Prefer `ShowLOVAsync` over applying `LOVManager.GetRelatedFieldValues(...)` directly so the return-field mapping logic stays centralized.
 - `PagingManager` tracks page state only. Callers still own total-count population and datasource query execution.
 - UI layers own rendering, focus, and keyboard plumbing; FormsManager provides a UI-agnostic runtime surface.
+
+## Stale / superseded documents in this folder
+
+- **`EXECUTIVE_SUMMARY.md`** — written against an earlier state of the engine. Mentions features (e.g. "Update operations rely on reflection", "No LOV implementation exists") that are no longer true. **Do not use as a current reference.** The current Oracle Forms coverage is captured in [`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md).
+- **`MIGRATION-GUIDE.md`** — older legacy migration notes. Kept for historical context.
+- **`FormsManager.original.cs.bak`** — backup of the pre-partial-class file. Safe to delete; everything has been moved to typed partials.

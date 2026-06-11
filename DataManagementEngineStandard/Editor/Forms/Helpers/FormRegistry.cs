@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -33,6 +34,17 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (string.IsNullOrWhiteSpace(formName)) throw new ArgumentNullException(nameof(formName));
             if (form == null) throw new ArgumentNullException(nameof(form));
+            // Detect a re-register that replaces a DIFFERENT instance. The
+            // previous instance's lifecycle event listeners on this registry
+            // would otherwise silently start firing for actions taken by the
+            // new instance — a subtle cross-talk bug. Idempotent re-register
+            // (same instance) is allowed silently.
+            if (_forms.TryGetValue(formName, out var previous) && !ReferenceEquals(previous, form))
+            {
+                Debug.WriteLine(
+                    $"[FormRegistry] RegisterForm is replacing existing instance for '{formName}'. " +
+                    $"Previous type={previous.GetType().Name}, New type={form.GetType().Name}.");
+            }
             _forms[formName] = form;
             RaiseLifecycle(formName, FormLifecycleEvent.Registered);
         }

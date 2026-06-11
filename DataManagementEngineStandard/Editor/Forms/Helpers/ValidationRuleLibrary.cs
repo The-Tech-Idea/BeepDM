@@ -169,27 +169,46 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Creates a future-date validation rule for a field.
+        /// Creates a future-date validation rule for a field. The field
+        /// value must be greater than or equal to today.
         /// </summary>
+        /// <remarks>
+        /// D4 (audit pass 3, 2026-06): the previous implementation used
+        /// <see cref="ValidationType.Date"/>, which only checks "is this
+        /// value a date" — it never compared against <see cref="DateTime.Today"/>.
+        /// The rule was a no-op. The new implementation uses
+        /// <see cref="ValidationType.GreaterThan"/> with today's date as
+        /// the minimum. <c>Convert.ToDouble(DateTime.Today)</c> is the OLE
+        /// Automation date double, and <c>ValidateGreaterThan</c> applies
+        /// the same conversion to the field value, so the comparison is
+        /// correct without changing the validation dispatcher.
+        /// </remarks>
         public static ValidationRule FutureDateRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Future",
             BlockName = blockName,
             ItemName = fieldName,
-            ValidationType = ValidationType.Date,
+            ValidationType = ValidationType.GreaterThan,
             MinValue = DateTime.Today,
             ErrorMessage = $"{fieldName} must be today or in the future"
         };
 
         /// <summary>
-        /// Creates a past-date validation rule for a field.
+        /// Creates a past-date validation rule for a field. The field
+        /// value must be less than or equal to today.
         /// </summary>
+        /// <remarks>
+        /// D4 (audit pass 3, 2026-06): see <see cref="FutureDateRule"/> for
+        /// the rationale. The previous implementation used
+        /// <see cref="ValidationType.Date"/> which does not compare against
+        /// a bound.
+        /// </remarks>
         public static ValidationRule PastDateRule(string blockName, string fieldName) => new()
         {
             RuleName = $"{blockName}_{fieldName}_Past",
             BlockName = blockName,
             ItemName = fieldName,
-            ValidationType = ValidationType.Date,
+            ValidationType = ValidationType.LessThan,
             MaxValue = DateTime.Today,
             ErrorMessage = $"{fieldName} must be today or in the past"
         };

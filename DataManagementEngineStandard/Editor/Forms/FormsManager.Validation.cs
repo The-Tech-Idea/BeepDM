@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -61,11 +62,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (currentRecord != null)
                 {
                     PrepareValidationContext(blockName);
+                    // RecordPropertyAccessor.GetAllReadable returns a
+                    // case-insensitive Dictionary<string, object>, which
+                    // is the same shape ValidationManager.ValidateRecord
+                    // wants. Replaces the GetProperties() + ToDictionary
+                    // reflection path that re-scanned the record type on
+                    // every validation.
                     var recordDict = currentRecord is IDictionary<string, object> dict
                         ? dict
-                        : currentRecord.GetType()
-                            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                            .ToDictionary(p => p.Name, p => p.GetValue(currentRecord) as object, StringComparer.OrdinalIgnoreCase);
+                        : RecordPropertyAccessor.GetAllReadable(currentRecord, _dmeEditor);
 
                     var ruleResult = _validationManager.ValidateRecord(blockName, recordDict, ValidationTiming.Manual);
                     rulesValid = ruleResult?.IsValid != false;

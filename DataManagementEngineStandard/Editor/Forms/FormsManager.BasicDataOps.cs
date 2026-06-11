@@ -122,42 +122,45 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
-                // Delete the current record using reflection
-                var deleteMethod = blockInfo.UnitOfWork.GetType().GetMethod("DeleteAsync");
-                if (deleteMethod != null)
+                // Delete the current record. IUnitofWork (non-generic) declares
+                // Task<IErrorsInfo> DeleteAsync(dynamic doc) directly — no reflection needed.
+                // (The previous GetMethod("DeleteAsync").Invoke(...) was a silent-no-op trap
+                //  if the method didn't exist: the whole delete path was skipped without a
+                //  loud error. The direct call now either compiles or fails fast.)
+                IErrorsInfo result;
+                SuppressSync(blockName);
+                try
                 {
-                    SuppressSync(blockName);
-                    IErrorsInfo result;
-                    try
-                    {
-                        var task = (Task<IErrorsInfo>)deleteMethod.Invoke(blockInfo.UnitOfWork, new object[] { currentRecord });
-                        result = await task;
-                    }
-                    finally { ResumeSync(blockName); }
+                    result = await blockInfo.UnitOfWork.DeleteAsync(currentRecord);
+                }
+                finally { ResumeSync(blockName); }
 
-                    if (result.Flag == Errors.Ok)
-                    {
-                        Status = $"Record deleted successfully in block '{blockName}'";
-                        _messageManager?.ShowWarningMessage(blockName, Status);
-
-                        // Fire POST-DELETE trigger after successful delete
-                        await _triggerManager.FireBlockTriggerAsync(
-                            TriggerType.PostDelete, blockName,
-                            TriggerContext.ForBlock(TriggerType.PostDelete, blockName, currentRecord, _dmeEditor));
-
-                        await SynchronizeDetailBlocksAsync(blockName);
-                        return true;
-                    }
-                    else
-                    {
-                        Status = $"Error deleting record: {result.Message}";
-                        _messageManager?.ShowErrorMessage(blockName, Status);
-                        return false;
-                    }
+                if (result == null)
+                {
+                    Status = $"DeleteAsync returned null on unit of work for block '{blockName}'";
+                    _messageManager?.ShowErrorMessage(blockName, Status);
+                    return false;
                 }
 
-                Status = $"DeleteAsync method not found on unit of work for block '{blockName}'";
-                return false;
+                if (result.Flag == Errors.Ok)
+                {
+                    Status = $"Record deleted successfully in block '{blockName}'";
+                    _messageManager?.ShowWarningMessage(blockName, Status);
+
+                    // Fire POST-DELETE trigger after successful delete
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PostDelete, blockName,
+                        TriggerContext.ForBlock(TriggerType.PostDelete, blockName, currentRecord, _dmeEditor));
+
+                    await SynchronizeDetailBlocksAsync(blockName);
+                    return true;
+                }
+                else
+                {
+                    Status = $"Error deleting record: {result.Message}";
+                    _messageManager?.ShowErrorMessage(blockName, Status);
+                    return false;
+                }
             }
             catch (Exception ex)
             {

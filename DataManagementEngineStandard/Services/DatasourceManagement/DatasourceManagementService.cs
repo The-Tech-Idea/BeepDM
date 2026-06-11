@@ -64,6 +64,42 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
             return CreateError($"Failed to add datasource '{connection.ConnectionName}'.");
         }
 
+        /// <summary>
+        /// Update an existing datasource. The connection is matched by
+        /// <see cref="ConnectionProperties.GuidID"/> first, then by
+        /// <see cref="ConnectionProperties.ConnectionName"/> as a fallback.
+        /// Added in PR 2 of the Beep Studio plan to back the
+        /// <c>ISourceService.SaveAsync</c> update path.
+        /// </summary>
+        public IErrorsInfo UpdateDatasource(ConnectionProperties connection)
+        {
+            if (connection == null)
+                return CreateError("Connection properties cannot be null.");
+
+            if (string.IsNullOrWhiteSpace(connection.ConnectionName))
+                return CreateError("Connection name is required.");
+
+            var existing = GetDatasource(connection.ConnectionName);
+            if (existing == null)
+                return CreateError($"Datasource '{connection.ConnectionName}' not found.");
+
+            var targetGuidId = !string.IsNullOrWhiteSpace(existing.GuidID)
+                ? existing.GuidID
+                : (connection.GuidID ?? string.Empty);
+
+            var result = _editor.ConfigEditor?.UpdateDataConnection(connection, targetGuidId) == true;
+            if (result)
+            {
+                _editor.ConfigEditor?.SaveDataconnectionsValues();
+                _editor.AddLogMessage("DatasourceMgr",
+                    $"Updated datasource '{connection.ConnectionName}'",
+                    DateTime.Now, 0, null, Errors.Ok);
+                return new ErrorsInfo { Flag = Errors.Ok };
+            }
+
+            return CreateError($"Failed to update datasource '{connection.ConnectionName}'.");
+        }
+
         public IErrorsInfo RemoveDatasource(string name)
         {
             if (string.IsNullOrWhiteSpace(name))

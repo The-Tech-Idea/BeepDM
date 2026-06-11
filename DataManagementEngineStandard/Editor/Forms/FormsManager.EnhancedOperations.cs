@@ -169,47 +169,43 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Use the unit of work's insert method with better method resolution
-                var unitOfWorkType = blockInfo.UnitOfWork.GetType();
-                var insertMethod = FindBestInsertMethod(unitOfWorkType, record.GetType());
-
-                if (insertMethod != null)
+                // IUnitofWork (non-generic) declares InsertAsync(dynamic doc) directly.
+                // The previous FindBestInsertMethod(...) reflection was a silent-no-op
+                // trap: if the typed overload didn't exist, the engine silently no-op'd
+                // the insert. Direct dispatch either compiles or fails loud.
+                SuppressSync(blockName);
+                IErrorsInfo insertResult;
+                try
                 {
-                    SuppressSync(blockName);
-                    Task<IErrorsInfo> insertTask;
-                    IErrorsInfo insertResult;
-                    try
-                    {
-                        insertTask = (Task<IErrorsInfo>)insertMethod.Invoke(blockInfo.UnitOfWork, new object[] { record });
-                        insertResult = await insertTask;
-                    }
-                    finally { ResumeSync(blockName); }
+                    insertResult = await blockInfo.UnitOfWork.InsertAsync(record);
+                }
+                finally { ResumeSync(blockName); }
 
-                    if (insertResult.Flag == Errors.Ok)
-                    {
-                        // Fire POST-INSERT trigger after successful insert
-                        await _triggerManager.FireBlockTriggerAsync(
-                            TriggerType.PostInsert, blockName,
-                            TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
+                if (insertResult == null)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"InsertAsync returned null on unit of work for block '{blockName}'";
+                    return result;
+                }
 
-                        await SynchronizeDetailBlocksAsync(blockName);
-                        result.Message = "Record inserted successfully";
-                        Status = $"Record inserted successfully in block '{blockName}'";
-                        LogOperation($"Record inserted successfully in block '{blockName}'", blockName);
-                    }
-                    else
-                    {
-                        result.Flag = insertResult.Flag;
-                        result.Message = insertResult.Message;
-                        result.Ex = insertResult.Ex;
-                        Status = $"Error inserting record: {insertResult.Message}";
-                    }
+                if (insertResult.Flag == Errors.Ok)
+                {
+                    // Fire POST-INSERT trigger after successful insert
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PostInsert, blockName,
+                        TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
+
+                    await SynchronizeDetailBlocksAsync(blockName);
+                    result.Message = "Record inserted successfully";
+                    Status = $"Record inserted successfully in block '{blockName}'";
+                    LogOperation($"Record inserted successfully in block '{blockName}'", blockName);
                 }
                 else
                 {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"No suitable InsertAsync method found for block '{blockName}'";
-                    Status = result.Message;
+                    result.Flag = insertResult.Flag;
+                    result.Message = insertResult.Message;
+                    result.Ex = insertResult.Ex;
+                    Status = $"Error inserting record: {insertResult.Message}";
                 }
 
                 return result;
@@ -301,40 +297,35 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Use unit of work's update method with better method resolution
-                var unitOfWorkType = blockInfo.UnitOfWork.GetType();
-                var updateMethod = FindBestUpdateMethod(unitOfWorkType, currentRecord.GetType());
+                // IUnitofWork (non-generic) declares UpdateAsync(dynamic doc) directly.
+                // Direct dispatch — same rationale as the InsertAsync change above.
+                var updateResult = await blockInfo.UnitOfWork.UpdateAsync(currentRecord);
 
-                if (updateMethod != null)
+                if (updateResult == null)
                 {
-                    var task = (Task<IErrorsInfo>)updateMethod.Invoke(blockInfo.UnitOfWork, new object[] { currentRecord });
-                    var updateResult = await task;
-                    
-                    if (updateResult.Flag == Errors.Ok)
-                    {
-                        // Fire POST-UPDATE trigger after successful update
-                        await _triggerManager.FireBlockTriggerAsync(
-                            TriggerType.PostUpdate, blockName,
-                            TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor));
+                    result.Flag = Errors.Failed;
+                    result.Message = $"UpdateAsync returned null on unit of work for block '{blockName}'";
+                    return result;
+                }
 
-                        await SynchronizeDetailBlocksAsync(blockName);
-                        result.Message = "Record updated successfully";
-                        Status = $"Record updated successfully in block '{blockName}'";
-                        LogOperation($"Record updated successfully in block '{blockName}'", blockName);
-                    }
-                    else
-                    {
-                        result.Flag = updateResult.Flag;
-                        result.Message = updateResult.Message;
-                        result.Ex = updateResult.Ex;
-                        Status = $"Error updating record: {updateResult.Message}";
-                    }
+                if (updateResult.Flag == Errors.Ok)
+                {
+                    // Fire POST-UPDATE trigger after successful update
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PostUpdate, blockName,
+                        TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor));
+
+                    await SynchronizeDetailBlocksAsync(blockName);
+                    result.Message = "Record updated successfully";
+                    Status = $"Record updated successfully in block '{blockName}'";
+                    LogOperation($"Record updated successfully in block '{blockName}'", blockName);
                 }
                 else
                 {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"No suitable UpdateAsync method found for block '{blockName}'";
-                    Status = result.Message;
+                    result.Flag = updateResult.Flag;
+                    result.Message = updateResult.Message;
+                    result.Ex = updateResult.Ex;
+                    Status = $"Error updating record: {updateResult.Message}";
                 }
 
                 return result;
@@ -394,38 +385,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                var unitOfWorkType = blockInfo.UnitOfWork.GetType();
-                
-                // Execute query with proper method resolution
+                // IUnitofWork (non-generic) declares Get(List<AppFilter>) and Get() directly.
+                // Direct dynamic dispatch — the previous GetMethod("Get").Invoke(...) was
+                // a silent-no-op trap if the method didn't exist.
                 if (filters != null && filters.Any())
                 {
-                    var getWithFilters = unitOfWorkType.GetMethod("Get", new[] { typeof(List<AppFilter>) });
-                    if (getWithFilters != null)
-                    {
-                        var task = (Task)getWithFilters.Invoke(blockInfo.UnitOfWork, new object[] { filters });
-                        await task;
-                    }
-                    else
-                    {
-                        result.Flag = Errors.Failed;
-                        result.Message = $"Get method with filters not found for block '{blockName}'";
-                        return result;
-                    }
+                    await blockInfo.UnitOfWork.Get(filters);
                 }
                 else
                 {
-                    var getMethod = unitOfWorkType.GetMethod("Get", Type.EmptyTypes);
-                    if (getMethod != null)
-                    {
-                        var task = (Task)getMethod.Invoke(blockInfo.UnitOfWork, null);
-                        await task;
-                    }
-                    else
-                    {
-                        result.Flag = Errors.Failed;
-                        result.Message = $"Get method not found for block '{blockName}'";
-                        return result;
-                    }
+                    await blockInfo.UnitOfWork.Get();
                 }
 
                 // CRITICAL: After successful query execution, transition to CRUD mode
@@ -483,13 +452,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var blockInfo = GetBlock(blockName);
                 if (blockInfo?.UnitOfWork?.Units != null)
                 {
-                    // Use reflection to get count
-                    var unitsType = blockInfo.UnitOfWork.Units.GetType();
-                    var countProperty = unitsType.GetProperty("Count");
-                    if (countProperty != null)
-                    {
-                        return (int)countProperty.GetValue(blockInfo.UnitOfWork.Units);
-                    }
+                    // Units is `dynamic`. The runtime type is ObservableBindingList<T>
+                    // which extends BindingList<T> : Collection<T> with a Count property.
+                    // The previous GetProperty("Count") reflection was a silent-no-op
+                    // trap on a custom Units implementation; dynamic dispatch is louder.
+                    dynamic d = blockInfo.UnitOfWork.Units;
+                    int? count = d.Count as int?;
+                    return count ?? 0;
                 }
                 return 0;
             }
@@ -592,77 +561,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #endregion
 
         #region Private Helper Methods for Enhanced Operations
-        /// <summary>
-        /// Finds the best insert method for the given types
-        /// </summary>
-        private System.Reflection.MethodInfo FindBestInsertMethod(Type unitOfWorkType, Type recordType)
-        {
-            // Try exact type match first
-            var exactMethod = unitOfWorkType.GetMethod("InsertAsync", new[] { recordType });
-            if (exactMethod != null)
-                return exactMethod;
+        // FindBestInsertMethod and FindBestUpdateMethod were removed: the engine now
+        // calls IUnitofWork.InsertAsync / UpdateAsync directly via dynamic dispatch.
+        // The reflection-based method-resolution helpers were a silent-no-op trap
+        // (returning null when the typed overload didn't exist) and have been
+        // superseded by the direct call.
 
-            // Try object parameter
-            var objectMethod = unitOfWorkType.GetMethod("InsertAsync", new[] { typeof(object) });
-            if (objectMethod != null)
-                return objectMethod;
-
-            // Try generic method if available
-            var genericMethods = unitOfWorkType.GetMethods()
-                .Where(m => m.Name == "InsertAsync" && m.IsGenericMethod)
-                .ToList();
-
-            foreach (var method in genericMethods)
-            {
-                try
-                {
-                    var genericMethod = method.MakeGenericMethod(recordType);
-                    return genericMethod;
-                }
-                catch
-                {
-                    // Continue to next method
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Finds the best update method for the given types
-        /// </summary>
-        private System.Reflection.MethodInfo FindBestUpdateMethod(Type unitOfWorkType, Type recordType)
-        {
-            // Try exact type match first
-            var exactMethod = unitOfWorkType.GetMethod("UpdateAsync", new[] { recordType });
-            if (exactMethod != null)
-                return exactMethod;
-
-            // Try object parameter
-            var objectMethod = unitOfWorkType.GetMethod("UpdateAsync", new[] { typeof(object) });
-            if (objectMethod != null)
-                return objectMethod;
-
-            // Try generic method if available
-            var genericMethods = unitOfWorkType.GetMethods()
-                .Where(m => m.Name == "UpdateAsync" && m.IsGenericMethod)
-                .ToList();
-
-            foreach (var method in genericMethods)
-            {
-                try
-                {
-                    var genericMethod = method.MakeGenericMethod(recordType);
-                    return genericMethod;
-                }
-                catch
-                {
-                    // Continue to next method
-                }
-            }
-
-            return null;
-        }
         #endregion
     }
 }

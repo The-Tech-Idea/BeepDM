@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -91,10 +92,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         /// <param name="triggers">The set of triggers to fire (DAG — must not contain cycles).</param>
         /// <param name="blockName">Block context for each trigger.</param>
+        /// <param name="cancellationToken">Cancellation token observed between triggers and forwarded to each <see cref="TriggerDefinition.ExecuteAsync(TriggerContext, CancellationToken)"/> call. Cancelling between triggers causes the chain to stop with a <see cref="TriggerResult.Cancelled"/> result appended to the returned list.</param>
         /// <returns>List of results in execution order.</returns>
         public async Task<IReadOnlyList<TriggerResult>> FireTriggersInOrderAsync(
             IReadOnlyList<TriggerDefinition> triggers,
-            string blockName)
+            string blockName,
+            CancellationToken cancellationToken = default)
         {
             if (triggers == null || triggers.Count == 0)
                 return Array.Empty<TriggerResult>();
@@ -104,10 +107,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             foreach (var t in ordered)
             {
+                // Honour cancellation between triggers. TriggerDefinition.ExecuteAsync
+                // also observes the token, so a long-running trigger can be cancelled
+                // mid-execution; this check covers the gap between triggers.
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    results.Add(TriggerResult.Cancelled);
+                    return results;
+                }
+
                 if (t.AsyncHandler != null || t.Handler != null)
                 {
                     var ctx    = TriggerContext.ForBlock(t.TriggerType, blockName ?? string.Empty, null, _dmeEditor);
-                    var result = await t.ExecuteAsync(ctx, default);
+                    var result = await t.ExecuteAsync(ctx, cancellationToken);
                     results.Add(result);
 
                     if (result == TriggerResult.Failure || result == TriggerResult.Cancelled)

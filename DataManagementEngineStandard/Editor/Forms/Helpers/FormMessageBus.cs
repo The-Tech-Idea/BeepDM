@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.Forms.Models;
 
@@ -100,7 +101,24 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             lock (_subLock) { snapshot = new List<Action<FormMessage>>(list); }
             foreach (var h in snapshot)
             {
-                try { h(msg); } catch { /* swallow handler exceptions */ }
+                // We intentionally swallow handler exceptions here so one bad
+                // subscriber does not abort the dispatch to the rest of the
+                // subscribers on the same form/type. The bus stays up; the
+                // exception is logged so the operator can spot the bad
+                // subscriber. Without the log, a subscriber whose handler
+                // throws on every dispatch would silently drop all of its
+                // messages with no signal at all.
+                try
+                {
+                    h(msg);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"[FormMessageBus] Subscriber handler threw for '{key}' " +
+                        $"(message type '{messageType}', payload type " +
+                        $"'{msg.Payload?.GetType().Name ?? "<null>"}'): {ex.Message}");
+                }
             }
         }
     }

@@ -20,6 +20,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private readonly ConcurrentDictionary<string, string> _locks
             = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        // B19: short critical section that serializes the "check-then-remove"
+        // in ReleaseSharedBlockLock. We use a small dedicated lock instead of
+        // serializing against the entire _locks dict because TryLockSharedBlock
+        // is on the hot path of any shared-block update — a single 5ms polling
+        // tick is fine, but a long-held global lock would queue up.
+        private readonly object _releaseLock = new object();
+
         /// <inheritdoc/>
         public event EventHandler<SharedBlockChangedEventArgs> SharedBlockChanged;
 
@@ -73,9 +80,26 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (string.IsNullOrWhiteSpace(blockName) || string.IsNullOrWhiteSpace(lockedBy))
                 return;
-            if (_locks.TryGetValue(blockName, out var owner) &&
-                string.Equals(owner, lockedBy, StringComparison.OrdinalIgnoreCase))
-                _locks.TryRemove(blockName, out _);
+            // B19: the previous implementation was a check-then-remove
+            // (TryGetValue + string compare + TryRemove). Between the check
+            // and the remove, another thread could acquire the lock — and
+            // our remove would then free THEIR lock, not ours.
+            //
+            // We use a short dedicated lock (_releaseLock) to make the
+            // "read current owner, compare, remove" sequence atomic. The
+            // lock is held only for the duration of the comparison + remove
+            // (a few CPU cycles); it is NOT held across the user's actual
+            // critical section, only across our bookkeeping. This means a
+            // contention storm on the lock-dict's writer side does not
+            // queue up against the user's critical section.
+            lock (_releaseLock)
+            {
+                if (_locks.TryGetValue(blockName, out var owner) &&
+                    string.Equals(owner, lockedBy, StringComparison.OrdinalIgnoreCase))
+                {
+                    _locks.TryRemove(blockName, out _);
+                }
+            }
         }
 
         /// <summary>

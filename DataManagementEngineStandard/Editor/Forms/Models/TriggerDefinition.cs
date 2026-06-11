@@ -64,8 +64,27 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>Execution priority (higher runs first)</summary>
         public TriggerPriority Priority { get; set; } = TriggerPriority.Normal;
         
+        // B4 (audit pass 4, 2026-06): IsEnabled is mutated from
+        // outside the trigger chain (EnableTrigger / DisableTrigger /
+        // EnableBlockTriggers / DisableBlockTriggers / EnableAllTriggers
+        // / DisableAllTriggers) and read from inside the chain (the
+        // per-rule `rules.Where(r => r.IsEnabled)` filter, and the
+        // `HasBlockTrigger` / `HasItemTrigger` checks). Without a
+        // volatile barrier, a thread that just disabled a trigger may
+        // see a stale IsEnabled = true on a weak memory model and
+        // continue to execute the trigger. The C# compiler rejects
+        // `volatile` on a public auto-property (volatile on auto-props
+        // is restricted to certain access patterns), so we use a
+        // private volatile backing field with explicit accessors. The
+        // public setter is kept for API compat; reads/writes are
+        // routed through the volatile field.
+        private volatile bool _isEnabled = true;
         /// <summary>Whether trigger is enabled</summary>
-        public bool IsEnabled { get; set; } = true;
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set => _isEnabled = value;
+        }
         
         /// <summary>Maximum execution time in milliseconds (0 = no limit)</summary>
         public int TimeoutMs { get; set; } = 0;
@@ -178,16 +197,42 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         #region Methods
         
         /// <summary>
-        /// Execute the trigger synchronously
+        /// Execute the trigger synchronously.
         /// </summary>
+        /// <remarks>
+        /// B1 (audit pass 4, 2026-06): the AsyncHandler-only path
+        /// (<c>Handler is null &amp;&amp; AsyncHandler is not null</c>)
+        /// calls <c>.GetAwaiter().GetResult()</c> on the async handler.
+        /// This is the classic sync-over-async pattern and DEADLOCKS on
+        /// a UI thread with a captured
+        /// <see cref="SynchronizationContext"/>: the awaited task tries
+        /// to resume on the captured context, but the context is blocked
+        /// waiting for the task to complete. Callers that may be on a UI
+        /// thread (Forms, WPF, Blazor) MUST use
+        /// <see cref="ExecuteAsync(TriggerContext, CancellationToken)"/>
+        /// instead. The TriggerManager's sync <c>FireXxxTrigger</c>
+        /// overloads are safe to call from any thread because they reach
+        /// this method from the engine's worker thread (or a thread
+        /// without a captured sync context), but external callers that
+        /// invoke <c>Execute</c> directly from a UI event handler WILL
+        /// deadlock.
+        ///
+        /// The detection in the AsyncHandler-only branch is a defensive
+        /// belt-and-braces: if we are on a captured sync context, refuse
+        /// the call and throw with a clear message. This catches the
+        /// common case (UI thread) early. Callers without a sync context
+        /// (thread pool, console, test runners) will not see the throw
+        /// and will get the same .GetAwaiter().GetResult() behavior as
+        /// before.
+        /// </remarks>
         public TriggerResult Execute(TriggerContext context)
         {
             if (!IsEnabled || !HasHandler)
                 return TriggerResult.Skipped;
-            
+
             var startTime = DateTime.UtcNow;
             TriggerResult result;
-            
+
             try
             {
                 if (Handler != null)
@@ -196,6 +241,18 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
                 }
                 else if (AsyncHandler != null)
                 {
+                    if (SynchronizationContext.Current != null)
+                    {
+                        // Captured sync context — the .GetAwaiter().GetResult()
+                        // below would deadlock. Refuse the call with a
+                        // clear message pointing the caller at ExecuteAsync.
+                        throw new InvalidOperationException(
+                            "TriggerDefinition.Execute was called from a thread with a captured " +
+                            "SynchronizationContext (typically a UI thread), but the trigger only " +
+                            "has an AsyncHandler. Calling .GetAwaiter().GetResult() here would deadlock. " +
+                            "Use TriggerDefinition.ExecuteAsync(...) from UI threads, or call " +
+                            "TriggerManager.Fire*TriggerAsync(...) which dispatches via the thread pool.");
+                    }
                     // Run async handler synchronously
                     result = AsyncHandler(context, CancellationToken.None).GetAwaiter().GetResult();
                 }
@@ -208,7 +265,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
             {
                 result = TriggerResult.Exception;
             }
-            
+
             RecordExecution(result, startTime);
             return result;
         }
@@ -275,8 +332,19 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         }
         
         /// <summary>
-        /// Clone this trigger definition
+        /// Clone this trigger definition.
         /// </summary>
+        /// <remarks>
+        /// B2 (audit pass 4, 2026-06): the previous version did not copy
+        /// <see cref="DependsOn"/> (a <see cref="List{String}"/>) or
+        /// <see cref="ChainMode"/>. A clone of a trigger that had
+        /// <c>DependsOn = ["x"]</c> and <c>ChainMode = Continue</c> came
+        /// out with an empty dependency list and the default
+        /// <c>StopOnFailure</c> chain mode — silently broken. The
+        /// dependencies are now deep-copied (new list) and the chain
+        /// mode is copied. The new <c>TriggerId</c> still differs from
+        /// the source (by design — clones are independent registrations).
+        /// </remarks>
         public TriggerDefinition Clone()
         {
             return new TriggerDefinition
@@ -299,6 +367,15 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
                 ContinueOnFailure = ContinueOnFailure,
                 AllowOverride = AllowOverride,
                 LogExecution = LogExecution,
+                // Deep-copy the dependency list so the clone and the
+                // source do not share the same backing array. The
+                // TriggerId is intentionally different on the clone
+                // (assigned above), so a downstream OrderByDependency
+                // will treat them as distinct nodes.
+                DependsOn = DependsOn != null
+                    ? new List<string>(DependsOn)
+                    : new List<string>(),
+                ChainMode = ChainMode,
                 Handler = Handler,
                 AsyncHandler = AsyncHandler,
                 CreatedAt = DateTime.Now,
@@ -327,16 +404,25 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         private void RecordExecution(TriggerResult result, DateTime startTime)
         {
             var elapsed = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
-            
+
             ExecutionCount++;
-            LastExecutedAt = DateTime.Now;
+            // B6 (audit pass 4, 2026-06): the previous version used
+            // DateTime.Now (local time) for LastExecutedAt while
+            // startTime and the elapsed calculation are in UTC.
+            // Mixing the two in the same record was confusing — the
+            // wall-clock time of execution was reported in local
+            // time, the duration was measured in UTC. Use UtcNow for
+            // both so the timestamps are internally consistent. (The
+            // consumer of LastExecutedAt can convert to local time for
+            // display.)
+            LastExecutedAt = DateTime.UtcNow;
             LastResult = result;
-            
+
             if (result == TriggerResult.Success)
                 SuccessCount++;
             else if (result != TriggerResult.Skipped)
                 FailureCount++;
-            
+
             _totalExecutionTimeMs += elapsed;
             AverageExecutionTimeMs = ExecutionCount > 0 ? (double)_totalExecutionTimeMs / ExecutionCount : 0;
         }

@@ -20615,6 +20615,15 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerDependencyManager.OrderByDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
             <summary>Orders trigger definitions according to dependency requirements.</summary>
+            <remarks>
+            If a trigger's <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.DependsOn"/> list references a
+            <c>TriggerId</c> that is NOT present in <paramref name="triggers"/>, the
+            dependency is logged as a warning and the trigger is still added to the
+            result in its natural input order. The previous behavior silently dropped
+            the missing dep and the dependent trigger ran without its prerequisite —
+            a "fire and forget" that surfaced as a runtime no-op. The warning makes
+            the misconfiguration visible to the operator.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerDependencyManager.HasCircularDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
             <summary>Returns whether the trigger graph contains a circular dependency.</summary>
@@ -20726,6 +20735,14 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.RegisterTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition)">
             <inheritdoc />
+            <remarks>
+            Re-registering a trigger with the same <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.TriggerId"/>
+            is a supported idempotent operation. The previously-registered definition is
+            removed from its per-scope list (Form / Block / Item / Global) and the new
+            definition takes its place. Without this, the per-scope list would accumulate
+            a stale entry for every re-register and the next <c>Fire*</c> call would
+            execute BOTH the old and new handler — a silent duplicate-fire bug.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.UnregisterTrigger(System.String)">
             <inheritdoc />
@@ -21259,6 +21276,14 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry.CalledAt">
             <summary>Gets or sets when the call was made.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry.Completion">
+            <summary>Task that completes when the callee returns (or closes).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry.Complete(System.Boolean)">
+            <summary>Complete the entry's task. Called by the form manager when
+            the callee returns to the caller. Idempotent — subsequent calls are
+            silently ignored.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormMessage">
             <summary>A message sent between forms via IFormMessageBus</summary>
         </member>
@@ -21548,6 +21573,16 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.Timestamp">
             <summary>Gets or sets when the savepoint was created (UTC)</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.SequenceNumber">
+            <summary>
+            Process-wide monotonic sequence number assigned at
+            creation time. Used by <c>SavepointManager.RollbackToSavepointAsync</c>
+            to order savepoints reliably across sub-tick creations
+            (audit pass 3, 2026-06). Two savepoints created in the
+            same <see cref="!:DateTime.UtcNow.Ticks"/> window can have
+            distinct SequenceNumber values.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.RecordIndex">
             <summary>Gets or sets the record index at savepoint time</summary>
         </member>
@@ -21558,7 +21593,13 @@
             <summary>Gets or sets whether the block was dirty at savepoint time</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.RecordSnapshot">
-            <summary>Snapshot of field values at savepoint creation (field -> value)</summary>
+            <summary>
+            Snapshot of field values at savepoint creation (field -> value).
+            Marked <c>init</c>-only to prevent callers from mutating
+            the snapshot after the savepoint is recorded (audit pass 3,
+            2026-06). The dictionary itself is still mutable; the
+            <c>init</c> restriction applies to the property reference.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.Age">
             <summary>Gets the age of this savepoint</summary>
@@ -22127,9 +22168,35 @@
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.Execute(TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
-            <summary>
-            Execute the trigger synchronously
-            </summary>
+             <summary>
+             Execute the trigger synchronously.
+             </summary>
+             <remarks>
+             B1 (audit pass 4, 2026-06): the AsyncHandler-only path
+             (<c>Handler is null &amp;&amp; AsyncHandler is not null</c>)
+             calls <c>.GetAwaiter().GetResult()</c> on the async handler.
+             This is the classic sync-over-async pattern and DEADLOCKS on
+             a UI thread with a captured
+             <see cref="T:System.Threading.SynchronizationContext"/>: the awaited task tries
+             to resume on the captured context, but the context is blocked
+             waiting for the task to complete. Callers that may be on a UI
+             thread (Forms, WPF, Blazor) MUST use
+             <see cref="M:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.ExecuteAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)"/>
+             instead. The TriggerManager's sync <c>FireXxxTrigger</c>
+             overloads are safe to call from any thread because they reach
+             this method from the engine's worker thread (or a thread
+             without a captured sync context), but external callers that
+             invoke <c>Execute</c> directly from a UI event handler WILL
+             deadlock.
+            
+             The detection in the AsyncHandler-only branch is a defensive
+             belt-and-braces: if we are on a captured sync context, refuse
+             the call and throw with a clear message. This catches the
+             common case (UI thread) early. Callers without a sync context
+             (thread pool, console, test runners) will not see the throw
+             and will get the same .GetAwaiter().GetResult() behavior as
+             before.
+             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.ExecuteAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
             <summary>
@@ -22143,8 +22210,19 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.Clone">
             <summary>
-            Clone this trigger definition
+            Clone this trigger definition.
             </summary>
+            <remarks>
+            B2 (audit pass 4, 2026-06): the previous version did not copy
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.DependsOn"/> (a <see cref="T:System.Collections.Generic.List`1"/>) or
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.ChainMode"/>. A clone of a trigger that had
+            <c>DependsOn = ["x"]</c> and <c>ChainMode = Continue</c> came
+            out with an empty dependency list and the default
+            <c>StopOnFailure</c> chain mode — silently broken. The
+            dependencies are now deep-copied (new list) and the chain
+            mode is copied. The new <c>TriggerId</c> still differs from
+            the source (by design — clones are independent registrations).
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.CreateFormTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult})">
             <summary>
@@ -23388,9 +23466,26 @@
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RollbackToSavepointAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <summary>
-            Rolls back a block to a previously created savepoint (Phase 6).
-            </summary>
+             <summary>
+             Rolls back a block to a previously created savepoint (Phase 6).
+             </summary>
+             <remarks>
+             Ordering matters here. The savepoint store is mutated LAST,
+             after the data rollback succeeds, so a partial failure in
+             the data rollback leaves the savepoint store intact and
+             the user can retry. If the data rollback fails after the
+             store was mutated, the user would lose their other
+             savepoints with no way to recover.
+            
+             Flow:
+             <list type="number">
+               <item>Look up the savepoint (read-only).</item>
+               <item>Roll back the unit of work (data side).</item>
+               <item>Move to the saved record index.</item>
+               <item>Restore the record snapshot (best-effort).</item>
+               <item>Tell the manager to delete later savepoints (store side).</item>
+             </list>
+             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetupBlockAsync(System.String,System.String,System.String,System.Boolean,System.Threading.CancellationToken)">
             <summary>
@@ -23713,16 +23808,6 @@
             Applies audit defaults to a record
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FindBestInsertMethod(System.Type,System.Type)">
-            <summary>
-            Finds the best insert method for the given types
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FindBestUpdateMethod(System.Type,System.Type)">
-            <summary>
-            Finds the best update method for the given types
-            </summary>
-        </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnFormOpen">
             <summary>
             Raised before a form open operation is finalized.
@@ -23809,6 +23894,38 @@
             <summary>
             Executes a sequence generator for a field
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetSystemVariables(System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariableType,System.Object)">
+            <summary>
+            Sets common Oracle Forms system variables on the record
+            (SYSTEM_DATE, SYSTEM_DATETIME, SYSTEM_USER, RECORD_STATUS).
+            </summary>
+            <remarks>
+            B6 (audit pass 3, 2026-06): the helper had this
+            method but the FormsManager wrapper didn't expose
+            it. Hosts that wanted to set the Oracle Forms
+            system variables on a record had to call the
+            helper directly. Now exposed through the engine
+            for consistency with the other FormsSimulation
+            wrappers.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ValidateField(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints)">
+            <summary>
+            Validates a field's value against a set of field constraints.
+            </summary>
+            <remarks>
+            B6 (audit pass 3, 2026-06): the helper had this
+            method but the FormsManager wrapper didn't expose
+            it. Note: per the helper's <see cref="!:FormsSimulationHelper.ValidateField"/>
+            remarks, this is effectively a no-op when the
+            host does not supply explicit
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints"/> — the engine
+            doesn't read entity annotations to populate
+            constraints automatically. Callers should
+            supply constraints explicitly for any
+            non-trivial validation.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlock``1(System.String,TheTechIdea.Beep.Editor.IUnitofWork,System.String,System.Boolean)">
             <summary>
@@ -24098,7 +24215,28 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetBlockMode(System.String)">
             <summary>
-            Gets the current mode of a block
+            Gets the current mode of a block.
+            </summary>
+            <remarks>
+            B23: if <paramref name="blockName"/> is null/empty or the block is
+            not registered, the method returns <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode.Query"/>
+            as a silent default. The caller cannot distinguish "block is in
+            Query mode" from "block does not exist". This is intentional for
+            back-compat with the public <c>IBeepBuiltins</c> contract — host
+            code that calls <c>GetBlockMode</c> on a block that may not exist
+            keeps working. Callers that need to distinguish the two cases
+            should use <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryGetBlockMode(System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode@)"/> instead, which returns
+            <c>false</c> when the block is missing and populates an output
+            parameter with the actual mode when it is present.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryGetBlockMode(System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode@)">
+            <summary>
+            Try to get the current mode of a block. Returns <c>true</c> when
+            the block is registered, populating <paramref name="mode"/> with
+            the block's actual mode. Returns <c>false</c> when the block is
+            null, empty, or not registered — the caller can then choose
+            whether to treat that as "block is in Query mode" or as an error.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetAllBlockModeInfo">
@@ -24111,11 +24249,30 @@
             Checks if form-level mode transition is safe
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CallFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},TheTechIdea.Beep.Editor.Forms.Models.FormCallMode)">
-            <summary>
-            Call another form, suspending this one until the callee returns or is closed.
-            Equivalent to Oracle Forms CALL_FORM.
-            </summary>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CallFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},TheTechIdea.Beep.Editor.Forms.Models.FormCallMode,System.Threading.CancellationToken)">
+             <summary>
+             Call another form, suspending this one until the callee returns or is closed.
+             Equivalent to Oracle Forms CALL_FORM.
+             </summary>
+             <remarks>
+             For <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.FormCallMode.Modal"/>, the returned task does not
+             complete until the callee calls <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReturnToCallerAsync(System.Object)"/>
+             (or is closed without returning). The caller is genuinely suspended —
+             not just status-flagged — via a <see cref="T:System.Threading.Tasks.TaskCompletionSource`1"/>
+             stored on the <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry"/>. For
+             <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.FormCallMode.Modeless"/> and <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.FormCallMode.Replace"/>,
+             the call still pushes a stack entry (so the callee has a "caller" to
+             return to) but the caller's task completes immediately after the
+             WhenNewFormInstance trigger fires — the engine does not block the
+             caller on the callee's lifecycle for non-modal modes.
+            
+             If the form is unregistered between the existence check and the
+             GetForm lookup, the call returns false without pushing a stack entry
+             (B22: no TOCTOU orphan).
+             </remarks>
+             <param name="cancellationToken">Cancellation token observed while
+             waiting for the callee to return. Cancelling does not abort the
+             callee; it returns the caller with a "false" return value.</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OpenFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>
@@ -24134,6 +24291,14 @@
             Return to the calling form, optionally passing return data.
             Equivalent to Oracle Forms EXIT_FORM with return value or RETURN built-in.
             </summary>
+            <remarks>
+            Validates that the top of the call stack was actually pushed by THIS
+            form (the active callee). If a foreign entry is on top — e.g. a
+            modeless sibling tries to return on behalf of a different call —
+            the entry is pushed back and a debug warning is logged. Without
+            this check, a cross-form ReturnToCallerAsync would silently corrupt
+            the stack and switch the active form to the wrong caller.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetCallStack">
             <summary>Get the current form call stack (read-only snapshot).</summary>
@@ -24183,6 +24348,18 @@
             <summary>
             Switches to a different block, checking for unsaved changes first
             </summary>
+            <remarks>
+            B4 (audit pass 3, 2026-06): the other navigation paths
+            (<see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NavigateToRecordInternalAsync(System.String,System.Int32,System.Boolean)"/> and
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NavigateWithValidationAsync(System.String,TheTechIdea.Beep.Editor.UOWManager.Models.NavigationType)"/>) honor
+            <c>Configuration.Navigation.ValidateBeforeNavigation</c>
+            but this method did not. Added the same check so a
+            user can opt into "block switch validates the current
+            record" without the inconsistency of having to enable
+            the flag and find that block switches still skip
+            validation. The check is on the **current** block
+            (about to be left), matching the other paths' semantics.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetCurrentRecordInfo(System.String)">
             <summary>
@@ -24212,6 +24389,26 @@
             Fires KEY-NEXT-ITEM or a generic navigation trigger.
             Corresponds to Oracle Forms GO_ITEM built-in.
             </summary>
+            <remarks>
+            B9 (audit pass 3, 2026-06): <b>this method does NOT
+            actually move focus</b>. It only fires the
+            KEY-NEXT-ITEM trigger; the host UI is expected to
+            read the trigger and move focus to the named item.
+            This is a divergence from the Oracle Forms
+            <c>GO_ITEM</c> built-in, which moves focus as a
+            side-effect of the trigger. The engine does not have
+            a focus model — focus is a host-UI concern — so
+            truly matching Oracle Forms would require either
+            (a) extending the engine with a focus model, or
+            (b) renaming this method to make the trigger-only
+            behavior explicit (e.g.
+            <c>FireGoItemTriggerAsync</c>). Until one of those
+            is done, callers should not assume
+            <c>GoItemAsync</c> moved focus; the method returns
+            <c>true</c> if the trigger fired without
+            cancellation, regardless of whether the host actually
+            moved focus.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NextItemAsync(System.String,System.String)">
             <summary>
@@ -24393,11 +24590,17 @@
             Creates a master-detail relationship between blocks
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDetailBlocksAsync(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDetailBlocksAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Synchronizes detail blocks when master record changes.
             Fires ON-POPULATE-DETAILS trigger before delegating to the relationship manager.
             </summary>
+            <param name="masterBlockName">Master block whose detail blocks should be synchronized.</param>
+            <param name="ct">
+            Cancellation token. Propagated through the detail
+            hierarchy walk; observed at the start of each
+            relationship iteration.
+            </param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetDetailBlocks(System.String)">
             <summary>
@@ -24555,7 +24758,7 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ClearTriggerLog">
             <summary>Clear the in-memory trigger execution log.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireTriggersInOrderAsync(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition},System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireTriggersInOrderAsync(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition},System.String,System.Threading.CancellationToken)">
             <summary>
             Fire a list of triggers in dependency order (<see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.DependsOn"/>).
             Honours each definition's <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.ChainMode"/>:
@@ -24563,6 +24766,7 @@
             </summary>
             <param name="triggers">The set of triggers to fire (DAG — must not contain cycles).</param>
             <param name="blockName">Block context for each trigger.</param>
+            <param name="cancellationToken">Cancellation token observed between triggers and forwarded to each <see cref="M:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.ExecuteAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)"/> call. Cancelling between triggers causes the chain to stop with a <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerResult.Cancelled"/> result appended to the returned list.</param>
             <returns>List of results in execution order.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ValidateField(System.String,System.String,System.Object)">
@@ -24635,6 +24839,15 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.Summary">
             <summary>
             Gets a compact text summary of the block mode and state.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.MultiFormTaskExtensions">
+            <summary>
+            Internal extension that lets a <see cref="T:System.Threading.Tasks.Task"/> be awaited with a
+            <see cref="T:System.Threading.CancellationToken"/>. When the token cancels, the awaiter
+            throws <see cref="T:System.OperationCanceledException"/>. The original task is
+            left running (we cannot cancel the callee from here — that is the
+            host's responsibility, e.g. via <c>CloseFormAsync</c>).
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.BlockErrorLog">
@@ -24988,12 +25201,17 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.SetFieldValue(System.Object,System.String,System.Object)">
             <summary>
-            Sets a field value on a record using reflection with enhanced error handling and type conversion
+            Sets a field value on a record. Delegates to
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor"/> for the actual reflection,
+            which means we share the process-wide PropertyInfo cache with
+            every other FormsManager call site and get a throttled
+            diagnostic on missing/read-only fields for free.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.GetFieldValue(System.Object,System.String)">
             <summary>
-            Gets a field value from a record using reflection with caching
+            Gets a field value from a record. Delegates to
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor"/> for cached lookup.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.ExecuteSequence(System.String,System.Object,System.String,System.String)">
@@ -25003,7 +25221,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.GetPropertyValue(System.Object,System.String)">
             <summary>
-            Gets a property value from an object using reflection with enhanced error handling
+            Gets a property value from an object. Delegates to
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor"/> for the cached lookup.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.SetSystemVariables(System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariableType,System.Object)">
@@ -25013,8 +25232,24 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.ValidateField(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints)">
             <summary>
-            Validates field constraints similar to Oracle Forms
+            Validates field constraints similar to Oracle Forms.
             </summary>
+            <remarks>
+            B5 (audit pass 3, 2026-06): the default
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints"/> returned by
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper.GetDefaultConstraints(System.Type,System.String)"/>
+            has every constraint disabled (Required = false,
+            MaxLength = 0, MinValue = null, MaxValue = null,
+            no CustomValidator). Without an explicit
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints"/> supplied by the
+            caller, this method is effectively a no-op that
+            always returns <c>IsValid = true</c>. The
+            engine does not currently read entity annotations
+            or other metadata to populate
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints"/> automatically; the
+            host must supply the constraints at registration
+            time or via a future metadata-binding extension.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.LockManager">
             <summary>
@@ -25115,7 +25350,20 @@
             <inheritdoc />
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.LOVManager.RegisterLOV(System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.LOVDefinition)">
-            <inheritdoc />
+             <inheritdoc />
+             <remarks>
+             If <paramref name="lov"/>.<see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.LOVDefinition.LOVName"/> is null or whitespace,
+             this method MUTATES the caller's <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.LOVDefinition"/> instance to set it to
+             <c>{blockName}_{fieldName}_LOV</c>. The mutation is intentional so that callers
+             reusing the same definition across multiple registrations see a consistent name, but
+             it is observable from the caller's reference. If this is a concern, pass a dedicated
+             instance per registration.
+            
+             Re-registering an existing LOV for the same (blockName, fieldName) is a
+             supported idempotent operation. The previous definition is overwritten and any
+             in-memory cache it held is cleared (best-effort) so a downstream caller cannot
+             read stale rows from the dropped reference.
+             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.LOVManager.UnregisterLOV(System.String,System.String)">
             <inheritdoc />
@@ -25454,44 +25702,309 @@
             Deletes all saved query templates for a block.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager">
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor">
+             <summary>
+             Centralized reflection-based property accessor for records managed by
+             <see cref="T:TheTechIdea.Beep.Editor.UOWManager.FormsManager"/>. The engine binds records to a block by name
+             (see <c>DataBlockField.FieldName</c>), so the runtime record type is
+             opaque to the framework and <c>PropertyInfo</c> lookups cannot be
+             generated at compile time.
+            
+             <para>
+             This helper consolidates what used to be ~12 ad-hoc reflection sites
+             scattered across <c>FormsManager.BlockRegistration.cs</c>,
+             <c>FormsManager.DataOperations.cs</c>, <c>FormsManager.Helpers.cs</c>,
+             <c>FormsManager.Sequences.cs</c>, <c>FormsManager.Validation.cs</c>,
+             and <c>FormsSimulationHelper.cs</c>. Two regressions it fixes:
+             </para>
+            
+             <list type="number">
+               <item>
+                 <term>Silent null returns</term>
+                 <description>
+                   Every previous site swallowed the missing-field case (returning
+                   <c>null</c> or <c>false</c> with no log). Misconfigurations such
+                   as <c>FieldName = "OrderId"</c> on a record type that has
+                   <c>order_id</c> would silently no-op. The accessor emits a
+                   <c>Debug.WriteLine</c> + <c>IDMEEditor.AddLogMessage</c> warning
+                   on first miss per (Type, name) pair, with throttling.
+                 </description>
+               </item>
+               <item>
+                 <term>Repeated reflection cost</term>
+                 <description>
+                   <c>FormsSimulationHelper._propertyCache</c> used a
+                   <c>$"{type.FullName}.{propertyName}"</c> string key (one
+                   allocation per call) and was per-instance. The new cache is
+                   process-wide, keyed by <c>Type</c> (no string allocation), and
+                   caches both the "found" and "definitively missing" answers.
+                 </description>
+               </item>
+             </list>
+            
+             <para>
+             Lookup rules: <c>Public | Instance | IgnoreCase</c>, skipping indexers
+             (<c>GetIndexParameters().Length != 0</c>). Set-only properties (no
+             getter) are NOT filtered: they pass the indexer filter, but
+             <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetValue(System.Object,System.String,TheTechIdea.Beep.Editor.IDMEEditor)"/> returns <c>null</c> for them (the caller has
+             no way to distinguish "set-only" from "getter returned null"). This
+             matches the original pre-consolidation behavior bit-for-bit so
+             callers see no behavior change unless a previously-silent
+             misconfiguration trips the new diagnostic.
+             </para>
+            
+             <para>
+             <b>Memory note for hosts with collectible <c>AssemblyLoadContext</c>s:</b>
+             the catalog holds strong references to <see cref="T:System.Reflection.PropertyInfo"/>,
+             which transitively roots the declaring <see cref="T:System.Type"/>,
+             <see cref="T:System.Reflection.Module"/>, and <see cref="T:System.Reflection.Assembly"/>.
+             Hosts that load record types from a collectible <c>AssemblyLoadContext</c>
+             and later unload it will find that the unloaded <c>Assembly</c> cannot
+             be collected because the catalog still references types from it.
+             Workarounds: (a) <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ClearCatalog"/> on unload, or
+             (b) avoid collectible ALCs for record types. The BeepDM Forms folder
+             itself is not a collectible ALC host, so this is a future-host
+             concern.
+             </para>
+             </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor._catalog">
+             <summary>
+             Per-type property catalog: <c>(Type, name) -> PropertyInfo</c>.
+             The inner dict's value type is the non-nullable
+             <see cref="T:System.Reflection.PropertyInfo"/>, but we overload <c>null</c> as a
+             semantic sentinel meaning "this (Type, name) was looked up and
+             definitively does not exist on the type" — the negative cache
+             that prevents the "lookup repeats forever" failure mode for
+             misspelled field names. See <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.BuildCatalogForType(System.Type)"/>
+             for the seeding logic and <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.EnumerateReadableProperties(System.Type)"/>
+             for the skip-null behavior.
+            
+             <para>
+             Nested structure: the outer dict grows once per Type, the
+             inner dict is per-Type. No allocations on the hot path
+             (the <c>TryGetValue</c> fast path).
+             </para>
+             </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor._lastMissLog">
             <summary>
-            Deprecated legacy helper for the old standalone relationship engine.
-            Active master/detail orchestration now lives directly in FormsManager core methods.
+            Throttle: do not log the same (Type, name) "missing field" more
+            than once per minute. Production forms can run thousands of
+            navigation events per second; we don't want to flood the log.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Collections.Concurrent.ConcurrentDictionary{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetValue(System.Object,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
-            Creates the deprecated relationship manager wrapper over the shared FormsManager block and relationship collections.
+            Read a property value from <paramref name="record"/>. Returns
+            <c>null</c> if the record is null, the field name is blank, or
+            the property does not exist on the record's type.
             </summary>
-            <param name="dmeEditor">Editor used for logging and datasource access.</param>
-            <param name="blocks">Registered block metadata keyed by block name.</param>
-            <param name="relationships">Relationship collections keyed by master block name.</param>
+            <remarks>
+            On a definitive miss (property does not exist on the type) the
+            accessor emits a single throttled warning via
+            <see cref="M:System.Diagnostics.Debug.WriteLine(System.String)"/>. Bind a <paramref name="logger"/>
+            to surface the same warning in the editor's log stream.
+            </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager.CreateMasterDetailRelation(System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.TryGetValue(System.Object,System.String,System.Object@,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
-            Creates a master-detail relationship between blocks
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager.SynchronizeDetailBlocksAsync(System.String)">
-            <summary>
-            Synchronizes detail blocks when master record changes
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager.GetDetailBlocks(System.String)">
-            <summary>
-            Gets all blocks that are detail blocks of the specified master block
+            Try to read a property value from <paramref name="record"/>.
+            Returns <c>true</c> when the property exists; <c>false</c> on a
+            miss or read error (in which case <paramref name="value"/> is
+            set to <c>null</c>).
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager.GetMasterBlock(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.TrySetValue(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
-            Gets the master block name for a detail block
+            Try to set a property value on <paramref name="record"/>. Returns
+            <c>false</c> on: null record, blank name, missing property,
+            read-only property, type-incompatible value (with conversion
+            failure), or reflection set error. Logs a single throttled
+            warning per (Type, name) for the "missing" and "read-only"
+            categories.
+            </summary>
+            <remarks>
+            Behavior delta from the previous <c>FormsManager.Helpers.TrySetPropertyValue</c>:
+            <c>Convert.ChangeType</c> failures (e.g. caller passes a string
+            for an int property) previously threw one of
+            <see cref="T:System.InvalidCastException"/>, <see cref="T:System.FormatException"/>,
+            or <see cref="T:System.OverflowException"/>; <c>SetValue</c> failures
+            could also throw <see cref="T:System.Reflection.TargetException"/>,
+            <see cref="T:System.Reflection.TargetInvocationException"/>, or
+            <see cref="T:System.NotSupportedException"/> (e.g. for C# 9+ <c>init</c>-only
+            properties). All such exceptions are now caught, logged, and
+            the method returns <c>false</c>. Callers that wrapped the
+            previous code in a try/catch continue to work; callers that
+            relied on the throw will see the same "skip" behavior as a
+            missing field.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetAllReadable(System.Object,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Enumerate all publicly-readable, non-indexed instance properties
+            of <paramref name="record"/>'s type as a snapshot dictionary keyed
+            by property name (case-insensitive). Returns an empty dictionary
+            if <paramref name="record"/> is null.
+            </summary>
+            <remarks>
+            The returned dictionary is a fresh allocation per call. Callers
+            that snapshot records for rollback should hold on to it for the
+            duration of the rollback window and then drop it. Returned as
+            <see cref="T:System.Collections.Generic.IDictionary`2"/> so it can be passed
+            directly to APIs that demand the mutable surface (e.g.
+            ValidationManager.ValidateRecord).
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.EnumerateWritableProperties(System.Object)">
+            <summary>
+            Enumerate all publicly-writable, non-indexed instance properties
+            of <paramref name="record"/>'s type. Used by snapshot-restore to
+            walk the target type's writable surface.
+            </summary>
+            <remarks>
+            The catalog <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.BuildCatalogForType(System.Type)"/> already filters
+            indexers out at seeding time, so they cannot appear here. We
+            still check <see cref="P:System.Reflection.PropertyInfo.CanWrite"/> because the
+            snapshot-restore path only writes to settable properties —
+            set-only and read-only properties are valid for reads but not
+            for the restore path.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ResolveProperty(System.Object,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
+             <summary>
+             Resolve a property by name on the record's runtime type. Returns
+             <c>null</c> if the record is null, the field name is blank, or
+             the property does not exist on the type.
+             </summary>
+             <remarks>
+             The catalog is a <c>ConcurrentDictionary&lt;Type, ConcurrentDictionary&lt;string, PropertyInfo&gt;&gt;</c>.
+             A <c>null</c> entry in the per-type dict means "definitively
+             missing" (negative cache). The lookup is:
+             </remarks>
+             <list type="number">
+               <item>
+                <term>Fast path (hit)</term>
+                <description>
+                  Lock-free <c>perType.TryGetValue</c>. Zero allocation. This
+                  branch dominates in real forms — once a (Type, name) pair
+                  has been resolved, every subsequent call hits the cache.
+                </description>
+              </item>
+              <item>
+                <term>Slow path (miss)</term>
+                <description>
+                  Allocates a <c>ValueTuple&lt;Type, string&gt;</c> for the
+                  <c>GetOrAdd</c> state argument. Misses are rare (one per
+                  (Type, name) pair over the lifetime of the process), so
+                  the allocation is acceptable. <c>GetOrAdd</c> may invoke
+                  the factory more than once under contention, but the
+                  factory is deterministic for the same (Type, name) — the
+                  resulting <c>PropertyInfo</c> instances are equivalent
+                  for our purposes.
+                </description>
+              </item>
+              <item>
+                <term>Logging</term>
+                <description>
+                  Done by the caller (<see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.LogMissingField(TheTechIdea.Beep.Editor.IDMEEditor,System.Object,System.String)"/>) only
+                  when the factory returns <c>null</c>. Logging holds a
+                  single global <c>_throttleLock</c> (scoped to the
+                  throttle bookkeeping, NOT the I/O). The I/O
+                  (<c>AddLogMessage</c>) happens outside the lock.
+                </description>
+              </item>
+            </list>
+             <para>
+             This is the third shape of this method. The previous versions had:
+             </para>
+             <list type="bullet">
+              <item>
+                <term>v1 (original)</term>
+                <description>
+                  Per-type <c>lock</c> on the catalog; logging I/O inside
+                  the lock.
+                </description>
+              </item>
+              <item>
+                <term>v2 (audit pass 1)</term>
+                <description>
+                  Replaced the lock with <c>GetOrAdd</c>, but the
+                  throttle was racy and the state tuple was eager
+                  (allocated on every call, not just on miss).
+                </description>
+              </item>
+              <item>
+                <term>v3 (audit pass 2, this version)</term>
+                <description>
+                  Explicit <c>TryGetValue</c> fast path avoids the
+                  tuple allocation on hit. Global <c>_throttleLock</c>
+                  scoped to throttle bookkeeping only.
+                </description>
+              </item>
+              <item>
+                <term>v4 (audit pass 3, current)</term>
+                <description>
+                  Same core as v3, but the typeKey string for the
+                  throttle is built inside the lock (rejected callers
+                  pay no allocation). The factory lambda in
+                  <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ShouldLogMiss(System.Type,System.String,System.String)"/> is
+                  marked <c>static</c> for Roslyn delegate caching.
+                  <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ClearCatalog"/> added for collectible
+                  <c>AssemblyLoadContext</c> hosts.
+                </description>
+              </item>
+            </list>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ResolvePropertyCore(System.Type,System.String)">
+            <summary>
+            Pure factory: scan the type's public-readable surface for
+            <paramref name="fieldName"/>. Returns <c>null</c> if the field
+            does not exist (or is an indexer). Has no side effects; safe
+            to invoke from <c>ConcurrentDictionary.GetOrAdd</c>.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RelationshipManager.RemoveBlockRelationships(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.LogRestoreFailure(TheTechIdea.Beep.Editor.IDMEEditor,System.Object,System.String,System.Reflection.PropertyInfo,System.Exception)">
             <summary>
-            Removes all relationships for a block
+            Diagnostic hook for callers that bypass <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.TrySetValue(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.IDMEEditor)"/>
+            and need to surface a throttled SetValue failure (e.g. the
+            snapshot-restore path in <c>FormsManager.BlockRegistration.cs</c>,
+            which uses <c>ConvertSnapshotValue</c> for enum/DateTime
+            handling and calls <c>property.SetValue</c> directly).
             </summary>
+            <remarks>
+            Public so external callers can route SetValue failures through
+            the same throttled diagnostic as the accessor's own TrySetValue.
+            Throttle is "approximately once per minute" per (Type, fieldName).
+            The <paramref name="property"/> is used to surface the target
+            type in the log message; pass <c>null</c> if it is not
+            available (the message will read "type ?" for the target type).
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor._throttleLock">
+            <summary>
+            Global lock for the log throttle bookkeeping. See
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ShouldLogMiss(System.Type,System.String,System.String)"/> for why this is needed and why
+            it is scoped tightly.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.ClearCatalog">
+            <summary>
+            Clears the per-type property catalog and the log throttle
+            dictionary. Intended for hosts that unload record types
+            from a collectible <see cref="!:System.Reflection.AssemblyLoadContext"/>
+            and need the catalog to release its strong references to
+            the unloaded <see cref="T:System.Type"/> instances. After this call,
+            the next lookup for any (Type, name) pair will re-seed the
+            catalog via <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.BuildCatalogForType(System.Type)"/>, which will
+            resolve the new <c>Type</c> reference correctly.
+            </summary>
+            <remarks>
+            Not safe to call from inside an active resolution. Callers
+            should drain all in-flight form work before invoking this.
+            The BeepDM Forms folder does not need this method; it is
+            provided for hosts that integrate with collectible ALCs.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.SavepointManager">
             <summary>
@@ -25504,15 +26017,64 @@
             Creates a named savepoint for a block using default record metadata.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.SavepointManager.CreateSavepoint(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.Dictionary{System.String,System.Object})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.SavepointManager.CreateSavepoint(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>
             Creates a named savepoint for a block with the supplied record metadata and optional snapshot values.
             </summary>
+            <param name="blockName">Logical block name (case-insensitive). Required.</param>
+            <param name="savepointName">
+            Savepoint name. If null or whitespace, an auto-generated name of the form
+            <c>SP_{counter}_{utcTicks}</c> is assigned.
+            </param>
+            <param name="recordIndex">Record index at savepoint time (0-based).</param>
+            <param name="recordCount">Total record count at savepoint time.</param>
+            <param name="isDirty">Whether the block had unsaved changes at savepoint time.</param>
+            <param name="snapshot">
+            Field-value snapshot to record with the savepoint. <see cref="T:System.Collections.Generic.IDictionary`2"/>
+            is the parameter type so that callers using
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetAllReadable(System.Object,TheTechIdea.Beep.Editor.IDMEEditor)"/>
+            can pass the result directly without an explicit cast. The
+            manager stores a copy in <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.RecordSnapshot"/>
+            (a <see cref="T:System.Collections.Generic.Dictionary`2"/>); if the caller
+            passes a non-Dictionary implementation, the manager
+            materializes a new Dictionary with case-insensitive keys.
+            </param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.SavepointManager.RollbackToSavepointAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <summary>
-            Rolls back the savepoint stack for a block to the specified savepoint.
-            </summary>
+             <summary>
+             Rolls back the savepoint stack for a block to the specified savepoint.
+             </summary>
+             <param name="blockName">Block whose savepoint stack to roll back.</param>
+             <param name="savepointName">Target savepoint name (case-insensitive).</param>
+             <param name="ct">
+             Cancellation token. The method body is fast (in-memory
+             dict operations only) but the token is observed once at
+             the start of the body so a caller that cancels
+             immediately gets a clean <see cref="T:System.OperationCanceledException"/>
+             without any state mutation.
+             </param>
+             <returns>
+             <c>true</c> if the rollback succeeded (i.e. the target
+             savepoint was found and later savepoints were removed);
+             <c>false</c> if the savepoint was not found.
+             </returns>
+             <remarks>
+             This method only mutates the savepoint store. The actual
+             data rollback (restoring the UoW state) is the caller's
+             responsibility — see
+             <c>FormsManager.RollbackToSavepointAsync</c>. Callers
+             should perform the data rollback BEFORE calling this, so
+             that a partial failure in the data rollback does not leave
+             the savepoint store in a mutated state.
+            
+             "Later" is determined by the savepoint's
+             <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.SequenceNumber"/>, which is a
+             process-wide monotonic counter assigned at creation time
+             (audit pass 3, 2026-06). This is more reliable than
+             comparing <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.SavepointInfo.Timestamp"/> values,
+             which can collide for savepoints created in the same
+             ~100ns tick window.
+             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.SavepointManager.ReleaseSavepoint(System.String,System.String)">
             <summary>
@@ -25649,11 +26211,25 @@
             <summary>
             Reads a field or property value from a record using case-insensitive reflection.
             </summary>
+            <remarks>
+            Routes through <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor"/> so the engine-wide typed
+            <c>PropertyInfo</c> catalog handles the lookup. The previous direct
+            <c>Type.GetProperty(...)</c> path re-issued a reflection call per read and
+            bypassed the case-insensitive / throttle / log-diagnostic plumbing the rest
+            of the engine uses.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.TriggerLibrary.SetFieldValue(System.Object,System.String,System.Object)">
             <summary>
             Sets a field or property value on a record using case-insensitive reflection.
             </summary>
+            <remarks>
+            Routes through <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.TrySetValue(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.IDMEEditor)"/>, which handles
+            the <see cref="M:System.Convert.ChangeType(System.Object,System.Type)"/> call internally and logs a
+            throttled diagnostic on missing/read-only/type-mismatch. The previous inline
+            <c>ConvertValue</c> helper (removed) duplicated the conversion logic and
+            silently swallowed conversion failures.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.TriggerLibrary.GetTriggerStatistics(System.String,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager)">
             <summary>
@@ -25802,16 +26378,58 @@
             <inheritdoc />
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateItemAsync(System.String,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)">
-            <inheritdoc />
+            <summary>
+            Async wrapper around <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateItem(System.String,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming)"/>. The work is
+            synchronous; this method offloads it to the thread pool.
+            </summary>
+            <remarks>
+            B10 (audit pass 3, 2026-06): the previous "async" path
+            wrapped the sync <c>ValidateItem</c> in
+            <c>Task.Run</c>. This is sync-over-async with extra
+            steps — the work itself is not parallel, just
+            off-thread. True parallel validation would require
+            per-rule async execution, which is out of scope for
+            this pass. The benefit of this wrapper is only that
+            the caller can <c>await</c> without blocking the UI
+            thread, which is a real (if narrow) win.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateRecordAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.Object},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)">
-            <inheritdoc />
+            <summary>
+            Async wrapper around <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateRecord(System.String,System.Collections.Generic.IDictionary{System.String,System.Object},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming)"/>. The
+            work is synchronous; this method offloads it to the
+            thread pool. See <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateItemAsync(System.String,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)"/> for the
+            sync-over-async caveat.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateBlockAsync(System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.IDictionary{System.String,System.Object}},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)">
-            <inheritdoc />
+            <summary>
+            Validates a block of records in parallel. The per-record
+            validation is itself synchronous; this method fans out
+            the records to the thread pool via
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateRecordAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.Object},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)"/>.
+            </summary>
+            <remarks>
+            B10: the parallelism here is real (records are
+            validated concurrently on the thread pool), but the
+            per-record work is still sync-over-async on any
+            async resources it touches. This is useful when
+            records are I/O-light and CPU-bound, but a wasted
+            fan-out for records that are themselves I/O-bound
+            (e.g. ValidateLookup / ValidateUnique hit a
+            database). For I/O-heavy records, prefer the sync
+            entry point <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateBlock(System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.IDictionary{System.String,System.Object}},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming)"/> in a
+            background thread, or pre-load the data before
+            calling.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateFormAsync(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.IDictionary{System.String,System.Object}}},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)">
-            <inheritdoc />
+            <summary>
+            Validates a form (collection of blocks) in parallel. The
+            per-block validation runs concurrently. See
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateBlockAsync(System.String,System.Collections.Generic.IEnumerable{System.Collections.Generic.IDictionary{System.String,System.Object}},TheTechIdea.Beep.Editor.UOWManager.Models.ValidationTiming,System.Threading.CancellationToken)"/> for the
+            sync-over-async caveat.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.SetDataSource(TheTechIdea.Beep.IDataSource)">
             <inheritdoc />
@@ -25821,6 +26439,26 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.SetBlockValidationEnabled(System.String,System.Boolean)">
             <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.QueryOutcome">
+            <summary>
+            Outcome of a single validation query against the data source.
+            Lets the caller distinguish "no rows found" (Empty, a real
+            result) from "the DB call threw" (Error, an undefined
+            result). The previous bool out-parameter collapsed both
+            into a single false, which forced callers like
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.ValidateUnique(System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.ValidationRule,System.Collections.Generic.IDictionary{System.String,System.Object})"/> to silently pass on DB error —
+            a security bypass for a uniqueness check.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.QueryOutcome.Ok">
+            <summary>Query ran successfully (rows is populated, possibly empty).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.QueryOutcome.Empty">
+            <summary>Query ran successfully and returned zero rows.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationManager.QueryOutcome.Error">
+            <summary>Data source is null, entity name is empty, or the query threw.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationRuleBuilder">
             <summary>
@@ -25974,13 +26612,32 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationRuleLibrary.FutureDateRule(System.String,System.String)">
             <summary>
-            Creates a future-date validation rule for a field.
+            Creates a future-date validation rule for a field. The field
+            value must be greater than or equal to today.
             </summary>
+            <remarks>
+            D4 (audit pass 3, 2026-06): the previous implementation used
+            <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationType.Date"/>, which only checks "is this
+            value a date" — it never compared against <see cref="P:System.DateTime.Today"/>.
+            The rule was a no-op. The new implementation uses
+            <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationType.GreaterThan"/> with today's date as
+            the minimum. <c>Convert.ToDouble(DateTime.Today)</c> is the OLE
+            Automation date double, and <c>ValidateGreaterThan</c> applies
+            the same conversion to the field value, so the comparison is
+            correct without changing the validation dispatcher.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationRuleLibrary.PastDateRule(System.String,System.String)">
             <summary>
-            Creates a past-date validation rule for a field.
+            Creates a past-date validation rule for a field. The field
+            value must be less than or equal to today.
             </summary>
+            <remarks>
+            D4 (audit pass 3, 2026-06): see <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationRuleLibrary.FutureDateRule(System.String,System.String)"/> for
+            the rationale. The previous implementation used
+            <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.ValidationType.Date"/> which does not compare against
+            a bound.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationRuleLibrary.PatternRule(System.String,System.String,System.String,System.String)">
             <summary>
@@ -26074,8 +26731,10 @@
             UI layers (BeepForms, BeepBlock) must never call IDataSource directly.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SynchronizeDetailBlocksAsync(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SynchronizeDetailBlocksAsync(System.String,System.Threading.CancellationToken)">
             <summary>Synchronizes detail blocks attached to the specified master block.</summary>
+            <param name="masterBlockName">Master block whose detail blocks should be synchronized.</param>
+            <param name="ct">Cancellation token; observed at each relationship iteration and at the start of each recursive call.</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetDetailBlocks(System.String)">
             <summary>Returns the detail block names attached to a master block.</summary>
@@ -26257,27 +26916,6 @@
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.OnFormMessage">
             <summary>Raised when the manager receives an inter-form message for this form.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRelationshipManager">
-            <summary>
-            Deprecated legacy helper for the old standalone relationship helper.
-            Active master/detail orchestration now lives directly in FormsManager master/detail methods.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRelationshipManager.CreateMasterDetailRelation(System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
-            <summary>Creates a master-detail relationship between two blocks.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRelationshipManager.SynchronizeDetailBlocksAsync(System.String)">
-            <summary>Synchronizes the detail blocks attached to a master block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRelationshipManager.GetDetailBlocks(System.String)">
-            <summary>Returns the detail block names attached to a master block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRelationshipManager.GetMasterBlock(System.String)">
-            <summary>Returns the master block name for a detail block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRelationshipManager.RemoveBlockRelationships(System.String)">
-            <summary>Removes all relationships involving a specific block.</summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager">
             <summary>
             Interface for dirty state management functionality
@@ -26349,6 +26987,12 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.GetPropertyValue(System.Object,System.String)">
             <summary>Gets a named property value from an object.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetSystemVariables(System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariableType,System.Object)">
+            <summary>Sets a named system variable (e.g. <c>SYSTEM.RECORD_STATUS</c>) on a record.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.ValidateField(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints)">
+            <summary>Validates a field's value against a set of field constraints. Returns the validation result.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager">
             <summary>
@@ -27402,7 +28046,7 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String)">
             <summary>Create a named savepoint; auto-generates name if null passed</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.Dictionary{System.String,System.Object})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>Create a savepoint with full state detail and optional record snapshot</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.RollbackToSavepointAsync(System.String,System.String,System.Threading.CancellationToken)">
@@ -28434,8 +29078,21 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship">
             <summary>
-            Extended data block relationship with additional metadata
+            Extended data block relationship with additional metadata.
             </summary>
+            <remarks>
+            B36/D6 (audit pass 3, 2026-06): the previous version carried a
+            number of fields that were never read by the master/detail
+            engine (<c>CascadeDelete</c>, <c>CascadeUpdate</c>, <c>Strength</c>,
+            <c>CustomSyncLogic</c>, <c>Metrics</c>, <c>ExtendedProperties</c>).
+            The cascade / strength / custom-sync fields were placeholders for
+            a feature that was never built; the metrics were never updated
+            anywhere. The supporting <c>RelationshipStrength</c> enum and
+            <c>RelationshipMetrics</c> class are also removed. External hosts
+            that depended on the removed fields must migrate — the engine
+            does not read them, so removing the fields has no runtime
+            behavior change beyond compile-time breakage.
+            </remarks>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.MasterBlockName">
             <summary>Gets or sets the name of the master block</summary>
@@ -28463,58 +29120,6 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.Description">
             <summary>Gets or sets a description of the relationship</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.ExtendedProperties">
-            <summary>Gets or sets extended properties for the relationship</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.CascadeDelete">
-            <summary>Gets or sets whether to cascade deletes</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.CascadeUpdate">
-            <summary>Gets or sets whether to cascade updates</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.Strength">
-            <summary>Gets or sets the relationship strength (weak, strong)</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.CustomSyncLogic">
-            <summary>Gets or sets custom synchronization logic</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.Metrics">
-            <summary>Gets or sets performance metrics for the relationship</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipStrength">
-            <summary>
-            Relationship strength types
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipStrength.Weak">
-            <summary>Weak relationship - detail records can exist without master</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipStrength.Strong">
-            <summary>Strong relationship - detail records require master record</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics">
-            <summary>
-            Performance metrics for relationships
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics.SynchronizationCount">
-            <summary>Gets or sets the total number of synchronizations</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics.AverageSyncTimeMs">
-            <summary>Gets or sets the average synchronization time in milliseconds</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics.LastSyncTimeMs">
-            <summary>Gets or sets the last synchronization time in milliseconds</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics.TotalRecordsSynchronized">
-            <summary>Gets or sets the total number of records synchronized</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics.ErrorCount">
-            <summary>Gets or sets the number of synchronization errors</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipMetrics.LastSyncTimestamp">
-            <summary>Gets or sets the last synchronization timestamp</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.DirtyBlockInfo">
             <summary>
@@ -52728,6 +53333,15 @@
             Registers the Beep audit feature with web-friendly defaults.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.UpdateDatasource(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
+            <summary>
+            Update an existing datasource. The connection is matched by
+            <see cref="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.GuidID"/> first, then by
+            <see cref="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.ConnectionName"/> as a fallback.
+            Added in PR 2 of the Beep Studio plan to back the
+            <c>ISourceService.SaveAsync</c> update path.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasourceWithInspection(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>
             Same as <see cref="M:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService.ApplySchemaToDatasource(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> but also returns a per-entity
@@ -56946,6 +57560,1616 @@
             Disposes the pipeline. Completes the queue, cancels the drain
             loop, awaits its shutdown, then disposes every sink.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.BeepServiceExtensions">
+            <summary>
+            DI registration helpers for the Beep Studio. The host calls
+            <see cref="M:TheTechIdea.Beep.Studio.BeepServiceExtensions.AddBeepStudio(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{TheTechIdea.Beep.Studio.StudioOptions})"/> next to the existing
+            <c>RegisterBeepApp</c> call.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.BeepServiceExtensions.AddBeepStudio(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{TheTechIdea.Beep.Studio.StudioOptions})">
+            <summary>The DI registration method name (kept as a nested static for discoverability).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService">
+            <summary>
+            CRUD over <see cref="T:TheTechIdea.Beep.Studio.EnvironmentProfile"/>s. The Studio uses these to drive
+            the approval workflow — every migration / sync declares which environment
+            it targets, and the engine looks up the profile to decide if an approval
+            is required.
+            </summary>
+            <remarks>
+            Implementations persist to <c>%ProgramData%\TheTechIdea\Beep\Studio\env-profiles.json</c>
+            (or the platform-equivalent path from <see cref="T:TheTechIdea.Beep.Services.EnvironmentService"/>).
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService.ListAsync(System.Threading.CancellationToken)">
+            <summary>List all profiles, ordered by <see cref="P:TheTechIdea.Beep.Studio.EnvironmentProfile.Order"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Get a single profile by id.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService.SaveAsync(TheTechIdea.Beep.Studio.EnvironmentProfile,System.Threading.CancellationToken)">
+            <summary>Create or update a profile. The <see cref="P:TheTechIdea.Beep.Studio.EnvironmentProfile.UpdatedAt"/> is set by the engine.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Delete a profile by id. Returns <see cref="F:TheTechIdea.Beep.Studio.StudioErrorCode.NotFound"/> if missing.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService.GetDefaultAsync(System.Threading.CancellationToken)">
+            <summary>Get the default profile (the first <see cref="F:TheTechIdea.Beep.Studio.RolloutTier.Dev"/> profile). Used when the caller does not specify one.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Contracts.IStudioService">
+            <summary>
+            Top-level facade for the Beep Studio. Composes every lower-level service
+            (driver, source, schema, migration, sync, governance, manifest, deployment)
+            behind a single async, platform-agnostic API. UI hosts (Blazor, WinForms,
+            WPF, Maui) call into this; engine primitives (IMigrationManager, BeepSyncManager,
+            IBeepAudit, IDMEEditor) are never touched directly from the host.
+            </summary>
+            <remarks>
+            This is the **only** type the host UI is expected to depend on. Sub-service
+            facades (e.g. <see cref="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Migrations"/>, <see cref="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Sources"/>) are exposed as
+            properties so the host can take a single dependency in DI and still reach
+            into any sub-service.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Environments">
+            <summary>Environment profiles (Dev / Test / Staging / Live / Custom).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Drivers">
+            <summary>Data-source driver provisioning (Phase 2).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Sources">
+            <summary>Source (connection) registry + configuration (Phase 3).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Schemas">
+            <summary>Schema discovery + design (Phase 4).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Migrations">
+            <summary>Migration orchestration (Phase 5).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Sync">
+            <summary>Data sync orchestration (Phase 6).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Governance">
+            <summary>Governance: policies, approvals, audit (Phase 7).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Manifest">
+            <summary>Data lifecycle manifest — the link between data and code (Phase 9).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Contracts.IStudioService.Deployment">
+            <summary>Deployment metadata + HMAC approval tokens (Phase 10).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IStudioService.GetInfo">
+            <summary>
+            Read the Studio's runtime info (version, supported types, capabilities).
+            Synchronous because it is a pure metadata read backed by in-memory state.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Contracts.IStudioService.GetInfoAsync(System.Threading.CancellationToken)">
+            <summary>Async version of <see cref="M:TheTechIdea.Beep.Studio.Contracts.IStudioService.GetInfo"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher">
+            <summary>
+            Telemetry enricher that stamps every audit envelope with the current
+            deployment metadata (code revision ref, short SHA, version, build id,
+            built-at). The Studio uses this to make every audit event traceable
+            back to the exact code revision that produced it.
+            </summary>
+            <remarks>
+            <para>
+            Enrichers run on the producer thread and must be cheap and
+            non-blocking. The deployment metadata is resolved once via
+            <see cref="T:System.Lazy`1"/> and cached for the process lifetime — a redeploy
+            produces a new process and a fresh cache.
+            </para>
+            <para>
+            If metadata resolution fails (e.g. no git, no env var, no
+            <c>InformationalVersion</c>), the enricher stamps an explicit
+            <c>"unresolved"</c> marker rather than throwing. Audit must never be
+            lost because of cross-cutting enricher failures.
+            </para>
+            <para>
+            Wiring modes:
+            <list type="bullet">
+              <item>
+                <description>
+                <c>DeploymentMetadataEnricher(IDeploymentMetadataService)</c> —
+                the enricher resolves the metadata the first time
+                <see cref="M:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.Enrich(TheTechIdea.Beep.Services.Telemetry.TelemetryEnvelope)"/> runs and caches it. Best for late DI.
+                </description>
+              </item>
+              <item>
+                <description>
+                <c>DeploymentMetadataEnricher(DeploymentMetadata?)</c> — for
+                unit tests and offline wiring with a precomputed value.
+                </description>
+              </item>
+            </list>
+            </para>
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.Name">
+            <summary>Stable name used for diagnostics and ordering.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.#ctor(TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService)">
+            <summary>
+            Default ctor. Resolves the metadata on the first <see cref="M:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.Enrich(TheTechIdea.Beep.Services.Telemetry.TelemetryEnvelope)"/>
+            call. Resolution is bounded by a 2-second timeout and never throws.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.#ctor(TheTechIdea.Beep.Studio.Deployment.DeploymentMetadata)">
+            <summary>Constructor used by unit tests with a precomputed value.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.Current">
+            <summary>The current metadata, or <c>null</c> if resolution failed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataEnricher.Enrich(TheTechIdea.Beep.Services.Telemetry.TelemetryEnvelope)">
+            <summary>
+            Stamps the envelope's <c>Properties</c> bag with deployment metadata.
+            Initializes <c>Properties</c> when it is <c>null</c>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadataService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService"/>. Resolves
+            the deployment metadata (code revision + build id + version) from the
+            environment, the manifest, the git CLI, and the assembly. Mints and
+            verifies HMAC-SHA256 approval tokens bound to a specific deployment.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService">
+            <summary>
+            Deployment metadata + HMAC approval tokens. Implemented in Phase 10.
+            The service captures the code revision the Studio is running against,
+            enriches every audit event with it, and issues HMAC-signed approval
+            tokens that bind an approval to a specific code revision.
+            </summary>
+            <remarks>
+            We do <b>not</b> orchestrate deployments here. The service only
+            <i>resolves</i> the metadata that a CI/CD system has set; it does not
+            build, deploy, push, or publish anything.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService.GetCurrentAsync(System.Threading.CancellationToken)">
+            <summary>Resolve the deployment metadata for the current process.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService.Override(TheTechIdea.Beep.Studio.Deployment.DeploymentMetadata)">
+            <summary>Override the deployment metadata (used by tests and by the host during a dry-run).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService.IssueApprovalTokenAsync(TheTechIdea.Beep.Studio.Deployment.ApprovalTokenRequest,System.Threading.CancellationToken)">
+            <summary>Issue an HMAC-signed approval token for a request + deployment pair.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.IDeploymentMetadataService.VerifyApprovalTokenAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Verify an approval token against the current deployment metadata.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadata">
+            <summary>The metadata that describes a single code revision a Studio instance is running against.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.DeploymentMetadata.#ctor(System.String,System.String,System.String,System.String,System.String,System.DateTimeOffset,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String})">
+            <summary>The metadata that describes a single code revision a Studio instance is running against.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.ApprovalTokenRequest">
+            <summary>A request to issue an approval token.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.ApprovalTokenRequest.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.RolloutTier,System.DateTimeOffset,System.TimeSpan)">
+            <summary>A request to issue an approval token.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.ApprovalTokenClaims">
+            <summary>The claims inside a verified approval token.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.ApprovalTokenClaims.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.RolloutTier,System.String,System.String,System.DateTimeOffset,System.DateTimeOffset)">
+            <summary>The claims inside a verified approval token.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Deployment.ApprovalToken">
+            <summary>The full approval token + claims + lifetime.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Deployment.ApprovalToken.#ctor(System.String,TheTechIdea.Beep.Studio.Deployment.ApprovalTokenClaims,System.DateTimeOffset,System.DateTimeOffset)">
+            <summary>The full approval token + claims + lifetime.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.DriverService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Driver.IDriverService"/>. Lists registered
+            drivers from <see cref="P:TheTechIdea.Beep.ConfigUtil.IConfigEditor.DataDriversClasses"/>; provisions
+            a driver via the engine's <see cref="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.DriverService.SplitExtensions(System.String)">
+            <summary>
+            Split a comma-separated extension string into a list. Returns an
+            empty list when the input is null or whitespace. Used to convert
+            <c>ConnectionDriversConfig.extensionstoHandle</c> (a single string)
+            into the <c>List&lt;string&gt;</c> shape the Studio's
+            <see cref="T:TheTechIdea.Beep.Studio.Driver.DriverInfo"/> expects.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.IDriverService">
+            <summary>
+            Provisioning of a data-source driver (a NuGet package, a local DLL, or a
+            plugin assembly). Implemented in Phase 2 — this PR ships the stub.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.IDriverService.ListAsync(System.Threading.CancellationToken)">
+            <summary>List every driver registered with the engine (built-in + provisioned).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.IDriverService.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Get a single driver by its package name (e.g. <c>Beep.DataSource.SqlServer</c>).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.IDriverService.ProvisionAsync(TheTechIdea.Beep.Studio.Driver.DriverProvisionRequest,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <summary>Provision a driver. The default implementation supports NuGet, local-folder, and plugin-assembly sources.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.IDriverService.UnloadAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Unload a previously-provisioned driver. The engine keeps the package on disk.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.DriverInfo">
+            <summary>A registered data-source driver.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.DriverInfo.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean,System.Boolean,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>A registered data-source driver.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.DriverProvisionRequest">
+            <summary>A request to provision a driver.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.DriverProvisionRequest.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.Driver.DriverSource,System.String,System.String,System.Boolean)">
+            <summary>A request to provision a driver.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.DriverProvisionResult">
+            <summary>The result of a provisioning attempt.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.DriverProvisionResult.#ctor(System.Boolean,System.String,System.String,System.Boolean,System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>The result of a provisioning attempt.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.DriverSource">
+            <summary>Where the driver comes from.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Driver.DriverSource.NuGet">
+            <summary>NuGet package — fetched from a configured feed (default: nuget.org).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Driver.DriverSource.Local">
+            <summary>Local file / folder — copied from a user-supplied path.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Driver.DriverSource.Plugin">
+            <summary>Plugin assembly — loaded from an already-registered plugin.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.EnvironmentProfile">
+            <summary>
+            An environment profile (Dev, Test, Staging, Live, or a custom tier).
+            Profiles drive the approval workflow — a profile with <see cref="P:TheTechIdea.Beep.Studio.EnvironmentProfile.RequiresApproval"/>
+            = true requires an approval token before any migration or sync can run.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.EnvironmentProfile.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.RolloutTier,System.Int32,System.String,System.Boolean,System.Int32,System.Boolean,System.Collections.Generic.IReadOnlyList{System.String},System.DateTimeOffset,System.DateTimeOffset)">
+            <summary>
+            An environment profile (Dev, Test, Staging, Live, or a custom tier).
+            Profiles drive the approval workflow — a profile with <see cref="P:TheTechIdea.Beep.Studio.EnvironmentProfile.RequiresApproval"/>
+            = true requires an approval token before any migration or sync can run.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.RolloutTier">
+            <summary>The rollout tier a profile represents. Drives the default approval policy.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.RolloutTier.Dev">
+            <summary>Development. No approval required by default.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.RolloutTier.Test">
+            <summary>Test / CI. Approval optional, depends on policy.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.RolloutTier.Staging">
+            <summary>Staging. Approval required.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.RolloutTier.Live">
+            <summary>Live / production. Approval required with multiple approvers.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.RolloutTier.Custom">
+            <summary>Custom tier (e.g. "sandbox", "dr"). The default policy is host-defined.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.GovernanceService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Governance.IGovernanceService"/>. Persists
+            policies to <c>%ProgramData%\TheTechIdea\BeepDMS\governance-policies.json</c>
+            and approvals to <c>%ProgramData%\TheTechIdea\BeepDMS\governance-approvals.json</c>.
+            Wraps the engine's <see cref="T:TheTechIdea.Beep.Services.Audit.IBeepAudit"/> for the audit surface.
+            </summary>
+            <remarks>
+            The engine's <c>AuditEvent</c> is more general than the Studio's
+            <c>StudioAuditEvent</c>; the mapping goes both ways via
+            <see cref="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.MapFromAuditEvent(TheTechIdea.Beep.Services.Audit.Models.AuditEvent)"/> and <see cref="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.MapToAuditEvent(TheTechIdea.Beep.Studio.Governance.StudioAuditEvent)"/>.
+            The Studio carries extra business-friendly fields (<c>Category</c>,
+            <c>Action</c>, <c>Subject</c>, <c>BeforeJson</c>, <c>AfterJson</c>) that the
+            engine stores in the <c>Properties</c> dictionary.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.IGovernanceService">
+            <summary>
+            Governance: policies, approvals, and audit. Implemented in Phase 7.
+            Wraps the engine's existing <c>IBeepAudit</c> pipeline (hash-chained,
+            tamper-evident) with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-shaped surface, an
+            approval workflow, and a redaction policy for sensitive fields.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.GovernancePolicy">
+            <summary>A governance policy. Drives the approval workflow and the audit policy.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.GovernancePolicy.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.RolloutTier,System.Boolean,System.Int32,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.String},System.Nullable{System.TimeSpan},System.Boolean,System.Boolean,System.Int32,System.DateTimeOffset,System.DateTimeOffset)">
+            <summary>A governance policy. Drives the approval workflow and the audit policy.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.ApprovalRequest">
+            <summary>An approval request.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.ApprovalRequest.#ctor(System.String,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Studio.RolloutTier,System.String,System.DateTimeOffset,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Governance.ApprovalDecision},TheTechIdea.Beep.Studio.Governance.ApprovalState,System.Nullable{System.DateTimeOffset})">
+            <summary>An approval request.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.ApprovalDecision">
+            <summary>A single approver's decision.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.ApprovalDecision.#ctor(System.String,System.DateTimeOffset,System.Boolean,System.String)">
+            <summary>A single approver's decision.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.ApprovalState">
+            <summary>The state of an approval request.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Pending">
+            <summary>Pending. Awaiting one or more approvers.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Approved">
+            <summary>Approved. The required approver count was met.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Rejected">
+            <summary>Rejected. At least one approver rejected the request.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Withdrawn">
+            <summary>Withdrawn by the requestor before the decision was made.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Expired">
+            <summary>Expired without a decision.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.ApprovalListFilter">
+            <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Governance.IGovernanceService.ListApprovalsAsync(TheTechIdea.Beep.Studio.Governance.ApprovalListFilter,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.ApprovalListFilter.#ctor(System.Nullable{TheTechIdea.Beep.Studio.Governance.ApprovalState},System.Nullable{TheTechIdea.Beep.Studio.RolloutTier},System.String,System.String,System.String,System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset},System.Int32,System.Int32)">
+            <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Governance.IGovernanceService.ListApprovalsAsync(TheTechIdea.Beep.Studio.Governance.ApprovalListFilter,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.StudioAuditEvent">
+            <summary>An audit event recorded by the Studio. Wraps the engine's <c>TelemetryEnvelope</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.StudioAuditEvent.#ctor(System.Nullable{System.Int64},System.DateTimeOffset,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>An audit event recorded by the Studio. Wraps the engine's <c>TelemetryEnvelope</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.AuditQuery">
+            <summary>Query for the audit log.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.AuditQuery.#ctor(System.String,System.String,System.String,System.String,System.String,System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset},System.Int32,System.Int32)">
+            <summary>Query for the audit log.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.AuditIntegrityReport">
+            <summary>The result of an integrity check on the audit log.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.AuditIntegrityReport.#ctor(System.Boolean,System.Int32,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Governance.AuditIntegrityIssue})">
+            <summary>The result of an integrity check on the audit log.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.AuditIntegrityIssue">
+            <summary>A single integrity issue.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.AuditIntegrityIssue.#ctor(System.Int64,System.String)">
+            <summary>A single integrity issue.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.SloTarget">
+            <summary>A service-level objective (SLO) target. Used by the Studio's governance
+            policies to drive alerts when the engine's telemetry pipeline reports
+            out-of-range values.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.SloTarget.#ctor(System.String,System.String,System.Double,System.String,System.TimeSpan,System.String)">
+            <summary>A service-level objective (SLO) target. Used by the Studio's governance
+            policies to drive alerts when the engine's telemetry pipeline reports
+            out-of-range values.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Governance.AlertRule">
+            <summary>An alert rule. When the engine's SLO subsystem detects a matching
+            trigger, the Studio raises an alert via the configured actions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.AlertRule.#ctor(System.String,System.String,System.String,System.Double,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyDictionary{System.String,System.String})">
+            <summary>An alert rule. When the engine's SLO subsystem detects a matching
+            trigger, the Studio raises an alert via the configured actions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.IStudioProgress">
+            <summary>
+            Platform-agnostic progress reporter. The Studio reports lifecycle events
+            (Begin / Update / Complete / Failed) with a structured payload so any UI
+            shell (Blazor, WinForms, WPF, Maui, Console) can render it without
+            knowing engine internals.
+            </summary>
+            <remarks>
+            This is the cross-cutting contract every Studio host implements. The default
+            implementation is <see cref="T:TheTechIdea.Beep.Studio.NullStudioProgress"/>, which silently drops
+            every update (useful for tests and CLI runs).
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.IStudioProgress.Report(TheTechIdea.Beep.Studio.StudioProgressUpdate)">
+            <summary>Emit a progress update. Implementations must be thread-safe.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioProgressUpdate">
+            <summary>
+            A single progress update from the engine. Carries enough context for the
+            host UI to render a step progress strip, a per-step sub-label, a percentage,
+            a severity (info / warning / error), and an arbitrary payload for
+            operation-specific data (e.g. the current entity being migrated).
+            </summary>
+            <param name="OperationId">A stable id that correlates all updates for one operation.</param>
+            <param name="OperationName">A human-readable name (e.g. "Provisioning SQLite driver").</param>
+            <param name="Stage">The lifecycle stage: <c>Begin</c> at start, repeated <c>Update</c> calls, then <c>Complete</c> or <c>Failed</c>.</param>
+            <param name="CurrentStep">A free-form description of the current sub-step (e.g. "Downloading package...").</param>
+            <param name="Percent">0..100. The host may clamp to a max for display.</param>
+            <param name="Severity">Info / Warning / Error. Failed operations should set this to <c>Error</c>.</param>
+            <param name="Timestamp">When the engine emitted the update.</param>
+            <param name="Payload">Operation-specific data (current entity, current row count, etc.).</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioProgressUpdate.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.StudioProgressStage,System.String,System.Int32,TheTechIdea.Beep.Studio.StudioProgressSeverity,System.DateTimeOffset,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            A single progress update from the engine. Carries enough context for the
+            host UI to render a step progress strip, a per-step sub-label, a percentage,
+            a severity (info / warning / error), and an arbitrary payload for
+            operation-specific data (e.g. the current entity being migrated).
+            </summary>
+            <param name="OperationId">A stable id that correlates all updates for one operation.</param>
+            <param name="OperationName">A human-readable name (e.g. "Provisioning SQLite driver").</param>
+            <param name="Stage">The lifecycle stage: <c>Begin</c> at start, repeated <c>Update</c> calls, then <c>Complete</c> or <c>Failed</c>.</param>
+            <param name="CurrentStep">A free-form description of the current sub-step (e.g. "Downloading package...").</param>
+            <param name="Percent">0..100. The host may clamp to a max for display.</param>
+            <param name="Severity">Info / Warning / Error. Failed operations should set this to <c>Error</c>.</param>
+            <param name="Timestamp">When the engine emitted the update.</param>
+            <param name="Payload">Operation-specific data (current entity, current row count, etc.).</param>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.OperationId">
+            <summary>A stable id that correlates all updates for one operation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.OperationName">
+            <summary>A human-readable name (e.g. "Provisioning SQLite driver").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.Stage">
+            <summary>The lifecycle stage: <c>Begin</c> at start, repeated <c>Update</c> calls, then <c>Complete</c> or <c>Failed</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.CurrentStep">
+            <summary>A free-form description of the current sub-step (e.g. "Downloading package...").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.Percent">
+            <summary>0..100. The host may clamp to a max for display.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.Severity">
+            <summary>Info / Warning / Error. Failed operations should set this to <c>Error</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.Timestamp">
+            <summary>When the engine emitted the update.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.Payload">
+            <summary>Operation-specific data (current entity, current row count, etc.).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioProgressStage">
+            <summary>The four lifecycle stages the engine emits.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressStage.Begin">
+            <summary>The operation has started. The first update for an <see cref="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.OperationId"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressStage.Update">
+            <summary>An intermediate progress update. The engine may emit zero or more of these.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressStage.Complete">
+            <summary>The operation completed successfully. The final update for the <see cref="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.OperationId"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressStage.Failed">
+            <summary>The operation failed. The final update for the <see cref="P:TheTechIdea.Beep.Studio.StudioProgressUpdate.OperationId"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioProgressSeverity">
+            <summary>The severity of a <see cref="T:TheTechIdea.Beep.Studio.StudioProgressUpdate"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressSeverity.Info">
+            <summary>Informational only. The default.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressSeverity.Warning">
+            <summary>A non-fatal warning. The host UI may show a yellow indicator.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioProgressSeverity.Error">
+            <summary>An error. Usually paired with <see cref="F:TheTechIdea.Beep.Studio.StudioProgressStage.Failed"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.NullStudioProgress">
+            <summary>
+            No-op progress reporter. Every <see cref="M:TheTechIdea.Beep.Studio.NullStudioProgress.Report(TheTechIdea.Beep.Studio.StudioProgressUpdate)"/> call is silently dropped.
+            Use in tests and in CLI runs where no UI consumes the updates.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioProgress.Instance">
+            <summary>Singleton instance — safe to share across all threads and circuits.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.NullStudioProgress.Report(TheTechIdea.Beep.Studio.StudioProgressUpdate)">
+            <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifestService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService"/>.
+            Reads / writes / validates a <see cref="T:TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifest"/> from a JSON
+            file in the project repo (default: <c>beep/data-lifecycle-manifest.json</c>).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService">
+            <summary>
+            Data lifecycle manifest — the link between data lifecycle and code lifecycle.
+            Implemented in Phase 9. The manifest is a JSON or YAML file in the project
+            repo that declares: "this code revision expects these data sources, with
+            these schemas, with this approval tier, with this retention policy."
+            The Studio reads it on startup, validates every apply against it, and is
+            the canonical artefact that ties data changes to code revisions.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService.LoadAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Load the manifest from the configured path. If <paramref name="overridePath"/>
+            is <c>null</c>, the Studio walks up from the current working directory
+            looking for <c>beep/data-lifecycle-manifest.json</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService.SaveAsync(TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifest,System.String,System.Threading.CancellationToken)">
+            <summary>Write the manifest to a path. Used by the host UI's manifest editor.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService.ValidateAsync(TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifest,System.Threading.CancellationToken)">
+            <summary>
+            Validate the manifest against the live Studio state (registered sources,
+            registered drivers, governance policies). Returns a report with all
+            issues (not just the first) — the host UI renders them as a list.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService.ResolveManifestPath(System.String)">
+            <summary>Resolve the manifest path by walking up from CWD to the repo root.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService.Current">
+            <summary>The currently loaded manifest, or <c>null</c> if <see cref="M:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService.LoadAsync(System.String,System.Threading.CancellationToken)"/> has not succeeded.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifest">
+            <summary>Root manifest POCO. Bound from JSON or YAML.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifest.#ctor(System.Int32,System.String,TheTechIdea.Beep.Studio.Manifest.ManifestProjectRef,TheTechIdea.Beep.Studio.Manifest.DataLifecycleSpec,System.Nullable{System.DateTimeOffset},System.String)">
+            <summary>Root manifest POCO. Bound from JSON or YAML.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestProjectRef">
+            <summary>The project this manifest describes.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestProjectRef.#ctor(System.String,System.String,System.String,TheTechIdea.Beep.Studio.Manifest.CodeRevisionRef)">
+            <summary>The project this manifest describes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.CodeRevisionRef">
+            <summary>Reference to a specific code revision (git ref + sha).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.CodeRevisionRef.#ctor(System.String,System.String)">
+            <summary>Reference to a specific code revision (git ref + sha).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.DataLifecycleSpec">
+            <summary>The data-lifecycle spec inside a manifest.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.DataLifecycleSpec.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Manifest.ManifestEnvironmentSpec},System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Manifest.ManifestExpectedSource},TheTechIdea.Beep.Studio.Manifest.ManifestSchemaPolicies,TheTechIdea.Beep.Studio.Manifest.ManifestSyncPolicies,TheTechIdea.Beep.Studio.Manifest.ManifestAuditPolicies,TheTechIdea.Beep.Studio.Manifest.ManifestApprovalPolicies)">
+            <summary>The data-lifecycle spec inside a manifest.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestEnvironmentSpec">
+            <summary>An environment the project targets.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestEnvironmentSpec.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.RolloutTier,System.Collections.Generic.IReadOnlyList{System.String},System.Boolean,System.Int32,System.Nullable{System.TimeSpan})">
+            <summary>An environment the project targets.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestExpectedSource">
+            <summary>A data source the project expects to use.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestExpectedSource.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>A data source the project expects to use.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestSchemaPolicies">
+            <summary>Schema-level policies.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestSchemaPolicies.#ctor(System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>Schema-level policies.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestSyncPolicies">
+            <summary>Sync-level policies.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestSyncPolicies.#ctor(System.Boolean,System.String,System.Int32,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>Sync-level policies.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestAuditPolicies">
+            <summary>Audit-level policies.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestAuditPolicies.#ctor(System.Collections.Generic.IReadOnlyList{System.String},System.Int32,System.Boolean)">
+            <summary>Audit-level policies.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestApprovalPolicies">
+            <summary>Approval-level policies.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestApprovalPolicies.#ctor(System.Collections.Generic.IReadOnlyList{System.String},System.Boolean,System.Nullable{System.TimeSpan})">
+            <summary>Approval-level policies.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestValidationReport">
+            <summary>The result of a manifest validation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestValidationReport.#ctor(System.Boolean,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Manifest.ManifestValidationIssue},System.DateTimeOffset,System.String)">
+            <summary>The result of a manifest validation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Manifest.ManifestValidationIssue">
+            <summary>A single manifest validation issue.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Manifest.ManifestValidationIssue.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>A single manifest validation issue.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.IMigrationStudioService">
+            <summary>
+            Migration orchestration. Implemented in Phase 5. Wraps the engine's
+            <c>IMigrationManager</c> with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-shaped API,
+            a <see cref="T:TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle"/> for resumable / cancellable runs,
+            and a <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/> reporter.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationRequest">
+            <summary>A request to build a migration plan.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationRequest.#ctor(System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Boolean,System.Boolean,System.Boolean)">
+            <summary>A request to build a migration plan.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle">
+            <summary>Immutable handle to a built plan. Reused across dry-run / preflight / apply.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle.#ctor(System.String,System.String,System.String,System.String,System.DateTimeOffset,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.DdlOperationVm})">
+            <summary>Immutable handle to a built plan. Reused across dry-run / preflight / apply.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.DdlOperationVm">
+            <summary>A single DDL operation in a plan.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.DdlOperationVm.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>A single DDL operation in a plan.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationExecutionHandle">
+            <summary>Handle to a running or completed migration execution.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationExecutionHandle.#ctor(System.String,System.String,System.String,System.DateTimeOffset,TheTechIdea.Beep.Studio.Migration.MigrationExecutionState)">
+            <summary>Handle to a running or completed migration execution.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState">
+            <summary>The lifecycle state of a migration execution.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.Queued">
+            <summary>The execution has been queued but not started.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.Running">
+            <summary>The execution is in flight.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.Paused">
+            <summary>The execution was paused by the operator.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.Succeeded">
+            <summary>The execution completed without errors.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.Failed">
+            <summary>The execution failed. A rollback may be in progress or pending.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.Cancelled">
+            <summary>The execution was cancelled by the operator.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationExecutionState.RolledBack">
+            <summary>The execution was rolled back after a failure.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.RollbackPolicy">
+            <summary>Policy controlling a rollback.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.RollbackPolicy.#ctor(System.Boolean,System.Boolean,System.Nullable{System.TimeSpan})">
+            <summary>Policy controlling a rollback.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationRollbackReport">
+            <summary>Result of a rollback attempt.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationRollbackReport.#ctor(System.Boolean,System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>Result of a rollback attempt.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationDryRunReport">
+            <summary>Dry-run report (one row per entity).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationDryRunReport.#ctor(System.String,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.DryRunEntityReport})">
+            <summary>Dry-run report (one row per entity).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.DryRunEntityReport">
+            <summary>Dry-run row for a single entity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.DryRunEntityReport.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>Dry-run row for a single entity.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationPreflightReport">
+            <summary>Preflight report (one row per check).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationPreflightReport.#ctor(System.String,System.Boolean,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.PreflightCheckResult})">
+            <summary>Preflight report (one row per check).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.PreflightCheckResult">
+            <summary>Result of a single preflight check.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.PreflightCheckResult.#ctor(System.String,System.String,System.String)">
+            <summary>Result of a single preflight check.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationImpactReport">
+            <summary>Impact report (which entities are referenced, row counts).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationImpactReport.#ctor(System.String,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.ImpactedEntity})">
+            <summary>Impact report (which entities are referenced, row counts).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.ImpactedEntity">
+            <summary>A single entity in an impact report.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.ImpactedEntity.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Int32)">
+            <summary>A single entity in an impact report.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.CiValidationReport">
+            <summary>CI gate result. Used by the CI/CD service (Future Work) and the build pipeline.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.CiValidationReport.#ctor(System.Boolean,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.CiCheckResult},System.String)">
+            <summary>CI gate result. Used by the CI/CD service (Future Work) and the build pipeline.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.CiCheckResult">
+            <summary>Result of a single CI check.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.CiCheckResult.#ctor(System.String,System.Boolean,System.String)">
+            <summary>Result of a single CI check.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.PolicyEvaluationResult">
+            <summary>Result of a policy evaluation against a plan.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.PolicyEvaluationResult.#ctor(System.Boolean,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.PolicyViolation})">
+            <summary>Result of a policy evaluation against a plan.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.PolicyViolation">
+            <summary>A single policy violation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.PolicyViolation.#ctor(System.String,System.String,System.String)">
+            <summary>A single policy violation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationHistoryItem">
+            <summary>A history row for a previously-applied migration.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationHistoryItem.#ctor(System.String,System.DateTimeOffset,System.String,System.Int32,System.Boolean,System.String,System.String)">
+            <summary>A history row for a previously-applied migration.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationStudioService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Migration.IMigrationStudioService"/>. Wraps the
+            engine's <see cref="T:TheTechIdea.Beep.Editor.Migration.IMigrationManager"/> with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-
+            shaped API, an <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/> reporter, and an in-memory
+            cache of plan handles. Real DDL previews are emitted by the engine at
+            execute time; v1 of the Studio surfaces a placeholder for the
+            pre-execution preview.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationStudioService._planCache">
+            <summary>Map of plan hash → last built plan handle (per-target). Re-used for dry-run / preflight / apply.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationStudioService._execStates">
+            <summary>Map of execution token → last-seen state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.BuildPlanAsync(TheTechIdea.Beep.Studio.Migration.MigrationRequest,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.DryRunAsync(TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.PreflightAsync(TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.ImpactAsync(TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.ValidateForCiAsync(TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.EvaluatePolicyAsync(TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.ApplyAsync(TheTechIdea.Beep.Studio.Migration.MigrationPlanHandle,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.ResumeAsync(System.String,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.CancelAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.RollbackAsync(System.String,TheTechIdea.Beep.Studio.Migration.RollbackPolicy,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.GetHistoryAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationStudioService.GetExecutionStateAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.StudioProgressToEngineAdapter">
+            <summary>
+            Adapts the Studio's platform-agnostic <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/> to the
+            engine's existing <see cref="T:System.IProgress`1"/> contract, where
+            <c>T</c> is the engine's <c>PassedArgs</c> envelope. The engine's
+            migration manager and driver provision step already call
+            <c>progress.Report(new PassedArgs { ... })</c>; this adapter lets the
+            Studio receive those reports without the engine knowing about
+            <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/>.
+            </summary>
+            <remarks>
+            The adapter is one-way (engine → Studio). The engine never sees
+            <see cref="T:TheTechIdea.Beep.Studio.StudioProgressUpdate"/>; it just sees a normal
+            <see cref="T:System.IProgress`1"/> and calls <c>Report</c> on it. The adapter
+            translates the engine's loosely-typed <c>PassedArgs</c> into a
+            typed <see cref="T:TheTechIdea.Beep.Studio.StudioProgressUpdate"/> using the
+            <c>EventType</c>, <c>Messege</c> (sic — that's the engine's
+            spelling), and <c>Progress</c> fields.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.StudioProgressToEngineAdapter.#ctor(TheTechIdea.Beep.Studio.IStudioProgress,System.String,System.String)">
+            <summary>
+            Construct the bridge. <paramref name="inner"/> is the Studio
+            progress reporter (e.g. a Blazor <c>MudBlazorISnackbar</c>-backed
+            implementation). <paramref name="operationId"/> and
+            <paramref name="operationName"/> are stamped on every emitted
+            <see cref="T:TheTechIdea.Beep.Studio.StudioProgressUpdate"/> so the host UI can correlate
+            updates back to the originating operation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.StudioProgressToEngineAdapter.Report(TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Translates the engine's <paramref name="args"/> into a
+            <see cref="T:TheTechIdea.Beep.Studio.StudioProgressUpdate"/> and forwards to the inner
+            <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/>. Never throws — the engine's
+            progress contract is best-effort.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.NullStudioService">
+            <summary>
+            No-op implementation of <see cref="T:TheTechIdea.Beep.Studio.Contracts.IStudioService"/>. Every call
+            returns <c>StudioResult&lt;T&gt;.Fail(StudioErrorCode.HostNotSupported, ...)</c>.
+            Use in tests and in hosts that have not yet wired the Studio.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Instance">
+            <summary>Singleton instance — safe to share across all threads and circuits.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Environments">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Drivers">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Sources">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Schemas">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Migrations">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Sync">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Governance">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Manifest">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.NullStudioService.Deployment">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.NullStudioService.GetInfo">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.NullStudioService.GetInfoAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.ISchemaService">
+            <summary>
+            Schema discovery + design. Implemented in Phase 4. Wraps the engine's
+            existing <c>EntityDiscoveryService</c> with a view-model surface and an
+            optional EF Core adapter (in a sibling assembly so the engine stays
+            EF-Core-free).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.ISchemaService.DiscoverAsync(TheTechIdea.Beep.Studio.Schema.EntityDiscoveryRequest,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <summary>Scan an assembly for entity types and return their descriptors.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.ISchemaService.DescribeAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Describe a single entity type in detail (columns, PK, FK).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.EntityDiscoveryRequest">
+            <summary>A request to scan an assembly for entity types.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.EntityDiscoveryRequest.#ctor(System.String,System.String,System.Boolean,TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>A request to scan an assembly for entity types.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter">
+            <summary>Filter for the category of entities to return.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter.All">
+            <summary>Include every category.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter.Entity">
+            <summary>Only entities that inherit from the engine's <c>Entity</c> base class.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter.IEntity">
+            <summary>Only entities that implement the engine's <c>IEntity</c> contract.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter.EfCore">
+            <summary>Only entities decorated with EF Core attributes (via the optional adapter).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter.Poco">
+            <summary>Only plain POCOs with no engine or EF Core decoration.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategoryFilter.ExcludeEfCore">
+            <summary>Exclude any EF Core decorated types.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.EntityDescriptor">
+            <summary>A discovered entity type. Bindable in any UI.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.EntityDescriptor.#ctor(System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Schema.EntityPropertyDescriptor})">
+            <summary>A discovered entity type. Bindable in any UI.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.EntityCategories">
+            <summary>The engine's classification of a discovered entity.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategories.Entity">
+            <summary>Inherits from the engine's <c>Entity</c> base class.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategories.IEntity">
+            <summary>Implements the engine's <c>IEntity</c> contract.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategories.EfCore">
+            <summary>Decorated with EF Core attributes (via the optional adapter).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Schema.EntityCategories.Poco">
+            <summary>Plain POCO with no engine or EF Core decoration.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.EntityPropertyDescriptor">
+            <summary>A single property of a discovered entity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.EntityPropertyDescriptor.#ctor(System.String,System.String,System.Boolean,System.Boolean,System.Boolean,System.String,System.Nullable{System.Int32},System.Boolean,System.Boolean,System.String)">
+            <summary>A single property of a discovered entity.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Schema.SchemaService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Schema.ISchemaService"/>. Wraps the engine's
+            <see cref="T:TheTechIdea.Beep.Editor.EntityDiscovery.EntityDiscoveryService"/> with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-
+            shaped API and a file-system assembly scanner so hosts that don't load
+            plug-in assemblies via <see cref="T:TheTechIdea.Beep.Services.IBeepService"/> can still
+            discover their entities.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.SchemaService.DiscoverAsync(TheTechIdea.Beep.Studio.Schema.EntityDiscoveryRequest,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Schema.SchemaService.DescribeAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Source.ISourceService">
+            <summary>
+            CRUD + health check for data sources (connections). Implemented in Phase 3.
+            The source registry is the central place where every connection used by
+            every project is recorded; downstream apps consume it via the push flow
+            (Phase 24 of the original plan).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.ListAsync(TheTechIdea.Beep.Studio.Source.SourceListFilter,System.Threading.CancellationToken)">
+            <summary>List sources, with optional filtering.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Get a single source by name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.SaveAsync(TheTechIdea.Beep.Studio.Source.SourceConfigurationRequest,System.Threading.CancellationToken)">
+            <summary>Create or update a source. Secrets are extracted and stored in the keychain before persistence.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Delete a source by name. Refuses if any project binding still references it.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.TestAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Run a connection health check against the live data source.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.BrowseAsync(System.String,System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>Browse the schema: list entities, or describe a single entity, or fetch sample rows.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Source.SourceListFilter">
+            <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Source.ISourceService.ListAsync(TheTechIdea.Beep.Studio.Source.SourceListFilter,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceListFilter.#ctor(System.String,System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Source.ISourceService.ListAsync(TheTechIdea.Beep.Studio.Source.SourceListFilter,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Source.SourceInfo">
+            <summary>Metadata about a registered source. Wraps a <c>ConnectionProperties</c> with Studio-level bookkeeping.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceInfo.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String,System.DateTimeOffset,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},TheTechIdea.Beep.Studio.Source.SourceTestResult,System.String,System.String,System.String,System.Nullable{System.Int32},System.String)">
+            <summary>Metadata about a registered source. Wraps a <c>ConnectionProperties</c> with Studio-level bookkeeping.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Source.SourceConfigurationRequest">
+            <summary>Request to create or update a source.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceConfigurationRequest.#ctor(System.String,System.String,System.String,System.String,System.Nullable{System.Int32},System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String,System.String,System.String)">
+            <summary>Request to create or update a source.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Source.SourceTestResult">
+            <summary>Result of a connection health check.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceTestResult.#ctor(System.Boolean,System.Int32,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>Result of a connection health check.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Source.SourceService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Source.ISourceService"/>. Wraps the
+            engine's existing <see cref="T:TheTechIdea.Beep.Services.DatasourceManagement.DatasourceManagementService"/> so all
+            connection management flows through the same code path as
+            <c>DataConnection.razor</c>, <c>SetupOrchestrationService</c>, and the
+            CI/CD service. The Studio is a thin shell on top.
+            </summary>
+            <remarks>
+            Construction is via <c>new SourceService(dmeEditor)</c>; the DI extension
+            wires this in <c>BeepServiceExtensions.AddBeepStudio</c> by resolving
+            the host's <c>IDMEEditor</c> (which lives in the singleton
+            <c>IBeepService</c>).
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>Construct the source service. <paramref name="editor"/> is the host's <see cref="T:TheTechIdea.Beep.Editor.IDMEEditor"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.ListAsync(TheTechIdea.Beep.Studio.Source.SourceListFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.SaveAsync(TheTechIdea.Beep.Studio.Source.SourceConfigurationRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.TestAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.BrowseAsync(System.String,System.String,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioConstants">
+            <summary>
+            Engine-wide constants for the Studio. Used for file names, environment names,
+            and well-known keys the engine looks up in the manifest.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.StudioSubFolder">
+            <summary>The Studio's sub-folder under the platform-appropriate <c>Beep</c> data folder.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.DefaultManifestFileName">
+            <summary>The default manifest filename, relative to the project repo root.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.DefaultManifestSubFolder">
+            <summary>The default manifest sub-folder, relative to the project repo root.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.CurrentManifestVersion">
+            <summary>The current supported manifest version.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.DeploymentMetadataEnvVar">
+            <summary>The environment variable that CI sets with the deployment metadata (engine Phase 10).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.ApprovalHmacKeyEnvVar">
+            <summary>The environment variable that holds the approval-token HMAC key.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.ManifestPathEnvVar">
+            <summary>The environment variable that points at a manifest file (overrides the auto-discover).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioConstants.DefaultEnvironmentId">
+            <summary>The default env profile id, used when no profile is specified.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioConstants.WellKnownEnvironmentIds">
+            <summary>All well-known environment ids, in display order.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioConstants.DefaultLiveCooldown">
+            <summary>The default cooldown between two applies in the Live tier (5 minutes).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioError">
+            <summary>
+            Error envelope for a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>. Mirrors RFC 7807 ProblemDetails
+            in spirit but is engine-agnostic. The <see cref="P:TheTechIdea.Beep.Studio.StudioError.Code"/> is a stable, machine-readable
+            identifier the host UI maps to a user-friendly message.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioError.#ctor(TheTechIdea.Beep.Studio.StudioErrorCode,System.String,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Error envelope for a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>. Mirrors RFC 7807 ProblemDetails
+            in spirit but is engine-agnostic. The <see cref="P:TheTechIdea.Beep.Studio.StudioError.Code"/> is a stable, machine-readable
+            identifier the host UI maps to a user-friendly message.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioError.None">
+            <summary>The default "no error" sentinel used by <see cref="M:TheTechIdea.Beep.Studio.StudioResult`1.Ok(`0)"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioError.IsNone">
+            <summary>True when this is the <see cref="P:TheTechIdea.Beep.Studio.StudioError.None"/> sentinel.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioErrorCode">
+            <summary>
+            Stable, machine-readable error codes for <see cref="T:TheTechIdea.Beep.Studio.StudioError"/>. The host UI
+            maps each code to a user-friendly message in a single table; never embed UI
+            strings in engine code.
+            </summary>
+            <remarks>
+            The numeric values are stable across releases — do not renumber. New codes
+            are appended at the end. The grouped ranges are:
+            <list type="bullet">
+              <item><c>0-99</c> — generic</item>
+              <item><c>100-199</c> — driver</item>
+              <item><c>200-299</c> — source / connection</item>
+              <item><c>300-399</c> — schema</item>
+              <item><c>400-499</c> — migration</item>
+              <item><c>500-599</c> — sync</item>
+              <item><c>600-699</c> — manifest + deployment</item>
+              <item><c>700-799</c> — audit</item>
+              <item><c>800-899</c> — cancellation</item>
+              <item><c>900-999</c> — host + internal</item>
+            </list>
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.None">
+            <summary>No error. The <see cref="P:TheTechIdea.Beep.Studio.StudioError.None"/> sentinel.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.Unknown">
+            <summary>An unspecified error. Inspect the <see cref="P:TheTechIdea.Beep.Studio.StudioError.Message"/> for details.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.InvalidArgument">
+            <summary>One of the arguments did not pass validation.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.NotFound">
+            <summary>The requested entity does not exist.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.AlreadyExists">
+            <summary>The entity being created already exists.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.PermissionDenied">
+            <summary>The caller is not permitted to perform the requested action.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.DriverMissing">
+            <summary>No data-source driver is registered for the requested type.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.DriverLoadFailed">
+            <summary>A registered driver failed to load (bad DLL, missing dep, etc.).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ConnectionFailed">
+            <summary>Connection to the data source could not be established.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ConnectionTestFailed">
+            <summary>Connection was established but a health check failed (e.g. wrong credentials).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.SchemaIncompatible">
+            <summary>The discovered schema is incompatible with what the manifest expects.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.PlanRejected">
+            <summary>The migration plan was rejected (e.g. by the policy evaluator).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.PolicyViolation">
+            <summary>The request violates the manifest's policy (e.g. <c>forbidDestructiveInLive</c>).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ApprovalRequired">
+            <summary>The operation requires an approval token that was not supplied.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ApprovalTokenInvalid">
+            <summary>The supplied approval token was rejected (wrong signature, expired, or wrong code revision).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ApplyFailed">
+            <summary>Applying the migration plan failed (one or more DDL ops errored).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.RollbackFailed">
+            <summary>Rollback after a failed apply could not complete cleanly.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.SyncRunFailed">
+            <summary>The sync run was terminated by an error.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ConflictUnresolved">
+            <summary>A sync conflict was detected that no rule resolved.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ManifestInvalid">
+            <summary>The manifest file could not be parsed or failed validation.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.ManifestVersionUnsupported">
+            <summary>The manifest's <c>manifestVersion</c> is not supported by this Studio version.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.DeploymentMetadataMissing">
+            <summary>The current deployment metadata could not be resolved (no git SHA, no env var, no manifest ref).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.AuditFailed">
+            <summary>An audit pipeline error prevented the event from being recorded.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.Cancelled">
+            <summary>The call was cancelled via the <see cref="T:System.Threading.CancellationToken"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.HostNotSupported">
+            <summary>The host (Blazor / WinForms / etc.) does not support the requested operation.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioErrorCode.InternalError">
+            <summary>An unexpected internal error. Inspect the <see cref="P:TheTechIdea.Beep.Studio.StudioError.Exception"/> for the stack trace.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioInfo">
+            <summary>
+            Runtime info about the Studio. Returned by <see cref="M:TheTechIdea.Beep.Studio.Contracts.IStudioService.GetInfo"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioInfo.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.RolloutTier},System.Boolean,System.Boolean,System.Boolean,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>
+            Runtime info about the Studio. Returned by <see cref="M:TheTechIdea.Beep.Studio.Contracts.IStudioService.GetInfo"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioOptions">
+            <summary>
+            DI options for the Studio. Passed to <see cref="!:BeepServiceExtensions.Studio.AddBeepStudio"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.DataRoot">
+            <summary>The Studio's data folder. Defaults to the platform-appropriate path from <c>EnvironmentService</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.Persistence">
+            <summary>Persistence layout. Default: JSON.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.DisableAudit">
+            <summary>Disable the audit hook. Default: <c>false</c> (audit ON).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.DisableHostedServices">
+            <summary>Disable the built-in hosted services (sync runner etc.). Default: <c>false</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.DisableAssemblyLoad">
+            <summary>Disable the auto-load of plug-in assemblies on startup. Default: <c>false</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.DefaultEnvironmentTier">
+            <summary>Default tier applied to environments created via the API when the caller does not specify one. Default: <see cref="F:TheTechIdea.Beep.Studio.RolloutTier.Dev"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.AuditRetentionDays">
+            <summary>How many days of audit history to retain on the local file sink. 0 = forever. Default: 365.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.ManifestPath">
+            <summary>Path to the project's <c>DataLifecycleManifest</c>. If <c>null</c>, the Studio walks up from CWD looking for <c>beep/data-lifecycle-manifest.json</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.EnforceManifestOnApply">
+            <summary>When <c>true</c> (default), the Studio refuses to apply a migration or run a sync that does not match the manifest's expected source list.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.EnrichAuditWithDeploymentMetadata">
+            <summary>When <c>true</c> (default), every audit event is enriched with <see cref="!:DeploymentMetadata"/> (code revision + build id).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioOptions.ApprovalHmacKey">
+            <summary>Override the HMAC key used to sign approval tokens. <c>null</c> means the DI extension will read from <c>BEEP_APPROVAL_HMAC_KEY</c> (or generate an ephemeral key in dev).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioPersistenceMode">
+            <summary>The persistence layout for the Studio's JSON state files.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioPersistenceMode.Json">
+            <summary>JSON files only.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioPersistenceMode.Sqlite">
+            <summary>SQLite only.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioPersistenceMode.Hybrid">
+            <summary>JSON for sources / schemas / manifest, SQLite for audit + history.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioResult`1">
+            <summary>
+            Result type for all Beep Studio engine calls. Every public mutation or query on
+            <see cref="T:TheTechIdea.Beep.Studio.Contracts.IStudioService"/> returns a
+            <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/> instead of throwing for business-level errors.
+            Throwing is reserved for programmer errors (null arguments, contract violations).
+            </summary>
+            <remarks>
+            The struct is a <c>readonly record struct</c> so it can be returned by value
+            without an allocation on the hot path. The shape mirrors
+            <c>Microsoft.Extensions.Logging</c>-style error envelopes but is engine-agnostic.
+            </remarks>
+            <typeparam name="T">The success payload type.</typeparam>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.#ctor(System.Boolean,`0,TheTechIdea.Beep.Studio.StudioError)">
+            <summary>
+            Result type for all Beep Studio engine calls. Every public mutation or query on
+            <see cref="T:TheTechIdea.Beep.Studio.Contracts.IStudioService"/> returns a
+            <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/> instead of throwing for business-level errors.
+            Throwing is reserved for programmer errors (null arguments, contract violations).
+            </summary>
+            <remarks>
+            The struct is a <c>readonly record struct</c> so it can be returned by value
+            without an allocation on the hot path. The shape mirrors
+            <c>Microsoft.Extensions.Logging</c>-style error envelopes but is engine-agnostic.
+            </remarks>
+            <typeparam name="T">The success payload type.</typeparam>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioResult`1.IsSuccess">
+            <summary>True when the call succeeded; the <see cref="P:TheTechIdea.Beep.Studio.StudioResult`1.Value"/> is the payload.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioResult`1.Value">
+            <summary>The success payload. <c>null</c> when <see cref="P:TheTechIdea.Beep.Studio.StudioResult`1.IsSuccess"/> is false.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioResult`1.Error">
+            <summary>The error envelope. <see cref="P:TheTechIdea.Beep.Studio.StudioError.None"/> when the call succeeded.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.Ok(`0)">
+            <summary>Create a successful result with the supplied payload.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.Fail(TheTechIdea.Beep.Studio.StudioErrorCode,System.String,System.Exception)">
+            <summary>Create a failed result with the supplied error code and message.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.Fail(TheTechIdea.Beep.Studio.StudioErrorCode,System.String,System.Exception,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>Create a failed result with the supplied error code, message, and structured details.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.Fail(TheTechIdea.Beep.Studio.StudioError)">
+            <summary>Create a failed result from a pre-built <see cref="T:TheTechIdea.Beep.Studio.StudioError"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.op_Implicit(`0)~TheTechIdea.Beep.Studio.StudioResult{`0}">
+            <summary>
+            Implicit conversion from <typeparamref name="T"/> to a successful <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>.
+            Lets call sites do <c>return someValue;</c> when the success path is the only path.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioResult`1.Match``1(System.Func{`0,``0},System.Func{TheTechIdea.Beep.Studio.StudioError,``0})">
+            <summary>Match on success/failure and produce a non-Result value.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioService">
+            <summary>
+            Top-level facade for the Beep Studio. Composes every lower-level service
+            (driver, source, schema, migration, sync, governance, manifest,
+            deployment) behind a single async, platform-agnostic API. The host UI
+            depends on <see cref="T:TheTechIdea.Beep.Studio.Contracts.IStudioService"/> only; this class
+            resolves the sub-services from <see cref="T:System.IServiceProvider"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioService.#ctor(System.IServiceProvider)">
+            <summary>Construct the facade. The DI container supplies the sub-services.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Environments">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Drivers">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Sources">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Schemas">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Migrations">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Sync">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Governance">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Manifest">
+            <inheritdoc />
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioService.Deployment">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioService.GetInfo">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.StudioService.GetInfoAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ISyncStudioService">
+            <summary>
+            Data sync orchestration. Implemented in Phase 6. Wraps the engine's
+            <c>BeepSyncManager</c> with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-shaped API,
+            a <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/> reporter, and a background run queue.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncListFilter">
+            <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Sync.ISyncStudioService.ListSchemasAsync(TheTechIdea.Beep.Studio.Sync.SyncListFilter,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncListFilter.#ctor(System.String,System.String,System.String,System.String,System.Nullable{System.Boolean},System.Int32,System.Int32)">
+            <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Sync.ISyncStudioService.ListSchemasAsync(TheTechIdea.Beep.Studio.Sync.SyncListFilter,System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncSchemaSummary">
+            <summary>Summary row for a sync schema.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncSchemaSummary.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.DateTimeOffset},TheTechIdea.Beep.Studio.Sync.SyncRunState,System.Int32)">
+            <summary>Summary row for a sync schema.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncRunState">
+            <summary>Lifecycle state of a sync run.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.Idle">
+            <summary>No run in flight. The schema is idle.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.Queued">
+            <summary>The run is queued but not yet started.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.Running">
+            <summary>The run is in flight.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.Succeeded">
+            <summary>The run completed without errors.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.Failed">
+            <summary>The run failed with an unrecoverable error.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.Stopped">
+            <summary>The run was stopped by the operator.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncRunState.PartialSuccess">
+            <summary>The run completed but some rows were skipped (e.g. conflicts, mapping issues).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncSchemaVm">
+            <summary>Full view-model of a sync schema. Bindable in any UI.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncSchemaVm.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Studio.Sync.WatermarkSnapshotVm,TheTechIdea.Beep.Studio.Sync.ConflictPolicyVm,TheTechIdea.Beep.Studio.Sync.RetryPolicyVm,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Sync.FieldMappingVm},System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Sync.AppFilterVm})">
+            <summary>Full view-model of a sync schema. Bindable in any UI.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.WatermarkSnapshotVm">
+            <summary>Current watermark state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.WatermarkSnapshotVm.#ctor(System.String,System.String,System.String,System.Int32,System.String)">
+            <summary>Current watermark state.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ConflictPolicyVm">
+            <summary>The conflict policy attached to a sync schema.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.ConflictPolicyVm.#ctor(System.String,System.String,System.String,System.Boolean,System.Int32,System.String)">
+            <summary>The conflict policy attached to a sync schema.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.RetryPolicyVm">
+            <summary>The retry policy attached to a sync schema.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.RetryPolicyVm.#ctor(System.Int32,System.Int32,System.String,System.String)">
+            <summary>The retry policy attached to a sync schema.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.FieldMappingVm">
+            <summary>A field mapping (source field → destination field, with optional transforms).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.FieldMappingVm.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>A field mapping (source field → destination field, with optional transforms).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.AppFilterVm">
+            <summary>A filter applied to the source rows before sync.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.AppFilterVm.#ctor(System.String,System.String,System.Object,System.String)">
+            <summary>A filter applied to the source rows before sync.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncRunOptions">
+            <summary>Options for a single sync run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncRunOptions.#ctor(System.Int32,System.String,System.Boolean,System.Nullable{System.TimeSpan})">
+            <summary>Options for a single sync run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncRunHandle">
+            <summary>Handle to a queued or in-flight sync run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncRunHandle.#ctor(System.String,System.String,System.DateTimeOffset,TheTechIdea.Beep.Studio.Sync.SyncRunState)">
+            <summary>Handle to a queued or in-flight sync run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncRunStatus">
+            <summary>Current status of a sync run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncRunStatus.#ctor(System.String,System.String,TheTechIdea.Beep.Studio.Sync.SyncRunState,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset},System.Nullable{System.Int32},System.Nullable{System.Int32},System.String,System.String,System.String)">
+            <summary>Current status of a sync run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncReconciliationVm">
+            <summary>Reconciliation report for a completed run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncReconciliationVm.#ctor(System.String,System.String,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.TimeSpan)">
+            <summary>Reconciliation report for a completed run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ConflictEvidenceVm">
+            <summary>A single conflict evidence row.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.ConflictEvidenceVm.#ctor(System.String,System.String,System.DateTimeOffset,System.String,System.String,System.Object,System.Object,System.String,System.String)">
+            <summary>A single conflict evidence row.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction">
+            <summary>The action to take on a conflict.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction.SourceWins">
+            <summary>Source wins. The destination row is overwritten with the source value.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction.DestinationWins">
+            <summary>Destination wins. The source row is dropped.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction.LatestTimestampWins">
+            <summary>The row with the latest timestamp wins.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction.Quarantine">
+            <summary>The conflict is moved to a quarantine schema for manual review.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction.ManualOverride">
+            <summary>A human will resolve the conflict later.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ConflictResolutionResult">
+            <summary>Result of a conflict resolution.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.ConflictResolutionResult.#ctor(System.Boolean,System.String,System.String)">
+            <summary>Result of a conflict resolution.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncRunHistoryItem">
+            <summary>A history row for a previously-completed sync run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncRunHistoryItem.#ctor(System.String,System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},TheTechIdea.Beep.Studio.Sync.SyncRunState,System.Int32,System.Int32,System.String)">
+            <summary>A history row for a previously-completed sync run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncPreflightReport">
+            <summary>Pre-flight report (the result of <see cref="M:TheTechIdea.Beep.Studio.Sync.ISyncStudioService.RunPreflightAsync(System.String,System.Threading.CancellationToken)"/>).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncPreflightReport.#ctor(System.String,System.Boolean,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Migration.PreflightCheckResult})">
+            <summary>Pre-flight report (the result of <see cref="M:TheTechIdea.Beep.Studio.Sync.ISyncStudioService.RunPreflightAsync(System.String,System.Threading.CancellationToken)"/>).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ValidationReport">
+            <summary>Validation report for a sync schema definition.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.ValidationReport.#ctor(System.Boolean,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Sync.ValidationIssue})">
+            <summary>Validation report for a sync schema definition.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.ValidationIssue">
+            <summary>A single validation issue.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.ValidationIssue.#ctor(System.String,System.String,System.String)">
+            <summary>A single validation issue.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Sync.SyncStudioService">
+            <summary>
+            Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Sync.ISyncStudioService"/>. Wraps the
+            engine's <see cref="T:TheTechIdea.Beep.Editor.BeepSyncManager"/> with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-
+            shaped API and an in-memory run registry (the engine is fire-and-forget;
+            the Studio tracks each enqueue so the host can poll for status).
+            </summary>
+            <remarks>
+            Architectural difference from the engine: the engine's
+            <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)"/> is a single async call that
+            returns when the run is done. The Studio's <see cref="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.EnqueueRunAsync(System.String,TheTechIdea.Beep.Studio.Sync.SyncRunOptions,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)"/>
+            returns immediately with a <see cref="T:TheTechIdea.Beep.Studio.Sync.SyncRunHandle"/>, then runs the
+            engine call on a background <see cref="M:System.Threading.Tasks.Task.Run(System.Action)"/>. The host UI can poll
+            <see cref="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.GetRunStatusAsync(System.String,System.Threading.CancellationToken)"/> for progress. This lets a Blazor circuit
+            close without killing an in-flight sync — but it means a sync that
+            survives a process restart is the engine's responsibility (it is, via
+            its own checkpoint persistence).
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncStudioService._runStatuses">
+            <summary>Map of runId → status. In-memory only; rebuilt on every host start.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Sync.SyncStudioService._runSchemas">
+            <summary>Map of runId → schema (snapshot at enqueue time; the engine's schema may mutate after the run).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.ListSchemasAsync(TheTechIdea.Beep.Studio.Sync.SyncListFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.GetSchemaAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.SaveSchemaAsync(TheTechIdea.Beep.Studio.Sync.SyncSchemaVm,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.DeleteSchemaAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.ValidateSchemaAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.RunPreflightAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.EnqueueRunAsync(System.String,TheTechIdea.Beep.Studio.Sync.SyncRunOptions,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.StopRunAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.GetRunStatusAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.GetReconciliationAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.ListConflictsAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.ResolveConflictAsync(System.String,System.String,TheTechIdea.Beep.Studio.Sync.ConflictResolutionAction,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.GetRunHistoryAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter">
              <summary>

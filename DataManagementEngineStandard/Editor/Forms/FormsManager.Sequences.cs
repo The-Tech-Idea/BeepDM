@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 
 namespace TheTechIdea.Beep.Editor.UOWManager
@@ -14,8 +15,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// </summary>
     public partial class FormsManager
     {
-        // Per-field default factories: key = "blockName|itemName"
-        private readonly Dictionary<string, Func<object>> _fieldDefaults =
+        // B2 (audit pass 3, 2026-06): re-indexed from
+        //   Dictionary<string, Func<object>>  (key = "blockName|itemName")
+        // to
+        //   Dictionary<string, Dictionary<string, Func<object>>>
+        //   (outer key = block name, inner key = item name)
+        // for two reasons:
+        //   1. ApplyItemDefaults no longer iterates the entire
+        //      registry to find the entries for one block; it
+        //      indexes directly by block name.
+        //   2. The compound-string key was a latent bug: a field
+        //      name containing a '|' character would split
+        //      incorrectly on Split('|') and the field would
+        //      be silently skipped (B3). The nested dict makes
+        //      the field name the inner key directly, with no
+        //      delimiter involved.
+        // Outer key uses StringComparer.OrdinalIgnoreCase to
+        // match the engine's block-name handling; same for the
+        // inner key. B2/B3 combined.
+        //
+        // Note: this is a Dictionary<,>, not ConcurrentDictionary.
+        // The class is not documented as thread-safe (see N2 in
+        // the audit). If the host needs concurrent access, swap
+        // for ConcurrentDictionary and add a lock around the
+        // inner-dict mutations.
+        private readonly Dictionary<string, Dictionary<string, Func<object>>> _fieldDefaultsByBlock =
             new(StringComparer.OrdinalIgnoreCase);
 
         #region Sequence Built-ins
@@ -58,15 +82,29 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             if (string.IsNullOrWhiteSpace(blockName)) throw new ArgumentNullException(nameof(blockName));
             if (string.IsNullOrWhiteSpace(itemName)) throw new ArgumentNullException(nameof(itemName));
-            _fieldDefaults[$"{blockName}|{itemName}"] = defaultFactory
-                ?? throw new ArgumentNullException(nameof(defaultFactory));
+            if (defaultFactory == null) throw new ArgumentNullException(nameof(defaultFactory));
+
+            // B2: index by block name; the inner dict is created
+            // on first SetItemDefault for that block.
+            var perBlock = GetOrCreatePerBlockDict(blockName);
+            perBlock[itemName] = defaultFactory;
         }
 
         /// <summary>
         /// Remove a previously registered field default.
         /// </summary>
         public void ClearItemDefault(string blockName, string itemName)
-            => _fieldDefaults.Remove($"{blockName}|{itemName}");
+        {
+            if (string.IsNullOrWhiteSpace(blockName) || string.IsNullOrWhiteSpace(itemName))
+                return;
+
+            if (_fieldDefaultsByBlock.TryGetValue(blockName, out var perBlock))
+            {
+                perBlock.Remove(itemName);
+                if (perBlock.Count == 0)
+                    _fieldDefaultsByBlock.Remove(blockName);
+            }
+        }
 
         /// <summary>
         /// Apply all registered defaults for a block to the supplied record object.
@@ -75,27 +113,64 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public void ApplyItemDefaults(string blockName, object record)
         {
             if (record == null) return;
-            var type = record.GetType();
 
-            foreach (var kv in _fieldDefaults)
+            // B2: index directly by block name — no full
+            // registry walk. B1: removed the unused
+            // `var type = record.GetType();` from the previous
+            // version (audit pass 3, 2026-06).
+            if (!_fieldDefaultsByBlock.TryGetValue(blockName, out var perBlock))
+                return;
+
+            // Snapshot the keys so a SetItemDefault inside a
+            // factory callback (which can happen — e.g. one
+            // default registers another) doesn't invalidate the
+            // enumerator.
+            var keys = perBlock.Keys.ToArray();
+            foreach (var fieldName in keys)
             {
-                var parts = kv.Key.Split('|');
-                if (parts.Length != 2 || !parts[0].Equals(blockName, StringComparison.OrdinalIgnoreCase))
+                if (!perBlock.TryGetValue(fieldName, out var factory))
                     continue;
 
-                var fieldName = parts[1];
                 try
                 {
-                    var value = kv.Value();
-                    var prop = type.GetProperty(fieldName,
-                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                    prop?.SetValue(record, Convert.ChangeType(value, prop.PropertyType));
+                    var value = factory();
+                    // Read through RecordPropertyAccessor: cached lookup
+                    // + throttled diagnostic on miss. Replaces the
+                    // per-call Type.GetProperty reflection that ran
+                    // on every default apply.
+                    //
+                    // Behavior delta from the pre-consolidation code:
+                    // a missing field used to silently no-op (the
+                    // `prop?.SetValue(...)` short-circuited on null
+                    // prop). Now TrySetValue returns false and we log
+                    // a loud error. A type-conversion failure
+                    // (e.g. default for an int field returned a
+                    // string) used to throw InvalidCastException; now
+                    // it's caught inside TrySetValue and surfaces as
+                    // a "could not set field" log line, which is the
+                    // same observable behavior for the catch below.
+                    if (!RecordPropertyAccessor.TrySetValue(record, fieldName, value, _dmeEditor))
+                    {
+                        LogError(
+                            $"ApplyItemDefaults: could not set field '{fieldName}' on record type '{record.GetType().Name}' in block '{blockName}'",
+                            null, blockName);
+                    }
                 }
                 catch (Exception ex)
                 {
                     LogError($"Error applying default for field '{fieldName}' in block '{blockName}'", ex, blockName);
                 }
             }
+        }
+
+        private Dictionary<string, Func<object>> GetOrCreatePerBlockDict(string blockName)
+        {
+            if (!_fieldDefaultsByBlock.TryGetValue(blockName, out var perBlock))
+            {
+                perBlock = new Dictionary<string, Func<object>>(StringComparer.OrdinalIgnoreCase);
+                _fieldDefaultsByBlock[blockName] = perBlock;
+            }
+            return perBlock;
         }
 
         #endregion
@@ -121,7 +196,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var srcRecord = srcInfo.UnitOfWork.Units.Current;
             var dstRecord = dstInfo.UnitOfWork.Units.Current;
             var value = GetFieldValue(srcRecord, sourceField);
-            SetFieldValue(dstRecord, destField, value);
+            // B5 (audit pass 3, 2026-06): the previous version
+            // discarded the bool return from SetFieldValue. A
+            // failed set (e.g. destination field is read-only or
+            // doesn't exist) silently kept going. Now we log a
+            // diagnostic so the user has a chance to notice.
+            if (!SetFieldValue(dstRecord, destField, value))
+            {
+                LogError(
+                    $"CopyFieldValue: failed to set field '{destField}' on destination record in block '{destBlock}' " +
+                    $"(source value was from field '{sourceField}' in block '{sourceBlock}')",
+                    null, destBlock);
+            }
         }
 
         #endregion
@@ -141,12 +227,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 return result;
 
             var record = blockInfo.UnitOfWork.Units.Current;
-            var type = record.GetType();
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                try { result[prop.Name] = prop.GetValue(record); }
-                catch { /* skip unreadable props */ }
-            }
+            // Use the cached PropertyInfo catalog via
+            // RecordPropertyAccessor. Note: the previous implementation
+            // caught and silently swallowed GetValue exceptions; the
+            // accessor does the same but also emits a throttled
+            // diagnostic for the first failure per (Type, name).
+            var snapshot = RecordPropertyAccessor.GetAllReadable(record, _dmeEditor);
+            foreach (var kvp in snapshot)
+                result[kvp.Key] = kvp.Value;
             return result;
         }
 

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.UOW;
 using TheTechIdea.Beep.Editor.UOW.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Report;
 
@@ -269,18 +270,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (uow?.Units == null || string.IsNullOrEmpty(fieldName))
                 return Array.Empty<ItemGroup<object>>();
 
-            var prop = uow.Units.GetType()
-                          .GetGenericArguments().FirstOrDefault()
-                          ?.GetProperty(fieldName,
-                             System.Reflection.BindingFlags.Public |
-                             System.Reflection.BindingFlags.Instance |
-                             System.Reflection.BindingFlags.IgnoreCase);
-
-            if (prop == null) return Array.Empty<ItemGroup<object>>();
-
+            // The previous code reflected on the generic type argument of
+            // uow.Units (e.g. ObservableBindingList<Order> -> Order) and
+            // called Type.GetProperty directly. That was a fragile
+            // shortcut: it assumed the runtime Units is a BindingList<T>
+            // with a single generic argument, and it bypassed the cache.
+            //
+            // The new path iterates Units once and reads through
+            // RecordPropertyAccessor per item. Null items in the
+            // collection are skipped (their grouping key would be null
+            // either way; the original code grouped them into a "null"
+            // group, which is rarely what callers want). Empty
+            // collections return an empty list — matching the original
+            // observable behavior.
             return ((System.Collections.IEnumerable)uow.Units)
                       .Cast<object>()
-                      .GroupBy(item => prop.GetValue(item))
+                      .Where(item => item != null)
+                      .GroupBy(item => RecordPropertyAccessor.GetValue(item, fieldName, _dmeEditor))
                       .Select(g => new ItemGroup<object>
                       {
                           Key   = g.Key,

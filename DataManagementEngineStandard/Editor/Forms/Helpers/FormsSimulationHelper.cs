@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reflection;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
-using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Utilities;
@@ -19,7 +17,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         #region Fields
         private readonly IDMEEditor _dmeEditor;
         private readonly ConcurrentDictionary<string, DataBlockInfo> _blocks;
-        private readonly ConcurrentDictionary<string, PropertyInfo> _propertyCache = new();
+        // _propertyCache was removed: the per-instance
+        // ConcurrentDictionary<string, PropertyInfo> cache was a 100-line
+        // reinvention of RecordPropertyAccessor (process-wide, typed
+        // dictionary-of-dictionary catalog). All reflection call sites in
+        // this helper now route through RecordPropertyAccessor.
         private static readonly Dictionary<string, string[]> _auditFieldPatterns = new()
         {
             ["CreatedDate"] = new[] { "CreatedDate", "Created_Date", "CreateDate", "DateCreated" },
@@ -97,7 +99,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         }
 
         /// <summary>
-        /// Sets a field value on a record using reflection with enhanced error handling and type conversion
+        /// Sets a field value on a record. Delegates to
+        /// <see cref="RecordPropertyAccessor"/> for the actual reflection,
+        /// which means we share the process-wide PropertyInfo cache with
+        /// every other FormsManager call site and get a throttled
+        /// diagnostic on missing/read-only fields for free.
         /// </summary>
         public bool SetFieldValue(object record, string FieldName, object value)
         {
@@ -106,16 +112,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
             try
             {
-                var property = GetCachedProperty(record.GetType(), FieldName);
-                if (property == null || !property.CanWrite)
-                    return false;
-
-                // Convert value to the correct type if needed
-                var convertedValue = ConvertValueToTargetType(value, property.PropertyType);
-                
-                // Set the value
-                property.SetValue(record, convertedValue);
-                return true;
+                return RecordPropertyAccessor.TrySetValue(record, FieldName, value, _dmeEditor);
             }
             catch (Exception ex)
             {
@@ -125,7 +122,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         }
 
         /// <summary>
-        /// Gets a field value from a record using reflection with caching
+        /// Gets a field value from a record. Delegates to
+        /// <see cref="RecordPropertyAccessor"/> for cached lookup.
         /// </summary>
         public object GetFieldValue(object record, string FieldName)
         {
@@ -134,8 +132,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
             try
             {
-                var property = GetCachedProperty(record.GetType(), FieldName);
-                return property?.GetValue(record);
+                return RecordPropertyAccessor.GetValue(record, FieldName, _dmeEditor);
             }
             catch (Exception ex)
             {
@@ -168,15 +165,54 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 if (getSeqMethod != null)
                 {
                     var sequenceValue = getSeqMethod.Invoke(blockInfo.UnitOfWork, new object[] { sequenceName });
-                    if (sequenceValue != null && Convert.ToInt32(sequenceValue) > 0)
+                    // B1 (audit pass 3, 2026-06): the previous
+                    // version silently no-op'd the field set if
+                    // the sequence value was null, 0, or
+                    // negative. Most DBs start sequences at 1,
+                    // so 0 is suspicious and a clear signal
+                    // of a misconfigured sequence (e.g. one
+                    // that was reset to 0 and never advanced,
+                    // or a test sequence the user forgot to
+                    // populate). Distinguish the three
+                    // failure modes in the log so the host can
+                    // tell them apart.
+                    if (sequenceValue == null)
                     {
-                        var success = SetFieldValue(record, FieldName, sequenceValue);
-                        if (success)
-                        {
-                            LogOperation($"Sequence '{sequenceName}' value {sequenceValue} set to field '{FieldName}' in block '{blockName}'");
-                        }
-                        return success;
+                        LogError(
+                            $"ExecuteSequence: sequence '{sequenceName}' on block '{blockName}' returned null. " +
+                            $"Check the sequence registration in the unit of work.",
+                            null);
+                        return false;
                     }
+
+                    int intValue;
+                    try
+                    {
+                        intValue = Convert.ToInt32(sequenceValue);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(
+                            $"ExecuteSequence: sequence '{sequenceName}' on block '{blockName}' returned non-integer value '{sequenceValue}'",
+                            ex);
+                        return false;
+                    }
+
+                    if (intValue <= 0)
+                    {
+                        LogError(
+                            $"ExecuteSequence: sequence '{sequenceName}' on block '{blockName}' returned non-positive value {intValue}. " +
+                            $"Field '{FieldName}' not set. (Most DB sequences start at 1; check that the sequence was created and not reset to 0.)",
+                            null);
+                        return false;
+                    }
+
+                    var success = SetFieldValue(record, FieldName, sequenceValue);
+                    if (success)
+                    {
+                        LogOperation($"Sequence '{sequenceName}' value {sequenceValue} set to field '{FieldName}' in block '{blockName}'");
+                    }
+                    return success;
                 }
 
                 LogError($"Could not generate sequence value for '{sequenceName}'", null);
@@ -190,7 +226,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         }
 
         /// <summary>
-        /// Gets a property value from an object using reflection with enhanced error handling
+        /// Gets a property value from an object. Delegates to
+        /// <see cref="RecordPropertyAccessor"/> for the cached lookup.
         /// </summary>
         public object GetPropertyValue(object obj, string propertyName)
         {
@@ -199,8 +236,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
             try
             {
-                var property = GetCachedProperty(obj.GetType(), propertyName);
-                return property?.GetValue(obj);
+                return RecordPropertyAccessor.GetValue(obj, propertyName, _dmeEditor);
             }
             catch (Exception ex)
             {
@@ -242,8 +278,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         }
 
         /// <summary>
-        /// Validates field constraints similar to Oracle Forms
+        /// Validates field constraints similar to Oracle Forms.
         /// </summary>
+        /// <remarks>
+        /// B5 (audit pass 3, 2026-06): the default
+        /// <see cref="FieldConstraints"/> returned by
+        /// <see cref="GetDefaultConstraints(Type, string)"/>
+        /// has every constraint disabled (Required = false,
+        /// MaxLength = 0, MinValue = null, MaxValue = null,
+        /// no CustomValidator). Without an explicit
+        /// <see cref="FieldConstraints"/> supplied by the
+        /// caller, this method is effectively a no-op that
+        /// always returns <c>IsValid = true</c>. The
+        /// engine does not currently read entity annotations
+        /// or other metadata to populate
+        /// <see cref="FieldConstraints"/> automatically; the
+        /// host must supply the constraints at registration
+        /// time or via a future metadata-binding extension.
+        /// </remarks>
         public ValidationResult ValidateField(object record, string FieldName, object value, FieldConstraints constraints = null)
         {
             var result = new ValidationResult { IsValid = true,FieldName = FieldName };
@@ -282,14 +334,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 if (IsNumericType(value?.GetType()) && (constraints.MinValue.HasValue || constraints.MaxValue.HasValue))
                 {
                     var numericValue = Convert.ToDouble(value);
-                    
+
                     if (constraints.MinValue.HasValue && numericValue < constraints.MinValue.Value)
                     {
                         result.IsValid = false;
                         result.ErrorMessage = $"Field '{FieldName}' must be at least {constraints.MinValue.Value}";
                         return result;
                     }
-                    
+
                     if (constraints.MaxValue.HasValue && numericValue > constraints.MaxValue.Value)
                     {
                         result.IsValid = false;
@@ -326,18 +378,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Private Helper Methods
 
-        private PropertyInfo GetCachedProperty(Type type, string propertyName)
-        {
-            var cacheKey = $"{type.FullName}.{propertyName}";
-            
-            return _propertyCache.GetOrAdd(cacheKey, _ =>
-            {
-                return type.GetProperty(propertyName,
-                    BindingFlags.IgnoreCase |
-                    BindingFlags.Public |
-                    BindingFlags.Instance);
-            });
-        }
+        // GetCachedProperty removed: its per-instance string-keyed
+        // cache has been replaced by RecordPropertyAccessor's
+        // process-wide, type-keyed catalog.
 
         private object ConvertValueToTargetType(object value, Type targetType)
         {
@@ -372,8 +415,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
                 return Convert.ChangeType(value, actualTargetType);
             }
-            catch
+            // B10 (audit pass 3, 2026-06): the previous
+            // version caught the conversion exception and
+            // silently returned the type's default. The
+            // caller would see a "successful" set of a
+            // bogus value (e.g. assigning 0 to an int
+            // field when the user wanted to set "abc"). Now
+            // log a diagnostic so the host can see the
+            // failure.
+            catch (Exception ex)
             {
+                LogError(
+                    $"ConvertValueToTargetType: failed to convert value '{value}' of type '{value.GetType().Name}' " +
+                    $"to target type '{targetType.Name}'. Returning type default.",
+                    ex);
                 return GetDefaultValueForType(targetType);
             }
         }
@@ -392,19 +447,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                    value == DBNull.Value;
         }
 
+        // B7 (audit pass 3, 2026-06): the numericTypes
+        // array was allocated on every call. Moved to a
+        // static field. The HashSet<T> variant would be
+        // faster, but for an 11-element array linear scan is
+        // fine and avoids the hash overhead.
+        private static readonly Type[] _numericTypes =
+        {
+            typeof(byte), typeof(sbyte), typeof(short), typeof(ushort),
+            typeof(int), typeof(uint), typeof(long), typeof(ulong),
+            typeof(float), typeof(double), typeof(decimal)
+        };
+
         private bool IsNumericType(Type type)
         {
             if (type == null) return false;
 
-            var numericTypes = new[]
-            {
-                typeof(byte), typeof(sbyte), typeof(short), typeof(ushort),
-                typeof(int), typeof(uint), typeof(long), typeof(ulong),
-                typeof(float), typeof(double), typeof(decimal)
-            };
-
-            return Array.Exists(numericTypes, t => t == type) ||
-                   Array.Exists(numericTypes, t => t == Nullable.GetUnderlyingType(type));
+            return Array.IndexOf(_numericTypes, type) >= 0 ||
+                   Array.IndexOf(_numericTypes, Nullable.GetUnderlyingType(type)) >= 0;
         }
 
         private FieldConstraints GetDefaultConstraints(Type recordType, string FieldName)
