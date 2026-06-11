@@ -5,7 +5,7 @@
 
 > Completion in this tracker means **implemented in code**. Audit date: **2026-04-09**. The help-page rewrite for Phase 09 was applied on the same audit date, so the roadmap is now fully complete.
 
-Detailed phase documents live under [phases/](phases) and capture implementation guidance, UoW boundaries, and primary-key handling rules for each phase.
+Detailed phase documents live under [phases/](phases) and capture implementation guidance, UoW boundaries, and primary-key handling rules for each phase. Phase 10 (the IDE Object Navigator presentation layer) lives in the IDE project repo at `TheTechIdea.Beep.Desktop.IDE.Extensions/.plans/` and is tracked in the project's `MASTER-TODO-TRACKER-DATABLOCK-CONNECTION.md`; this engine tracker is for engine-only work.
 
 ## Post-Audit Integration Notes
 
@@ -352,8 +352,28 @@ This phase was completed by rewriting `Help/formsmanager.html` to reflect the au
 | 7 — Performance | Complete | 15 | 15 | 100% |
 | 8 — Testing & Docs | Complete | 20 | 20 | 100% |
 | 9 — Help Documentation | Complete | 30 | 30 | 100% |
-| **TOTAL** | | **190** | **190** | **100%** |
+| **10 — Beep IDE Object Navigator** | **Tracked in IDE project** | **—** | **—** | **—** |
+| **TOTAL** | | **190** | **232** | **82%** |
 
 ---
 
-*Last audited: 2026-04-09*
+## Phase 10: Beep IDE Object Navigator — Tracked in the IDE project
+
+> **Moved to the IDE project (2026-06-11).** The engine is complete
+> (Phases 1–9, 190/190 tasks, audit 2026-04-09). The Object Navigator
+> presentation layer is tracked in the IDE project repo at
+> `TheTechIdea.Beep.Desktop.IDE.Extensions/.plans/`:
+>
+> - Root: `phase-10-object-navigator/README.md`
+> - 5 sub-phase docs: `10.1-phase-ide-provider-wiring.md` … `10.5-phase-engine-contract-verification.md`
+> - Functional matrix: `phase-10-object-navigator/functional-matrix.md`
+> - Tracker: `MASTER-TODO-TRACKER-DATABLOCK-CONNECTION.md`
+>
+> No engine-side work. This tracker is for engine-only tasks; Phase 10
+> tasks are counted and tracked in the IDE project's tracker.
+
+**Phase 10: tracked in IDE project**
+
+---
+
+*Last audited: 2026-04-09 (engine) — Phase 10 presentation work lives in the IDE project repo.*

@@ -1,10 +1,10 @@
 # FormsManager Enhancement Plan
 
-> **Inspired by Oracle Forms** — phased roadmap to bring full Oracle Forms parity and modern data management capabilities to the Beep FormsManager system.
+> **Inspired by Oracle Forms** - phased roadmap to bring full Oracle Forms parity and modern data management capabilities to the Beep FormsManager system.
 
-**Current Score:** 9.5/10  
-**Target Score:** 9.5/10  
-**Audit Date:** 2026-04-09  
+**Current Score:** 9.5/10 (engine) — **Phase 10 lives in the IDE project**  
+**Target Score:** 9.5/10 (engine) + 10/10 (Object Navigator surface)  
+**Audit Date:** 2026-04-09 (engine) — Phase 10 (IDE Object Navigator) lives in `TheTechIdea.Beep.Desktop.IDE.Extensions/.plans/`, 2026-06-11  
 **Namespace:** `TheTechIdea.Beep.Editor.UOWManager`  
 **Implementation Standard:** A phase is considered complete in this plan when the runtime capability exists in code and the corresponding help-site closeout has been applied where required.
 
@@ -16,15 +16,16 @@ Use the detailed phase documents below when creating, enhancing, updating, or fi
 The roadmap in this file stays high-level; the per-phase files capture implementation seams,
 UoW considerations, primary-key handling rules, and validation guidance.
 
-- [Phase 01 — Core Completion & Stabilization](phases/phase-01-core-completion-stabilization.md)
-- [Phase 02 — Oracle Forms Built-in Emulation](phases/phase-02-oracle-builtins-emulation.md)
-- [Phase 03 — Multi-Form & Cross-Form Communication](phases/phase-03-multi-form-cross-form.md)
-- [Phase 04 — Advanced Trigger System](phases/phase-04-advanced-trigger-system.md)
-- [Phase 05 — Audit Trail & Change Tracking](phases/phase-05-audit-trail-change-tracking.md)
-- [Phase 06 — Security & Authorization](phases/phase-06-security-authorization.md)
-- [Phase 07 — Performance & Scalability](phases/phase-07-performance-scalability.md)
-- [Phase 08 — Testing & Documentation](phases/phase-08-testing-documentation.md)
-- [Phase 09 — Help Documentation Update](phases/phase-09-help-documentation-update.md)
+- [Phase 01 - Core Completion & Stabilization](phases/phase-01-core-completion-stabilization.md)
+- [Phase 02 - Oracle Forms Built-in Emulation](phases/phase-02-oracle-builtins-emulation.md)
+- [Phase 03 - Multi-Form & Cross-Form Communication](phases/phase-03-multi-form-cross-form.md)
+- [Phase 04 - Advanced Trigger System](phases/phase-04-advanced-trigger-system.md)
+- [Phase 05 - Audit Trail & Change Tracking](phases/phase-05-audit-trail-change-tracking.md)
+- [Phase 06 - Security & Authorization](phases/phase-06-security-authorization.md)
+- [Phase 07 - Performance & Scalability](phases/phase-07-performance-scalability.md)
+- [Phase 08 - Testing & Documentation](phases/phase-08-testing-documentation.md)
+- [Phase 09 - Help Documentation Update](phases/phase-09-help-documentation-update.md)
+- [Phase 10 - Beep IDE Object Navigator](https://github.com/) — *2026-06-10, restructured 2026-06-11* (lives in the IDE project at `TheTechIdea.Beep.Desktop.IDE.Extensions/.plans/phase-10-object-navigator/`)
 
 ---
 
@@ -33,6 +34,7 @@ UoW considerations, primary-key handling rules, and validation guidance.
 - Phases 01 through 09 are now complete across the FormsManager partials, helper managers, interfaces, tests, reference docs, and help-site page.
 - `Help/formsmanager.html` was rewritten on 2026-04-09 to align the public help page with the audited runtime surface.
 - The integrated WinForms host seam now mirrors trigger metadata and normalized block-level UoW activity through `BeepForms` / `IBeepFormsHost`, keeping `BeepBlock` on the UI side of the runtime boundary.
+- **Phase 10 (2026-06-10, restructured 2026-06-11)** — the engine is done; the **IDE tool window** Object Navigator does not yet surface the engine's tree in the canonical Oracle Forms shape. Phase 10 is purely presentation / wiring in `TheTechIdea.Beep.Desktop.IDE.Extensions/` — no new engine code. Tracked in the IDE project at `TheTechIdea.Beep.Desktop.IDE.Extensions/.plans/phase-10-object-navigator/`. The user-facing WinForms runtime Navigator is out of scope (tracked in a separate workstream).
 - Use [todo-tracker.md](todo-tracker.md) as the operational status source of truth. The detailed phase checklists later in this file are retained as historical implementation notes and seam references.
 
 ---
