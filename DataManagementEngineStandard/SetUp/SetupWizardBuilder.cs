@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace TheTechIdea.Beep.SetUp
 {
@@ -22,15 +24,33 @@ namespace TheTechIdea.Beep.SetUp
         private readonly List<ISetupStep> _steps = new();
         private SetupOptions _options = new SetupOptions();
         private string _wizardId = "default-setup";
+        private ILogger<SetupWizard>? _logger;
+        private IServiceProvider? _services;
 
-        /// <summary>Sets the wizard identifier used in reports.</summary>
         public SetupWizardBuilder WithId(string wizardId)
         {
             _wizardId = wizardId;
             return this;
         }
 
-        /// <summary>Appends a step to the wizard execution sequence.</summary>
+        public SetupWizardBuilder WithLogger(ILogger<SetupWizard>? logger)
+        {
+            _logger = logger;
+            return this;
+        }
+
+        public SetupWizardBuilder WithOptions(SetupOptions options)
+        {
+            _options = options ?? new SetupOptions();
+            return this;
+        }
+
+        public SetupWizardBuilder UseServiceProvider(IServiceProvider services)
+        {
+            _services = services;
+            return this;
+        }
+
         public SetupWizardBuilder AddStep(ISetupStep step)
         {
             if (step == null) throw new ArgumentNullException(nameof(step));
@@ -38,49 +58,80 @@ namespace TheTechIdea.Beep.SetUp
             return this;
         }
 
-        /// <summary>Replaces the entire options object.</summary>
-        public SetupWizardBuilder WithOptions(SetupOptions options)
+        public SetupWizardBuilder AddStep<T>(Action<T>? configure = null) where T : class, ISetupStep
         {
-            _options = options;
+            T step;
+            if (_services != null)
+                step = ActivatorUtilities.CreateInstance<T>(_services);
+            else
+                step = Activator.CreateInstance<T>();
+
+            configure?.Invoke(step);
+            _steps.Add(step);
             return this;
         }
 
         /// <summary>Toggles dry-run mode.</summary>
         public SetupWizardBuilder WithDryRun(bool dryRun = true)
         {
-            _options.DryRun = dryRun;
+            _options = new SetupOptions
+            {
+                DryRun = dryRun,
+                SkipSeeding = _options.SkipSeeding,
+                SkipSchema = _options.SkipSchema,
+                Environment = _options.Environment,
+                StrictPolicyMode = _options.StrictPolicyMode,
+                StateFilePath = _options.StateFilePath,
+                ReportOutputPath = _options.ReportOutputPath
+            };
             return this;
         }
 
         /// <summary>Sets the target environment label.</summary>
         public SetupWizardBuilder WithEnvironment(string env)
         {
-            _options.Environment = env;
+            _options = new SetupOptions
+            {
+                DryRun = _options.DryRun,
+                SkipSeeding = _options.SkipSeeding,
+                SkipSchema = _options.SkipSchema,
+                Environment = env,
+                StrictPolicyMode = _options.StrictPolicyMode,
+                StateFilePath = _options.StateFilePath,
+                ReportOutputPath = _options.ReportOutputPath
+            };
             return this;
         }
 
         /// <summary>Sets the checkpoint state file path.</summary>
         public SetupWizardBuilder WithStateFile(string path)
         {
-            _options.StateFilePath = path;
+            _options = new SetupOptions
+            {
+                DryRun = _options.DryRun,
+                SkipSeeding = _options.SkipSeeding,
+                SkipSchema = _options.SkipSchema,
+                Environment = _options.Environment,
+                StrictPolicyMode = _options.StrictPolicyMode,
+                StateFilePath = path,
+                ReportOutputPath = _options.ReportOutputPath
+            };
             return this;
         }
 
         /// <summary>Sets the report output directory.</summary>
         public SetupWizardBuilder WithReportOutput(string path)
         {
-            _options.ReportOutputPath = path;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the checkpoint state file path and configures the wizard to resume
-        /// from the persisted checkpoint when <see cref="ISetupWizard.Resume"/> is called.
-        /// Equivalent to <see cref="WithStateFile"/> but communicates intent clearly.
-        /// </summary>
-        public SetupWizardBuilder WithResumeFromFile(string path)
-        {
-            _options.StateFilePath = path;
+            _options = new SetupOptions
+            {
+                DryRun = _options.DryRun,
+                SkipSeeding = _options.SkipSeeding,
+                SkipSchema = _options.SkipSchema,
+                Environment = _options.Environment,
+                StrictPolicyMode = _options.StrictPolicyMode,
+                StateFilePath = _options.StateFilePath,
+                ReportOutputPath = path
+            };
             return this;
         }
 
@@ -93,25 +144,74 @@ namespace TheTechIdea.Beep.SetUp
         public ISetupWizard Build()
         {
             ValidateDependencyOrder();
-            return new SetupWizard(_wizardId, _steps, _options);
+            return new SetupWizard(_wizardId, _steps, _options, _logger);
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
         private void ValidateDependencyOrder()
         {
-            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            var stepById = _steps.ToDictionary(s => s.StepId, StringComparer.Ordinal);
+            var inDegree = new Dictionary<string, int>(StringComparer.Ordinal);
+            var adjacency = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
             foreach (var step in _steps)
             {
-                foreach (var dep in step.DependsOn)
+                var deps = (step.DependsOn ?? Array.Empty<string>())
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .ToList();
+
+                foreach (var dep in deps)
                 {
-                    if (!seenIds.Contains(dep))
+                    if (!stepById.ContainsKey(dep))
                         throw new InvalidOperationException(
-                            $"Step '{step.StepId}' declares dependency on '{dep}', " +
-                            $"but '{dep}' has not been added before it. " +
-                            $"Add the dependency step first or verify the StepId spelling.");
+                            $"Step '{step.StepId}' depends on unknown step '{dep}'.");
+
+                    if (string.Equals(dep, step.StepId, StringComparison.Ordinal))
+                        throw new InvalidOperationException(
+                            $"Step '{step.StepId}' cannot depend on itself.");
                 }
-                seenIds.Add(step.StepId);
+
+                adjacency[step.StepId] = deps;
+                if (!inDegree.ContainsKey(step.StepId))
+                    inDegree[step.StepId] = 0;
+
+                foreach (var dep in deps)
+                {
+                    inDegree[dep] = inDegree.GetValueOrDefault(dep, 0) + 1;
+                }
+            }
+
+            // Kahn's algorithm: detect cycles
+            var queue = new Queue<string>(_steps
+                .Select(s => s.StepId)
+                .Where(id => inDegree.GetValueOrDefault(id, 0) == 0));
+
+            var sorted = new List<string>();
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                sorted.Add(current);
+
+                if (adjacency.TryGetValue(current, out var neighbors))
+                {
+                    foreach (var neighbor in neighbors)
+                    {
+                        inDegree[neighbor]--;
+                        if (inDegree[neighbor] == 0)
+                            queue.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            if (sorted.Count != _steps.Count)
+            {
+                var cycleSteps = string.Join(" → ",
+                    _steps.Where(s => !sorted.Contains(s.StepId))
+                        .Select(s => $"'{s.StepId}'"));
+                throw new InvalidOperationException(
+                    $"Cycle detected in step dependencies: {cycleSteps}. " +
+                    "Remove circular dependencies between steps.");
             }
         }
     }

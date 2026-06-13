@@ -44,7 +44,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             catch (OperationCanceledException)
             {
                 OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = "Setup wizard cancelled." });
-                throw;
+                // Fall through — wizard already built a partial report.
             }
 
             var report = wizard.GetReport();

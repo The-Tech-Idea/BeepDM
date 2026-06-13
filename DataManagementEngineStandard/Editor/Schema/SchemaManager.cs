@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -14,15 +15,23 @@ namespace TheTechIdea.Beep.Editor.Schema
     /// and entity creation. Other services (MigrationManager, BeepSyncManager, DataImportManager,
     /// ETLEditor) call into this for any schema work.
     /// </summary>
-    public sealed class SchemaManager : ISchemaManager
+    public class SchemaManager : ISchemaManager
     {
         private readonly IDMEEditor _editor;
         private readonly ISchemaSnapshotStore _store;
+        private readonly ISchemaComparator _comparator;
+        private readonly ISchemaFingerprinter _fingerprinter;
 
-        public SchemaManager(IDMEEditor editor, ISchemaSnapshotStore? store = null)
+        public SchemaManager(
+            IDMEEditor editor,
+            ISchemaSnapshotStore? store = null,
+            ISchemaComparator? comparator = null,
+            ISchemaFingerprinter? fingerprinter = null)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
             _store  = store ?? new FileSchemaSnapshotStore();
+            _comparator = comparator ?? new SchemaComparator();
+            _fingerprinter = fingerprinter ?? new SchemaFingerprinter();
         }
 
         // ──────────────────────────────────────────────────────────────────
@@ -289,45 +298,68 @@ namespace TheTechIdea.Beep.Editor.Schema
                 return new SchemaDraftResult { Status = CreateErrors(Errors.Failed, "BuildSyncDraft: request is null.") };
 
             return await Task.Run(() =>
-            {
-                try
                 {
-                    var source = request.SourceData;
-                    if (source == null && !string.IsNullOrWhiteSpace(request.SourceDataSourceName))
-                        source = _editor.GetDataSource(request.SourceDataSourceName);
-
-                    var dest = request.DestinationData;
-                    if (dest == null && !string.IsNullOrWhiteSpace(request.DestinationDataSourceName))
-                        dest = _editor.GetDataSource(request.DestinationDataSourceName);
-
-                    var sourceStruct = request.SourceEntityStructure
-                                       ?? source?.GetEntityStructure(request.SourceEntityName, false);
-                    var destStruct = request.DestinationEntityStructure
-                                     ?? dest?.GetEntityStructure(request.DestinationEntityName, false);
-
-                    var draft = new DataSyncSchema
+                    try
                     {
-                        Id                        = Guid.NewGuid().ToString("N"),
-                        EntityName                = $"SyncDraft_{request.SourceEntityName}_{request.DestinationEntityName}",
-                        SourceEntityName          = request.SourceEntityName,
-                        DestinationEntityName     = request.DestinationEntityName,
-                        SourceDataSourceName      = request.SourceDataSourceName,
-                        DestinationDataSourceName = request.DestinationDataSourceName,
-                    };
+                        var source = request.SourceData;
+                        if (source == null && !string.IsNullOrWhiteSpace(request.SourceDataSourceName))
+                            source = _editor.GetDataSource(request.SourceDataSourceName);
 
-                    if (sourceStruct?.Fields != null)
-                        _editor?.Logger?.WriteLog($"BuildSyncDraft: auto-seeding {sourceStruct.Fields.Count} fields from source structure.");
+                        var dest = request.DestinationData;
+                        if (dest == null && !string.IsNullOrWhiteSpace(request.DestinationDataSourceName))
+                            dest = _editor.GetDataSource(request.DestinationDataSourceName);
 
-                    _editor?.Logger?.WriteLog($"BuildSyncDraft: draft '{draft.EntityName}' created.");
+                        var sourceStruct = request.SourceEntityStructure
+                                           ?? source?.GetEntityStructure(request.SourceEntityName, false);
+                        var destStruct = request.DestinationEntityStructure
+                                          ?? dest?.GetEntityStructure(request.DestinationEntityName, false);
 
-                    return new SchemaDraftResult { Draft = draft, Status = CreateErrors(Errors.Ok, "Draft built.") };
-                }
-                catch (Exception ex)
-                {
-                    _editor?.Logger?.WriteLog($"SchemaManager.BuildSyncDraftAsync: {ex.Message}");
-                    return new SchemaDraftResult { Status = CreateErrors(Errors.Failed, $"BuildSyncDraft exception: {ex.Message}") };
-                }
-            }, token).ConfigureAwait(false);
+                        var draft = new DataSyncSchema
+                        {
+                            Id                        = Guid.NewGuid().ToString("N"),
+                            EntityName                = $"SyncDraft_{request.SourceEntityName}_{request.DestinationEntityName}",
+                            SourceEntityName          = request.SourceEntityName,
+                            DestinationEntityName     = request.DestinationEntityName,
+                            SourceDataSourceName      = request.SourceDataSourceName,
+                            DestinationDataSourceName = request.DestinationDataSourceName,
+                        };
+
+                        if (sourceStruct?.Fields != null)
+                        {
+                            var destFieldNames = destStruct?.Fields?
+                                .Select(f => f.FieldName)
+                                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+                                ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                            foreach (var sourceField in sourceStruct.Fields)
+                            {
+                                var matchedDest = string.IsNullOrWhiteSpace(sourceField.FieldName)
+                                    ? null
+                                    : destStruct?.Fields?.FirstOrDefault(df =>
+                                        string.Equals(df.FieldName, sourceField.FieldName, StringComparison.OrdinalIgnoreCase));
+
+                                draft.MappedFields.Add(new FieldSyncData
+                                {
+                                    SourceField          = sourceField.FieldName ?? string.Empty,
+                                    DestinationField     = matchedDest?.FieldName ?? sourceField.FieldName ?? string.Empty,
+                                    SourceFieldType      = sourceField.Fieldtype ?? string.Empty,
+                                    DestinationFieldType = matchedDest?.Fieldtype ?? sourceField.Fieldtype ?? string.Empty,
+                                });
+                            }
+
+                            _editor?.Logger?.WriteLog($"BuildSyncDraft: auto-seeded {draft.MappedFields.Count} mapped fields from source structure.");
+                        }
+
+                        _editor?.Logger?.WriteLog($"BuildSyncDraft: draft '{draft.EntityName}' created.");
+
+                        return new SchemaDraftResult { Draft = draft, Status = CreateErrors(Errors.Ok, "Draft built.") };
+                    }
+                    catch (Exception ex)
+                    {
+                        _editor?.Logger?.WriteLog($"SchemaManager.BuildSyncDraftAsync: {ex.Message}");
+                        return new SchemaDraftResult { Status = CreateErrors(Errors.Failed, $"BuildSyncDraft exception: {ex.Message}") };
+                    }
+                }, token).ConfigureAwait(false);
         }
 
         // ──────────────────────────────────────────────────────────────────
@@ -421,7 +453,7 @@ namespace TheTechIdea.Beep.Editor.Schema
                     AlteredFields = new List<FieldTypeDrift>()
                 };
 
-            return SchemaComparator.Compare(baseline: desired, current: actual);
+            return _comparator.Compare(baseline: desired, current: actual);
         }
 
         public async Task<SchemaSnapshot> SaveBaselineAsync(
@@ -440,7 +472,7 @@ namespace TheTechIdea.Beep.Editor.Schema
             var baseline = await _store.LoadAsync(BuildKey(dataSourceName, type.Name), token).ConfigureAwait(false);
             if (baseline == null) return null;
             var current = await CaptureFromTypeAsync(type, dataSourceName, token).ConfigureAwait(false);
-            return SchemaComparator.Compare(baseline, current);
+            return _comparator.Compare(baseline, current);
         }
 
         public async Task<SchemaSnapshot> SaveDatabaseBaselineAsync(
@@ -454,40 +486,116 @@ namespace TheTechIdea.Beep.Editor.Schema
         public async Task<Dictionary<string, SchemaDriftReport>> InspectManyAsync(
             IEnumerable<Type> types, string dataSourceName, CancellationToken token = default)
         {
-            var result = new Dictionary<string, SchemaDriftReport>(StringComparer.OrdinalIgnoreCase);
-            if (types == null) return result;
-            foreach (var type in types)
+            var result = new ConcurrentDictionary<string, SchemaDriftReport>(StringComparer.OrdinalIgnoreCase);
+            if (types == null) return new Dictionary<string, SchemaDriftReport>(result, StringComparer.OrdinalIgnoreCase);
+
+            var typeList = types.Where(t => t != null).ToList();
+            var sema = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount));
+
+            var tasks = typeList.Select(async type =>
             {
-                token.ThrowIfCancellationRequested();
-                if (type == null) continue;
-                var report = await InspectAsync(type, dataSourceName, type.Name, token).ConfigureAwait(false);
-                result[type.Name] = report;
-            }
-            return result;
+                await sema.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    token.ThrowIfCancellationRequested();
+                    var report = await InspectAsync(type, dataSourceName, type.Name, token).ConfigureAwait(false);
+                    result[type.Name] = report;
+                }
+                finally { sema.Release(); }
+            });
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+            return new Dictionary<string, SchemaDriftReport>(result, StringComparer.OrdinalIgnoreCase);
         }
 
         public async Task<Dictionary<string, SchemaDriftReport>> InspectManyAsync(
             IEnumerable<Type> types, IDataSource dataSource, CancellationToken token = default)
         {
-            var result = new Dictionary<string, SchemaDriftReport>(StringComparer.OrdinalIgnoreCase);
-            if (types == null || dataSource == null) return result;
-            foreach (var type in types)
+            var result = new ConcurrentDictionary<string, SchemaDriftReport>(StringComparer.OrdinalIgnoreCase);
+            if (types == null || dataSource == null)
+                return new Dictionary<string, SchemaDriftReport>(result, StringComparer.OrdinalIgnoreCase);
+
+            var typeList = types.Where(t => t != null).ToList();
+            var sema = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount));
+
+            var tasks = typeList.Select(async type =>
             {
-                token.ThrowIfCancellationRequested();
-                if (type == null) continue;
-                var desired = await CaptureFromTypeAsync(type, dataSource.DatasourceName, token).ConfigureAwait(false);
-                var actual  = await CaptureFromDataSourceAsync(dataSource.DatasourceName, type.Name, refresh: true, token).ConfigureAwait(false);
-                result[type.Name] = actual.Fields.Count == 0
-                    ? new SchemaDriftReport
-                      {
-                          Baseline = desired, Current = actual,
-                          AddedFields   = new List<SnapshotField>(desired.Fields),
-                          RemovedFields = new List<SnapshotField>(),
-                          AlteredFields = new List<FieldTypeDrift>()
-                      }
-                    : SchemaComparator.Compare(desired, actual);
-            }
-            return result;
+                await sema.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    token.ThrowIfCancellationRequested();
+                    var desired = await CaptureFromTypeAsync(type, dataSource.DatasourceName, token).ConfigureAwait(false);
+                    var actual = await CaptureFromDataSourceAsync(dataSource.DatasourceName, type.Name, refresh: true, token).ConfigureAwait(false);
+                    result[type.Name] = actual.Fields.Count == 0
+                        ? new SchemaDriftReport
+                          {
+                              Baseline = desired, Current = actual,
+                              AddedFields   = new List<SnapshotField>(desired.Fields),
+                              RemovedFields = new List<SnapshotField>(),
+                              AlteredFields = new List<FieldTypeDrift>()
+                          }
+                         : _comparator.Compare(desired, actual);
+                }
+                finally { sema.Release(); }
+            });
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+            return new Dictionary<string, SchemaDriftReport>(result, StringComparer.OrdinalIgnoreCase);
+        }
+
+        // ──────────────────────────────────────────────────────────────────
+        // Change plan generation
+        // ──────────────────────────────────────────────────────────────────
+
+        public Task<SchemaChangePlan> GenerateChangePlanAsync(
+            SchemaDriftReport driftReport,
+            CancellationToken token = default)
+        {
+            if (driftReport == null)
+                return Task.FromResult(new SchemaChangePlan());
+
+            return Task.Run(() =>
+            {
+                var changes = new List<SchemaChange>();
+
+                foreach (var field in driftReport.RemovedFields)
+                    changes.Add(new SchemaChange
+                    {
+                        ChangeType   = "DROP_COLUMN",
+                        FieldName    = field.Name,
+                        DataType     = field.DataType,
+                        IsNullable   = field.IsNullable,
+                        MaxLength    = field.MaxLength,
+                        Description  = $"Drop column '{field.Name}'"
+                    });
+
+                foreach (var field in driftReport.AddedFields)
+                    changes.Add(new SchemaChange
+                    {
+                        ChangeType   = "ADD_COLUMN",
+                        FieldName    = field.Name,
+                        DataType     = field.DataType,
+                        IsNullable   = field.IsNullable,
+                        MaxLength    = field.MaxLength,
+                        Description  = $"Add column '{field.Name}' ({field.DataType})"
+                    });
+
+                foreach (var drift in driftReport.AlteredFields)
+                    changes.Add(new SchemaChange
+                    {
+                        ChangeType   = "ALTER_COLUMN",
+                        FieldName    = drift.FieldName,
+                        DataType     = drift.CurrentType,
+                        Description  = drift.Description
+                    });
+
+                return new SchemaChangePlan
+                {
+                    Baseline = driftReport.Baseline,
+                    Current  = driftReport.Current,
+                    Changes  = changes
+                };
+            }, token);
         }
 
         // ──────────────────────────────────────────────────────────────────

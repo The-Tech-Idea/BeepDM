@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -12,13 +14,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
         public bool ApplyDefaults { get; set; } = true;
     }
 
-    public class DefaultsSetupStep : ISetupStep
+    public class DefaultsSetupStep : IDefaultsSetupStep
     {
         private readonly DefaultsSetupStepOptions _options;
+        private readonly ILogger<DefaultsSetupStep>? _logger;
 
-        public DefaultsSetupStep(DefaultsSetupStepOptions options = null)
+        public DefaultsSetupStep(DefaultsSetupStepOptions options = null, ILogger<DefaultsSetupStep>? logger = null)
         {
             _options = options ?? new DefaultsSetupStepOptions();
+            _logger = logger;
         }
 
         public string StepId => "defaults-setup";
@@ -27,13 +31,19 @@ namespace TheTechIdea.Beep.SetUp.Steps
         public IReadOnlyList<string> DependsOn => new[] { "schema-setup" };
 
         public bool CanSkip(SetupContext context)
-            => !_options.ApplyDefaults || context?.Editor?.ConfigEditor == null;
+        {
+            if (context?.Options?.DryRun == true) return true;
+            if (!_options.ApplyDefaults) return true;
+            if (context?.Options?.SkipSchema == true) return true;
+            if (context?.Editor?.ConfigEditor == null) return true;
+            return false;
+        }
 
         public IErrorsInfo Validate(SetupContext context)
         {
             if (context?.Editor == null)
-                return new ErrorsInfo { Flag = Errors.Failed, Message = "Editor is not available." };
-            return new ErrorsInfo { Flag = Errors.Ok };
+                return Fail("Editor is not available.");
+            return Ok();
         }
 
         public IErrorsInfo Execute(SetupContext context, IProgress<PassedArgs> progress = null)
@@ -46,9 +56,9 @@ namespace TheTechIdea.Beep.SetUp.Steps
                     ?? configEditor?.DataConnections?.FirstOrDefault()?.ConnectionName;
 
                 if (string.IsNullOrWhiteSpace(dsName))
-                    return new ErrorsInfo { Flag = Errors.Failed, Message = "No datasource name available." };
+                    return Fail("No datasource name available.");
 
-                progress?.Report(new PassedArgs { Messege = "Configuring entity defaults...", ParameterInt1 = 0 });
+                StepErrorHelpers.Report(progress, 0, "Configuring entity defaults...");
 
                 var existing = configEditor.Getdefaults(editor, dsName) ?? new List<DefaultValue>();
 
@@ -72,16 +82,17 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 if (added > 0)
                 {
                     var result = configEditor.Savedefaults(editor, existing, dsName);
-                    progress?.Report(new PassedArgs { Messege = $"Added {added} default values for '{dsName}'.", ParameterInt1 = 100 });
+                    StepErrorHelpers.Report(progress, 100, $"Added {added} default values for '{dsName}'.");
                     return result;
                 }
 
-                progress?.Report(new PassedArgs { Messege = "Defaults already configured.", ParameterInt1 = 100 });
-                return new ErrorsInfo { Flag = Errors.Ok, Message = "Defaults already configured." };
+                StepErrorHelpers.Report(progress, 100, "Defaults already configured.");
+                return Ok("Defaults already configured.");
             }
             catch (Exception ex)
             {
-                return new ErrorsInfo { Flag = Errors.Failed, Message = $"Defaults setup failed: {ex.Message}" };
+                _logger?.LogError(ex, "Defaults setup failed");
+                return Fail($"Defaults setup failed: {ex.Message}");
             }
         }
     }

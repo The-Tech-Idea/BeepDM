@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Addin;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Seeding
 {
@@ -30,7 +31,7 @@ namespace TheTechIdea.Beep.SetUp.Seeding
                         $"Insert failed for record {i + 1}/{total} in '{TargetEntityName}': {result.Message}",
                         result.Ex);
 
-                Report(progress,
+                StepErrorHelpers.Report(progress,
                     (int)((i + 1) * 100.0 / total),
                     $"Seeding {SeederName}: {i + 1}/{total}");
             }

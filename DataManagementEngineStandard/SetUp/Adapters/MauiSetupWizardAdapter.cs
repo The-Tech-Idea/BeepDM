@@ -56,7 +56,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             catch (OperationCanceledException)
             {
                 await InvokeOnMainThreadAsync(() => _progressAction.Invoke(0, "Setup wizard cancelled."));
-                throw;
+                // Fall through — wizard already built a partial report.
             }
 
             var report = wizard.GetReport();

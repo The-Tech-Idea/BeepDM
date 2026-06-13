@@ -34,8 +34,8 @@ namespace TheTechIdea.Beep.Editor
                             ["schemaId"]     = schema.Id
                         });
 
-                    var cat    = SchemaFingerprinter.ReadString(outputs, "category", "Transient");
-                    var action = SchemaFingerprinter.ReadString(outputs, "action",   "Retry");
+                    var cat    = RuleOutputParser.ReadString(outputs, "category", "Transient");
+                    var action = RuleOutputParser.ReadString(outputs, "action",   "Retry");
                     return (cat, action);
                 }
                 catch (Exception ex)

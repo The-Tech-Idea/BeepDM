@@ -9,9 +9,6 @@ namespace TheTechIdea.Beep.SetUp
         /// <summary>Called when a step is about to begin execution.</summary>
         void ReportStepStart(string stepId, string stepName, int stepIndex, int totalSteps);
 
-        /// <summary>Called by a step to report incremental progress (0–100).</summary>
-        void ReportStepProgress(string stepId, int percentComplete, string message);
-
         /// <summary>Called when a step finishes (succeeded or failed).</summary>
         void ReportStepComplete(string stepId, bool succeeded, string message);
 

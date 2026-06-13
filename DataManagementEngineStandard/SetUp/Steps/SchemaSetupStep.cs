@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Editor.EntityDiscovery;
 using TheTechIdea.Beep.Editor.Migration;
 using TheTechIdea.Beep.Editor.Schema;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -21,15 +25,27 @@ namespace TheTechIdea.Beep.SetUp.Steps
     ///
     /// Idempotency: the entity-list SHA-256 hash is stored in <see cref="SetupState.SchemaHash"/>.
     /// <see cref="CanSkip"/> returns <c>true</c> when the hash is unchanged, meaning the schema
-    /// was already applied and no entity types have been added or removed.
+    /// was already applied and no entity types have been added, removed, or had their property
+    /// signatures changed. The hash includes type names and all public instance property
+    /// name+type pairs to detect structual schema drift.
     /// </summary>
-    public class SchemaSetupStep : ISetupStep
+    public class SchemaSetupStep : ISchemaSetupStep
     {
         private readonly SchemaSetupStepOptions _opts;
+        private readonly ILogger<SchemaSetupStep>? _logger;
+        private readonly ISchemaManager? _schemaManager;
+        private readonly IEntityDiscoveryService? _discovery;
 
-        public SchemaSetupStep(SchemaSetupStepOptions opts)
+        public SchemaSetupStep(
+            SchemaSetupStepOptions opts,
+            ILogger<SchemaSetupStep>? logger = null,
+            ISchemaManager? schemaManager = null,
+            IEntityDiscoveryService? discovery = null)
         {
             _opts = opts ?? throw new ArgumentNullException(nameof(opts));
+            _logger = logger;
+            _schemaManager = schemaManager;
+            _discovery = discovery;
         }
 
         // ── ISetupStep ───────────────────────────────────────────────────────
@@ -75,6 +91,23 @@ namespace TheTechIdea.Beep.SetUp.Steps
             bool strict = _opts.StrictPolicyMode ?? context.Options?.StrictPolicyMode ?? false;
             string environment = context.Options?.Environment ?? "Development";
 
+            // Auto-discover entity types when none were explicitly provided
+            if (_discovery != null && (_opts.EntityTypes == null || _opts.EntityTypes.Count == 0))
+            {
+                var discovered = _discovery.Discover(new EntityDiscoveryOptions
+                {
+                    Scope = DiscoveryScope.AllLoaded,
+                    ExcludeAbstract = true,
+                    ExcludeOpenGenerics = true
+                });
+                _opts.EntityTypes = discovered
+                    .Select(e => Type.GetType(e.FullName, throwOnError: false))
+                    .Where(t => t != null)
+                    .Cast<Type>()
+                    .ToList();
+                _logger?.LogInformation("[SchemaSetupStep] Auto-discovered {Count} entity types", _opts.EntityTypes.Count);
+            }
+
             var migration = new MigrationManager(editor, ds);
 
             // Register extra assemblies when provided
@@ -85,7 +118,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             }
 
             // ── A. Build migration plan ──────────────────────────────────────
-            Report(progress, 5, "Building migration plan…");
+            StepErrorHelpers.Report(progress, 5, "Building migration plan…");
             var plan = migration.BuildMigrationPlanForTypes(
                 _opts.EntityTypes,
                 _opts.DetectRelationships);
@@ -96,7 +129,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             context.MigrationPlan = plan;
 
             // ── B. Evaluate policy ───────────────────────────────────────────
-            Report(progress, 15, "Evaluating migration policy…");
+            StepErrorHelpers.Report(progress, 15, "Evaluating migration policy…");
             var policyOpts = BuildPolicyOptions(environment, strict);
             var policy = migration.EvaluateMigrationPlanPolicy(plan, policyOpts);
 
@@ -110,25 +143,25 @@ namespace TheTechIdea.Beep.SetUp.Steps
             }
 
             // ── C. Dry-run DDL preview ───────────────────────────────────────
-            Report(progress, 25, "Generating dry-run DDL preview…");
+            StepErrorHelpers.Report(progress, 25, "Generating dry-run DDL preview…");
             var dryRun = migration.GenerateDryRunReport(plan);
             if (dryRun != null)
                 context.Properties["DryRunReportJson"] = JsonSerializer.Serialize(dryRun);
 
-            // ── C2. NEW: Per-entity schema drift (.NET class vs live DB) ──────
+            // ── C2. Per-entity schema drift (.NET class vs live DB) ───
             try
             {
-                var schema = new SchemaManager(editor);
+                var schema = _schemaManager ?? new SchemaManager(editor);
                 var drift = schema.InspectManyAsync(_opts.EntityTypes, ds).GetAwaiter().GetResult();
                 if (drift != null && drift.Count > 0)
                 {
                     context.Properties["SchemaDrift"] = drift;
-                    Report(progress, 26, $"Captured {drift.Count} schema drift report(s).");
+                    StepErrorHelpers.Report(progress, 26, $"Captured {drift.Count} schema drift report(s).");
                 }
             }
             catch (Exception ex)
             {
-                // Schema drift is informational only — never block on it
+                _logger?.LogWarning(ex, "[SchemaSetupStep] Schema drift capture failed");
                 editor.Logger?.WriteLog(
                     $"[SchemaSetupStep] Schema drift capture failed: {ex.Message}");
             }
@@ -138,7 +171,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 return Ok("Dry-run complete. Schema not modified (DryRun=true).");
 
             // ── D. Preflight checks ──────────────────────────────────────────
-            Report(progress, 35, "Running preflight checks…");
+            StepErrorHelpers.Report(progress, 35, "Running preflight checks…");
             var preflight = migration.RunPreflightChecks(plan, policyOpts);
             if (!preflight.CanApply)
             {
@@ -150,7 +183,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             }
 
             // ── E. Impact report (advisory) ──────────────────────────────────
-            Report(progress, 45, "Building impact report…");
+            StepErrorHelpers.Report(progress, 45, "Building impact report…");
             var impact = migration.BuildImpactReport(plan);
             var highImpact = impact?.Entries?
                 .Count(e => e.Sensitivity == MigrationImpactSensitivity.High) ?? 0;
@@ -160,7 +193,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                     "Review the impact report before applying in production.");
 
             // ── F. Compensation / rollback plan ──────────────────────────────
-            Report(progress, 55, "Building compensation plan…");
+            StepErrorHelpers.Report(progress, 55, "Building compensation plan…");
             var compensationPlan = migration.BuildCompensationPlan(plan);
             if (compensationPlan != null)
                 context.Properties["CompensationPlanJson"] = JsonSerializer.Serialize(compensationPlan);
@@ -174,14 +207,14 @@ namespace TheTechIdea.Beep.SetUp.Steps
                              "Confirm backup and restore-test evidence before proceeding.");
 
             // ── G. Approve plan ──────────────────────────────────────────────
-            Report(progress, 65, "Approving migration plan…");
+            StepErrorHelpers.Report(progress, 65, "Approving migration plan…");
             plan = migration.ApproveMigrationPlan(
                 plan,
                 approvedBy: _opts.ApproverLabel,
                 notes: $"Auto-approved by setup wizard. Environment={environment}");
 
             // ── H. Execute ───────────────────────────────────────────────────
-            Report(progress, 70, "Executing migration plan…");
+            StepErrorHelpers.Report(progress, 70, "Executing migration plan…");
             var execPolicy = new MigrationExecutionPolicy();
             var checkpoint = migration.CreateExecutionCheckpoint(plan);
 
@@ -190,7 +223,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 execPolicy,
                 checkpoint.ExecutionToken,
                 new Progress<PassedArgs>(a =>
-                    Report(progress, 70 + (a.ParameterInt1 / 4), a.Messege)));
+                    StepErrorHelpers.Report(progress, 70 + (a.ParameterInt1 / 4), a.Messege)));
 
             if (!execResult.Success)
             {
@@ -214,7 +247,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
             ds.GetEntitesList();
 
-            Report(progress, 100, "Schema creation complete.");
+            StepErrorHelpers.Report(progress, 100, "Schema creation complete.");
             return Ok($"Schema applied via MigrationManager. Token={execResult.ExecutionToken}");
         }
 
@@ -242,17 +275,21 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
         private static string ComputeEntityListHash(IEnumerable<Type> types)
         {
-            var names = string.Join(",", types.Select(t => t.FullName).OrderBy(n => n));
-            var bytes = Encoding.UTF8.GetBytes(names);
+            var sb = new StringBuilder();
+            foreach (var t in types.OrderBy(t => t.FullName))
+            {
+                sb.Append(t.FullName);
+                foreach (var prop in t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .OrderBy(p => p.Name))
+                {
+                    sb.Append('|');
+                    sb.Append(prop.Name);
+                    sb.Append(':');
+                    sb.Append(prop.PropertyType.FullName);
+                }
+            }
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
             return Convert.ToHexString(SHA256.HashData(bytes));
         }
-
-        private static void Report(IProgress<PassedArgs> p, int pct, string msg) =>
-            p?.Report(new PassedArgs { ParameterInt1 = pct, Messege = msg });
-
-        private static IErrorsInfo Ok(string msg = "Ok") =>
-            new ErrorsInfo { Flag = Errors.Ok, Message = msg };
-    private static IErrorsInfo Fail(string msg, Exception ex = null) =>
-        new ErrorsInfo { Flag = Errors.Failed, Message = msg, Ex = ex };
     }
 }

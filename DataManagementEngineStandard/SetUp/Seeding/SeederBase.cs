@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor.Defaults;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Seeding
 {
@@ -16,6 +18,12 @@ namespace TheTechIdea.Beep.SetUp.Seeding
     /// </summary>
     public abstract class SeederBase : ISeeder
     {
+        /// <summary>
+        /// Optional logger for diagnostic output. Set via constructor in derived classes.
+        /// When null, errors are silently swallowed (backward-compatible).
+        /// </summary>
+        protected ILogger? Logger { get; set; }
+
         /// <inheritdoc/>
         public abstract string SeederId { get; }
 
@@ -53,28 +61,13 @@ namespace TheTechIdea.Beep.SetUp.Seeding
             }
             catch (Exception ex)
             {
-                return new ErrorsInfo
-                {
-                    Flag = Errors.Failed,
-                    Message = $"Seeder '{SeederId}' threw an unhandled exception: {ex.Message}",
-                    Ex = ex
-                };
+                Logger?.LogError(ex, "Seeder '{SeederId}' threw an unhandled exception", SeederId);
+                return Fail($"Seeder '{SeederId}' threw an unhandled exception: {ex.Message}", ex);
             }
         }
 
         /// <summary>Implement the actual insert logic here.</summary>
         protected abstract IErrorsInfo SeedCore(IDataSource dataSource, IDMEEditor editor,
             IProgress<PassedArgs> progress);
-
-        // ── Protected helpers ────────────────────────────────────────────────
-
-        protected static void Report(IProgress<PassedArgs> p, int pct, string msg) =>
-            p?.Report(new PassedArgs { ParameterInt1 = pct, Messege = msg });
-
-        protected static IErrorsInfo Ok(string msg = "Ok") =>
-            new ErrorsInfo { Flag = Errors.Ok, Message = msg };
-
-        protected static IErrorsInfo Fail(string msg, Exception ex = null) =>
-            new ErrorsInfo { Flag = Errors.Failed, Message = msg, Ex = ex };
     }
 }

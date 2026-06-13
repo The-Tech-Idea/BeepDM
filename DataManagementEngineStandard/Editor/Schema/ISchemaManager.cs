@@ -82,6 +82,11 @@ namespace TheTechIdea.Beep.Editor.Schema
         Task<Dictionary<string, SchemaDriftReport>> InspectManyAsync(
             IEnumerable<Type> types, IDataSource dataSource,
             CancellationToken token = default);
+
+        /// <summary>Generates a DDL change plan from a drift report without executing it.</summary>
+        Task<SchemaChangePlan> GenerateChangePlanAsync(
+            SchemaDriftReport driftReport,
+            CancellationToken token = default);
     }
 
     /// <summary>Result of resolving a data source by name (and auto-opening it if not open).</summary>

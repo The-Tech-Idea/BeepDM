@@ -1,11 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.Utilities;
+using DataSourceType = TheTechIdea.Beep.Utilities.DataSourceType;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -25,13 +30,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
     ///     + SaveDataconnectionsValues
     ///  7. Optionally open the datasource and populate context.DataSource
     /// </summary>
-    public class ConnectionConfigStep : ISetupStep
+    public class ConnectionConfigStep : IConnectionConfigStep
     {
         private readonly ConnectionConfigStepOptions _opts;
+        private readonly ILogger<ConnectionConfigStep>? _logger;
 
-        public ConnectionConfigStep(ConnectionConfigStepOptions opts)
+        public ConnectionConfigStep(ConnectionConfigStepOptions opts, ILogger<ConnectionConfigStep>? logger = null)
         {
             _opts = opts ?? throw new ArgumentNullException(nameof(opts));
+            _logger = logger;
         }
 
         // ── ISetupStep ───────────────────────────────────────────────────────
@@ -43,6 +50,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
         public bool CanSkip(SetupContext context)
         {
+            if (context?.Options?.DryRun == true) return true;
             var cp = _opts.ConnectionProperties;
             if (cp == null) return false;
 
@@ -69,6 +77,10 @@ namespace TheTechIdea.Beep.SetUp.Steps
             if (string.IsNullOrWhiteSpace(cp.ConnectionName))
                 return Fail("ConnectionProperties.ConnectionName must be set.");
 
+            if (cp.DatabaseType == DataSourceType.Unknown || cp.DatabaseType == DataSourceType.NONE)
+                return Fail($"ConnectionProperties.DatabaseType is '{cp.DatabaseType}'. " +
+                             "Set it to a valid datasource type (e.g. SqlServer, SqlLite, PostgreSql).");
+
             return Ok();
         }
 
@@ -79,7 +91,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             var baseDir = _opts.BaseDirectory ?? AppContext.BaseDirectory;
 
             // ── 1. Link to driver ────────────────────────────────────────────
-            Report(progress, 10, "Linking connection to driver…");
+            StepErrorHelpers.Report(progress, 10, "Linking connection to driver…");
             var driver = ConnectionHelper.GetBestMatchingDriver(cp, editor.ConfigEditor);
             if (driver == null)
                 return Fail($"No matching driver found for ConnectionName='{cp.ConnectionName}', " +
@@ -89,7 +101,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             cp.DriverName = driver.PackageName;
 
             // ── 2. Build connection string ───────────────────────────────────
-            Report(progress, 25, "Building connection string…");
+            StepErrorHelpers.Report(progress, 25, "Building connection string…");
             string builtCs = ConnectionHelper.ReplaceValueFromConnectionString(driver, cp, editor);
             if (!string.IsNullOrWhiteSpace(builtCs))
                 cp.ConnectionString = builtCs;
@@ -97,10 +109,27 @@ namespace TheTechIdea.Beep.SetUp.Steps
             // ── 3. Normalise file paths ──────────────────────────────────────
             ConnectionHelper.NormalizeFilePath(cp, baseDir);
 
+            // Validate directory existence for file-based datasources
+            if (IsFileBasedDatasource(cp.DatabaseType) && !string.IsNullOrWhiteSpace(cp.FilePath))
+            {
+                var dir = Path.GetDirectoryName(cp.FilePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    _logger?.LogWarning("Directory '{Dir}' for file-based datasource does not exist; it will be created",
+                        dir);
+                    try { Directory.CreateDirectory(dir); }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Failed to create directory '{Dir}' for file-based datasource", dir);
+                        return Fail($"Failed to create directory for file-based datasource '{cp.ConnectionName}': {ex.Message}");
+                    }
+                }
+            }
+
             // ── 4. Validate connection string structure ──────────────────────
             if (!_opts.SkipConnectionStringValidation)
             {
-                Report(progress, 40, "Validating connection string…");
+                StepErrorHelpers.Report(progress, 40, "Validating connection string…");
                 if (!ConnectionHelper.IsConnectionStringValid(cp.ConnectionString, cp.DatabaseType))
                     return Fail($"Connection string for '{cp.ConnectionName}' failed validation " +
                                  $"(DatabaseType={cp.DatabaseType}). " +
@@ -111,10 +140,10 @@ namespace TheTechIdea.Beep.SetUp.Steps
             // SecureConnectionString masks passwords for log/display purposes.
             // We must NOT store the masked string in cp — the real credentials are required
             // for every subsequent OpenDataSource call.
-            Report(progress, 55, $"Connection string ready. Driver={cp.DriverName}");
+            StepErrorHelpers.Report(progress, 55, $"Connection string ready. Driver={cp.DriverName}");
 
             // ── 6. Persist ───────────────────────────────────────────────────
-            Report(progress, 65, "Persisting connection…");
+            StepErrorHelpers.Report(progress, 65, "Persisting connection…");
 
             // Look up the STORED GuidID so UpdateDataConnection targets the right record.
             // Using cp.GuidID here would be wrong when cp is a new/detached object — it
@@ -138,7 +167,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             // ── 7. Open connection ───────────────────────────────────────────
             if (_opts.OpenConnection)
             {
-                Report(progress, 80, $"Opening connection '{cp.ConnectionName}'…");
+                StepErrorHelpers.Report(progress, 80, $"Opening connection '{cp.ConnectionName}'…");
                 var state = editor.OpenDataSource(cp.ConnectionName);
 
                 if (state != ConnectionState.Open)
@@ -148,19 +177,18 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 context.DataSource = editor.GetDataSource(cp.ConnectionName);
             }
 
-            Report(progress, 100, "Connection configured.");
+            StepErrorHelpers.Report(progress, 100, "Connection configured.");
             return Ok($"Connection '{cp.ConnectionName}' configured successfully.");
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
-        private static void Report(IProgress<PassedArgs> progress, int pct, string msg) =>
-            progress?.Report(new PassedArgs { ParameterInt1 = pct, Messege = msg });
-
-        private static IErrorsInfo Ok(string msg = "Ok") =>
-            new ErrorsInfo { Flag = Errors.Ok, Message = msg };
-
-        private static IErrorsInfo Fail(string msg, Exception ex = null) =>
-            new ErrorsInfo { Flag = Errors.Failed, Message = msg, Ex = ex };
+        private static bool IsFileBasedDatasource(DataSourceType databaseType)
+        {
+            return databaseType == DataSourceType.SqlLite
+                || databaseType == DataSourceType.SqlCompact
+                || databaseType == DataSourceType.LiteDB
+                || databaseType == DataSourceType.VistaDB;
+        }
     }
 }

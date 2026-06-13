@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.SetUp.Seeding;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -19,13 +21,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
     ///  - Partial progress is persisted to <see cref="SetupState.CompletedSeederIds"/>
     ///    after each seeder so a failed run can resume.
     /// </summary>
-    public class SeedingStep : ISetupStep
+    public class SeedingStep : ISeedingStep
     {
         private readonly SeedingStepOptions _opts;
+        private readonly ILogger<SeedingStep>? _logger;
 
-        public SeedingStep(SeedingStepOptions opts)
+        public SeedingStep(SeedingStepOptions opts, ILogger<SeedingStep>? logger = null)
         {
             _opts = opts ?? throw new ArgumentNullException(nameof(opts));
+            _logger = logger;
         }
 
         // ── ISetupStep ───────────────────────────────────────────────────────
@@ -37,7 +41,9 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
         public bool CanSkip(SetupContext context)
         {
+            if (context?.Options?.DryRun == true) return true;
             if (context?.Options?.SkipSeeding == true) return true;
+            if (context?.Options?.SkipSchema == true) return true;
             if (_opts.Registry == null) return false;          // can't evaluate without a registry
             var ds = context?.DataSource;
             if (ds == null) return false;
@@ -52,9 +58,11 @@ namespace TheTechIdea.Beep.SetUp.Steps
             if (context?.Editor == null)
                 return Fail("SetupContext.Editor is required.");
 
-            // When seeding is explicitly skipped, there's nothing to validate
+            // When seeding or schema is explicitly skipped, there's nothing to validate
             if (context.Options?.SkipSeeding == true)
                 return Ok("Seeding will be skipped (SkipSeeding=true).");
+            if (context.Options?.SkipSchema == true)
+                return Ok("Seeding will be skipped (SkipSchema=true).");
 
             if (_opts.Registry == null)
                 return Fail("SeedingStepOptions.Registry must be set.");
@@ -89,14 +97,21 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
                 // Already completed in a previous (partial) run — skip
                 if (completedIds.Contains(seeder.SeederId))
-                    continue;
+                {
+                    if (seeder.IsAlreadySeeded(ds, editor) == false)
+                        _logger?.LogWarning("Seeder '{SeederId}' was marked completed but IsAlreadySeeded returns false; re-running",
+                            seeder.SeederId);
+                    else
+                        continue;
+                }
 
-                Report(progress, (int)(i * 100.0 / total),
+                StepErrorHelpers.Report(progress, (int)(i * 100.0 / total),
                     $"[{i + 1}/{total}] Running seeder: {seeder.SeederName}…");
 
                 // Idempotency guard
                 if (seeder.IsAlreadySeeded(ds, editor))
                 {
+                    _logger?.LogInformation("Seeder '{SeederId}' already applied — skipping", seeder.SeederId);
                     editor.Logger?.WriteLog(
                         $"[SeedingStep] Seeder '{seeder.SeederId}' already applied — skipping.");
                     completedIds.Add(seeder.SeederId);
@@ -109,7 +124,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                     {
                         int baseProgress = (int)(i * 100.0 / total);
                         int stepContribution = (int)(a.ParameterInt1 / (double)total);
-                        Report(progress, baseProgress + stepContribution, a.Messege);
+                        StepErrorHelpers.Report(progress, baseProgress + stepContribution, a.Messege);
                     }));
 
                 if (result.Flag != Errors.Ok)
@@ -122,7 +137,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 PersistCompletedSeeders(context, completedIds);
             }
 
-            Report(progress, 100, $"Seeding complete. {completedIds.Count} seeders applied.");
+            StepErrorHelpers.Report(progress, 100, $"Seeding complete. {completedIds.Count} seeders applied.");
             return Ok($"Seeding complete. {completedIds.Count} seeders applied.");
         }
 
@@ -141,17 +156,8 @@ namespace TheTechIdea.Beep.SetUp.Steps
         private static void PersistCompletedSeeders(
             SetupContext context, HashSet<string> completedIds)
         {
-            if (context.State != null)
+            if (context?.State != null)
                 context.State.CompletedSeederIds = new HashSet<string>(completedIds, StringComparer.Ordinal);
         }
-
-        private static void Report(IProgress<PassedArgs> p, int pct, string msg) =>
-            p?.Report(new PassedArgs { ParameterInt1 = pct, Messege = msg });
-
-        private static IErrorsInfo Ok(string msg = "Ok") =>
-            new ErrorsInfo { Flag = Errors.Ok, Message = msg };
-
-        private static IErrorsInfo Fail(string msg, Exception ex = null) =>
-            new ErrorsInfo { Flag = Errors.Failed, Message = msg, Ex = ex };
     }
 }

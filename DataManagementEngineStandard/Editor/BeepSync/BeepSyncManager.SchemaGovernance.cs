@@ -109,6 +109,6 @@ namespace TheTechIdea.Beep.Editor
         }
 
         private static string ComputeSchemaHash(DataSyncSchema schema) =>
-            SchemaFingerprinter.ComputeSchemaHash(schema);
+            new SchemaFingerprinter().ComputeSchemaHash(schema);
     }
 }

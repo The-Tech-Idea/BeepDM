@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -22,13 +24,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
     ///
     /// After any State 2/3 work: ConfigEditor.SaveConnectionDriversConfigValues()
     /// </summary>
-    public class DriverProvisionStep : ISetupStep
+    public class DriverProvisionStep : IDriverProvisionStep
     {
         private readonly DriverProvisionStepOptions _opts;
+        private readonly ILogger<DriverProvisionStep>? _logger;
 
-        public DriverProvisionStep(DriverProvisionStepOptions opts)
+        public DriverProvisionStep(DriverProvisionStepOptions opts, ILogger<DriverProvisionStep>? logger = null)
         {
             _opts = opts ?? throw new ArgumentNullException(nameof(opts));
+            _logger = logger;
         }
 
         // ── ISetupStep ───────────────────────────────────────────────────────
@@ -40,6 +44,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
         public bool CanSkip(SetupContext context)
         {
+            if (context?.Options?.DryRun == true) return true;
             // State 1: driver already loaded → nothing to do
             var driver = FindDriver(context);
             return driver != null && !driver.IsMissing;
@@ -70,7 +75,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             // State 2 — DLL cached on disk but not yet loaded into this process
             if (!driver.NuggetMissing)
             {
-                Report(progress, 20, $"Loading driver from local package: {driver.PackageName}");
+                StepErrorHelpers.Report(progress, 20, $"Loading driver from local package: {driver.PackageName}");
 
                 if (context.Editor.assemblyHandler == null)
                     return Fail("IDMEEditor.assemblyHandler is null. Ensure AssemblyHandler was initialised before running DriverProvisionStep.");
@@ -80,8 +85,9 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
                 if (loaded && !driver.IsMissing)
                 {
-                    Report(progress, 90, "Driver loaded from local package.");
+                    StepErrorHelpers.Report(progress, 90, "Driver loaded from local package.");
                     context.Editor.ConfigEditor.SaveConnectionDriversConfigValues();
+                    _logger?.LogInformation("Driver '{PackageName}' loaded from local package", driver.PackageName);
                     return Ok($"Driver '{driver.PackageName}' loaded from local cache.");
                 }
 
@@ -90,7 +96,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             }
 
             // State 3 — package not on disk; download from NuGet
-            Report(progress, 30, $"Downloading NuGet package: {driver.PackageName}");
+            StepErrorHelpers.Report(progress, 30, $"Downloading NuGet package: {driver.PackageName}");
 
             if (context.Editor.assemblyHandler == null)
                 return Fail("IDMEEditor.assemblyHandler is null. Ensure AssemblyHandler was initialised before running DriverProvisionStep.");
@@ -107,13 +113,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 useSingleSharedContext: true,
                 appInstallPath: _opts.AppInstallPath);
 
-            // Block: this method is called from a synchronous ISetupStep.Execute
-            var assemblies = downloadTask.GetAwaiter().GetResult();
+            // Block: this method is called from a synchronous ISetupStep.Execute.
+            // Use ConfigureAwait(false).GetAwaiter().GetResult() to avoid deadlocks
+            // if a SynchronizationContext is captured by the caller.
+            var assemblies = downloadTask.ConfigureAwait(false).GetAwaiter().GetResult();
 
             if (assemblies == null || assemblies.Count == 0)
                 return Fail($"NuGet download returned no assemblies for '{driver.PackageName}'.");
 
-            Report(progress, 80, "Verifying [AddinAttribute] registration…");
+            StepErrorHelpers.Report(progress, 80, "Verifying [AddinAttribute] registration…");
 
             // Verify the driver registered itself through [AddinAttribute] detection
             bool verified = context.Editor.ConfigEditor.DataDriversClasses
@@ -124,8 +132,10 @@ namespace TheTechIdea.Beep.SetUp.Steps
                              "[AddinAttribute] type was found in DataDriversClasses. " +
                              "Ensure the driver DLL exposes an [AddinAttribute] class.");
 
-            Report(progress, 90, "Persisting driver configuration…");
+            StepErrorHelpers.Report(progress, 90, "Persisting driver configuration…");
             context.Editor.ConfigEditor.SaveConnectionDriversConfigValues();
+            _logger?.LogInformation("Driver '{PackageName}' v{Version} downloaded and loaded from NuGet",
+                driver.PackageName, version ?? "(latest)");
 
             return Ok($"Driver '{driver.PackageName}' downloaded and loaded from NuGet.");
         }
@@ -148,14 +158,5 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
             return result.Count > 0 ? result : null;
         }
-
-        private static void Report(IProgress<PassedArgs> progress, int pct, string msg) =>
-            progress?.Report(new PassedArgs { ParameterInt1 = pct, Messege = msg });
-
-        private static IErrorsInfo Ok(string msg = "Ok") =>
-            new ErrorsInfo { Flag = Errors.Ok, Message = msg };
-
-        private static IErrorsInfo Fail(string msg, Exception ex = null) =>
-            new ErrorsInfo { Flag = Errors.Failed, Message = msg, Ex = ex };
     }
 }

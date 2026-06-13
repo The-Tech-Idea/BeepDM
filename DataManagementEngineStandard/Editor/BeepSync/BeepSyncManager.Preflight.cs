@@ -53,7 +53,7 @@ namespace TheTechIdea.Beep.Editor
                             },
                             policy);
 
-                        bool passed = SchemaFingerprinter.ReadBoolean(result);
+                        bool passed = RuleOutputParser.ReadBoolean(result);
                         if (!passed)
                         {
                             report.RulesPassed = false;
@@ -138,7 +138,7 @@ namespace TheTechIdea.Beep.Editor
         // ── Shared rule-policy builder ─────────────────────────────────────────────
 
         internal static RuleExecutionPolicy BuildRulePolicy(DataSyncSchema schema, int defaultMaxMs = 5000) =>
-            SchemaFingerprinter.BuildRulePolicy(
+            RuleOutputParser.BuildRulePolicy(
                 schema?.RulePolicy?.MaxDepth       ?? 0,
                 schema?.RulePolicy?.MaxExecutionMs ?? 0,
                 defaultMaxDepth: 10,

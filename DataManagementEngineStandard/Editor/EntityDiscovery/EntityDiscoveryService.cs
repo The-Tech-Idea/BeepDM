@@ -1,27 +1,43 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
-using TheTechIdea.Beep.Editor.Migration;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.EntityDiscovery
 {
-    public class EntityDiscoveryService
+    public class EntityDiscoveryService : IEntityDiscoveryService
     {
         private readonly IDMEEditor _editor;
+        private readonly IDiscoveryCache? _cache;
+        private readonly IProjectScopeStrategy _scopeStrategy;
+        private readonly List<Assembly> _registeredAssemblies = new();
+        private readonly object _registeredLock = new();
 
-        public EntityDiscoveryService(IDMEEditor editor)
+        public EntityDiscoveryService(
+            IDMEEditor editor,
+            IDiscoveryCache? cache = null,
+            IProjectScopeStrategy? scopeStrategy = null)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+            _cache = cache;
+            _scopeStrategy = scopeStrategy ?? ProjectScopeResolver.Default;
         }
 
         public void RegisterAssembly(Assembly assembly)
         {
             if (assembly == null) return;
-            var migration = new MigrationManager(_editor);
-            migration.RegisterAssembly(assembly);
+            lock (_registeredLock)
+            {
+                if (!_registeredAssemblies.Contains(assembly))
+                    _registeredAssemblies.Add(assembly);
+            }
             _editor.AddLogMessage("EntityDiscovery",
                 $"Registered assembly '{assembly.GetName().Name}' for entity discovery",
                 DateTime.Now, 0, null, Errors.Ok);
@@ -29,8 +45,107 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
 
         public IReadOnlyList<Assembly> GetRegisteredAssemblies()
         {
-            var migration = new MigrationManager(_editor);
-            return migration.GetRegisteredAssemblies();
+            lock (_registeredLock)
+                return _registeredAssemblies.ToList();
+        }
+
+        public List<DiscoveredEntity> Discover(EntityDiscoveryOptions options)
+        {
+            return DiscoverAsync(options, null, CancellationToken.None)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        public async Task<List<DiscoveredEntity>> DiscoverAsync(
+            EntityDiscoveryOptions options,
+            IProgress<int>? progress = null,
+            CancellationToken token = default)
+        {
+            if (options == null) options = new EntityDiscoveryOptions();
+
+            var cacheKey = BuildCacheKey(options);
+
+            if (_cache != null)
+            {
+                var cached = _cache.GetOrAdd(cacheKey, () =>
+                {
+                    return DiscoverCoreAsync(options, progress, token)
+                        .ConfigureAwait(false).GetAwaiter().GetResult()
+                        .ToList().AsReadOnly();
+                });
+                return cached.ToList();
+            }
+
+            return await DiscoverCoreAsync(options, progress, token).ConfigureAwait(false);
+        }
+
+        private static string BuildCacheKey(EntityDiscoveryOptions options)
+        {
+            var scope = options.Scope.ToString();
+            var ns = options.Namespace ?? "*";
+            var subNs = options.IncludeSubNamespaces ? "1" : "0";
+            var asm = options.Assembly?.GetName().Name ?? "*";
+            var nameFilter = options.NameFilter ?? "*";
+            var categories = (int)options.Categories;
+            var excludeAbs = options.ExcludeAbstract ? "1" : "0";
+            var excludeGen = options.ExcludeOpenGenerics ? "1" : "0";
+            var requireCtor = options.RequireParameterlessConstructor ? "1" : "0";
+            return $"ED:{scope}|{ns}|{subNs}|{asm}|{nameFilter}|{categories}|{excludeAbs}|{excludeGen}|{requireCtor}";
+        }
+
+        private async Task<List<DiscoveredEntity>> DiscoverCoreAsync(
+            EntityDiscoveryOptions options,
+            IProgress<int>? progress,
+            CancellationToken token)
+        {
+            var assemblies = ResolveScopeAssemblies(options);
+            var total = assemblies.Count;
+            var processed = 0;
+
+            var results = new ConcurrentBag<DiscoveredEntity>();
+
+            Parallel.ForEach(assemblies, new ParallelOptions
+            {
+                CancellationToken = token,
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount)
+            }, asm =>
+            {
+                token.ThrowIfCancellationRequested();
+                var discovered = ScanAssembly(asm, options);
+                foreach (var entity in discovered)
+                    results.Add(entity);
+
+                var count = Interlocked.Increment(ref processed);
+                progress?.Report((count * 100) / total);
+            });
+
+            return results
+                .GroupBy(e => e.FullName)
+                .Select(g => g.First())
+                .Where(e => options.IncludesCategory(e.Category))
+                .Where(e => options.PassesNamespace(e))
+                .Where(e => options.PassesFreeText(e))
+                .OrderBy(e => e.Namespace, StringComparer.Ordinal)
+                .ThenBy(e => e.Name, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        public IReadOnlyList<Assembly> ResolveScopeAssemblies(EntityDiscoveryOptions options)
+        {
+            if (options == null) options = new EntityDiscoveryOptions();
+
+            switch (options.Scope)
+            {
+                case DiscoveryScope.Explicit:
+                    return options.Assemblies
+                        ?? (IReadOnlyList<Assembly>)Array.Empty<Assembly>();
+
+                case DiscoveryScope.AllLoaded:
+                    return EnumerateSearchableAssemblies().ToList();
+
+                case DiscoveryScope.Project:
+                default:
+                    return _scopeStrategy.ResolveProjectScope();
+            }
         }
 
         public List<DiscoveredEntity> DiscoverEntities(
@@ -38,66 +153,32 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
             Assembly assembly = null,
             bool includeSubNamespaces = true)
         {
-            var migration = new MigrationManager(_editor);
-            var entityTypes = migration.DiscoverEntityTypes(namespaceName, assembly, includeSubNamespaces);
-            return MapToDiscoveredEntities(entityTypes);
+            return Discover(new EntityDiscoveryOptions
+            {
+                Namespace = namespaceName,
+                IncludeSubNamespaces = includeSubNamespaces,
+                Assembly = assembly
+            });
         }
 
         public List<DiscoveredEntity> DiscoverAllEntities(bool includeSubNamespaces = true)
         {
-            return DiscoverEntities(null, null, includeSubNamespaces);
+            return Discover(new EntityDiscoveryOptions
+            {
+                IncludeSubNamespaces = includeSubNamespaces
+            });
         }
 
-        public List<DiscoveredEntity> ScanAssemblyForEntities(Assembly assembly, bool includeSubNamespaces = true)
+        public List<DiscoveredEntity> ScanAssemblyForEntities(
+            Assembly assembly,
+            bool includeSubNamespaces = true)
         {
             if (assembly == null) return new List<DiscoveredEntity>();
-
-            var migration = new MigrationManager(_editor);
-            var entityTypes = migration.DiscoverEntityTypes(null, assembly, includeSubNamespaces);
-            var entities = MapToDiscoveredEntities(entityTypes);
-
-            var migrationTypes = new HashSet<Type>(entityTypes);
-            var additionalPocos = new List<DiscoveredEntity>();
-
-            try
+            return Discover(new EntityDiscoveryOptions
             {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (type == null || migrationTypes.Contains(type)) continue;
-                    if (type.IsNotPublic) continue;
-                    if (type.IsInterface || type.IsAbstract || type.IsGenericTypeDefinition) continue;
-                    if (type.IsNested && !type.IsNestedPublic) continue;
-                    if (!type.IsClass) continue;
-
-                    var classCreator = _editor.classCreator;
-                    if (classCreator != null && classCreator.IsDiscoverablePoco(type))
-                    {
-                        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                        var category = classCreator.IsEfDecoratedType(type)
-                            ? EntityCategory.EfCore
-                            : EntityCategory.Poco;
-
-                        additionalPocos.Add(new DiscoveredEntity
-                        {
-                            Name = type.Name,
-                            FullName = type.FullName ?? type.Name,
-                            AssemblyName = assembly.GetName().Name ?? string.Empty,
-                            PropertyCount = properties.Length,
-                            Category = category,
-                            Namespace = type.Namespace ?? string.Empty,
-                            HasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null
-                        });
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            var result = new List<DiscoveredEntity>();
-            result.AddRange(entities);
-            result.AddRange(additionalPocos);
-            return result.DistinctBy(e => e.FullName).ToList();
+                Assembly = assembly,
+                IncludeSubNamespaces = includeSubNamespaces
+            });
         }
 
         public Dictionary<string, List<DiscoveredEntity>> GroupEntitiesByAssembly(
@@ -111,44 +192,178 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
                 .ToDictionary(g => g.Key, g => g.ToList());
         }
 
-        private List<DiscoveredEntity> MapToDiscoveredEntities(List<Type> entityTypes)
+        private IEnumerable<Assembly> EnumerateSearchableAssemblies()
         {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (asm.IsDynamic) continue;
+                var name = asm.GetName().Name;
+                if (string.IsNullOrEmpty(name)) continue;
+                if (_scopeStrategy.FrameworkPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                if (!seen.Add(name)) continue;
+                yield return asm;
+            }
+        }
+
+        private List<DiscoveredEntity> ScanAssembly(Assembly assembly, EntityDiscoveryOptions options)
+        {
+            if (assembly == null || assembly.IsDynamic) return new List<DiscoveredEntity>();
+
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray(); }
+            catch { return new List<DiscoveredEntity>(); }
+
             var result = new List<DiscoveredEntity>();
 
-            foreach (var type in entityTypes)
+            foreach (var type in types)
             {
                 if (type == null) continue;
+                if (!PassesBasicFilters(type, options)) continue;
 
+                var category = ClassifyEntity(type);
                 var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                EntityCategory category;
-
-                if (typeof(IEntity).IsAssignableFrom(type) ||
-                    (type.BaseType != null && type.BaseType.Name == "Entity"))
-                {
-                    category = EntityCategory.Entity;
-                }
-                else if (_editor.classCreator?.IsEfDecoratedType(type) == true)
-                {
-                    category = EntityCategory.EfCore;
-                }
-                else
-                {
-                    category = EntityCategory.Poco;
-                }
-
-                result.Add(new DiscoveredEntity
-                {
-                    Name = type.Name,
-                    FullName = type.FullName ?? type.Name,
-                    AssemblyName = type.Assembly.GetName().Name ?? string.Empty,
-                    PropertyCount = properties.Length,
-                    Category = category,
-                    Namespace = type.Namespace ?? string.Empty,
-                    HasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null
-                });
+                result.Add(BuildEntity(type, properties, category));
             }
 
             return result;
+        }
+
+        private static DiscoveredEntity BuildEntity(
+            Type type,
+            PropertyInfo[] properties,
+            EntityCategory category)
+        {
+            var scalarCount = 0;
+            var navCount = 0;
+            foreach (var p in properties)
+            {
+                if (IsNavigationProperty(p)) navCount++;
+                else scalarCount++;
+            }
+
+            return new DiscoveredEntity
+            {
+                Name = type.Name,
+                FullName = type.FullName ?? type.Name,
+                AssemblyName = type.Assembly?.GetName().Name ?? string.Empty,
+                PropertyCount = properties.Length,
+                ScalarPropertyCount = scalarCount,
+                NavigationPropertyCount = navCount,
+                Category = category,
+                Namespace = type.Namespace ?? string.Empty,
+                HasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null,
+                IsEfDecorated = category == EntityCategory.EfCore,
+                IsBeepEntity = category == EntityCategory.Entity,
+                PrimaryKeyNames = DetectPrimaryKeyNames(type, properties),
+                IsAbstract = type.IsAbstract,
+                IsGeneric = type.IsGenericType
+            };
+        }
+
+        private EntityCategory ClassifyEntity(Type type)
+        {
+            if (IsBeepEntity(type)) return EntityCategory.Entity;
+            if (_editor.classCreator?.IsEfDecoratedType(type) == true) return EntityCategory.EfCore;
+            if (_editor.classCreator?.IsDiscoverablePoco(type) == true) return EntityCategory.Poco;
+            return EntityCategory.Poco;
+        }
+
+        private static bool IsBeepEntity(Type type)
+        {
+            if (type == null) return false;
+            if (typeof(IEntity).IsAssignableFrom(type)) return true;
+            for (var t = type.BaseType; t != null; t = t.BaseType)
+            {
+                if (t.Name == "Entity") return true;
+            }
+            return false;
+        }
+
+        private static bool PassesBasicFilters(Type type, EntityDiscoveryOptions options)
+        {
+            if (type == null) return false;
+            if (!type.IsClass) return false;
+            if (type.IsInterface) return false;
+            if (type.IsNotPublic && !type.IsNestedPublic) return false;
+            if (type.IsNested && !type.IsNestedPublic) return false;
+            if (options.ExcludeAbstract && (type.IsAbstract || type.IsInterface)) return false;
+            if (options.ExcludeOpenGenerics && type.IsGenericTypeDefinition) return false;
+            if (IsCompilerGenerated(type)) return false;
+            if (options.RequireParameterlessConstructor && type.GetConstructor(Type.EmptyTypes) == null) return false;
+            return true;
+        }
+
+        private static bool IsCompilerGenerated(Type type)
+        {
+            if (type == null) return false;
+            if (type.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
+                return true;
+            var name = type.Name ?? string.Empty;
+            if (name.StartsWith("<", StringComparison.Ordinal)) return true;
+            if (name.Contains("<") && name.EndsWith(">")) return true;
+            return false;
+        }
+
+        private static bool IsNavigationProperty(PropertyInfo p)
+        {
+            if (p == null) return false;
+            var t = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
+            if (!t.IsClass && !t.IsInterface) return false;
+            if (t == typeof(string)) return false;
+            if (t == typeof(object)) return false;
+            return true;
+        }
+
+        private static string DetectPrimaryKeyNames(Type type, PropertyInfo[] properties)
+        {
+            var keyProps = properties
+                .Where(p => p.GetCustomAttribute<KeyAttribute>(inherit: false) != null)
+                .Select(p => p.Name)
+                .ToList();
+            if (keyProps.Count > 0) return string.Join(", ", keyProps);
+
+            var convention = properties
+                .Where(p => p.Name == "Id" || p.Name == type.Name + "Id")
+                .Select(p => p.Name)
+                .ToList();
+            if (convention.Count > 0) return string.Join(", ", convention);
+
+            if (typeof(IEntity).IsAssignableFrom(type)
+                && !type.IsAbstract
+                && type.GetConstructor(Type.EmptyTypes) != null)
+            {
+                var pkProp = type.GetProperty("PrimaryKeys",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (pkProp != null && pkProp.CanRead && !pkProp.GetMethod.IsAbstract)
+                {
+                    try
+                    {
+                        var instance = Activator.CreateInstance(type);
+                        if (instance != null)
+                        {
+                            var val = pkProp.GetValue(instance);
+                            if (val is System.Collections.IEnumerable list)
+                            {
+                                var names = new List<string>();
+                                foreach (var item in list)
+                                {
+                                    if (item is EntityField f && !string.IsNullOrWhiteSpace(f.FieldName))
+                                        names.Add(f.FieldName);
+                                    else if (item is string s && !string.IsNullOrWhiteSpace(s))
+                                        names.Add(s);
+                                }
+                                if (names.Count > 0) return string.Join(", ", names);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            return string.Empty;
         }
     }
 }

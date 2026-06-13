@@ -341,7 +341,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
         }
 
         private static string ComputeSchemaHash(DataSyncSchema schema) =>
-            SchemaFingerprinter.ComputeSchemaHash(schema);
+            new SchemaFingerprinter().ComputeSchemaHash(schema);
 
         /// <summary>
         /// Ensure the directory exists for storing schemas

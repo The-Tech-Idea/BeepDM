@@ -9,6 +9,9 @@ namespace TheTechIdea.Beep.SetUp
     /// </summary>
     public class SetupState
     {
+        /// <summary>Unique identifier for this wizard run, regenerated on each fresh start. Used to detect stale/concurrent checkpoints.</summary>
+        public string RunId { get; set; }
+
         /// <summary>Set of step IDs that have completed successfully.</summary>
         public HashSet<string> CompletedStepIds { get; set; } = new HashSet<string>(StringComparer.Ordinal);
 

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.ConfigUtil;
+using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
@@ -13,13 +15,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
         public bool SkipIfTargetHasData { get; set; } = true;
     }
 
-    public class DataImportStep : ISetupStep
+    public class DataImportStep : IDataImportStep
     {
         private readonly DataImportStepOptions _options;
+        private readonly ILogger<DataImportStep>? _logger;
 
-        public DataImportStep(DataImportStepOptions options = null)
+        public DataImportStep(DataImportStepOptions options = null, ILogger<DataImportStep>? logger = null)
         {
             _options = options ?? new DataImportStepOptions();
+            _logger = logger;
         }
 
         public string StepId => "data-import";
@@ -29,14 +33,16 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
         public bool CanSkip(SetupContext context)
         {
+            if (context?.Options?.DryRun == true) return true;
+            if (context?.Options?.SkipSchema == true) return true;
             return _options.EntityNames == null || _options.EntityNames.Count == 0;
         }
 
         public IErrorsInfo Validate(SetupContext context)
         {
             if (context?.Editor == null)
-                return new ErrorsInfo { Flag = Errors.Failed, Message = "Editor is not available." };
-            return new ErrorsInfo { Flag = Errors.Ok };
+                return Fail("Editor is not available.");
+            return Ok();
         }
 
         public IErrorsInfo Execute(SetupContext context, IProgress<PassedArgs> progress = null)
@@ -45,7 +51,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
             {
                 var ds = context.DataSource;
                 if (ds == null)
-                    return new ErrorsInfo { Flag = Errors.Ok, Message = "No datasource available for import verification." };
+                    return Ok("No datasource available for import verification.");
 
                 var total = _options.EntityNames.Count;
                 var verified = 0;
@@ -54,7 +60,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 foreach (var entityName in _options.EntityNames)
                 {
                     var pct = total > 0 ? (int)(verified * 100.0 / total) : 0;
-                    progress?.Report(new PassedArgs { Messege = $"Verifying '{entityName}'...", ParameterInt1 = pct });
+                    StepErrorHelpers.Report(progress, pct, $"Verifying '{entityName}'...");
 
                     var entity = ds.GetEntityStructure(entityName, false);
                     if (entity == null)
@@ -75,12 +81,13 @@ namespace TheTechIdea.Beep.SetUp.Steps
                     verified++;
                 }
 
-                progress?.Report(new PassedArgs { Messege = $"Verified {verified} entities.", ParameterInt1 = 100 });
-                return new ErrorsInfo { Flag = Errors.Ok, Message = string.Join("; ", messages) };
+                StepErrorHelpers.Report(progress, 100, $"Verified {verified} entities.");
+                return Ok(string.Join("; ", messages));
             }
             catch (Exception ex)
             {
-                return new ErrorsInfo { Flag = Errors.Failed, Message = $"Data import verification failed: {ex.Message}" };
+                _logger?.LogError(ex, "Data import verification failed");
+                return Fail($"Data import verification failed: {ex.Message}");
             }
         }
     }

@@ -36,8 +36,8 @@ namespace TheTechIdea.Beep.Editor
                         },
                         BuildRulePolicy(schema));
 
-                    var winner     = SchemaFingerprinter.ReadString(outputs, "winner",     result?.ToString());
-                    var reasonCode = SchemaFingerprinter.ReadString(outputs, "reasonCode", "RULE");
+                    var winner     = RuleOutputParser.ReadString(outputs, "winner",     result?.ToString());
+                    var reasonCode = RuleOutputParser.ReadString(outputs, "reasonCode", "RULE");
                     var elapsed    = DateTime.UtcNow - started;
 
                     if (cp.CaptureEvidence)

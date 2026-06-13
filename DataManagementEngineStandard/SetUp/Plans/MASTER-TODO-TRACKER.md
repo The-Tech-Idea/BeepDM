@@ -51,16 +51,16 @@
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| 3.1 | Implement `SchemaSetupStep : ISetupStep` | `[ ]` | Accepts entity type list |
-| 3.2 | Call `BuildMigrationPlanForTypes` inside step | `[ ]` | |
-| 3.3 | Call `EvaluateMigrationPlanPolicy` and block on unsafe decisions | `[ ]` | |
-| 3.4 | Generate dry-run report via `GenerateDryRunReport` | `[ ]` | Store in `SetupReport` |
-| 3.5 | Generate preflight and impact reports | `[ ]` | |
-| 3.6 | Build compensation plan via `BuildCompensationPlan` | `[ ]` | Before execution |
-| 3.7 | Call `ApproveMigrationPlan` programmatically in non-interactive mode | `[ ]` | |
-| 3.8 | Call `ExecuteMigrationPlan` with progress propagation | `[ ]` | |
-| 3.9 | Persist `MigrationExecutionCheckpoint` into `SetupState` | `[ ]` | Resume support |
-| 3.10 | `CanSkip` guard: compare entity list hash with existing schema | `[ ]` | |
+| 3.1 | Implement `SchemaSetupStep : ISetupStep` | `[x]` | `Steps/SchemaSetupStep.cs` — plan → policy → dry-run → execute pipeline |
+| 3.2 | Call `BuildMigrationPlanForTypes` inside step | `[x]` | Implemented |
+| 3.3 | Call `EvaluateMigrationPlanPolicy` and block on unsafe decisions | `[x]` | Four-tier env support (Dev/Test/Staging/Prod) |
+| 3.4 | Generate dry-run report via `GenerateDryRunReport` | `[x]` | DDL preview + per-entity drift via SchemaManager |
+| 3.5 | Generate preflight and impact reports | `[x]` | Implemented |
+| 3.6 | Build compensation plan via `BuildCompensationPlan` | `[x]` | Before execution |
+| 3.7 | Call `ApproveMigrationPlan` programmatically in non-interactive mode | `[x]` | Auto-approve with "SetupWizard" label |
+| 3.8 | Call `ExecuteMigrationPlan` with progress propagation | `[x]` | Implemented |
+| 3.9 | Persist `MigrationExecutionCheckpoint` into `SetupState` | `[x]` | SchemaHash persists in SetupState |
+| 3.10 | `CanSkip` guard: compare entity list hash with existing schema | `[x]` | SHA-256 of sorted type full names |
 | 3.11 | Unit tests: resolve driver via `ConfigEditor.DataDriversClasses`, open `IDataSource` for that driver, run `SchemaSetupStep` against it | `[ ]` | Do NOT hardcode SQLite; test against whichever provider(s) are registered — mirrors `CreateLocalDB.razor` / `DatabaseTypeStepControl` driver-selection pattern |
 | 3.12 | Write Phase 3 plan document | `[x]` | See `03-phase3-schema-creation-ddl-migration.md` |
 
@@ -72,15 +72,15 @@
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| 4.1 | Define `ISeeder` interface | `[ ]` | SeederId, DependsOn, SeedAsync, IsAlreadySeeded |
-| 4.2 | Define `ISeederRegistry` interface | `[ ]` | Register, Discover, ResolveOrder |
-| 4.3 | Implement `SeederRegistry` with topological sort | `[ ]` | Circular dependency detection |
-| 4.4 | Implement `IIdempotentSeeder` base helper | `[ ]` | Skip if already seeded |
-| 4.5 | Implement `SeedingStep : ISetupStep` | `[ ]` | Runs registered seeders in order |
-| 4.6 | Add `DefaultsManager.Initialize` call before seeding | `[ ]` | Inject audit/timestamp fields |
-| 4.7 | Add per-seeder progress events | `[ ]` | Report seeder name + row count |
-| 4.8 | Persist seeder run state in `SetupState` | `[ ]` | Re-entry guard |
-| 4.9 | Implement `ReferenceDatSeeder` base class | `[ ]` | Pattern for lookup/enum tables |
+| 4.1 | Define `ISeeder` interface | `[x]` | `Seeding/ISeeder.cs` — SeederId, DependsOn, Seed, IsAlreadySeeded |
+| 4.2 | Define `ISeederRegistry` interface | `[x]` | `Seeding/ISeederRegistry.cs` — Register, Discover, GetOrderedSeeders |
+| 4.3 | Implement `SeederRegistry` with topological sort | `[x]` | Kahn's algorithm, circular dependency detection |
+| 4.4 | Implement `ISeeder` base helper | `[x]` | `Seeding/SeederBase.cs` — idempotency, DefaultsManager.Initialize, error catch |
+| 4.5 | Implement `SeedingStep : ISetupStep` | `[x]` | Runs registered seeders in dependency order |
+| 4.6 | Add `DefaultsManager.Initialize` call before seeding | `[x]` | Called in SeederBase.Seed |
+| 4.7 | Add per-seeder progress events | `[x]` | Per-seeder + per-row progress via nested IProgress<PassedArgs> |
+| 4.8 | Persist seeder run state in `SetupState` | `[x]` | CompletedSeederIds tracks partial progress |
+| 4.9 | Implement `ReferenceDataSeederBase` class | `[x]` | Generic pattern for lookup/enum tables |
 | 4.10 | Implement `AdminUserSeeder` example | `[ ]` | Demonstrates context-aware seeder |
 | 4.11 | Unit tests: ordering, idempotency, partial failure | `[ ]` | |
 | 4.12 | Write Phase 4 plan document | `[x]` | See `04-phase4-seeding-and-data-load.md` |
@@ -93,14 +93,14 @@
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| 5.1 | Define `ISetupWizardAdapter` interface | `[ ]` | RunAsync, ShowStep, ShowProgress, ShowResult |
-| 5.2 | Implement `DesktopSetupWizardAdapter` (WinForms/WPF) | `[ ]` | Modal dialog shell, `IProgress<PassedArgs>` |
-| 5.3 | Implement `ConsoleSetupWizardAdapter` (CLI / BeepShell) | `[ ]` | AnsiConsole prompts, table output |
-| 5.4 | Implement `WebApiSetupWizardAdapter` (ASP.NET Core) | `[ ]` | Background job + status endpoint |
-| 5.5 | Implement `BlazorServerSetupWizardAdapter` | `[ ]` | SignalR progress push, component scaffold |
-| 5.6 | Implement `BlazorWasmSetupWizardAdapter` | `[ ]` | Browser storage state, offline guard |
-| 5.7 | Implement `MauiSetupWizardAdapter` | `[ ]` | `IProgress<PassedArgs>` → MAUI dispatcher |
-| 5.8 | Integrate `AddBeepForDesktop/Web/Blazor/Maui` DI in each adapter | `[ ]` | |
+| 5.1 | Define `ISetupWizardAdapter` interface | `[x]` | `ISetupWizardAdapter.cs` — RunAsync, ShowStep, ShowProgress, ShowResult |
+| 5.2 | Implement `DesktopSetupWizardAdapter` (WinForms/WPF) | `[x]` | Task.Run on thread-pool, Action<PassedArgs> callback |
+| 5.3 | Implement `ConsoleSetupWizardAdapter` (CLI / BeepShell) | `[x]` | Console.WriteLine table output, extensible via subclass |
+| 5.4 | Implement `WebApiSetupWizardAdapter` (ASP.NET Core) | `[x]` | Background thread, SetupAdapterStatus for polling |
+| 5.5 | Implement `BlazorServerSetupWizardAdapter` | `[x]` | Virtual hooks, SignalR extension point |
+| 5.6 | Implement `BlazorWasmSetupWizardAdapter` | `[x]` | Virtual hooks, localStorage extension point |
+| 5.7 | Implement `MauiSetupWizardAdapter` | `[x]` | Virtual InvokeOnMainThreadAsync, progress callback |
+| 5.8 | Integrate `AddBeepForDesktop/Web/Blazor/Maui` DI in each adapter | `[x]` | Via ISetupWizardFactory in bootstrapper |
 | 5.9 | Integration tests: each adapter resolves driver via `ConfigEditor.DataDriversClasses`, opens the selected `IDataSource`, runs wizard end-to-end | `[ ]` | InMemory only acceptable for pure adapter-lifecycle tests; schema/seed tests must use a real registered driver |
 | 5.10 | Write Phase 5 plan document | `[x]` | See `05-phase5-platform-adapters.md` |
 
@@ -166,7 +166,7 @@
 | X.2 | Review all plans against `migration` SKILL and `idatasource` SKILL | `[ ]` | |
 | X.3 | Align `SetupContext` with `BeepServiceRegistration` patterns | `[ ]` | Use `IBeepService` |
 | X.4 | Verify `DefaultsManager.Initialize` is called before any seed operation | `[ ]` | |
-| X.5 | Ensure all wizard contracts return `IErrorsInfo`; no exceptions thrown | `[ ]` | |
+| X.5 | Ensure all wizard contracts return `IErrorsInfo`; no exceptions thrown | `[x]` | Verified — SetupWizard catches all exceptions; steps return IErrorsInfo |
 | X.6 | Verify idempotency contract for all P0 steps | `[ ]` | |
 | X.7 | Create integration test project skeleton `tests/SetupWizardIntegrationTests/` | `[ ]` | |
 
@@ -207,3 +207,5 @@ Phase 9 adds **application bootstrapping** (first-run detection, DI integration,
 | 2026-05-13 | Initial tracker |
 | 2026-06-07 | **Audit:** Phases 1-5 code exists despite stale `[ ]` markers. Marked all as `[x]`. |
 | 2026-06-07 | **Phase 9:** Added bootstrapping layer — `IFirstRunDetector`, `ApplicationBootstrapper`, DI extensions. |
+| 2026-06-12 | **Tracker sync:** Phases 3-5 tasks updated from `[ ]` to `[x]` with accurate notes. Cross-cutting X.5 verified. |
+| 2026-06-12 | **Revise/Enhance:** Initiated Tier A implementation per `REVISE-ENHANCE-PLAN.md`. |

@@ -1,5 +1,7 @@
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.SetUp
@@ -17,14 +19,19 @@ namespace TheTechIdea.Beep.SetUp
             services.TryAddSingleton<IFirstRunDetector>(sp =>
             {
                 var editor = sp.GetRequiredService<IDMEEditor>();
-                return new FileBasedFirstRunDetector(editor, markerFileName);
+                var logger = sp.GetService<ILogger<FileBasedFirstRunDetector>>();
+                return new FileBasedFirstRunDetector(editor, markerFileName, logger);
             });
             return services;
         }
 
         public static IServiceCollection AddSetupWizard(this IServiceCollection services)
         {
-            services.TryAddSingleton<ISetupWizardFactory, DefaultSetupWizardFactory>();
+            services.TryAddSingleton<ISetupWizardFactory>(sp =>
+            {
+                var logger = sp.GetService<ILogger<SetupWizard>>();
+                return new DefaultSetupWizardFactory(logger);
+            });
             services.TryAddSingleton(sp =>
             {
                 var factory = sp.GetRequiredService<ISetupWizardFactory>();
@@ -44,15 +51,36 @@ namespace TheTechIdea.Beep.SetUp
             return services;
         }
 
-        public static IServiceCollection AddApplicationBootstrapper(this IServiceCollection services)
+        public static IServiceCollection AddBeepBootstrapper(this IServiceCollection services)
         {
             services.TryAddSingleton(sp =>
             {
                 var firstRun = sp.GetRequiredService<IFirstRunDetector>();
-                var wizard = sp.GetRequiredService<ISetupWizard>();
-                var context = sp.GetRequiredService<SetupContext>();
-                var adapter = sp.GetRequiredService<ISetupWizardAdapter>();
-                return new ApplicationBootstrapper(firstRun, wizard, context, adapter);
+                var factory  = sp.GetRequiredService<ISetupWizardFactory>();
+                var adapter  = sp.GetRequiredService<ISetupWizardAdapter>();
+                var logger   = sp.GetService<ILogger<BeepBootstrapper>>();
+                return new BeepBootstrapper(
+                    firstRun, factory,
+                    () => sp.GetService<IDMEEditor>()
+                           ?? throw new InvalidOperationException(
+                                "BeepBootstrapper could not resolve IDMEEditor from DI."),
+                    adapter,
+                    logger);
+            });
+            return services;
+        }
+
+        public static IServiceCollection AddBeepBootstrapper(
+            this IServiceCollection services,
+            Func<IServiceProvider, IDMEEditor> editorAccessor)
+        {
+            services.TryAddSingleton(sp =>
+            {
+                var firstRun = sp.GetRequiredService<IFirstRunDetector>();
+                var factory  = sp.GetRequiredService<ISetupWizardFactory>();
+                var adapter  = sp.GetRequiredService<ISetupWizardAdapter>();
+                var logger   = sp.GetService<ILogger<BeepBootstrapper>>();
+                return new BeepBootstrapper(firstRun, factory, () => editorAccessor(sp), adapter, logger);
             });
             return services;
         }

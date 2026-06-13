@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
@@ -30,7 +29,6 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             _progressCallback = args =>
             {
                 OnProgress?.Invoke(args);
-                Debug.WriteLine($"[DesktopSetupWizardAdapter] {args.Messege}");
             };
             _completedCallback = report => OnCompleted?.Invoke(report);
         }
@@ -66,7 +64,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
                     ParameterInt1 = 0,
                     Messege = "Setup wizard cancelled."
                 });
-                throw;
+                // Fall through — wizard already built a partial report before re-throwing.
             }
 
             var report = wizard.GetReport();

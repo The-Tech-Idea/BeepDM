@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.SetUp
@@ -17,12 +18,15 @@ namespace TheTechIdea.Beep.SetUp
     {
         private readonly IDMEEditor _editor;
         private readonly string _markerFileName;
+        private readonly ILogger<FileBasedFirstRunDetector>? _logger;
         private string? _markerFilePath;
 
-        public FileBasedFirstRunDetector(IDMEEditor editor, string? markerFileName = null)
+        public FileBasedFirstRunDetector(IDMEEditor editor, string? markerFileName = null,
+            ILogger<FileBasedFirstRunDetector>? logger = null)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
             _markerFileName = string.IsNullOrWhiteSpace(markerFileName) ? ".setup_complete" : markerFileName.Trim();
+            _logger = logger;
         }
 
         public bool WasSetupCompleted => _markerFilePath != null && File.Exists(_markerFilePath);
@@ -44,6 +48,7 @@ namespace TheTechIdea.Beep.SetUp
             }
             catch (Exception ex)
             {
+                _logger?.LogWarning(ex, "Could not create config directory '{Path}'", configPath);
                 System.Diagnostics.Debug.WriteLine($"[FileBasedFirstRunDetector] Could not create config directory '{configPath}': {ex.Message}");
                 configPath = AppContext.BaseDirectory;
             }
@@ -74,6 +79,7 @@ namespace TheTechIdea.Beep.SetUp
             }
             catch (Exception ex)
             {
+                _logger?.LogWarning(ex, "Could not mark setup complete");
                 System.Diagnostics.Debug.WriteLine($"[FileBasedFirstRunDetector] Could not mark setup complete: {ex.Message}");
             }
             return Task.CompletedTask;
@@ -89,6 +95,7 @@ namespace TheTechIdea.Beep.SetUp
             }
             catch (Exception ex)
             {
+                _logger?.LogWarning(ex, "Could not clear setup flag");
                 System.Diagnostics.Debug.WriteLine($"[FileBasedFirstRunDetector] Could not clear setup flag: {ex.Message}");
             }
             return Task.CompletedTask;

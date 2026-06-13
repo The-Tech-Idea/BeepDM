@@ -35,23 +35,25 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             try
             {
                 await Task.Run(() => wizard.Run(context, progress), cancellationToken);
-
-                var report = wizard.GetReport();
-                Status.State = report.Succeeded ? "Completed" : "Failed";
-                Status.Report = report;
-                return report;
             }
             catch (OperationCanceledException)
             {
                 Status.State = "Cancelled";
-                throw;
+                Status.CurrentMessage = "Setup wizard cancelled.";
+                // Fall through — wizard already built a partial report.
             }
             catch (Exception ex)
             {
                 Status.State = "Failed";
                 Status.CurrentMessage = ex.Message;
-                throw;
+                // Fall through — wizard may have a partial report.
             }
+
+            var report = wizard.GetReport();
+            if (Status.State == "Running")
+                Status.State = report?.Succeeded == true ? "Completed" : "Failed";
+            Status.Report = report;
+            return report ?? new SetupReport { Succeeded = false };
         }
 
         /// <inheritdoc/>

@@ -66,7 +66,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
                     await SaveStateAsync(StateStorageKey, cancelJson);
                 }
                 OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = "Setup wizard cancelled." });
-                throw;
+                // Fall through — wizard already built a partial report.
             }
 
             var report = wizard.GetReport();

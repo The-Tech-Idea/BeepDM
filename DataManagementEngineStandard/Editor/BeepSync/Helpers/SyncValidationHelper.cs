@@ -405,16 +405,16 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
                     var (outputs, dqResult) = ruleEngine.SolveRule(ruleKey, context, rulePolicy);
 
-                    bool passed = SchemaFingerprinter.ReadBoolean(dqResult);
+                    bool passed = RuleOutputParser.ReadBoolean(dqResult);
                     if (!passed)
                     {
                         failures.Add(new DqGateResult
                         {
                             RuleKey    = ruleKey,
                             Passed     = false,
-                            ReasonCode = SchemaFingerprinter.ReadString(outputs, "reasonCode", "DQ-FAIL"),
-                            FieldName  = SchemaFingerprinter.ReadString(outputs, "field",      null!),
-                            Message    = SchemaFingerprinter.ReadString(outputs, "message",    null!),
+                            ReasonCode = RuleOutputParser.ReadString(outputs, "reasonCode", "DQ-FAIL"),
+                            FieldName  = RuleOutputParser.ReadString(outputs, "field",      null!),
+                            Message    = RuleOutputParser.ReadString(outputs, "message",    null!),
                             EntityName = schema.DestinationEntityName,
                             EvaluatedAt = DateTime.UtcNow
                         });

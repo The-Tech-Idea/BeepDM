@@ -3,15 +3,22 @@ using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.Editor.Schema
 {
-    /// <summary>
-    /// Compares two <see cref="SchemaSnapshot"/> instances and produces a <see cref="SchemaDriftReport"/>.
-    /// </summary>
-    public static class SchemaComparator
+    public sealed class SchemaComparator : ISchemaComparator
     {
-        public static SchemaDriftReport Compare(SchemaSnapshot baseline, SchemaSnapshot current)
+        SchemaDriftReport ISchemaComparator.Compare(SchemaSnapshot baseline, SchemaSnapshot current) =>
+            Compare(baseline, current, SchemaComparisonOptions.Default);
+
+        SchemaDriftReport ISchemaComparator.Compare(SchemaSnapshot baseline, SchemaSnapshot current, SchemaComparisonOptions options) =>
+            Compare(baseline, current, options);
+
+        public SchemaDriftReport Compare(SchemaSnapshot baseline, SchemaSnapshot current) =>
+            Compare(baseline, current, SchemaComparisonOptions.Default);
+
+        public SchemaDriftReport Compare(SchemaSnapshot baseline, SchemaSnapshot current, SchemaComparisonOptions options)
         {
             ArgumentNullException.ThrowIfNull(baseline);
             ArgumentNullException.ThrowIfNull(current);
+            if (options == null) options = SchemaComparisonOptions.Default;
 
             var report = new SchemaDriftReport { Baseline = baseline, Current = current };
             var baseMap = BuildMap(baseline.Fields);
@@ -28,7 +35,7 @@ namespace TheTechIdea.Beep.Editor.Schema
             foreach (var (name, baseField) in baseMap)
             {
                 if (!currMap.TryGetValue(name, out var currField)) continue;
-                var drift = Diff(baseField, currField);
+                var drift = Diff(baseField, currField, options);
                 if (drift != null)
                     report.AlteredFields.Add(drift);
             }
@@ -44,15 +51,39 @@ namespace TheTechIdea.Beep.Editor.Schema
             return map;
         }
 
-        private static FieldTypeDrift? Diff(SnapshotField b, SnapshotField c)
+        private static FieldTypeDrift? Diff(SnapshotField b, SnapshotField c, SchemaComparisonOptions options)
         {
             var changes = new List<string>();
-            if (!string.Equals(b.DataType, c.DataType, StringComparison.OrdinalIgnoreCase))
+
+            var stringComparison = options.IgnoreCaseInTypeNames
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            if (!string.Equals(b.DataType, c.DataType, stringComparison))
                 changes.Add($"DataType: {b.DataType} → {c.DataType}");
-            if (b.IsNullable != c.IsNullable)
+
+            if (options.IncludeNullableChanges && b.IsNullable != c.IsNullable)
                 changes.Add($"IsNullable: {b.IsNullable} → {c.IsNullable}");
-            if (b.MaxLength != c.MaxLength && c.MaxLength > 0)
+
+            if (options.NormalizeMaxLengthZero)
+            {
+                var bLen = b.MaxLength == 0 ? -1 : b.MaxLength;
+                var cLen = c.MaxLength == 0 ? -1 : c.MaxLength;
+                if (bLen != cLen)
+                    changes.Add($"MaxLength: {b.MaxLength} → {c.MaxLength}");
+            }
+            else if (b.MaxLength != c.MaxLength)
+            {
                 changes.Add($"MaxLength: {b.MaxLength} → {c.MaxLength}");
+            }
+
+            if (options.IncludePrecisionScale)
+            {
+                if (b.Precision != c.Precision)
+                    changes.Add($"Precision: {b.Precision} → {c.Precision}");
+                if (b.Scale != c.Scale)
+                    changes.Add($"Scale: {b.Scale} → {c.Scale}");
+            }
 
             if (changes.Count == 0) return null;
 
