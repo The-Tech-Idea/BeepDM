@@ -26665,9 +26665,1162 @@
             Creates a generic regex-pattern validation rule for a field.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager">
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager">
             <summary>
-            Core interface for UnitofWorksManager functionality
+            Interface for dirty state management functionality
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.CheckAndHandleUnsavedChangesAsync(System.String)">
+            <summary>Checks for unsaved changes affecting a block and handles the caller decision flow.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.HasUnsavedChanges">
+            <summary>Returns whether any registered block currently has unsaved changes.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.GetDirtyBlocks">
+            <summary>Returns the names of blocks that currently have unsaved changes.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.CollectDirtyDetailBlocks(System.String,System.Collections.Generic.List{System.String})">
+            <summary>Collects dirty detail blocks related to a master block into the supplied list.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.SaveDirtyBlocksAsync(System.Collections.Generic.List{System.String})">
+            <summary>Saves the specified dirty blocks.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.RollbackDirtyBlocksAsync(System.Collections.Generic.List{System.String})">
+            <summary>Rolls back the specified dirty blocks.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.OnUnsavedChanges">
+            <summary>Raised when an operation encounters unsaved changes and requires a user decision.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager">
+            <summary>
+            Interface for event handling functionality
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.SubscribeToUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
+            <summary>Subscribes the manager to unit-of-work events for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.UnsubscribeFromUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
+            <summary>Unsubscribes the manager from unit-of-work events for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerBlockEnter(System.String)">
+            <summary>Raises the block-enter event for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerBlockLeave(System.String)">
+            <summary>Raises the block-leave event for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerError(System.String,System.Exception)">
+            <summary>Raises the error event for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerFieldValidation(System.String,System.String,System.Object)">
+            <summary>Triggers field-level validation for a block field.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerRecordValidation(System.String,System.Object)">
+            <summary>Triggers record-level validation for a block record.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper">
+            <summary>
+            Interface for Oracle Forms simulation helpers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetAuditDefaults(System.Object,System.String)">
+            <summary>Sets common audit-field defaults on a record.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetFieldValue(System.Object,System.String,System.Object)">
+            <summary>Sets a named field or property value on a record.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.GetFieldValue(System.Object,System.String)">
+            <summary>Gets a named field or property value from a record.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.ExecuteSequence(System.String,System.Object,System.String,System.String)">
+            <summary>Executes sequence logic for a block field.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.GetPropertyValue(System.Object,System.String)">
+            <summary>Gets a named property value from an object.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetSystemVariables(System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariableType,System.Object)">
+            <summary>Sets a named system variable (e.g. <c>SYSTEM.RECORD_STATUS</c>) on a record.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.ValidateField(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints)">
+            <summary>Validates a field's value against a set of field constraints. Returns the validation result.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager">
+            <summary>
+            Interface for performance and caching functionality
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.OptimizeBlockAccess">
+            <summary>Runs cache and block-access optimization routines.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.CacheBlockInfo(System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo)">
+            <summary>Caches block metadata for faster later access.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.GetCachedBlockInfo(System.String)">
+            <summary>Returns cached block metadata for a block when present.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.ClearCache">
+            <summary>Clears all cached block metadata.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.GetPerformanceStatistics">
+            <summary>Returns aggregate performance statistics for the manager.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.InvalidateBlockCache(System.String)">
+            <summary>Removes a single block's entry from the cache (invalidation).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.SetBlockCacheTtl(System.String,System.TimeSpan)">
+            <summary>Sets a per-block cache TTL, overriding the global cache expiration time.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.GetCacheStats">
+            <summary>Returns a lightweight cache hit/miss/eviction snapshot.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.CheckMemoryPressure(System.Int64)">
+            <summary>
+            Checks estimated managed memory against <paramref name="thresholdBytes"/>;
+            if exceeded, evicts the least-recently-used half of the cache.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager">
+            <summary>
+            Interface for configuration management
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.Configuration">
+            <summary>Gets or sets the active FormsManager configuration instance.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.LoadConfiguration">
+            <summary>Loads configuration from its backing store.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.SaveConfiguration">
+            <summary>Saves configuration to its backing store.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.ResetToDefaults">
+            <summary>Resets configuration back to defaults.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.ValidateConfiguration">
+            <summary>Returns whether the active configuration is structurally valid.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager">
+            <summary>
+            Interface for managing Oracle Forms :SYSTEM.* equivalent variables
+            Provides access to block, record, item, and form state information
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.GetSystemVariables(System.String)">
+            <summary>
+            Get system variables for a specific block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.GetFormSystemVariables">
+            <summary>
+            Get form-level system variables
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateForBlockChange(System.String)">
+            <summary>
+            Update system variables when block changes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateForRecordChange(System.String,System.Int32,System.Int32)">
+            <summary>
+            Update system variables when record changes within a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateForItemChange(System.String,System.String,System.Object)">
+            <summary>
+            Update system variables when item focus changes
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetMode(System.String)">
+            <summary>
+            Update MODE system variable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetBlockStatus(System.String,System.String)">
+            <summary>
+            Update BLOCK_STATUS system variable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetFormStatus(System.String)">
+            <summary>
+            Update FORM_STATUS system variable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetRecordStatus(System.String,System.String)">
+            <summary>
+            Update RECORD_STATUS system variable
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetTriggerContext(System.String,System.String,System.String,System.Int32)">
+            <summary>
+            Set trigger context before trigger execution
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.ClearTriggerContext">
+            <summary>
+            Clear trigger context after trigger execution
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetLastError(System.String,System.Int32)">
+            <summary>
+            Set last error information
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.ClearLastError">
+            <summary>
+            Clear last error
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetLastQuery(System.String)">
+            <summary>
+            Set last query string
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetCurrentForm(System.String)">
+            <summary>
+            Set current form name
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.Reset">
+            <summary>
+            Reset all system variables
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateBlockVariables(System.String,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Boolean,System.Boolean,System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.TriggerType})">
+            <summary>
+            Update per-block variables with a full block snapshot captured by FormsManager.
+            Stores the snapshot so BeepDataBlock can read it back via GetBlockVariables.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.GetBlockVariables(System.String)">
+            <summary>
+            Retrieve the per-block variable snapshot last written by UpdateBlockVariables.
+            Returns a fresh empty instance when no snapshot exists for the block.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager">
+            <summary>
+            Manages named savepoints for block state snapshots and rollback.
+            Platform-agnostic — no UI dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String)">
+            <summary>Create a named savepoint; auto-generates name if null passed</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
+            <summary>Create a savepoint with full state detail and optional record snapshot</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.RollbackToSavepointAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Roll back to a named savepoint; removes later savepoints</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.ReleaseSavepoint(System.String,System.String)">
+            <summary>Release (forget) a named savepoint</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.ReleaseAllSavepoints(System.String)">
+            <summary>Release all savepoints for a block</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.ListSavepoints(System.String)">
+            <summary>List all savepoints for a block, ordered by creation time</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.SavepointExists(System.String,System.String)">
+            <summary>Check whether a named savepoint exists</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager">
+            <summary>
+            Provides client-side record locking for data blocks.
+            Platform-agnostic — no UI dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockMode(System.String)">
+            <summary>Returns the configured lock mode for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.SetLockMode(System.String,TheTechIdea.Beep.Editor.Forms.Models.LockMode)">
+            <summary>Sets the lock mode for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockOnEdit(System.String)">
+            <summary>Returns whether automatic lock-on-edit is enabled for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.SetLockOnEdit(System.String,System.Boolean)">
+            <summary>Sets whether automatic lock-on-edit is enabled for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.SetCurrentRecordIndex(System.String,System.Int32)">
+            <summary>Set the current record index for a block (called on navigation).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.LockCurrentRecordAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Locks the current record for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.UnlockCurrentRecord(System.String)">
+            <summary>Unlocks the current record for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.UnlockAllRecords(System.String)">
+            <summary>Unlocks all tracked records for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.IsRecordLocked(System.String,System.Int32)">
+            <summary>Returns whether a specific record is locked.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.IsCurrentRecordLocked(System.String)">
+            <summary>Returns whether the current record is locked.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockInfo(System.String,System.Int32)">
+            <summary>Returns lock metadata for a specific record.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockedRecordCount(System.String)">
+            <summary>Returns the number of locked records for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetAllLocks(System.String)">
+            <summary>Returns all tracked locks for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.AutoLockIfNeededAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Lock automatically if LockOnEdit is true and mode is Automatic</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager">
+            <summary>
+            Builds AppFilter lists from field-value dictionaries and manages query templates.
+            Pure logic — no UI dependencies.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.SetQueryOperator(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.QueryOperator)">
+            <summary>Registers the query operator for a block field.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.GetQueryOperator(System.String,System.String)">
+            <summary>Returns the registered query operator for a block field.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ClearQueryOperators(System.String)">
+            <summary>Clears the registered query operators for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.BuildFilters(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>Builds filters from a block field-value dictionary.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ParseWhereClause(System.String)">
+            <summary>Parses a WHERE clause into filters.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ParseOrderByClause(System.String)">
+            <summary>Parses an ORDER BY clause into filters.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.CombineFiltersAnd(System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Combines two filter lists using AND semantics.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.SaveQueryTemplate(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Saves a named query template for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.LoadQueryTemplate(System.String,System.String)">
+            <summary>Loads a named query template for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.GetQueryTemplates(System.String)">
+            <summary>Returns all query templates saved for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.DeleteQueryTemplate(System.String,System.String)">
+            <summary>Deletes a query template for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ClearAllTemplates(System.String)">
+            <summary>Deletes all query templates for a block.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog">
+            <summary>
+            Per-block error log with FIFO eviction and platform-agnostic events.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.SuppressErrorEvents">
+            <summary>Gets or sets whether error events should be suppressed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.MaxLogSize">
+            <summary>Gets or sets the maximum retained log size per block.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.OnError">
+            <summary>Raised when an error entry is logged.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.OnWarning">
+            <summary>Raised when a warning entry is logged.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.LogError(System.String,System.Exception,System.String,TheTechIdea.Beep.Editor.Forms.Models.ErrorSeverity)">
+            <summary>Logs an error or warning entry for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.LogWarning(System.String,System.String,System.String)">
+            <summary>Logs a warning entry for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.ClearErrorLog(System.String)">
+            <summary>Clears the error log for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.ClearAllLogs">
+            <summary>Clears all block logs.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorLog(System.String)">
+            <summary>Returns the full retained log for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorsForContext(System.String,System.String)">
+            <summary>Returns the retained log entries for a block and context.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorsBySeverity(System.String,TheTechIdea.Beep.Editor.Forms.Models.ErrorSeverity)">
+            <summary>Returns the retained log entries for a block and severity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorCount(System.String)">
+            <summary>Returns the retained log entry count for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.HasErrors(System.String)">
+            <summary>Returns whether the block log contains at least one error-severity entry.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager">
+            <summary>
+            Platform-agnostic message queue for data blocks.
+            UI layers subscribe to OnMessage/OnMessageCleared to display messages.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.MessageDisplayDurationMs">
+            <summary>Gets or sets the intended message display duration in milliseconds.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.AutoAdvanceMessages">
+            <summary>Gets or sets whether the manager should auto-advance queued messages.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.OnMessage">
+            <summary>Raised when a block message becomes current.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.OnMessageCleared">
+            <summary>Raised when a block message is cleared.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.SetMessage(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.MessageLevel)">
+            <summary>Sets the current message for a block or enqueues it.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ClearMessage(System.String)">
+            <summary>Clears the current message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.AdvanceMessage(System.String)">
+            <summary>Advances to the next queued message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowInfoMessage(System.String,System.String)">
+            <summary>Queues an informational message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowSuccessMessage(System.String,System.String)">
+            <summary>Queues a success message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowWarningMessage(System.String,System.String)">
+            <summary>Queues a warning message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowErrorMessage(System.String,System.String)">
+            <summary>Queues an error message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.GetCurrentMessage(System.String)">
+            <summary>Returns the current message text for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.GetCurrentMessageLevel(System.String)">
+            <summary>Returns the level of the current message for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.GetQueuedMessageCount(System.String)">
+            <summary>Returns the number of queued messages waiting for a block.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory">
+            <summary>
+            Resolves IUnitofWork + IEntityStructure from connection name and entity name via IDMEEditor.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory.CreateBlockAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Create a UoW + EntityStructure pair from a connection and entity name</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory.ValidateBlockSourceAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Validate that the connection + entity pair resolves correctly</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager">
+            <summary>
+            Sets and gets Oracle Forms-equivalent block properties on registered blocks.
+            Corresponds to Oracle Forms SET_BLOCK_PROPERTY / GET_BLOCK_PROPERTY built-ins.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager.SetBlockProperty(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty,System.Object)">
+            <summary>Set a property on the named block</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager.GetBlockProperty(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty)">
+            <summary>Get a property value from the named block</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager.GetBlockProperty``1(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty)">
+            <summary>Typed convenience overload for GetBlockProperty</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager">
+            <summary>
+            Manages per-block paging state for virtual scrolling / paged data loading.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetPageSize(System.String,System.Int32)">
+            <summary>Sets the page size for a block (records per page).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetPageSize(System.String)">
+            <summary>Gets the current page size for a block (default 50).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetCurrentPage(System.String)">
+            <summary>
+            Returns a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/> snapshot for the current page of the block.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetCurrentPage(System.String,System.Int32)">
+            <summary>
+            Advances the paging state to the specified page number and returns the resulting
+            <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/>.  Does NOT load data — callers must re-execute the query.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetTotalRecordCount(System.String,System.Int64)">
+            <summary>Stores the total record count for a block (from a COUNT query or post-load).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetTotalRecordCount(System.String)">
+            <summary>Returns the stored total record count for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetFetchAheadDepth(System.String,System.Int32)">
+            <summary>
+            Sets the number of pages to pre-fetch ahead of the current page (0 = disabled).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetFetchAheadDepth(System.String)">
+            <summary>Returns the configured fetch-ahead depth for a block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.ResetPaging(System.String)">
+            <summary>Resets all paging state for a block to defaults.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry">
+            <summary>
+            Shared registry of all active form managers.
+            Pass a single instance to every FormsManager so forms can discover each other.
+            Equivalent to Oracle Forms' :GLOBAL scope and CALL_FORM / OPEN_FORM / NEW_FORM built-ins.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.ActiveFormName">
+            <summary>Name of the currently active (focused) form, or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.RegisterForm(System.String,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager)">
+            <summary>Register a form manager under a logical form name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.UnregisterForm(System.String)">
+            <summary>Remove a form from the registry. Returns false if not found.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GetForm(System.String)">
+            <summary>Retrieve a registered form manager by name, or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GetActiveFormNames">
+            <summary>Get all currently registered form names.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.FormExists(System.String)">
+            <summary>Returns true when a form with the given name is registered.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.SetActiveForm(System.String)">
+            <summary>Mark a form as the currently active/focused form.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.SetGlobal(System.String,System.Object)">
+            <summary>Set or overwrite a global variable (:GLOBAL.name).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GetGlobal(System.String)">
+            <summary>Read a global variable. Returns null if not set.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GlobalExists(System.String)">
+            <summary>Returns true if a global variable with the given name exists.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.FormLifecycleChanged">
+            <summary>Raised whenever a form is registered, unregistered, activated or deactivated.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus">
+            <summary>
+            Pub/sub message bus for inter-form communication.
+            Equivalent to Oracle Forms' DO_KEY / SYNCHRONIZE and custom messaging patterns.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.PostMessage(System.String,System.String,System.Object,System.String)">
+            <summary>
+            Send a typed message payload to a specific form.
+            Any subscribers registered for (targetForm, messageType) are invoked synchronously.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.Broadcast(System.String,System.Object,System.String)">
+            <summary>Broadcast a message to all forms subscribed to the given messageType.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.Subscribe(System.String,System.String,System.Action{TheTechIdea.Beep.Editor.Forms.Models.FormMessage})">
+            <summary>Subscribe a form to receive messages of a given type.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.Unsubscribe(System.String,System.String)">
+            <summary>Unsubscribe a form from a specific message type.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.UnsubscribeAll(System.String)">
+            <summary>Remove all subscriptions registered by a form (call during cleanup).</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.OnFormMessage">
+            <summary>Raised for every message posted or broadcast (global observer hook).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager">
+            <summary>
+            Manages IUnitofWork data blocks that are shared across multiple form managers.
+            Provides optimistic lock coordination so only one form modifies a shared block at a time.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.CreateSharedBlock(System.String,TheTechIdea.Beep.Editor.IUnitofWork)">
+            <summary>Publish a block UoW so other forms can access it. Returns false if already exists.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.GetSharedBlock(System.String)">
+            <summary>Retrieve a shared block UoW by name, or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockExists(System.String)">
+            <summary>Returns true when the named shared block exists.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.RemoveSharedBlock(System.String)">
+            <summary>Remove a shared block (releases any outstanding lock).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.TryLockSharedBlock(System.String,System.String,System.TimeSpan)">
+            <summary>
+            Attempt to acquire an exclusive write lock on a shared block.
+            Returns true when the lock is obtained within the timeout.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.ReleaseSharedBlockLock(System.String,System.String)">
+            <summary>Release a write lock held by the named caller. No-op if not locked by that caller.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockChanged">
+            <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider">
+            <summary>
+            Pluggable UI provider for modal alert dialogs.
+            Inject an implementation from the UI layer; the default no-op implementation
+            logs to Status and returns AlertResult.Button1.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Display an alert dialog and return the button the user pressed.
+            Corresponds to Oracle Forms SHOW_ALERT built-in.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider">
+            <summary>
+            Provides named auto-increment sequences.
+            Corresponds to Oracle Forms :SEQUENCE.NEXTVAL usage.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.GetNextSequence(System.String)">
+            <summary>Increment and return the next value for the named sequence</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.PeekNextSequence(System.String)">
+            <summary>Peek at the next value without incrementing</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.ResetSequence(System.String,System.Int64)">
+            <summary>Reset a sequence to a starting value (default 1)</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.SequenceExists(System.String)">
+            <summary>Whether the named sequence has been created</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.CreateSequence(System.String,System.Int64,System.Int64)">
+            <summary>Create a new named sequence with the given starting value</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager">
+            <summary>
+            Manages named form-level timers that fire WHEN-TIMER-EXPIRED triggers.
+            Corresponds to Oracle Forms CREATE_TIMER / DELETE_TIMER / GET_TIMER built-ins.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.CreateTimer(System.String,System.TimeSpan,System.Boolean)">
+            <summary>
+            Create and start a named timer.
+            Corresponds to Oracle Forms CREATE_TIMER.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.DeleteTimer(System.String)">
+            <summary>
+            Stop and remove a named timer.
+            Corresponds to Oracle Forms DELETE_TIMER.
+            Returns false if the timer was not found.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.GetTimer(System.String)">
+            <summary>
+            Get the definition/state of a named timer.
+            Corresponds to Oracle Forms GET_TIMER.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.GetAllTimers">
+            <summary>Returns all currently registered timers (running and paused)</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.TimerExists(System.String)">
+            <summary>Whether a timer with the given name exists</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.TimerFired">
+            <summary>
+            Event raised when a timer fires.
+            Handlers should fire TriggerType.WhenTimerExpired for their block/form.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs">
+            <summary>
+            Event arguments for the ITimerManager.TimerFired event.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.TimerName">
+            <summary>Gets the logical timer name that fired.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.FireCount">
+            <summary>Gets the number of times the timer has fired.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.FiredAt">
+            <summary>Gets the timestamp when the timer fired.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore">
+            <summary>Pluggable persistence back-end for audit entries.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Save(TheTechIdea.Beep.Editor.Forms.Models.AuditEntry)">
+            <summary>Persist a single audit entry.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Query(System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.AuditOperation},System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
+            <summary>Query audit entries with optional filters.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Purge(System.Int32)">
+            <summary>Remove entries older than <paramref name="olderThanDays"/> days.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Clear">
+            <summary>Remove all entries.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager">
+            <summary>
+            Manages field-level and commit-level audit recording for the forms engine.
+            Accumulates pending field changes and flushes them as <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.AuditEntry"/>
+            objects to the configured <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore"/> on each commit.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Configuration">
+            <summary>Current audit configuration.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.CurrentUser">
+            <summary>Name of the currently logged-in user stamped on each audit entry.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Store">
+            <summary>The underlying store (injectable for testing or external persistence).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.SetAuditUser(System.String)">
+            <summary>Sets the user name stamped on every subsequent audit entry.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Configure(System.Action{TheTechIdea.Beep.Editor.Forms.Models.AuditConfiguration})">
+            <summary>Applies configuration changes via a delegate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.RecordFieldChange(System.String,System.String,System.Object,System.Object,System.Int32)">
+            <summary>
+            Records a single field change in the pending buffer.
+            Called for every <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockFieldChangedEventArgs"/> while audit is enabled.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.FlushPendingToStore(System.String,TheTechIdea.Beep.Editor.Forms.Models.AuditOperation)">
+            <summary>
+            Flushes all pending field changes as committed audit entries.
+            Should be called after a successful <c>CommitFormAsync</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.DiscardPending">
+            <summary>
+            Discards all pending (uncommitted) field changes.
+            Should be called after a rollback.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.GetAuditLog(System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.AuditOperation},System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
+            <summary>
+            Returns audit entries from the store, with optional block/operation/date filters.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.GetFieldHistory(System.String,System.String,System.String)">
+            <summary>
+            Returns the history of changes to a specific field within a record.
+            <paramref name="recordKey"/> is the string form of the row index or PK.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.ExportToCsvAsync(System.String,System.String)">
+            <summary>Writes all (or block-filtered) audit entries to a CSV file.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.ExportToJsonAsync(System.String,System.String)">
+            <summary>Writes all (or block-filtered) audit entries to a JSON file.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Purge(System.Int32)">
+            <summary>Purges entries older than <paramref name="olderThanDays"/> days.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Clear">
+            <summary>Clears all audit data from the store.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFieldMaskProvider">
+            <summary>Applies a mask pattern to a raw field value for display purposes.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFieldMaskProvider.Mask(System.Object,System.String)">
+            <summary>
+            Returns a masked representation of <paramref name="rawValue"/> using
+            <paramref name="pattern"/>.  The single character "*" means "hide everything".
+            Other patterns use '#' as a digit placeholder and '*' for any char.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager">
+            <summary>
+            Controls block- and field-level security for the forms engine.
+            Integrates with <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager"/> and <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager"/>
+            to enforce permissions at runtime.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.OnSecurityViolation">
+            <summary>Raised whenever a security violation is detected.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.CurrentContext">
+            <summary>The currently active security context (user + roles).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.SetSecurityContext(TheTechIdea.Beep.Editor.Forms.Models.SecurityContext)">
+            <summary>Sets the current security context and re-evaluates all block/field permissions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.SetBlockSecurity(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockSecurity)">
+            <summary>Registers or replaces block-level security for <paramref name="blockName"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetBlockSecurity(System.String)">
+            <summary>Returns the registered security rules for a block, or null if none.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.IsBlockAllowed(System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission)">
+            <summary>
+            Returns true when the current user/roles may perform <paramref name="permission"/> on the block.
+            Also applies to a specific permission flag when <c>ISecurityManager</c> is used standalone.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.ApplyBlockSecurityFlags(System.Action{System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean})">
+            <summary>
+            Evaluates all registered block securities against the current context and updates
+            <c>DataBlockInfo.InsertAllowed</c> / <c>UpdateAllowed</c> / <c>DeleteAllowed</c> / <c>QueryAllowed</c>
+            via the supplied <paramref name="applyBlockFlags"/> callback.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetBlockRowFilter(System.String)">
+            <summary>
+            Returns the effective row-filter WHERE clause for a block (or empty string if none).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.SetFieldSecurity(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.FieldSecurity)">
+            <summary>Registers or replaces field-level security for a specific item.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetFieldSecurity(System.String,System.String)">
+            <summary>Returns registered field security or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.ApplyFieldSecurityFlags(System.Action{System.String,System.String,System.Boolean},System.Action{System.String,System.String,System.Boolean})">
+            <summary>
+            Evaluates all registered field securities against the current context and applies
+            Enabled / Visible flags via the supplied callbacks (delegates into ItemPropertyManager).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetMaskedValue(System.String,System.String,System.Object)">
+            <summary>
+            Returns a masked / display-safe value for a field, applying the registered mask pattern
+            if field security has <c>Masked = true</c>.  Returns the raw value unchanged otherwise.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.RaiseViolation(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission,System.String)">
+            <summary>Records a security violation without throwing.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetViolationLog">
+            <summary>Returns all recorded violations for the current session.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager">
+            <summary>
+            Interface for managing triggers (Oracle Forms trigger equivalents).
+            Provides registration, execution, and lifecycle management for all trigger types.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterFormTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register a form-level trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterFormTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken,System.Threading.Tasks.Task{TheTechIdea.Beep.Editor.Forms.Models.TriggerResult}},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register a form-level async trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterBlockTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register a block-level trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterBlockTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken,System.Threading.Tasks.Task{TheTechIdea.Beep.Editor.Forms.Models.TriggerResult}},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register a block-level async trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterItemTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register an item-level trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterItemTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken,System.Threading.Tasks.Task{TheTechIdea.Beep.Editor.Forms.Models.TriggerResult}},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register an item-level async trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterGlobalTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
+            <summary>
+            Register a global trigger (applies to all forms)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition)">
+            <summary>
+            Register a trigger definition directly
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.UnregisterTrigger(System.String)">
+            <summary>
+            Unregister a specific trigger by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.UnregisterBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
+            <summary>
+            Unregister all triggers of a type for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.UnregisterItemTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String)">
+            <summary>
+            Unregister all triggers of a type for an item
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ClearBlockTriggers(System.String)">
+            <summary>
+            Unregister all triggers for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ClearItemTriggers(System.String,System.String)">
+            <summary>
+            Unregister all triggers for an item
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ClearAllTriggers">
+            <summary>
+            Unregister all triggers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireFormTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
+            <summary>
+            Fire a form-level trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireFormTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
+            <summary>
+            Fire a form-level trigger asynchronously
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireBlockTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
+            <summary>
+            Fire a block-level trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireBlockTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
+            <summary>
+            Fire a block-level trigger asynchronously
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireItemTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
+            <summary>
+            Fire an item-level trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireItemTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
+            <summary>
+            Fire an item-level trigger asynchronously
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireGlobalTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
+            <summary>
+            Fire a global trigger
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireGlobalTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
+            <summary>
+            Fire a global trigger asynchronously
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetTrigger(System.String)">
+            <summary>
+            Get a trigger by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetBlockTriggers(System.String)">
+            <summary>
+            Get all triggers for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
+            <summary>
+            Get all triggers of a specific type for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetItemTriggers(System.String,System.String)">
+            <summary>
+            Get all triggers for an item
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetFormTriggers(System.String)">
+            <summary>
+            Get all form-level triggers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetGlobalTriggers">
+            <summary>
+            Get all global triggers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetTriggersByCategory(TheTechIdea.Beep.Editor.Forms.Models.TriggerCategory)">
+            <summary>
+            Get all triggers by category
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.HasBlockTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
+            <summary>
+            Check if a trigger exists for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.HasItemTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String)">
+            <summary>
+            Check if a trigger exists for an item
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerCount">
+            <summary>
+            Get total trigger count
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.EnableTrigger(System.String)">
+            <summary>
+            Enable a trigger by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.DisableTrigger(System.String)">
+            <summary>
+            Disable a trigger by ID
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.EnableBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
+            <summary>
+            Enable all triggers of a type for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.DisableBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
+            <summary>
+            Disable all triggers of a type for a block
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.EnableAllTriggers">
+            <summary>
+            Enable all triggers
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.DisableAllTriggers">
+            <summary>
+            Disable all triggers
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.IsSuspended">
+            <summary>
+            Check if trigger execution is globally suspended
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.SuspendTriggers">
+            <summary>
+            Suspend all trigger execution temporarily
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ResumeTriggers">
+            <summary>
+            Resume trigger execution
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerExecuting">
+            <summary>Event raised before a trigger executes</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerExecuted">
+            <summary>Event raised after a trigger executes</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerRegistered">
+            <summary>Event raised when a trigger is registered</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerUnregistered">
+            <summary>Event raised when a trigger is unregistered</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerChainCompleted">
+            <summary>Event raised when a trigger chain completes</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetTriggerStatistics(System.String)">
+            <summary>Get aggregate execution statistics for a block's triggers</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetFormLevelTriggers(System.String)">
+            <summary>Get only form-scope triggers registered for a block</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetBlockLevelTriggers(System.String)">
+            <summary>Get only block-scope triggers registered for a block</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetRecordLevelTriggers(System.String)">
+            <summary>Get only record-scope triggers registered for a block</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetItemLevelTriggers(System.String)">
+            <summary>Get only item-scope triggers registered for a block</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry">
+            <summary>
+            One recorded execution of a trigger (timing + outcome).
+            Stored by <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.TriggerId">
+            <summary>Gets or sets the unique trigger identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.TriggerName">
+            <summary>Gets or sets the trigger display name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.TriggerType">
+            <summary>Gets or sets the trigger type that executed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.BlockName">
+            <summary>Gets or sets the block involved in the execution.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ItemName">
+            <summary>Gets or sets the item involved in the execution.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.Result">
+            <summary>Gets or sets the trigger execution result.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ElapsedMs">
+            <summary>Gets or sets the execution time in milliseconds.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ExecutedAt">
+            <summary>Gets or sets when the trigger executed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ErrorMessage">
+            <summary>Gets or sets the error message for failed trigger executions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog">
+            <summary>
+            In-memory ring-buffer log of recent trigger executions with timing.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.Capacity">
+            <summary>Maximum number of entries to retain (oldest are dropped).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.Record(TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry)">
+            <summary>Append an entry.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.GetAll">
+            <summary>All retained entries, newest last.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.GetByBlock(System.String)">
+            <summary>Entries for a specific block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.GetByType(TheTechIdea.Beep.Editor.Forms.Models.TriggerType)">
+            <summary>Entries for a specific trigger type.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.Clear">
+            <summary>Remove all retained entries.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager">
+            <summary>
+            Builds a dependency graph over <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.DependsOn"/> lists,
+            detects cycles, and returns an execution-ordered list for a set of triggers.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager.OrderByDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
+            <summary>
+            Returns the triggers in dependency order (topological sort).
+            Throws <see cref="T:System.InvalidOperationException"/> if a cycle is detected.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager.HasCircularDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
+            <summary>
+            Returns true when the supplied list contains a circular dependency.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager.FindCycle(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
+            <summary>
+            Returns the names of all triggers involved in a cycle, or empty list when no cycle exists.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.DMEEditor">
@@ -26936,237 +28089,6 @@
         </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.OnFormMessage">
             <summary>Raised when the manager receives an inter-form message for this form.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager">
-            <summary>
-            Interface for dirty state management functionality
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.CheckAndHandleUnsavedChangesAsync(System.String)">
-            <summary>Checks for unsaved changes affecting a block and handles the caller decision flow.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.HasUnsavedChanges">
-            <summary>Returns whether any registered block currently has unsaved changes.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.GetDirtyBlocks">
-            <summary>Returns the names of blocks that currently have unsaved changes.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.CollectDirtyDetailBlocks(System.String,System.Collections.Generic.List{System.String})">
-            <summary>Collects dirty detail blocks related to a master block into the supplied list.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.SaveDirtyBlocksAsync(System.Collections.Generic.List{System.String})">
-            <summary>Saves the specified dirty blocks.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.RollbackDirtyBlocksAsync(System.Collections.Generic.List{System.String})">
-            <summary>Rolls back the specified dirty blocks.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.OnUnsavedChanges">
-            <summary>Raised when an operation encounters unsaved changes and requires a user decision.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager">
-            <summary>
-            Interface for event handling functionality
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.SubscribeToUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
-            <summary>Subscribes the manager to unit-of-work events for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.UnsubscribeFromUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
-            <summary>Unsubscribes the manager from unit-of-work events for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerBlockEnter(System.String)">
-            <summary>Raises the block-enter event for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerBlockLeave(System.String)">
-            <summary>Raises the block-leave event for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerError(System.String,System.Exception)">
-            <summary>Raises the error event for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerFieldValidation(System.String,System.String,System.Object)">
-            <summary>Triggers field-level validation for a block field.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerRecordValidation(System.String,System.Object)">
-            <summary>Triggers record-level validation for a block record.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper">
-            <summary>
-            Interface for Oracle Forms simulation helpers
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetAuditDefaults(System.Object,System.String)">
-            <summary>Sets common audit-field defaults on a record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetFieldValue(System.Object,System.String,System.Object)">
-            <summary>Sets a named field or property value on a record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.GetFieldValue(System.Object,System.String)">
-            <summary>Gets a named field or property value from a record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.ExecuteSequence(System.String,System.Object,System.String,System.String)">
-            <summary>Executes sequence logic for a block field.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.GetPropertyValue(System.Object,System.String)">
-            <summary>Gets a named property value from an object.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.SetSystemVariables(System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.SystemVariableType,System.Object)">
-            <summary>Sets a named system variable (e.g. <c>SYSTEM.RECORD_STATUS</c>) on a record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper.ValidateField(System.Object,System.String,System.Object,TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints)">
-            <summary>Validates a field's value against a set of field constraints. Returns the validation result.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager">
-            <summary>
-            Interface for performance and caching functionality
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.OptimizeBlockAccess">
-            <summary>Runs cache and block-access optimization routines.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.CacheBlockInfo(System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo)">
-            <summary>Caches block metadata for faster later access.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.GetCachedBlockInfo(System.String)">
-            <summary>Returns cached block metadata for a block when present.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.ClearCache">
-            <summary>Clears all cached block metadata.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.GetPerformanceStatistics">
-            <summary>Returns aggregate performance statistics for the manager.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.InvalidateBlockCache(System.String)">
-            <summary>Removes a single block's entry from the cache (invalidation).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.SetBlockCacheTtl(System.String,System.TimeSpan)">
-            <summary>Sets a per-block cache TTL, overriding the global cache expiration time.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.GetCacheStats">
-            <summary>Returns a lightweight cache hit/miss/eviction snapshot.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager.CheckMemoryPressure(System.Int64)">
-            <summary>
-            Checks estimated managed memory against <paramref name="thresholdBytes"/>;
-            if exceeded, evicts the least-recently-used half of the cache.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager">
-            <summary>
-            Interface for configuration management
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.Configuration">
-            <summary>Gets or sets the active FormsManager configuration instance.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.LoadConfiguration">
-            <summary>Loads configuration from its backing store.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.SaveConfiguration">
-            <summary>Saves configuration to its backing store.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.ResetToDefaults">
-            <summary>Resets configuration back to defaults.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager.ValidateConfiguration">
-            <summary>Returns whether the active configuration is structurally valid.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager">
-            <summary>
-            Interface for managing Oracle Forms :SYSTEM.* equivalent variables
-            Provides access to block, record, item, and form state information
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.GetSystemVariables(System.String)">
-            <summary>
-            Get system variables for a specific block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.GetFormSystemVariables">
-            <summary>
-            Get form-level system variables
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateForBlockChange(System.String)">
-            <summary>
-            Update system variables when block changes
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateForRecordChange(System.String,System.Int32,System.Int32)">
-            <summary>
-            Update system variables when record changes within a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateForItemChange(System.String,System.String,System.Object)">
-            <summary>
-            Update system variables when item focus changes
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetMode(System.String)">
-            <summary>
-            Update MODE system variable
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetBlockStatus(System.String,System.String)">
-            <summary>
-            Update BLOCK_STATUS system variable
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetFormStatus(System.String)">
-            <summary>
-            Update FORM_STATUS system variable
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetRecordStatus(System.String,System.String)">
-            <summary>
-            Update RECORD_STATUS system variable
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetTriggerContext(System.String,System.String,System.String,System.Int32)">
-            <summary>
-            Set trigger context before trigger execution
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.ClearTriggerContext">
-            <summary>
-            Clear trigger context after trigger execution
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetLastError(System.String,System.Int32)">
-            <summary>
-            Set last error information
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.ClearLastError">
-            <summary>
-            Clear last error
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetLastQuery(System.String)">
-            <summary>
-            Set last query string
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.SetCurrentForm(System.String)">
-            <summary>
-            Set current form name
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.Reset">
-            <summary>
-            Reset all system variables
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.UpdateBlockVariables(System.String,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Boolean,System.Boolean,System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.TriggerType})">
-            <summary>
-            Update per-block variables with a full block snapshot captured by FormsManager.
-            Stores the snapshot so BeepDataBlock can read it back via GetBlockVariables.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager.GetBlockVariables(System.String)">
-            <summary>
-            Retrieve the per-block variable snapshot last written by UpdateBlockVariables.
-            Returns a fresh empty instance when no snapshot exists for the block.
-            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IValidationManager">
             <summary>
@@ -27816,933 +28738,6 @@
         </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.ItemErrorChanged">
             <summary>Event raised when item error state changes</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager">
-            <summary>
-            Interface for managing triggers (Oracle Forms trigger equivalents).
-            Provides registration, execution, and lifecycle management for all trigger types.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterFormTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register a form-level trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterFormTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken,System.Threading.Tasks.Task{TheTechIdea.Beep.Editor.Forms.Models.TriggerResult}},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register a form-level async trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterBlockTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register a block-level trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterBlockTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken,System.Threading.Tasks.Task{TheTechIdea.Beep.Editor.Forms.Models.TriggerResult}},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register a block-level async trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterItemTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register an item-level trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterItemTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken,System.Threading.Tasks.Task{TheTechIdea.Beep.Editor.Forms.Models.TriggerResult}},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register an item-level async trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterGlobalTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult},TheTechIdea.Beep.Editor.Forms.Models.TriggerPriority)">
-            <summary>
-            Register a global trigger (applies to all forms)
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.RegisterTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition)">
-            <summary>
-            Register a trigger definition directly
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.UnregisterTrigger(System.String)">
-            <summary>
-            Unregister a specific trigger by ID
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.UnregisterBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
-            <summary>
-            Unregister all triggers of a type for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.UnregisterItemTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String)">
-            <summary>
-            Unregister all triggers of a type for an item
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ClearBlockTriggers(System.String)">
-            <summary>
-            Unregister all triggers for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ClearItemTriggers(System.String,System.String)">
-            <summary>
-            Unregister all triggers for an item
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ClearAllTriggers">
-            <summary>
-            Unregister all triggers
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireFormTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
-            <summary>
-            Fire a form-level trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireFormTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
-            <summary>
-            Fire a form-level trigger asynchronously
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireBlockTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
-            <summary>
-            Fire a block-level trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireBlockTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
-            <summary>
-            Fire a block-level trigger asynchronously
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireItemTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
-            <summary>
-            Fire an item-level trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireItemTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
-            <summary>
-            Fire an item-level trigger asynchronously
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireGlobalTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
-            <summary>
-            Fire a global trigger
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.FireGlobalTriggerAsync(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)">
-            <summary>
-            Fire a global trigger asynchronously
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetTrigger(System.String)">
-            <summary>
-            Get a trigger by ID
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetBlockTriggers(System.String)">
-            <summary>
-            Get all triggers for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
-            <summary>
-            Get all triggers of a specific type for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetItemTriggers(System.String,System.String)">
-            <summary>
-            Get all triggers for an item
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetFormTriggers(System.String)">
-            <summary>
-            Get all form-level triggers
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetGlobalTriggers">
-            <summary>
-            Get all global triggers
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetTriggersByCategory(TheTechIdea.Beep.Editor.Forms.Models.TriggerCategory)">
-            <summary>
-            Get all triggers by category
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.HasBlockTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
-            <summary>
-            Check if a trigger exists for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.HasItemTrigger(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String,System.String)">
-            <summary>
-            Check if a trigger exists for an item
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerCount">
-            <summary>
-            Get total trigger count
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.EnableTrigger(System.String)">
-            <summary>
-            Enable a trigger by ID
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.DisableTrigger(System.String)">
-            <summary>
-            Disable a trigger by ID
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.EnableBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
-            <summary>
-            Enable all triggers of a type for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.DisableBlockTriggers(TheTechIdea.Beep.Editor.Forms.Models.TriggerType,System.String)">
-            <summary>
-            Disable all triggers of a type for a block
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.EnableAllTriggers">
-            <summary>
-            Enable all triggers
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.DisableAllTriggers">
-            <summary>
-            Disable all triggers
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.IsSuspended">
-            <summary>
-            Check if trigger execution is globally suspended
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.SuspendTriggers">
-            <summary>
-            Suspend all trigger execution temporarily
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.ResumeTriggers">
-            <summary>
-            Resume trigger execution
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerExecuting">
-            <summary>Event raised before a trigger executes</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerExecuted">
-            <summary>Event raised after a trigger executes</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerRegistered">
-            <summary>Event raised when a trigger is registered</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerUnregistered">
-            <summary>Event raised when a trigger is unregistered</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerChainCompleted">
-            <summary>Event raised when a trigger chain completes</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetTriggerStatistics(System.String)">
-            <summary>Get aggregate execution statistics for a block's triggers</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetFormLevelTriggers(System.String)">
-            <summary>Get only form-scope triggers registered for a block</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetBlockLevelTriggers(System.String)">
-            <summary>Get only block-scope triggers registered for a block</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetRecordLevelTriggers(System.String)">
-            <summary>Get only record-scope triggers registered for a block</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.GetItemLevelTriggers(System.String)">
-            <summary>Get only item-scope triggers registered for a block</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager">
-            <summary>
-            Manages named savepoints for block state snapshots and rollback.
-            Platform-agnostic — no UI dependencies.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String)">
-            <summary>Create a named savepoint; auto-generates name if null passed</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.CreateSavepoint(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object})">
-            <summary>Create a savepoint with full state detail and optional record snapshot</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.RollbackToSavepointAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <summary>Roll back to a named savepoint; removes later savepoints</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.ReleaseSavepoint(System.String,System.String)">
-            <summary>Release (forget) a named savepoint</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.ReleaseAllSavepoints(System.String)">
-            <summary>Release all savepoints for a block</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.ListSavepoints(System.String)">
-            <summary>List all savepoints for a block, ordered by creation time</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager.SavepointExists(System.String,System.String)">
-            <summary>Check whether a named savepoint exists</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager">
-            <summary>
-            Provides client-side record locking for data blocks.
-            Platform-agnostic — no UI dependencies.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockMode(System.String)">
-            <summary>Returns the configured lock mode for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.SetLockMode(System.String,TheTechIdea.Beep.Editor.Forms.Models.LockMode)">
-            <summary>Sets the lock mode for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockOnEdit(System.String)">
-            <summary>Returns whether automatic lock-on-edit is enabled for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.SetLockOnEdit(System.String,System.Boolean)">
-            <summary>Sets whether automatic lock-on-edit is enabled for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.SetCurrentRecordIndex(System.String,System.Int32)">
-            <summary>Set the current record index for a block (called on navigation).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.LockCurrentRecordAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Locks the current record for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.UnlockCurrentRecord(System.String)">
-            <summary>Unlocks the current record for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.UnlockAllRecords(System.String)">
-            <summary>Unlocks all tracked records for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.IsRecordLocked(System.String,System.Int32)">
-            <summary>Returns whether a specific record is locked.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.IsCurrentRecordLocked(System.String)">
-            <summary>Returns whether the current record is locked.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockInfo(System.String,System.Int32)">
-            <summary>Returns lock metadata for a specific record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetLockedRecordCount(System.String)">
-            <summary>Returns the number of locked records for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.GetAllLocks(System.String)">
-            <summary>Returns all tracked locks for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager.AutoLockIfNeededAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Lock automatically if LockOnEdit is true and mode is Automatic</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager">
-            <summary>
-            Builds AppFilter lists from field-value dictionaries and manages query templates.
-            Pure logic — no UI dependencies.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.SetQueryOperator(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.QueryOperator)">
-            <summary>Registers the query operator for a block field.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.GetQueryOperator(System.String,System.String)">
-            <summary>Returns the registered query operator for a block field.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ClearQueryOperators(System.String)">
-            <summary>Clears the registered query operators for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.BuildFilters(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
-            <summary>Builds filters from a block field-value dictionary.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ParseWhereClause(System.String)">
-            <summary>Parses a WHERE clause into filters.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ParseOrderByClause(System.String)">
-            <summary>Parses an ORDER BY clause into filters.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.CombineFiltersAnd(System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>Combines two filter lists using AND semantics.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.SaveQueryTemplate(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
-            <summary>Saves a named query template for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.LoadQueryTemplate(System.String,System.String)">
-            <summary>Loads a named query template for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.GetQueryTemplates(System.String)">
-            <summary>Returns all query templates saved for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.DeleteQueryTemplate(System.String,System.String)">
-            <summary>Deletes a query template for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager.ClearAllTemplates(System.String)">
-            <summary>Deletes all query templates for a block.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog">
-            <summary>
-            Per-block error log with FIFO eviction and platform-agnostic events.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.SuppressErrorEvents">
-            <summary>Gets or sets whether error events should be suppressed.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.MaxLogSize">
-            <summary>Gets or sets the maximum retained log size per block.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.OnError">
-            <summary>Raised when an error entry is logged.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.OnWarning">
-            <summary>Raised when a warning entry is logged.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.LogError(System.String,System.Exception,System.String,TheTechIdea.Beep.Editor.Forms.Models.ErrorSeverity)">
-            <summary>Logs an error or warning entry for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.LogWarning(System.String,System.String,System.String)">
-            <summary>Logs a warning entry for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.ClearErrorLog(System.String)">
-            <summary>Clears the error log for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.ClearAllLogs">
-            <summary>Clears all block logs.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorLog(System.String)">
-            <summary>Returns the full retained log for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorsForContext(System.String,System.String)">
-            <summary>Returns the retained log entries for a block and context.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorsBySeverity(System.String,TheTechIdea.Beep.Editor.Forms.Models.ErrorSeverity)">
-            <summary>Returns the retained log entries for a block and severity.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.GetErrorCount(System.String)">
-            <summary>Returns the retained log entry count for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog.HasErrors(System.String)">
-            <summary>Returns whether the block log contains at least one error-severity entry.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager">
-            <summary>
-            Platform-agnostic message queue for data blocks.
-            UI layers subscribe to OnMessage/OnMessageCleared to display messages.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.MessageDisplayDurationMs">
-            <summary>Gets or sets the intended message display duration in milliseconds.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.AutoAdvanceMessages">
-            <summary>Gets or sets whether the manager should auto-advance queued messages.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.OnMessage">
-            <summary>Raised when a block message becomes current.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.OnMessageCleared">
-            <summary>Raised when a block message is cleared.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.SetMessage(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.MessageLevel)">
-            <summary>Sets the current message for a block or enqueues it.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ClearMessage(System.String)">
-            <summary>Clears the current message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.AdvanceMessage(System.String)">
-            <summary>Advances to the next queued message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowInfoMessage(System.String,System.String)">
-            <summary>Queues an informational message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowSuccessMessage(System.String,System.String)">
-            <summary>Queues a success message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowWarningMessage(System.String,System.String)">
-            <summary>Queues a warning message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ShowErrorMessage(System.String,System.String)">
-            <summary>Queues an error message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.GetCurrentMessage(System.String)">
-            <summary>Returns the current message text for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.GetCurrentMessageLevel(System.String)">
-            <summary>Returns the level of the current message for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.GetQueuedMessageCount(System.String)">
-            <summary>Returns the number of queued messages waiting for a block.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory">
-            <summary>
-            Resolves IUnitofWork + IEntityStructure from connection name and entity name via IDMEEditor.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory.CreateBlockAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <summary>Create a UoW + EntityStructure pair from a connection and entity name</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory.ValidateBlockSourceAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <summary>Validate that the connection + entity pair resolves correctly</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager">
-            <summary>
-            Sets and gets Oracle Forms-equivalent block properties on registered blocks.
-            Corresponds to Oracle Forms SET_BLOCK_PROPERTY / GET_BLOCK_PROPERTY built-ins.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager.SetBlockProperty(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty,System.Object)">
-            <summary>Set a property on the named block</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager.GetBlockProperty(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty)">
-            <summary>Get a property value from the named block</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager.GetBlockProperty``1(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty)">
-            <summary>Typed convenience overload for GetBlockProperty</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider">
-            <summary>
-            Pluggable UI provider for modal alert dialogs.
-            Inject an implementation from the UI layer; the default no-op implementation
-            logs to Status and returns AlertResult.Button1.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
-            <summary>
-            Display an alert dialog and return the button the user pressed.
-            Corresponds to Oracle Forms SHOW_ALERT built-in.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider">
-            <summary>
-            Provides named auto-increment sequences.
-            Corresponds to Oracle Forms :SEQUENCE.NEXTVAL usage.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.GetNextSequence(System.String)">
-            <summary>Increment and return the next value for the named sequence</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.PeekNextSequence(System.String)">
-            <summary>Peek at the next value without incrementing</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.ResetSequence(System.String,System.Int64)">
-            <summary>Reset a sequence to a starting value (default 1)</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.SequenceExists(System.String)">
-            <summary>Whether the named sequence has been created</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.CreateSequence(System.String,System.Int64,System.Int64)">
-            <summary>Create a new named sequence with the given starting value</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager">
-            <summary>
-            Manages named form-level timers that fire WHEN-TIMER-EXPIRED triggers.
-            Corresponds to Oracle Forms CREATE_TIMER / DELETE_TIMER / GET_TIMER built-ins.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.CreateTimer(System.String,System.TimeSpan,System.Boolean)">
-            <summary>
-            Create and start a named timer.
-            Corresponds to Oracle Forms CREATE_TIMER.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.DeleteTimer(System.String)">
-            <summary>
-            Stop and remove a named timer.
-            Corresponds to Oracle Forms DELETE_TIMER.
-            Returns false if the timer was not found.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.GetTimer(System.String)">
-            <summary>
-            Get the definition/state of a named timer.
-            Corresponds to Oracle Forms GET_TIMER.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.GetAllTimers">
-            <summary>Returns all currently registered timers (running and paused)</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.TimerExists(System.String)">
-            <summary>Whether a timer with the given name exists</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager.TimerFired">
-            <summary>
-            Event raised when a timer fires.
-            Handlers should fire TriggerType.WhenTimerExpired for their block/form.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs">
-            <summary>
-            Event arguments for the ITimerManager.TimerFired event.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.TimerName">
-            <summary>Gets the logical timer name that fired.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.FireCount">
-            <summary>Gets the number of times the timer has fired.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.FiredAt">
-            <summary>Gets the timestamp when the timer fired.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry">
-            <summary>
-            Shared registry of all active form managers.
-            Pass a single instance to every FormsManager so forms can discover each other.
-            Equivalent to Oracle Forms' :GLOBAL scope and CALL_FORM / OPEN_FORM / NEW_FORM built-ins.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.ActiveFormName">
-            <summary>Name of the currently active (focused) form, or null.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.RegisterForm(System.String,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager)">
-            <summary>Register a form manager under a logical form name.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.UnregisterForm(System.String)">
-            <summary>Remove a form from the registry. Returns false if not found.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GetForm(System.String)">
-            <summary>Retrieve a registered form manager by name, or null.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GetActiveFormNames">
-            <summary>Get all currently registered form names.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.FormExists(System.String)">
-            <summary>Returns true when a form with the given name is registered.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.SetActiveForm(System.String)">
-            <summary>Mark a form as the currently active/focused form.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.SetGlobal(System.String,System.Object)">
-            <summary>Set or overwrite a global variable (:GLOBAL.name).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GetGlobal(System.String)">
-            <summary>Read a global variable. Returns null if not set.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.GlobalExists(System.String)">
-            <summary>Returns true if a global variable with the given name exists.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry.FormLifecycleChanged">
-            <summary>Raised whenever a form is registered, unregistered, activated or deactivated.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus">
-            <summary>
-            Pub/sub message bus for inter-form communication.
-            Equivalent to Oracle Forms' DO_KEY / SYNCHRONIZE and custom messaging patterns.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.PostMessage(System.String,System.String,System.Object,System.String)">
-            <summary>
-            Send a typed message payload to a specific form.
-            Any subscribers registered for (targetForm, messageType) are invoked synchronously.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.Broadcast(System.String,System.Object,System.String)">
-            <summary>Broadcast a message to all forms subscribed to the given messageType.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.Subscribe(System.String,System.String,System.Action{TheTechIdea.Beep.Editor.Forms.Models.FormMessage})">
-            <summary>Subscribe a form to receive messages of a given type.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.Unsubscribe(System.String,System.String)">
-            <summary>Unsubscribe a form from a specific message type.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.UnsubscribeAll(System.String)">
-            <summary>Remove all subscriptions registered by a form (call during cleanup).</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus.OnFormMessage">
-            <summary>Raised for every message posted or broadcast (global observer hook).</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager">
-            <summary>
-            Manages IUnitofWork data blocks that are shared across multiple form managers.
-            Provides optimistic lock coordination so only one form modifies a shared block at a time.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.CreateSharedBlock(System.String,TheTechIdea.Beep.Editor.IUnitofWork)">
-            <summary>Publish a block UoW so other forms can access it. Returns false if already exists.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.GetSharedBlock(System.String)">
-            <summary>Retrieve a shared block UoW by name, or null.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockExists(System.String)">
-            <summary>Returns true when the named shared block exists.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.RemoveSharedBlock(System.String)">
-            <summary>Remove a shared block (releases any outstanding lock).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.TryLockSharedBlock(System.String,System.String,System.TimeSpan)">
-            <summary>
-            Attempt to acquire an exclusive write lock on a shared block.
-            Returns true when the lock is obtained within the timeout.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.ReleaseSharedBlockLock(System.String,System.String)">
-            <summary>Release a write lock held by the named caller. No-op if not locked by that caller.</summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockChanged">
-            <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry">
-            <summary>
-            One recorded execution of a trigger (timing + outcome).
-            Stored by <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog"/>.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.TriggerId">
-            <summary>Gets or sets the unique trigger identifier.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.TriggerName">
-            <summary>Gets or sets the trigger display name.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.TriggerType">
-            <summary>Gets or sets the trigger type that executed.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.BlockName">
-            <summary>Gets or sets the block involved in the execution.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ItemName">
-            <summary>Gets or sets the item involved in the execution.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.Result">
-            <summary>Gets or sets the trigger execution result.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ElapsedMs">
-            <summary>Gets or sets the execution time in milliseconds.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ExecutedAt">
-            <summary>Gets or sets when the trigger executed.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry.ErrorMessage">
-            <summary>Gets or sets the error message for failed trigger executions.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog">
-            <summary>
-            In-memory ring-buffer log of recent trigger executions with timing.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.Capacity">
-            <summary>Maximum number of entries to retain (oldest are dropped).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.Record(TheTechIdea.Beep.Editor.UOWManager.Interfaces.TriggerExecutionLogEntry)">
-            <summary>Append an entry.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.GetAll">
-            <summary>All retained entries, newest last.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.GetByBlock(System.String)">
-            <summary>Entries for a specific block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.GetByType(TheTechIdea.Beep.Editor.Forms.Models.TriggerType)">
-            <summary>Entries for a specific trigger type.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog.Clear">
-            <summary>Remove all retained entries.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager">
-            <summary>
-            Builds a dependency graph over <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition.DependsOn"/> lists,
-            detects cycles, and returns an execution-ordered list for a set of triggers.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager.OrderByDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
-            <summary>
-            Returns the triggers in dependency order (topological sort).
-            Throws <see cref="T:System.InvalidOperationException"/> if a cycle is detected.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager.HasCircularDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
-            <summary>
-            Returns true when the supplied list contains a circular dependency.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager.FindCycle(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
-            <summary>
-            Returns the names of all triggers involved in a cycle, or empty list when no cycle exists.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore">
-            <summary>Pluggable persistence back-end for audit entries.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Save(TheTechIdea.Beep.Editor.Forms.Models.AuditEntry)">
-            <summary>Persist a single audit entry.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Query(System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.AuditOperation},System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
-            <summary>Query audit entries with optional filters.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Purge(System.Int32)">
-            <summary>Remove entries older than <paramref name="olderThanDays"/> days.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore.Clear">
-            <summary>Remove all entries.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager">
-            <summary>
-            Manages field-level and commit-level audit recording for the forms engine.
-            Accumulates pending field changes and flushes them as <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.AuditEntry"/>
-            objects to the configured <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore"/> on each commit.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Configuration">
-            <summary>Current audit configuration.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.CurrentUser">
-            <summary>Name of the currently logged-in user stamped on each audit entry.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Store">
-            <summary>The underlying store (injectable for testing or external persistence).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.SetAuditUser(System.String)">
-            <summary>Sets the user name stamped on every subsequent audit entry.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Configure(System.Action{TheTechIdea.Beep.Editor.Forms.Models.AuditConfiguration})">
-            <summary>Applies configuration changes via a delegate.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.RecordFieldChange(System.String,System.String,System.Object,System.Object,System.Int32)">
-            <summary>
-            Records a single field change in the pending buffer.
-            Called for every <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockFieldChangedEventArgs"/> while audit is enabled.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.FlushPendingToStore(System.String,TheTechIdea.Beep.Editor.Forms.Models.AuditOperation)">
-            <summary>
-            Flushes all pending field changes as committed audit entries.
-            Should be called after a successful <c>CommitFormAsync</c>.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.DiscardPending">
-            <summary>
-            Discards all pending (uncommitted) field changes.
-            Should be called after a rollback.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.GetAuditLog(System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.AuditOperation},System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
-            <summary>
-            Returns audit entries from the store, with optional block/operation/date filters.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.GetFieldHistory(System.String,System.String,System.String)">
-            <summary>
-            Returns the history of changes to a specific field within a record.
-            <paramref name="recordKey"/> is the string form of the row index or PK.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.ExportToCsvAsync(System.String,System.String)">
-            <summary>Writes all (or block-filtered) audit entries to a CSV file.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.ExportToJsonAsync(System.String,System.String)">
-            <summary>Writes all (or block-filtered) audit entries to a JSON file.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Purge(System.Int32)">
-            <summary>Purges entries older than <paramref name="olderThanDays"/> days.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager.Clear">
-            <summary>Clears all audit data from the store.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFieldMaskProvider">
-            <summary>Applies a mask pattern to a raw field value for display purposes.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFieldMaskProvider.Mask(System.Object,System.String)">
-            <summary>
-            Returns a masked representation of <paramref name="rawValue"/> using
-            <paramref name="pattern"/>.  The single character "*" means "hide everything".
-            Other patterns use '#' as a digit placeholder and '*' for any char.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager">
-            <summary>
-            Controls block- and field-level security for the forms engine.
-            Integrates with <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager"/> and <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager"/>
-            to enforce permissions at runtime.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.OnSecurityViolation">
-            <summary>Raised whenever a security violation is detected.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.CurrentContext">
-            <summary>The currently active security context (user + roles).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.SetSecurityContext(TheTechIdea.Beep.Editor.Forms.Models.SecurityContext)">
-            <summary>Sets the current security context and re-evaluates all block/field permissions.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.SetBlockSecurity(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockSecurity)">
-            <summary>Registers or replaces block-level security for <paramref name="blockName"/>.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetBlockSecurity(System.String)">
-            <summary>Returns the registered security rules for a block, or null if none.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.IsBlockAllowed(System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission)">
-            <summary>
-            Returns true when the current user/roles may perform <paramref name="permission"/> on the block.
-            Also applies to a specific permission flag when <c>ISecurityManager</c> is used standalone.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.ApplyBlockSecurityFlags(System.Action{System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean})">
-            <summary>
-            Evaluates all registered block securities against the current context and updates
-            <c>DataBlockInfo.InsertAllowed</c> / <c>UpdateAllowed</c> / <c>DeleteAllowed</c> / <c>QueryAllowed</c>
-            via the supplied <paramref name="applyBlockFlags"/> callback.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetBlockRowFilter(System.String)">
-            <summary>
-            Returns the effective row-filter WHERE clause for a block (or empty string if none).
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.SetFieldSecurity(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.FieldSecurity)">
-            <summary>Registers or replaces field-level security for a specific item.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetFieldSecurity(System.String,System.String)">
-            <summary>Returns registered field security or null.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.ApplyFieldSecurityFlags(System.Action{System.String,System.String,System.Boolean},System.Action{System.String,System.String,System.Boolean})">
-            <summary>
-            Evaluates all registered field securities against the current context and applies
-            Enabled / Visible flags via the supplied callbacks (delegates into ItemPropertyManager).
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetMaskedValue(System.String,System.String,System.Object)">
-            <summary>
-            Returns a masked / display-safe value for a field, applying the registered mask pattern
-            if field security has <c>Masked = true</c>.  Returns the raw value unchanged otherwise.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.RaiseViolation(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission,System.String)">
-            <summary>Records a security violation without throwing.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetViolationLog">
-            <summary>Returns all recorded violations for the current session.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager">
-            <summary>
-            Manages per-block paging state for virtual scrolling / paged data loading.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetPageSize(System.String,System.Int32)">
-            <summary>Sets the page size for a block (records per page).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetPageSize(System.String)">
-            <summary>Gets the current page size for a block (default 50).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetCurrentPage(System.String)">
-            <summary>
-            Returns a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/> snapshot for the current page of the block.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetCurrentPage(System.String,System.Int32)">
-            <summary>
-            Advances the paging state to the specified page number and returns the resulting
-            <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/>.  Does NOT load data — callers must re-execute the query.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetTotalRecordCount(System.String,System.Int64)">
-            <summary>Stores the total record count for a block (from a COUNT query or post-load).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetTotalRecordCount(System.String)">
-            <summary>Returns the stored total record count for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetFetchAheadDepth(System.String,System.Int32)">
-            <summary>
-            Sets the number of pages to pre-fetch ahead of the current page (0 = disabled).
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.GetFetchAheadDepth(System.String)">
-            <summary>Returns the configured fetch-ahead depth for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.ResetPaging(System.String)">
-            <summary>Resets all paging state for a block to defaults.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockConfiguration">
             <summary>
