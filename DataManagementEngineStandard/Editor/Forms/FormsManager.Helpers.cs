@@ -276,7 +276,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 throw new ArgumentException("Detail block name cannot be null or empty", nameof(detailBlockName));
         }
 
-        private List<DataBlockRelationship> GetActiveRelationships(string masterBlockName)
+        internal List<DataBlockRelationship> GetActiveRelationships(string masterBlockName)
         {
             lock (_lockObject)
             {

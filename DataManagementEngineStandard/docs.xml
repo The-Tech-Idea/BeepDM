@@ -17585,10 +17585,10 @@
             <summary>Conflict evidence from the last bidirectional run (requires <see cref="P:TheTechIdea.Beep.Editor.BeepSync.ConflictPolicy.CaptureEvidence"/>).</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunCheckpoint">
-            <summary>Checkpoint saved/resumed during the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)"/> call.</summary>
+            <summary>Checkpoint saved/resumed during the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)"/> call.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunReconciliationReport">
-            <summary>Reconciliation report from the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)"/> call.</summary>
+            <summary>Reconciliation report from the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)"/> call.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.SchemaManager">
             <summary>
@@ -17632,7 +17632,7 @@
             and persists it.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)">
             <summary>Synchronizes data for the given schema.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncData(TheTechIdea.Beep.Editor.DataSyncSchema)">
@@ -17881,7 +17881,7 @@
             Translates DataSyncSchema into DataImportConfiguration for execution by DataImportManager.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)">
             <summary>
             Converts a DataSyncSchema into a DataImportConfiguration that DataImportManager can execute.
             </summary>
@@ -17890,7 +17890,7 @@
             <param name="historyStore">Optional run history store</param>
             <returns>A DataImportConfiguration ready for RunImportAsync</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToReverseImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToReverseImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)">
             <summary>
             Creates a reverse DataImportConfiguration for bidirectional sync (destination → source).
             </summary>
@@ -18462,7 +18462,7 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.MappingDriftDetected">
             <summary>When <c>true</c>, mapping drift was detected during preflight but the run was allowed to proceed.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FromImportRunRecord(TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord)">
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FromImportRunRecord(TheTechIdea.Beep.Editor.Importing.ImportRunRecord)">
             <summary>
             Creates a SyncMetrics instance from a completed ImportRunRecord.
             </summary>
@@ -22693,6 +22693,9 @@
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenButtonPressed">
             <summary>When button pressed (WHEN-BUTTON-PRESSED)</summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenCustomItemEvent">
+            <summary>When a host-defined custom item event fires (WHEN-CUSTOM-ITEM-EVENT). The eventType parameter identifies the specific event.</summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenTimerExpired">
             <summary>When timer expired (WHEN-TIMER-EXPIRED)</summary>
         </member>
@@ -23944,7 +23947,11 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CommitFormAsync">
             <summary>
-            Commits all changes in all blocks - equivalent to Oracle Forms COMMIT_FORM
+            Commits all changes in all blocks - equivalent to Oracle Forms COMMIT_FORM.
+            When called from a modal child form, commits all dirty blocks across the
+            entire call chain (parent + ancestors) so that the database session is
+            consistent. This matches Oracle Forms' behaviour where CALL_FORM shares
+            the same database session and a COMMIT from the child commits everything.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RollbackFormAsync">
@@ -23965,6 +23972,23 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ValidateForm">
             <summary>
             Validates the entire form
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ResolveCrossFormCommitTargets">
+            <summary>
+            Walks the call stack to determine which FormsManager instances should
+            participate in a cross-form commit. When <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CallFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},TheTechIdea.Beep.Editor.Forms.Models.FormCallMode,System.Threading.CancellationToken)"/> was
+            used (modal or modeless), the child form's commit should include the
+            caller's dirty blocks as well — matching Oracle Forms' shared database
+            session. Returns the list in caller→callee order so the callee's blocks
+            are committed after the caller's (detail → master FK constraints).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryCrossFormTransactionCommitAsync(System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.FormsManager},System.Collections.Generic.List{System.String})">
+            <summary>
+            Attempts a cross-form commit, optionally wrapping it in a single
+            source-level transaction if every participating form's data source
+            supports transactions. On failure, rolls back all committed forms.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.BuildCommitOrder">
@@ -25085,7 +25109,7 @@
             Raised when an operation encounters unsaved changes and needs a caller decision.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}})">
             <summary>
             Creates a dirty-state manager for the registered blocks owned by a FormsManager instance.
             </summary>
@@ -25129,155 +25153,53 @@
             Rolls back all dirty blocks with error handling
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.PropagateMasterKeyToDetails(System.String,System.Collections.Generic.List{System.String})">
+             <summary>
+             After a master block is committed, the database may have generated the real key
+             (e.g. auto-increment identity). This method propagates the master's current key
+             value to all dirty detail records so they carry the correct FK when committed.
+             Matches the Oracle Forms COPY / WHEN-VALIDATE-RECORD key-propagation contract.
+            
+             CONTRACT: UoW implementations MUST update the record's key property after Commit()
+             for auto-generated keys. ADO.NET sources do this via SCOPE_IDENTITY() / RETURNING.
+             For NoSQL/File/WebAPI sources, the key is typically generated before commit
+             (client-side ObjectId, counter, or API-returned ID). If the key is still null/empty
+             after commit, a warning is logged and propagation is skipped — the caller should
+             re-query the data source or use a PostCommitRefresh hook.
+             </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager">
             <summary>
-            Event management helper for UnitofWorksManager
+            Event management helper for UnitofWorksManager.
+            Subscribes to all 17 IUnitofWork DML/lifecycle events and translates
+            them into FormsManager's event pipeline (DMLTriggerEventArgs,
+            RecordTriggerEventArgs, ValidationTriggerEventArgs).
+            Handler delegates are stored so Unsubscribe can remove every one.
             </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnBlockEnter">
-            <summary>
-            Raised when a block is entered.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnBlockLeave">
-            <summary>
-            Raised when a block is left.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnBlockClear">
-            <summary>
-            Raised when a block clear operation is triggered.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnBlockValidate">
-            <summary>
-            Raised when block-level validation is triggered.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnRecordEnter">
-            <summary>
-            Raised when a record is entered.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnRecordLeave">
-            <summary>
-            Raised when a record is left.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnRecordValidate">
-            <summary>
-            Raised when record-level validation is triggered.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPreQuery">
-            <summary>
-            Raised before a query operation executes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPostQuery">
-            <summary>
-            Raised after a query operation completes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPreInsert">
-            <summary>
-            Raised before an insert operation executes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPostInsert">
-            <summary>
-            Raised after an insert operation completes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPreUpdate">
-            <summary>
-            Raised before an update operation executes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPostUpdate">
-            <summary>
-            Raised after an update operation completes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPreDelete">
-            <summary>
-            Raised before a delete operation executes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPostDelete">
-            <summary>
-            Raised after a delete operation completes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPreCommit">
-            <summary>
-            Raised before a commit operation executes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnPostCommit">
-            <summary>
-            Raised after a commit operation completes.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnValidateField">
-            <summary>
-            Raised when field-level validation is requested.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnValidateRecord">
-            <summary>
-            Raised when record-level validation is requested.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnValidateForm">
-            <summary>
-            Raised when form-level validation is requested.
-            </summary>
-        </member>
-        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.OnError">
-            <summary>
-            Raised when an error is surfaced through the Forms event pipeline.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Creates an event manager that records activity through the supplied editor.
-            </summary>
-            <param name="dmeEditor">Editor used for logging and integration callbacks.</param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.SubscribeToUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
             <summary>
-            Subscribes to unit of work events
+            Subscribes to all DML, lifecycle, navigation, and batch events on the
+            unit of work and stores every delegate so Unsubscribe can remove them.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.UnsubscribeFromUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
             <summary>
-            Unsubscribes from unit of work events
+            Removes every event handler previously subscribed for the block.
+            Safe to call on already-unsubscribed blocks (no-op).
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TriggerBlockEnter(System.String)">
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.StoredHandlers">
             <summary>
-            Triggers block enter event
+            Holds all handler delegates for a single block so Unsubscribe can
+            remove every one. Each delegate is a named field so -= works.
+            Also stores optional cleanup actions for events not on the base interface.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TriggerBlockLeave(System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TrySubscribe(TheTechIdea.Beep.Editor.IUnitofWork,System.String,System.Action,System.Action)">
             <summary>
-            Triggers block leave event
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TriggerError(System.String,System.Exception)">
-            <summary>
-            Triggers error event
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TriggerFieldValidation(System.String,System.String,System.Object)">
-            <summary>
-            Triggers field validation event
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TriggerRecordValidation(System.String,System.Object)">
-            <summary>
-            Triggers record validation event
+            Subscribes to an optional event that may not exist on the non-generic
+            IUnitofWork interface. Stores the cleanup action for unsubscribe.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper">
@@ -31277,28 +31199,28 @@
             the schema manager directly.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.InitializeDataSources(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.InitializeDataSources(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Initializes data sources if not already configured
             </summary>
             <param name="config">Import configuration</param>
             <returns>Task for async operation</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.EnsureDestinationEntityExists(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.EnsureDestinationEntityExists(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Ensures the destination entity exists, creating it if necessary
             </summary>
             <param name="config">Import configuration</param>
             <returns>Task for async operation</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.LoadSourceEntityStructure(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.LoadSourceEntityStructure(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Loads the source entity structure
             </summary>
             <param name="config">Import configuration</param>
             <returns>Source entity structure</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.FetchSourceDataAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.FetchSourceDataAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Threading.CancellationToken)">
             <summary>
             Fetches source data based on configuration
             </summary>
@@ -31306,7 +31228,7 @@
             <param name="token">Cancellation token</param>
             <returns>Source data enumerable</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ConvertToEnumerable(System.Object,TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ConvertToEnumerable(System.Object,TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Threading.CancellationToken)">
             <summary>
             Converts various data result types to enumerable
             </summary>
@@ -31315,7 +31237,7 @@
             <param name="token">Cancellation token</param>
             <returns>Converted enumerable</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ConvertDataTableToEnumerable(System.Data.DataTable,TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ConvertDataTableToEnumerable(System.Data.DataTable,TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Converts DataTable to enumerable objects
             </summary>
@@ -31344,7 +31266,7 @@
             </summary>
             <returns>Import status information</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.TestImportConfigurationAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.TestImportConfigurationAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Tests the import configuration without executing the import
             </summary>
@@ -31457,16 +31379,16 @@
             Ensures configuration is initialized
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.UpdateStatus(System.Action{TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus})">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.UpdateStatus(System.Action{TheTechIdea.Beep.Editor.Importing.ImportStatus})">
             <summary>Thread-safe in-place status update used throughout the import pipeline.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.ImportContext,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.ImportContext,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
             <summary>
             Runs an import defined by a typed ImportContext.
             Translates to DataImportConfiguration then delegates to the existing pipeline.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.BuildConfigurationFromContext(TheTechIdea.Beep.Editor.Importing.Interfaces.ImportContext)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.BuildConfigurationFromContext(TheTechIdea.Beep.Editor.Importing.ImportContext)">
             <summary>
             Builds a DataImportConfiguration from a typed ImportContext.
             </summary>
@@ -31481,7 +31403,7 @@
             <param name="destDataSourceName">Destination data source name</param>
             <returns>New import configuration</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.SetImportConfiguration(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.SetImportConfiguration(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Sets the import configuration
             </summary>
@@ -31512,7 +31434,7 @@
             <param name="batchSize">Batch size</param>
             <returns>Import result</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
             <summary>
             Runs import with enhanced configuration
             </summary>
@@ -31537,14 +31459,14 @@
             </summary>
             <param name="disposing">True if disposing managed resources</param>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunMigrationPreflightAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Action{System.String})">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunMigrationPreflightAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Action{System.String})">
             <summary>
             Validates schema compatibility between source and destination before running a migration.
             Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.RunPreflightAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Action{System.String},System.Threading.CancellationToken)"/>; kept on
             <see cref="T:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager"/> for back-compat with existing callers.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Builds a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/> that describes what a sync run would do,
             without executing any data movement. Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.
@@ -31555,11 +31477,11 @@
             Replays all pending (non-replayed) error records for <paramref name="contextKey"/>.
             Each pending record is re-submitted through the configured quality checks and
             transformation pipeline and, if it now passes, is written to the destination.
-            Successfully replayed records are marked with <see cref="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.Replayed"/> = <c>true</c>
+            Successfully replayed records are marked with <see cref="P:TheTechIdea.Beep.Editor.Importing.ImportErrorRecord.Replayed"/> = <c>true</c>
             in the error store.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayOneRecordAsync(TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord,TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayOneRecordAsync(TheTechIdea.Beep.Editor.Importing.ImportErrorRecord,TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Threading.CancellationToken)">
             <summary>
             Attempts to re-apply quality rules and write a single error record to the destination.
             Returns <c>true</c> on success.
@@ -31567,7 +31489,7 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ResolveConfigByContextKey(System.String)">
             <summary>
-            Resolves the <see cref="T:TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration"/> associated with <paramref name="contextKey"/>.
+            Resolves the <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration"/> associated with <paramref name="contextKey"/>.
             Each <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportManager"/> instance manages a single pipeline (<see cref="F:TheTechIdea.Beep.Editor.Importing.DataImportManager._config"/>),
             so we return it when its composite key matches.
             </summary>
@@ -31580,70 +31502,6 @@
             
              Entity name used: <c>import_errors</c>.
              </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore">
-            <summary>
-            Abstraction for persisting, loading, and managing <see cref="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord"/> items
-            produced during import runs.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore.SaveAsync(TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord,System.Threading.CancellationToken)">
-            <summary>Persists a single failed record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore.LoadAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Returns all error records for the given pipeline context key.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore.LoadPendingAsync(System.String,System.Threading.CancellationToken)">
-            <summary>
-            Returns only records for <paramref name="contextKey"/> that have not yet been replayed.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore.MarkReplayedAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
-            <summary>Marks a specific record as replayed (by batch + record index).</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore.ClearAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Removes all error records for the given context key.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord">
-            <summary>
-            Full audit record for a single failed / quarantined import record.
-            Persisted by <see cref="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore"/> implementations.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.ContextKey">
-            <summary>Pipeline key: "{sourceDS}/{sourceEntity}/{destDS}/{destEntity}".</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.OccurredAt">
-            <summary>UTC timestamp when the error occurred.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.BatchNumber">
-            <summary>Zero-based batch counter within the overall import run.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.RecordIndex">
-            <summary>Zero-based index of the record within its batch.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.RuleName">
-            <summary>The name of the quality rule that triggered the failure (if applicable).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.Reason">
-            <summary>Human-readable description of why the record failed.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.RawRecord">
-            <summary>
-            The faulted record as it arrived from the source.
-            Serialised as JSON when persisted.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.Replayed">
-            <summary>
-            <c>true</c> when this record has been successfully replayed after fixing the root cause.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.ReplayedAt">
-            <summary>UTC timestamp of a successful replay (set by the Replay partial).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.ErrorStore.ImportErrorRecord.TriageNote">
-            <summary>Optional notes added during manual triage of the error.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.JsonFileImportErrorStore">
             <summary>
@@ -31723,10 +31581,10 @@
             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.Factories.LocalStoreFactory.CreateErrorStore(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>Creates the appropriate <see cref="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore"/>.</summary>
+            <summary>Creates the appropriate <see cref="T:TheTechIdea.Beep.Editor.Importing.IImportErrorStore"/>.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.Factories.LocalStoreFactory.CreateHistoryStore(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>Creates the appropriate <see cref="T:TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore"/>.</summary>
+            <summary>Creates the appropriate <see cref="T:TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore"/>.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.Factories.LocalStoreFactory.HasLocalDriver(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
@@ -31743,7 +31601,7 @@
             Calculates optimal batch size based on data characteristics
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportBatchHelper.ProcessBatchAsync(System.Collections.Generic.IEnumerable{System.Object},TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportBatchHelper.ProcessBatchAsync(System.Collections.Generic.IEnumerable{System.Object},TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>
             Processes a batch of records
             </summary>
@@ -31758,12 +31616,12 @@
             Estimates memory usage for a batch
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportBatchHelper.ValidateBatchConfiguration(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Int32)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportBatchHelper.ValidateBatchConfiguration(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Int32)">
             <summary>
             Validates batch configuration
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportBatchHelper.ProcessBatchWithRetryAsync(System.Collections.Generic.IEnumerable{System.Object},TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Int32)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportBatchHelper.ProcessBatchWithRetryAsync(System.Collections.Generic.IEnumerable{System.Object},TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Int32)">
             <summary>
             Processes batches with retry logic
             </summary>
@@ -31808,7 +31666,7 @@
             Clears the import log
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportProgressHelper.GetLogEntriesByLevel(TheTechIdea.Beep.Editor.Importing.Interfaces.ImportLogLevel)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportProgressHelper.GetLogEntriesByLevel(TheTechIdea.Beep.Editor.Importing.ImportLogLevel)">
             <summary>
             Gets log entries by level
             </summary>
@@ -31863,7 +31721,7 @@
             Applies custom transformation function
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportTransformationHelper.ApplyTransformationPipeline(System.Object,TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportTransformationHelper.ApplyTransformationPipeline(System.Object,TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Applies complete transformation pipeline
             </summary>
@@ -31883,7 +31741,7 @@
             Helper class for data import validation operations
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportValidationHelper.ValidateImportConfiguration(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Helpers.DataImportValidationHelper.ValidateImportConfiguration(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Validates import configuration before execution
             </summary>
@@ -31919,81 +31777,6 @@
             Uses the <see cref="T:TheTechIdea.Beep.Editor.IDMEEditor"/> to resolve the connection.
             Entity name: <c>import_run_history</c>.
             </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore">
-            <summary>
-            Contract for persisting and querying import run history records.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore.SaveRunAsync(TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord,System.Threading.CancellationToken)">
-            <summary>Persists a completed run record.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore.GetRunsAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Returns all run records for the given context key, newest first.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore.GetLastSuccessfulRunAsync(System.String,System.Threading.CancellationToken)">
-            <summary>
-            Returns the most recent run record for <paramref name="contextKey"/> whose
-            <see cref="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.FinalState"/> is <see cref="F:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportState.Completed"/>.
-            Returns <c>null</c> when no such record exists.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore.ClearAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Deletes all run records for the given context key.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord">
-            <summary>Full audit record persisted after each import run.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.ContextKey">
-            <summary>Pipeline key: "{sourceDS}/{sourceEntity}/{destDS}/{destEntity}".</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.RunId">
-            <summary>Unique run identifier (GUID string).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.StartedAt">
-            <summary>UTC start timestamp.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.FinishedAt">
-            <summary>UTC end timestamp (null if still running).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.FinalState">
-            <summary>Terminal state of the import run.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.SyncMode">
-            <summary>Sync mode used for this run.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.RecordsRead">
-            <summary>Total records read from the source.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.RecordsWritten">
-            <summary>Records successfully written to the destination.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.RecordsBlocked">
-            <summary>Records blocked by quality rules.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.RecordsQuarantined">
-            <summary>Records quarantined by quality rules.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.RecordsWarned">
-            <summary>Records that triggered a warning quality rule.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.BatchesProcessed">
-            <summary>Number of batches processed.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.SchemaDriftDetected">
-            <summary>Whether a schema drift was detected.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.FinalWatermark">
-            <summary>The watermark value at the end of a successful incremental run (serialised as string).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.Summary">
-            <summary>Human-readable summary or error message.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.History.ImportRunRecord.BatchMetrics">
-            <summary>Per-batch performance metrics (optional — only populated when detailed tracking is enabled).</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.History.BatchMetric">
-            <summary>Lightweight performance record for a single batch.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.History.JsonFileImportRunHistoryStore">
             <summary>
@@ -32031,10 +31814,10 @@
         <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.GetImportStatus">
             <summary>Returns a detached snapshot of the current import status. Thread-safe.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.ImportContext,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.ImportContext,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
             <summary>Runs an import defined by a typed ImportContext.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.BuildConfigurationFromContext(TheTechIdea.Beep.Editor.Importing.Interfaces.ImportContext)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.BuildConfigurationFromContext(TheTechIdea.Beep.Editor.Importing.ImportContext)">
             <summary>
             Builds a DataImportConfiguration from an ImportContext.
             Useful for callers that need the concrete config object.
@@ -32043,16 +31826,16 @@
         <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.CreateImportConfiguration(System.String,System.String,System.String,System.String)">
             <summary>Creates a new import configuration from the four core identifiers.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.TestImportConfigurationAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.TestImportConfigurationAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>Tests whether the supplied configuration is executable (connectivity, entity presence, etc.).</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.RunImportAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
             <summary>Runs an import defined by an explicit DataImportConfiguration.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.RunMigrationPreflightAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.Action{System.String})">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.RunMigrationPreflightAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Action{System.String})">
             <summary>Validates schema compatibility before running a migration.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>Builds a sync-draft schema without executing the import.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager.ReplayFailedRecordsAsync(System.String,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
@@ -32063,7 +31846,7 @@
             Interface for data import validation operations
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportValidationHelper.ValidateImportConfiguration(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportValidationHelper.ValidateImportConfiguration(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Validates import configuration before execution
             </summary>
@@ -32133,7 +31916,7 @@
             <param name="transformationFunction">Custom transformation function</param>
             <returns>Transformed record</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportTransformationHelper.ApplyTransformationPipeline(System.Object,TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportTransformationHelper.ApplyTransformationPipeline(System.Object,TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Applies complete transformation pipeline
             </summary>
@@ -32155,7 +31938,7 @@
             <param name="availableMemory">Available memory for processing</param>
             <returns>Optimal batch size</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportBatchHelper.ProcessBatchAsync(System.Collections.Generic.IEnumerable{System.Object},TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportBatchHelper.ProcessBatchAsync(System.Collections.Generic.IEnumerable{System.Object},TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
             <summary>
             Processes a batch of records
             </summary>
@@ -32218,74 +32001,6 @@
         <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportProgressHelper.ClearLog">
             <summary>
             Clears the import log
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.BatchErrorStrategy">
-            <summary>Defines how a failed batch should be handled.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportState">
-            <summary>Lifecycle state of an import run.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.SyncMode">
-            <summary>How the import run handles already-seen records at the destination.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.SchemaDriftPolicy">
-            <summary>What to do when the source schema changed since the last run.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportSelectionContext">
-            <summary>Source / destination selection, independent of execution options.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportExecutionOptions">
-            <summary>Execution knobs — what the import run should do.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportContext">
-            <summary>
-            Typed, serialisable context that replaces the string-key parameter dictionary.
-            Both core (DataImportManager) and UI (ImportExportOrchestrator) use this.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportContext.From(TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration)">
-            <summary>Builds an ImportContext from a legacy DataImportConfiguration.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus">
-            <summary>Live snapshot of an import run — safe to read from any thread.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus.IsRunning">
-            <summary>True when the import is actively running.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus.IsPaused">
-            <summary>True when the import has been paused.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus.IsCompleted">
-            <summary>True when the import finished (success or failure).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus.IsCancelled">
-            <summary>True when the import was cancelled by the user.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus.HasErrors">
-            <summary>True when error-level log entries were recorded.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus.Snapshot">
-            <summary>Returns a detached copy — callers cannot mutate the live state.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.DataImportConfiguration">
-            <summary>
-            Configuration class for data import operations
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportPerformanceMetrics">
-            <summary>
-            Performance metrics for import operations
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.Importlogdata">
-            <summary>
-            Import log data structure
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.ImportLogLevel">
-            <summary>
-            Import log levels
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Profiling.DataProfiler">
@@ -32360,10 +32075,10 @@
             <summary>Per-field statistical summaries.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Quality.NotNullRule">
-            <summary>Records must have a non-null value for <see cref="P:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.FieldName"/>.</summary>
+            <summary>Records must have a non-null value for <see cref="P:TheTechIdea.Beep.Editor.Importing.IDataQualityRule.FieldName"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Quality.UniqueRule">
-            <summary>All values seen in <see cref="P:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.FieldName"/> within a batch must be distinct.</summary>
+            <summary>All values seen in <see cref="P:TheTechIdea.Beep.Editor.Importing.IDataQualityRule.FieldName"/> within a batch must be distinct.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Quality.RangeRule">
             <summary>Numeric or date value must fall within [<see cref="P:TheTechIdea.Beep.Editor.Importing.Quality.RangeRule.Min"/>, <see cref="P:TheTechIdea.Beep.Editor.Importing.Quality.RangeRule.Max"/>].</summary>
@@ -32383,11 +32098,11 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityEvaluator">
             <summary>
-            Evaluates a set of <see cref="T:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule"/> instances against a single record.
+            Evaluates a set of <see cref="T:TheTechIdea.Beep.Editor.Importing.IDataQualityRule"/> instances against a single record.
             Called per-record inside the batch processing pipeline.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityEvaluator.Evaluate(System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule},TheTechIdea.Beep.Editor.Importing.Interfaces.ImportStatus,TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,System.String,System.Int32,System.Int32)">
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityEvaluator.Evaluate(System.Object,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.Importing.IDataQualityRule},TheTechIdea.Beep.Editor.Importing.ImportStatus,TheTechIdea.Beep.Editor.Importing.IImportErrorStore,System.String,System.Int32,System.Int32)">
             <summary>
             Evaluates all rules for the given record.
             </summary>
@@ -32402,74 +32117,6 @@
             <c>true</c> when the record should be written to the destination;
             <c>false</c> when it was blocked.
             </returns>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityAction">
-            <summary>What to do when a quality rule fires against a record.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityAction.Block">
-            <summary>Reject the record entirely — it is not written to the destination.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityAction.Quarantine">
-            <summary>Move the record to the error store for later analysis.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.Importing.Quality.DataQualityAction.Warn">
-            <summary>Log the issue but still write the record.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule">
-            <summary>
-            Contract for a single data-quality rule evaluated per-record during import.
-            Implementations live in <see cref="!:BuiltInRules"/> or can be supplied by callers.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.RuleName">
-            <summary>Human-readable rule identifier (e.g. "not_null:CustomerID").</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.FieldName">
-            <summary>The field this rule is scoped to.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.OnFailure">
-            <summary>Action taken when <see cref="M:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.Evaluate(System.Object,System.Object)"/> returns <c>false</c>.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.Evaluate(System.Object,System.Object)">
-            <summary>
-            Returns <c>true</c> when the record passes the rule, <c>false</c> when it fails.
-            </summary>
-            <param name="fieldValue">Extracted value of <see cref="P:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.FieldName"/> from <paramref name="record"/>.</param>
-            <param name="record">The full source record (for cross-field rules).</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.Quality.IDataQualityRule.FailureMessage(System.Object)">
-            <summary>Builds a human-readable failure description for error logging.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Importing.Staging.StagingOptions">
-            <summary>
-            Controls whether raw records are written to a staging entity before normalization.
-            When staging is enabled the pipeline writes all source records to
-            <c>&lt;EntityName&gt;&lt;StagingEntitySuffix&gt;</c> first, then normalizes and
-            moves them to the final destination entity.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Staging.StagingOptions.Enabled">
-            <summary>
-            Master switch.  When <c>false</c> (default) records go directly to the destination.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Staging.StagingOptions.StagingEntitySuffix">
-            <summary>
-            Suffix appended to the entity name to form the staging entity name.
-            Defaults to <c>"_raw"</c> (e.g. <c>Customers_raw</c>).
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Staging.StagingOptions.DropStagingAfterNormalize">
-            <summary>
-            When <c>true</c> the staging entity is dropped after normalization succeeds.
-            When <c>false</c> the staging entity is kept for auditing.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Importing.Staging.StagingOptions.SkipNormalization">
-            <summary>
-            Skip the normalization step entirely — records remain in the staging entity only.
-            Useful for inspection runs without writing to the live destination table.
-            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Sync.IWatermarkStore">
             <summary>
@@ -37590,6 +37237,49 @@
             <summary>
             Migration tracking service — migration history, tracked execution,
             undo with compensation plan preview.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.SolutionDiscovery">
+            <summary>
+            Solution discovery service — scans for .sln files, parses .csproj
+            metadata, builds project dependency graphs, and auto-detects Data folders.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.AppMap">
+            <summary>
+            AppMap service — creates AppMap from solution discovery, detects project
+            roles via heuristics, allows manual role override, and persists to JSON.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.Environment">
+            <summary>
+            Environment management service — per-project environment profiles,
+            standard tier seeding (Local/Dev/Test/Staging/Production),
+            promote config between environments, environment-wide switching.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.Version">
+            <summary>
+            Version management service — database and application version tracking,
+            version comparison, and JSON persistence.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.Identity">
+            <summary>
+            Identity management service — auto-detects ASP.NET Identity tables,
+            user/role CRUD with custom table mapping for non-ASP.NET systems.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.DataImport">
+            <summary>
+            Data import manager — full import pipeline with validation, transformation,
+            batch processing, progress tracking, defaults, and history.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.MultiSync">
+            <summary>
+            Multi-project sync service — detects shared Data projects,
+            auto-links consumers, syncs schema to shared database.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.InitializeUniversalDataSourceHelpers">
@@ -51844,6 +51534,168 @@
         <member name="T:TheTechIdea.Beep.Rules.TokenizeResult">
             <summary>Result of a tokenize pass — always recovered; no exceptions thrown.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.AppMapService">
+            <summary>
+            Implements IAppMapService: creates AppMap from solution discovery,
+            detects roles via heuristics, allows manual override, and persists to JSON.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchPlan">
+            <summary>
+            Describes what changes when switching all projects from one environment to another.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchPlan.FromEnvironment">
+            <summary>Source environment ID.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchPlan.ToEnvironment">
+            <summary>Target environment ID.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchPlan.Changes">
+            <summary>Per-project changes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchPlan.ChangeCount">
+            <summary>Total number of servers being switched.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchPlan.InvolvesProduction">
+            <summary>Whether any production environment is involved.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.EnvironmentSwitchChange">
+            <summary>
+            A single project's environment switch change.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.ServerUrlChange">
+            <summary>
+            Old → new URL for a server.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.HealthCheckResult">
+            <summary>
+            Result of a health check against a server or database.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.ISolutionControlService">
+            <summary>
+            Aggregates AppMap, Environment, and health-check data into a live
+            solution snapshot. Provides environment-wide switching across all
+            projects in one operation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.ControlPanel.ISolutionControlService.GetSnapshotAsync(TheTechIdea.Beep.AppMap.AppMap,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Build a live snapshot of the entire solution in a specific environment.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.ControlPanel.ISolutionControlService.HealthCheckAllAsync(TheTechIdea.Beep.AppMap.AppMap,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Run health checks against all project servers and databases.
+            Updates the snapshot with live health status.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.ControlPanel.ISolutionControlService.SwitchEnvironmentAsync(TheTechIdea.Beep.AppMap.AppMap,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Switch ALL projects from one environment to another.
+            Returns a diff plan showing what changes.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.ControlPanel.ISolutionControlService.GetDependencyMapAsync(TheTechIdea.Beep.AppMap.AppMap,System.Threading.CancellationToken)">
+            <summary>
+            Build a project→dependency adjacency map.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus">
+            <summary>
+            Runtime status of a project in a specific environment.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus.ProjectName">
+            <summary>Project name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus.ServerType">
+            <summary>Server type.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus.Url">
+            <summary>Base URL.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus.Health">
+            <summary>Health check result.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus.IsRunning">
+            <summary>Whether the server is reachable.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.ProjectRuntimeStatus.LastCheckedAt">
+            <summary>When status was last checked.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionControlService">
+            <summary>
+            Aggregates IAppMapService + IEnvironmentManagementService into
+            a unified solution control panel: snapshots, health checks,
+            environment-wide switching, and dependency maps.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot">
+            <summary>
+            Aggregated live snapshot of an entire solution.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.AppMapId">
+            <summary>The AppMap this snapshot is based on.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.SolutionName">
+            <summary>Solution name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.ActiveEnvironmentId">
+            <summary>Current active environment.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.Projects">
+            <summary>Runtime status of all projects.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.DatabaseVersions">
+            <summary>Database versions per datasource.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.DependencyMap">
+            <summary>Dependency map (project → depends on).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.SnapshotAt">
+            <summary>When this snapshot was taken.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.AppMap.ControlPanel.SolutionSnapshot.OverallHealth">
+            <summary>Overall health.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.EnvironmentManagementService">
+            <summary>
+            Manages environment profiles per project with standard tier seeding,
+            promote workflows, and environment-wide switching.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.IdentityManagementService">
+            <summary>
+            Auto-detects ASP.NET Identity tables and provides user/role CRUD.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.MultiProjectSyncService">
+            <summary>
+            Thin wrapper around existing BeepSyncManager for AppMap-friendly multi-project sync.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.RoleDetectionHeuristics">
+            <summary>
+            Static heuristics for detecting project roles from .csproj metadata.
+            Returns (role, confidence). First match wins in priority order.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.RoleDetectionHeuristics.Detect(TheTechIdea.Beep.AppMap.ProjectInfo)">
+            <summary>
+            Detect the most likely role for a project. Returns (role, confidence, heuristicName).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.SolutionDiscoveryService">
+            <summary>
+            Scans file-system paths for .sln files, parses .csproj metadata,
+            builds project dependency graphs, and auto-detects Data folders.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Services.Audit.BeepAudit">
             <summary>
             Production <see cref="T:TheTechIdea.Beep.Services.Audit.IBeepAudit"/> backed by the shared
@@ -59238,7 +59090,7 @@
             </summary>
             <remarks>
             Architectural difference from the engine: the engine's
-            <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.ErrorStore.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.History.IImportRunHistoryStore)"/> is a single async call that
+            <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)"/> is a single async call that
             returns when the run is done. The Studio's <see cref="M:TheTechIdea.Beep.Studio.Sync.SyncStudioService.EnqueueRunAsync(System.String,TheTechIdea.Beep.Studio.Sync.SyncRunOptions,TheTechIdea.Beep.Studio.IStudioProgress,System.Threading.CancellationToken)"/>
             returns immediately with a <see cref="T:TheTechIdea.Beep.Studio.Sync.SyncRunHandle"/>, then runs the
             engine call on a background <see cref="M:System.Threading.Tasks.Task.Run(System.Action)"/>. The host UI can poll

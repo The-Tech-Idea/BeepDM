@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Logger;
@@ -157,6 +158,12 @@ namespace TheTechIdea.Beep.ConfigUtil
         // List<ETLScriptHDR> ReadSyncDataSource(string filename = "SyncDataSource");
         List<DefaultValue> Getdefaults(IDMEEditor DMEEditor, string DatasourceName);
         IErrorsInfo Savedefaults(IDMEEditor DMEEditor, List<DefaultValue> defaults, string DatasourceName);
+
+        // Import configuration persistence (per datasource)
+        void SaveImportConfiguration(string datasourceName, TheTechIdea.Beep.Editor.Importing.DataImportConfiguration config);
+        TheTechIdea.Beep.Editor.Importing.DataImportConfiguration LoadImportConfiguration(string datasourceName);
+        List<string> GetSavedImportConfigNames();
+        void DeleteImportConfiguration(string datasourceName);
 
 
     }

@@ -160,7 +160,7 @@ namespace TheTechIdea.Beep
                 {
                     // Include stack trace for errors
                     formattedMessage += $" | Context: {miscData ?? "N/A"} | ID: {recordId}";
-                    formattedMessage += $" | Stack: {Environment.StackTrace.Split(new[] { Environment.NewLine }, StringSplitOptions.None).FirstOrDefault(s => s.Contains("DMEEditor"))}";
+                    formattedMessage += $" | Stack: {System.Environment.StackTrace.Split(new[] { System.Environment.NewLine }, StringSplitOptions.None).FirstOrDefault(s => s.Contains("DMEEditor"))}";
                 }
                 if(Logger==null) 
                     return;

@@ -1,5 +1,7 @@
 using TheTechIdea.Beep.Editor.EntityDiscovery;
+using TheTechIdea.Beep.Editor.Importing;
 using TheTechIdea.Beep.Editor.Migration;
+using TheTechIdea.Beep.Services.AppMap;
 using TheTechIdea.Beep.Services.DatasourceManagement;
 
 namespace TheTechIdea.Beep
@@ -15,6 +17,13 @@ namespace TheTechIdea.Beep
         private EntityDiscoveryService _entityDiscovery;
         private DatasourceManagementService _datasourceMgr;
         private MigrationTrackingService _migrationTracker;
+        private SolutionDiscoveryService _solutionDiscovery;
+        private AppMapService _appMap;
+        private EnvironmentManagementService _environment;
+        private VersionManagementService _version;
+        private IdentityManagementService _identity;
+        private MultiProjectSyncService _multiSync;
+        private DataImportManager _dataImport;
         private readonly object _serviceLock = new();
 
         /// <summary>
@@ -71,6 +80,140 @@ namespace TheTechIdea.Beep
                     }
                 }
                 return _migrationTracker;
+            }
+        }
+
+        /// <summary>
+        /// Solution discovery service — scans for .sln files, parses .csproj
+        /// metadata, builds project dependency graphs, and auto-detects Data folders.
+        /// </summary>
+        public ISolutionDiscoveryService SolutionDiscovery
+        {
+            get
+            {
+                if (_solutionDiscovery == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _solutionDiscovery ??= new SolutionDiscoveryService(this);
+                    }
+                }
+                return _solutionDiscovery;
+            }
+        }
+
+        /// <summary>
+        /// AppMap service — creates AppMap from solution discovery, detects project
+        /// roles via heuristics, allows manual role override, and persists to JSON.
+        /// </summary>
+        public IAppMapService AppMap
+        {
+            get
+            {
+                if (_appMap == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _appMap ??= new AppMapService(this);
+                    }
+                }
+                return _appMap;
+            }
+        }
+
+        /// <summary>
+        /// Environment management service — per-project environment profiles,
+        /// standard tier seeding (Local/Dev/Test/Staging/Production),
+        /// promote config between environments, environment-wide switching.
+        /// </summary>
+        public IEnvironmentManagementService Environment
+        {
+            get
+            {
+                if (_environment == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _environment ??= new EnvironmentManagementService(this);
+                    }
+                }
+                return _environment;
+            }
+        }
+
+        /// <summary>
+        /// Version management service — database and application version tracking,
+        /// version comparison, and JSON persistence.
+        /// </summary>
+        public IVersionManagementService Version
+        {
+            get
+            {
+                if (_version == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _version ??= new VersionManagementService(this);
+                    }
+                }
+                return _version;
+            }
+        }
+
+        /// <summary>
+        /// Identity management service — auto-detects ASP.NET Identity tables,
+        /// user/role CRUD with custom table mapping for non-ASP.NET systems.
+        /// </summary>
+        public IIdentityManagementService Identity
+        {
+            get
+            {
+                if (_identity == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _identity ??= new IdentityManagementService(this);
+                    }
+                }
+                return _identity;
+            }
+        }
+
+        /// <summary>
+        /// Data import manager — full import pipeline with validation, transformation,
+        /// batch processing, progress tracking, defaults, and history.
+        /// </summary>
+        public DataImportManager DataImport
+        {
+            get
+            {
+                if (_dataImport == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _dataImport ??= new DataImportManager(this);
+                    }
+                }
+                return _dataImport;
+            }
+        }
+
+        /// <summary>
+        /// Multi-project sync service — detects shared Data projects,
+        /// auto-links consumers, syncs schema to shared database.
+        /// </summary>
+        public IMultiProjectSyncService MultiSync
+        {
+            get
+            {
+                if (_multiSync == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _multiSync ??= new MultiProjectSyncService(this);
+                    }
+                }
+                return _multiSync;
             }
         }
     }

@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                 // If there are quality rules, re-evaluate them.
                 if (config.QualityRules?.Count > 0 && errorRecord.RawRecord != null)
                 {
-                    var dummyStatus = new Interfaces.ImportStatus();
+                    var dummyStatus = new ImportStatus();
                     bool passes = Quality.DataQualityEvaluator.Evaluate(
                         errorRecord.RawRecord,
                         config.QualityRules,

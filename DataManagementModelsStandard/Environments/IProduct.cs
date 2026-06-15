@@ -1,4 +1,7 @@
-﻿namespace TheTechIdea.Beep.Environments
+using System;
+using System.Collections.Generic;
+using System.Linq;
+namespace TheTechIdea.Beep.Environments
 {
     public interface IProduct
     {

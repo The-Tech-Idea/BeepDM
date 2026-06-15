@@ -376,6 +376,9 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         WhenButtonPressed = 177,
         
         // Reserved 178-189 for future mouse triggers
+
+        /// <summary>When a host-defined custom item event fires (WHEN-CUSTOM-ITEM-EVENT). The eventType parameter identifies the specific event.</summary>
+        WhenCustomItemEvent = 174,
         
         #endregion
         

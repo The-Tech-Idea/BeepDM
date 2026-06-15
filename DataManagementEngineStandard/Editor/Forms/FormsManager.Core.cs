@@ -121,7 +121,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
 
             // Initialize helper managers with defaults if not provided
-            _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(_dmeEditor, _blocks, GetDetailBlocks, GetBlock);
+            _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(_dmeEditor, _blocks, GetDetailBlocks, GetBlock, GetActiveRelationships);
             _eventManager = eventManager ?? new EventManager(_dmeEditor);
             _formsSimulationHelper = formsSimulationHelper ?? new FormsSimulationHelper(_dmeEditor, _blocks);
             _performanceManager = performanceManager ?? new PerformanceManager(_dmeEditor);

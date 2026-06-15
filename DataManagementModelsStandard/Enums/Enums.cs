@@ -587,4 +587,73 @@ namespace TheTechIdea.Beep.Utilities
     {
         Insert,Update,Delete,Select,Error
     }
+
+    /// <summary>Role assigned to a project in a multi-project solution.</summary>
+    public enum ProjectRole
+    {
+        Unknown = 0,
+        Data = 1,
+        Api = 2,
+        Web = 3,
+        IdentityServer = 4,
+        Console = 5,
+        Library = 6,
+        Test = 7,
+        Service = 8
+    }
+
+    /// <summary>Standard environment deployment tier.</summary>
+    public enum EnvironmentTier
+    {
+        Local = 0,
+        Dev = 1,
+        Test = 2,
+        Staging = 3,
+        Production = 4,
+        Live = 5
+    }
+
+    /// <summary>Server type in a deployment topology.</summary>
+    public enum ServerType
+    {
+        ApiServer = 0,
+        WebServer = 1,
+        IdentityServer = 2,
+        DbServer = 3,
+        Other = 4
+    }
+
+    /// <summary>Detection mode for identity system.</summary>
+    public enum IdentityDetectionMode
+    {
+        None = 0,
+        AspNetIdentity = 1,
+        Generic = 2
+    }
+
+    /// <summary>Type of change between two database versions.</summary>
+    public enum VersionChangeType
+    {
+        Added = 0,
+        Modified = 1,
+        Removed = 2
+    }
+
+    /// <summary>Operation to perform during a multi-project sync.</summary>
+    public enum SyncOperation
+    {
+        Create = 0,
+        Alter = 1,
+        Drop = 2,
+        NoChange = 3
+    }
+
+    /// <summary>Health status of a server or database.</summary>
+    public enum HealthStatus
+    {
+        Unknown = 0,
+        Healthy = 1,
+        Degraded = 2,
+        Unhealthy = 3
+    }
 }

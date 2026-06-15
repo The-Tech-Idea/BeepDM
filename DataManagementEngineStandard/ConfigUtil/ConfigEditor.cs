@@ -395,7 +395,50 @@ namespace TheTechIdea.Beep.ConfigUtil
 			return true;
 		}
 
-		// Simplified stub implementations for remaining methods
+        #region "Import Configuration Operations"
+        public void SaveImportConfiguration(string datasourceName, TheTechIdea.Beep.Editor.Importing.DataImportConfiguration config)
+        {
+            if (string.IsNullOrWhiteSpace(datasourceName) || config == null) return;
+            var safeName = string.Join("_", datasourceName.Split(Path.GetInvalidFileNameChars()));
+            var path = Path.Combine(ConfigPath, $"ImportConfig_{safeName}.json");
+            JsonLoader.Serialize(path, config);
+        }
+
+        public TheTechIdea.Beep.Editor.Importing.DataImportConfiguration LoadImportConfiguration(string datasourceName)
+        {
+            if (string.IsNullOrWhiteSpace(datasourceName)) return null!;
+            var safeName = string.Join("_", datasourceName.Split(Path.GetInvalidFileNameChars()));
+            var path = Path.Combine(ConfigPath, $"ImportConfig_{safeName}.json");
+            if (!File.Exists(path)) return null!;
+            return JsonLoader.DeserializeSingleObject<TheTechIdea.Beep.Editor.Importing.DataImportConfiguration>(path);
+        }
+
+        public List<string> GetSavedImportConfigNames()
+        {
+            var names = new List<string>();
+            try
+            {
+                if (Directory.Exists(ConfigPath))
+                {
+                    var files = Directory.GetFiles(ConfigPath, "ImportConfig_*.json");
+                    foreach (var f in files)
+                        names.Add(Path.GetFileNameWithoutExtension(f).Replace("ImportConfig_", ""));
+                }
+            }
+            catch { }
+            return names;
+        }
+
+        public void DeleteImportConfiguration(string datasourceName)
+        {
+            if (string.IsNullOrWhiteSpace(datasourceName)) return;
+            var safeName = string.Join("_", datasourceName.Split(Path.GetInvalidFileNameChars()));
+            var path = Path.Combine(ConfigPath, $"ImportConfig_{safeName}.json");
+            if (File.Exists(path)) File.Delete(path);
+        }
+        #endregion
+
+        // Simplified stub implementations for remaining methods
 		public void SaveDatabasesValues() { /* Implementation */ }
 		public void LoadDatabasesValues() { /* Implementation */ }
 		public void SaveEvents() { /* Implementation */ }

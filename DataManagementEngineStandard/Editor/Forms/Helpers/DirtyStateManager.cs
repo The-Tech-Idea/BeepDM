@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Forms.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Report;
@@ -23,6 +24,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly ConcurrentDictionary<string, DataBlockInfo> _blocks;
         private readonly Func<string, List<string>> _getDetailBlocksFunc;
         private readonly Func<string, DataBlockInfo> _getBlockFunc;
+        private readonly Func<string, List<DataBlockRelationship>> _getRelationshipsFunc;
+        private static bool IsNullOrEmpty(object value) =>
+            value == null || value == DBNull.Value || (value is string text && string.IsNullOrWhiteSpace(text));
+
         #endregion
 
         #region Events
@@ -30,6 +35,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// Raised when an operation encounters unsaved changes and needs a caller decision.
         /// </summary>
         public event EventHandler<UnsavedChangesEventArgs> OnUnsavedChanges;
+
         #endregion
 
         #region Constructor
@@ -44,13 +50,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks,
             Func<string, List<string>> getDetailBlocksFunc,
-            Func<string, DataBlockInfo> getBlockFunc)
+            Func<string, DataBlockInfo> getBlockFunc,
+            Func<string, List<DataBlockRelationship>> getRelationshipsFunc)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             _blocks = blocks ?? throw new ArgumentNullException(nameof(blocks));
             _getDetailBlocksFunc = getDetailBlocksFunc ?? throw new ArgumentNullException(nameof(getDetailBlocksFunc));
             _getBlockFunc = getBlockFunc ?? throw new ArgumentNullException(nameof(getBlockFunc));
+            _getRelationshipsFunc = getRelationshipsFunc ?? throw new ArgumentNullException(nameof(getRelationshipsFunc));
         }
+
         #endregion
 
         #region Public Methods
@@ -199,6 +208,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                             {
                                 successCount++;
                                 LogOperation($"Successfully saved block '{blockName}' ({successCount}/{totalBlocks})");
+
+                                // G0.1/G1.1: After a master block is committed, propagate its
+                                // newly-generated key (e.g. auto-increment ID assigned by the DB)
+                                // to all dirty detail records before they are committed.
+                                if (blockInfo.IsMasterBlock)
+                                    PropagateMasterKeyToDetails(blockName, sortedBlocks);
                             }
                             else
                             {
@@ -506,6 +521,113 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             var fullMessage = blockName != null ? $"[{blockName}] {message}" : message;
             _dmeEditor.AddLogMessage("DirtyStateManager", fullMessage, DateTime.Now, -1, null, Errors.Failed);
+        }
+
+        /// <summary>
+        /// After a master block is committed, the database may have generated the real key
+        /// (e.g. auto-increment identity). This method propagates the master's current key
+        /// value to all dirty detail records so they carry the correct FK when committed.
+        /// Matches the Oracle Forms COPY / WHEN-VALIDATE-RECORD key-propagation contract.
+        ///
+        /// CONTRACT: UoW implementations MUST update the record's key property after Commit()
+        /// for auto-generated keys. ADO.NET sources do this via SCOPE_IDENTITY() / RETURNING.
+        /// For NoSQL/File/WebAPI sources, the key is typically generated before commit
+        /// (client-side ObjectId, counter, or API-returned ID). If the key is still null/empty
+        /// after commit, a warning is logged and propagation is skipped — the caller should
+        /// re-query the data source or use a PostCommitRefresh hook.
+        /// </summary>
+        private void PropagateMasterKeyToDetails(string masterBlockName, List<string> dirtyBlockNames)
+        {
+            var relationships = _getRelationshipsFunc(masterBlockName);
+            if (relationships == null || !relationships.Any())
+                return;
+
+            var masterBlock = _getBlockFunc(masterBlockName);
+            var masterCurrentItem = masterBlock?.UnitOfWork?.CurrentItem;
+            if (masterCurrentItem == null) return;
+
+            foreach (var relationship in relationships.Where(r => r.IsActive))
+            {
+                if (!dirtyBlockNames.Contains(relationship.DetailBlockName))
+                    continue;
+
+                var detailBlock = _getBlockFunc(relationship.DetailBlockName);
+                if (detailBlock?.UnitOfWork == null) continue;
+
+                var masterFieldMappings = MasterDetailKeyResolver.TryParseMappings(
+                    relationship.MasterKeyField, relationship.DetailForeignKeyField,
+                    out var mappings, out _);
+
+                if (mappings == null || mappings.Count == 0) continue;
+
+                foreach (var mapping in mappings)
+                {
+                    var masterKeyValue = RecordPropertyAccessor.GetValue(
+                        masterCurrentItem, mapping.MasterField, _dmeEditor);
+
+                    // Safety-net: if the key is still null/empty after commit,
+                    // the UoW implementation did not populate the auto-generated
+                    // value (common in non-ADO NoSQL/File/WebAPI sources). Log
+                    // a warning and skip — do not propagate null/empty FK values.
+                    if (IsNullOrEmpty(masterKeyValue))
+                    {
+                        LogError(
+                            $"PropagateMasterKeyToDetails: master key '{relationship.MasterKeyField}' " +
+                            $"on block '{masterBlockName}' is null/empty after commit. " +
+                            $"The UoW implementation may not have captured the generated key. " +
+                            $"Key propagation to detail '{relationship.DetailBlockName}' was skipped. " +
+                            $"UoW implementations MUST update the record's key property after Commit() " +
+                            $"for sources that generate keys (ADO.NET SCOPE_IDENTITY, WebAPI POST response, etc.).",
+                            null, relationship.DetailBlockName);
+                        continue;
+                    }
+
+                    // Propagate the master key to ALL dirtied detail records — both
+                    // newly inserted (GetInsertedItems) and existing-but-modified
+                    // (GetUpdatedItems). This covers: DB-generated identity after
+                    // master insert, AND manual key changes on the master that must
+                    // cascade to existing child records. Oracle Forms COPY contract.
+                    System.Collections.IList? inserteds = null;
+                    System.Collections.IList? updateds = null;
+                    try
+                    {
+                        dynamic dynUoW = detailBlock.UnitOfWork;
+                        inserteds = ((System.Collections.IList?)dynUoW.GetInsertedItems() ?? null);
+                        updateds  = ((System.Collections.IList?)dynUoW.GetUpdatedItems() ?? null);
+                    }
+                    catch { /* Optional — skip if UoW doesn't expose these */ }
+
+                    if (inserteds != null)
+                    {
+                        foreach (var detailRecord in inserteds)
+                        {
+                            RecordPropertyAccessor.TrySetValue(
+                                detailRecord, mapping.DetailField, masterKeyValue, _dmeEditor);
+                        }
+                    }
+
+                    if (updateds != null)
+                    {
+                        foreach (var detailRecord in updateds)
+                        {
+                            RecordPropertyAccessor.TrySetValue(
+                                detailRecord, mapping.DetailField, masterKeyValue, _dmeEditor);
+                        }
+                    }
+
+                    // Also update the current item
+                    var currentDetail = detailBlock.UnitOfWork.CurrentItem;
+                    if (currentDetail != null)
+                    {
+                        RecordPropertyAccessor.TrySetValue(
+                            currentDetail, mapping.DetailField, masterKeyValue, _dmeEditor);
+                    }
+                }
+
+                LogOperation(
+                    $"Propagated master key from '{masterBlockName}.{relationship.MasterKeyField}' " +
+                    $"to detail '{relationship.DetailBlockName}.{relationship.DetailForeignKeyField}'");
+            }
         }
 
         #endregion

@@ -1,305 +1,426 @@
-# FormsManager
+# FormsManager — Oracle Forms Runtime Engine
 
-`FormsManager` is the BeepDM form-orchestration runtime in the `TheTechIdea.Beep.Editor.UOWManager` namespace. It is the current concrete implementation behind `IUnitofWorksManager` and coordinates block registration, navigation, mode transitions, master/detail synchronization, triggers, LOVs, validation, auditing, security, paging, and multi-form communication. The intent is to provide an Oracle Forms–compatible runtime surface that UIs (WinForms, Blazor, Razor) can call into without re-implementing the orchestration.
+`FormsManager` is the BeepDM form-orchestration runtime in the `TheTechIdea.Beep.Editor.UOWManager`
+namespace. It implements `IUnitofWorksManager` and coordinates block registration, navigation,
+mode transitions, master/detail synchronization, triggers, LOVs, validation, auditing, security,
+paging, multi-form communication, alerts, timers, sequences, savepoints, and undo/redo.
 
-This README replaces the older `UnitofWorksManager` naming found in earlier notes. The public runtime surface is `FormsManager`; the compatibility interface is still named `IUnitofWorksManager`.
+The architecture follows the **Oracle Forms runtime** model: FormsManager owns orchestration;
+`IUnitofWork` owns persistence. UIs (WinForms, WPF, Blazor) call into FormsManager and provide an
+`IBuiltinHost` adapter to receive the `IBeepBuiltins` built-in surface.
 
-## Documentation map
+---
 
-This folder has multiple documents. Read them in this order for the cleanest introduction:
+## 1. File Map — 28 Partial Classes
 
-1. **[`architecture.md`](architecture.md)** — subsystems, layering, request flow, and the host/orchestrator/helper model. Read this first to understand what FormsManager *is* before reading the API.
-2. **[`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md)** — every Oracle Forms concept that has a counterpart here, with the exact FormsManager method and a status (complete / partial / missing). This is the **biggest gap-tracking document** in this folder.
-3. **[`functional-matrix.md`](functional-matrix.md)** — every public type and capability, in tabular form. Use this as a lookup reference.
-4. **[`functionality/`](functionality/)** — per-subsystem deep-dives, one document per major concern (navigation, triggers, validation, LOV, master-detail, security, audit, multi-form, timers, alerts, sequences, performance, builtins).
-5. **[`gaps.md`](gaps.md)** — what the engine does not yet do. Read after the mapping doc.
-6. **[`enhancements.md`](enhancements.md)** — prioritized list of opportunities to close those gaps.
+```
+Editor/Forms/
+├── FormsManager.Core.cs               Constructor + 24 DI helpers + lifetime
+├── FormsManager.Properties.cs         28 readonly public properties
+├── FormsManager.BlockRegistration.cs  Register / Unregister / SetupBlock / Savepoints
+├── FormsManager.DataOperations.cs     Undo/Redo / Batch commit / Export/Import / Aggregates
+├── FormsManager.BasicDataOps.cs       Insert / Delete / EnterQuery / ExecuteQuery
+├── FormsManager.Navigation.cs         Record + block navigation / GO_BLOCK / GO_ITEM / NEXT_ITEM
+├── FormsManager.ModeTransitions.cs    ENTER_QUERY → EXECUTE_QUERY → CRUD transitions
+├── FormsManager.Relationships.cs      Master/detail registration + sync
+├── FormsManager.FormOperations.cs     Open / Close / Commit / Rollback / Clear / Validate
+├── FormsManager.GenericOperations.cs  Typed block wrappers + ShowLOVAsync
+├── FormsManager.EnhancedOperations.cs Insert/update with audit defaults + query enhancement
+├── FormsManager.FormsSimulation.cs    SetFieldValue / GetFieldValue / ExecuteSequence
+├── FormsManager.DmlTriggers.cs        ON-INSERT / ON-UPDATE / ON-DELETE wrappers
+├── FormsManager.KeyTriggers.cs        KEY- trigger registration + default actions
+├── FormsManager.TriggerChaining.cs    Trigger execution DAG + execution log
+├── FormsManager.Validation.cs         Field + block validation (event + rule-based)
+├── FormsManager.Security.cs           Block/field security + row filtering + masking
+├── FormsManager.Audit.cs              Audit trail configuration + query + export
+├── FormsManager.Alerts.cs             MESSAGE / SHOW_ALERT / BELL equivalents
+├── FormsManager.Timers.cs             CREATE_TIMER / DELETE_TIMER
+├── FormsManager.Sequences.cs          Sequences + item defaults
+├── FormsManager.InterFormComm.cs      :GLOBAL.* / parameters / message bus / shared blocks
+├── FormsManager.MultiFormNavigation.cs CALL_FORM / OPEN_FORM / NEW_FORM / return-to-caller
+├── FormsManager.BlockProperties.cs    SET_BLOCK_PROPERTY / GET_BLOCK_PROPERTY
+├── FormsManager.Performance.cs        Paging / fetch-ahead / lazy load / cache
+├── FormsManager.DirtyState.cs         Unsaved-changes detection + handling
+├── FormsManager.Lifecycle.cs          Dispose
+└── FormsManager.Helpers.cs            Private plumbing (SuppressSync, ResolveEntityType, etc.)
+```
 
-Related documentation outside this folder:
+---
 
-- **[`MIGRATION-GUIDE.md`](MIGRATION-GUIDE.md)** — older legacy migration notes.
-- **[`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md)** — older state-of-the-engine assessment. **Out of date**; do not use as a current reference. See [`gaps.md`](gaps.md) for the current state.
-- **[`Helpers/README.md`](Helpers/README.md)**, **[`Interfaces/README.md`](Interfaces/README.md)**, **[`Models/README.md`](Models/README.md)** — index docs for the three subfolders.
-- **[`plan.instructions.md`](plan.instructions.md)** — historical planning notes.
+## 2. Helper Manager Composition (24 DI-injected managers)
 
-## What FormsManager owns
+FormsManager composes 24 helper managers, each exposed as a property and DI-injected:
 
-- Block registration, current-block state, and form-level orchestration.
-- Master/detail registration and detail synchronization.
-- Query-mode and CRUD-mode transitions.
-- Navigation history, savepoints, locks, and cross-block validation.
-- Oracle Forms-style built-ins such as alerts, timers, sequences, and block properties.
-- Multi-form registry / message / shared-block plumbing.
-- Integration of helper managers for validation, LOV, triggers, audit, security, paging, and caching.
-- Runtime trigger metadata and block UoW activity that host UIs may observe only through proxy layers such as `BeepForms` / `IBeepFormsHost`.
+| Property | Interface | Responsibility |
+|----------|-----------|---------------|
+| `DMEEditor` | `IDMEEditor` | Engine root — data sources, connections |
+| `DirtyStateManager` | `IDirtyStateManager` | Unsaved change tracking |
+| `PerformanceManager` | `IPerformanceManager` | Paging, caching, lazy load |
+| `SystemVariables` | `ISystemVariablesManager` | `:SYSTEM.*` variable mirror |
+| `Validation` | `IValidationManager` | Field/record/block validation |
+| `LOV` | `ILOVManager` | LOV query + display |
+| `ItemProperties` | `IItemPropertyManager` | Per-item get/set |
+| `Triggers` | `ITriggerManager` | Trigger registration + firing |
+| `Savepoints` | `ISavepointManager` | Named block savepoints |
+| `Locking` | `ILockManager` | Record locking |
+| `QueryBuilder` | `IQueryBuilderManager` | Dynamic query filtering |
+| `ErrorLog` | `IBlockErrorLog` | Error logging |
+| `Messages` | `IMessageQueueManager` | Per-block message queue |
+| `BlockFactory` | `IBlockFactory` | UoW + entity structure resolution |
+| `BlockProperties` | `IBlockPropertyManager` | `SET_BLOCK_PROPERTY` routing |
+| `AlertProvider` | `IAlertProvider` | Alert dialog surface |
+| `Sequences` | `ISequenceProvider` | Auto-increment sequences |
+| `Timers` | `ITimerManager` | `CREATE_TIMER` / `DELETE_TIMER` |
+| `Registry` | `IFormRegistry` | Multi-form registration |
+| `MessageBus` | `IFormMessageBus` | Inter-form messaging |
+| `SharedBlocks` | `ISharedBlockManager` | Cross-form shared blocks |
+| `Security` | `ISecurityManager` | Block/field permissions |
+| `Audit` | `IAuditManager` | Change audit trail |
+| `Paging` | `IPagingManager` | Database-level paging |
 
-## What stays in `IUnitofWork`
+Plus 4 internal managers:
+- `_eventManager` (`IEventManager`) — TriggerBlockEnter/Leave, TriggerFieldValidation, etc.
+- `_formsSimulationHelper` (`IFormsSimulationHelper`)
+- `_masterDetailKeyResolver` (`MasterDetailKeyResolver`) — FK resolution for relationships
+- `_configurationManager` (`IConfigurationManager`) — JSON config persistence
 
-- Persistence and actual CRUD execution.
-- Dirty-state ownership.
-- Commit and rollback semantics.
-- Datasource-backed identity refresh and sequence generation when the datasource owns key allocation.
-- Query execution and loaded-record storage.
+---
 
-Integrated WinForms controls should not subscribe to `FormsManager.Triggers` or raw block `IUnitofWork` instances directly. If UI surfaces need trigger or CRUD/query/current-record activity, add or use a `BeepForms` host proxy so workflow ownership stays inside FormsManager.
+## 3. Public API (100+ methods)
 
-## Key generation and ownership rules
+### 3.1 Block Registration
+| Method | Signature |
+|--------|-----------|
+| `RegisterBlock` | `(string name, IUnitofWork uow, string dsName, bool isMaster)` |
+| `RegisterBlock` (overload) | `(string name, IUnitofWork uow, IEntityStructure es, string dsName, bool isMaster)` |
+| `RegisterBlock<T>` (generic) | `(string name, IUnitofWork uow, string dsName, bool isMaster)` |
+| `RegisterBlockFromSourceAsync` | `(string name, string conn, string entity, bool isMaster, CancellationToken)` |
+| `SetupBlockAsync` | `(string name, string conn, string entity, bool isMaster, CancellationToken)` — single-call bootstrap |
+| `UnregisterBlock` | `(string name)` — removes relationships, unsubscribes events |
+| `GetBlock` / `GetBlock<T>` | `(string name)` — cached lookup |
+| `GetUnitOfWork` | `(string name)` |
+| `BlockExists` | `(string name)` |
 
-1. If a caller, default, or trigger already supplied a valid key, FormsManager preserves it.
-2. If a datasource owns identity or auto-increment values, leave the key unset until insert or commit refresh completes.
-3. If a real sequence exists, prefer the datasource or UoW sequence path before using the in-memory FormsManager sequence provider.
-4. Use FormsManager sequences for Oracle-style built-ins, deterministic tests, or non-database-backed scenarios.
-5. Do not auto-number composite keys.
-6. Never consume sequence values during query, paging, navigation, or cache prefetch.
+### 3.2 Data Operations
+| Method | Signature |
+|--------|-----------|
+| `InsertRecordAsync` | `(string name, object record = null)` |
+| `DeleteCurrentRecordAsync` | `(string name)` |
+| `UpdateCurrentRecordAsync` | `(string name)` |
+| `ExecuteQueryAsync` | `(string name, List<AppFilter> filters = null)` |
+| `EnterQueryModeAsync` | `(string name)` |
+| `ExecuteQueryAndEnterCrudModeAsync` | `(string name, List<AppFilter> filters = null)` |
+| `ExecuteQueryEnhancedAsync` | `(string name, List<AppFilter> filters = null)` — with audit |
+| `InsertRecordEnhancedAsync` | `(string name, object record = null)` — with audit |
+| `CreateNewRecord` | `(string name)` |
+| `RefreshBlockAsync` | `(string name, List<AppFilter> filters, ConflictMode, CancellationToken)` |
+| `RevertCurrentRecord` | `(string name)` |
+| `RevertRecord` | `(string name, int index)` |
 
-## Architecture (one-paragraph version)
+### 3.3 Navigation
+| Method | Signature |
+|--------|-----------|
+| `FirstRecordAsync` / `LastRecordAsync` | `(string name)` |
+| `NextRecordAsync` / `PreviousRecordAsync` | `(string name)` |
+| `NavigateToRecordAsync` | `(string name, int recordIndex)` |
+| `SwitchToBlockAsync` | `(string name)` |
+| `GoBlockAsync` / `GoRecordAsync` / `GoItemAsync` | (Oracle Forms named equivalents) |
+| `NextItemAsync` / `PreviousItemAsync` | `(string name, string currentItem = null)` |
+| `NextBlockAsync` / `PreviousBlockAsync` | `()` |
+| `NavigateBackAsync` / `NavigateForwardAsync` | `(string name)` (per-block history) |
+| `CanNavigateBack` / `CanNavigateForward` | `(string name)` |
+| `GetNavigationHistory` / `ClearNavigationHistory` | `(string name)` |
+| `GetCurrentRecordInfo` | `(string name)` |
+| `GetAllNavigationInfo` | `()` |
 
-`FormsManager` is a partial-class orchestrator that owns no significant logic itself. It composes 24 helper managers (one per concern: validation, LOV, triggers, security, audit, paging, etc.), exposes them as properties (`manager.LOV`, `manager.Triggers`, `manager.Validation`, …), and routes every public method to the right helper. The winforms / blazor / razor host implements `IBuiltinHost` and gets the `IBeepBuiltins` Oracle-style built-in surface. Persistence stays in `IUnitofWork`; orchestration is the FormsManager's job. Full detail in [`architecture.md`](architecture.md).
+### 3.4 Mode Transitions
+| Method | Signature |
+|--------|-----------|
+| `EnterQueryModeAsync` | `(string name)` — validates unsaved changes first |
+| `ExecuteQueryAndEnterCrudModeAsync` | `(string name, List<AppFilter> filters)` |
+| `EnterCrudModeForNewRecordAsync` | `(string name)` |
+| `CreateNewRecordInMasterBlockAsync` | `(string masterName)` |
+| `GetBlockMode` / `TryGetBlockMode` | `(string name)` |
+| `GetAllBlockModeInfo` | `()` |
+| `IsFormReadyForModeTransitionAsync` | `()` |
+| `ValidateAllBlocksForModeTransitionAsync` | `()` |
 
-## Quick start
+### 3.5 Form Operations
+| Method | Signature |
+|--------|-----------|
+| `OpenFormAsync` | `(string formName)` |
+| `CloseFormAsync` | `()` |
+| `CommitFormAsync` | `()` — FK-aware topological ordered commit |
+| `RollbackFormAsync` | `()` |
+| `ClearAllBlocksAsync` / `ClearBlockAsync` | `(string name?)` |
+| `ValidateForm` | `()` |
+
+### 3.6 Relationships
+| Method | Signature |
+|--------|-----------|
+| `CreateMasterDetailRelation` | `(string master, string detail, string masterKey, string detailFk, RelationshipType)` |
+| `SynchronizeDetailBlocksAsync` | `(string master, CancellationToken)` |
+| `GetDetailBlocks` | `(string master)` |
+| `GetMasterBlock` | `(string detail)` |
+
+### 3.7 Undo/Redo
+| Method | Signature |
+|--------|-----------|
+| `SetBlockUndoEnabled` | `(string name, bool enable, int maxDepth)` |
+| `UndoBlock` / `RedoBlock` | `(string name)` |
+| `CanUndoBlock` / `CanRedoBlock` | `(string name)` |
+
+### 3.8 Savepoints
+| Method | Signature |
+|--------|-----------|
+| `CreateBlockSavepoint` | `(string name, string savepointName)` |
+| `RollbackToSavepointAsync` | `(string name, string savepointName, CancellationToken)` |
+
+### 3.9 Batch & Export
+| Method | Signature |
+|--------|-----------|
+| `CommitFormBatchAsync` | `(int batchSize, IProgress<CommitBatchProgress>, Cancellation)` |
+| `CommitBlockBatchAsync` | `(string name, int batchSize, IProgress, Cancellation)` |
+| `ExportBlockToJsonAsync` / `ExportBlockToCsvAsync` | `(string name, Stream, ...)` |
+| `ImportBlockFromJsonAsync` / `ImportBlockFromCsvAsync` | `(string name, Stream, bool clearFirst, ...)` |
+| `GetBlockAsDataTable` | `(string name)` |
+| `CloneBlockDataAsync` | `(string source, string dest, Cancellation)` |
+| `DuplicateCurrentRecordAsync` | `(string name, Cancellation)` |
+
+### 3.10 Aggregates
+| Method | Signature |
+|--------|-----------|
+| `GetBlockSum` / `GetBlockAverage` | `(string name, string field)` |
+| `GetBlockCount` | `(string name, Func<object,bool> predicate)` |
+| `GetBlockGroups` | `(string name, string field)` |
+| `GetBlockChangeSummary` | `(string name)` |
+| `GetFormChangeSummary` | `()` |
+
+### 3.11 Form State
+| Method | Signature |
+|--------|-----------|
+| `SaveFormState` | `()` — returns `FormStateSnapshot` |
+| `RestoreFormStateAsync` | `(FormStateSnapshot snapshot, Cancellation)` |
+
+### 3.12 Cross-Block Validation
+| Method | Signature |
+|--------|-----------|
+| `RegisterCrossBlockRule` / `UnregisterCrossBlockRule` | `(CrossBlockValidationRule)` / `(string name)` |
+| `ValidateCrossBlock` | `()` |
+
+### 3.13 Block Properties (Oracle `SET_BLOCK_PROPERTY`)
+| Method | Signature |
+|--------|-----------|
+| `SetBlockProperty` / `GetBlockProperty` / `GetBlockProperty<T>` | `(string name, BlockProperty, object value)` |
+| `SetInsertAllowed` / `SetUpdateAllowed` / `SetDeleteAllowed` / `SetQueryAllowed` | `(string name, bool)` |
+| `SetDefaultWhere` / `SetOrderBy` | `(string name, string clause)` |
+
+### 3.14 DML Triggers
+| Method | Signature |
+|--------|-----------|
+| `FireOnInsertAsync` / `FireOnUpdateAsync` / `FireOnDeleteAsync` | `(string name, object record)` |
+| `RaiseFormTriggerAsync` | `(string triggerName, string blockName)` |
+
+### 3.15 Key Triggers
+| Method | Signature |
+|--------|-----------|
+| `RegisterKeyTrigger` / `RegisterKeyTriggerAsync` | `(KeyTriggerType, string block, handler)` |
+| `FireKeyTriggerAsync` | `(KeyTriggerType, string block)` |
+
+### 3.16 Trigger Chaining
+| Method | Signature |
+|--------|-----------|
+| `FireTriggersInOrderAsync` | `(IReadOnlyList<TriggerDefinition>, string block, Cancellation)` |
+| `GetTriggerLog` / `ClearTriggerLog` | `()` / `()` |
+| `TriggerLog` / `TriggerDependencies` | Properties |
+
+### 3.17 Validation
+| Method | Signature |
+|--------|-----------|
+| `ValidateField` | `(string name, string field, object value)` |
+| `ValidateBlock` | `(string name)` |
+
+### 3.18 Security
+| Method | Signature |
+|--------|-----------|
+| `SetSecurityContext` | `(SecurityContext)` |
+| `SetBlockSecurity` / `GetBlockSecurity` | `(string name, BlockSecurity)` / `(string name)` |
+| `IsBlockAllowed` | `(string name, SecurityPermission)` |
+| `SetFieldSecurity` / `GetFieldSecurity` | `(string name, string field, FieldSecurity)` / `(string name, string field)` |
+| `GetMaskedFieldValue` | `(string name, string field, object raw)` |
+| `GetSecurityViolations` | `()` |
+| `SecurityContext` / `Security` | Properties |
+
+### 3.19 Audit
+| Method | Signature |
+|--------|-----------|
+| `SetAuditUser` / `ConfigureAudit` | `(string)` / `(Action<AuditConfiguration>)` |
+| `GetAuditLog` | `(string block, AuditOperation?, DateTime?, DateTime?)` |
+| `GetFieldHistory` | `(string block, string recordKey, string field)` |
+| `ExportAuditToCsvAsync` / `ExportAuditToJsonAsync` | `(string path, string block)` / `(string path, string block)` |
+| `PurgeAudit` / `ClearAudit` | `(int olderThanDays)` / `()` |
+| `AuditManager` | Property |
+
+### 3.20 Alerts & Messages
+| Method | Signature |
+|--------|-----------|
+| `SetMessage` / `ClearMessage` | `(string text, MessageLevel)` / `()` |
+| `ShowAlertAsync` | `(string title, string msg, AlertStyle, string btn1, string btn2, string btn3, Cancellation)` |
+| `ShowInfoAsync` / `ConfirmAsync` | Shortcut wrappers |
+| `CurrentMessage` | Property |
+
+### 3.21 Forms Simulation
+| Method | Signature |
+|--------|-----------|
+| `SetAuditDefaults` | `(object record, string user)` |
+| `SetFieldValue` / `GetFieldValue` | `(object record, string field, object value)` / `(object record, string field)` |
+| `ExecuteSequence` | `(string block, object record, string field, string seq)` |
+| `SetSystemVariables` | `(object record, SystemVariableType, object value)` |
+
+### 3.22 Inter-Form Communication
+| Method | Signature |
+|--------|-----------|
+| `SetGlobalVariable` / `GetGlobalVariable` / `GetGlobalVariable<T>` | `(string name, object value)` / `(string name)` |
+| `SendParameterToForm` | `(string form, string param, object value)` |
+| `PostMessage` / `BroadcastMessage` | `(string target, string type, object payload)` / `(string type, object payload)` |
+| `SubscribeToMessage` / `UnsubscribeFromMessage` | `(string type, Action<FormMessage>)` / `(string type)` |
+| `CreateSharedBlock` / `GetSharedBlock` | `(string name, IUnitofWork)` / `(string name)` |
+| `TryLockSharedBlock` / `ReleaseSharedBlockLock` | `(string name, TimeSpan)` / `(string name)` |
+
+### 3.23 Performance & Paging
+| Method | Signature |
+|--------|-----------|
+| `SetBlockPageSize` / `LoadPageAsync` | `(string name, int)` / `(string name, int page, Cancellation)` |
+| `GetTotalRecordCount` / `SetTotalRecordCount` | `(string name)` / `(string name, long)` |
+| `SetFetchAheadDepth` | `(string name, int depth)` |
+| `SetLazyLoadMode` / `GetLazyLoadMode` | `(string name, LazyLoadMode)` / `(string name)` |
+| `SetMaxRecordsPerFetch` | `(string name, int max)` |
+| `InvalidateBlockCache` / `SetBlockCacheTtl` | `(string name)` / `(string name, TimeSpan)` |
+| `GetCacheStats` / `CheckCacheMemoryPressure` | `()` / `(long thresholdMb)` |
+| `Paging` | Property |
+
+### 3.24 Dirty State
+| Method | Signature |
+|--------|-----------|
+| `CheckAndHandleUnsavedChangesAsync` | `(string name)` |
+| `HasUnsavedChanges` / `GetDirtyBlocks` | `()` / `()` |
+
+---
+
+## 4. Model Catalog (80+ classes)
+
+### 4.1 Trigger Models (`Models/TriggerEnums.cs`, `TriggerDefinition.cs`, `TriggerContext.cs`, `TriggerEventArgs.cs`)
+- **200+ Oracle Forms trigger types** across 10 categories: FormLifecycle, BlockLifecycle, RecordLifecycle, ItemLifecycle, DataManipulation, Query, Validation, Navigation, KeyAction, Mouse, Timer, ErrorHandling, MasterDetail, Custom
+- `TriggerDefinition` — full trigger config with sync/async handlers, dependencies, priority, chain mode
+- `TriggerContext` — 40+ properties for handler context
+- `TriggerResult` — Success/Failure/Cancelled/Skipped/Timeout/Exception
+
+### 4.2 Data Models (`DataBlockInfo.cs`, `DataBlockRelationship.cs`, `DataBlockMode.cs`)
+- `DataBlockInfo` — registered block metadata (UoW, entity structure, mode, security flags, FK fields)
+- `DataBlockRelationship` — master/detail relationship definition
+- `DataBlockMode` — Normal/EnterQuery/Query/CRUD/ReadOnly/Insert
+
+### 4.3 Validation Models (`ValidationRule.cs`, `ValidationResult.cs`, `ValidationEnums.cs`, `CrossBlockValidationRule.cs`)
+- `ValidationRule` — single field rule with 16 validation types, custom validator, conditions
+- `ItemValidationResult` / `RecordValidationResult` / `BlockValidationResult` / `FormValidationResult` — hierarchical results
+- `ValidationTiming` — OnBlur/OnChange/OnRecordChange/OnCommit/Manual
+
+### 4.4 Oracle Forms System Variables (`SystemVariables.cs`, `SystemVariableType.cs`, `RecordStatus.cs`)
+- 20+ `:SYSTEM.*` mirror properties (CURRENT_BLOCK, CURSOR_RECORD, LAST_QUERY, FORM_STATUS, etc.)
+- `BeepRecordStatus` — Query/New/Insert/Changed/QueryCriteria
+
+### 4.5 LOV Models (`LOVDefinition.cs`, `LOVColumn.cs`, `LOVResult.cs`, `LOVEnums.cs`)
+- `LOVDefinition` — full LOV config (display/return fields, columns, filters, cache, validation type)
+- `LOVResult` / `LOVSelectionResult` / `LOVValidationResult`
+- `LOVSearchMode` / `LOVValidationType` — Contains/StartsWith/EndsWith/Exact; ListOnly/Unrestricted/Validated
+
+### 4.6 Security Models (`SecurityModels.cs`, `SecurityPermission.cs`)
+- `SecurityContext` / `BlockSecurity` / `FieldSecurity` — user identity, per-block filtering, per-field masking
+- `SecurityRole` / `SecurityViolationEventArgs`
+
+### 4.7 Audit Models (`AuditModels.cs`, `AuditConfiguration.cs`)
+- `AuditEntry` — full before/after image with field-level change tracking
+- `AuditConfiguration` — enabled blocks, excluded fields, auto-generated columns, retention
+
+### 4.8 Performance Models (`PerformanceModels.cs`, `CacheEfficiencyMetrics.cs`, `CachedBlockInfo.cs`, `DirtyBlockInfo.cs`)
+- `PageInfo` / `CacheStats` / `CacheEfficiencyMetrics` / `PerformanceMetric` / `PerformanceStatistics`
+- `LazyLoadMode` / `CachedBlockInfo` / `CachePriority`
+
+### 4.9 Navigation Models (`NavigationInfo.cs`, `NavigationHistoryEntry.cs`, `NavigationTriggerEventArgs.cs`, `TriggerStatisticsInfo.cs`)
+- `NavigationInfo` — current index, total records, has previous/next, metrics
+- `NavigationTriggerEventArgs` — cancelable navigation event with context
+
+### 4.10 Item Models (`ItemInfo.cs`, `ItemPropertyEventArgs.cs`, `BlockFieldMetadata.cs`, `BlockFieldChangedEventArgs.cs`, `FieldConstraints.cs`)
+- `ItemInfo` — 30 properties (bound property, tab order, validation, error state, navigation links)
+- `ItemValueChangedEventArgs` / `ItemErrorEventArgs` / `ItemNavigationEventArgs`
+
+### 4.11 DML & Trigger Event Args (`DMLTriggerEventArgs.cs`, `TriggerEventArgs.cs`, `ErrorTriggerEventArgs.cs`, `ValidationTriggerEventArgs.cs`, `FormTriggerEventArgs.cs`, `RecordTriggerEventArgs.cs`, `BlockTriggerEventArgs.cs`)
+- `DMLTriggerEventArgs` — context for ON-INSERT/UPDATE/DELETE with helper methods
+- `FormTriggerEventArgs` — cancelable form lifecycle event
+
+### 4.12 Save/Undo/Dirty Models (`SaveResult.cs`, `SaveOptions.cs`, `RollbackOptions.cs`, `SavepointInfo.cs`, `UnsavedChangesEventArgs.cs`, `DirtyBlockInfo.cs`, `LockMode.cs`, `RecordLockInfo.cs`, `BlockErrorInfo.cs`, `BlockMessage.cs`)
+- `SavepointInfo` — timestamped block state snapshot with record index, dirty flag, snapshot dict
+- `UnsavedChangesEventArgs` — user-actionable dialog type
+
+### 4.13 Multi-Form Models (`FormRegistryModels.cs`, `FormCallStackEntry.cs`, `FormMessage.cs`)
+- `FormCallStackEntry` — nested form stack with call mode, parameters, completion task
+- `FormMessage` / `FormMessageEventArgs` — inter-form message bus
+
+### 4.14 Configuration Models (`Configuration/*`)
+- `UnitofWorksManagerConfiguration` — top-level aggregation
+- `NavigationConfiguration` / `ValidationConfiguration` / `PerformanceConfiguration` / `FormConfiguration`
+- `ConfigurationManager` — JSON persistence
+
+---
+
+## 5. Events (10+ event streams)
+
+| Event | Class | Fires When |
+|-------|-------|-----------|
+| `OnBlockFieldChanged` | `FormsManager` | Any field value changes (also feeds audit) |
+| `OnNavigate` | `Navigation` | Before record navigation (cancellable) |
+| `OnCurrentChanged` | `Navigation` | After navigation completes |
+| `OnFormOpen` / `OnFormClose` | `FormOperations` | Form lifecycle |
+| `OnFormCommit` / `OnFormRollback` | `FormOperations` | Commit/rollback lifecycle |
+| `OnFormValidate` | `FormOperations` | Form validation |
+| `OnFormMessage` | `InterFormComm` | Inter-form message received |
+
+---
+
+## 6. Quick Start
 
 ```csharp
 using TheTechIdea.Beep.Editor.UOWManager;
 
-var manager = new FormsManager(dmeEditor)
-{
-    CurrentFormName = "CUSTOMER_ORDERS"
-};
+var manager = new FormsManager(dmeEditor) { CurrentFormName = "CUSTOMER_ORDERS" };
 
-manager.RegisterBlock<CustomerDto>(
-    blockName: "CUSTOMERS",
-    unitOfWork: customerUow,
-    entityStructure: customerEntity,
-    dataSourceName: "Northwind",
-    isMasterBlock: true);
+// Register blocks
+manager.RegisterBlock<CustomerDto>("CUSTOMERS", customerUow, customerEntity, "Northwind", isMaster: true);
+manager.RegisterBlock<OrderDto>("ORDERS", orderUow, orderEntity, "Northwind");
 
-manager.RegisterBlock<OrderDto>(
-    blockName: "ORDERS",
-    unitOfWork: orderUow,
-    entityStructure: orderEntity,
-    dataSourceName: "Northwind");
+// Master-detail
+manager.CreateMasterDetailRelation("CUSTOMERS", "ORDERS", "CustomerId", "CustomerId");
 
-manager.CreateMasterDetailRelation(
-    masterBlockName: "CUSTOMERS",
-    detailBlockName: "ORDERS",
-    masterKeyField: "CustomerId",
-    detailForeignKeyField: "CustomerId");
-```
+// Query
+await manager.ExecuteQueryAsync("CUSTOMERS");
 
-If the `UnitofWork` already carries `EntityStructure`, you can register without passing it again:
-
-```csharp
-manager.RegisterBlock<CustomerDto>(
-    blockName: "CUSTOMERS",
-    unitOfWork: customerUow,
-    dataSourceName: "Northwind",
-    isMasterBlock: true);
-```
-
-## Common workflows
-
-### Form lifecycle and query mode
-
-```csharp
-await manager.OpenFormAsync("CUSTOMER_ORDERS");
-
-await manager.EnterQueryModeAsync("CUSTOMERS");
-
-var filters = new List<AppFilter>
-{
-    new AppFilter { FieldName = "Country", Operator = "=", FilterValue = "USA" }
-};
-
-await manager.ExecuteQueryAndEnterCrudModeAsync("CUSTOMERS", filters);
+// Navigate
 await manager.FirstRecordAsync("CUSTOMERS");
-await manager.NextRecordAsync("CUSTOMERS");
+await manager.SynchronizeDetailBlocksAsync("CUSTOMERS");
 
-var commitResult = await manager.CommitFormAsync();
-if (commitResult.Flag != Errors.Ok)
-{
-    await manager.RollbackFormAsync();
-}
+// Commit
+await manager.CommitFormAsync();
 ```
 
-### Typed block registration and access
+---
 
-```csharp
-manager.RegisterBlock<ProductDto>("PRODUCTS", productUow, productEntity, "Catalog");
+## 7. Documentation Map
 
-var productBlock = manager.GetBlock<ProductDto>("PRODUCTS");
-await manager.InsertRecordAsync<ProductDto>("PRODUCTS", new ProductDto
-{
-    ProductId = "P-100",
-    Name = "Widget"
-});
-```
-
-### LOV registration and selection
-
-```csharp
-var customerLov = LOVDefinition
-    .CreateLookup("CUSTOMER_LOV", "Northwind", "Customers", "CustomerId", "CompanyName")
-    .MapField("CompanyName", "CustomerName");
-
-manager.LOV.RegisterLOV("ORDERS", "CustomerId", customerLov);
-
-var lovResult = await manager.ShowLOVAsync("ORDERS", "CustomerId", searchText: "alf");
-var selected = lovResult.Records.FirstOrDefault();
-
-if (selected != null)
-{
-    await manager.ShowLOVAsync("ORDERS", "CustomerId", selectedRecord: selected);
-}
-```
-
-`ShowLOVAsync` is the orchestration entry point. It loads data through `LOVManager`, respects cache settings, and writes both the return field and any related mapped fields back to the current record.
-
-### Export, import, undo, and aggregates
-
-```csharp
-using var jsonStream = new MemoryStream();
-await manager.ExportBlockToJsonAsync("ORDERS", jsonStream);
-
-jsonStream.Position = 0;
-await manager.ImportBlockFromJsonAsync("ORDERS_ARCHIVE", jsonStream, clearFirst: true);
-
-manager.SetBlockUndoEnabled("ORDERS", enable: true);
-var total = manager.GetBlockSum("ORDERS", "LineTotal");
-var count = manager.GetBlockCount("ORDERS");
-```
-
-### Alerts, block properties, sequences, and timers
-
-```csharp
-manager.SetDefaultWhere("ORDERS", "IsDeleted = 0");
-manager.SetOrderBy("ORDERS", "OrderDate desc");
-manager.SetInsertAllowed("ORDERS", true);
-
-manager.SetItemDefault("ORDERS", "Status", () => "Draft");
-var nextNumber = manager.GetNextSequence("ORDER_SEQ");
-
-var timer = manager.CreateTimer("REFRESH_ORDERS", TimeSpan.FromSeconds(30), repeating: true);
-var confirmed = await manager.ConfirmAsync("Commit", "Save all pending changes?");
-
-if (confirmed)
-{
-    await manager.CommitFormAsync();
-}
-```
-
-### Multi-form, globals, and messaging
-
-```csharp
-manager.SetGlobalVariable("ACTIVE_CUSTOMER_ID", "ALFKI");
-manager.SubscribeToMessage("CustomerChanged", message =>
-{
-    Console.WriteLine($"Received {message.MessageType} from {message.SenderForm}");
-});
-
-manager.PostMessage("ORDER_FORM", "CustomerChanged", "ALFKI");
-await manager.CallFormAsync(
-    "ORDER_FORM",
-    new Dictionary<string, object> { ["CustomerId"] = "ALFKI" },
-    FormCallMode.Modal);
-```
-
-Use `CallFormAsync` for modal child-form behavior. Use the overload `OpenFormAsync(string formName, Dictionary<string, object> parameters)` for modeless Oracle-style `OPEN_FORM`. The simpler `OpenFormAsync(string formName)` continues to represent the current form lifecycle open operation.
-
-### Audit, security, and paging
-
-```csharp
-manager.SetAuditUser("fahad");
-manager.ConfigureAudit(config =>
-{
-    config.Enabled = true;
-    config.AuditedBlocks.Add("ORDERS");
-});
-
-manager.SetSecurityContext(new SecurityContext
-{
-    UserName = "fahad",
-    Roles = new List<SecurityRole>
-    {
-        new SecurityRole { Name = "OrderClerk", Permissions = SecurityPermission.Query | SecurityPermission.Update }
-    }
-});
-
-manager.SetBlockPageSize("ORDERS", 50);
-manager.SetTotalRecordCount("ORDERS", 1200);
-manager.SetFetchAheadDepth("ORDERS", 2);
-
-var page = await manager.LoadPageAsync("ORDERS", 3);
-var auditEntries = manager.GetAuditLog("ORDERS");
-```
-
-## Oracle Forms coverage snapshot (high-level)
-
-| Oracle Forms concept | FormsManager API | Status |
-| --- | --- | --- |
-| `ENTER_QUERY` | `EnterQueryModeAsync` | ✅ complete |
-| `EXECUTE_QUERY` | `ExecuteQueryAndEnterCrudModeAsync`, `ExecuteQueryAsync` | ✅ complete |
-| `COMMIT_FORM` | `CommitFormAsync` | ✅ complete |
-| `ROLLBACK_FORM` | `RollbackFormAsync` | ✅ complete |
-| `CLEAR_FORM` / `CLEAR_BLOCK` / `CLEAR_RECORD` | `ClearAllBlocksAsync`, `ClearBlockAsync` | ✅ complete |
-| `GO_BLOCK` / `GO_ITEM` / `GO_RECORD` | `SwitchToBlockAsync`, `GoItemAsync`, `NavigateToRecordAsync` | ✅ complete |
-| `NEXT_RECORD` / `PREVIOUS_RECORD` | `NextRecordAsync`, `PreviousRecordAsync` | ✅ complete |
-| `SHOW_LOV` | `ShowLOVAsync` plus `LOV.RegisterLOV` | ✅ complete |
-| `SET_BLOCK_PROPERTY` | `SetBlockProperty`, `SetDefaultWhere`, `SetOrderBy` | ✅ complete |
-| `MESSAGE` / `SHOW_ALERT` | `SetMessage`, `ShowAlertAsync`, `ConfirmAsync` | ✅ complete |
-| `:SEQUENCE.NEXTVAL` | `GetNextSequence` | ✅ complete |
-| `CREATE_TIMER` | `CreateTimer` | ✅ complete |
-| `CALL_FORM` / `OPEN_FORM` / `NEW_FORM` | `CallFormAsync`, `OpenFormAsync`, `NewFormAsync` | ✅ complete |
-| `:GLOBAL.*` | `SetGlobalVariable`, `GetGlobalVariable` | ✅ complete |
-| `POST` (record-level commit) | `PostAsync` (via `IBeepBuiltins`) | ✅ complete |
-| `KEY-` triggers | `RegisterKeyTrigger` | ✅ complete |
-| WHEN-NEW-BLOCK-INSTANCE / WHEN-NEW-RECORD-INSTANCE | Trigger system | ✅ complete |
-| WHEN-VALIDATE-RECORD / WHEN-VALIDATE-ITEM | Trigger system + validation hooks | ✅ complete |
-| `RAISE_FORM_TRIGGER_FAILURE` | `RaiseFormTriggerFailure` (via `IBeepBuiltins`) | ✅ complete |
-| `POPUP_LOV` / `LIST_VALUES` | `PopupLov`, `ListValues` (via `IBeepBuiltins`) | ✅ complete |
-| `SET_APPLICATION_PROPERTY` / `GET_APPLICATION_PROPERTY` | `SetApplicationProperty` / `GetApplicationProperty` (via `IBeepBuiltins`) | ✅ complete |
-| `ENTER_QUERY` with multiple filter criteria | `ExecuteQueryAsync` accepts a filter list | ✅ complete |
-| Visual attributes / font / color | ❌ **not in this layer** — UI-specific, owned by host | n/a |
-| `PL/SQL` library procedures | ❌ not emulated | ❌ missing |
-| `LOV`-column properties (display width, return-item, etc.) | ✅ partial — width/return only | ⚠️ partial |
-| Multi-form transactional rollback | ⚠️ partial — single-form rollback works; cross-form rollback not coordinated | ⚠️ partial |
-| `WHEN-CUSTOM-ITEM-EVENT` | ⚠️ partial — wired via `EventManager` but no canonical custom-item event type | ⚠️ partial |
-
-For the **full** mapping including items NOT in this summary, see [`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md).
-
-## Current test coverage
-
-### Unit suites
-
-- `FormsManager.Core.Tests`
-- `FormsManager.Navigation.Tests`
-- `FormsManager.FormOperations.Tests`
-- `FormsManager.ModeTransitions.Tests`
-- `TriggerManager.Tests`
-- `ValidationManager.Tests`
-- `LOVManager.Tests`
-- `SavepointManager.Tests`
-- `LockManager.Tests`
-
-### Integration slices
-
-- Master/detail cascade when the master current record changes.
-- Full form lifecycle from open through query, edit, commit, and close.
-- Cross-block validation stopping commit before dirty-state save.
-- Concurrent block-local navigation across separate blocks.
-- Concrete-datasource LOV loading, cache reuse, and selected-record population.
-- JSON and CSV export/import round-trips through block capabilities.
-
-The LOV integration slice exposed a real orchestration bug: the selected LOV return value was not being written back to the bound field when `LOVManager` returned its internal `__RETURN_VALUE__` sentinel. `ShowLOVAsync` now normalizes that sentinel to the requested field name before applying values.
-
-## Notes for callers
-
-- Prefer FormsManager master/detail APIs over the deprecated standalone `IRelationshipManager` abstraction.
-- Prefer `ShowLOVAsync` over applying `LOVManager.GetRelatedFieldValues(...)` directly so the return-field mapping logic stays centralized.
-- `PagingManager` tracks page state only. Callers still own total-count population and datasource query execution.
-- UI layers own rendering, focus, and keyboard plumbing; FormsManager provides a UI-agnostic runtime surface.
-
-## Stale / superseded documents in this folder
-
-- **`EXECUTIVE_SUMMARY.md`** — written against an earlier state of the engine. Mentions features (e.g. "Update operations rely on reflection", "No LOV implementation exists") that are no longer true. **Do not use as a current reference.** The current Oracle Forms coverage is captured in [`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md).
-- **`MIGRATION-GUIDE.md`** — older legacy migration notes. Kept for historical context.
-- **`FormsManager.original.cs.bak`** — backup of the pre-partial-class file. Safe to delete; everything has been moved to typed partials.
+| Document | Purpose |
+|----------|---------|
+| **[`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md)** | Every Oracle Forms concept → FormsManager method |
+| **[`gaps.md`](gaps.md)** | What the engine does not yet implement |
+| **[`enhancements.md`](enhancements.md)** | Prioritized gap-closure roadmap |
+| **[`architecture.md`](architecture.md)** | Subsystems, layering, host/orchestrator/helper model |
+| **[`Models/README.md`](Models/README.md)** | Model class catalog |
+| **[`Configuration/README.md`](Configuration/README.md)** | Configuration DTOs |

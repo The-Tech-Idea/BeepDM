@@ -114,6 +114,197 @@
             Gets or sets the class associated with the branch. Defaults to "ADDIN".
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.AppMap.AppMap">
+            <summary>
+            Top-level model representing an entire multi-project solution map.
+            Aggregates solution info, role assignments, environments, and versions.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.Id">
+            <summary>Unique identifier for this AppMap.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.Solution">
+            <summary>Solution discovery info.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.Projects">
+            <summary>Projects with their assigned roles.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.Environments">
+            <summary>All known environment tiers.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.DatabaseVersions">
+            <summary>Known database versions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.AppVersions">
+            <summary>Known application versions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.CreatedAt">
+            <summary>When this AppMap was created.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.UpdatedAt">
+            <summary>When this AppMap was last modified.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppMap.SchemaVersion">
+            <summary>Schema version of the AppMap format.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.AppMap.DiscoveryOptions">
+            <summary>
+            Options for solution/project discovery scanning.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.DiscoveryOptions.MaxDepth">
+            <summary>Maximum directory depth to search for .sln files.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.DiscoveryOptions.FollowProjectReferences">
+            <summary>Whether to resolve transitive project references.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.DiscoveryOptions.IncludeTestProjects">
+            <summary>Whether to include test projects in results.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.DiscoveryOptions.DataFolderPatterns">
+            <summary>Folder name patterns that indicate data/model directories.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.DiscoveryOptions.IncludeNuGetPackages">
+            <summary>Whether to extract NuGet package references from .csproj.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.DiscoveryOptions.DbContextPatterns">
+            <summary>File patterns to search for DbContext classes.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.AppMap.ProjectDependencyGraph">
+            <summary>
+            Adjacency list representing project→project dependency relationships.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectDependencyGraph.Adjacency">
+            <summary>Adjacency: project name → list of project names it depends on.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectDependencyGraph.NodeCount">
+            <summary>Total number of nodes (projects).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectDependencyGraph.EdgeCount">
+            <summary>Total number of edges (dependencies).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.AppMap.ProjectDependencyGraph.GetRootProjects">
+            <summary>Projects with no incoming edges (root projects).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.AppMap.ProjectDependencyGraph.GetLeafProjects">
+            <summary>Projects with no outgoing edges (leaf projects).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.AppMap.ProjectDependencyGraph.FindCycles">
+            <summary>Detect circular dependencies.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.AppMap.ProjectInfo">
+            <summary>
+            Metadata about a discovered .NET project (parsed from .csproj).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.Name">
+            <summary>Project name (without .csproj extension).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.CsprojPath">
+            <summary>Absolute path to the .csproj file.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.ProjectDirectory">
+            <summary>Project directory (parent of .csproj).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.TargetFramework">
+            <summary>Target framework moniker (e.g. net10.0).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.Sdk">
+            <summary>SDK style (e.g. Microsoft.NET.Sdk.Web).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.OutputType">
+            <summary>Output type: Exe, Library, WinExe.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.ProjectTypeGuid">
+            <summary>Project type GUID from .sln (if known).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.PackageReferences">
+            <summary>Package references with versions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.ProjectReferences">
+            <summary>Project references (names of other projects in the solution).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.RootNamespace">
+            <summary>Root namespace from .csproj or convention.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.IsTestProject">
+            <summary>Whether this project references test frameworks.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectInfo.DataFolders">
+            <summary>Data folders found by convention scan.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.AppMap.DataFolderInfo">
+            <summary>
+            A folder that likely contains data/entity classes.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.AppMap.ProjectRoleAssignment">
+            <summary>
+            A project with its detected/assigned role and confidence.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectRoleAssignment.Confidence">
+            <summary>Confidence of auto-detection (0.0 to 1.0).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectRoleAssignment.IsManualOverride">
+            <summary>True if the user manually overrode the detected role.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectRoleAssignment.AssignedAt">
+            <summary>When the role was assigned.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.ProjectRoleAssignment.MatchedHeuristic">
+            <summary>Which heuristic matched (if any).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.AppMap.SolutionInfo">
+            <summary>
+            Information about a discovered .sln file.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.SolutionInfo.Name">
+            <summary>Solution name (without .sln extension).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.SolutionInfo.SlnPath">
+            <summary>Absolute path to the .sln file.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.SolutionInfo.FormatVersion">
+            <summary>Solution format version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.SolutionInfo.Projects">
+            <summary>Projects found in the solution.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.SolutionInfo.Configurations">
+            <summary>Solution configurations (Debug, Release, etc.).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.AppMap.SolutionInfo.DiscoveredAt">
+            <summary>When the solution was discovered.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.AppVersion">
+            <summary>
+            Records an application version deployment.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.Version">
+            <summary>Semantic version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.BuildDate">
+            <summary>When this version was built.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.GitSha">
+            <summary>Git commit SHA at build time.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.BuildId">
+            <summary>CI/CD build ID.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.DeployedEnvironments">
+            <summary>Environments where this version is deployed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.ReleaseNotes">
+            <summary>Release notes or changelog.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.AppVersion.MinDatabaseVersion">
+            <summary>Minimum database version required.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.AssemblyClassDefinition.RuleKey">
             <summary>Key from <c>[RuleAttribute(ruleKey)]</c>.</summary>
         </member>
@@ -328,6 +519,35 @@
             Automatically syncs with AuthenticationTypeEnum property
             For backward compatibility and serialization
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.DatabaseVersion">
+            <summary>
+            Records a database schema version snapshot.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.Version">
+            <summary>Semantic version (e.g. "2.3.1").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.DatasourceName">
+            <summary>The datasource this version applies to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.AppliedAt">
+            <summary>When this version was applied.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.MigrationPlanHash">
+            <summary>Hash of the migration plan that produced this version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.SchemaHash">
+            <summary>Hash of the full schema at this version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.EntityCount">
+            <summary>Number of entities at this version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.AppliedBy">
+            <summary>Who or what applied this version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.DatabaseVersion.VersionString">
+            <summary>Formatted version string.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.DefaultValue">
             <summary>
@@ -805,6 +1025,16 @@
         <member name="P:TheTechIdea.Beep.ConfigUtil.IConnectionProperties.RequiresTokenRefresh">
             <summary>
             Gets or sets a value indicating whether the token needs to be refreshed.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.VersionChangeEntry">
+            <summary>
+            Describes what changed between two versions.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.VersionComparison">
+            <summary>
+            Result of comparing two database versions.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Core.DataSourceCapabilities">
@@ -1761,6 +1991,32 @@
             Requires <see cref="P:TheTechIdea.Beep.Editor.BeepSync.SyncDefaultsPolicy.ApplyOnInsert"/> to also be set.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding">
+            <summary>
+            Maps a project to a specific datasource in a given environment.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.ProjectName">
+            <summary>Project name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.EnvironmentId">
+            <summary>Environment ID.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.DatasourceName">
+            <summary>Datasource name (as registered in BeepDM).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.IsPrimary">
+            <summary>Whether this is the primary datasource for the project.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.IsReadOnly">
+            <summary>Whether this datasource is read-only for this project.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.CreatedAt">
+            <summary>When this binding was created.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding.UpdatedAt">
+            <summary>When this binding was last modified.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.RetryPolicy">
             <summary>
             Retry and error-classification policy attached to a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/>.
@@ -1807,6 +2063,26 @@
             When <c>true</c>, a checkpoint is saved after each successfully committed batch,
             enabling mid-run resume on transient failures.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject">
+            <summary>
+            A Data project that is shared by multiple consumer projects.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject.DataProject">
+            <summary>The Data project itself.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject.EntityNames">
+            <summary>Entities discovered in the Data project.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject.ConsumerProjects">
+            <summary>Projects that reference (consume) this Data project.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject.EntityCount">
+            <summary>Number of entities.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject.ConsumerCount">
+            <summary>Number of consumers.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SloProfile">
             <summary>
@@ -2146,6 +2422,34 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreflightIssue.Message">
             <summary>Human-readable description of the issue.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncPreview">
+            <summary>
+            Preview of what will happen during a multi-project sync.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreview.DataProjectName">
+            <summary>The shared Data project being synced.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreview.Entities">
+            <summary>Per-entity sync preview.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreview.TotalEntities">
+            <summary>Total entities to sync.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreview.CreateCount">
+            <summary>Entities that will create new tables.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreview.AlterCount">
+            <summary>Entities that will alter existing tables.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPreview.DropCount">
+            <summary>Entities that will be dropped.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncEntityPreview">
+            <summary>
+            Preview for a single entity during sync.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncReconciliationReport">
             <summary>
@@ -3209,6 +3513,86 @@
             Note: Returns null for unsupported or not-yet-implemented datasources.
             Check the capability matrix first to determine supported operations.
             </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.SolutionDiscovery">
+            <summary>Solution discovery: scan .sln, parse .csproj, build dependency graph.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.AppMap">
+            <summary>AppMap: role detection, manual override, JSON persistence.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.Environment">
+            <summary>Environment management: per-project profiles, standard tiers, promote/switch.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.Version">
+            <summary>Version management: database and application version tracking.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.Identity">
+            <summary>Identity management: user/role CRUD, ASP.NET Identity detection.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.MultiSync">
+            <summary>Multi-project sync: shared Data detection, auto-link, schema sync.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.BatchErrorStrategy">
+            <summary>Defines how a failed batch should be handled.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportState">
+            <summary>Lifecycle state of an import run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.SyncMode">
+            <summary>How the import run handles already-seen records at the destination.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.SchemaDriftPolicy">
+            <summary>What to do when the source schema changed since the last run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportLogLevel">
+            <summary>Import log levels.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.DataQualityAction">
+            <summary>What to do when a quality rule fires against a record.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportSelectionContext">
+            <summary>Source / destination selection, independent of execution options.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportExecutionOptions">
+            <summary>Execution knobs — what the import run should do.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportContext">
+            <summary>
+            Typed, serialisable context that replaces the string-key parameter dictionary.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportStatus">
+            <summary>Live snapshot of an import run — safe to read from any thread.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration">
+            <summary>Configuration class for data import operations.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportPerformanceMetrics">
+            <summary>Performance metrics for import operations.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.Importlogdata">
+            <summary>Import log data structure.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.StagingOptions">
+            <summary>Controls whether raw records are written to a staging entity before normalization.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IDataQualityRule">
+            <summary>Contract for a single data-quality rule evaluated per-record during import.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportErrorRecord">
+            <summary>Full audit record for a single failed / quarantined import record.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IImportErrorStore">
+            <summary>Abstraction for persisting failed records during import.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportRunRecord">
+            <summary>Full audit record persisted after each import run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.BatchMetric">
+            <summary>Lightweight performance record for a single batch.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore">
+            <summary>Contract for persisting and querying import run history records.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Interfaces.IDefaultValueResolver">
             <summary>
@@ -5471,6 +5855,156 @@
             Default value from workflow or business process context.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Utilities.ProjectRole">
+            <summary>Role assigned to a project in a multi-project solution.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.EnvironmentTier">
+            <summary>Standard environment deployment tier.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.ServerType">
+            <summary>Server type in a deployment topology.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.IdentityDetectionMode">
+            <summary>Detection mode for identity system.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.VersionChangeType">
+            <summary>Type of change between two database versions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.SyncOperation">
+            <summary>Operation to perform during a multi-project sync.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Utilities.HealthStatus">
+            <summary>Health status of a server or database.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.AppEnvironment">
+            <summary>
+            An environment definition (e.g. Dev, Test, Production).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Id">
+            <summary>Unique ID (e.g. "dev", "staging", "live").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Name">
+            <summary>Display name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Tier">
+            <summary>Standard tier classification.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Order">
+            <summary>Sort order for display.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Color">
+            <summary>Color hint for UI (hex or MudBlazor color name).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.IsProduction">
+            <summary>Whether this is a production environment.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.RequiresApproval">
+            <summary>Whether changes to this environment require approval.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Description">
+            <summary>Optional description.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.Tags">
+            <summary>Tags for filtering.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.CreatedAt">
+            <summary>When this environment was created.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.AppEnvironment.UpdatedAt">
+            <summary>When this environment was last modified.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.Data.IdentityDetectionResult">
+            <summary>
+            Result of scanning a datasource for identity tables.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Environments.Data.IdentityDetectionResult.AspNetTableNames">
+            <summary>Known ASP.NET Identity table names.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Environments.Data.IdentityDetectionResult.CoreAspNetTables">
+            <summary>Core tables required for ASP.NET Identity mode.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.Data.RoleRecord">
+            <summary>
+            A role record.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.Data.RoleRecord.UserCount">
+            <summary>Number of users assigned to this role.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.Data.TableMapping">
+            <summary>
+            Custom table/column mapping for non-ASP.NET identity systems.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.Data.UserRecord">
+            <summary>
+            A user record — can represent an ASP.NET Identity user or a generic user.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.Data.UserRecord.Roles">
+            <summary>Roles assigned to this user (populated on read).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.Data.UserRecord.CustomFields">
+            <summary>Custom fields for non-ASP.NET identity systems.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.Data.UserRoleAssignment">
+            <summary>
+            Assigns a role to a user.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.EnvironmentConfigOverride">
+            <summary>
+            A key-value configuration override for a specific environment.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.EnvironmentServerConfig">
+            <summary>
+            Server configuration for a specific environment.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.EnvironmentServerConfig.ServerType">
+            <summary>Type of server.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.EnvironmentServerConfig.Url">
+            <summary>Base URL (e.g. https://localhost:5001).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.EnvironmentServerConfig.HealthCheckEndpoint">
+            <summary>Health check endpoint (relative to URL).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.EnvironmentServerConfig.IsRequired">
+            <summary>Whether this server is required for the environment to be healthy.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.EnvironmentServerConfig.Metadata">
+            <summary>Additional metadata.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile">
+            <summary>
+            Links a project to an environment with its server configs.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.ProjectName">
+            <summary>The project this profile belongs to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.EnvironmentId">
+            <summary>The environment this profile is for.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.Servers">
+            <summary>Server configurations for this project in this environment.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.Overrides">
+            <summary>Configuration overrides for this project in this environment.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.IsPrimary">
+            <summary>Whether this is the primary profile for the project.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.CreatedAt">
+            <summary>When this profile was created.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Environments.ProjectEnvironmentProfile.UpdatedAt">
+            <summary>When this profile was last modified.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Extensions.AppFilterCommandExtensions">
             <summary>
             Maps AppFilterQueryDefinition into IDbCommand text and parameters.
@@ -6109,6 +6643,64 @@
             Closes the connection to the data source.
             </summary>
             <returns>The state of the connection after attempting to close it.</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.ImportExport.ExportOptions">
+            <summary>
+            Options for exporting data from a datasource.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ExportOptions.DatasourceName">
+            <summary>The datasource to export from.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ExportOptions.EntityNames">
+            <summary>Entity names to export (empty = all).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ExportOptions.MaxRowsPerEntity">
+            <summary>Max rows per entity (0 = unlimited).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ExportOptions.IncludeSchema">
+            <summary>Whether to include schema definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ExportOptions.CompressionLevel">
+            <summary>Compression level for ZIP (0-9).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ExportOptions.OutputPath">
+            <summary>Output file path (optional, auto-generated if empty).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ImportExport.ConflictResolution">
+            <summary>
+            Conflict resolution strategy when importing.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ImportExport.ImportOptions">
+            <summary>
+            Options for importing data into a datasource.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ImportOptions.TargetDatasource">
+            <summary>The datasource to import into.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ImportOptions.PackagePath">
+            <summary>Path to the export package (ZIP file).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ImportOptions.ConflictResolution">
+            <summary>How to handle conflicts.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ImportOptions.DryRun">
+            <summary>Whether this is a dry-run (preview only).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ImportExport.ImportOptions.EntityFilter">
+            <summary>Entities to import (empty = all in package).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ImportExport.ImportReport">
+            <summary>
+            Report after an import operation.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ImportExport.EntityImportReport">
+            <summary>
+            Per-entity import report.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Logger.IDMLogger">
             <summary>
@@ -9503,6 +10095,101 @@
             Returns true when this rule's schema version is compatible with the supplied engine version.
             Currently uses a simple major-version equality check.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService">
+            <summary>
+            Auto-detects ASP.NET Identity tables and provides user/role CRUD.
+            Falls back to generic table-mapped CRUD for non-ASP.NET systems.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.DetectAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Detect whether a datasource uses ASP.NET Identity tables.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.GetUsersAsync(System.Threading.CancellationToken)">
+            <summary>Get all users from the datasource.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.CreateUserAsync(TheTechIdea.Beep.Environments.Data.UserRecord,System.Threading.CancellationToken)">
+            <summary>Create a new user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.UpdateUserAsync(TheTechIdea.Beep.Environments.Data.UserRecord,System.Threading.CancellationToken)">
+            <summary>Update an existing user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.DeleteUserAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Delete a user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.GetRolesAsync(System.Threading.CancellationToken)">
+            <summary>Get all roles.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.CreateRoleAsync(TheTechIdea.Beep.Environments.Data.RoleRecord,System.Threading.CancellationToken)">
+            <summary>Create a new role.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.DeleteRoleAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Delete a role.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.AssignRoleAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Assign a role to a user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.RemoveRoleAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Remove a role from a user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.GetUserRolesAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Get roles assigned to a user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.SetTableMapping(TheTechIdea.Beep.Environments.Data.TableMapping)">
+            <summary>Set custom table mapping for non-ASP.NET identity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IIdentityManagementService.GetTableMapping">
+            <summary>Get the current table mapping (null for ASP.NET identity).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.IMultiProjectSyncService">
+            <summary>
+            Detects shared Data projects and syncs entity definitions
+            across multiple consumer projects to a single database.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IMultiProjectSyncService.DetectSharedDataProjects">
+            <summary>Find all Data-role projects and their consumers in an AppMap.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IMultiProjectSyncService.AutoLinkConsumers(TheTechIdea.Beep.Editor.BeepSync.SharedDataProject,System.String)">
+            <summary>Auto-link consumer projects to the shared database.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IMultiProjectSyncService.PreviewSync(TheTechIdea.Beep.Editor.BeepSync.SharedDataProject,System.String)">
+            <summary>Preview what would be synced.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IMultiProjectSyncService.SyncAllToSharedDbAsync(TheTechIdea.Beep.Editor.BeepSync.SharedDataProject,System.String,System.Threading.CancellationToken)">
+            <summary>Apply schema to all consumer datasources.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IMultiProjectSyncService.GetConsumerBindings(TheTechIdea.Beep.Editor.BeepSync.SharedDataProject)">
+            <summary>Get current bindings for a shared data project.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.AppMap.IVersionManagementService">
+            <summary>
+            Tracks database schema versions and application versions.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.RecordDatabaseVersion(TheTechIdea.Beep.ConfigUtil.DatabaseVersion)">
+            <summary>Record a database version after a successful migration.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.GetVersionHistory(System.String)">
+            <summary>Get version history for a datasource.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.GetLatestVersion(System.String)">
+            <summary>Get the latest version for a datasource.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.CompareVersions(TheTechIdea.Beep.ConfigUtil.DatabaseVersion,TheTechIdea.Beep.ConfigUtil.DatabaseVersion)">
+            <summary>Compare two versions and produce a change log.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.RecordAppVersion(TheTechIdea.Beep.ConfigUtil.AppVersion)">
+            <summary>Record an application version deployment.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.GetAppVersionHistory">
+            <summary>Get all recorded application versions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.SaveAsync(System.Threading.CancellationToken)">
+            <summary>Persist all version data to JSON.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.AppMap.IVersionManagementService.LoadAsync(System.Threading.CancellationToken)">
+            <summary>Load version data from JSON.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Services.Audit.IBeepAudit">
             <summary>

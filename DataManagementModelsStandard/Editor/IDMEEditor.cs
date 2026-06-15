@@ -12,6 +12,7 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Services.AppMap;
 
 
 namespace TheTechIdea.Beep.Editor
@@ -130,5 +131,27 @@ namespace TheTechIdea.Beep.Editor
         IDataSourceHelper GetDataSourceHelper(DataSourceType datasourceType);
 
         #endregion "Universal DataSource Helpers - Phase 2"
+
+        #region "AppMap & Deployment Services"
+
+        /// <summary>Solution discovery: scan .sln, parse .csproj, build dependency graph.</summary>
+        ISolutionDiscoveryService SolutionDiscovery { get; }
+
+        /// <summary>AppMap: role detection, manual override, JSON persistence.</summary>
+        IAppMapService AppMap { get; }
+
+        /// <summary>Environment management: per-project profiles, standard tiers, promote/switch.</summary>
+        IEnvironmentManagementService Environment { get; }
+
+        /// <summary>Version management: database and application version tracking.</summary>
+        IVersionManagementService Version { get; }
+
+        /// <summary>Identity management: user/role CRUD, ASP.NET Identity detection.</summary>
+        IIdentityManagementService Identity { get; }
+
+        /// <summary>Multi-project sync: shared Data detection, auto-link, schema sync.</summary>
+        IMultiProjectSyncService MultiSync { get; }
+
+        #endregion
     }
 }

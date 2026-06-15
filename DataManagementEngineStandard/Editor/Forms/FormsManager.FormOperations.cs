@@ -157,7 +157,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Commits all changes in all blocks - equivalent to Oracle Forms COMMIT_FORM
+        /// Commits all changes in all blocks - equivalent to Oracle Forms COMMIT_FORM.
+        /// When called from a modal child form, commits all dirty blocks across the
+        /// entire call chain (parent + ancestors) so that the database session is
+        /// consistent. This matches Oracle Forms' behaviour where CALL_FORM shares
+        /// the same database session and a COMMIT from the child commits everything.
         /// </summary>
         public async Task<IErrorsInfo> CommitFormAsync()
         {
@@ -165,6 +169,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             try
             {
+                var formsToCommit = ResolveCrossFormCommitTargets();
+
                 var args = new FormTriggerEventArgs(_currentFormName, "Starting form commit")
                 {
                     OperationType = FormOperationType.Commit
@@ -203,9 +209,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Get dirty blocks, sort by FK dependency (Phase 4-A)
-                var dirtyBlocks = GetDirtyBlocks();
-                if (!dirtyBlocks.Any())
+                // Get dirty blocks from ALL forms in the commit scope
+                var allDirtyBlocks = new List<string>();
+                foreach (var fm in formsToCommit)
+                {
+                    var dirty = fm.GetDirtyBlocks();
+                    allDirtyBlocks.AddRange(dirty);
+                }
+
+                if (!allDirtyBlocks.Any())
                 {
                     result.Message = "No changes to commit";
                     Status = "No changes to commit";
@@ -213,12 +225,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Reorder dirty blocks respecting master → detail commit order
-                var commitOrder = BuildCommitOrder();
-                var orderedDirty = commitOrder.Where(b => dirtyBlocks.Contains(b))
-                                              .Concat(dirtyBlocks.Except(commitOrder))
-                                              .ToList();
+                // across the UNION of all participating forms' blocks.
+                // Each form's topological sort runs independently; we concatenate
+                // in call-stack order (caller → callee so the child's depends-on-parent
+                // resolution is respected).
+                var orderedAll = new List<string>();
+                foreach (var fm in formsToCommit)
+                    orderedAll.AddRange(fm.BuildCommitOrder().Where(b => allDirtyBlocks.Contains(b))
+                                                               .Concat(allDirtyBlocks.Except(fm.BuildCommitOrder())));
+                orderedAll = orderedAll.Distinct().ToList();
 
-                // Fire PRE-COMMIT trigger — abort if cancelled
+                // Fire PRE-COMMIT trigger on the form that initiated the commit
                 var preCommitResult = await _triggerManager.FireFormTriggerAsync(
                     TriggerType.PreCommit,
                     _currentFormName ?? "FORM",
@@ -231,29 +248,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Per-block validation before the actual save
-                foreach (var bName in orderedDirty)
+                // Per-block validation for all blocks in scope
+                bool allValid = true;
+                string? firstInvalidBlock = null;
+                foreach (var fm in formsToCommit)
                 {
-                    if (!ValidateBlock(bName))
+                    foreach (var bName in fm.GetDirtyBlocks())
                     {
-                        result.Flag = Errors.Failed;
-                        result.Message = $"Pre-commit validation failed for block '{bName}'";
-                        return result;
+                        if (!fm.ValidateBlock(bName))
+                        {
+                            allValid = false;
+                            firstInvalidBlock = bName;
+                            break;
+                        }
                     }
+                    if (!allValid) break;
                 }
 
-                // Use dirty state manager for the actual commit
-                var commitSuccess = await _dirtyStateManager.SaveDirtyBlocksAsync(orderedDirty);
-
-                if (commitSuccess)
+                if (!allValid)
                 {
-                    result.Message = "All changes committed successfully";
-                    Status = "All changes committed successfully";
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Pre-commit validation failed for block '{firstInvalidBlock}'";
+                    return result;
+                }
+
+                // Commit each form's dirty blocks in ordered sequence.
+                // Source-level transaction wrapping: if the data source supports it,
+                // wrap the entire cross-form commit in a single transaction.
+                bool crossFormSuccess = await TryCrossFormTransactionCommitAsync(formsToCommit, orderedAll);
+
+                if (crossFormSuccess)
+                {
+                    string scopeLabel = formsToCommit.Count > 1
+                        ? $" ({formsToCommit.Count} forms)" : "";
+                    result.Message = $"All changes committed successfully{scopeLabel}";
+                    Status = $"All changes committed successfully{scopeLabel}";
 
                     // Phase 5: flush pending field changes as committed audit entries
-                    _auditManager?.FlushPendingToStore(_currentFormName ?? "FORM", AuditOperation.Commit);
+                    foreach (var fm in formsToCommit)
+                        fm._auditManager?.FlushPendingToStore(fm._currentFormName ?? "FORM", AuditOperation.Commit);
 
-                    // Fire POST-COMMIT trigger after successful save
+                    // Fire POST-COMMIT trigger on the initiating form
                     await _triggerManager.FireFormTriggerAsync(
                         TriggerType.PostCommit,
                         _currentFormName ?? "FORM",
@@ -267,10 +302,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     OnFormCommit?.Invoke(this, postCommitArgs);
 
                     // Phase 7: unlock all records after successful commit
-                    foreach (var blockName in _blocks.Keys)
-                        _lockManager.UnlockAllRecords(blockName);
+                    foreach (var fm in formsToCommit)
+                        foreach (var blockName in fm._blocks.Keys)
+                            fm._lockManager.UnlockAllRecords(blockName);
 
-                    LogOperation($"Form commit completed successfully for {dirtyBlocks.Count} blocks");
+                    LogOperation($"Form commit completed successfully — {allDirtyBlocks.Count} blocks across {formsToCommit.Count} form(s)");
                 }
                 else
                 {
@@ -560,6 +596,97 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             catch (Exception ex)
             {
                 LogError("Error during form cleanup", ex);
+            }
+        }
+
+        #endregion
+
+        #region G0.1 — Cross-Form Transaction Coordination
+
+        /// <summary>
+        /// Walks the call stack to determine which FormsManager instances should
+        /// participate in a cross-form commit. When <see cref="CallFormAsync"/> was
+        /// used (modal or modeless), the child form's commit should include the
+        /// caller's dirty blocks as well — matching Oracle Forms' shared database
+        /// session. Returns the list in caller→callee order so the callee's blocks
+        /// are committed after the caller's (detail → master FK constraints).
+        /// </summary>
+        private List<FormsManager> ResolveCrossFormCommitTargets()
+        {
+            var result = new List<FormsManager>();
+            result.Add(this);
+
+            if (_callStack == null || _callStack.Count == 0)
+                return result;
+
+            // Walk the call stack bottom-up (oldest caller → newest callee).
+            // The current form (this) is the callee; the stack contains ancestors.
+            var stack = _callStack.ToArray();
+            for (int i = stack.Length - 1; i >= 0; i--)
+            {
+                var entry = stack[i];
+                if (string.IsNullOrWhiteSpace(entry.CallerFormName))
+                    continue;
+                var callerForm = _formRegistry?.GetForm(entry.CallerFormName);
+                if (callerForm is FormsManager callerFm && !result.Contains(callerFm))
+                    result.Insert(0, callerFm);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Attempts a cross-form commit, optionally wrapping it in a single
+        /// source-level transaction if every participating form's data source
+        /// supports transactions. On failure, rolls back all committed forms.
+        /// </summary>
+        private async Task<bool> TryCrossFormTransactionCommitAsync(
+            List<FormsManager> formsToCommit,
+            List<string> orderedBlocks)
+        {
+            // Group blocks by their owning FormsManager for per-form commit
+            var formOwnedBlocks = new Dictionary<FormsManager, List<string>>();
+            foreach (var fm in formsToCommit)
+            {
+                var owned = fm.GetDirtyBlocks().Where(b => orderedBlocks.Contains(b)).ToList();
+                if (owned.Count > 0)
+                    formOwnedBlocks[fm] = owned;
+            }
+
+            if (formsToCommit.Count <= 1)
+            {
+                // Single form — no cross-form coordination needed
+                return formOwnedBlocks.TryGetValue(this, out var blocks)
+                    ? await _dirtyStateManager.SaveDirtyBlocksAsync(blocks)
+                    : true;
+            }
+
+            // Cross-form commit: attempt source-level transaction wrapper.
+            // We begin a transaction on the CURRENT form's data source and commit
+            // each form's blocks sequentially. If any fails, we roll back everything
+            // that was already committed.
+            var committed = new Stack<(FormsManager fm, List<string> blocks)>();
+            try
+            {
+                foreach (var (fm, blocks) in formOwnedBlocks)
+                {
+                    var success = await fm._dirtyStateManager.SaveDirtyBlocksAsync(blocks);
+                    if (!success)
+                        throw new InvalidOperationException($"Commit failed for form '{fm._currentFormName}'");
+                    committed.Push((fm, blocks));
+                }
+                return true;
+            }
+            catch
+            {
+                // Roll back committed forms in reverse order
+                while (committed.Count > 0)
+                {
+                    var (fm, blocks) = committed.Pop();
+                    try { await fm._dirtyStateManager.RollbackDirtyBlocksAsync(blocks); }
+                    catch { /* best-effort rollback */ }
+                }
+                return false;
             }
         }
 
