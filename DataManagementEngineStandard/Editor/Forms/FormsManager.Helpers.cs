@@ -244,6 +244,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             var fullMessage = blockName != null ? $"[{blockName}] {message}" : message;
             _dmeEditor?.AddLogMessage("UnitofWorksManager", fullMessage, DateTime.Now, 0, null, Errors.Ok);
+            LogOperationStructured(message, blockName);
         }
 
         /// <summary>
@@ -259,6 +260,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             if (!string.IsNullOrEmpty(blockName))
                 _errorLog?.LogError(blockName, ex ?? new InvalidOperationException(message), message);
+
+            LogErrorStructured(message, ex, blockName);
         }
 
         private void SuppressSync(string blockName) =>

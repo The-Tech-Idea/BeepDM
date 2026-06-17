@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
 	  <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
@@ -18,6 +18,7 @@
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	  <NoWarn>$(NoWarn);CS1591</NoWarn>
 	  <DocumentationFile>docs.xml</DocumentationFile>
 	  <IncludeSymbols>False</IncludeSymbols>
   </PropertyGroup>
@@ -30,6 +31,7 @@
 	</Target>
  
 	<ItemGroup>
+	  <Compile Remove="Editor\Forms.Tests\**" />
 	  <Compile Remove="GFX\**" />
 	  <EmbeddedResource Remove="GFX\**" />
 	  <None Remove="GFX\**" />

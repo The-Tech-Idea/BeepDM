@@ -412,17 +412,29 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             var usedBytes = GC.GetTotalMemory(false);
             if (usedBytes < thresholdBytes) return;
 
-            LogOperation($"Memory pressure detected ({usedBytes / (1024 * 1024)} MB). Evicting LRU cache entries.");
+            LogOperation($"Memory pressure detected ({usedBytes / (1024 * 1024)} MB). Evicting weighted-LRU cache entries.");
 
             if (!_cacheLock.TryEnterWriteLock(TimeSpan.FromSeconds(3))) return;
             try
             {
-                var half = _blockCache.Count / 2;
-                if (half <= 0) return;
+                if (_blockCache.Count == 0) return;
+
+                double overRatio = (double)(usedBytes - thresholdBytes) / thresholdBytes;
+                int evictCount = overRatio switch
+                {
+                    < 0.10 => Math.Max(1, _blockCache.Count / 10),
+                    < 0.25 => _blockCache.Count / 5,
+                    < 0.50 => _blockCache.Count / 3,
+                    < 1.00 => _blockCache.Count / 2,
+                    _      => _blockCache.Count * 2 / 3
+                };
+
+                evictCount = Math.Max(1, Math.Min(evictCount, _blockCache.Count - 1));
+                if (_blockCache.Count <= 1) { evictCount = 1; }
 
                 var lruKeys = _blockCache
                     .OrderBy(kvp => kvp.Value.LastAccessed)
-                    .Take(half)
+                    .Take(evictCount)
                     .Select(kvp => kvp.Key)
                     .ToList();
 
@@ -432,7 +444,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     Interlocked.Increment(ref _evictionCount);
                 }
 
-                LogOperation($"LRU eviction removed {lruKeys.Count} entries due to memory pressure.");
+                LogOperation($"Weighted-LRU eviction removed {lruKeys.Count} entries (over ratio: {overRatio:P0}).");
             }
             finally
             {
