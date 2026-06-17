@@ -552,11 +552,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Applies audit defaults to a record
+        /// Applies audit defaults to a record (delegates to <see cref="SetAuditDefaults"/>).
         /// </summary>
+        [Obsolete("Use SetAuditDefaults instead — this is a duplicate kept for backward compatibility.")]
         public void ApplyAuditDefaults(object record, string currentUser = null)
         {
-            _formsSimulationHelper.SetAuditDefaults(record, currentUser ?? Environment.UserName);
+            SetAuditDefaults(record, currentUser);
+        }
         }
         #endregion
 

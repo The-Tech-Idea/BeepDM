@@ -454,7 +454,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex) { LogError($"CloneBlockDataAsync failed for '{sourceBlockName}' -> '{destBlockName}'", ex, sourceBlockName); return false; }
         }
 
         /// <summary>
@@ -473,7 +473,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 await InsertRecordAsync(blockName, clone);
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex) { LogError($"DuplicateCurrentRecordAsync failed for '{blockName}'", ex, blockName); return false; }
         }
 
         #endregion

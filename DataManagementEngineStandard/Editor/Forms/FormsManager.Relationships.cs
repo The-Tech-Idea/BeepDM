@@ -88,6 +88,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     existing.MasterKeyField = resolution.MasterKeyField;
                     existing.DetailForeignKeyField = resolution.DetailForeignKeyField;
+                    existing.KeyFieldMappings = resolution.Mappings != null
+                        ? new List<DataBlockFieldMapping>(resolution.Mappings)
+                        : new List<DataBlockFieldMapping>();
                     existing.RelationshipType = relationshipType;
                     existing.Description = $"Resolved via {resolution.Source}";
                     existing.IsActive = true;
@@ -101,6 +104,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         DetailBlockName = detailBlockName,
                         MasterKeyField = resolution.MasterKeyField,
                         DetailForeignKeyField = resolution.DetailForeignKeyField,
+                        KeyFieldMappings = resolution.Mappings != null
+                            ? new List<DataBlockFieldMapping>(resolution.Mappings)
+                            : new List<DataBlockFieldMapping>(),
                         RelationshipType = relationshipType,
                         Description = $"Resolved via {resolution.Source}",
                         IsActive = true,
@@ -113,6 +119,70 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             detailBlock.MasterBlockName = masterBlockName;
             detailBlock.MasterKeyField = resolution.MasterKeyField;
             detailBlock.ForeignKeyField = resolution.DetailForeignKeyField;
+            detailBlock.IsMasterBlock = false;
+        }
+
+        /// <summary>
+        /// Creates a master-detail relationship with composite (multi-field) keys.
+        /// The key mappings are passed as explicit field pairs; the resolver is bypassed
+        /// and the mappings are stored directly for use during detail synchronization.
+        /// </summary>
+        public void CreateMasterDetailRelation(string masterBlockName, string detailBlockName,
+            DataBlockFieldMapping[] keyFieldMappings, RelationshipType relationshipType = RelationshipType.OneToMany)
+        {
+            if (keyFieldMappings == null || keyFieldMappings.Length == 0)
+                throw new ArgumentException("At least one key field mapping is required for composite-key relationships", nameof(keyFieldMappings));
+
+            var masterBlock = GetBlock(masterBlockName)
+                ?? throw new InvalidOperationException($"Master block '{masterBlockName}' is not registered");
+            var detailBlock = GetBlock(detailBlockName)
+                ?? throw new InvalidOperationException($"Detail block '{detailBlockName}' is not registered");
+
+            ValidateRelationshipParameters(masterBlockName, detailBlockName);
+
+            lock (_lockObject)
+            {
+                if (!_relationships.TryGetValue(masterBlockName, out var relationships))
+                {
+                    relationships = new List<DataBlockRelationship>();
+                    _relationships[masterBlockName] = relationships;
+                }
+
+                var existing = relationships.FirstOrDefault(r =>
+                    string.Equals(r.DetailBlockName, detailBlockName, StringComparison.OrdinalIgnoreCase));
+
+                var mappingList = new List<DataBlockFieldMapping>(keyFieldMappings);
+                if (existing != null)
+                {
+                    existing.MasterKeyField = mappingList[0].MasterField;
+                    existing.DetailForeignKeyField = mappingList[0].DetailField;
+                    existing.KeyFieldMappings = mappingList;
+                    existing.RelationshipType = relationshipType;
+                    existing.Description = "Composite-key (explicit)";
+                    existing.IsActive = true;
+                    existing.ModifiedDate = DateTime.Now;
+                }
+                else
+                {
+                    relationships.Add(new DataBlockRelationship
+                    {
+                        MasterBlockName = masterBlockName,
+                        DetailBlockName = detailBlockName,
+                        MasterKeyField = mappingList[0].MasterField,
+                        DetailForeignKeyField = mappingList[0].DetailField,
+                        KeyFieldMappings = mappingList,
+                        RelationshipType = relationshipType,
+                        Description = "Composite-key (explicit)",
+                        IsActive = true,
+                        CreatedDate = DateTime.Now
+                    });
+                }
+            }
+
+            masterBlock.IsMasterBlock = true;
+            detailBlock.MasterBlockName = masterBlockName;
+            detailBlock.MasterKeyField = mappingList[0].MasterField;
+            detailBlock.ForeignKeyField = mappingList[0].DetailField;
             detailBlock.IsMasterBlock = false;
         }
 
@@ -167,6 +237,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         #endregion
 
+        public void ClearBlockRelationships(string blockName) => RemoveBlockRelationships(blockName);
+
         private void RemoveBlockRelationships(string blockName)
         {
             var blockInfo = GetBlock(blockName);
@@ -208,6 +280,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             blockInfo.MasterKeyField = null;
             blockInfo.ForeignKeyField = null;
             blockInfo.IsMasterBlock = GetDetailBlocks(blockName).Any();
+        }
+
+        /// <summary>Blocks registered but not attached to any form (standalone). Used by IDE navigator.</summary>
+        public IReadOnlyList<DataBlockInfo> StandaloneBlocks =>
+            _blocks.Values.Where(b => string.IsNullOrEmpty(b.FormName)).ToList().AsReadOnly();
+
+        /// <summary>
+        /// Runtime status snapshot for IDE display. Returns non-null even if block doesn't exist
+        /// (empty status with the requested name).
+        /// </summary>
+        public BlockStatus GetBlockStatus(string blockName)
+        {
+            var result = new BlockStatus { BlockName = blockName ?? "(unknown)" };
+            if (!_blocks.TryGetValue(blockName ?? string.Empty, out var info))
+                return result;
+
+            var uow = info.UnitOfWork;
+            if (uow != null)
+            {
+                try
+                {
+                    dynamic dyn = uow;
+                    result.RecordCount = (int)(dyn.Units?.Count ?? 0);
+                    result.CurrentRecordIndex = (int)(dyn.CurrentIndex ?? 0);
+                }
+                catch { /* dynamic access may fail on some UoW implementations */ }
+            }
+            result.IsInQueryMode = info.Mode == DataBlockMode.Query || info.Mode == DataBlockMode.EnterQuery;
+            result.CurrentMode = info.Mode.ToString();
+            result.HasUnsavedChanges = uow?.IsDirty == true;
+            return result;
+        }
+
+        /// <summary>
+        /// Register a form discovered by the IDE scanner in the shared form registry.
+        /// Does NOT create a FormsManager — the host creates that separately.
+        /// </summary>
+        public void RegisterDiscoveredForm(string formName, string codeFilePath, string designerFilePath, string hostName = null)
+        {
+            if (_formRegistry == null || string.IsNullOrWhiteSpace(formName)) return;
+            _formRegistry.RegisterForm(formName, this);
         }
     }
 }

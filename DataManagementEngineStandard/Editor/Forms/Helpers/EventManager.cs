@@ -50,6 +50,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         public event EventHandler<ValidationTriggerEventArgs> OnValidateForm;
 
         public event EventHandler<ErrorTriggerEventArgs> OnError;
+        public event EventHandler<CustomItemEventArgs> OnCustomItemEvent;
 #pragma warning restore CS0067
         #endregion
 
@@ -240,6 +241,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 return args.IsValid;
             }
             catch (Exception ex) { LogError($"Record validation error in '{blockName}'", ex); return false; }
+        }
+
+        public bool TriggerCustomItemEvent(string eventType, string blockName, string itemName, object payload = null)
+        {
+            try
+            {
+                var args = new CustomItemEventArgs(eventType, blockName, itemName, payload);
+                OnCustomItemEvent?.Invoke(this, args);
+                return !args.Cancel;
+            }
+            catch (Exception ex) { LogError($"CustomItemEvent '{eventType}' error for '{itemName}' in '{blockName}'", ex); return false; }
         }
 
         #endregion

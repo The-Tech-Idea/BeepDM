@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Configuration;
 using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -73,13 +72,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly ConcurrentDictionary<string, int> _syncSuppressCount = new(StringComparer.OrdinalIgnoreCase);
 
         // Phase 5 — audit
-        private IAuditManager _auditManager;
+        private readonly IAuditManager _auditManager;
 
         // Phase 6 — security
-        private ISecurityManager _securityManager;
+        private readonly ISecurityManager _securityManager;
 
         // Phase 7 — paging
-        private IPagingManager _pagingManager;
+        private readonly IPagingManager _pagingManager;
         #endregion
 
         #region Phase 4-F – Block Change Feed
@@ -116,7 +115,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             ITimerManager timerManager = null,
             IFormRegistry formRegistry = null,
             IFormMessageBus messageBus = null,
-            ISharedBlockManager sharedBlockManager = null)
+            ISharedBlockManager sharedBlockManager = null,
+            ISecurityManager securityManager = null,
+            IPagingManager pagingManager = null,
+            IAuditManager auditManager = null,
+            CrossBlockValidationManager crossBlockValidation = null,
+            ITriggerExecutionLog triggerExecutionLog = null,
+            ITriggerDependencyManager triggerDependencyManager = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
 
@@ -142,17 +147,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _sequenceProvider = sequenceProvider ?? new Forms.Helpers.SequenceProvider();
             _timerManager = timerManager ?? new Forms.Helpers.TimerManager();
             _timerManager.TimerFired += OnTimerManagerFired;
-            _formRegistry = formRegistry ?? new Forms.Helpers.FormRegistry();
+            _formRegistry = formRegistry
+                ?? (dmeEditor as TheTechIdea.Beep.DMEEditor)?.FormRegistry
+                ?? new Forms.Helpers.FormRegistry();
             _messageBus = messageBus ?? new Forms.Helpers.FormMessageBus();
             _messageBus.OnFormMessage += OnMessageBusFormMessage;
             _sharedBlockManager = sharedBlockManager ?? new Forms.Helpers.SharedBlockManager();
-            _securityManager = new Forms.Helpers.SecurityManager();
-            _pagingManager = new Forms.Helpers.PagingManager();
-            _auditManager = new Forms.Helpers.AuditManager();
-            _crossBlockValidation = new CrossBlockValidationManager(GetUnitOfWork);
+            _securityManager = securityManager ?? new Forms.Helpers.SecurityManager();
+            _pagingManager = pagingManager ?? new Forms.Helpers.PagingManager();
+            _auditManager = auditManager ?? new Forms.Helpers.AuditManager();
+            _crossBlockValidation = crossBlockValidation ?? new CrossBlockValidationManager(GetUnitOfWork);
 
             InitializeManager();
-            InitializeTriggerChaining();
+            InitializeTriggerChaining(triggerExecutionLog, triggerDependencyManager);
             InitializeAudit();
             InitializeSecurity();
             InitializePerformance();

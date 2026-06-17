@@ -25,6 +25,7 @@ using TheTechIdea.Beep.Addin;
 using static TheTechIdea.Beep.Utils.Util;
 using TheTechIdea.Beep.Editor.Defaults;
 using TheTechIdea.Beep.Editor.ETL;
+using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 
 
 
@@ -86,6 +87,17 @@ namespace TheTechIdea.Beep
         /// Class and Type Creator based of EntityStructure and Data objects
         /// </summary>
         public IClassCreator classCreator { get; set; }
+        /// <summary>
+        /// Shared form registry — all FormsManager instances register here.
+        /// Lazy-initialized; set explicitly before first use to inject a pre-populated
+        /// registry. Available at both design time (IDE) and runtime (WinForms/WPF).
+        /// </summary>
+        public IFormRegistry FormRegistry
+        {
+            get => _formRegistry ??= new TheTechIdea.Beep.Editor.Forms.Helpers.FormRegistry();
+            set => _formRegistry = value;
+        }
+        private IFormRegistry _formRegistry;
         /// <summary>
         ///  Logs and Error Messeges
         /// </summary>

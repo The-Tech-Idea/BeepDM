@@ -981,65 +981,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #endregion
     }
 
-    #region Supporting Classes
-
-    /// <summary>
-    /// Result of mode transition validation
-    /// </summary>
-    public class ModeTransitionValidationResult
-    {
-        /// <summary>
-        /// Gets or sets whether the requested mode transition is currently valid.
-        /// </summary>
-        public bool IsValid { get; set; }
-        /// <summary>
-        /// Gets or sets the summary message for the validation outcome.
-        /// </summary>
-        public string Message { get; set; }
-        /// <summary>
-        /// Gets or sets the individual issues detected while validating the transition.
-        /// </summary>
-        public List<string> ValidationIssues { get; set; } = new List<string>();
-    }
-
-    /// <summary>
-    /// Information about a block's mode and state
-    /// </summary>
-    public class BlockModeInfo
-    {
-        /// <summary>
-        /// Gets or sets the logical block name.
-        /// </summary>
-        public string BlockName { get; set; }
-        /// <summary>
-        /// Gets or sets the current runtime mode for the block.
-        /// </summary>
-        public DataBlockMode CurrentMode { get; set; }
-        /// <summary>
-        /// Gets or sets the time the block last changed modes.
-        /// </summary>
-        public DateTime LastModeChange { get; set; }
-        /// <summary>
-        /// Gets or sets whether the block currently has unsaved changes.
-        /// </summary>
-        public bool HasUnsavedChanges { get; set; }
-        /// <summary>
-        /// Gets or sets the number of loaded records in the block.
-        /// </summary>
-        public int RecordCount { get; set; }
-        /// <summary>
-        /// Gets or sets whether this block is the current active block.
-        /// </summary>
-        public bool IsCurrentBlock { get; set; }
-        
-        /// <summary>
-        /// Gets a compact text summary of the block mode and state.
-        /// </summary>
-        public string Summary => 
-            $"{BlockName}: {CurrentMode} mode, {RecordCount} records" +
-            (HasUnsavedChanges ? " (unsaved changes)" : "") +
-            (IsCurrentBlock ? " (current)" : "");
-    }
-
-    #endregion
+    // ModeTransitionValidationResult and BlockModeInfo are now in Models\ModeTransitionModels.cs
+    // (moved for consistency with the rest of the Models/ catalog).
 }

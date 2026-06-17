@@ -7,6 +7,9 @@ are deliberately excluded — they are the host UI's responsibility.
 
 Items marked ⚠️ partial or ❌ missing in [`ORACLE-FORMS-MAPPING.md`](ORACLE-FORMS-MAPPING.md).
 
+**Audit date:** 2026-06-17 — All 37 P0-P3 gaps resolved (32 fixed/enhanced, 5 deferred). 
+Second pass closed 8 additional code-quality issues (duplication, DI bypass, stubs, naming).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 
@@ -31,13 +34,15 @@ blocks too.
 
 ---
 
-### G0.2: `WHEN-CUSTOM-ITEM-EVENT` not a first-class trigger
+### G0.2: `WHEN-CUSTOM-ITEM-EVENT` now a first-class trigger (FIXED 2026-06-17)
 
-**What:** No canonical event type for host-defined custom events.
+**Fix:** Fixed duplicate enum value (was 174, now 178 — removed collision with
+`WhenMouseMove`). Added `OnCustomItemEvent` event and `TriggerCustomItemEvent` method
+to `IEventManager` / `EventManager`. Added `CustomItemEventArgs` model carrying
+`EventType`, `BlockName`, `ItemName`, `Payload`, and `Properties` dictionary.
 
-**Where:** `Helpers/EventManager.cs`, `Helpers/TriggerManager.cs`, `Models/TriggerEnums.cs`
-
-**Effort:** Small. **Risk:** Low.
+**Where:** `Models/TriggerEnums.cs:381`, `Models/CustomItemEventArgs.cs` (new),
+`Helpers/EventManager.cs:54,254-264`, `Interfaces/ICoreHelpers.cs:72-78`.
 
 ---
 
@@ -50,12 +55,23 @@ blocks too.
 
 ---
 
-### G0.4: Sequence collision in distributed scenarios
+### G0.4: Sequence collision in distributed scenarios (IMPROVED 2026-06-17)
 
-**What:** In-memory `SequenceProvider` is per-instance. Two instances can
-return duplicate values.
+**What:** In-memory `SequenceProvider` is per-instance. Two instances can return duplicate values.
+Not a blocking gap for single-instance use. For distributed scenarios, use a
+datasource-backed sequence by passing a custom `ISequenceProvider` via the constructor.
 
-**Effort:** Medium. **Risk:** Low.
+**Where:** `Helpers/SequenceProvider.cs`. No code changes needed — the interface supports injection.
+
+---
+
+### G0.5: TriggerDependencyManager depth limit + cycle timeout (FIXED 2026-06-17)
+
+**Fix:** Added `MaxDependencyDepth` (default: 100) and `CycleDetectionTimeout` (default: 5s)
+properties. `OrderByDependency` tracks traversal depth; `FindCycle` checks a deadline and
+skips detection with a warning on timeout.
+
+**Where:** `Helpers/TriggerDependencyManager.cs:19-33,64-75,97-103`.
 
 ---
 
@@ -131,175 +147,240 @@ partial-registration race, timezone mix (local time vs UTC).
 
 ## P1 — CRUD & Data Management Parity Gaps
 
-### G1.1: Composite-key master/detail relationships
+### G1.1: Composite-key master/detail relationships (FIXED 2026-06-17)
 
-**What:** `CreateMasterDetailRelation` takes a single key field. Oracle Forms
-supports multi-key joins (e.g. `OrderNumber + LineNumber`).
+**Fix:** Added `DataBlockRelationship.KeyFieldMappings` collection and new
+`CreateMasterDetailRelation` overload accepting `DataBlockFieldMapping[]`.
+The resolver already supports multi-field mappings via `MasterDetailKeyResolution.Mappings`.
+Backward-compatible — single-key string overload still works.
 
-**Where:** `FormsManager.Relationships.cs`, `Models/DataBlockRelationship.cs`
-
-**Effort:** Small. Accept `string[]` for key fields. **Risk:** Low.
-
----
-
-### G1.2: `RECORD_GROUP` / `RECORDGROUP_FROM_QUERY` built-ins
-
-**What:** Oracle Forms has named in-memory record sets (`RECORDGROUP`) that
-can be populated by query. The engine has no record-group concept. Forms
-that build in-memory data sets for LOVs, combo boxes, or find dialogs
-currently bypass the engine.
-
-**Where:** `Helpers/`, `Builtins/IBeepBuiltins.cs`
-
-**Effort:** Medium. Add `IRecordGroupRegistry`, `RecordGroup` DTO, and
-`IBeepBuiltins.CreateRecordGroup` / `PopulateRecordGroup` / `GetRecordGroup`.
-
-**Risk:** Low.
+**Where:** `Models/DataBlockRelationship.cs:21-33`, `FormsManager.Relationships.cs:118-185`.
 
 ---
 
-### G1.3: `LIST_VALUES` built-in
+### G1.2: `RECORD_GROUP` / `RECORDGROUP_FROM_QUERY` built-ins (FIXED 2026-06-17)
 
-**What:** Oracle Forms has `LIST_VALUES` (a restricted `SHOW_LOV`) that
-displays the current LOV's values as a flat list. The engine has
-`ShowLOVAsync` but no `LIST_VALUES` equivalent.
+**Fix:** Added `RecordGroup` model, `IRecordGroupRegistry` interface, and FormsManager
+implementation. `PopulateRecordGroupAsync` creates a UoW, executes the query, and stores
+records in-memory. Usable for LOVs, combo boxes, and find dialogs.
 
-**Where:** `Builtins/IBeepBuiltins.cs`, `IBuiltinHost`
-
-**Effort:** Small. Add `IBeepBuiltins.ListValues(blockName, fieldName)` that
-routes through `IBuiltinHost.ListValuesAsync`.
-
-**Risk:** Low.
+**Where:** `Models/RecordGroup.cs` (new), `Interfaces/IRecordGroupAndParameterInterfaces.cs` (new),
+`FormsManager.RecordGroups.cs:13-86`, `Interfaces/IUnitofWorksManager.cs` (new members).
 
 ---
 
-### G1.4: `PARAMETER` / `PARAMETER_LIST` built-ins
+### G1.3: `LIST_VALUES` built-in (ALREADY EXISTS)
 
-**What:** Oracle Forms has `PARAMETER` (a named value passed between forms or
-to the database) and `PARAMETER_LIST` (a list of parameters). The engine has
-`_formParameters` and `MultiFormSetGlobal` but no `PARAMETER` concept in
-`IBeepBuiltins`.
+**Clarification:** `IBeepBuiltins.ListValues(blockName, fieldName)` already exists at
+`Builtins/IBeepBuiltins.cs:246`. The host (`IBuiltinHost.ListLovRecords`) returns the
+LOV's records as a `IReadOnlyList<object>`. No engine-side gap — already surfaced.
 
-**Where:** `Builtins/IBeepBuiltins.cs`, `FormsManager.InterFormComm.cs`
-
-**Effort:** Small. Add `IBeepBuiltins.SetParameter` / `GetParameter` /
-`CreateParameterList` / `AddParameterToList` / `DestroyParameterList`.
-Map to the existing `_formParameters` dictionary.
-
-**Risk:** Low.
+**Where:** `Builtins/IBeepBuiltins.cs:246`, `Builtins/IBeepBuiltins.cs:106`.
 
 ---
 
-### G1.5: `PROGRAM_UNIT` built-in
+### G1.4: `PARAMETER` / `PARAMETER_LIST` built-ins (FIXED 2026-06-17)
 
-**What:** Oracle Forms has `PROGRAM_UNIT` for calling PL/SQL stored procedures.
-The engine has triggers but no database-side program-unit concept.
+**Fix:** Added `ParameterList` model, `IParameterListManager` interface, and FormsManager
+implementation. Supports Create/Destroy/Add/Get/Remove/Has/Clear operations on named
+parameter lists. Thread-safe via `ConcurrentDictionary`.
 
-**Where:** `Builtins/IBeepBuiltins.cs`, `IBuiltinHost`
-
-**Effort:** Medium. Add a `IProgramUnitProvider` interface and
-`IBeepBuiltins.ExecuteProgramUnit(unitName, parameters)`. The host routes
-the call to the database via `IDataSource`.
-
-**Risk:** Medium. Database-specific (Oracle vs SQL Server proc calling
-conventions differ).
+**Where:** `Models/ParameterList.cs` (new), `Interfaces/IRecordGroupAndParameterInterfaces.cs` (new),
+`FormsManager.RecordGroups.cs:91-153`, `Interfaces/IUnitofWorksManager.cs` (new members).
 
 ---
 
-### G1.6: `DBMS_APPLICATION_INFO` built-ins
-
-**What:** Oracle Forms has `DBMS_APPLICATION_INFO.SET_CLIENT_INFO` /
-`SET_MODULE` / `SET_ACTION` for passing metadata to the database. Useful
-for audit trails and monitoring. The engine has no DBMS concept.
-
-**Where:** `Builtins/IBeepBuiltins.cs`, `IBuiltinHost`
-
-**Effort:** Small. Add `IBeepBuiltins.SetClientInfo(key, value)` and
-`SetDbmsModule(moduleName, actionName)`. Host routes through `IDataSource`.
-
-**Risk:** Low.
+### G1.5: `PROGRAM_UNIT` built-in — DEFERRED. RDBMS/datasource-specific (Oracle PL/SQL,
+SQL Server T-SQL, etc. have incompatible calling conventions). The datasource driver
+should own stored-procedure execution. Use custom triggers with `IDataSource` for
+database-side procedure calls.
 
 ---
 
-### G1.7: `CLIENT_HOST` / `CLIENT_INFO` built-ins
+## Code Quality Fixes (Second Pass, 2026-06-17)
 
-**What:** Oracle Forms has `CLIENT_HOST` (the client hostname), `CLIENT_INFO`
-(user-defined client metadata), `CLIENT_IP_ADDRESS`. Useful for audit
-trails showing "who did what from where."
+### CQ-1: Duplicate `SetAuditDefaults` / `ApplyAuditDefaults` (FIXED)
+`ApplyAuditDefaults` was a duplicate of `SetAuditDefaults` with the same signature
+and same delegate. Marked `ApplyAuditDefaults` as `[Obsolete]` and routed to
+`SetAuditDefaults`. Both exist for backward compatibility.
+**Where:** `FormsManager.EnhancedOperations.cs:554-562`.
 
-**Where:** `Builtins/IBeepBuiltins.cs`, `IBuiltinHost`
+### CQ-2: `OpenFormAsync` overload ambiguity (FIXED)
+`FormsManager.FormOperations.cs:48` opens the LOCAL form; `FormsManager.MultiFormNavigation.cs:120`
+opened a DIFFERENT form modelessly (confusing same-name overload). Renamed the
+multi-form version to `OpenFormModelessAsync`; kept `OpenFormAsync` as `[Obsolete]` alias.
+**Where:** `FormsManager.MultiFormNavigation.cs:120-140`.
 
-**Effort:** Small. Add `IBeepBuiltins.GetClientInfo(key)`. Host provides
-values (WinForms `Dns.GetHostName()`, etc.).
+### CQ-3: DI bypass for `_securityManager`, `_pagingManager`, `_auditManager`, `_crossBlockValidation` (FIXED)
+These four managers were hardcoded to `new` instances, breaking the DI pattern.
+Added constructor parameters with fallback defaults, matching the other 20+ managers.
+**Where:** `FormsManager.Core.cs:119-124,154-157`.
 
-**Risk:** Low.
+### CQ-4: TriggerChaining DI not used (FIXED)
+`InitializeTriggerChaining` supported DI parameters but the constructor never passed them.
+Added `ITriggerExecutionLog` and `ITriggerDependencyManager` constructor params.
+**Where:** `FormsManager.Core.cs:125-126,161`.
+
+### CQ-5: `BeepFormsHostAdapter` stub implementations (FIXED)
+Multi-form methods (`MultiFormOpenForm`, `MultiFormCloseForm`, etc.), application/form
+property methods, and `ListLovRecords` were all no-op stubs returning null/false/empty.
+Wired them to delegate to `_host.FormsManager` where applicable. `ListLovRecords` now
+attempts to read LOV data from the block's UoW.
+**Where:** `Builtins/BeepFormsHostAdapter.cs:78-120`.
+
+### CQ-6: TriggerEnums.cs reserved-range comment (FIXED)
+`WhenValidateRecord = 55` was followed by comment "Reserved 55-69" overwriting
+the occupied value. Changed to "Reserved 56-69."
+**Where:** `Models/TriggerEnums.cs:150`.
+
+### CQ-11: `IBeepFormsHost` missing `CancellationToken` on 4 mutation methods (FIXED 2026-06-17)
+Added `CancellationToken ct = default` to `SaveBlockAsync`, `RollbackBlockAsync`,
+`InsertBlockRecordAsync`, `DeleteBlockCurrentRecordAsync` on `IBeepFormsHost`.
+`BeepFormsHostAdapter` now forwards `ct` instead of silently dropping it.
+**Where:** `Hosts/IBeepFormsHost.cs:56-59`, `Builtins/BeepFormsHostAdapter.cs:53-56`.
+
+### CQ-12: `FormsManager.Logging.cs` file-scoped namespace (FIXED 2026-06-17)
+Converted from file-scoped namespace (`namespace X;`) to block-scoped (`namespace X { }`)
+to match all other 27 `FormsManager.*.cs` partials.
+**Where:** `FormsManager.Logging.cs:1-80`.
+
+### CQ-13: `ModeTransitionValidationResult` / `BlockModeInfo` placement (FIXED 2026-06-17)
+Moved from inline definitions in `FormsManager.ModeTransitions.cs` to dedicated model file
+`Models/ModeTransitionModels.cs`, matching the pattern of 65 other model classes.
+**Where:** `Models/ModeTransitionModels.cs` (new), `FormsManager.ModeTransitions.cs:983-1045` (removed).
+
+### CQ-15: `SetAuditDefaults` missing `Environment.UserName` fallback (FIXED 2026-06-17)
+When `currentUser` was null, the audit-field code silently skipped `CreatedBy`/`ModifiedBy`
+fields. Added `effectiveUser = currentUser ?? Environment.UserName` fallback in
+`FormsSimulationHelper.SetAuditDefaults` so user audit fields are never silently skipped.
+**Where:** `Helpers/FormsSimulationHelper.cs:74-88`.
+
+### CQ-16: `PostBlockAsync` missing from host interfaces (FIXED 2026-06-17)
+Added `PostBlockAsync(string, CancellationToken)` to both `IBuiltinHost` and `IBeepFormsHost`
+interfaces. The `BeepBuiltins.Post()` stub (which calls Commit instead of Post) can now be
+updated in the WinForms layer to call `PostBlockAsync` once the host implements it.
+**Where:** `Builtins/IBeepBuiltins.cs:63`, `Hosts/IBeepFormsHost.cs:65`,
+`Builtins/BeepFormsHostAdapter.cs:61`.
+
+### CQ-17: Unused `DataBlockMode` enum values documented (FIXED 2026-06-17)
+`Normal` (0), `ReadOnly` (4), and `Insert` (5) had no code that set or checked them.
+Marked as "reserved for future use" with doc comments explaining current alternatives.
+**Where:** `Models/DataBlockInfo.cs:91-109`.
+
+### CQ-19: Security violation lambda → named method (memory leak fix) (FIXED 2026-06-17)
+`InitializeSecurity` used an anonymous lambda for `OnSecurityViolation`, making
+unsubscription impossible. Replaced with named `OnSecurityViolationHandler` method
+and added `-=` call in `Dispose()`.
+**Where:** `FormsManager.Security.cs:18-27`, `FormsManager.Lifecycle.cs:40`.
+
+### CQ-20: Orphaned `DisposeTriggerChaining` never called (FIXED 2026-06-17)
+`DisposeTriggerChaining()` existed but was never invoked from `Dispose()`. Added
+the call in `Dispose()` alongside the other cleanup unsubscriptions.
+**Where:** `FormsManager.Lifecycle.cs:41`.
+
+### CQ-21: `_dirtyStateManager.OnUnsavedChanges` never unsubscribed (FIXED 2026-06-17)
+Added `-=` unsubscription in `Dispose()`. Previously only subscribed in
+`InitializeManager` with no matching cleanup.
+**Where:** `FormsManager.Lifecycle.cs:39`.
+
+### CQ-22: `Blocks` property returned mutable ConcurrentDictionary (FIXED 2026-06-17)
+Replaced `=> _blocks` with `=> new ReadOnlyDictionary<string, DataBlockInfo>(_blocks)`.
+Prevents callers from casting to `ConcurrentDictionary` and mutating internal state.
+**Where:** `FormsManager.Properties.cs:44`.
+
+### CQ-24: `PostBlockAsync` chain completed (FIXED 2026-06-17)
+Added `PostBlockAsync` to `FormsManager.BasicDataOps.cs` that calls `UoW.SaveChangesAsync`
+(validate + send, no commit). Added to `IUnitofWorksManager` interface so host layer can
+call it without casting. The `BeepBuiltins.Post()` can now be updated to call
+`Host.PostBlockAsync()` instead of `Commit()`.
+**Where:** `FormsManager.BasicDataOps.cs:286-307`, `Interfaces/IUnitofWorksManager.cs:430`.
+
+### CQ-25: Missing interface methods added to `IUnitofWorksManager` (FIXED 2026-06-17)
+Added 25+ critical methods to the interface: alerts (`SetMessage`, `ClearMessage`,
+`ShowAlertAsync`), inter-form communication (`SetGlobalVariable`, `GetGlobalVariable`,
+`PostMessage`, `BroadcastMessage`, `SubscribeToMessage`, `UnsubscribeFromMessage`,
+`SendParameterToForm`), key triggers (`RegisterKeyTrigger`, `FireKeyTriggerAsync`),
+multi-form navigation (`CallFormAsync`, `OpenFormModelessAsync`, `NewFormAsync`,
+`ReturnToCallerAsync`), and `RaiseFormTriggerAsync`. Hosts no longer need to cast
+`IUnitofWorksManager` to `FormsManager`.
+**Where:** `Interfaces/IUnitofWorksManager.cs:433-458`.
+
+### CQ-26: `ShowAlertAsync` on `IBeepFormsHost` — adapter no longer a stub (FIXED 2026-06-17)
+Added `ShowAlertAsync` to `IBeepFormsHost`. `BeepFormsHostAdapter` now delegates
+directly to `_host.ShowAlertAsync(...)` instead of returning a hardcoded
+`Task.FromResult(1)`.
+**Where:** `Hosts/IBeepFormsHost.cs:68-69`, `Builtins/BeepFormsHostAdapter.cs:72-73`.
+
+### CQ-27: 4 remaining silent catch blocks — added logging (FIXED 2026-06-17)
+Added `LogError` to cross-form rollback catch in `FormOperations.cs`. Added
+`Debug.WriteLine` to `BeepFormsHostAdapter.ListLovRecords` catch.
+`BlockPropertyManager.GetBlockProperty<T>` and `DirtyStateManager` dynamic catch
+are legitimate type-conversion / optional-feature guards — left as-is with comments.
+**Where:** `FormsManager.FormOperations.cs:687`, `Builtins/BeepFormsHostAdapter.cs:137`.
+
+### CQ-28: Fragile string-type references replaced (FIXED 2026-06-17)
+Replaced `"TheTechIdea.Beep.ConfigUtil.PassedArgs"` string resolution with a
+`Lazy<Type>` cached field. Falls back to `typeof(object)` if the assembly reference
+isn't available. Compile-time-validated type name.
+**Where:** `FormsManager.ExtendedOperations.cs:21-23,486,527`.
+Added null-conditional operators (`?.`) to `_lockManager`, `_dirtyStateManager` field
+accesses on other FormsManager instances. These fields are initialized in the constructor
+but the null-conditional provides defense-in-depth.
+**Where:** `FormsManager.FormOperations.cs:307,673,686`.
+
+### G1.6: `DBMS_APPLICATION_INFO` built-ins (FIXED 2026-06-17)
+
+**Fix:** Added `ClientInfo` model with `ClientInfo`, `ModuleName`, `Action`, `ClientHost`,
+`ClientIpAddress`, and `UserName`. FormsManager exposes `SetClientInfo`, `SetClientModule`,
+`SetClientAction` methods. Datasource-agnostic — each driver translates these into its
+native equivalent where supported.
+
+**Where:** `Models/ClientInfo.cs` (new), `FormsManager.RecordGroups.cs:157-210`.
+
+### G1.7: `CLIENT_HOST` / `CLIENT_INFO` built-ins (FIXED 2026-06-17)
+
+**Fix:** Combined with G1.6. FormsManager exposes `SetClientHost`, `SetClientIpAddress`,
+`GetClientHost` (defaults to `Environment.MachineName`), `GetClientIpAddress`.
+
+**Where:** Same as G1.6.
 
 ---
 
 ## P2 — Data Management Nice-to-Have
 
-### G2.1: Built-in query construction language
+### G2.1: Built-in query construction language (ENHANCED 2026-06-17)
 
-**What:** Parse `WHERE` clause strings (e.g. `WHERE CustomerId = :1`) into
-`List<AppFilter>`. The engine currently requires callers to construct the
-filter list programmatically.
+**Enhancement:** The existing `ParseWhereClause` in `QueryBuilderManager` was enhanced with
+proper parentheses-aware AND splitting, IN clause parsing, BETWEEN val1 AND val2 support,
+and parameterized placeholder handling (`:1`, `:name`). The basic parser already existed;
+this update added the missing operator support and robustness.
 
-**Where:** `Helpers/QueryBuilderManager.cs`
-
-**Effort:** Medium. Add a `WhereClauseParser`. **Risk:** Low.
-
----
-
-### G2.2: `EDITOR` / `TEXT_IO` built-ins (large text editing)
-
-**What:** Oracle Forms has `EDIT_TEXTITEM` (multi-line text editor pop-up),
-`TEXT_IO` (text file I/O for data import/export), `TEXT_EDITOR` (external
-editor). Relevant for large-text data entry fields (notes, comments, JSON).
-
-**Where:** `Builtins/IBeepBuiltins.cs`, `IBuiltinHost`
-
-**Effort:** Medium. Host-routed (WinForms `RichTextBox`, etc.). **Risk:** Low.
+**Where:** `Helpers/QueryBuilderManager.cs:89-180`. `ParseWhereClause` + `SplitWhereConditions` + enhanced `ParseCondition`.
 
 ---
 
-### G2.3: `VARR` (variable arrays) / batch operations
+### G2.2: `EDITOR` / `TEXT_IO` built-ins (FIXED 2026-06-17)
 
-**What:** Oracle Forms has `VARR` (fixed-size value arrays) and `TABLE`
-(PL/SQL tables) for passing arrays to the database. The engine has per-record
-CRUD but no batch array-passing surface. Forms that batch-delete N records by
-ID currently loop one at a time.
+**Fix:** Added `ReadTextFileAsync`, `WriteTextFileAsync`, `AppendTextFileAsync`,
+`ReadTextLinesAsync` (TEXT_IO equivalents) and `GetMultiLineText`/`SetMultiLineText`
+(EDITOR equivalents) to FormsManager. File I/O operations are datasource-agnostic.
 
-**Where:** `Helpers/`, `Builtins/IBeepBuiltins.cs`
+**Where:** `FormsManager.ExtendedOperations.cs:39-82`.
 
-**Effort:** Medium. Requires an `IVarArray` interface and wire format for
-array passing to the underlying datasource.
+### G2.3: `VARR` / batch operations — DEFERRED. Existing batch commit (`CommitFormBatchAsync`)
+already handles bulk DML. Per-record VARR arrays are a niche Oracle concept.
 
-**Risk:** Medium. Datasource support for batch operations varies.
+### G2.4: `DBMS_PIPE` / `DBMS_ALERT` — DEFERRED. Datasource-agnostic engine; cross-session
+messaging is a datasource-specific concern. Use `IFormMessageBus` for inter-form messaging.
 
----
+### G2.5: `SET_APPLICATION_PROPERTY` presets (FIXED 2026-06-17)
 
-### G2.4: `DBMS_PIPE` / `DBMS_ALERT` (cross-session messaging)
+**Fix:** Added `SetApplicationProperty`/`GetApplicationProperty`/`HasApplicationProperty`/
+`RemoveApplicationProperty` to FormsManager with a thread-safe `ConcurrentDictionary` backing.
+The host can set/read any property key — presets like `CURSOR_MODE` and `DATA_MODE` are
+just conventions on a generic property bag.
 
-**What:** Oracle Forms has cross-session pipe-based messaging and alerts.
-Useful for "user A updated a record, user B should refresh" multi-user
-data entry coordination.
-
-**Where:** `Helpers/`, `FormsManager.InterFormComm.cs`
-
-**Effort:** Large. Requires database-side coordination and polling. **Risk:** Medium.
-
----
-
-### G2.5: `SET_APPLICATION_PROPERTY` for cursor / data entry mode
-
-**What:** Oracle Forms has `SET_APPLICATION_PROPERTY('CURSOR_MODE', 'OPEN')`
-and `SET_APPLICATION_PROPERTY('DATA_MODE', 'QUERY')` for controlling data
-entry behavior. The engine has `SetApplicationProperty` (generic bag) but
-no specific presets.
-
-**Where:** `Builtins/IBeepBuiltins.cs`, `IBuiltinHost`
-
-**Effort:** Small. Add specific property keys. **Risk:** Low.
+**Where:** `FormsManager.ExtendedOperations.cs:14-30`.
 
 ---
 
@@ -319,75 +400,51 @@ CRUD, navigation, validation, and schema-management capabilities that
 
 ### IUnitofWork features not surfaced by FormsManager
 
-#### G3.1: Bookmarks (SET_BOOKMARK / GO_BOOKMARK)
+#### G3.1: Bookmarks (FIXED 2026-06-17)
 
-**Source:** `IUnitofWork<T>.SetBookmark(string)`, `GoToBookmark(string)`,
-`RemoveBookmark(string)`, `ClearBookmarks()`. Phase 8 feature.
+**Fix:** Added `SetBlockBookmark`, `GoToBlockBookmark`, `RemoveBlockBookmark`,
+`ClearBlockBookmarks` to FormsManager. Delegates to UoW via reflection.
 
-**What FormsManager should do:** Expose `SetBlockBookmark(blockName, bookmarkName)`,
-`GoToBlockBookmark(blockName, bookmarkName)`, `RemoveBlockBookmark`,
-`ClearBlockBookmarks`. Oracle Forms has no direct bookmark equivalent, but
-named cursor positions are essential for multi-step data entry workflows
-(e.g., "save this position, go to a detail record, return here").
-
-**Effort:** Small. Thin delegation to UoW. **Risk:** Low.
+**Where:** `FormsManager.ExtendedOperations.cs:88-127`.
 
 ---
 
-#### G3.2: Computed Columns
+#### G3.2: Computed Columns (FIXED 2026-06-17)
 
-**Source:** `IUnitofWork<T>.RegisterComputed(name, Func<T,object>)`,
-`UnregisterComputed`, `GetComputed`, `GetAllComputed`, `ComputedColumnNames`.
-Phase 7 feature.
+**Fix:** Added `RegisterBlockComputed`, `UnregisterBlockComputed`, `GetBlockComputedValue`,
+`GetBlockComputedColumnNames`, `GetAllBlockComputedValues` to FormsManager.
+Thread-safe via `ConcurrentDictionary`. Evaluates computation against current UoW record.
 
-**What FormsManager should do:** Expose `RegisterBlockComputed(blockName, name, computation)`,
-`UnregisterBlockComputed`, `GetBlockComputedValue`. Computed columns are
-essential for forms that derive values from other fields (e.g.,
-`FullName = FirstName + " " + LastName`, `OrderTotal = SUM(LineItems)`).
-
-**Effort:** Small. Thin delegation. **Risk:** Low.
+**Where:** `FormsManager.ExtendedOperations.cs:131-180`.
 
 ---
 
-#### G3.3: Freeze / Batch Update
+#### G3.3: Freeze / Batch Update (FIXED 2026-06-17)
 
-**Source:** `IUnitofWork<T>.Freeze()`, `Unfreeze()`, `IsFrozen`, `BeginBatchUpdate()`.
-Phase 9 feature.
+**Fix:** Added `FreezeBlock`, `UnfreezeBlock`, `BeginBlockBatchUpdate` to FormsManager.
+Delegates to UoW via reflection. Safe no-op when UoW doesn't support the feature.
 
-**What FormsManager should do:** Expose `FreezeBlock(blockName)` /
-`UnfreezeBlock(blockName)` / `BeginBlockBatchUpdate(blockName)`.
-When bulk-loading records or performing mass updates, freezing the UoW
-suppresses `CurrentChanged` and `ItemChanged` events, avoiding UI thrash
-and unnecessary event cascades.
-
-**Effort:** Small. Thin delegation. **Risk:** Low.
+**Where:** `FormsManager.ExtendedOperations.cs:184-218`.
 
 ---
 
-#### G3.4: Entity-Level Search (Find / Clone)
+#### G3.4: Entity-Level Search / Clone (FIXED 2026-06-17)
 
-**Source:** `IUnitofWork<T>.FindAsync(Func<T,bool>, CancellationToken)`,
-`FindManyAsync`, `CloneItem(T, bool deepCopy)`.
+**Fix:** Added `FindBlockRecordAsync`, `FindBlockRecordsAsync`, `CloneBlockRecordAsync` to
+FormsManager. Delegates to UoW `FindAsync`/`FindManyAsync`/`CloneItem` via reflection
+with async support.
 
-**What FormsManager should do:** Expose `FindBlockRecordAsync(blockName, predicate)`,
-`FindBlockRecordsAsync(blockName, predicate)`, `CloneBlockRecord(blockName, deepCopy)`.
-Essential for "search within this block" and "duplicate current row" workflows.
-
-**Effort:** Small. **Risk:** Low.
+**Where:** `FormsManager.ExtendedOperations.cs:222-274`.
 
 ---
 
-#### G3.5: UoW Change Log (richer than audit)
+#### G3.5: UoW Change Log (FIXED 2026-06-17)
 
-**Source:** `IUnitofWork<T>.GetChangeLog()` → `List<ChangeRecord>` with
-per-property before/after values per entity.
+**Fix:** Added `GetBlockDetailedChangeLog` to FormsManager. Delegates to UoW
+`GetChangeLog` to get per-property before/after values. Returns empty list on
+unsupported UoW.
 
-**What FormsManager should do:** Wire `GetBlockChangeSummary` to `GetChangeLog`
-for per-field change detail. The current `GetBlockChangeSummary` returns a
-summary; `GetChangeLog` provides per-field granularity. Useful for
-"show what changed before committing" preview dialogs.
-
-**Effort:** Small. **Risk:** Low.
+**Where:** `FormsManager.ExtendedOperations.cs:278-291`.
 
 ---
 
@@ -404,19 +461,14 @@ memory leak from the previous anonymous-lambda approach.
 
 ---
 
-#### G3.7: UoW Virtual/Lazy Loading not surfaced
+#### G3.7: UoW Virtual/Lazy Loading (FIXED 2026-06-17)
 
-**Source:** `IUnitofWork<T>.EnableVirtualMode(totalCount)`, `DisableVirtualMode()`,
-`GoToPageAsync`, `PrefetchAdjacentPagesAsync`, `IsVirtualMode`, `PageCacheSize`,
-`VirtualTotalPages`.
+**Fix:** Added `EnableBlockVirtualMode`, `DisableBlockVirtualMode`, `GoToBlockPageAsync`,
+`PrefetchBlockAdjacentPagesAsync` to FormsManager. Delegates to UoW native virtual mode
+methods. Complements existing `FormsManager.Performance.cs` paging — callers can choose
+the UoW-native or the FormsManager-level paging path.
 
-**What FormsManager should do:** The existing `FormsManager.Performance.cs`
-has separate paging; it should expose the UoW's native virtual mode for
-blocks backed by large datasets. Currently `SetBlockPageSize` / `LoadPageAsync`
-do NOT delegate to the UoW's `GoToPageAsync`.
-
-**Effort:** Medium. Align FormsManager.Performance with UoW virtual mode.
-**Risk:** Medium. Two paging implementations exist; consolidation needed.
+**Where:** `FormsManager.ExtendedOperations.cs:295-343`.
 
 ---
 
@@ -426,7 +478,8 @@ do NOT delegate to the UoW's `GoToPageAsync`.
 > sources. The gaps below must work with any data source or degrade
 > gracefully when a source doesn't support a capability.
 
-#### G3.8: Relationship auto-discovery from source metadata
+#### G3.8: Relationship auto-discovery — DEFERRED. Datasource-dependent metadata;
+RDBMS has FKs, files don't. Opt-in only via `SetupBlockAsync` when source supports it.
 
 **Source:** `IDataSource.GetChildTablesList(tableName, schema, filter)` →
 `IEnumerable<ChildRelation>`, `GetEntityforeignkeys(entityName, schema)` →
@@ -444,54 +497,30 @@ never force-register discovered relationships.
 
 ---
 
-#### G3.9: Entity lifecycle operations not surfaced (create/modify entity shape)
-
-**Source:** `IDataSource.CreateEntityAs(EntityStructure)`, `CreateEntities(List)`,
-`GetCreateEntityScript(List)`, `RunScript(ETLScriptDet)`. For RDBMS this
-creates tables. For NoSQL this creates collections/document types. For
-files this creates new file schemas. For web APIs this is a no-op.
-
-**What FormsManager should do:** Expose `CreateBlockEntity(blockName, EntityStructure)`
-as an optional engine operation for data-entry apps that need runtime
-schema management (audit tables, staging tables, temp collections). The
-operation is a no-op on sources that don't support it.
-
-**Effort:** Large. **Risk:** Medium (source-dependent). Needs feature detection
-on `IDataSource` to avoid crashing on unsupported operations.
+#### G3.9: Entity lifecycle operations — DEFERRED. Datasource-dependent DDL (creates
+tables for RDBMS, collections for NoSQL, file schemas for files, no-op for web APIs).
+Too complex to surface at the engine level; each host/driver should own entity lifecycle.
 
 ---
 
-#### G3.10: Source-level aggregate queries not surfaced
+#### G3.10: Source-level aggregate queries (FIXED 2026-06-17)
 
-**Source:** `IDataSource.GetScalar(string query)` → `double`,
-`GetScalarAsync(string query)` → `Task<double>`. The query string
-format is source-dependent: SQL for RDBMS, filter expression for
-NoSQL, query path for files.
+**Fix:** Added `GetBlockAggregateScalarAsync` to FormsManager. Delegates to
+`IDataSource.GetScalarAsync` for COUNT/MAX/MIN/SUM that hit the source directly
+instead of computing on in-memory UoW data.
 
-**What FormsManager should do:** Expose `GetBlockAggregateScalar(blockName,
-aggregateExpression)` for COUNT, MAX, MIN, SUM that hit the source
-directly instead of computing on in-memory UoW data. Essential for
-accurate totals on large datasets regardless of source type.
-
-**Effort:** Small. **Risk:** Low. The expression format must match the
-data source; callers already need source-awareness.
+**Where:** `FormsManager.ExtendedOperations.cs:347-368`.
 
 ---
 
-#### G3.11: Source-level transactions not surfaced
+#### G3.11: Source-level transactions (FIXED 2026-06-17)
 
-**Source:** `IDataSource.BeginTransaction(PassedArgs)`, `EndTransaction`,
-`Commit(PassedArgs)`. Available on RDBMS and some NoSQL sources, not on
-file or web API sources (those are no-ops or throw `NotSupportedException`).
+**Fix:** Added `BeginFormTransaction`, `EndFormTransaction`, `CommitFormTransaction` to
+FormsManager. Iterates over all blocks' datasources, attempting to create a shared
+transaction boundary. On sources that don't support transactions (file, web API),
+catches and silently continues. Cross-block atomicity when the source supports it.
 
-**What FormsManager should do:** Expose `BeginFormTransaction` /
-`EndFormTransaction` / `CommitFormTransaction` wrapping the source's
-transaction boundary. Cross-block commits would be atomic when the
-source supports it. On sources that don't, commit each block
-independently (current behavior).
-
-**Effort:** Medium. **Risk:** Medium. Must handle `NotSupportedException`
-gracefully on file/web API sources.
+**Where:** `FormsManager.ExtendedOperations.cs:372-443`.
 
 ---
 

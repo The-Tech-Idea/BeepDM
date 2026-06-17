@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using TheTechIdea.Beep.Editor.Forms.Models;
 
 namespace TheTechIdea.Beep.Editor.UOWManager.Models
 {
@@ -27,11 +29,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>Gets or sets the name of the detail block</summary>
         public string DetailBlockName { get; set; }
 
-        /// <summary>Gets or sets the key field in the master block</summary>
+        /// <summary>Gets or sets the key field in the master block (first key for composite)</summary>
         public string MasterKeyField { get; set; }
 
-        /// <summary>Gets or sets the foreign key field in the detail block</summary>
+        /// <summary>Gets or sets the foreign key field in the detail block (first key for composite)</summary>
         public string DetailForeignKeyField { get; set; }
+
+        /// <summary>Gets or sets the resolved field mappings for composite-key relationships</summary>
+        public List<DataBlockFieldMapping> KeyFieldMappings { get; set; } = new();
+
+        /// <summary>Gets the master key fields as a read-only list (from Mappings or the single key)</summary>
+        public IReadOnlyList<string> MasterKeyFields =>
+            KeyFieldMappings.Count > 0
+                ? KeyFieldMappings.Select(m => m.MasterField).ToList().AsReadOnly()
+                : (MasterKeyField != null ? new List<string> { MasterKeyField }.AsReadOnly() : Array.Empty<string>());
+
+        /// <summary>Gets the detail foreign-key fields as a read-only list</summary>
+        public IReadOnlyList<string> DetailForeignKeyFields =>
+            KeyFieldMappings.Count > 0
+                ? KeyFieldMappings.Select(m => m.DetailField).ToList().AsReadOnly()
+                : (DetailForeignKeyField != null ? new List<string> { DetailForeignKeyField }.AsReadOnly() : Array.Empty<string>());
 
         /// <summary>Gets or sets the type of relationship</summary>
         public RelationshipType RelationshipType { get; set; } = RelationshipType.OneToMany;

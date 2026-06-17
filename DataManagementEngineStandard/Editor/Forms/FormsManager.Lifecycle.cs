@@ -33,7 +33,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             
             try
             {
-                // Unsubscribe from all events and dispose resources
                 foreach (var blockInfo in _blocks.Values)
                 {
                     if (blockInfo.UnitOfWork != null)
@@ -41,8 +40,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         _eventManager.UnsubscribeFromUnitOfWorkEvents(blockInfo.UnitOfWork, blockInfo.BlockName);
                     }
                 }
+
+                _dirtyStateManager.OnUnsavedChanges -= OnUnsavedChangesHandler;
+                _securityManager.OnSecurityViolation -= OnSecurityViolationHandler;
+                DisposeTriggerChaining();
                 
-                // Dispose helper managers
                 _performanceManager?.Dispose();
                 _messageBus.OnFormMessage -= OnMessageBusFormMessage;
                 _messageBus?.UnsubscribeAll(_currentFormName ?? string.Empty);

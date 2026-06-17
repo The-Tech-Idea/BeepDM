@@ -13,6 +13,30 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// </summary>
     public class TriggerDependencyManager : ITriggerDependencyManager
     {
+        private int _maxDependencyDepth = 100;
+        private TimeSpan _cycleDetectionTimeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Maximum depth of the dependency graph traversal. Prevents stack
+        /// overflow on extremely deep or accidentally recursive dependency chains.
+        /// Default: 100.
+        /// </summary>
+        public int MaxDependencyDepth
+        {
+            get => _maxDependencyDepth;
+            set => _maxDependencyDepth = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "Must be positive");
+        }
+
+        /// <summary>
+        /// Maximum time allowed for cycle detection. If exceeded, the graph is
+        /// assumed to be too complex to check and a warning is logged (the
+        /// operation proceeds without cycle detection). Default: 5 seconds.
+        /// </summary>
+        public TimeSpan CycleDetectionTimeout
+        {
+            get => _cycleDetectionTimeout;
+            set => _cycleDetectionTimeout = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), "Must be positive");
+        }
         /// <summary>Orders trigger definitions according to dependency requirements.</summary>
         /// <remarks>
         /// If a trigger's <see cref="TriggerDefinition.DependsOn"/> list references a
@@ -37,8 +61,15 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var result  = new List<TriggerDefinition>();
 
-            void Visit(TriggerDefinition t)
+            void Visit(TriggerDefinition t, int depth = 0)
             {
+                if (depth > _maxDependencyDepth)
+                {
+                    Debug.WriteLine(
+                        $"[TriggerDependencyManager] Max dependency depth ({_maxDependencyDepth}) " +
+                        $"exceeded for '{t.TriggerName}'. Check for accidental recursion.");
+                    return;
+                }
                 if (!visited.Add(t.TriggerId)) return;
                 if (t.DependsOn != null)
                 {
@@ -47,7 +78,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                         if (string.IsNullOrEmpty(depId)) continue;
                         if (byId.TryGetValue(depId, out var dep))
                         {
-                            Visit(dep);
+                            Visit(dep, depth + 1);
                         }
                         else
                         {
@@ -83,9 +114,17 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             var white  = new HashSet<string>(byId.Keys, StringComparer.OrdinalIgnoreCase);
             var grey   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var stack  = new List<string>();
+            var deadline = DateTime.UtcNow + _cycleDetectionTimeout;
 
             bool Dfs(string id)
             {
+                if (DateTime.UtcNow > deadline)
+                {
+                    Debug.WriteLine(
+                        $"[TriggerDependencyManager] Cycle detection timed out after {_cycleDetectionTimeout.TotalSeconds:F0}s. " +
+                        $"Graph has {triggers.Count} triggers. Skipping cycle check — proceeding without cycle detection.");
+                    return false;
+                }
                 white.Remove(id);
                 grey.Add(id);
                 stack.Add(id);

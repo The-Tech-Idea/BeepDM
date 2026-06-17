@@ -1072,8 +1072,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 {
                     { rule.ItemName ?? "value", value }
                 };
-                var result = rule.CustomValidator(value, null, record).GetAwaiter().GetResult();
-                return result.isValid;
+
+                Task<ValidationResult> task;
+                if (SynchronizationContext.Current != null)
+                    task = Task.Run(() => rule.CustomValidator(value, null, record));
+                else
+                    task = rule.CustomValidator(value, null, record);
+                var result = task.GetAwaiter().GetResult();
+
+                return result?.isValid ?? false;
             }
             catch (Exception ex)
             {

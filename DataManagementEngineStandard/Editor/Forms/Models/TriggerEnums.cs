@@ -147,7 +147,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>When validating a record (WHEN-VALIDATE-RECORD)</summary>
         WhenValidateRecord = 55,
         
-        // Reserved 55-69 for future record-level triggers
+        // Reserved 56-69 for future record-level triggers
         
         #endregion
         
@@ -375,10 +375,10 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>When button pressed (WHEN-BUTTON-PRESSED)</summary>
         WhenButtonPressed = 177,
         
-        // Reserved 178-189 for future mouse triggers
-
         /// <summary>When a host-defined custom item event fires (WHEN-CUSTOM-ITEM-EVENT). The eventType parameter identifies the specific event.</summary>
-        WhenCustomItemEvent = 174,
+        WhenCustomItemEvent = 178,
+        
+        // Reserved 179-189 for future mouse triggers
         
         #endregion
         

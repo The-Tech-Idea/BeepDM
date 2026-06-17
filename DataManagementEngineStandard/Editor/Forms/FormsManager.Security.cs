@@ -18,12 +18,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private void InitializeSecurity()
         {
             if (_securityManager == null) return;
+            _securityManager.OnSecurityViolation += OnSecurityViolationHandler;
+        }
 
-            // Subscribe to violations so they flow through the error log
-            _securityManager.OnSecurityViolation += (s, e) =>
-            {
-                _errorLog?.LogError(e.BlockName, null, e.Message);
-            };
+        private void OnSecurityViolationHandler(object sender, SecurityViolationEventArgs e)
+        {
+            _errorLog?.LogError(e.BlockName, null, e.Message);
         }
 
         #endregion
@@ -143,5 +143,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         #endregion
+
+        /// <summary>
+        /// Removes all security rules (block- and field-level) for the named block.
+        /// After calling this, the block reverts to default open-access permissions.
+        /// </summary>
+        public void ClearBlockSecurity(string blockName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+            _securityManager?.ClearBlockSecurity(blockName);
+            ApplyAllSecurityFlags();
+        }
     }
 }

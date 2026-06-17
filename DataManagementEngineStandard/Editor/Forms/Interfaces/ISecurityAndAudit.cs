@@ -189,6 +189,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// </summary>
         void ApplyBlockSecurityFlags(Action<string, bool, bool, bool, bool> applyBlockFlags);
 
+        /// <summary>Removes all security rules (block- and field-level) for the named block.</summary>
+        void ClearBlockSecurity(string blockName);
+
         /// <summary>
         /// Returns the effective row-filter WHERE clause for a block (or empty string if none).
         /// </summary>

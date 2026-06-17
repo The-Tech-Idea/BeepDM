@@ -279,7 +279,33 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                    message.IndexOf("canceled", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("validation failed", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("must be in Query mode", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   message.IndexOf("already in Query mode", StringComparison.OrdinalIgnoreCase) >= 0;
+                    message.IndexOf("already in Query mode", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Post (validate and send to DB without committing). Oracle Forms POST equivalent.
+        /// Validates and saves the current record to the underlying datasource but does NOT
+        /// commit the transaction. In the current engine, this delegates to the UoW's Commit
+        /// which performs a save + commit in one operation. Once IUnitofWork gains a dedicated
+        /// PostAsync/ValidateAsync method, this will be updated to call it directly.
+        /// </summary>
+        public async Task<bool> PostBlockAsync(string blockName, CancellationToken ct = default)
+        {
+            var block = GetBlock(blockName);
+            if (block == null) return false;
+            var uow = block.UnitOfWork;
+            if (uow == null) return false;
+
+            try
+            {
+                var result = await uow.Commit(ct).ConfigureAwait(false);
+                return result?.Flag == Errors.Ok;
+            }
+            catch (Exception ex)
+            {
+                LogError($"PostBlockAsync failed for block '{blockName}'", ex, blockName);
+                return false;
+            }
         }
 
         #endregion

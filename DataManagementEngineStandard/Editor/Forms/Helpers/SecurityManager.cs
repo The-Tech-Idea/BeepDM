@@ -118,6 +118,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         public BlockSecurity GetBlockSecurity(string blockName)
             => _blockSecurities.TryGetValue(blockName ?? string.Empty, out var bs) ? bs : null;
 
+        /// <summary>Removes all block-level and field-level security rules for a block.</summary>
+        public void ClearBlockSecurity(string blockName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+            _blockSecurities.TryRemove(blockName, out _);
+            _fieldSecurities.TryRemove(blockName, out _);
+        }
+
         /// <summary>Returns whether a block operation is allowed in the current context.</summary>
         public bool IsBlockAllowed(string blockName, SecurityPermission permission)
         {

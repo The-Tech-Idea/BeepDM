@@ -90,7 +90,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
     /// </summary>
     public enum DataBlockMode
     {
-        /// <summary>Normal mode - the block accepts all operations allowed by its configuration.</summary>
+        /// <summary>Normal mode — reserved for future use. CRUD (3) is the current canonical normal-mode value.</summary>
         Normal = 0,
 
         /// <summary>Enter-Query mode - the user is typing example criteria to filter the next query (Oracle Forms ENTER_QUERY).</summary>
@@ -102,10 +102,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>CRUD mode - explicit alias for Normal kept for source compatibility with existing call-sites.</summary>
         CRUD = 3,
 
-        /// <summary>Read-only mode.</summary>
+        /// <summary>Read-only mode — reserved for future use. Currently enforced via DataBlockInfo.InsertAllowed/UpdateAllowed/DeleteAllowed flags.</summary>
         ReadOnly = 4,
 
-        /// <summary>Insert mode - the current record is a new record awaiting commit.</summary>
+        /// <summary>Insert mode — reserved for future use. Insert operations currently run in CRUD (3) mode.</summary>
         Insert = 5
     }
     

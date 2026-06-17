@@ -55,9 +55,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
                     SaveConfiguration(); // Create default config file
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 Configuration = UnitofWorksManagerConfiguration.Default;
+                System.Diagnostics.Debug.WriteLine($"[ConfigurationManager] LoadConfiguration failed: {ex.Message}");
             }
         }
 
@@ -76,9 +77,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Configuration
                 
                 File.WriteAllText(_configFilePath, json);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log error but don't throw
+                System.Diagnostics.Debug.WriteLine($"[ConfigurationManager] SaveConfiguration failed: {ex.Message}");
             }
         }
 

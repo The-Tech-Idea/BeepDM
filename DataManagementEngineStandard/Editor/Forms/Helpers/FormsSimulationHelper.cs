@@ -71,16 +71,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     auditDefaults[datePattern] = now;
                 }
 
-                // Add user fields if current user is provided
-                if (!string.IsNullOrEmpty(currentUser))
+                // Add user fields if current user is provided; fall back to Environment.UserName
+                // when no explicit user is given so audit fields are never silently skipped.
+                var effectiveUser = currentUser;
+                if (string.IsNullOrEmpty(effectiveUser))
+                    effectiveUser = Environment.UserName;
+                if (!string.IsNullOrEmpty(effectiveUser))
                 {
                     foreach (var userPattern in _auditFieldPatterns["CreatedBy"])
                     {
-                        auditDefaults[userPattern] = currentUser;
+                        auditDefaults[userPattern] = effectiveUser;
                     }
                     foreach (var userPattern in _auditFieldPatterns["ModifiedBy"])
                     {
-                        auditDefaults[userPattern] = currentUser;
+                        auditDefaults[userPattern] = effectiveUser;
                     }
                 }
 

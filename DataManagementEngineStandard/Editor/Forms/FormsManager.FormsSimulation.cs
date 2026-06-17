@@ -77,6 +77,39 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return _formsSimulationHelper.ValidateField(record, FieldName, value, constraints);
         }
 
+        /// <summary>
+        /// Clears the current record's field value (sets it to null/empty).
+        /// Oracle Forms KEY-CLRITM equivalent. Fire KEY-CLRITM triggers first,
+        /// then clear the field value and reset associated item state.
+        /// </summary>
+        public bool ClearItem(string blockName, string itemName)
+        {
+            var block = GetBlock(blockName);
+            if (block == null) return false;
+            var uow = block.UnitOfWork;
+            if (uow == null) return false;
+            var current = uow.CurrentItem;
+            if (current == null) return false;
+            if (_itemPropertyManager == null) return false;
+
+            try
+            {
+                var oldValue = GetFieldValue(current, itemName);
+                SetFieldValue(current, itemName, null);
+
+                _itemPropertyManager.ClearItemDirty(blockName, itemName);
+                _itemPropertyManager.ClearItemError(blockName, itemName);
+
+                LogOperation($"Cleared item '{itemName}' in block '{blockName}' (was: {oldValue})", blockName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogError($"ClearItem failed for '{itemName}' in block '{blockName}'", ex, blockName);
+                return false;
+            }
+        }
+
         #endregion
     }
 }

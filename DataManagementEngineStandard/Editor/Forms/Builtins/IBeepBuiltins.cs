@@ -59,6 +59,9 @@ namespace TheTechIdea.Beep.Editor.Forms.Builtins
         Task<bool> ClearBlockAsync(string blockName, CancellationToken ct);
         Task<bool> ClearRecordAsync(string blockName, CancellationToken ct);
 
+        /// <summary>Post (validate and send to DB without committing). Oracle Forms POST equivalent.</summary>
+        Task<bool> PostBlockAsync(string blockName, CancellationToken ct = default);
+
         // Validation
         RecordValidationResult? ValidateBlockRecord(string blockName, IDictionary<string, object> record, ValidationTiming timing);
 
@@ -138,8 +141,8 @@ namespace TheTechIdea.Beep.Editor.Forms.Builtins
     /// <para>
     /// Returning <c>false</c> from any method indicates the operation could not be
     /// completed. Failures that should surface to the user raise
-    /// <see cref="BeepBuiltinException"/> with a Forms-style error code
-    /// (for example <c>FRM-41003</c>).
+    /// <see cref="BeepBuiltinException"/> with a Beep error code
+    /// (for example <c>BEEP-41003</c>).
     /// </para>
     /// </summary>
     public interface IBeepBuiltins

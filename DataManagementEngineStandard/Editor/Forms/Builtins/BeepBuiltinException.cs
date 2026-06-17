@@ -4,8 +4,8 @@ namespace TheTechIdea.Beep.Editor.Forms.Builtins
 {
     /// <summary>
     /// Exception thrown by <see cref="IBeepBuiltins"/> when a built-in cannot
-    /// complete. Carries an Oracle Forms-compatible error code
-    /// (for example <c>FRM-41003</c>) so triggers and UI handlers can map
+    /// complete. Carries a Beep-specific error code
+    /// (for example <c>BEEP-41003</c>) so triggers and UI handlers can map
     /// failures to localized messages.
     /// </summary>
     public class BeepBuiltinException : Exception

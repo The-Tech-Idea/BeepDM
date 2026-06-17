@@ -67,6 +67,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Triggers record-level validation for a block record.</summary>
         bool TriggerRecordValidation(string blockName, object record);
+
+        /// <summary>Fires the host-defined custom item event (WHEN-CUSTOM-ITEM-EVENT) with an event type identifier and optional payload.</summary>
+        bool TriggerCustomItemEvent(string eventType, string blockName, string itemName, object payload = null);
+
+        /// <summary>Raised when a host-defined custom item event is triggered via <see cref="TriggerCustomItemEvent"/>.</summary>
+        event EventHandler<CustomItemEventArgs> OnCustomItemEvent;
     }
 
     /// <summary>

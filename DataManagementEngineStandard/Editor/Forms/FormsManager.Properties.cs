@@ -40,8 +40,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             set => _currentBlockName = value;
         }
 
-        /// <summary>Gets all registered blocks</summary>
-        public IReadOnlyDictionary<string, DataBlockInfo> Blocks => _blocks;
+        /// <summary>Gets all registered blocks (read-only snapshot — mutation requires FormsManager methods).</summary>
+        public IReadOnlyDictionary<string, DataBlockInfo> Blocks =>
+            new System.Collections.ObjectModel.ReadOnlyDictionary<string, DataBlockInfo>(_blocks);
 
         /// <summary>Gets whether any block has unsaved changes</summary>
         public bool IsDirty => _blocks.Values.Any(block => block.UnitOfWork?.IsDirty == true);

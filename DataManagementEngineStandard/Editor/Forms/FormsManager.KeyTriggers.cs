@@ -69,8 +69,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         /// <param name="key">The key trigger to fire.</param>
         /// <param name="blockName">Override block name; defaults to <see cref="CurrentBlockName"/>.</param>
-        /// <returns>True when the action completed without cancellation.</returns>
-        public async Task<bool> FireKeyTriggerAsync(
+        /// <returns>The trigger execution result; Cancelled if the trigger was cancelled, otherwise the default action outcome.</returns>
+        public async Task<TriggerResult> FireKeyTriggerAsync(
             KeyTriggerType key,
             string blockName = null)
         {
@@ -86,10 +86,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 result = await _triggerManager.FireBlockTriggerAsync(type, block, ctx);
 
             if (result == TriggerResult.Cancelled)
-                return false;
+                return TriggerResult.Cancelled;
 
-            // Default built-in actions (replicate Oracle Forms KEY-* defaults)
-            return await ExecuteKeyDefaultActionAsync(key, block);
+            var actionOk = await ExecuteKeyDefaultActionAsync(key, block);
+            return actionOk ? TriggerResult.Success : TriggerResult.Failure;
         }
 
         // ─────────────────────────────────────────────────────────────────────

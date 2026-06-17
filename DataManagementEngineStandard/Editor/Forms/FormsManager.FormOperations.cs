@@ -304,7 +304,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Phase 7: unlock all records after successful commit
                     foreach (var fm in formsToCommit)
                         foreach (var blockName in fm._blocks.Keys)
-                            fm._lockManager.UnlockAllRecords(blockName);
+                            fm._lockManager?.UnlockAllRecords(blockName);
 
                     LogOperation($"Form commit completed successfully — {allDirtyBlocks.Count} blocks across {formsToCommit.Count} form(s)");
                 }
@@ -670,7 +670,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 foreach (var (fm, blocks) in formOwnedBlocks)
                 {
-                    var success = await fm._dirtyStateManager.SaveDirtyBlocksAsync(blocks);
+                    var success = await fm._dirtyStateManager?.SaveDirtyBlocksAsync(blocks);
                     if (!success)
                         throw new InvalidOperationException($"Commit failed for form '{fm._currentFormName}'");
                     committed.Push((fm, blocks));
@@ -683,8 +683,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 while (committed.Count > 0)
                 {
                     var (fm, blocks) = committed.Pop();
-                    try { await fm._dirtyStateManager.RollbackDirtyBlocksAsync(blocks); }
-                    catch { /* best-effort rollback */ }
+                    try { await fm._dirtyStateManager?.RollbackDirtyBlocksAsync(blocks); }
+                    catch (Exception ex) { LogError($"Rollback failed during cross-form commit recovery for '{fm._currentFormName}'", ex, fm._currentFormName); }
                 }
                 return false;
             }

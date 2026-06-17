@@ -336,6 +336,139 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Raised when the manager receives an inter-form message for this form.</summary>
         event EventHandler<FormMessageEventArgs> OnFormMessage;
 
-    }
+        // ── Record Groups (G1.2) ───────────────────────────────────────
+        void CreateRecordGroup(string name, string dataSourceName, string entityName, List<AppFilter> filters = null);
+        Task<bool> PopulateRecordGroupAsync(string name, CancellationToken ct = default);
+        RecordGroup GetRecordGroup(string name);
+        IReadOnlyList<RecordGroup> GetAllRecordGroups();
+        bool RemoveRecordGroup(string name);
+        void ClearAllRecordGroups();
+        bool RecordGroupExists(string name);
 
-}
+        // ── Parameter Lists (G1.4) ─────────────────────────────────────
+        ParameterList CreateParameterList(string name);
+        bool DestroyParameterList(string name);
+        void AddParameter(string listName, string paramName, object value);
+        object GetParameter(string listName, string paramName);
+        T GetParameter<T>(string listName, string paramName);
+        bool RemoveParameter(string listName, string paramName);
+        bool HasParameter(string listName, string paramName);
+        ParameterList GetParameterList(string name);
+        IReadOnlyList<ParameterList> GetAllParameterLists();
+        bool ParameterListExists(string name);
+        void ClearParameterList(string listName);
+
+        // ── Client Info (G1.6/G1.7) ────────────────────────────────────
+        ClientInfo ClientInfo { get; set; }
+        void SetClientInfo(string clientInfo);
+        void SetClientModule(string moduleName, string action);
+        void SetClientAction(string action);
+        void SetClientHost(string hostName);
+        void SetClientIpAddress(string ipAddress);
+        string GetClientInfo();
+        string GetClientModule();
+        string GetClientAction();
+        string GetClientHost();
+        string GetClientIpAddress();
+
+        // ── Application Properties (G2.5) ──────────────────────────────
+        void SetApplicationProperty(string name, object value);
+        object GetApplicationProperty(string name);
+        T GetApplicationProperty<T>(string name);
+        bool HasApplicationProperty(string name);
+        void RemoveApplicationProperty(string name);
+
+        // ── TEXT_IO / Editor (G2.2) ────────────────────────────────────
+        Task<string> ReadTextFileAsync(string path, CancellationToken ct = default);
+        Task WriteTextFileAsync(string path, string content, CancellationToken ct = default);
+        Task AppendTextFileAsync(string path, string content, CancellationToken ct = default);
+        Task<string[]> ReadTextLinesAsync(string path, CancellationToken ct = default);
+        string GetMultiLineText(string blockName, string fieldName);
+        bool SetMultiLineText(string blockName, string fieldName, string text);
+
+        // ── Bookmarks (G3.1) ───────────────────────────────────────────
+        void SetBlockBookmark(string blockName, string bookmarkName);
+        bool GoToBlockBookmark(string blockName, string bookmarkName);
+        void RemoveBlockBookmark(string blockName, string bookmarkName);
+        void ClearBlockBookmarks(string blockName);
+
+        // ── Computed Columns (G3.2) ────────────────────────────────────
+        void RegisterBlockComputed(string blockName, string columnName, Func<object, object> computation);
+        void UnregisterBlockComputed(string blockName, string columnName);
+        object GetBlockComputedValue(string blockName, string columnName);
+        IReadOnlyList<string> GetBlockComputedColumnNames(string blockName);
+        Dictionary<string, object> GetAllBlockComputedValues(string blockName);
+
+        // ── Freeze / Batch Update (G3.3) ───────────────────────────────
+        void FreezeBlock(string blockName);
+        void UnfreezeBlock(string blockName);
+        void BeginBlockBatchUpdate(string blockName);
+
+        // ── Entity Search / Clone (G3.4) ───────────────────────────────
+        Task<object> FindBlockRecordAsync(string blockName, Func<object, bool> predicate, CancellationToken ct = default);
+        Task<List<object>> FindBlockRecordsAsync(string blockName, Func<object, bool> predicate, CancellationToken ct = default);
+        Task<object> CloneBlockRecordAsync(string blockName, bool deepCopy = false, CancellationToken ct = default);
+
+        // ── Change Log (G3.5) ──────────────────────────────────────────
+        IReadOnlyList<object> GetBlockDetailedChangeLog(string blockName);
+
+        // ── Virtual/Lazy Loading (G3.7) ────────────────────────────────
+        void EnableBlockVirtualMode(string blockName, long totalRecordCount);
+        void DisableBlockVirtualMode(string blockName);
+        Task GoToBlockPageAsync(string blockName, int page, CancellationToken ct = default);
+        Task PrefetchBlockAdjacentPagesAsync(string blockName, CancellationToken ct = default);
+
+        // ── Source Aggregates (G3.10) ──────────────────────────────────
+        Task<double> GetBlockAggregateScalarAsync(string blockName, string aggregateExpression, CancellationToken ct = default);
+
+        // ── Source Transactions (G3.11) ────────────────────────────────
+        bool BeginFormTransaction();
+        void EndFormTransaction();
+        bool CommitFormTransaction();
+
+        // ── Post (validate + send, no commit) ──────────────────────────
+        Task<bool> PostBlockAsync(string blockName, CancellationToken ct = default);
+
+        // ── Alerts ─────────────────────────────────────────────────────
+        void SetMessage(string text, MessageLevel level = MessageLevel.Info);
+        void ClearMessage();
+        Task<AlertResult> ShowAlertAsync(string title, string message, AlertStyle style = AlertStyle.None,
+            string button1Text = "OK", string button2Text = null, string button3Text = null, CancellationToken ct = default);
+
+        // ── Inter-Form ─────────────────────────────────────────────────
+        void SetGlobalVariable(string name, object value);
+        object GetGlobalVariable(string name);
+        T GetGlobalVariable<T>(string name);
+        bool SendParameterToForm(string targetFormName, string paramName, object value);
+        void PostMessage(string targetForm, string messageType, object payload = null);
+        void BroadcastMessage(string messageType, object payload = null);
+        void SubscribeToMessage(string messageType, Action<FormMessage> handler);
+        void UnsubscribeFromMessage(string messageType);
+
+        // ── Key Triggers ───────────────────────────────────────────────
+        void RegisterKeyTrigger(KeyTriggerType keyType, string blockName, Func<TriggerContext, TriggerResult> handler);
+        void RegisterKeyTriggerAsync(KeyTriggerType keyType, string blockName, Func<TriggerContext, CancellationToken, Task<TriggerResult>> asyncHandler);
+        Task<TriggerResult> FireKeyTriggerAsync(KeyTriggerType keyType, string blockName);
+
+        // ── Multi-Form Navigation ──────────────────────────────────────
+        Task<bool> CallFormAsync(string formName, Dictionary<string, object> parameters = null, FormCallMode callMode = FormCallMode.Modal, CancellationToken ct = default);
+        Task<bool> OpenFormModelessAsync(string formName, Dictionary<string, object> parameters = null);
+        Task<bool> NewFormAsync(string formName, Dictionary<string, object> parameters = null);
+        Task<bool> ReturnToCallerAsync(object returnData = null);
+
+        // ── Form Trigger Raise ─────────────────────────────────────────
+        Task<TriggerResult> RaiseFormTriggerAsync(string triggerName, string blockName = null);
+
+        // ── Block Management ───────────────────────────────────────────
+        /// <summary>Removes all master-detail relationships where the given block is master or detail.</summary>
+        void ClearBlockRelationships(string blockName);
+        /// <summary>Removes all security rules (block- and field-level) for a block.</summary>
+        void ClearBlockSecurity(string blockName);
+
+        // ── IDE / Navigator Surface ─────────────────────────────────────
+        /// <summary>Blocks not attached to any form (standalone registration).</summary>
+        IReadOnlyList<DataBlockInfo> StandaloneBlocks { get; }
+        /// <summary>Runtime status snapshot for a block (record count, query mode, etc.).</summary>
+        BlockStatus GetBlockStatus(string blockName);
+        /// <summary>Register a form discovered by the IDE scanner.</summary>
+        void RegisterDiscoveredForm(string formName, string codeFilePath, string designerFilePath, string hostName = null);

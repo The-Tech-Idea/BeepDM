@@ -53,13 +53,20 @@ public interface IBeepFormsHost
     bool TryGetBlockProperty(string blockName, string property, out object? value);
     bool TrySetBlockProperty(string blockName, string property, object? value);
 
-    Task<bool> SaveBlockAsync(string blockName);
-    Task<bool> RollbackBlockAsync(string blockName);
-    Task<bool> InsertBlockRecordAsync(string blockName);
-    Task<bool> DeleteBlockCurrentRecordAsync(string blockName);
+    Task<bool> SaveBlockAsync(string blockName, CancellationToken ct = default);
+    Task<bool> RollbackBlockAsync(string blockName, CancellationToken ct = default);
+    Task<bool> InsertBlockRecordAsync(string blockName, CancellationToken ct = default);
+    Task<bool> DeleteBlockCurrentRecordAsync(string blockName, CancellationToken ct = default);
     Task<bool> ExecuteQueryAsync(string blockName, CancellationToken ct = default);
     Task<bool> ClearBlockAsync(string blockName, CancellationToken ct = default);
     Task<bool> ClearRecordAsync(string blockName, CancellationToken ct = default);
+
+    /// <summary>Post (validate and send to DB without committing). Oracle Forms POST equivalent.</summary>
+    Task<bool> PostBlockAsync(string blockName, CancellationToken ct = default);
+
+    /// <summary>Show a modal alert dialog. Returns the 1-based button index the user clicked.</summary>
+    Task<int> ShowAlertAsync(string title, string message, BeepBuiltinAlertStyle style,
+        string button1Text, string? button2Text = null, string? button3Text = null, CancellationToken ct = default);
 
     void PublishBuiltinMessage(string message, int messageLevel, BeepBuiltinMessageSeverity severity);
     void ClearBuiltinMessage();

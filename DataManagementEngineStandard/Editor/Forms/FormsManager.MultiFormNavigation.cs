@@ -117,7 +117,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Open a form independently (both forms run concurrently).
         /// Equivalent to Oracle Forms OPEN_FORM.
         /// </summary>
+        [Obsolete("Use OpenFormModelessAsync to avoid ambiguity with FormsManager.OpenFormAsync.")]
         public Task<bool> OpenFormAsync(
+            string formName,
+            Dictionary<string, object> parameters = null)
+            => OpenFormModelessAsync(formName, parameters);
+
+        /// <summary>
+        /// Open a form independently (modeless — concurrent with the caller).
+        /// Equivalent to Oracle Forms OPEN_FORM. Distinct from <see cref="FormOperations"/> 
+        /// <c>OpenFormAsync</c> which opens the LOCAL form.
+        /// </summary>
+        public Task<bool> OpenFormModelessAsync(
             string formName,
             Dictionary<string, object> parameters = null)
             => CallFormAsync(formName, parameters, FormCallMode.Modeless);
