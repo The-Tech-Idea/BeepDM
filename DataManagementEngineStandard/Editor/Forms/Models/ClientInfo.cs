@@ -11,7 +11,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
     public class ClientInfo
     {
         /// <summary>User-defined client metadata (e.g., "User=Alice; Dept=Sales").</summary>
-        public string ClientInfo { get; set; }
+        public string ClientInfoText { get; set; }
 
         /// <summary>The application module name (e.g., "OrderEntry").</summary>
         public string ModuleName { get; set; }

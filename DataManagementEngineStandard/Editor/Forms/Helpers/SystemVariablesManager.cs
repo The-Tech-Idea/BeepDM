@@ -99,29 +99,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     var unitOfWork = blockInfo.UnitOfWork;
                     if (unitOfWork != null)
                     {
-                        // Try to get record count from unit of work
                         try
                         {
-                            var unitsProperty = unitOfWork.GetType().GetProperty("Units");
-                            if (unitsProperty != null)
+                            dynamic dynUow = unitOfWork;
+                            var units = dynUow.Units as System.Collections.ICollection;
+                            if (units != null)
                             {
-                                var units = unitsProperty.GetValue(unitOfWork);
-                                if (units != null)
-                                {
-                                    var countProperty = units.GetType().GetProperty("Count");
-                                    var currentIndexProperty = units.GetType().GetProperty("CurrentIndex");
-                                    
-                                    if (countProperty != null)
-                                    {
-                                        sysVars.LAST_RECORD = (int)countProperty.GetValue(units);
-                                        sysVars.RECORDS_DISPLAYED = sysVars.LAST_RECORD;
-                                    }
-                                    
-                                    if (currentIndexProperty != null)
-                                    {
-                                        sysVars.CURSOR_RECORD = (int)currentIndexProperty.GetValue(units) + 1; // 1-based
-                                    }
-                                }
+                                sysVars.LAST_RECORD = units.Count;
+                                sysVars.RECORDS_DISPLAYED = sysVars.LAST_RECORD;
+                                sysVars.CURSOR_RECORD = ((int)(dynUow.CurrentIndex ?? 0)) + 1;
                             }
                         }
                         catch

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Common.Retry;
 using TheTechIdea.Beep.Logger;
+using TheTechIdea.Beep.Proxy;
 using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.WebAPI.Helpers
@@ -505,19 +506,9 @@ namespace TheTechIdea.Beep.WebAPI.Helpers
         }
 
         /// <summary>
-        /// Circuit breaker state enumeration
+        /// Circuit breaker state — see TheTechIdea.Beep.Proxy.CircuitBreakerState.
         /// </summary>
-        public enum CircuitBreakerState
-        {
-            /// <summary>Circuit breaker is closed (normal operation)</summary>
-            Closed,
-            
-            /// <summary>Circuit breaker is open (failing fast)</summary>
-            Open,
-            
-            /// <summary>Circuit breaker is half-open (testing recovery)</summary>
-            HalfOpen
-        }
+        // CircuitBreakerState consolidated to Proxy/CircuitBreaker.cs
 
         /// <summary>
         /// Circuit breaker status information

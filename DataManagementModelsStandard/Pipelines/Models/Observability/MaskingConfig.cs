@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TheTechIdea.Beep.Pipelines.Models;
 
 namespace TheTechIdea.Beep.Pipelines.Observability
 {
@@ -26,16 +27,7 @@ namespace TheTechIdea.Beep.Pipelines.Observability
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>How sensitive field values are represented in row-level logs.</summary>
-    public enum MaskingStrategy
-    {
-        /// <summary>No masking — value logged as-is.</summary>
-        None,
-        /// <summary>Replace the value with <c>"***REDACTED***"</c>.</summary>
-        Redact,
-        /// <summary>Show first/last N characters; mask the middle with asterisks.</summary>
-        Partial,
-        /// <summary>Replace the value with its SHA-256 hex digest.</summary>
-        Hash
-    }
+    /// <summary>How sensitive field values are represented in row-level logs.
+    /// Uses TheTechIdea.Beep.Pipelines.Models.MaskingStrategy — single source of truth.</summary>
+    // MaskingStrategy consolidated to Pipelines/Models/DataClassification.cs
 }

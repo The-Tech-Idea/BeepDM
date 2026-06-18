@@ -21,13 +21,14 @@ namespace TheTechIdea.Beep.Pipelines.Models
     /// </summary>
     public enum MaskingStrategy
     {
-        /// <summary>No masking — value logged as-is.</summary>
-        None,
-        /// <summary>Replace value with "***REDACTED***".</summary>
-        Redact,
-        /// <summary>Replace value with a one-way SHA-256 hash.</summary>
-        Hash,
-        /// <summary>Show first and last character with asterisks in between.</summary>
-        Partial
+        None = 0,
+        Redact = 1,
+        PartialMask = 2,
+        Partial = 3,
+        Hash = 4,
+        Tokenize = 5,
+        FormatPreservingEncrypt = 6,
+        Synthesize = 7,
+        Generalize = 8
     }
 }

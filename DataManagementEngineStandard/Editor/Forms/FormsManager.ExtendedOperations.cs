@@ -446,7 +446,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (block == null) return 0;
             try
             {
-                var ds = block.DataSource ?? _dmeEditor.GetDataSource(block.DataSourceName);
+                var ds = _dmeEditor.GetDataSource(block.DataSourceName);
                 if (ds == null) return 0;
 
                 var method = ds.GetType().GetMethod("GetScalarAsync");
@@ -477,7 +477,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 foreach (var kvp in _blocks)
                 {
-                    var ds = kvp.Value.DataSource ?? _dmeEditor.GetDataSource(kvp.Value.DataSourceName);
+                    var ds = _dmeEditor.GetDataSource(kvp.Value.DataSourceName);
                     if (ds == null) continue;
                     try
                     {
@@ -503,7 +503,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             foreach (var kvp in _blocks)
             {
-                var ds = kvp.Value.DataSource ?? _dmeEditor.GetDataSource(kvp.Value.DataSourceName);
+                var ds = _dmeEditor.GetDataSource(kvp.Value.DataSourceName);
                 if (ds == null) continue;
                 try
                 {
@@ -520,7 +520,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 foreach (var kvp in _blocks)
                 {
-                    var ds = kvp.Value.DataSource ?? _dmeEditor.GetDataSource(kvp.Value.DataSourceName);
+                    var ds = _dmeEditor.GetDataSource(kvp.Value.DataSourceName);
                     if (ds == null) continue;
                     try
                     {

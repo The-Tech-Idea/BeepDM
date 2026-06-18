@@ -99,6 +99,23 @@ namespace TheTechIdea.Beep
         }
         private IFormRegistry _formRegistry;
         /// <summary>
+        /// Catalog-aware connection repository for scope/profile-aware connection management.
+        /// Lazy-initialized with ConfigEditor's path; set explicitly to inject a custom repository.
+        /// </summary>
+        public IConnectionCatalogRepository ConnectionCatalogRepository
+        {
+            get
+            {
+                if (_catalogRepo == null && ConfigEditor != null)
+                {
+                    _catalogRepo = ConfigEditor.ConnectionCatalogRepository;
+                }
+                return _catalogRepo;
+            }
+            set { _catalogRepo = value; if (ConfigEditor != null) ConfigEditor.ConnectionCatalogRepository = value; }
+        }
+        private IConnectionCatalogRepository _catalogRepo;
+        /// <summary>
         ///  Logs and Error Messeges
         /// </summary>
         public BindingList<ILogAndError> Loganderrors { get; set; } = new BindingList<ILogAndError>();

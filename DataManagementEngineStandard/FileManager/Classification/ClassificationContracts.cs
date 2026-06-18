@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Pipelines.Models;
 
 namespace TheTechIdea.Beep.FileManager.Classification
 {
@@ -19,17 +20,7 @@ namespace TheTechIdea.Beep.FileManager.Classification
     {
         Task<IReadOnlyList<ClassificationHit>> ClassifyColumnAsync(string columnName, IEnumerable<string> sampleValues, int sampleSize = 500, CancellationToken ct = default);
     }
-
-    public enum MaskingStrategy
-    {
-        Redact,
-        PartialMask,
-        Tokenize,
-        FormatPreservingEncrypt,
-        Synthesize,
-        Generalize,
-        None
-    }
+    // MaskingStrategy moved to TheTechIdea.Beep.Pipelines.Models.MaskingStrategy in Models project.
 
     public sealed class ColumnMaskingPolicy
     {

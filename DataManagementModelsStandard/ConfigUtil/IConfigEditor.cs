@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -164,6 +165,10 @@ namespace TheTechIdea.Beep.ConfigUtil
         TheTechIdea.Beep.Editor.Importing.DataImportConfiguration LoadImportConfiguration(string datasourceName);
         List<string> GetSavedImportConfigNames();
         void DeleteImportConfiguration(string datasourceName);
+
+        // ── Catalog-aware connection management ──────────────────────
+        /// <summary>Catalog repository for scope/profile-aware connection persistence. Set by the host.</summary>
+        IConnectionCatalogRepository? ConnectionCatalogRepository { get; set; }
 
 
     }

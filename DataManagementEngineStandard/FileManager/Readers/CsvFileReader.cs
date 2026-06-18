@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Rules;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.FileManager.Attributes;
 using TheTechIdea.Beep.Utilities;

@@ -559,7 +559,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             SetAuditDefaults(record, currentUser);
         }
-        }
+
         #endregion
 
         #region Private Helper Methods for Enhanced Operations

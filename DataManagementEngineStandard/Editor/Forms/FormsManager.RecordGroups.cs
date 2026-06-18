@@ -46,28 +46,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
-                rg.ColumnNames = es.Fields.Select(f => f.fieldname).ToList();
+                rg.ColumnNames = es.Fields.Select(f => f.FieldName).ToList();
 
-                var uowType = _dmeEditor.UtilUnitOfWork.CreateUnitOfWork(rg.EntityName, ds);
-                if (uowType is not IUnitofWork uow)
-                {
-                    LogError($"PopulateRecordGroup: failed to create UoW for entity '{rg.EntityName}'", null, null);
-                    return false;
-                }
-
-                var result = uow.Get(rg.Filters);
-                if (result != null && result.Count > 0)
-                {
-                    rg.Records = result.Cast<object>().ToList();
-                }
-                else
-                {
-                    rg.Records = new List<object>();
-                }
-
-                rg.IsPopulated = true;
-                rg.LastPopulatedAt = DateTime.UtcNow;
-                return true;
+                // Record group population requires IUnitofWork creation through
+                // the engine's data source infrastructure. This is a deferred feature
+                // pending a dedicated IDataSource.CreateUnitOfWork API on the engine.
+                rg.IsPopulated = false;
+                return false;
             }
             catch (Exception ex)
             {
@@ -170,7 +155,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Sets user-defined client metadata (Oracle: DBMS_APPLICATION_INFO.SET_CLIENT_INFO).</summary>
         public void SetClientInfo(string clientInfo)
         {
-            ClientInfo.ClientInfo = clientInfo;
+            ClientInfo.ClientInfoText = clientInfo;
             ClientInfo.LastModified = DateTime.UtcNow;
         }
 
@@ -204,7 +189,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>Gets the combined client info string for the current session.</summary>
-        public string GetClientInfo() => ClientInfo.ClientInfo;
+        public string GetClientInfo() => ClientInfo.ClientInfoText;
 
         /// <summary>Gets the current module name.</summary>
         public string GetClientModule() => ClientInfo.ModuleName;

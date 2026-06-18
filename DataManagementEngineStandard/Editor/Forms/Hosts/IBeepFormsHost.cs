@@ -17,6 +17,7 @@ public interface IBeepFormsHost
     string? ActiveItemName { get; }
     IUnitofWorksManager? FormsManager { get; set; }
     IBeepBuiltins? Builtins { get; }
+    FormHostPlatform HostPlatform { get; }
 
     IReadOnlyList<string> Blocks { get; }
 

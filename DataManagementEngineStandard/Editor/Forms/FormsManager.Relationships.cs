@@ -140,6 +140,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             ValidateRelationshipParameters(masterBlockName, detailBlockName);
 
+            var mappingList = new List<DataBlockFieldMapping>(keyFieldMappings);
+
             lock (_lockObject)
             {
                 if (!_relationships.TryGetValue(masterBlockName, out var relationships))
@@ -151,7 +153,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var existing = relationships.FirstOrDefault(r =>
                     string.Equals(r.DetailBlockName, detailBlockName, StringComparison.OrdinalIgnoreCase));
 
-                var mappingList = new List<DataBlockFieldMapping>(keyFieldMappings);
                 if (existing != null)
                 {
                     existing.MasterKeyField = mappingList[0].MasterField;
@@ -282,9 +283,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             blockInfo.IsMasterBlock = GetDetailBlocks(blockName).Any();
         }
 
-        /// <summary>Blocks registered but not attached to any form (standalone). Used by IDE navigator.</summary>
+        /// <summary>All registered blocks. Standalone filtering requires per-block form tracking (deferred).</summary>
         public IReadOnlyList<DataBlockInfo> StandaloneBlocks =>
-            _blocks.Values.Where(b => string.IsNullOrEmpty(b.FormName)).ToList().AsReadOnly();
+            _blocks.Values.ToList().AsReadOnly();
 
         /// <summary>
         /// Runtime status snapshot for IDE display. Returns non-null even if block doesn't exist

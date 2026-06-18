@@ -26,8 +26,8 @@ namespace TheTechIdea.Beep.FileManager.Observability
     {
         IReadOnlyList<SloViolation> Evaluate(IngestionMetricsSnapshot snapshot);
     }
-
-    public enum HealthStatus { Healthy, Degraded, Unhealthy }
+    // HealthStatus moved to TheTechIdea.Beep.Utilities.HealthStatus in Models project.
+    // Use TheTechIdea.Beep.Utilities.HealthStatus (includes Unknown=0 in addition to Healthy/Degraded/Unhealthy).
 
     public sealed class HealthCheckResult
     {

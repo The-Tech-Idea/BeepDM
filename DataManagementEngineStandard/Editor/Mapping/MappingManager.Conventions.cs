@@ -8,6 +8,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
+using TheTechIdea.Beep.Editor.Mapping.Models;
 
 namespace TheTechIdea.Beep.Editor.Mapping
 {
@@ -15,23 +16,7 @@ namespace TheTechIdea.Beep.Editor.Mapping
     // Supporting types
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Controls how field names are compared when auto-mapping by convention.
-    /// </summary>
-    public enum NameMatchMode
-    {
-        /// <summary>Names must match character-for-character (ordinal).</summary>
-        Exact,
-
-        /// <summary>Names match regardless of casing.</summary>
-        CaseInsensitive,
-
-        /// <summary>
-        /// Names match when one is a prefix of the other (case-insensitive).
-        /// Useful for aligning "CustomerID" → "CustID"-style shortened names.
-        /// </summary>
-        FuzzyPrefix
-    }
+    // NameMatchMode moved to Editor/Mapping/Models/MappingModels.cs — single source of truth.
 
     /// <summary>
     /// Describes the outcome of <see cref="MappingManager.ValidateMappingAsync"/>.

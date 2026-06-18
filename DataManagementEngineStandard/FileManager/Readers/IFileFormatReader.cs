@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Rules;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Utilities;
@@ -18,8 +19,8 @@ namespace TheTechIdea.Beep.FileManager.Readers
     /// </summary>
     public enum ParseMode { Lenient, Strict }
 
-    /// <summary>Severity level for a reader-emitted diagnostic.</summary>
-    public enum DiagnosticSeverity { Info, Warning, Error }
+    /// <summary>Severity level for a reader-emitted diagnostic. See TheTechIdea.Beep.Rules.DiagnosticSeverity.</summary>
+    // DiagnosticSeverity moved to Rules/enums.cs in Models project — single source of truth.
 
     /// <summary>A structured diagnostic emitted by a file reader during parsing.</summary>
     public sealed class RowDiagnostic

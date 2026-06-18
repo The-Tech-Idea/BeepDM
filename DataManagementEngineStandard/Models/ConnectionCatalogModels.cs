@@ -4,21 +4,6 @@ using TheTechIdea.Beep.ConfigUtil;
 
 namespace TheTechIdea.Beep.Winform.Controls
 {
-    public enum ConnectionStorageScope
-    {
-        Project,
-        User,
-        Machine
-    }
-
-    public enum ConnectionConflictPolicy
-    {
-        Replace,
-        Rename,
-        Skip,
-        MergeByGuid
-    }
-
     public enum ConnectionStoreKind
     {
         ProjectLocal,

@@ -507,6 +507,17 @@
             Gets the recommended authentication type for a given data source type
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.ConnectionStorageScope">
+            <summary>
+            Defines logical storage tiers for connection data.
+            Shared between engine (BeepConnectionRepository) and public API (IConfigEditor).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.ConnectionConflictPolicy">
+            <summary>
+            Controls how the repository resolves naming collisions during import/promote.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.AuthenticationTypeEnum">
             <summary>
             Authentication type enum for this connection (supports all connection types: databases, Web APIs, files, cloud services)
@@ -666,6 +677,27 @@
         <member name="P:TheTechIdea.Beep.ConfigUtil.IConfigEditor.DefaultResolverClasses">
             <summary>Third-party <c>IDefaultValueResolver</c> implementations discovered by <c>AssemblyHandler</c>.
             Built-in resolvers (DateTime, GUID, Sequence, etc.) are registered directly by <c>DefaultsManager</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.IConfigEditor.ConnectionCatalogRepository">
+            <summary>Catalog repository for scope/profile-aware connection persistence. Set by the host.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionCatalogRepository">
+            <summary>
+            Catalog-aware connection persistence. Implemented by BeepConnectionRepository
+            in the engine layer. Declared here so IConfigEditor can reference it without
+            taking a dependency on the engine project.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.BeepConnectionLifecycle">
+            <summary>
+            Lightweight connection lifecycle state (platform-agnostic).
+            Mirrors BeepConnectionState in the engine layer.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.ConnectionHealth">
+            <summary>
+            Connection health status for monitoring.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionProperties">
             <summary>
@@ -8264,18 +8296,6 @@
             Strategy used to redact or mask sensitive field values in logs and snapshots.
             </summary>
         </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Models.MaskingStrategy.None">
-            <summary>No masking — value logged as-is.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Models.MaskingStrategy.Redact">
-            <summary>Replace value with "***REDACTED***".</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Models.MaskingStrategy.Hash">
-            <summary>Replace value with a one-way SHA-256 hash.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Models.MaskingStrategy.Partial">
-            <summary>Show first and last character with asterisks in between.</summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Pipelines.Models.DataLineageRecord">
             <summary>
             Records column-level data lineage for a pipeline run.
@@ -9760,25 +9780,10 @@
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Pipelines.Observability.MaskingConfig.ShowFirstChars">
-            <summary>Number of leading characters to preserve when <see cref="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Partial"/>.</summary>
+            <summary>Number of leading characters to preserve when <see cref="F:TheTechIdea.Beep.Pipelines.Models.MaskingStrategy.Partial"/>.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Pipelines.Observability.MaskingConfig.ShowLastChars">
             <summary>Number of trailing characters to preserve — e.g. 4 yields "****1234".</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy">
-            <summary>How sensitive field values are represented in row-level logs.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.None">
-            <summary>No masking — value logged as-is.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Redact">
-            <summary>Replace the value with <c>"***REDACTED***"</c>.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Partial">
-            <summary>Show first/last N characters; mask the middle with asterisks.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy.Hash">
-            <summary>Replace the value with its SHA-256 hex digest.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Pipelines.Observability.PipelineMetrics">
             <summary>

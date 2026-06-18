@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using TheTechIdea.Beep.Services.Logging;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Configuration
@@ -91,10 +92,5 @@ namespace TheTechIdea.Beep.Configuration
         public bool EnableAuditLogging { get; set; }
         public bool ValidateDataIntegrity { get; set; } = true;
         public int MaxFileUploadSizeMB { get; set; } = 100;
-    }
-
-    public enum BeepLogLevel
-    {
-        Trace, Debug, Information, Warning, Error, Critical, None
     }
 }

@@ -10,7 +10,7 @@ namespace TheTechIdea.Beep.Winform.Controls
     /// Centralized connection persistence helper backed by IBeepService.Config_editor.
     /// Keeps connection CRUD and save/reload behavior consistent across forms.
     /// </summary>
-    public sealed class BeepConnectionRepository
+    public sealed class BeepConnectionRepository : IConnectionCatalogRepository
     {
         private readonly IBeepService _beepService;
         private readonly IConnectionStorageProvider _storageProvider;
@@ -86,6 +86,11 @@ namespace TheTechIdea.Beep.Winform.Controls
         }
 
         public bool Save(List<ConnectionProperties> connections)
+        {
+            return ((IConnectionCatalogRepository)this).Save(connections ?? new List<ConnectionProperties>());
+        }
+
+        bool IConnectionCatalogRepository.Save(IReadOnlyList<ConnectionProperties> connections)
         {
             var scope = ActiveScope;
             lock (GetScopeLock(scope))

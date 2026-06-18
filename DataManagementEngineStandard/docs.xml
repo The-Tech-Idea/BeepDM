@@ -6015,6 +6015,9 @@
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Logger">
             <summary>Gets or sets the logger used for logging.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ConnectionCatalogRepository">
+            <summary>Catalog-aware connection repository. Set by the host (BeepService/DMEEditor) after construction.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Databasetypes">
             <summary>Gets or sets the list of database types.</summary>
         </member>
@@ -7311,9 +7314,6 @@
             Strict — throws on the first bad row.
             Lenient — skips/logs malformed rows and continues.
             </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.FileManager.Readers.DiagnosticSeverity">
-            <summary>Severity level for a reader-emitted diagnostic.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.FileManager.Readers.RowDiagnostic">
             <summary>A structured diagnostic emitted by a file reader during parsing.</summary>
@@ -20031,9 +20031,17 @@
         <member name="T:TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinException">
             <summary>
             Exception thrown by <see cref="T:TheTechIdea.Beep.Editor.Forms.Builtins.IBeepBuiltins"/> when a built-in cannot
-            complete. Carries an Oracle Forms-compatible error code
-            (for example <c>FRM-41003</c>) so triggers and UI handlers can map
+            complete. Carries a Beep-specific error code
+            (for example <c>BEEP-41003</c>) so triggers and UI handlers can map
             failures to localized messages.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.BeepFormsHostAdapter.ListLovRecords(System.String,System.String)">
+            <summary>
+            Lists LOV records for a block/field. Uses sync-over-async; MUST be called
+            from a non-UI thread or from a thread without a captured SynchronizationContext
+            to avoid deadlock. If called from a UI thread, the call is offloaded to the
+            thread pool via Task.Run.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Builtins.IBuiltinHost">
@@ -20045,6 +20053,9 @@
             <c>Beep.Winform.Data.Integrated.Controls</c>) implements this interface
             by delegating each member to its existing proxy methods.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.IBuiltinHost.PostBlockAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Post (validate and send to DB without committing). Oracle Forms POST equivalent.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Builtins.IBuiltinHost.PublishMessage(System.String,System.Int32,TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinMessageSeverity)">
             <summary>Push a status-bar message at the requested severity.</summary>
@@ -20076,8 +20087,8 @@
             <para>
             Returning <c>false</c> from any method indicates the operation could not be
             completed. Failures that should surface to the user raise
-            <see cref="T:TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinException"/> with a Forms-style error code
-            (for example <c>FRM-41003</c>).
+            <see cref="T:TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinException"/> with a Beep error code
+            (for example <c>BEEP-41003</c>).
             </para>
             </summary>
         </member>
@@ -20595,6 +20606,9 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SecurityManager.GetBlockSecurity(System.String)">
             <summary>Returns block-level security rules for a block.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SecurityManager.ClearBlockSecurity(System.String)">
+            <summary>Removes all block-level and field-level security rules for a block.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SecurityManager.IsBlockAllowed(System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission)">
             <summary>Returns whether a block operation is allowed in the current context.</summary>
         </member>
@@ -20710,6 +20724,20 @@
             <summary>
             Topological sort and cycle detection for trigger dependency graphs.
             Uses DFS-based algorithm on TriggerDefinition.DependsOn lists.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerDependencyManager.MaxDependencyDepth">
+            <summary>
+            Maximum depth of the dependency graph traversal. Prevents stack
+            overflow on extremely deep or accidentally recursive dependency chains.
+            Default: 100.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerDependencyManager.CycleDetectionTimeout">
+            <summary>
+            Maximum time allowed for cycle detection. If exceeded, the graph is
+            assumed to be too complex to check and a warning is logged (the
+            operation proceeds without cycle detection). Default: 5 seconds.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerDependencyManager.OrderByDependency(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition})">
@@ -21031,6 +21059,12 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.LOVColumnInfo.Alignment">
             <summary>Gets or sets the column alignment. 0=Left, 1=Center, 2=Right.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Hosts.IBeepFormsHost.PostBlockAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Post (validate and send to DB without committing). Oracle Forms POST equivalent.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Hosts.IBeepFormsHost.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Builtins.BeepBuiltinAlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Show a modal alert dialog. Returns the 1-based button index the user clicked.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.AlertStyle">
             <summary>
             Alert icon / severity style.
@@ -21324,6 +21358,42 @@
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.BlockProperty.Status">
             <summary>Current operational status / mode label</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo">
+            <summary>
+            Represents client session metadata for datasource-level identity tracking.
+            Mirrors Oracle Forms DBMS_APPLICATION_INFO (SET_CLIENT_INFO / SET_MODULE / SET_ACTION)
+            and CLIENT_HOST / CLIENT_INFO built-ins. Datasource-agnostic — each datasource
+            driver translates these into its native equivalent where supported.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.ClientInfoText">
+            <summary>User-defined client metadata (e.g., "User=Alice; Dept=Sales").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.ModuleName">
+            <summary>The application module name (e.g., "OrderEntry").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.Action">
+            <summary>The current action within the module (e.g., "EnteringNewOrder").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.ClientHost">
+            <summary>The client machine hostname.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.ClientIpAddress">
+            <summary>The client machine IP address (when determinable).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.UserName">
+            <summary>The application user identity driving this session.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.LastModified">
+            <summary>Timestamp of the last client-info change.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormHostPlatform">
+            <summary>
+            Identifies the UI host platform for form rendering.
+            Set by the host (WinForms/WPF) and read by the IDE to determine
+            which scanner, code generator, and templates to use.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormCallMode">
             <summary>How a form was opened (Oracle Forms: CALL_FORM mode)</summary>
         </member>
@@ -21499,6 +21569,12 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.MasterDetailKeyResolution.DetailForeignKeyField">
             <summary>Gets the resolved detail foreign-key field list as a comma-separated string.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ParameterList">
+            <summary>
+            Represents a named parameter list (PARAMETER_LIST in Oracle Forms terminology).
+            A named collection of key-value pairs that can be passed between forms or to the engine.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.LazyLoadMode">
             <summary>Lazy-load strategy for a data block.</summary>
         </member>
@@ -21636,6 +21712,13 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.QueryTemplateInfo.OperatorMap">
             <summary>Gets or sets the per-field operator map saved with this template</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.RecordGroup">
+            <summary>
+            Represents a named in-memory record group (RECORD_GROUP in Oracle Forms terminology).
+            Can be populated via query (RECORDGROUP_FROM_QUERY) or programmatic population.
+            Used for LOVs, combo boxes, and find dialogs.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.RecordLockInfo">
             <summary>
@@ -23496,6 +23579,15 @@
             Merges block-level default WHERE clause with caller-supplied filters via QueryBuilder.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.PostBlockAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Post (validate and send to DB without committing). Oracle Forms POST equivalent.
+            Validates and saves the current record to the underlying datasource but does NOT
+            commit the transaction. In the current engine, this delegates to the UoW's Commit
+            which performs a save + commit in one operation. Once IUnitofWork gains a dedicated
+            PostAsync/ValidateAsync method, this will be updated to call it directly.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetBlockProperty(System.String,TheTechIdea.Beep.Editor.Forms.Models.BlockProperty,System.Object)">
             <summary>
             Set an Oracle Forms-style block property.
@@ -23620,7 +23712,7 @@
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnBlockFieldChanged">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILOVManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILOVManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager,TheTechIdea.Beep.Editor.UOWManager.Helpers.CrossBlockValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager)">
             <summary>
             Constructor with full dependency injection
             </summary>
@@ -23907,7 +23999,7 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ApplyAuditDefaults(System.Object,System.String)">
             <summary>
-            Applies audit defaults to a record
+            Applies audit defaults to a record (delegates to <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetAuditDefaults(System.Object,System.String)"/>).
             </summary>
         </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnFormOpen">
@@ -24049,6 +24141,13 @@
             supply constraints explicitly for any
             non-trivial validation.
             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ClearItem(System.String,System.String)">
+            <summary>
+            Clears the current record's field value (sets it to null/empty).
+            Oracle Forms KEY-CLRITM equivalent. Fire KEY-CLRITM triggers first,
+            then clear the field value and reset associated item state.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlock``1(System.String,TheTechIdea.Beep.Editor.IUnitofWork,System.String,System.Boolean)">
             <summary>
@@ -24239,7 +24338,7 @@
             </summary>
             <param name="key">The key trigger to fire.</param>
             <param name="blockName">Override block name; defaults to <see cref="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CurrentBlockName"/>.</param>
-            <returns>True when the action completed without cancellation.</returns>
+            <returns>The trigger execution result; Cancelled if the trigger was cancelled, otherwise the default action outcome.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Dispose">
             <summary>
@@ -24401,6 +24500,13 @@
             <summary>
             Open a form independently (both forms run concurrently).
             Equivalent to Oracle Forms OPEN_FORM.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OpenFormModelessAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Open a form independently (modeless — concurrent with the caller).
+            Equivalent to Oracle Forms OPEN_FORM. Distinct from <see cref="!:FormOperations"/> 
+            <c>OpenFormAsync</c> which opens the LOCAL form.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NewFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
@@ -24634,7 +24740,7 @@
             <summary>Gets or sets the current active block name</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Blocks">
-            <summary>Gets all registered blocks</summary>
+            <summary>Gets all registered blocks (read-only snapshot — mutation requires FormsManager methods).</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.IsDirty">
             <summary>Gets whether any block has unsaved changes</summary>
@@ -24708,9 +24814,49 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Configuration">
             <summary>Gets the configuration</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ClientInfo">
+            <summary>Gets or sets the client session metadata for this FormsManager instance.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetClientInfo(System.String)">
+            <summary>Sets user-defined client metadata (Oracle: DBMS_APPLICATION_INFO.SET_CLIENT_INFO).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetClientModule(System.String,System.String)">
+            <summary>Sets the application module and action (Oracle: DBMS_APPLICATION_INFO.SET_MODULE + SET_ACTION).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetClientAction(System.String)">
+            <summary>Sets the client application action within the current module.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetClientHost(System.String)">
+            <summary>Sets the client hostname (Oracle: CLIENT_HOST).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetClientIpAddress(System.String)">
+            <summary>Sets the client IP address.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetClientInfo">
+            <summary>Gets the combined client info string for the current session.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetClientModule">
+            <summary>Gets the current module name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetClientAction">
+            <summary>Gets the current action name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetClientHost">
+            <summary>Gets the client hostname.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetClientIpAddress">
+            <summary>Gets the client IP address when determinable.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CreateMasterDetailRelation(System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
             <summary>
             Creates a master-detail relationship between blocks
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CreateMasterDetailRelation(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.DataBlockFieldMapping[],TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
+            <summary>
+            Creates a master-detail relationship with composite (multi-field) keys.
+            The key mappings are passed as explicit field pairs; the resolver is bypassed
+            and the mappings are stored directly for use during detail synchronization.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDetailBlocksAsync(System.String,System.Threading.CancellationToken)">
@@ -24733,6 +24879,21 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetMasterBlock(System.String)">
             <summary>
             Gets the master block name for a detail block
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.StandaloneBlocks">
+            <summary>All registered blocks. Standalone filtering requires per-block form tracking (deferred).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetBlockStatus(System.String)">
+            <summary>
+            Runtime status snapshot for IDE display. Returns non-null even if block doesn't exist
+            (empty status with the requested name).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterDiscoveredForm(System.String,System.String,System.String,System.String)">
+            <summary>
+            Register a form discovered by the IDE scanner in the shared form registry.
+            Does NOT create a FormsManager — the host creates that separately.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetSecurityContext(TheTechIdea.Beep.Editor.Forms.Models.SecurityContext)">
@@ -24781,6 +24942,12 @@
             <summary>
             Returns true if the current security context permits the operation;
             raises a violation event and logs to error log if not.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ClearBlockSecurity(System.String)">
+            <summary>
+            Removes all security rules (block- and field-level) for the named block.
+            After calling this, the block reverts to default open-access permissions.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetNextSequence(System.String)">
@@ -24902,66 +25069,6 @@
             <summary>
             Validates all records in a block. Routes through both the event manager and
             ValidationManager so that registered validation rules are also evaluated.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.ModeTransitionValidationResult">
-            <summary>
-            Result of mode transition validation
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.ModeTransitionValidationResult.IsValid">
-            <summary>
-            Gets or sets whether the requested mode transition is currently valid.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.ModeTransitionValidationResult.Message">
-            <summary>
-            Gets or sets the summary message for the validation outcome.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.ModeTransitionValidationResult.ValidationIssues">
-            <summary>
-            Gets or sets the individual issues detected while validating the transition.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo">
-            <summary>
-            Information about a block's mode and state
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.BlockName">
-            <summary>
-            Gets or sets the logical block name.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.CurrentMode">
-            <summary>
-            Gets or sets the current runtime mode for the block.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.LastModeChange">
-            <summary>
-            Gets or sets the time the block last changed modes.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.HasUnsavedChanges">
-            <summary>
-            Gets or sets whether the block currently has unsaved changes.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.RecordCount">
-            <summary>
-            Gets or sets the number of loaded records in the block.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.IsCurrentBlock">
-            <summary>
-            Gets or sets whether this block is the current active block.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOWManager.BlockModeInfo.Summary">
-            <summary>
-            Gets a compact text summary of the block mode and state.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.MultiFormTaskExtensions">
@@ -25686,6 +25793,13 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.QueryBuilderManager.ParseWhereClause(System.String)">
             <summary>
             Parses a simple SQL-like WHERE clause into <see cref="T:TheTechIdea.Beep.Report.AppFilter"/> instances.
+            Supports =, &lt;&gt;, &gt;, &lt;, &gt;=, &lt;=, LIKE, NOT LIKE, IS NULL, IS NOT NULL,
+            IN (value1, value2, ...), BETWEEN val1 AND val2, and parameterized placeholders (:1, :name).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.QueryBuilderManager.SplitWhereConditions(System.String)">
+            <summary>
+            Splits a WHERE clause on AND while respecting parenthesized groups and quoted strings.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.QueryBuilderManager.ParseOrderByClause(System.String)">
@@ -26717,6 +26831,12 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerRecordValidation(System.String,System.Object)">
             <summary>Triggers record-level validation for a block record.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerCustomItemEvent(System.String,System.String,System.String,System.Object)">
+            <summary>Fires the host-defined custom item event (WHEN-CUSTOM-ITEM-EVENT) with an event type identifier and optional payload.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.OnCustomItemEvent">
+            <summary>Raised when a host-defined custom item event is triggered via <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager.TriggerCustomItemEvent(System.String,System.String,System.String,System.Object)"/>.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper">
             <summary>
             Interface for Oracle Forms simulation helpers
@@ -27352,6 +27472,18 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.FiredAt">
             <summary>Gets the timestamp when the timer fired.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRecordGroupRegistry">
+            <summary>
+            Manages named in-memory record groups (RECORD_GROUP / RECORDGROUP_FROM_QUERY equivalents).
+            Record groups are populated from queries and used for LOVs, combo boxes, and find dialogs.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IParameterListManager">
+            <summary>
+            Manages named parameter lists (PARAMETER_LIST equivalents).
+            Named collections of key-value pairs that can be passed between forms or to the engine.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditStore">
             <summary>Pluggable persistence back-end for audit entries.</summary>
         </member>
@@ -27474,6 +27606,9 @@
             <c>DataBlockInfo.InsertAllowed</c> / <c>UpdateAllowed</c> / <c>DeleteAllowed</c> / <c>QueryAllowed</c>
             via the supplied <paramref name="applyBlockFlags"/> callback.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.ClearBlockSecurity(System.String)">
+            <summary>Removes all security rules (block- and field-level) for the named block.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager.GetBlockRowFilter(System.String)">
             <summary>
@@ -28089,6 +28224,21 @@
         </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.OnFormMessage">
             <summary>Raised when the manager receives an inter-form message for this form.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ClearBlockRelationships(System.String)">
+            <summary>Removes all master-detail relationships where the given block is master or detail.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ClearBlockSecurity(System.String)">
+            <summary>Removes all security rules (block- and field-level) for a block.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.StandaloneBlocks">
+            <summary>Blocks not attached to any form (standalone registration).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetBlockStatus(System.String)">
+            <summary>Runtime status snapshot for a block (record count, query mode, etc.).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RegisterDiscoveredForm(System.String,System.String,System.String,System.String)">
+            <summary>Register a form discovered by the IDE scanner.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IValidationManager">
             <summary>
@@ -28844,6 +28994,12 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.BlockFieldMetadata.ToString">
             <summary>Returns a compact display string for diagnostics and editors.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockStatus">
+            <summary>
+            Snapshot of a block's runtime status for IDE display.
+            Read from IUnitofWorksManager without reflection.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockTriggerEventArgs">
             <summary>
             Event arguments for block-level triggers in Oracle Forms simulation
@@ -28975,6 +29131,13 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.CrossBlockValidationRule.Severity">
             <summary>Gets or sets the severity to report when the rule fails.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.CustomItemEventArgs">
+            <summary>
+            Event arguments for host-defined custom item events (WHEN-CUSTOM-ITEM-EVENT).
+            Carries the event type identifier, block/item names, and an arbitrary payload
+            dictionary for extensibility without subclassing.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo">
             <summary>
             Information about a registered data block
@@ -29058,7 +29221,7 @@
             </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode.Normal">
-            <summary>Normal mode - the block accepts all operations allowed by its configuration.</summary>
+            <summary>Normal mode — reserved for future use. CRUD (3) is the current canonical normal-mode value.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode.EnterQuery">
             <summary>Enter-Query mode - the user is typing example criteria to filter the next query (Oracle Forms ENTER_QUERY).</summary>
@@ -29070,10 +29233,10 @@
             <summary>CRUD mode - explicit alias for Normal kept for source compatibility with existing call-sites.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode.ReadOnly">
-            <summary>Read-only mode.</summary>
+            <summary>Read-only mode — reserved for future use. Currently enforced via DataBlockInfo.InsertAllowed/UpdateAllowed/DeleteAllowed flags.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode.Insert">
-            <summary>Insert mode - the current record is a new record awaiting commit.</summary>
+            <summary>Insert mode — reserved for future use. Insert operations currently run in CRUD (3) mode.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType">
             <summary>
@@ -29117,10 +29280,19 @@
             <summary>Gets or sets the name of the detail block</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.MasterKeyField">
-            <summary>Gets or sets the key field in the master block</summary>
+            <summary>Gets or sets the key field in the master block (first key for composite)</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.DetailForeignKeyField">
-            <summary>Gets or sets the foreign key field in the detail block</summary>
+            <summary>Gets or sets the foreign key field in the detail block (first key for composite)</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.KeyFieldMappings">
+            <summary>Gets or sets the resolved field mappings for composite-key relationships</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.MasterKeyFields">
+            <summary>Gets the master key fields as a read-only list (from Mappings or the single key)</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.DetailForeignKeyFields">
+            <summary>Gets the detail foreign-key fields as a read-only list</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.RelationshipType">
             <summary>Gets or sets the type of relationship</summary>
@@ -30095,6 +30267,17 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.LOVValidationResult.Invalid(System.String,System.Collections.Generic.List{System.Object})">
             <summary>Create an invalid result</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.ModeTransitionValidationResult">
+            <summary>
+            Result of mode transition validation (e.g., ENTER_QUERY → EXECUTE_QUERY).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockModeInfo">
+            <summary>
+            Information about a block's runtime mode and state.
+            Used for mode-transition introspection and dashboard display.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.NavigationHistoryEntry">
             <summary>A single entry in block navigation history.</summary>
@@ -33076,13 +33259,13 @@
             Provides utility methods to create and manage entity mappings between source and destination entities.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.AutoMapByConventionWithScoring(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.Mapping.NameMatchMode,TheTechIdea.Beep.Editor.Mapping.AutoMatchOptions)">
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.AutoMapByConventionWithScoring(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.Mapping.Models.NameMatchMode,TheTechIdea.Beep.Editor.Mapping.AutoMatchOptions)">
             <summary>
             Builds mapping suggestions with confidence scoring and explainability.
             By default only auto-accepted matches are assigned to field mappings.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.AutoMapByConvention(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.Mapping.NameMatchMode)">
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.AutoMapByConvention(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.Mapping.Models.NameMatchMode)">
             <summary>
             Builds an <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/> by matching source fields to destination
             fields using the specified <paramref name="mode"/>.  Unmatched destination fields
@@ -33093,7 +33276,7 @@
             <param name="srcDataSourceName">Source data-source name.</param>
             <param name="destEntityName">Destination entity name.</param>
             <param name="destDataSourceName">Destination data-source name.</param>
-            <param name="mode">Name-matching strategy (default: <see cref="F:TheTechIdea.Beep.Editor.Mapping.NameMatchMode.CaseInsensitive"/>).</param>
+            <param name="mode">Name-matching strategy (default: <see cref="F:TheTechIdea.Beep.Editor.Mapping.Models.NameMatchMode.CaseInsensitive"/>).</param>
             <returns>Auto-populated mapping — save via <see cref="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.SaveMapping(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)"/> when satisfied.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.ValidateMappingAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
@@ -33147,23 +33330,6 @@
         <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.SaveEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
             <summary>
             Persists a mapping through MappingManager so cache invalidation and governance hooks are applied.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Mapping.NameMatchMode">
-            <summary>
-            Controls how field names are compared when auto-mapping by convention.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.Mapping.NameMatchMode.Exact">
-            <summary>Names must match character-for-character (ordinal).</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.Mapping.NameMatchMode.CaseInsensitive">
-            <summary>Names match regardless of casing.</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.Editor.Mapping.NameMatchMode.FuzzyPrefix">
-            <summary>
-            Names match when one is a prefix of the other (case-insensitive).
-            Useful for aligning "CustomerID" → "CustID"-style shortened names.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Mapping.MappingValidationResult">
@@ -37029,6 +37195,19 @@
             Class and Type Creator based of EntityStructure and Data objects
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.FormRegistry">
+            <summary>
+            Shared form registry — all FormsManager instances register here.
+            Lazy-initialized; set explicitly before first use to inject a pre-populated
+            registry. Available at both design time (IDE) and runtime (WinForms/WPF).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.ConnectionCatalogRepository">
+            <summary>
+            Catalog-aware connection repository for scope/profile-aware connection management.
+            Lazy-initialized with ConfigEditor's path; set explicitly to inject a custom repository.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.DMEEditor.Loganderrors">
             <summary>
              Logs and Error Messeges
@@ -38313,13 +38492,13 @@
             Used by observability components to redact PII before writing to logs or snapshots.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Pipelines.Observability.FieldRedactor.RedactFields(System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Collections.Generic.IReadOnlyList{System.String},TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy)">
+        <member name="M:TheTechIdea.Beep.Pipelines.Observability.FieldRedactor.RedactFields(System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Collections.Generic.IReadOnlyList{System.String},TheTechIdea.Beep.Pipelines.Models.MaskingStrategy)">
             <summary>
             Returns a copy of the dictionary with sensitive field values masked.
             Non-sensitive fields are returned as-is.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Pipelines.Observability.FieldRedactor.MaskValue(System.Object,TheTechIdea.Beep.Pipelines.Observability.MaskingStrategy)">
+        <member name="M:TheTechIdea.Beep.Pipelines.Observability.FieldRedactor.MaskValue(System.Object,TheTechIdea.Beep.Pipelines.Models.MaskingStrategy)">
             <summary>
             Masks a single value according to the specified strategy.
             </summary>
@@ -60276,20 +60455,6 @@
         </member>
         <member name="P:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.ErrorAnalysisResult.Timestamp">
             <summary>Error timestamp</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState">
-            <summary>
-            Circuit breaker state enumeration
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState.Closed">
-            <summary>Circuit breaker is closed (normal operation)</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState.Open">
-            <summary>Circuit breaker is open (failing fast)</summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerState.HalfOpen">
-            <summary>Circuit breaker is half-open (testing recovery)</summary>
         </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIErrorHelper.CircuitBreakerStatus">
             <summary>

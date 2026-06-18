@@ -472,3 +472,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         BlockStatus GetBlockStatus(string blockName);
         /// <summary>Register a form discovered by the IDE scanner.</summary>
         void RegisterDiscoveredForm(string formName, string codeFilePath, string designerFilePath, string hostName = null);
+
+    }
+}

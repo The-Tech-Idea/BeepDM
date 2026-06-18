@@ -298,7 +298,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             try
             {
-                var result = await uow.Commit(ct).ConfigureAwait(false);
+                var result = await uow.Commit(null, ct).ConfigureAwait(false);
                 return result?.Flag == Errors.Ok;
             }
             catch (Exception ex)

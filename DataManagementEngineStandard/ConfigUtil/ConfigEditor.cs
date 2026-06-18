@@ -137,7 +137,10 @@ namespace TheTechIdea.Beep.ConfigUtil
 		public ConfigandSettings Config { get; set; } = new ConfigandSettings();
 		
 		/// <summary>Gets or sets the logger used for logging.</summary>
-		public IDMLogger Logger { get; set; }
+        public IDMLogger Logger { get; set; }
+
+        /// <summary>Catalog-aware connection repository. Set by the host (BeepService/DMEEditor) after construction.</summary>
+        public IConnectionCatalogRepository? ConnectionCatalogRepository { get; set; }
 
 		// Delegated properties to managers
 		/// <summary>Gets or sets the list of database types.</summary>
