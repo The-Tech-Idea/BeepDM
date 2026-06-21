@@ -61,6 +61,15 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         public bool SequenceExists(string sequenceName) =>
             !string.IsNullOrWhiteSpace(sequenceName) && _sequences.ContainsKey(sequenceName);
 
+        /// <inheritdoc/>
+        public bool DropSequence(string sequenceName)
+        {
+            if (string.IsNullOrWhiteSpace(sequenceName))
+                throw new ArgumentNullException(nameof(sequenceName));
+
+            return _sequences.TryRemove(sequenceName, out _);
+        }
+
         private SequenceEntry GetOrCreate(string sequenceName)
         {
             if (string.IsNullOrWhiteSpace(sequenceName)) throw new ArgumentNullException(nameof(sequenceName));

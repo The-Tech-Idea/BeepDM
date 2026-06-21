@@ -70,6 +70,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public void CreateSequence(string sequenceName, long startValue = 1, long incrementBy = 1)
             => _sequenceProvider.CreateSequence(sequenceName, startValue, incrementBy);
 
+        /// <summary>
+        /// Remove a named sequence.
+        /// Corresponds to Oracle Forms DROP_SEQUENCE.
+        /// </summary>
+        public bool DropSequence(string sequenceName)
+            => _sequenceProvider.DropSequence(sequenceName);
+
         #endregion
 
         #region Default Value Built-ins

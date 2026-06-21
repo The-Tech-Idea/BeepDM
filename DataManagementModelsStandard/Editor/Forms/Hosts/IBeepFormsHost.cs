@@ -228,6 +228,7 @@ public interface IBeepFormsHost
         long startValue = 1,
         long incrementBy = 1);
     void ResetSequence(string sequenceName, long startValue = 1);
+    bool DropSequence(string sequenceName);
     void CreateRecordGroup(
         string name,
         string dataSourceName,

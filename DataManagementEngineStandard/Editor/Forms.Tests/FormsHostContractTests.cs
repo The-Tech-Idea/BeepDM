@@ -203,4 +203,12 @@ public class FormsHostContractTests
         Assert.NotNull(manager.GetMethod("ClearAudit"));
     }
 
+    [Fact]
+    public void SequenceContracts_ExposeFirstClassDropOperation()
+    {
+        Assert.NotNull(typeof(ISequenceProvider).GetMethod("DropSequence"));
+        Assert.NotNull(typeof(IUnitofWorksManager).GetMethod("DropSequence"));
+        Assert.NotNull(typeof(IBeepFormsHost).GetMethod("DropSequence"));
+    }
+
 }

@@ -61,6 +61,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Create a new named sequence with the given starting value</summary>
         void CreateSequence(string sequenceName, long startValue = 1, long incrementBy = 1);
+
+        /// <summary>Remove a named sequence. Returns false when it does not exist.</summary>
+        bool DropSequence(string sequenceName);
     }
 
     #endregion

@@ -88,6 +88,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the engine-owned form timer manager.</summary>
         ITimerManager Timers { get; }
 
+        /// <summary>Removes a named sequence.</summary>
+        bool DropSequence(string sequenceName);
+
         /// <summary>Sets the user stamped on subsequent audit entries.</summary>
         void SetAuditUser(string userName);
 

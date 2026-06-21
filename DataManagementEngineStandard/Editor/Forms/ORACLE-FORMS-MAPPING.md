@@ -179,7 +179,7 @@ If a concept is not in this document, it is **out of scope** (UI-specific) or **
 | `:SEQUENCE.NEXTVAL` | `FormsManager.GetNextSequence(name)` | ✅ | In-memory `SequenceProvider`. |
 | `:SEQUENCE.CURRVAL` | `FormsManager.PeekNextSequence(name)` | ✅ | |
 | `CREATE_SEQUENCE` | `FormsManager.CreateSequence(name, startValue, incrementBy)` | ✅ | |
-| `DROP_SEQUENCE` | (not yet; reset = `ResetSequence` to 0) | ❌ | No first-class drop; reset to 0 has the same effect on next call. |
+| `DROP_SEQUENCE` | `FormsManager.DropSequence` / `IBeepFormsHost.DropSequence` | ✅ | Removes the named sequence and reports whether it existed. |
 | Datasource-backed sequences | upstream `IUnitofWork` / `IDataSource` | ✅ | FormsManager rules say: prefer datasource sequences first. |
 
 ## 13. Timers
