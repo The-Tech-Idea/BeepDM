@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Sets a field value on a record using reflection
         /// </summary>
-        public bool SetFieldValue(object record, string FieldName, object value)
+        public bool SetFieldValue(object record, string FieldName, object? value)
         {
             return _formsSimulationHelper.SetFieldValue(record, FieldName, value);
         }
@@ -26,7 +26,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Gets a field value from a record using reflection
         /// </summary>
-        public object GetFieldValue(object record, string FieldName)
+        public object? GetFieldValue(object record, string FieldName)
         {
             return _formsSimulationHelper.GetFieldValue(record, FieldName);
         }

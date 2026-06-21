@@ -283,6 +283,13 @@ Added `-=` unsubscription in `Dispose()`. Previously only subscribed in
 `InitializeManager` with no matching cleanup.
 **Where:** `FormsManager.Lifecycle.cs:39`.
 
+### CQ-29: `OnBlockFieldChanged` audit handler never unsubscribed (FIXED 2026-06-17)
+`HandleBlockFieldChangedForAudit` was subscribed to `OnBlockFieldChanged` in
+`InitializeAudit()` with no matching `-=` in `Dispose()`, creating a self-referencing
+handler that prevented garbage collection of the FormsManager instance. Added the
+unsubscription in `Dispose()` alongside the other cleanup unsubscriptions.
+**Where:** `FormsManager.Audit.cs:25`, `FormsManager.Lifecycle.cs:46`.
+
 ### CQ-22: `Blocks` property returned mutable ConcurrentDictionary (FIXED 2026-06-17)
 Replaced `=> _blocks` with `=> new ReadOnlyDictionary<string, DataBlockInfo>(_blocks)`.
 Prevents callers from casting to `ConcurrentDictionary` and mutating internal state.

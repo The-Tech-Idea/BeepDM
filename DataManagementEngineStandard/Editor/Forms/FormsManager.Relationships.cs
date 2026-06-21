@@ -236,6 +236,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return GetBlock(detailBlockName)?.MasterBlockName;
         }
 
+        public bool ShouldSynchronizeDetailOnFieldChange(string blockName, string fieldName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName))
+                return false;
+            if (string.IsNullOrWhiteSpace(fieldName))
+                return true;
+            var detailBlocks = GetDetailBlocks(blockName);
+            if (detailBlocks == null || detailBlocks.Count == 0)
+                return false;
+            var block = GetBlock(blockName);
+            if (block == null)
+                return false;
+            var masterKey = block.MasterKeyField;
+            if (string.IsNullOrWhiteSpace(masterKey))
+                return true;
+            return string.Equals(masterKey, fieldName, StringComparison.OrdinalIgnoreCase);
+        }
+
         #endregion
 
         public void ClearBlockRelationships(string blockName) => RemoveBlockRelationships(blockName);

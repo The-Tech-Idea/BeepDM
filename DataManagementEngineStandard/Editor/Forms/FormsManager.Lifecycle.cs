@@ -43,6 +43,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 _dirtyStateManager.OnUnsavedChanges -= OnUnsavedChangesHandler;
                 _securityManager.OnSecurityViolation -= OnSecurityViolationHandler;
+                OnBlockFieldChanged -= HandleBlockFieldChangedForAudit;
                 DisposeTriggerChaining();
                 
                 _performanceManager?.Dispose();

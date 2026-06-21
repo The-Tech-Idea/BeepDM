@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,6 +13,7 @@ using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Services.AppMap;
+using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 
 
 namespace TheTechIdea.Beep.Editor
@@ -151,6 +152,14 @@ namespace TheTechIdea.Beep.Editor
 
         /// <summary>Multi-project sync: shared Data detection, auto-link, schema sync.</summary>
         IMultiProjectSyncService MultiSync { get; }
+
+        #region Forms Engine
+        /// <summary>Get all registered form names from the form registry.</summary>
+        IReadOnlyList<string> GetActiveFormNames();
+
+        /// <summary>Get a specific form's unit-of-works manager by name, or null.</summary>
+        IUnitofWorksManager? GetFormManager(string formName);
+        #endregion
 
         #endregion
     }

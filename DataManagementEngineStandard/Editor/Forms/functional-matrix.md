@@ -107,9 +107,9 @@ The matrix has four parts:
 | `UpdateCurrentRecordAsync(string)` | EnhancedOperations | yes | `Task<IErrorsInfo>` |
 | `DeleteCurrentRecordAsync(string)` | BasicDataOps | yes | `Task<bool>` |
 | `CreateNewRecord(string)` | EnhancedOperations | no | object |
-| `DuplicateCurrentRecordAsync(string, bool, IDictionary?)` | DataOperations | yes | `Task<bool>` |
+| `DuplicateCurrentRecordAsync(string, CancellationToken)` | DataOperations | yes | `Task<bool>` |
 | `CopyFields(object, object, params string[])` | EnhancedOperations | no | bool |
-| `CloneBlockDataAsync(string, string, IDictionary?)` | DataOperations | yes | `Task<bool>` |
+| `CloneBlockDataAsync(string, string, CancellationToken)` | DataOperations | yes | `Task<bool>` |
 | `ApplyAuditDefaults(object, string?)` | EnhancedOperations | no | void |
 | `SetFieldValue(object, string, object)` | FormsSimulation | no | bool |
 | `GetFieldValue(object, string)` | FormsSimulation | no | object |
@@ -124,7 +124,7 @@ The matrix has four parts:
 | `FireOnInsertAsync(string, object)` | DmlTriggers | yes | `Task<bool?>` |
 | `FireOnUpdateAsync(string, object)` | DmlTriggers | yes | `Task<bool?>` |
 | `FireOnDeleteAsync(string, object)` | DmlTriggers | yes | `Task<bool?>` |
-| `RaiseFormTriggerAsync(FormTriggerEventArgs)` | DmlTriggers | yes | `Task<TriggerResult>` |
+| `RaiseFormTriggerAsync(string, string?)` | DmlTriggers | yes | `Task<TriggerResult>` |
 | `FireTriggersInOrderAsync(string, List<TriggerDefinition>, IDictionary?)` | TriggerChaining | yes | `Task<IReadOnlyList<TriggerResult>>` |
 | `GetTriggerLog()` | TriggerChaining | no | `IReadOnlyList<TriggerExecutionLogEntry>` |
 | `ClearTriggerLog()` | TriggerChaining | no | void |

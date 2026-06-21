@@ -18,6 +18,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     {
         #region Mode Transition Operations
 
+        public async void EnteringQueryModeAsync(string blockName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+            try { await EnterQueryAsync(blockName); } catch { }
+        }
+
+        public async void ExitingQueryModeAsync(string blockName)
+        {
+            if (string.IsNullOrWhiteSpace(blockName)) return;
+            try
+            {
+                var blockInfo = GetBlock(blockName);
+                if (blockInfo != null && (blockInfo.Mode == DataBlockMode.Query || blockInfo.Mode == DataBlockMode.EnterQuery))
+                {
+                    await ExecuteQueryAsync(blockName);
+                }
+            }
+            catch { }
+        }
+
         /// <summary>
         /// Transitions a block from CRUD to Query mode - equivalent to Oracle Forms ENTER_QUERY
         /// Validates unsaved changes before transition

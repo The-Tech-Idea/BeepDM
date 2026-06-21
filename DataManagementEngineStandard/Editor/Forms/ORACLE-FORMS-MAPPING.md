@@ -119,7 +119,7 @@ If a concept is not in this document, it is **out of scope** (UI-specific) or **
 | `WHEN-*-POST-COMMIT` | `OnPostCommit` | ✅ | |
 | `WHEN-TIMER-EXPIRED` | `TimerManager.TimerFired` event + `TimerFiredEventArgs` | ✅ | |
 | `KEY-` triggers (KEY-F1, KEY-EXIT, etc.) | `FormsManager.RegisterKeyTrigger` / `FireKeyTriggerAsync` | ✅ | |
-| `WHEN-CUSTOM-ITEM-EVENT` | `EventManager.OnError` and `OnItemValueChanged` (no canonical custom-item event type) | ⚠️ | Engine emits *some* events that custom-item code can listen for, but there is no formal `WHEN-CUSTOM-ITEM-EVENT` trigger type. |
+| `WHEN-CUSTOM-ITEM-EVENT` | `EventManager.OnCustomItemEvent` event + `TriggerCustomItemEvent` method; `TriggerType.WhenCustomItemEvent = 178` | ✅ | First-class trigger type with dedicated event args (`CustomItemEventArgs`) carrying `EventType`, `BlockName`, `ItemName`, `Payload`, and `Properties` dictionary. |
 | `RAISE_FORM_TRIGGER_FAILURE` | `IBeepBuiltins.RaiseFormTriggerFailure(failureCode, message)` | ✅ | Throws `BeepBuiltinException` with a Forms-style code. |
 | Trigger chaining (sequencing, dependencies) | `TriggerManager` + `TriggerDependencyManager` | ✅ | The dependency manager handles ordering and cycle detection. |
 | Trigger execution log | `FormsManager.TriggerLog` / `GetTriggerLog` | ✅ | |

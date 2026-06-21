@@ -34,6 +34,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return _dirtyStateManager?.GetDirtyBlocks() ?? new List<string>();
         }
 
+        /// <summary>
+        /// Saves all currently dirty blocks
+        /// </summary>
+        public async Task<bool> SaveDirtyBlocksAsync()
+        {
+            var dirtyBlocks = GetDirtyBlocks();
+            if (dirtyBlocks.Count == 0)
+                return true;
+            return await _dirtyStateManager.SaveDirtyBlocksAsync(dirtyBlocks);
+        }
+
+        /// <summary>
+        /// Rolls back all currently dirty blocks
+        /// </summary>
+        public async Task<bool> RollbackDirtyBlocksAsync()
+        {
+            var dirtyBlocks = GetDirtyBlocks();
+            if (dirtyBlocks.Count == 0)
+                return true;
+            return await _dirtyStateManager.RollbackDirtyBlocksAsync(dirtyBlocks);
+        }
+
         #endregion
     }
 }

@@ -7,6 +7,7 @@ using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.Forms.Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace TheTechIdea.Beep.Editor.UOWManager
 {
@@ -121,9 +122,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             IAuditManager auditManager = null,
             CrossBlockValidationManager crossBlockValidation = null,
             ITriggerExecutionLog triggerExecutionLog = null,
-            ITriggerDependencyManager triggerDependencyManager = null)
+            ITriggerDependencyManager triggerDependencyManager = null,
+            ILogger<FormsManager> logger = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
+
+            // Wire structured logging if a logger is supplied; Logging.cs owns the field + setter
+            if (logger != null) Logger = logger;
 
             // Initialize helper managers with defaults if not provided
             _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(_dmeEditor, _blocks, GetDetailBlocks, GetBlock, GetActiveRelationships);

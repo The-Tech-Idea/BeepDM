@@ -1,4 +1,4 @@
-﻿
+
 
 using System.Collections.Generic;
 using System.Data;
@@ -98,6 +98,11 @@ namespace TheTechIdea.Beep
             set => _formRegistry = value;
         }
         private IFormRegistry _formRegistry;
+
+        public IReadOnlyList<string> GetActiveFormNames() => FormRegistry.GetActiveFormNames();
+
+        public IUnitofWorksManager? GetFormManager(string formName) => FormRegistry.GetForm(formName);
+
         /// <summary>
         /// Catalog-aware connection repository for scope/profile-aware connection management.
         /// Lazy-initialized with ConfigEditor's path; set explicitly to inject a custom repository.

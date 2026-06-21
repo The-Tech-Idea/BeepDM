@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,8 +6,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
-using TheTechIdea.Beep.Editor.UOWManager.Configuration;
-using TheTechIdea.Beep.Editor.UOWManager.Helpers;
+
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
 
@@ -31,6 +30,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Gets whether any registered block currently has unsaved changes.</summary>
         bool IsDirty { get; }
+
+        /// <summary>Returns the names of blocks that currently have unsaved changes.</summary>
+        List<string> GetDirtyBlocks();
+
+        /// <summary>Saves all currently dirty blocks.</summary>
+        Task<bool> SaveDirtyBlocksAsync();
+
+        /// <summary>Rolls back all currently dirty blocks.</summary>
+        Task<bool> RollbackDirtyBlocksAsync();
 
         /// <summary>Gets the latest status message emitted by the manager.</summary>
         string Status { get; }
@@ -74,6 +82,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the alert provider for SHOW_ALERT-style dialogs.</summary>
         IAlertProvider AlertProvider { get; }
 
+        /// <summary>Gets the engine-owned named sequence provider.</summary>
+        ISequenceProvider Sequences { get; }
+
+        /// <summary>Gets the engine-owned form timer manager.</summary>
+        ITimerManager Timers { get; }
+
         /// <summary>Registers a block and resolves its entity metadata from the unit of work when available.</summary>
         void RegisterBlock(string blockName, IUnitofWork unitOfWork,
             string dataSourceName = null, bool isMasterBlock = false);
@@ -116,6 +130,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Returns the master block name for a detail block.</summary>
         string GetMasterBlock(string detailBlockName);
+
+        /// <summary>
+        /// Returns true if a field change on the given block should trigger detail-block
+        /// synchronization. A field change should synchronize if (a) the block is a master,
+        /// (b) the changed field is the master key, (c) no master key is defined (sync always),
+        /// or (d) the field name is blank.
+        /// </summary>
+        bool ShouldSynchronizeDetailOnFieldChange(string blockName, string fieldName);
 
         /// <summary>Opens a form and performs form-level initialization.</summary>
         Task<bool> OpenFormAsync(string formName);
@@ -169,6 +191,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Executes a query for a block using the supplied filters.</summary>
         Task<bool> ExecuteQueryAsync(string blockName, List<AppFilter> filters = null);
+
+        /// <summary>Notifies the engine that a host is entering query mode for a block.</summary>
+        void EnteringQueryModeAsync(string blockName);
+
+        /// <summary>Notifies the engine that a host has finished executing a query and is exiting query mode.</summary>
+        void ExitingQueryModeAsync(string blockName);
 
         /// <summary>Validates a single field value in a block.</summary>
         bool ValidateField(string blockName, string FieldName, object value);
@@ -326,8 +354,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         Task<bool> DuplicateCurrentRecordAsync(string blockName,
             System.Threading.CancellationToken ct = default);
 
+        /// <summary>Gets a named field or property value from a record.</summary>
+        object? GetFieldValue(object record, string FieldName);
+
         /// <summary>Sets a named field or property value on a record.</summary>
-        bool SetFieldValue(object record, string FieldName, object value);
+        bool SetFieldValue(object record, string FieldName, object? value);
 
         // Block Change Feed
         /// <summary>Raised when a tracked field value changes within any registered block.</summary>
@@ -455,6 +486,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         Task<bool> OpenFormModelessAsync(string formName, Dictionary<string, object> parameters = null);
         Task<bool> NewFormAsync(string formName, Dictionary<string, object> parameters = null);
         Task<bool> ReturnToCallerAsync(object returnData = null);
+        object GetFormParameter(string paramName);
 
         // ── Form Trigger Raise ─────────────────────────────────────────
         Task<TriggerResult> RaiseFormTriggerAsync(string triggerName, string blockName = null);
