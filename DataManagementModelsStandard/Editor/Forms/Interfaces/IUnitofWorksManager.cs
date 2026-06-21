@@ -189,6 +189,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Returns the master block name for a detail block.</summary>
         string GetMasterBlock(string detailBlockName);
 
+        /// <summary>Creates a master-detail relationship between two blocks using a single key field pair.</summary>
+        void CreateMasterDetailRelation(string masterBlockName, string detailBlockName,
+            string masterKeyField, string detailForeignKeyField,
+            RelationshipType relationshipType = RelationshipType.OneToMany);
+
+        /// <summary>Creates a master-detail relationship with composite key field mappings.</summary>
+        void CreateMasterDetailRelation(string masterBlockName, string detailBlockName,
+            DataBlockFieldMapping[] keyFieldMappings,
+            RelationshipType relationshipType = RelationshipType.OneToMany);
+
         /// <summary>
         /// Returns true if a field change on the given block should trigger detail-block
         /// synchronization. A field change should synchronize if (a) the block is a master,
