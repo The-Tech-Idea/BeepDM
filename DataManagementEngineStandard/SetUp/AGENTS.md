@@ -216,3 +216,54 @@ Key test patterns:
 - Use `TestSeeder` / `TestSeederWithDeps` helpers for seeder registry tests.
 - Schema hash tests validate property-level change detection.
 - Import these namespaces: `TheTechIdea.Beep.Addin`, `TheTechIdea.Beep.ConfigUtil`, `TheTechIdea.Beep.DataBase`, `TheTechIdea.Beep.Editor`, `TheTechIdea.Beep.SetUp`, `TheTechIdea.Beep.SetUp.Seeding`, `Xunit`.
+
+---
+
+## Forms Engine — Architecture Rules (2026-06-18)
+
+### Three Object Types Only
+The UI emulates Oracle Forms with exactly 3 object types. Only 3 interfaces should exist:
+
+| Interface | File | Purpose |
+|---|---|---|
+| `IBeepFormsHost` | `Hosts/IBeepFormsHost.cs` | Form host — block registration, navigation, CRUD, LOV, validation, messaging |
+| `IBlockView` | `Hosts/IBlockView.cs` | Block view — Bind/Unbind, navigation, CRUD, events, field presenters |
+| `IFieldPresenter` | `Hosts/IFieldPresenter.cs` | Field presenter — Value, Validate, Clear, factory methods |
+
+**No other interfaces should exist.** Removed: `IBuiltinHost`, `IBeepBuiltins`, `IBlockNavigationBar`, `IFormsNotificationService`, `IFormsBootstrapper`,
+`IBeepFieldPresenter`, `IBeepWpfFieldPresenter`, `IBeepWpfBlockView`, `IBeepBlockView`, `IBeepWpfBlockNavigationBar`.
+
+### Architecture
+```
+Engine IUnitofWorksManager (~285 methods)
+    ▲                               ▲
+    │ _formsManager (direct)        │ IBeepFormsHost (45 methods)
+    │                               │
+BeepForms layer                   BeepBlock layer
+(all engine methods)              (only what Blocks need)
+```
+
+### Interface Ownership
+- ALL interfaces live in `Editor/Forms/Hosts/` ONLY
+- NO interfaces in WPF or WinForms `Contracts/` directories
+- Both WPF and WinForms implement engine interfaces directly — no extensions
+
+### No Builtins
+- `IBeepBuiltins`, `IBuiltinHost`, all builtin classes DELETED
+- Engine operations (SetMessage, ShowAlert, Multi-form, etc.) accessed through `_formsManager` directly
+- No adapters, no bridges, no wrapping layers
+
+### Engine Helpers (authoritative, shared)
+- `Helpers/RecordPropertyAccessor` — SINGLE reflection authority
+- `Helpers/MessageClassifier` — SINGLE severity authority
+- `Helpers/FieldTypeMapper` — SINGLE field type mapping
+- `Helpers/FieldFormulaEvaluator` — SINGLE formula evaluator
+
+### UI Layer Rules
+- NO business logic — no DataTable, DataView, DataRowView
+- NO raw reflection — use `RecordPropertyAccessor`
+- NO severity duplication — use `MessageClassifier`
+- NO `_boundUnitOfWork` or direct `IUnitOfWork` in Blocks
+- Both WPF and WinForms implement engine interfaces directly
+- Form-level operations use `_formsManager.*` directly
+

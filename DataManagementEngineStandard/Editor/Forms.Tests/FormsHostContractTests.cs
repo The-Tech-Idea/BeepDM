@@ -165,4 +165,42 @@ public class FormsHostContractTests
         Assert.NotNull(manager.GetMethod("GetSecurityViolations"));
     }
 
+    [Fact]
+    public void FormsHost_ExposesRemainingOracleFormsWorkflowSurfaces()
+    {
+        Type host = typeof(IBeepFormsHost);
+
+        string[] operations =
+        [
+            "GetAuditLog", "GetFieldHistory", "ExportAuditToCsvAsync",
+            "ExportAuditToJsonAsync", "PurgeAudit", "ClearAudit",
+            "SetBlockUndoEnabled", "UndoBlock", "RedoBlock",
+            "CanUndoBlock", "CanRedoBlock", "GetFormChangeSummary",
+            "RegisterCrossBlockRule", "UnregisterCrossBlockRule",
+            "ValidateCrossBlock", "GetDirtyBlocks", "SaveDirtyBlocksAsync",
+            "RollbackDirtyBlocksAsync", "GetItems", "SetItemProperty",
+            "GetItemProperty", "SetItemValue", "GetAllItemValues",
+            "GetDirtyItems", "GetItemsWithErrors", "SetTabOrder",
+            "GetTabOrder", "GetEditableItems"
+        ];
+
+        foreach (string operation in operations)
+        {
+            Assert.NotNull(host.GetMember(operation).SingleOrDefault());
+        }
+    }
+
+    [Fact]
+    public void ManagerContract_ExposesAuditOperationsUsedByHosts()
+    {
+        Type manager = typeof(IUnitofWorksManager);
+
+        Assert.NotNull(manager.GetMethod("GetAuditLog"));
+        Assert.NotNull(manager.GetMethod("GetFieldHistory"));
+        Assert.NotNull(manager.GetMethod("ExportAuditToCsvAsync"));
+        Assert.NotNull(manager.GetMethod("ExportAuditToJsonAsync"));
+        Assert.NotNull(manager.GetMethod("PurgeAudit"));
+        Assert.NotNull(manager.GetMethod("ClearAudit"));
+    }
+
 }

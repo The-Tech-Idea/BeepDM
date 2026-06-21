@@ -117,11 +117,7 @@ namespace TheTechIdea.Beep.Services
                 var engines = new List<ILogQueryEngine>();
                 foreach (ITelemetrySink sink in options.Sinks)
                 {
-                    if (sink is SqliteSink sqlite)
-                    {
-                        engines.Add(new SqliteLogQueryEngine(sqlite));
-                    }
-                    else if (sink is FileRollingSink file)
+                    if (sink is FileRollingSink file)
                     {
                         engines.Add(new FileScanLogQueryEngine(file));
                     }

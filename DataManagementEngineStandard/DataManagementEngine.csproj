@@ -39,6 +39,9 @@
 	<ItemGroup>
 	  <Compile Remove="CodeDom\CodeDomCompiler.cs" />
 	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Editor\Forms\nul" />
+	</ItemGroup>
 
 
   <ItemGroup>
@@ -58,7 +61,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />

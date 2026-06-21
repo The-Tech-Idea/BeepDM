@@ -170,13 +170,7 @@ namespace TheTechIdea.Beep.Services
         {
             var engines = new List<IAuditQueryEngine>();
 
-            foreach (ITelemetrySink sink in options.Sinks)
-            {
-                if (sink is SqliteSink sqlite)
-                {
-                    engines.Add(new SqliteAuditQueryEngine(sqlite));
-                }
-            }
+         
 
             if (options.EnableFileScanQuery)
             {
