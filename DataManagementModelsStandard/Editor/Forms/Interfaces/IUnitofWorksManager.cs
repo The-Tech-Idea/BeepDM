@@ -88,6 +88,33 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the engine-owned form timer manager.</summary>
         ITimerManager Timers { get; }
 
+        /// <summary>Sets the active Forms security context and reapplies effective permissions.</summary>
+        void SetSecurityContext(SecurityContext context);
+
+        /// <summary>Gets the active Forms security context.</summary>
+        SecurityContext SecurityContext { get; }
+
+        /// <summary>Registers block-level security rules.</summary>
+        void SetBlockSecurity(string blockName, BlockSecurity security);
+
+        /// <summary>Gets block-level security rules.</summary>
+        BlockSecurity GetBlockSecurity(string blockName);
+
+        /// <summary>Returns whether the active principal may perform the operation.</summary>
+        bool IsBlockAllowed(string blockName, SecurityPermission permission);
+
+        /// <summary>Registers field-level security rules.</summary>
+        void SetFieldSecurity(string blockName, string fieldName, FieldSecurity security);
+
+        /// <summary>Gets field-level security rules.</summary>
+        FieldSecurity GetFieldSecurity(string blockName, string fieldName);
+
+        /// <summary>Returns a display-safe field value after applying security masking.</summary>
+        object GetMaskedFieldValue(string blockName, string fieldName, object rawValue);
+
+        /// <summary>Returns security violations recorded for the current session.</summary>
+        IReadOnlyList<SecurityViolationEventArgs> GetSecurityViolations();
+
         /// <summary>Registers a block and resolves its entity metadata from the unit of work when available.</summary>
         void RegisterBlock(string blockName, IUnitofWork unitOfWork,
             string dataSourceName = null, bool isMasterBlock = false);

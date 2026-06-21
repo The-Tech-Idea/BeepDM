@@ -50,6 +50,19 @@ public interface IBeepFormsHost
     bool IsBlockQueryAllowed(string blockName);
     bool IsFieldQueryAllowed(string blockName, string fieldName);
     bool IsBlockDirty(string blockName);
+    ItemInfo? GetItemInfo(string blockName, string fieldName);
+
+    // ── Security ──────────────────────────────────────────────────────────────
+    void SetSecurityContext(SecurityContext context);
+    SecurityContext? GetSecurityContext();
+    void SetBlockSecurity(string blockName, BlockSecurity security);
+    BlockSecurity? GetBlockSecurity(string blockName);
+    bool IsBlockAllowed(string blockName, SecurityPermission permission);
+    void SetFieldSecurity(string blockName, string fieldName, FieldSecurity security);
+    FieldSecurity? GetFieldSecurity(string blockName, string fieldName);
+    object? GetMaskedFieldValue(string blockName, string fieldName, object? rawValue);
+    IReadOnlyList<SecurityViolationEventArgs> GetSecurityViolations();
+    void ClearBlockSecurity(string blockName);
 
     // ── Navigation ────────────────────────────────────────────────────────────
     Task<bool> MoveFirstAsync(string blockName);

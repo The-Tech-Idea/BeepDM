@@ -143,4 +143,26 @@ public class FormsHostContractTests
             typeof(IUnitofWorksManager).GetProperty("Sequences")?.PropertyType);
     }
 
+    [Fact]
+    public void FormsContracts_ExposeRuntimeSecurityWithoutPlatformTypes()
+    {
+        Type host = typeof(IBeepFormsHost);
+        Type manager = typeof(IUnitofWorksManager);
+
+        Assert.NotNull(host.GetMethod("SetSecurityContext"));
+        Assert.NotNull(host.GetMethod("SetBlockSecurity"));
+        Assert.NotNull(host.GetMethod("SetFieldSecurity"));
+        Assert.NotNull(host.GetMethod("GetFieldSecurity"));
+        Assert.NotNull(host.GetMethod("GetMaskedFieldValue"));
+        Assert.NotNull(host.GetMethod("GetSecurityViolations"));
+        Assert.NotNull(host.GetMethod("GetItemInfo"));
+
+        Assert.NotNull(manager.GetMethod("SetSecurityContext"));
+        Assert.NotNull(manager.GetMethod("SetBlockSecurity"));
+        Assert.NotNull(manager.GetMethod("SetFieldSecurity"));
+        Assert.NotNull(manager.GetMethod("GetFieldSecurity"));
+        Assert.NotNull(manager.GetMethod("GetMaskedFieldValue"));
+        Assert.NotNull(manager.GetMethod("GetSecurityViolations"));
+    }
+
 }
