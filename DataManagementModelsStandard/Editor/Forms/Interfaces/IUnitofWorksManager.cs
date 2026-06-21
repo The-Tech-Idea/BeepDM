@@ -88,6 +88,34 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the engine-owned form timer manager.</summary>
         ITimerManager Timers { get; }
 
+        /// <summary>Sets the user stamped on subsequent audit entries.</summary>
+        void SetAuditUser(string userName);
+
+        /// <summary>Returns audit entries with optional filters.</summary>
+        IReadOnlyList<AuditEntry> GetAuditLog(
+            string blockName = null,
+            AuditOperation? operation = null,
+            DateTime? from = null,
+            DateTime? to = null);
+
+        /// <summary>Returns field-level audit history.</summary>
+        IReadOnlyList<AuditFieldChange> GetFieldHistory(
+            string blockName,
+            string recordKey,
+            string fieldName);
+
+        /// <summary>Exports audit entries to CSV.</summary>
+        Task ExportAuditToCsvAsync(string filePath, string blockName = null);
+
+        /// <summary>Exports audit entries to JSON.</summary>
+        Task ExportAuditToJsonAsync(string filePath, string blockName = null);
+
+        /// <summary>Purges old audit entries.</summary>
+        void PurgeAudit(int olderThanDays);
+
+        /// <summary>Clears the audit store.</summary>
+        void ClearAudit();
+
         /// <summary>Sets the active Forms security context and reapplies effective permissions.</summary>
         void SetSecurityContext(SecurityContext context);
 

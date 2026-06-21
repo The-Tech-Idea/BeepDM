@@ -64,6 +64,69 @@ public interface IBeepFormsHost
     IReadOnlyList<SecurityViolationEventArgs> GetSecurityViolations();
     void ClearBlockSecurity(string blockName);
 
+    // ── Audit ─────────────────────────────────────────────────────────────────
+    void SetAuditUser(string userName);
+    IReadOnlyList<AuditEntry> GetAuditLog(
+        string? blockName = null,
+        AuditOperation? operation = null,
+        DateTime? from = null,
+        DateTime? to = null);
+    IReadOnlyList<AuditFieldChange> GetFieldHistory(
+        string blockName,
+        string recordKey,
+        string fieldName);
+    Task ExportAuditToCsvAsync(
+        string filePath,
+        string? blockName = null);
+    Task ExportAuditToJsonAsync(
+        string filePath,
+        string? blockName = null);
+    void PurgeAudit(int olderThanDays);
+    void ClearAudit();
+
+    // ── Undo, validation, and dirty state ─────────────────────────────────────
+    void SetBlockUndoEnabled(string blockName, bool enabled, int maxDepth = 50);
+    bool UndoBlock(string blockName);
+    bool RedoBlock(string blockName);
+    bool CanUndoBlock(string blockName);
+    bool CanRedoBlock(string blockName);
+    IReadOnlyDictionary<string, ChangeSummary> GetFormChangeSummary();
+    void RegisterCrossBlockRule(CrossBlockValidationRule rule);
+    bool UnregisterCrossBlockRule(string ruleName);
+    IReadOnlyList<string> ValidateCrossBlock();
+    IReadOnlyList<string> GetDirtyBlocks();
+    Task<bool> SaveDirtyBlocksAsync(CancellationToken ct = default);
+    Task<bool> RollbackDirtyBlocksAsync(CancellationToken ct = default);
+
+    // ── Item properties ───────────────────────────────────────────────────────
+    IReadOnlyList<ItemInfo> GetItems(string blockName);
+    void SetItemProperty(
+        string blockName,
+        string fieldName,
+        string propertyName,
+        object? value);
+    object? GetItemProperty(
+        string blockName,
+        string fieldName,
+        string propertyName);
+    void SetItemValue(string blockName, string fieldName, object? value);
+    object? GetItemValue(string blockName, string fieldName);
+    IReadOnlyDictionary<string, object> GetAllItemValues(string blockName);
+    void SetAllItemValues(
+        string blockName,
+        IReadOnlyDictionary<string, object> values);
+    IReadOnlyList<string> GetDirtyItems(string blockName);
+    void ClearItemDirty(string blockName, string fieldName);
+    void ClearAllItemDirtyFlags(string blockName);
+    void SetItemError(string blockName, string fieldName, string message);
+    void ClearItemError(string blockName, string fieldName);
+    IReadOnlyList<ItemInfo> GetItemsWithErrors(string blockName);
+    void SetTabOrder(string blockName, IReadOnlyList<string> fieldNames);
+    IReadOnlyList<string> GetTabOrder(string blockName);
+    string? GetNextItem(string blockName, string currentFieldName);
+    string? GetPreviousItem(string blockName, string currentFieldName);
+    IReadOnlyList<ItemInfo> GetEditableItems(string blockName, FormMode mode);
+
     // ── Navigation ────────────────────────────────────────────────────────────
     Task<bool> MoveFirstAsync(string blockName);
     Task<bool> MovePreviousAsync(string blockName);
