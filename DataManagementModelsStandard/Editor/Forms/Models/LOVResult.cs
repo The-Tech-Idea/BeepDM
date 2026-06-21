@@ -24,6 +24,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         
         /// <summary>Time taken to load data (milliseconds)</summary>
         public long LoadTimeMs { get; set; }
+
+        /// <summary>
+        /// Returns records as dictionaries using property reflection (single pass per record).
+        /// Allows IDE to read column values without repeated GetProperties calls.
+        /// </summary>
+        public IReadOnlyList<System.Collections.Generic.Dictionary<string, object>> GetRecordsAsDictionaries()
+        {
+            var result = new List<System.Collections.Generic.Dictionary<string, object>>();
+            foreach (var record in Records)
+            {
+                if (record == null) continue;
+                var dict = new System.Collections.Generic.Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
+                foreach (var prop in record.GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
+                    dict[prop.Name] = prop.GetValue(record);
+                result.Add(dict);
+            }
+            return result;
+        }
         
         #region Factory Methods
         

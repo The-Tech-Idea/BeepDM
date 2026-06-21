@@ -4708,6 +4708,12 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetMasterBlock(System.String)">
             <summary>Returns the master block name for a detail block.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateMasterDetailRelation(System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
+            <summary>Creates a master-detail relationship between two blocks using a single key field pair.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateMasterDetailRelation(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.DataBlockFieldMapping[],TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
+            <summary>Creates a master-detail relationship with composite key field mappings.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ShouldSynchronizeDetailOnFieldChange(System.String,System.String)">
             <summary>
             Returns true if a field change on the given block should trigger detail-block
@@ -6822,6 +6828,12 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.LOVResult.LoadTimeMs">
             <summary>Time taken to load data (milliseconds)</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.LOVResult.GetRecordsAsDictionaries">
+            <summary>
+            Returns records as dictionaries using property reflection (single pass per record).
+            Allows IDE to read column values without repeated GetProperties calls.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Models.LOVResult.Ok(System.Collections.Generic.List{System.Object},System.Boolean)">
             <summary>Create a success result with records</summary>
         </member>
@@ -8895,8 +8907,23 @@
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo">
             <summary>Form surface hosting blocks (WinForms BeepForms or WPF BeepWpfForms).</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedContainerTargetInfo">
+            <summary>A container control (Panel, GroupBox, TabPage) eligible as a block drop target.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockInfo">
             <summary>A block surface (BeepBlock) discovered in a designer file.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityDefinition">
+            <summary>Platform-agnostic entity definition metadata for a block.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition">
+            <summary>Platform-agnostic field definition within an entity.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedNavigationDefinition">
+            <summary>Platform-agnostic navigation bar definition for a block.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedNavigationCommand">
+            <summary>Platform-agnostic navigation command visibility/enabled state.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo">
             <summary>Platform-specific host (BeepForms or BeepWpfForms).</summary>
