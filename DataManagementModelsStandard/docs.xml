@@ -4036,6 +4036,9 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.CreateSequence(System.String,System.Int64,System.Int64)">
             <summary>Create a new named sequence with the given starting value</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider.DropSequence(System.String)">
+            <summary>Remove a named sequence. Returns false when it does not exist.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager">
             <summary>
             Manages named form-level timers that fire WHEN-TIMER-EXPIRED triggers.
@@ -4644,6 +4647,30 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Timers">
             <summary>Gets the engine-owned form timer manager.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.DropSequence(System.String)">
+            <summary>Removes a named sequence.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetAuditUser(System.String)">
+            <summary>Sets the user stamped on subsequent audit entries.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetAuditLog(System.String,System.Nullable{TheTechIdea.Beep.Editor.Forms.Models.AuditOperation},System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
+            <summary>Returns audit entries with optional filters.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetFieldHistory(System.String,System.String,System.String)">
+            <summary>Returns field-level audit history.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ExportAuditToCsvAsync(System.String,System.String)">
+            <summary>Exports audit entries to CSV.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ExportAuditToJsonAsync(System.String,System.String)">
+            <summary>Exports audit entries to JSON.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.PurgeAudit(System.Int32)">
+            <summary>Purges old audit entries.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ClearAudit">
+            <summary>Clears the audit store.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetSecurityContext(TheTechIdea.Beep.Editor.Forms.Models.SecurityContext)">
             <summary>Sets the active Forms security context and reapplies effective permissions.</summary>

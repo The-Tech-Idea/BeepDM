@@ -359,6 +359,10 @@ public interface IBeepFormsHost
     LOVDefinition? GetLov(string blockName, string fieldName);
     Task<LOVResult> LoadLovDataAsync(string blockName, string fieldName, string? searchText = null);
     Task<LOVResult> ShowLovAsync(string blockName, string fieldName, string? searchText = null, CancellationToken ct = default);
+    Task<LOVValidationResult> ValidateLovValueAsync(
+        string blockName,
+        string fieldName,
+        object value);
     Dictionary<string, object>? GetLovRelatedFieldValues(LOVDefinition lov, object? selectedItem);
 
     // ── Validation ────────────────────────────────────────────────────────────

@@ -21607,6 +21607,12 @@
             Create a named sequence with custom start and increment.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.DropSequence(System.String)">
+            <summary>
+            Remove a named sequence.
+            Corresponds to Oracle Forms DROP_SEQUENCE.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetItemDefault(System.String,System.String,System.Func{System.Object})">
             <summary>
             Register a factory that supplies the default value for a field when a new record is created.
@@ -23892,6 +23898,9 @@
             <inheritdoc/>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SequenceProvider.SequenceExists(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SequenceProvider.DropSequence(System.String)">
             <inheritdoc/>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.SharedBlockManager">
