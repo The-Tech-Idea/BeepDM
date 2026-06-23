@@ -4782,6 +4782,12 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.LastRecordAsync(System.String)">
             <summary>Navigates to the last record in a block.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.NavigateToRecordAsync(System.String,System.Int32)">
+            <summary>Navigates to a zero-based record index through the full validation and synchronization pipeline.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GoItemAsync(System.String,System.String)">
+            <summary>Navigates the Forms cursor to an item and executes its item-entry trigger.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SwitchToBlockAsync(System.String)">
             <summary>Switches the current active block.</summary>
         </member>

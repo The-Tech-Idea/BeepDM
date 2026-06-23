@@ -18,6 +18,7 @@ using TheTechIdea.Beep.Services;
 using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Utils;
+using TheTechIdea.Beep.Winform.Controls;
 
 
 
@@ -151,6 +152,11 @@ namespace TheTechIdea.Beep.Container.Services
                 util = new Util(lg, Erinfo, Config_editor);
                 LLoader = CreateAssemblyHandler(Config_editor, Erinfo, lg, util);
                 DMEEditor = new DMEEditor(lg, util, Erinfo, Config_editor, LLoader);
+
+                // Wire the catalog-aware connection repository so all connection
+                // CRUD flows through a single source of truth (scope/profile-aware).
+                var catalogRepo = new BeepConnectionRepository(this);
+                Config_editor.ConnectionCatalogRepository = catalogRepo;
 
                 // Register services if collection provided
                 if (Services != null)

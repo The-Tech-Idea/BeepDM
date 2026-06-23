@@ -31,10 +31,30 @@ public static class BeepServiceExtensions
     {
         if (services == null) throw new ArgumentNullException(nameof(services));
 
-        // 1. Configure options. Use a default instance if the host did not supply one.
-        var options = new StudioOptions();
-        configure?.Invoke(options);
-        services.TryAddSingleton(options);
+        // 1. Configure options via a factory so DataRoot can be resolved
+        //    from BeepService.BeepDirectory at resolution time. This keeps
+        //    all Studio data under the host's BeepDirectory instead of a
+        //    separate ProgramData/.../Studio folder.
+        services.TryAddSingleton(sp =>
+        {
+            var options = new StudioOptions();
+            configure?.Invoke(options);
+
+            if (string.IsNullOrWhiteSpace(options.DataRoot))
+            {
+                var beepService = sp.GetService<TheTechIdea.Beep.Services.IBeepService>();
+                if (!string.IsNullOrWhiteSpace(beepService?.BeepDirectory))
+                {
+                    options.DataRoot = System.IO.Path.Combine(beepService.BeepDirectory, "Studio");
+                }
+                else
+                {
+                    options.DataRoot = TheTechIdea.Beep.Services.EnvironmentService.CreateAppfolder("Studio");
+                }
+            }
+
+            return options;
+        });
 
         // 2. Register the top-level facade. TryAdd lets the host override the
         //    implementation for testing.
@@ -48,7 +68,11 @@ public static class BeepServiceExtensions
         //    PR 2: ISourceService → real SourceService (wraps DatasourceManagementService).
         //          The SourceService needs the host's IDMEEditor; we resolve it lazily
         //          via a factory so the registration is order-independent.
-        services.TryAddSingleton<IEnvironmentProfileService, EnvironmentProfileServiceStub>();
+        services.TryAddSingleton<IEnvironmentProfileService>(sp =>
+        {
+            var options = sp.GetRequiredService<StudioOptions>();
+            return new EnvironmentProfileService(options.DataRoot);
+        });
         // PR 8: IDriverService → real DriverService (wraps the engine's
         // DriverProvisionStep + ConnectionDriversConfig registry).
         services.TryAddSingleton<IDriverService>(sp => new DriverService(

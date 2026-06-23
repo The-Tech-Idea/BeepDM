@@ -355,37 +355,41 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         /// <summary>
         /// Set the current item (field) within the current block.
-        /// Fires KEY-NEXT-ITEM or a generic navigation trigger.
+        /// Validates the item, fires WHEN-NEW-ITEM-INSTANCE, and updates
+        /// the engine cursor variables. The host performs the visual focus.
         /// Corresponds to Oracle Forms GO_ITEM built-in.
         /// </summary>
-        /// <remarks>
-        /// B9 (audit pass 3, 2026-06): <b>this method does NOT
-        /// actually move focus</b>. It only fires the
-        /// KEY-NEXT-ITEM trigger; the host UI is expected to
-        /// read the trigger and move focus to the named item.
-        /// This is a divergence from the Oracle Forms
-        /// <c>GO_ITEM</c> built-in, which moves focus as a
-        /// side-effect of the trigger. The engine does not have
-        /// a focus model — focus is a host-UI concern — so
-        /// truly matching Oracle Forms would require either
-        /// (a) extending the engine with a focus model, or
-        /// (b) renaming this method to make the trigger-only
-        /// behavior explicit (e.g.
-        /// <c>FireGoItemTriggerAsync</c>). Until one of those
-        /// is done, callers should not assume
-        /// <c>GoItemAsync</c> moved focus; the method returns
-        /// <c>true</c> if the trigger fired without
-        /// cancellation, regardless of whether the host actually
-        /// moved focus.
-        /// </remarks>
         public async Task<bool> GoItemAsync(string blockName, string itemName)
         {
             if (string.IsNullOrWhiteSpace(blockName) || string.IsNullOrWhiteSpace(itemName))
                 return false;
+            blockName = blockName.Trim();
+            itemName = itemName.Trim();
+            if (!_itemPropertyManager.ItemExists(blockName, itemName))
+                return false;
 
             var ctx = TriggerContext.ForItem(
-                TriggerType.KeyNextItem, blockName, itemName, null, null, _dmeEditor);
-            await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyNextItem, blockName, ctx);
+                TriggerType.WhenNewItemInstance,
+                blockName,
+                itemName,
+                null,
+                null,
+                _dmeEditor);
+            var result = await _triggerManager.FireBlockTriggerAsync(
+                TriggerType.WhenNewItemInstance,
+                blockName,
+                ctx);
+            if (result is not TriggerResult.Success and not TriggerResult.Skipped)
+                return false;
+
+            object itemValue = null;
+            var currentRecord = GetUnitOfWork(blockName)?.CurrentItem;
+            if (currentRecord != null)
+                itemValue = GetFieldValue(currentRecord, itemName);
+            _systemVariablesManager.UpdateForItemChange(
+                blockName,
+                itemName,
+                itemValue);
 
             LogOperation($"GoItem: block='{blockName}', item='{itemName}'", blockName);
             return true;

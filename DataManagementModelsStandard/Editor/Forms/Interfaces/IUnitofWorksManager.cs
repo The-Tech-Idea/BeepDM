@@ -245,6 +245,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Navigates to the last record in a block.</summary>
         Task<bool> LastRecordAsync(string blockName);
 
+        /// <summary>Navigates to a zero-based record index through the full validation and synchronization pipeline.</summary>
+        Task<bool> NavigateToRecordAsync(string blockName, int recordIndex);
+
+        /// <summary>Navigates the Forms cursor to an item and executes its item-entry trigger.</summary>
+        Task<bool> GoItemAsync(string blockName, string itemName);
+
         /// <summary>Switches the current active block.</summary>
         Task<bool> SwitchToBlockAsync(string blockName);
 

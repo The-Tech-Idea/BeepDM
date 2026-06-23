@@ -31,6 +31,9 @@ internal static class StubMessages
 }
 
 // ── EnvironmentProfile ────────────────────────────────────────────────────────
+// EnvironmentProfileServiceStub replaced by the real EnvironmentProfileService
+// (Studio/EnvironmentProfileService.cs) in BeepServiceExtensions.AddBeepStudio.
+// The stub is retained here for backward compatibility and test scenarios.
 
 internal sealed class EnvironmentProfileServiceStub : IEnvironmentProfileService
 {

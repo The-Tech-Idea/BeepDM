@@ -216,5 +216,26 @@ namespace TheTechIdea.Beep
                 return _multiSync;
             }
         }
+
+        private IAppRelationshipService _appRelationship;
+
+        /// <summary>
+        /// App-Environment-Datasource relationship service — tracks which
+        /// datasource is used by which app in which environment.
+        /// </summary>
+        public IAppRelationshipService AppRelationship
+        {
+            get
+            {
+                if (_appRelationship == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _appRelationship ??= new AppRelationshipService(this);
+                    }
+                }
+                return _appRelationship;
+            }
+        }
     }
 }

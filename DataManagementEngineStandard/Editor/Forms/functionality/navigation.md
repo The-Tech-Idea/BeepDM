@@ -65,9 +65,14 @@ The engine stores records in 0-based arrays internally (matches `IUnitofWork.Uni
 The item-level equivalent of `GO_ITEM`. Sequence:
 
 1. Verify the block has the named item (uses `IItemPropertyManager`).
-2. Update `_currentItemName` (engine-level cursor; not currently exposed as a public property).
-3. Fire `WHEN-NEW-ITEM-INSTANCE` (via `EventManager`).
-4. Update system variables — `:SYSTEM.CURSOR_ITEM` and `:SYSTEM.CURSOR_VALUE`.
+2. Fire `WHEN-NEW-ITEM-INSTANCE` through `ITriggerManager`.
+3. Reject the navigation if the trigger fails or is cancelled.
+4. Update system variables — `:SYSTEM.CURSOR_BLOCK`, `:SYSTEM.CURSOR_ITEM`,
+   and `:SYSTEM.CURSOR_VALUE`.
+
+UI hosts call this method before moving platform focus. The shared
+`IBeepFormsHost.GoToItemAsync` contract therefore changes visual focus only
+after the engine accepts the target item.
 
 ### `NextItemAsync` / `PreviousItemAsync`
 

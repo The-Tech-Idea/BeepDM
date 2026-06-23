@@ -3,6 +3,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager;
+using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using Xunit;
 
@@ -193,6 +194,67 @@ public class FormsManagerTests : IDisposable
 
         bool result = await _manager.NavigateToRecordAsync("EMP", -1);
         Assert.False(result);
+    }
+
+    [Fact]
+    public async Task GoItem_ValidItemUpdatesCursorAndFiresNewItemTrigger()
+    {
+        var items = new Mock<IItemPropertyManager>(MockBehavior.Strict);
+        items.Setup(instance => instance.ItemExists("EMP", "ENAME"))
+            .Returns(true);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Strict);
+        variables.Setup(instance => instance.UpdateForItemChange(
+            "EMP",
+            "ENAME",
+            null));
+        var triggers = new Mock<ITriggerManager>(MockBehavior.Strict);
+        triggers.Setup(instance => instance.FireBlockTriggerAsync(
+                TriggerType.WhenNewItemInstance,
+                "EMP",
+                It.Is<TriggerContext>(context =>
+                    context.ItemName == "ENAME" &&
+                    context.TriggerType == TriggerType.WhenNewItemInstance),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TriggerResult.Success);
+        using var manager = new FormsManager(
+            _mockEditor.Object,
+            systemVariablesManager: variables.Object,
+            itemPropertyManager: items.Object,
+            triggerManager: triggers.Object);
+
+        var moved = await manager.GoItemAsync("EMP", "ENAME");
+
+        Assert.True(moved);
+        variables.VerifyAll();
+        triggers.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GoItem_UnknownItemReturnsFalseWithoutTrigger()
+    {
+        var items = new Mock<IItemPropertyManager>(MockBehavior.Strict);
+        items.Setup(instance => instance.ItemExists("EMP", "MISSING"))
+            .Returns(false);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Strict);
+        var triggers = new Mock<ITriggerManager>(MockBehavior.Strict);
+        using var manager = new FormsManager(
+            _mockEditor.Object,
+            systemVariablesManager: variables.Object,
+            itemPropertyManager: items.Object,
+            triggerManager: triggers.Object);
+
+        var moved = await manager.GoItemAsync("EMP", "MISSING");
+
+        Assert.False(moved);
+        triggers.Verify(instance => instance.FireBlockTriggerAsync(
+            It.IsAny<TriggerType>(),
+            It.IsAny<string>(),
+            It.IsAny<TriggerContext>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        variables.Verify(instance => instance.UpdateForItemChange(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>()), Times.Never);
     }
 
     #endregion

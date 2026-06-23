@@ -11,8 +11,10 @@ namespace TheTechIdea.Beep.Studio;
 /// </summary>
 public sealed class StudioOptions
 {
-    /// <summary>The Studio's data folder. Defaults to the platform-appropriate path from <c>EnvironmentService</c>.</summary>
-    public string DataRoot { get; set; } = TheTechIdea.Beep.Services.EnvironmentService.CreateAppfolder("Studio");
+    /// <summary>The Studio's data folder. When null, defaults to <c>{BeepService.BeepDirectory}/Studio</c>
+    /// at registration time. Falls back to <c>EnvironmentService.CreateAppfolder("Studio")</c>
+    /// when BeepService is unavailable.</summary>
+    public string? DataRoot { get; set; }
 
     /// <summary>Persistence layout. Default: JSON.</summary>
     public StudioPersistenceMode Persistence { get; set; } = StudioPersistenceMode.Json;

@@ -29,6 +29,7 @@ public interface IBlockView
 
     IReadOnlyList<IFieldPresenter> FieldPresenters { get; }
     IFieldPresenter? FindFieldPresenter(string fieldName);
+    bool FocusField(string fieldName);
     void AddFieldPresenter(IFieldPresenter presenter);
     void RemoveFieldPresenter(string fieldName);
 

@@ -1,4 +1,4 @@
-﻿using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using System;
 using System.Collections.Generic;
@@ -139,8 +139,14 @@ namespace TheTechIdea.Beep.ConfigUtil
 		/// <summary>Gets or sets the logger used for logging.</summary>
         public IDMLogger Logger { get; set; }
 
-        /// <summary>Catalog-aware connection repository. Set by the host (BeepService/DMEEditor) after construction.</summary>
-        public IConnectionCatalogRepository? ConnectionCatalogRepository { get; set; }
+        /// <summary>Catalog-aware connection repository. Set by the host (BeepService/DMEEditor) after construction.
+        /// When set, DataConnectionManager delegates all CRUD and persistence to this repository,
+        /// making the catalog the single source of truth.</summary>
+        public IConnectionCatalogRepository? ConnectionCatalogRepository
+        {
+            get => _connectionManager.CatalogRepository;
+            set => _connectionManager.CatalogRepository = value;
+        }
 
 		// Delegated properties to managers
 		/// <summary>Gets or sets the list of database types.</summary>

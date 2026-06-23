@@ -9,7 +9,11 @@ using TheTechIdea.Beep.Utilities;
 namespace TheTechIdea.Beep.ConfigUtil.Managers
 {
     /// <summary>
-    /// Manages data connections persistence and operations
+    /// Manages data connections persistence and operations.
+    /// When a <see cref="IConnectionCatalogRepository"/> is set (by the host),
+    /// all CRUD and persistence delegates to it — making the catalog the
+    /// single source of truth. When null (legacy/design-time mode), the
+    /// file-based DataConnections.json store is used directly.
     /// </summary>
     public class DataConnectionManager
     {
@@ -18,6 +22,13 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         private readonly string _configPath;
 
         public List<ConnectionProperties> DataConnections { get; set; }
+
+        /// <summary>
+        /// When set by the host (BeepService/DMEEditor), all CRUD and persistence
+        /// operations delegate to this catalog repository. When null, the legacy
+        /// file-based store (DataConnections.json) is used.
+        /// </summary>
+        public IConnectionCatalogRepository? CatalogRepository { get; set; }
 
         public DataConnectionManager(IDMLogger logger, IJsonLoader jsonLoader, string configPath)
         {
@@ -85,7 +96,7 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Adds a data connection to the list.
+        /// Adds a data connection. Delegates to the catalog repository when set.
         /// </summary>
         public bool AddDataConnection(ConnectionProperties cn)
         {
@@ -93,6 +104,16 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
             {
                 if (cn == null || string.IsNullOrEmpty(cn.ConnectionName)) 
                     return false;
+
+                if (CatalogRepository != null)
+                {
+                    var changed = CatalogRepository.AddOrUpdate(cn, persist: true);
+                    if (changed)
+                    {
+                        SyncFromRepository();
+                    }
+                    return changed;
+                }
 
                 if (DataConnections == null)
                 {
@@ -119,7 +140,7 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Updates an existing data connection.
+        /// Updates an existing data connection. Delegates to the catalog repository when set.
         /// </summary>
         public bool UpdateDataConnection(ConnectionProperties source, string targetGuidId)
         {
@@ -127,6 +148,16 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
             {
                 if (source == null || string.IsNullOrWhiteSpace(source.ConnectionName))
                     return false;
+
+                if (CatalogRepository != null)
+                {
+                    var changed = CatalogRepository.AddOrUpdate(source, persist: true);
+                    if (changed)
+                    {
+                        SyncFromRepository();
+                    }
+                    return changed;
+                }
 
                 if (DataConnections == null)
                     DataConnections = new List<ConnectionProperties>();
@@ -153,12 +184,22 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Removes a connection by name.
+        /// Removes a connection by name. Delegates to the catalog repository when set.
         /// </summary>
         public bool RemoveDataConnection(string connectionName)
         {
             try
             {
+                if (CatalogRepository != null)
+                {
+                    var removed = CatalogRepository.Remove(connectionName, persist: true);
+                    if (removed)
+                    {
+                        SyncFromRepository();
+                    }
+                    return removed;
+                }
+
                 if (DataConnections == null)
                 {
                     DataConnections = new List<ConnectionProperties>();
@@ -185,10 +226,20 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Removes a connection by GUID.
+        /// Removes a connection by GUID. Delegates to the catalog repository when set.
         /// </summary>
         public bool RemoveConnByGuidID(string guidId)
         {
+            if (CatalogRepository != null)
+            {
+                var existing = DataConnections?.FirstOrDefault(c =>
+                    c.GuidID.Equals(guidId, StringComparison.InvariantCultureIgnoreCase));
+                if (existing == null) return false;
+                var removed = CatalogRepository.Remove(existing.ConnectionName, persist: true);
+                if (removed) SyncFromRepository();
+                return removed;
+            }
+
             if (DataConnections == null || string.IsNullOrEmpty(guidId))
                 return false;
 
@@ -200,10 +251,19 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Removes a connection by ID.
+        /// Removes a connection by ID. Delegates to the catalog repository when set.
         /// </summary>
         public bool RemoveConnByID(int id)
         {
+            if (CatalogRepository != null)
+            {
+                var existing = DataConnections?.FirstOrDefault(c => c.ID == id);
+                if (existing == null) return false;
+                var removed = CatalogRepository.Remove(existing.ConnectionName, persist: true);
+                if (removed) SyncFromRepository();
+                return removed;
+            }
+
             if (DataConnections == null)
             {
                 DataConnections = new List<ConnectionProperties>();
@@ -215,10 +275,17 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Removes a connection by name (simple version).
+        /// Removes a connection by name (simple version). Delegates to the catalog repository when set.
         /// </summary>
         public bool RemoveConnByName(string name)
         {
+            if (CatalogRepository != null)
+            {
+                var removed = CatalogRepository.Remove(name, persist: true);
+                if (removed) SyncFromRepository();
+                return removed;
+            }
+
             if (DataConnections == null)
             {
                 DataConnections = new List<ConnectionProperties>();
@@ -230,10 +297,17 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Saves data connections to JSON file.
+        /// Saves data connections. When a catalog repository is set, this is a no-op
+        /// (the repository auto-persists). Otherwise saves to DataConnections.json.
         /// </summary>
         public void SaveDataConnectionsValues()
         {
+            if (CatalogRepository != null)
+            {
+                CatalogRepository.Save(DataConnections ?? new List<ConnectionProperties>());
+                return;
+            }
+
             try
             {
                 string path = Path.Combine(_configPath, "DataConnections.json");
@@ -246,10 +320,17 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         }
 
         /// <summary>
-        /// Loads data connections from JSON file.
+        /// Loads data connections. When a catalog repository is set, loads from the
+        /// catalog. Otherwise loads from DataConnections.json.
         /// </summary>
         public List<ConnectionProperties> LoadDataConnectionsValues()
         {
+            if (CatalogRepository != null)
+            {
+                DataConnections = CatalogRepository.LoadConnections().ToList();
+                return DataConnections;
+            }
+
             try
             {
                 string path = Path.Combine(_configPath, "DataConnections.json");
@@ -271,6 +352,15 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
                 DataConnections = new List<ConnectionProperties>();
                 return DataConnections;
             }
+        }
+
+        /// <summary>
+        /// Syncs the in-memory list from the catalog repository.
+        /// </summary>
+        private void SyncFromRepository()
+        {
+            if (CatalogRepository == null) return;
+            DataConnections = CatalogRepository.LoadConnections().ToList();
         }
 
         /// <summary>

@@ -6016,7 +6016,9 @@
             <summary>Gets or sets the logger used for logging.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.ConnectionCatalogRepository">
-            <summary>Catalog-aware connection repository. Set by the host (BeepService/DMEEditor) after construction.</summary>
+            <summary>Catalog-aware connection repository. Set by the host (BeepService/DMEEditor) after construction.
+            When set, DataConnectionManager delegates all CRUD and persistence to this repository,
+            making the catalog the single source of truth.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConfigEditor.Databasetypes">
             <summary>Gets or sets the list of database types.</summary>
@@ -6190,7 +6192,18 @@
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager">
             <summary>
-            Manages data connections persistence and operations
+            Manages data connections persistence and operations.
+            When a <see cref="T:TheTechIdea.Beep.ConfigUtil.IConnectionCatalogRepository"/> is set (by the host),
+            all CRUD and persistence delegates to it — making the catalog the
+            single source of truth. When null (legacy/design-time mode), the
+            file-based DataConnections.json store is used directly.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.CatalogRepository">
+            <summary>
+            When set by the host (BeepService/DMEEditor), all CRUD and persistence
+            operations delegate to this catalog repository. When null, the legacy
+            file-based store (DataConnections.json) is used.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.DataConnectionExist(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
@@ -6210,42 +6223,49 @@
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.AddDataConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
             <summary>
-            Adds a data connection to the list.
+            Adds a data connection. Delegates to the catalog repository when set.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.UpdateDataConnection(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.String)">
             <summary>
-            Updates an existing data connection.
+            Updates an existing data connection. Delegates to the catalog repository when set.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.RemoveDataConnection(System.String)">
             <summary>
-            Removes a connection by name.
+            Removes a connection by name. Delegates to the catalog repository when set.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.RemoveConnByGuidID(System.String)">
             <summary>
-            Removes a connection by GUID.
+            Removes a connection by GUID. Delegates to the catalog repository when set.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.RemoveConnByID(System.Int32)">
             <summary>
-            Removes a connection by ID.
+            Removes a connection by ID. Delegates to the catalog repository when set.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.RemoveConnByName(System.String)">
             <summary>
-            Removes a connection by name (simple version).
+            Removes a connection by name (simple version). Delegates to the catalog repository when set.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.SaveDataConnectionsValues">
             <summary>
-            Saves data connections to JSON file.
+            Saves data connections. When a catalog repository is set, this is a no-op
+            (the repository auto-persists). Otherwise saves to DataConnections.json.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.LoadDataConnectionsValues">
             <summary>
-            Loads data connections from JSON file.
+            Loads data connections. When a catalog repository is set, loads from the
+            catalog. Otherwise loads from DataConnections.json.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.SyncFromRepository">
+            <summary>
+            Syncs the in-memory list from the catalog repository.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.CopyConnectionProperties(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,TheTechIdea.Beep.ConfigUtil.ConnectionProperties)">
@@ -21250,29 +21270,10 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GoItemAsync(System.String,System.String)">
             <summary>
             Set the current item (field) within the current block.
-            Fires KEY-NEXT-ITEM or a generic navigation trigger.
+            Validates the item, fires WHEN-NEW-ITEM-INSTANCE, and updates
+            the engine cursor variables. The host performs the visual focus.
             Corresponds to Oracle Forms GO_ITEM built-in.
             </summary>
-            <remarks>
-            B9 (audit pass 3, 2026-06): <b>this method does NOT
-            actually move focus</b>. It only fires the
-            KEY-NEXT-ITEM trigger; the host UI is expected to
-            read the trigger and move focus to the named item.
-            This is a divergence from the Oracle Forms
-            <c>GO_ITEM</c> built-in, which moves focus as a
-            side-effect of the trigger. The engine does not have
-            a focus model — focus is a host-UI concern — so
-            truly matching Oracle Forms would require either
-            (a) extending the engine with a focus model, or
-            (b) renaming this method to make the trigger-only
-            behavior explicit (e.g.
-            <c>FireGoItemTriggerAsync</c>). Until one of those
-            is done, callers should not assume
-            <c>GoItemAsync</c> moved focus; the method returns
-            <c>true</c> if the trigger fired without
-            cancellation, regardless of whether the host actually
-            moved focus.
-            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NextItemAsync(System.String,System.String)">
             <summary>
@@ -30230,52 +30231,41 @@
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.OpenDataSource(System.String)">
             <summary>
-            Open DataSource and add it list of DataSources , if the samename exist in connections list
+            Open DataSource by name and add to list of DataSources.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.CloseDataSource(System.String)">
             <summary>
-            Close DataSource
+            Close DataSource by name.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.GetDataSource(System.String)">
             <summary>
-            Get Existing DataSource Created and exist in List of DataSources
+            Get Existing DataSource by name. Delegates to the unified
+            <see cref="M:TheTechIdea.Beep.DMEEditor.GetDataSourceById(System.String,System.Boolean)"/> lookup.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.OpenDataSourceUsingGuidID(System.String)">
             <summary>
-            Open DataSource and add it list of DataSources , if the samename exist in connections list
+            Open DataSource by GUID. Delegates to <see cref="M:TheTechIdea.Beep.DMEEditor.OpenDataSource(System.String)"/>
+            via the unified lookup.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.CloseDataSourceUsingGuidID(System.String)">
             <summary>
-            Close DataSource
+            Close DataSource by GUID. Delegates to the unified lookup.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.GetDataSourceUsingGuidID(System.String)">
             <summary>
-            Get Existing DataSource Created and exist in List of DataSources
+            Get Existing DataSource by GUID. Delegates to the unified
+            <see cref="M:TheTechIdea.Beep.DMEEditor.GetDataSourceById(System.String,System.Boolean)"/> lookup.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.CheckDataSourceExistUsingGuidID(System.String)">
             <summary>
-            Check DataSource Exist in List
+            Check DataSource Exist by GUID. Delegates to the unified lookup.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.RemoveDataDourceUsingGuidID(System.String)">
             <summary>
@@ -30286,17 +30276,15 @@
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.GetDataSourceClassUsingGuidID(System.String)">
             <summary>
-            Get DataSource Assembly and Class Handling Class
+            Get DataSource class by GUID. Delegates to <see cref="M:TheTechIdea.Beep.DMEEditor.GetDataSourceClass(System.String)"/>
+            via connection lookup.
             </summary>
-            <param name="DatasourceName"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.CreateNewDataSourceConnectionUsingGuidID(System.String)">
             <summary>
-            Create New Datasource and add to the List
+            Create New Datasource by GUID. Resolves the connection name and
+            delegates to <see cref="M:TheTechIdea.Beep.DMEEditor.CreateNewDataSourceConnection(System.String)"/>.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.GetDataSourceClass(System.String)">
             <summary>
@@ -30307,10 +30295,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.CheckDataSourceExist(System.String)">
             <summary>
-            Check DataSource Exist in List
+            Check DataSource Exist in List by name.
             </summary>
-            <param name="pdatasourcename"></param>
-            <returns></returns>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.RemoveDataDource(System.String)">
             <summary>
@@ -30402,6 +30388,12 @@
             <summary>
             Multi-project sync service — detects shared Data projects,
             auto-links consumers, syncs schema to shared database.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.AppRelationship">
+            <summary>
+            App-Environment-Datasource relationship service — tracks which
+            datasource is used by which app in which environment.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.InitializeUniversalDataSourceHelpers">
@@ -50767,6 +50759,20 @@
         <member name="F:TheTechIdea.Beep.Studio.RolloutTier.Custom">
             <summary>Custom tier (e.g. "sandbox", "dr"). The default policy is host-defined.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Studio.EnvironmentProfileService">
+            <summary>
+            Real implementation of <see cref="T:TheTechIdea.Beep.Studio.Contracts.IEnvironmentProfileService"/>.
+            Persists <see cref="T:TheTechIdea.Beep.Studio.EnvironmentProfile"/> records to <c>env-profiles.json</c>
+            and seeds default profiles that map to the engine's
+            <see cref="T:TheTechIdea.Beep.Environments.EnvironmentType"/> tiers.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.EnvironmentProfileService.CreateDefaultProfiles">
+            <summary>
+            Creates the standard set of environment profiles that map to the
+            engine's <see cref="T:TheTechIdea.Beep.Environments.EnvironmentType"/> values.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Governance.GovernanceService">
             <summary>
             Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Governance.IGovernanceService"/>. Persists
@@ -51707,7 +51713,9 @@
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Studio.StudioOptions.DataRoot">
-            <summary>The Studio's data folder. Defaults to the platform-appropriate path from <c>EnvironmentService</c>.</summary>
+            <summary>The Studio's data folder. When null, defaults to <c>{BeepService.BeepDirectory}/Studio</c>
+            at registration time. Falls back to <c>EnvironmentService.CreateAppfolder("Studio")</c>
+            when BeepService is unavailable.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Studio.StudioOptions.Persistence">
             <summary>Persistence layout. Default: JSON.</summary>

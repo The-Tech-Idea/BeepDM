@@ -32,6 +32,9 @@ public interface IBeepFormsHost
     bool RegisterBlock(object blockView);
     bool UnregisterBlock(string blockName);
     bool TrySetActiveBlock(string blockName);
+    Task<bool> SwitchToBlockAsync(
+        string blockName,
+        CancellationToken ct = default);
     bool IsBlockRegistered(string blockName);
     DataBlockInfo? GetBlockInfo(string blockName);
 
@@ -133,6 +136,10 @@ public interface IBeepFormsHost
     Task<bool> MoveNextAsync(string blockName);
     Task<bool> MoveLastAsync(string blockName);
     Task<bool> MoveToRecordAsync(string blockName, int index);
+    Task<bool> GoToItemAsync(
+        string blockName,
+        string fieldName,
+        CancellationToken ct = default);
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
     Task<bool> SaveBlockAsync(string blockName, CancellationToken ct = default);
@@ -366,6 +373,11 @@ public interface IBeepFormsHost
     Dictionary<string, object>? GetLovRelatedFieldValues(LOVDefinition lov, object? selectedItem);
 
     // ── Validation ────────────────────────────────────────────────────────────
+    ItemValidationResult ValidateItem(
+        string blockName,
+        string fieldName,
+        object? value,
+        ValidationTiming timing = ValidationTiming.Manual);
     RecordValidationResult? ValidateBlockRecord(string blockName, IDictionary<string, object> record, ValidationTiming timing);
 
     // ── Messaging ─────────────────────────────────────────────────────────────
