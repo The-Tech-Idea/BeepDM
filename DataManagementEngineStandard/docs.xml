@@ -50992,6 +50992,12 @@
         <member name="M:TheTechIdea.Beep.Studio.NullStudioProgress.Report(TheTechIdea.Beep.Studio.StudioProgressUpdate)">
             <inheritdoc />
         </member>
+        <member name="T:TheTechIdea.Beep.Studio.Lifecycle.IStudioModeService">
+            <summary>
+            Persists and retrieves the Studio operating mode from user-local settings.
+            Modes control feature visibility and approval gate requirements.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Manifest.DataLifecycleManifestService">
             <summary>
             Default implementation of <see cref="T:TheTechIdea.Beep.Studio.Manifest.IDataLifecycleManifestService"/>.

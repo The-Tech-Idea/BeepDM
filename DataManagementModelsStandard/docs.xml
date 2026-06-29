@@ -21562,6 +21562,71 @@
         <member name="T:TheTechIdea.Beep.StreamandEvents.TopicLifecycleMetadata">
             <summary>Lifecycle ownership metadata for a topic.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioMode">
+            <summary>
+            Operating mode for Beep Studio. Controls which features are visible
+            and whether approval gates are required for promotions.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioMode.Solo">
+            <summary>
+            One person does everything. No role differentiation needed.
+            All actions available without approval gates.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioMode.Team">
+            <summary>
+            Multiple developers + DBA + release manager.
+            Role-based views. Approval gates for Staging/Live.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioMode.Enterprise">
+            <summary>
+            Many teams, many apps, many environments.
+            Full governance, solution control panel, CI/CD endpoints.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioRole">
+            <summary>
+            User role within Team or Enterprise mode.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioRole.SoloDev">
+            <summary>Default for Solo mode. Sees everything.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioRole.Developer">
+            <summary>Writes code, creates schema changes, pushes to Test.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioRole.DBA">
+            <summary>Manages databases, reviews migrations, approves schema changes.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.StudioRole.Admin">
+            <summary>Manages environments, promotes to production, governs access.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.StudioModeConfig">
+            <summary>
+            Configuration that determines which features are available based on
+            the current operating mode and role.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioModeConfig.Default">
+            <summary>Default Solo config — everything enabled.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioModeConfig.TeamDeveloper">
+            <summary>Team Developer — Dev/Test only, no approvals.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioModeConfig.TeamDBA">
+            <summary>Team DBA — all envs, can approve.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioModeConfig.TeamAdmin">
+            <summary>Team Admin — full control.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioModeConfig.EnterpriseDBA">
+            <summary>Enterprise DBA — full governance.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.StudioModeConfig.EnterpriseAdmin">
+            <summary>Enterprise Admin — everything.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Tools.DriverPackageMapping">
             <summary>
             Maps a driver class to the NuGet package that provides it

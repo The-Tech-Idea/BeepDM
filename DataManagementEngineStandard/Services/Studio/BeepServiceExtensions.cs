@@ -60,6 +60,10 @@ public static class BeepServiceExtensions
         //    implementation for testing.
         services.TryAddSingleton<IStudioService, StudioService>();
 
+        // 2b. Register the Studio mode service (operating mode: Solo/Team/Enterprise).
+        services.TryAddSingleton<TheTechIdea.Beep.Studio.Lifecycle.IStudioModeService,
+            TheTechIdea.Beep.Studio.Lifecycle.StudioModeService>();
+
         // 3. Register the sub-service facades. Each one defaults to a stub that
         //    returns HostNotSupported; the real implementations land in their
         //    respective phases (2-7, 9, 10). The sub-service accessors on
