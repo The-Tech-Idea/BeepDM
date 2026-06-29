@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using TheTechIdea.Beep.AppMap;
+using TheTechIdea.Beep.Studio.Apps;
 using TheTechIdea.Beep.Studio.Contracts;
 using TheTechIdea.Beep.Studio.Deployment;
 using TheTechIdea.Beep.Studio.Driver;
@@ -34,6 +36,10 @@ public sealed class StudioService : IStudioService
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
     }
+
+    /// <inheritdoc />
+    public IAppStudioService Apps =>
+        _services.GetRequiredService<IAppStudioService>();
 
     /// <inheritdoc />
     public IEnvironmentProfileService Environments =>

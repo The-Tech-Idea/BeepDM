@@ -12,6 +12,7 @@ using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Services.AppMap;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 
@@ -152,6 +153,9 @@ namespace TheTechIdea.Beep.Editor
 
         /// <summary>Multi-project sync: shared Data detection, auto-link, schema sync.</summary>
         IMultiProjectSyncService MultiSync { get; }
+
+        /// <summary>App registry: manages the app→environment→datasource lifecycle.</summary>
+        IAppRegistry AppRegistry { get; }
 
         #region Forms Engine
         /// <summary>Get all registered form names from the form registry.</summary>

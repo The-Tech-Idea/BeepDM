@@ -1,6 +1,8 @@
+using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Editor.EntityDiscovery;
 using TheTechIdea.Beep.Editor.Importing;
 using TheTechIdea.Beep.Editor.Migration;
+using TheTechIdea.Beep.Services;
 using TheTechIdea.Beep.Services.AppMap;
 using TheTechIdea.Beep.Services.DatasourceManagement;
 
@@ -235,6 +237,48 @@ namespace TheTechIdea.Beep
                     }
                 }
                 return _appRelationship;
+            }
+        }
+
+        private IAppRegistry _appRegistry;
+
+        /// <summary>
+        /// App registry — manages the app→environment→datasource lifecycle.
+        /// Connectors call RegisterApp() to auto-populate discovered apps.
+        /// </summary>
+        public IAppRegistry AppRegistry
+        {
+            get
+            {
+                if (_appRegistry == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _appRegistry ??= new AppRegistry(this);
+                    }
+                }
+                return _appRegistry;
+            }
+        }
+
+        private TreeCatalogService _treeCatalog;
+
+        /// <summary>
+        /// Tree catalog service — read-only access to tree-building metadata
+        /// (branches, functions, object types, category folders).
+        /// </summary>
+        public TreeCatalogService TreeCatalog
+        {
+            get
+            {
+                if (_treeCatalog == null)
+                {
+                    lock (_serviceLock)
+                    {
+                        _treeCatalog ??= new TreeCatalogService(this);
+                    }
+                }
+                return _treeCatalog;
             }
         }
     }

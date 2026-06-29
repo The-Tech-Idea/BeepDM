@@ -4,6 +4,8 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using TheTechIdea.Beep.AppMap;
+using TheTechIdea.Beep.Studio.Apps;
 using TheTechIdea.Beep.Studio.Contracts;
 using TheTechIdea.Beep.Studio.Deployment;
 using TheTechIdea.Beep.Studio.Driver;
@@ -59,6 +61,12 @@ public static class BeepServiceExtensions
         // 2. Register the top-level facade. TryAdd lets the host override the
         //    implementation for testing.
         services.TryAddSingleton<IStudioService, StudioService>();
+
+        // 2a. The App aggregate — the base of the Studio. Wraps the engine's
+        //     IAppRegistry + DatasourceManagementService. Resolved lazily from
+        //     IBeepService.DMEEditor so registration is order-independent.
+        services.TryAddSingleton<IAppStudioService>(sp => new AppStudioService(
+            sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor));
 
         // 3. Register the sub-service facades. Each one defaults to a stub that
         //    returns HostNotSupported; the real implementations land in their

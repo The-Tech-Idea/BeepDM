@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.AppMap;
+using TheTechIdea.Beep.Studio.Apps;
+using TheTechIdea.Beep.Studio.Apps.Workflows;
 using TheTechIdea.Beep.Studio.Contracts;
 using TheTechIdea.Beep.Studio.Deployment;
 using TheTechIdea.Beep.Studio.Driver;
@@ -33,6 +36,9 @@ public sealed class NullStudioService : IStudioService
     public static NullStudioService Instance { get; } = new();
 
     private NullStudioService() { }
+
+    /// <inheritdoc />
+    public IAppStudioService Apps => NullAppStudioService.Instance;
 
     /// <inheritdoc />
     public IEnvironmentProfileService Environments => NullEnvironmentProfileService.Instance;
@@ -98,6 +104,70 @@ internal sealed class NullEnvironmentProfileService : IEnvironmentProfileService
         Task.FromResult(StudioResult<bool>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
     public Task<StudioResult<EnvironmentProfile>> GetDefaultAsync(CancellationToken ct = default) =>
         Task.FromResult(StudioResult<EnvironmentProfile>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+}
+
+internal sealed class NullAppStudioService : IAppStudioService
+{
+    public static NullAppStudioService Instance { get; } = new();
+    private NullAppStudioService() { }
+    public IAppMigrationWorkflow Migrations => NullAppMigrationWorkflow.Instance;
+    public IAppDataWorkflow Data => NullAppDataWorkflow.Instance;
+    public IAppGovernanceWorkflow Governance => NullAppGovernanceWorkflow.Instance;
+    public IAppQuickStartWorkflow QuickStart => NullAppQuickStartWorkflow.Instance;
+    public IAppDeployWorkflow Deploy => NullAppDeployWorkflow.Instance;
+    public IAppCicdWorkflow Cicd => NullAppCicdWorkflow.Instance;
+    public IAppCloudWorkflow Cloud => NullAppCloudWorkflow.Instance;
+    public IScenarioWorkflow Scenarios => NullAppScenarioWorkflow.Instance;
+    public Task<StudioResult<IReadOnlyList<AppDefinition>>> ListAsync(CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<IReadOnlyList<AppDefinition>>.Ok(Array.Empty<AppDefinition>()));
+    public Task<StudioResult<AppDefinition>> GetAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> SaveAsync(AppDefinition app, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> RegisterFromSolutionAsync(string appName, string solutionPath, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<bool>> DeleteAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<bool>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> AddEnvironmentAsync(string appId, AppEnv env, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> RemoveEnvironmentAsync(string appId, string envId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppEnv>> UpdateEnvironmentAsync(string appId, string envId, AppEnv updated, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppEnv>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> SetDatasourceAsync(string appId, string envId, AppDataSource ds, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> RemoveDatasourceAsync(string appId, string envId, string dsName, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<bool>> TestDatasourceAsync(string appId, string envId, string dsName, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<bool>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDashboard>> GetDashboardAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDashboard>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<PromotionResult>> PromoteAsync(string appId, string toEnv, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<PromotionResult>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<EnvironmentPromotion>> PromoteEnvironmentAsync(string appId, string toEnv, PromoteOptions? options = null, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<EnvironmentPromotion>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppProject>> RegisterProjectAsync(string appId, string csprojPath, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppProject>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<List<AppProject>>> ScanAndAddProjectsAsync(string appId, string folderOrSlnPath, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<List<AppProject>>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppProject>> DiscoverEntitiesForProjectAsync(string appId, string projectName, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppProject>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<List<AppProject>>> DiscoverAllEntitiesAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<List<AppProject>>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<List<AppProject>>> ReScanSolutionAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<List<AppProject>>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<AppDefinition>> CloneSolutionAsync(string appId, string newName, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppDefinition>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<string>> FindNearestSolutionAsync(string startPath, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<string>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<ChangeDetection>> DetectChangesAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<ChangeDetection>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<IReadOnlyList<AvailableDatasource>>> ListAvailableDatasourcesAsync(CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<IReadOnlyList<AvailableDatasource>>.Ok(System.Array.Empty<AvailableDatasource>()));
+    public Task<StudioResult<AppConfigOutput>> GenerateAppConfigAsync(string appId, string envId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<AppConfigOutput>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<IReadOnlyList<AppConfigOutput>>> GenerateAllAppConfigsAsync(string appId, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<IReadOnlyList<AppConfigOutput>>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
 }
 
 internal sealed class NullDriverService : IDriverService

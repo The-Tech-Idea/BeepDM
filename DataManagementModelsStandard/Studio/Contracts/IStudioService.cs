@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.AppMap;
+using TheTechIdea.Beep.Studio.Apps;
 using TheTechIdea.Beep.Studio.Deployment;
 using TheTechIdea.Beep.Studio.Driver;
 using TheTechIdea.Beep.Studio.Governance;
@@ -17,21 +19,28 @@ using TheTechIdea.Beep.Studio.Sync;
 namespace TheTechIdea.Beep.Studio.Contracts;
 
 /// <summary>
-/// Top-level facade for the Beep Studio. Composes every lower-level service
-/// (driver, source, schema, migration, sync, governance, manifest, deployment)
-/// behind a single async, platform-agnostic API. UI hosts (Blazor, WinForms,
-/// WPF, Maui) call into this; engine primitives (IMigrationManager, BeepSyncManager,
-/// IBeepAudit, IDMEEditor) are never touched directly from the host.
+/// Top-level facade for the Beep Studio. The Studio is organised around Apps:
+/// an <see cref="AppDefinition"/> owns environments, each owning datasources.
+/// Composes every lower-level service (driver, source, schema, migration, sync,
+/// governance, manifest, deployment) behind a single async, platform-agnostic API.
+/// UI hosts (Blazor, WinForms, WPF, Maui) call into this; engine primitives
+/// (IMigrationManager, BeepSyncManager, IBeepAudit, IDMEEditor) are never touched
+/// directly from the host.
 /// </summary>
 /// <remarks>
 /// This is the **only** type the host UI is expected to depend on. Sub-service
-/// facades (e.g. <see cref="Migrations"/>, <see cref="Sources"/>) are exposed as
-/// properties so the host can take a single dependency in DI and still reach
-/// into any sub-service.
+/// facades are exposed as properties so the host can take a single dependency in
+/// DI and still reach into any sub-service.
 /// </remarks>
 public interface IStudioService
 {
-    /// <summary>Environment profiles (Dev / Test / Staging / Live / Custom).</summary>
+    /// <summary>The App → Environment → Datasource aggregate. This is the base of the
+    /// Studio — everything else operates within an App context. Replaces the old
+    /// flat environment model.</summary>
+    IAppStudioService Apps { get; }
+
+    /// <summary>Environment tier templates (Dev / Test / Staging / Production) that App
+    /// environments are stamped from. Drives the approval policy per tier.</summary>
     IEnvironmentProfileService Environments { get; }
 
     /// <summary>Data-source driver provisioning (Phase 2).</summary>
