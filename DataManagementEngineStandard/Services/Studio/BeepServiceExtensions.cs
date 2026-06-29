@@ -62,12 +62,6 @@ public static class BeepServiceExtensions
         //    implementation for testing.
         services.TryAddSingleton<IStudioService, StudioService>();
 
-        // 2a. The App aggregate — the base of the Studio. Wraps the engine's
-        //     IAppRegistry + DatasourceManagementService. Resolved lazily from
-        //     IBeepService.DMEEditor so registration is order-independent.
-        services.TryAddSingleton<IAppStudioService>(sp => new AppStudioService(
-            sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor));
-
         // 3. Register the sub-service facades. Each one defaults to a stub that
         //    returns HostNotSupported; the real implementations land in their
         //    respective phases (2-7, 9, 10). The sub-service accessors on
