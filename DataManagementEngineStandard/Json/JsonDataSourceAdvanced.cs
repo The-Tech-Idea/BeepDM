@@ -179,8 +179,8 @@ namespace TheTechIdea.Beep.Json
             var rootEntity = Entities.First();
             _dataHelper = new JsonDataHelper(_rootArray, rootEntity, Entities, GetEntityType);
             _asyncHelper = new JsonAsyncDataHelper(_rootJson, Entities, GetEntityType);
-            _crudHelper = new JsonCrudHelper(_rootJson, Entities, GetEntityType);
-            _graphHelper = new JsonGraphHelper(_rootJson, Entities, GetEntityType);
+            _crudHelper = new JsonCrudHelper(_rootJson, Entities);
+            _graphHelper = new JsonGraphHelper(_rootJson, Entities);
         }
 
         private void PersistSchemaIfDirty()

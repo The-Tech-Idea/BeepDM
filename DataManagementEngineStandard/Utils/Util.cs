@@ -75,52 +75,9 @@ namespace TheTechIdea.Beep.Utils
         }
         public TypeCode GetTypeCode(Type dest)
         {
-            TypeCode retval = TypeCode.String;
-            switch (dest.ToString())
-            {
-                case "System.String":
-                    retval = TypeCode.String;
-                    break;
-                case "System.Decimal":
-                    retval = TypeCode.Decimal;
-                    break;
-                case "System.DateTime":
-                    retval = TypeCode.DateTime;
-                    break;
-                case "System.Char":
-                    retval = TypeCode.Char;
-                    break;
-                case "System.Boolean":
-                    retval = TypeCode.Boolean;
-                    break;
-                case "System.DBNull":
-                    retval = TypeCode.DBNull;
-                    break;
-                case "System.Byte":
-                    retval = TypeCode.Byte;
-                    break;
-                case "System.Int16":
-                    retval = TypeCode.Int16;
-                    break;
-                case "System.Double":
-                    retval = TypeCode.Double;
-                    break;
-                case "System.Int32":
-                    retval = TypeCode.Int32;
-                    break;
-                case "System.Int64":
-                    retval = TypeCode.Int64;
-                    break;
-                case "System.Single":
-                    retval = TypeCode.Single;
-                    break;
-                case "System.Object":
-                    retval = TypeCode.Object;
-                    break;
-
-
-            }
-            return retval;
+            var code = Type.GetTypeCode(dest);
+            // Default to String for Object/Empty types (unlike BCL which returns Object)
+            return code == TypeCode.Object || code == TypeCode.Empty ? TypeCode.String : code;
         }
         public bool IsObjectNumeric( object o)
         {
@@ -294,69 +251,56 @@ namespace TheTechIdea.Beep.Utils
                    type == typeof(float) || type == typeof(double) ||
                    type == typeof(decimal);
         }
-        public ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list)
-        {
-            var observableCollection = new ObservableCollection<T>(list);
-            return observableCollection;
-        }
+        public ObservableCollection<T> ConvertToObservableCollection<T>(List<T> list) => new(list);
         public bool AddinInterfaceFilter(Type typeObj, object criteriaObj)
         {
-            if (typeObj.ToString() == criteriaObj.ToString())
-                return true;
-            else
-                return false;
+            return typeObj.ToString() == criteriaObj?.ToString();
         }
         public DataTable CreateDataTableFromFile(string strFilePath)
         {
             DataTable dt = new DataTable();
-            using (StreamReader sr = new StreamReader(strFilePath))
+            using var sr = new StreamReader(strFilePath);
+            string? headerLine = sr.ReadLine();
+            if (string.IsNullOrEmpty(headerLine))
+                return dt;
+
+            string[] headers = headerLine.Split(',');
+            foreach (string header in headers)
+                dt.Columns.Add(header.Trim());
+
+            while (!sr.EndOfStream)
             {
-                string l = sr.ReadLine();
-                if (l != null)
-                {
-                    string[] headers = l.Split(',');
-                    foreach (string header in headers)
-                    {
-                        dt.Columns.Add(header);
-                    }
-                    while (!sr.EndOfStream)
-                    {
-                        string[] rows = sr.ReadLine().Split(',');
-                        DataRow dr = dt.NewRow();
-                        for (int i = 0; i < headers.Length; i++)
-                        {
-                            dr[i] = rows[i];
-                        }
-                        dt.Rows.Add(dr);
-                    }
-
-
-                }
-
+                string? line = sr.ReadLine();
+                if (string.IsNullOrEmpty(line)) continue;
+                string[] rows = line.Split(',');
+                DataRow dr = dt.NewRow();
+                int count = Math.Min(headers.Length, rows.Length);
+                for (int i = 0; i < count; i++)
+                    dr[i] = rows[i].Trim();
+                dt.Rows.Add(dr);
             }
-
-
             return dt;
         }
+
         public DataTable CreateDataTableFromListofStrings(List<string> strings)
         {
             DataTable dt = new DataTable();
+            if (strings == null || strings.Count == 0)
+                return dt;
+
             string[] headers = strings[0].Split(',');
             foreach (string header in headers)
-            {
-                dt.Columns.Add(header);
-            }
-            for (int j = 1; j < strings.Count-1; j++)
+                dt.Columns.Add(header.Trim());
+
+            for (int j = 1; j < strings.Count; j++)
             {
                 string[] rows = strings[j].Split(',');
                 DataRow dr = dt.NewRow();
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    dr[i] = rows[i];
-                }
+                int count = Math.Min(headers.Length, rows.Length);
+                for (int i = 0; i < count; i++)
+                    dr[i] = rows[i].Trim();
                 dt.Rows.Add(dr);
             }
-            
             return dt;
         }
         public Type GetListType(object someList)
@@ -391,109 +335,69 @@ namespace TheTechIdea.Beep.Utils
         }
         public bool ToCSVFile(IList list, string filepath)
         {
-            StreamWriter tw = new StreamWriter(filepath);
-            string WriteValue = "";
-            List<string> ls = new List<string>();
-            if (list == null)
-            {
+            if (list == null || list.Count == 0)
                 return false;
-            }
-            if(list.Count == 0)
-            {
-                return false;
-            }
-            var r1 = list[0];
-            Type tp1 = r1.GetType();
-            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(tp1);
-            //  var myObjectProperties = props.Select(x => x.Name);
-            //Set the first row as your property names
-           
-            for (int i = 0; i < props.Count; i++)
-            {
-                ls.Add(props[i].Name);
-            }
-            WriteValue = string.Join(",", ls);
-            tw.WriteLine(WriteValue);
 
-            foreach (var item in list)
-            {
-                var csvRow = Environment.NewLine;
-                for (int i = 0; i < ls.Count(); i++)
-                {
-                  
-                    var value = props[i].GetValue(item) ?? DBNull.Value;
-                    csvRow += $"{value},";
-                }
-                  
-                csvRow.TrimEnd(',');
-                tw.WriteLine(csvRow);
-            }
+            var itemType = list[0].GetType();
+            var props = TypeDescriptor.GetProperties(itemType);
+            var headers = new List<string>(props.Count);
+            for (int i = 0; i < props.Count; i++)
+                headers.Add(props[i].Name);
+
+            using var tw = new StreamWriter(filepath);
             try
             {
-                tw.Dispose();
-                // File.WriteAllBytes(filepath, Encoding.ASCII.GetBytes(csvFile));
+                tw.WriteLine(string.Join(",", headers));
+
+                foreach (var item in list)
+                {
+                    var values = new string[headers.Count];
+                    for (int i = 0; i < headers.Count; i++)
+                    {
+                        var val = props[i].GetValue(item);
+                        values[i] = val?.ToString() ?? string.Empty;
+                    }
+                    tw.WriteLine(string.Join(",", values));
+                }
                 return true;
             }
             catch (Exception ex)
             {
-                tw.Dispose();
                 DME.ErrorObject.Ex = ex;
                 DME.ErrorObject.Flag = Errors.Failed;
                 return false;
             }
-            
-           
         }
+
         public bool ToCSVFile(DataTable list, string filepath)
         {
-            StreamWriter tw = new StreamWriter(filepath);
-            string WriteValue = "";
-            List<string> ls = new List<string>();
-            if (list == null)
-            {
+            if (list == null || list.Rows.Count == 0)
                 return false;
-            }
-          
-            if (list.Rows.Count == 0)
-            {
-                return false;
-            }
-         
-            foreach (DataColumn item in list.Columns)
-            {
-               ls.Add(item.ColumnName);
-              
-            }
-             WriteValue = string.Join(",", ls);
-            tw.WriteLine(WriteValue);
-            for (int k = 0; k < list.Rows.Count; k++)
-            {
-                var csvRow = Environment.NewLine;
-                for (int i = 0; i < ls.Count(); i++)
-                {
 
-                    var value = list.Rows[k][ls[i]].ToString() ;
-                    csvRow += $"{value},";
-                }
+            var headers = new List<string>(list.Columns.Count);
+            foreach (DataColumn col in list.Columns)
+                headers.Add(col.ColumnName);
 
-                csvRow.TrimEnd(',');
-               tw.WriteLine(csvRow);
-            }
+            using var tw = new StreamWriter(filepath);
             try
             {
-                //  File.WriteAllBytes(filepath, Encoding.ASCII.GetBytes(csvFile));
-                tw.Dispose();
+                tw.WriteLine(string.Join(",", headers));
+
+                foreach (DataRow row in list.Rows)
+                {
+                    var values = new string[headers.Count];
+                    for (int i = 0; i < headers.Count; i++)
+                        values[i] = row[headers[i]]?.ToString() ?? string.Empty;
+                    tw.WriteLine(string.Join(",", values));
+                }
                 return true;
             }
             catch (Exception ex)
             {
-                tw.Dispose();
                 DME.ErrorObject.Ex = ex;
                 DME.ErrorObject.Flag = Errors.Failed;
                 return false;
             }
-
-
         }
         public DataTable ToDataTable(Type tp)
         {
@@ -655,69 +559,6 @@ namespace TheTechIdea.Beep.Utils
             dictionary.Add(propertyName, propertyValue);
 
         }
-        //public List<ExpandoObject> GetExpandoObject(DataTable dt, Type type, EntityStructure enttype)
-        //{
-
-
-        //    string f = "";
-        //    List<ExpandoObject> Records = new List<ExpandoObject>();
-        //    Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
-
-        //    for (int i = 0; i <= enttype.Fields.Count - 1; i++)
-        //    {
-        //        properties.Add(enttype.Fields[i].FieldName, type.GetProperty(enttype.Fields[i].FieldName));
-        //    }
-        //    foreach (DataRow row in dt.Rows)
-        //    {
-        //        //x = TypeHelpers.GetInstance(type);
-        //        // x = Activator.CreateInstance(type);
-        //        var accessor = TypeAccessor.Create(type);
-        //       dynamic x = new ExpandoObject();
-        //       x = convertToExpando(type);
-
-        //        var v = (dynamic)null;
-        //        for (int i = 0; i <= enttype.Fields.Count - 1; i++)
-        //        {
-        //            try
-        //            {
-        //                f = enttype.Fields[i].FieldName + "-" + enttype.Fields[i].Fieldtype + "-" + row[enttype.Fields[i].FieldName];
-        //                try
-        //                {
-        //                    v = Convert.ChangeType(row[enttype.Fields[i].FieldName], Type.GetType(enttype.Fields[i].Fieldtype));
-        //                    if ((row[enttype.Fields[i].FieldName] == null || row[enttype.Fields[i].FieldName] == "")) //&& (v.GetType().ToString()!="System.String")
-        //                    {
-        //                        v = null;
-        //                    }
-
-        //                }
-        //                catch (Exception)
-        //                {
-
-        //                    v = null;
-        //                    //Logger.WriteLog($"Error in Creating Record or Setting Value." + f);
-        //                }
-        //                accessor[x, enttype.Fields[i].FieldName] = v;
-        //                //Dynamic.InvokeSet(x, enttype.Fields[i].FieldName, v);
-        //                //properties[enttype.Fields[i].FieldName].SetValue(x, v, null);
-        //                //  type.GetProperty(enttype.Fields[i].FieldName).SetValue(x, v, null);
-        //                // Logger.WriteLog($"Creating Field and Value." + f);
-        //            }
-        //            catch (Exception ex)
-        //            {
-
-        //                Logger.WriteLog($"Error in Creating Record or Setting Value." + f + ":" + ex.Message);
-        //            }
-
-
-
-        //        }
-        //        Records.Add(x);
-
-        //        //}
-
-        //    }
-        //    return Records;
-        //}
         public  object GetBindingListFromIList(IList inputList, Type itemType, EntityStructure entType)
         {
             Type observableType = typeof(ObservableBindingList<>).MakeGenericType(itemType);
@@ -752,14 +593,21 @@ namespace TheTechIdea.Beep.Utils
                 foreach (DataColumn item in dt.Columns)
                 {
                     string columnName = item.ColumnName.ToLower();
-                    if (row[item.ColumnName] != DBNull.Value && properties.ContainsKey(columnName))
+                    if (row[item.ColumnName] != DBNull.Value && properties.TryGetValue(columnName, out var prop))
                     {
                         string stringValue = row[item.ColumnName].ToString();
-                        Type targetType = Type.GetType(enttype.Fields.FirstOrDefault(p => p.FieldName.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase))?.Fieldtype);
-                        var convertedValue = Convert.ChangeType(row[item.ColumnName], targetType);
                         if (!string.IsNullOrWhiteSpace(stringValue))
                         {
-                            properties[columnName].SetValue(x, convertedValue, null);
+                            var fieldDef = enttype.Fields.FirstOrDefault(p => p.FieldName.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase));
+                            if (fieldDef?.Fieldtype != null)
+                            {
+                                Type? targetType = Type.GetType(fieldDef.Fieldtype);
+                                if (targetType != null)
+                                {
+                                    try { prop.SetValue(x, Convert.ChangeType(row[item.ColumnName], targetType), null); }
+                                    catch { /* skip conversion failures */ }
+                                }
+                            }
                         }
                     }
                 }
@@ -777,9 +625,12 @@ namespace TheTechIdea.Beep.Utils
             List<object> Records = new List<object>();
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
           
-            for (int i = 0; i <= enttype.Fields.Count - 1; i++)
+            for (int i = 0; i < enttype.Fields.Count; i++)
             {
-                properties.Add(enttype.Fields[i].FieldName, type.GetProperty(enttype.Fields[i].FieldName));
+                var fieldName = enttype.Fields[i].FieldName;
+                var prop = type.GetProperty(fieldName);
+                if (prop != null)
+                    properties[fieldName] = prop;
             }
             foreach (DataRow row in dt.Rows)
             {
@@ -791,11 +642,18 @@ namespace TheTechIdea.Beep.Utils
                     if (row[item.ColumnName] != DBNull.Value)
                     {
                         string st = row[item.ColumnName].ToString();
-                        Type tp = Type.GetType(enttype.Fields.Where(p => p.FieldName.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault().Fieldtype);
-                        var v = Convert.ChangeType(row[item.ColumnName],tp);
-                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
+                        if (!string.IsNullOrWhiteSpace(st) && properties.TryGetValue(item.ColumnName, out var prop))
                         {
-                            properties[item.ColumnName].SetValue(x,v, null);
+                            var fieldDef = enttype.Fields.FirstOrDefault(p => p.FieldName.Equals(item.ColumnName, StringComparison.InvariantCultureIgnoreCase));
+                            if (fieldDef != null)
+                            {
+                                Type? tp = Type.GetType(fieldDef.Fieldtype);
+                                if (tp != null)
+                                {
+                                    try { prop.SetValue(x, Convert.ChangeType(row[item.ColumnName], tp), null); }
+                                    catch { /* skip conversion failures */ }
+                                }
+                            }
                         }
                     }
 
@@ -828,119 +686,90 @@ namespace TheTechIdea.Beep.Utils
             Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
             foreach (DataColumn item in dt.Columns)
             {
-                properties.Add(item.ColumnName, type.GetProperty(item.ColumnName));
-                //  properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
+                var prop = type.GetProperty(item.ColumnName);
+                if (prop != null)
+                    properties[item.ColumnName] = prop;
             }
-            //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
-            //{
-            //    properties.Add(enttype.Fields[i].FieldName, type.GetProperty(enttype.Fields[i].FieldName));
-            //}
-            //for (int i = 0; i <= enttype.Fields.Count - 1; i++)
-            //{}
+
             foreach (DataRow row in dt.Rows)
             {
-                // dynamic x = TypeHelpers.GetInstance(type);
                 dynamic x = Activator.CreateInstance(type);
-                //  var v = (dynamic)null;
                 foreach (DataColumn item in dt.Columns)
                 {
-                    if (row[item.ColumnName] != DBNull.Value)
+                    if (row[item.ColumnName] != DBNull.Value && properties.TryGetValue(item.ColumnName, out var prop))
                     {
                         string st = row[item.ColumnName].ToString();
-                        if (!string.IsNullOrEmpty(st) && !string.IsNullOrWhiteSpace(st))
-                        {
-                            properties[item.ColumnName].SetValue(x, row[item.ColumnName], null);
-                        }
+                        if (!string.IsNullOrWhiteSpace(st))
+                            prop.SetValue(x, row[item.ColumnName], null);
                     }
-
                 }
-               
                 Records.Add(x);
             }
             return Records;
         }
         public EntityStructure GetEntityStructure(DataTable tb)
         {
-            int i = 0;
             EntityStructure entityData = new EntityStructure();
             try
             {
-                string sheetname;
-                sheetname = tb.TableName;
-                entityData.EntityName = sheetname;
-                List<EntityField> Fields = new List<EntityField>();
+                entityData.EntityName = tb.TableName;
+                var fields = new List<EntityField>();
                 int y = 0;
-                foreach (DataColumn field in tb.Columns)
+                foreach (DataColumn col in tb.Columns)
                 {
-                    EntityField f = new EntityField();
-                        f=SetField(field, f);
-                    f.FieldIndex = y;
-                    f.EntityName = sheetname;
-                    Fields.Add(f);
-                    y += 1;
-
+                    EntityField f = SetField(col, new EntityField());
+                    f.FieldIndex = y++;
+                    f.EntityName = tb.TableName;
+                    fields.Add(f);
                 }
-
-                i += 1;
                 entityData.Fields = new List<EntityField>();
-                entityData.Fields.AddRange(Fields);
-
+                entityData.Fields.AddRange(fields);
             }
-            catch (Exception ex)
+            catch
             {
-               // DME.AddLogMessage("Error", "Could not Create Entity Structure" + ex.Message, DateTime.Now, -1, "", Errors.Failed);
                 return null;
             }
-
             return entityData;
-
-
         }
         public bool Download(string url, string downloadFileName, string downloadFilePath)
         {
-            string downloadfile = downloadFilePath + downloadFileName;
-            string httpPathWebResource = null;
-            bool ifFileDownoadedchk = false;
-            ifFileDownoadedchk = false;
-            WebClient myWebClient = new WebClient();
-            httpPathWebResource = url + downloadFileName;
-            myWebClient.DownloadFile(httpPathWebResource, downloadfile);
-            ifFileDownoadedchk = true;
-            return ifFileDownoadedchk;
+            try
+            {
+                var downloadFile = Path.Combine(downloadFilePath, downloadFileName);
+                var requestUri = new Uri(new Uri(url.TrimEnd('/') + "/"), downloadFileName);
+
+                using var client = new WebClient();
+                client.DownloadFile(requestUri, downloadFile);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                DME?.AddLogMessage("Util", $"Download failed: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                return false;
+            }
         }
         public Type GetTypeFromStringValue(string str)
         {
-            byte byteValue;
-            int intValue;
-            double doubleValue;
-            char charValue;
-            bool boolValue;
-            float floatValue;
-            DateTime dateValue;
-            decimal decimalValue;
-            string strvalue = str;
-            long longValue;
-            // Place checks higher if if-else statement to give higher priority to type.
-            if (int.TryParse(str, out intValue))
+            // Place checks in priority order for type detection.
+            if (int.TryParse(str, out var intValue))
                 return intValue.GetType();
-            else if (double.TryParse(str, out doubleValue))
+            if (double.TryParse(str, out var doubleValue))
                 return doubleValue.GetType();
-            else if (char.TryParse(str, out charValue))
+            if (char.TryParse(str, out var charValue))
                 return charValue.GetType();
-            else if (bool.TryParse(str, out boolValue))
+            if (bool.TryParse(str, out var boolValue))
                 return boolValue.GetType();
-            else if (DateTime.TryParse(str, out dateValue))
+            if (DateTime.TryParse(str, out var dateValue))
                 return dateValue.GetType();
-            else if (decimal.TryParse(str, out decimalValue))
+            if (decimal.TryParse(str, out var decimalValue))
                 return decimalValue.GetType();
-            else if (long.TryParse(str, out longValue))
+            if (long.TryParse(str, out var longValue))
                 return longValue.GetType();
-            else if (byte.TryParse(str, out byteValue))
+            if (byte.TryParse(str, out var byteValue))
                 return byteValue.GetType();
-            else if (float.TryParse(str, out floatValue))
+            if (float.TryParse(str, out var floatValue))
                 return floatValue.GetType();
-            else
-                return strvalue.GetType();
+            return typeof(string);
         }
         public Type MakeGenericListofType(string typestring)
         {
@@ -968,68 +797,13 @@ namespace TheTechIdea.Beep.Utils
             return type.MakeGenericType(parameters);
             // return listType.MakeGenericType(types);
         }
-        public EntityStructure GetEntityStructureFromType<T>()
-        {
-            EntityStructure entity = new EntityStructure();
-            Type entityType = typeof(T);
+        public EntityStructure GetEntityStructureFromType<T>() => GetEntityStructureFromType(typeof(T));
 
-            if (entity.Fields.Count == 0)
-            {
-                // Iterate over the properties of the type to create fields
-                foreach (PropertyInfo propInfo in entityType.GetProperties())
-                {
-                    EntityField field = new EntityField
-                    {
-                       FieldName = propInfo.Name,
-                        Fieldtype = propInfo.PropertyType.FullName
-                    };
-
-                    // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
-                    // might not be directly available or applicable for every property type.
-                    // You'll need to set these based on the specific needs or defaults.
-
-                    if (field.IsKey)
-                    {
-                        entity.PrimaryKeys.Add(field);
-                    }
-
-                    entity.Fields.Add(field);
-                }
-            }
-
-            return entity;
-        }
         public EntityStructure GetEntityStructureFromList<T>(List<T> list)
         {
-            EntityStructure entity = new EntityStructure();
-
-            // Check if the list is empty. If it's empty, we can still get the structure from the type T.
             if (list == null || !list.Any())
-            {
                 return GetEntityStructureFromType<T>();
-            }
-
-            // Get the type of the items in the list
-            Type itemType = typeof(T);
-
-            // Iterate over the properties of the type to create fields
-            foreach (PropertyInfo propInfo in itemType.GetProperties())
-            {
-                EntityField field = new EntityField
-                {
-                   FieldName = propInfo.Name,
-                    Fieldtype = propInfo.PropertyType.ToString(),
-                    // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
-                    // might need to be inferred or set to default values as they are not directly available from PropertyInfo
-                };
-
-                // Additional logic to determine if the field is a key, etc.
-                // This might involve custom attributes or conventions
-
-                entity.Fields.Add(field);
-            }
-
-            return entity;
+            return GetEntityStructureFromType(typeof(T));
         }
         public EntityStructure GetEntityStructureFromType(Type type)
         {
@@ -1044,276 +818,53 @@ namespace TheTechIdea.Beep.Utils
             }
             return entity;
         }
+        /// <summary>Resolves a CLR type to its DbFieldCategory. Shared by all SetField overloads.</summary>
+        private static DbFieldCategory ResolveFieldCategory(Type type)
+        {
+            if (type == typeof(string)) return DbFieldCategory.String;
+            if (type == typeof(int) || type == typeof(long) || type == typeof(float) || type == typeof(double) || type == typeof(decimal))
+                return DbFieldCategory.Numeric;
+            if (type == typeof(DateTime)) return DbFieldCategory.Date;
+            if (type == typeof(bool)) return DbFieldCategory.Boolean;
+            if (type == typeof(byte[])) return DbFieldCategory.Binary;
+            if (type == typeof(Guid)) return DbFieldCategory.Guid;
+            if (type == typeof(JsonDocument)) return DbFieldCategory.Json;
+            if (type == typeof(XmlDocument)) return DbFieldCategory.Xml;
+            if (type == typeof(decimal)) return DbFieldCategory.Currency;
+            if (type.IsEnum) return DbFieldCategory.Enum;
+            return DbFieldCategory.String;
+        }
+
         private EntityField SetField(PropertyInfo propInfo, EntityField entity)
         {
-            DbFieldCategory fldcat = DbFieldCategory.String;
-            if (propInfo.PropertyType == typeof(string))
+            return new EntityField
             {
-                fldcat = DbFieldCategory.String;
-            }
-            else if (propInfo.PropertyType == typeof(int) || propInfo.PropertyType == typeof(long) || propInfo.PropertyType == typeof(float) || propInfo.PropertyType == typeof(double) || propInfo.PropertyType == typeof(decimal))
-            {
-                fldcat = DbFieldCategory.Numeric;
-            }
-            else if (propInfo.PropertyType == typeof(DateTime))
-            {
-                fldcat = DbFieldCategory.Date;
-            }
-            else if (propInfo.PropertyType == typeof(bool))
-            {
-                fldcat = DbFieldCategory.Boolean;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(Guid))
-            {
-                fldcat = DbFieldCategory.Guid;
-            }
-            else if (propInfo.PropertyType == typeof(JsonDocument))
-            {
-                fldcat = DbFieldCategory.Json;
-            }
-            else if (propInfo.PropertyType == typeof(XmlDocument))
-            {
-                fldcat = DbFieldCategory.Xml;
-            }
-            else if (propInfo.PropertyType == typeof(decimal))
-            {
-                fldcat = DbFieldCategory.Currency;
-            }
-            else if (propInfo.PropertyType.IsEnum)
-            {
-                fldcat = DbFieldCategory.Enum;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            EntityField field = new EntityField
-            {
-               FieldName = propInfo.Name,
+                FieldName = propInfo.Name,
                 Fieldtype = propInfo.PropertyType.FullName,
-               FieldCategory = fldcat
+                FieldCategory = ResolveFieldCategory(propInfo.PropertyType)
             };
-            // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
-            // might not be directly available or applicable for every property type.
-            // You'll need to set these based on the specific needs or defaults.
-
-            return field;
         }
         private EntityField SetField(DataColumn col, EntityField entity)
         {
-            DbFieldCategory fldcat = DbFieldCategory.String;
-            if (col.DataType != null) {
-                // set fldcat based on col.DataType using all posibilties
-                if(col.DataType == typeof(string))
-                {
-                    fldcat = DbFieldCategory.String;
-                }
-                else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(float) || col.DataType == typeof(double) || col.DataType == typeof(decimal))
-                {
-                    fldcat = DbFieldCategory.Numeric;
-                }
-                else if (col.DataType == typeof(DateTime))
-                {
-                    fldcat = DbFieldCategory.Date;
-                }
-                else if (col.DataType == typeof(bool))
-                {
-                    fldcat = DbFieldCategory.Boolean;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(Guid))
-                {
-                    fldcat = DbFieldCategory.Guid;
-                }
-                else if (col.DataType == typeof(JsonDocument))
-                {
-                    fldcat = DbFieldCategory.Json;
-                }
-                else if (col.DataType == typeof(XmlDocument))
-                {
-                    fldcat = DbFieldCategory.Xml;
-                }
-                else if (col.DataType == typeof(decimal))
-                {
-                    fldcat = DbFieldCategory.Currency;
-                }
-                else if (col.DataType.IsEnum)
-                {
-                    fldcat = DbFieldCategory.Enum;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-                else if (col.DataType == typeof(byte[]))
-                {
-                    fldcat = DbFieldCategory.Binary;
-                }
-            }
-
-            EntityField field = new EntityField
+            return new EntityField
             {
-                EntityName=col.Table.TableName,
-               FieldName = col.ColumnName,
+                EntityName = col.Table?.TableName,
+                FieldName = col.ColumnName,
                 Fieldtype = col.DataType.ToString(),
-               FieldCategory = fldcat,
+                FieldCategory = col.DataType != null ? ResolveFieldCategory(col.DataType) : DbFieldCategory.String,
                 ValueRetrievedFromParent = false,
                 FieldIndex = col.Ordinal
-
             };
-            // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
-            // might not be directly available or applicable for every property type.
-            // You'll need to set these based on the specific needs or defaults.
-
-            return field;
         }
-        private EntityStructure SetField(PropertyInfo propInfo,EntityStructure entity)
+        private EntityStructure SetField(PropertyInfo propInfo, EntityStructure entity)
         {
-            DbFieldCategory fldcat = DbFieldCategory.String;
-            if (propInfo.PropertyType == typeof(string))
+            var field = new EntityField
             {
-                fldcat = DbFieldCategory.String;
-            }
-            else if (propInfo.PropertyType == typeof(int) || propInfo.PropertyType == typeof(long) || propInfo.PropertyType == typeof(float) || propInfo.PropertyType == typeof(double) || propInfo.PropertyType == typeof(decimal))
-            {
-                fldcat = DbFieldCategory.Numeric;
-            }
-            else if (propInfo.PropertyType == typeof(DateTime))
-            {
-                fldcat = DbFieldCategory.Date;
-            }
-            else if (propInfo.PropertyType == typeof(bool))
-            {
-                fldcat = DbFieldCategory.Boolean;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(Guid))
-            {
-                fldcat = DbFieldCategory.Guid;
-            }
-            else if (propInfo.PropertyType == typeof(JsonDocument))
-            {
-                fldcat = DbFieldCategory.Json;
-            }
-            else if (propInfo.PropertyType == typeof(XmlDocument))
-            {
-                fldcat = DbFieldCategory.Xml;
-            }
-            else if (propInfo.PropertyType == typeof(decimal))
-            {
-                fldcat = DbFieldCategory.Currency;
-            }
-            else if (propInfo.PropertyType.IsEnum)
-            {
-                fldcat = DbFieldCategory.Enum;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            else if (propInfo.PropertyType == typeof(byte[]))
-            {
-                fldcat = DbFieldCategory.Binary;
-            }
-            EntityField field = new EntityField
-            {
-               FieldName = propInfo.Name,
+                FieldName = propInfo.Name,
                 Fieldtype = propInfo.PropertyType.FullName,
-               FieldCategory = fldcat
+                FieldCategory = ResolveFieldCategory(propInfo.PropertyType)
             };
-            // Additional attributes like Size1, IsAutoIncrement, AllowDBNull, and IsUnique
-            // might not be directly available or applicable for every property type.
-            // You'll need to set these based on the specific needs or defaults.
-            if (field.IsKey)
-            {
-                entity.PrimaryKeys.Add(field);
-            }
+            if (field.IsKey) entity.PrimaryKeys.Add(field);
             entity.Fields.Add(field);
             return entity;
         }
@@ -1339,49 +890,8 @@ namespace TheTechIdea.Beep.Utils
                     try
                     {
                         x.FieldName = item.ColumnName;
-                        x.Fieldtype = item.DataType.ToString(); //"ColumnSize"
-                        x.FieldCategory = DbFieldCategory.String;
-                        if (item.DataType == typeof(string))
-                        {
-                            x.FieldCategory = DbFieldCategory.String;
-                        }
-                        else if (item.DataType == typeof(int) || item.DataType == typeof(long) || item.DataType == typeof(float) || item.DataType == typeof(double) || item.DataType == typeof(decimal))
-                        {
-                            x.FieldCategory = DbFieldCategory.Numeric;
-                        }
-                        else if (item.DataType == typeof(DateTime))
-                        {
-                            x.FieldCategory = DbFieldCategory.Date;
-                        }
-                        else if (item.DataType == typeof(bool))
-                        {
-                            x.FieldCategory = DbFieldCategory.Boolean;
-                        }
-                        else if (item.DataType == typeof(byte[]))
-                        {
-                            x.FieldCategory = DbFieldCategory.Binary;
-                        }
-                        else if (item.DataType == typeof(Guid))
-                        {
-                            x.FieldCategory = DbFieldCategory.Guid;
-                        }
-                        else if (item.DataType == typeof(JsonDocument))
-                        {
-                            x.FieldCategory = DbFieldCategory.Json;
-                        }
-                        else if (item.DataType == typeof(XmlDocument))
-                        {
-                            x.FieldCategory = DbFieldCategory.Xml;
-                        }
-                        else if (item.DataType == typeof(decimal))
-                        {
-                            x.FieldCategory = DbFieldCategory.Currency;
-                        }
-                        else if (item.DataType.IsEnum)
-                        {
-                            x.FieldCategory = DbFieldCategory.Enum;
-                        }
-                       
+                        x.Fieldtype = item.DataType.ToString();
+                        x.FieldCategory = ResolveFieldCategory(item.DataType);
                         x.Size1 = item.MaxLength;
                         try
                         {
@@ -1479,144 +989,54 @@ namespace TheTechIdea.Beep.Utils
         }
         public DataRow ConvertItemClassToDataRow(EntityStructure ent)
         {
-            DataTable dt = new DataTable();
-            DataRow dr;
+            var dt = new DataTable();
             foreach (EntityField col in ent.Fields)
             {
-                DataColumn co=dt.Columns.Add(col.FieldName.ToUpper());
-                co.DataType = Type.GetType(col.Fieldtype);
-
+                var co = dt.Columns.Add(col.FieldName.ToUpper());
+                var fieldType = Type.GetType(col.Fieldtype);
+                if (fieldType != null)
+                    co.DataType = fieldType;
             }
-            
-             dr= dt.NewRow();
-            return dr;
+            return dt.NewRow();
         }
-        public List<EntityField> GetFieldFromGeneratedObject(object dt, Type tp=null)
+        public List<EntityField> GetFieldFromGeneratedObject(object dt, Type? tp = null)
         {
-            List<EntityField> retval = new List<EntityField>();
             DataRow dr;
-            DataRowView dv;
-            DataTable tb = new DataTable();
-            if (dt.GetType().FullName == "System.Data.DataRowView")
-            {
-                dv = (DataRowView)dt;
+            if (dt is DataRowView dv)
                 dr = dv.Row;
-             
-            }
-            else
-            if (dt.GetType().FullName == "System.Data.DataRow")
+            else if (dt is DataRow row)
+                dr = row;
+            else if (dt is DataTable table)
+                dr = table.NewRow();
+            else if (tp != null)
             {
-                dr = (DataRow)dt;
-            }
-            else
-            if(dt.GetType().FullName == "System.Data.DataTable")
-            {
-                tb = (DataTable) dt;
+                var tb = new DataTable();
+                foreach (PropertyInfo pr in tp.GetProperties())
+                    tb.Columns.Add(pr.Name, pr.PropertyType);
                 dr = tb.NewRow();
             }
             else
-            {
-               
-                foreach (PropertyInfo pr in tp.GetProperties() )
-                {
-                 
-                    DataColumn co = tb.Columns.Add(pr.Name);
-                    co.DataType = pr.PropertyType;
+                return new List<EntityField>();
 
-                   
-                }
-                dr = tb.NewRow();
-            }
+            var retval = new List<EntityField>();
             foreach (DataColumn item in dr.Table.Columns)
             {
-                EntityField f = new EntityField();
-                f.FieldName = item.ColumnName;
-                f.Fieldtype = item.DataType.FullName;
-                f.FieldCategory = DbFieldCategory.String;
-                if (item.DataType == typeof(string))
+                var f = new EntityField
                 {
-                    f.FieldCategory = DbFieldCategory.String;
-                }
-                else if (item.DataType == typeof(int) || item.DataType == typeof(long) || item.DataType == typeof(float) || item.DataType == typeof(double) || item.DataType == typeof(decimal))
-                {
-                    f.FieldCategory = DbFieldCategory.Numeric;
-                }
-                else if (item.DataType == typeof(DateTime))
-                {
-                    f.FieldCategory = DbFieldCategory.Date;
-                }
-                else if (item.DataType == typeof(bool))
-                {
-                    f.FieldCategory = DbFieldCategory.Boolean;
-                }
-                else if (item.DataType == typeof(byte[]))
-                {
-                    f.FieldCategory = DbFieldCategory.Binary;
-                }
-                else if (item.DataType == typeof(Guid))
-                {
-                    f.FieldCategory = DbFieldCategory.Guid;
-                }
-                else if (item.DataType == typeof(JsonDocument))
-                {
-                    f.FieldCategory = DbFieldCategory.Json;
-                }
-                else if (item.DataType == typeof(XmlDocument))
-                {
-                    f.FieldCategory = DbFieldCategory.Xml;
-                }
-                else if (item.DataType == typeof(decimal))
-                {
-                    f.FieldCategory = DbFieldCategory.Currency;
-                }
-                else if (item.DataType.IsEnum)
-                {
-                    f.FieldCategory = DbFieldCategory.Enum;
-                }
-              
-
-                try
-                {
-                    f.IsAutoIncrement = item.AutoIncrement;
-                }
-                catch (Exception)
-                {
-
-                }
-                try
-                {
-                    f.AllowDBNull = item.AllowDBNull;
-                }
-                catch (Exception)
-                {
-
-
-                }
-               
-                try
-                {
-                    f.Size1 =item.MaxLength;
-                }
-                catch (Exception)
-                {
-
-                }
-                
-                try
-                {
-                    f.IsUnique =item.Unique;
-                }
-                catch (Exception)
-                {
-
-                }
+                    FieldName = item.ColumnName,
+                    Fieldtype = item.DataType.FullName,
+                    FieldCategory = ResolveFieldCategory(item.DataType)
+                };
+                try { f.IsAutoIncrement = item.AutoIncrement; } catch { }
+                try { f.AllowDBNull = item.AllowDBNull; } catch { }
+                try { f.Size1 = item.MaxLength; } catch { }
+                try { f.IsUnique = item.Unique; } catch { }
                 retval.Add(f);
             }
             return retval;
         }
-        public  Type GetEntityType(IDMEEditor DMEEditor, string EntityName,List<EntityField> Fields)
+        public Type GetEntityType(IDMEEditor DMEEditor, string EntityName, List<EntityField> Fields)
         {
-            
             DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
             return DMTypeBuilder.MyType;
         }
@@ -1624,66 +1044,26 @@ namespace TheTechIdea.Beep.Utils
         {
             return DMTypeBuilder.CreateNewObject(DMEEditor, EntityName, EntityName, Fields);
         }
-        public DataRow GetDataRowFromobject(string EntityName, Type enttype,object UploadDataRow, EntityStructure DataStruct)
+        public DataRow GetDataRowFromobject(string EntityName, Type enttype, object UploadDataRow, EntityStructure DataStruct)
         {
-            DataRow dr=null ;
-            dynamic result = null;
-              var ti = Activator.CreateInstance(enttype);
-            // ICustomTypeDescriptor, IEditableObject, IDataErrorInfo, INotifyPropertyChanged
-            if (UploadDataRow.GetType().FullName == "System.Data.DataRowView")
-            {
-                DataRowView dv = (DataRowView)UploadDataRow;
+            DataRow dr;
+            if (UploadDataRow is DataRowView dv)
                 dr = dv.Row;
-
-            }
-            else
-            if (UploadDataRow.GetType().FullName == "System.Data.DataRow")
-            {
-                dr = (DataRow)UploadDataRow;
-            }
+            else if (UploadDataRow is DataRow row)
+                dr = row;
             else
             {
                 dr = ConvertItemClassToDataRow(DataStruct);
                 foreach (EntityField col in DataStruct.Fields)
                 {
+                    object? result = DBNull.Value;
                     try
                     {
-                        PropertyInfo GetPropAInfo = UploadDataRow.GetType().GetProperty(col.FieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
-
-                        //if (GetPropAInfo.GetValue(UploadDataRow) != System.DBNull.Value)
-                        //{
-                        PropertyInfo PropAInfo = enttype.GetProperty(col.FieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
-                        if (GetPropAInfo != null && PropAInfo !=null)
-                        {
-                            result = GetPropAInfo.GetValue(UploadDataRow);
-
-
-                        }
+                        var prop = UploadDataRow.GetType().GetProperty(col.FieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+                        if (prop != null)
+                            result = prop.GetValue(UploadDataRow) ?? DBNull.Value;
                     }
-                    catch (Exception ex)
-                    {
-
-                        result = DBNull.Value;
-                    }
-                   
-                    if (result == null)
-                    {
-                        result = DBNull.Value;
-                    }
-                    //if (result != null && result != System.DBNull.Value)
-                    //{
-                    //    if (col.Fieldtype.Contains("Date"))
-                    //    {
-
-                    //        DateTime? dt = (DateTime)result;
-                    //        if (dt == DateTime.MinValue || dt == DateTime.MaxValue)
-                    //        {
-                    //            result = DBNull.Value;
-                    //        }
-
-                    //    }
-                    //}
-
+                    catch { }
                     dr[col.FieldName] = result;
                 }
             }
@@ -1777,29 +1157,6 @@ namespace TheTechIdea.Beep.Utils
             try
             {
                 PropertyInfo SrcPropAInfo = sourceobj.GetType().GetProperty(FieldName);
-                //dynamic v = Convert.ChangeType(value, SrcPropAInfo.PropertyType);
-                int v;
-                string vs;
-                DateTime vd;
-                Type valtype=value.GetType();
-                Type rectype= SrcPropAInfo.GetType();
-                //if (valtype == typeof(System.Int16)|| valtype == typeof(System.Int32) || valtype == typeof(System.Int64))
-                //{
-                //     v = (int)value;
-                //    SrcPropAInfo.SetValue(v, sourceobj, null);
-
-                //}
-                //else if (valtype == typeof(System.String))
-                //{
-                //     vs = (string)value;
-                //    SrcPropAInfo.SetValue(vs, sourceobj, null);
-
-                //}
-                //else if (valtype == typeof(System.DateTime))
-                //{
-                //    vd = (DateTime)value;
-                //    SrcPropAInfo.SetValue(vd, sourceobj, null);
-                //}
                 if (SrcPropAInfo != null)
                 {
                     Type t = Nullable.GetUnderlyingType(SrcPropAInfo.PropertyType) ?? SrcPropAInfo.PropertyType;

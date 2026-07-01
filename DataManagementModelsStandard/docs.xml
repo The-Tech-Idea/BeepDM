@@ -14060,6 +14060,44 @@
             Per-entity import report.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallConfig">
+            <summary>
+            Complete configuration for a Beep application installation.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallComponent">
+            <summary>Selectable feature in the installer.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.FileCopyOperation">
+            <summary>File copy definition for installation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.RegistryOperation">
+            <summary>Registry key/value operation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.ShortcutDefinition">
+            <summary>Shortcut/link definition.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.EnvironmentVariableOp">
+            <summary>Environment variable operation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Prerequisite">
+            <summary>Required prerequisite for installation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.UninstallManifest">
+            <summary>Record of all items installed for clean uninstall.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallerBranding">
+            <summary>Branding configuration for the installer UI.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.AppLanguage">
+            <summary>Represents a language supported by the application.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.TranslationString">
+            <summary>Represents a single translatable string key-value pair for a specific language.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.TranslationCategory">
+            <summary>Category grouping for translation strings.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Logger.IDMLogger">
             <summary>
             Provides a comprehensive logging interface for the application.

@@ -11,7 +11,7 @@ namespace TheTechIdea.Beep.Json.Helpers
     {
         private readonly JToken _root;
         private readonly List<EntityStructure> _entities;
-        public JsonGraphHelper(JToken root, List<EntityStructure> entities, Func<string, Type> resolver)
+        public JsonGraphHelper(JToken root, List<EntityStructure> entities)
         {
             _root = root;
             _entities = entities;

@@ -40982,6 +40982,219 @@
             <param name="parameters">Parameters for the operation</param>
             <returns>Tuple with validation result and error message</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.ConfigManager">
+            <summary>
+            Persists and loads installer configurations as human-readable JSON.
+            Supports variable substitution (%InstallPath%, %ProgramFiles%, etc.).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.Save(TheTechIdea.Beep.Installer.InstallConfig,System.String)">
+            <summary>Saves an InstallConfig to a JSON file.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.Load(System.String)">
+            <summary>Loads an InstallConfig from a JSON file. Returns null with error message on failure.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.Validate(TheTechIdea.Beep.Installer.InstallConfig)">
+            <summary>Validates an InstallConfig and returns warnings.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.ExpandVariables(System.String)">
+            <summary>Expands %Variable% patterns in a path.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.GenerateFromDirectory(System.String,System.String,System.String,System.String)">
+            <summary>Generates a fresh config with defaults for a given directory.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallConditionEvaluator">
+            <summary>
+            Evaluates installation conditions for conditional components.
+            Supports OS version, architecture, registry checks, file existence, and custom commands.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallHelpers">
+            <summary>Shared install utilities: hash verification, restart manager, firewall, restore point, file associations, env broadcast.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.ComputeFileHash(System.String)">
+            <summary>Computes SHA256 hash of a file. Returns null on error.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.VerifyFileHash(System.String,System.String)">
+            <summary>Verifies a file matches the expected SHA256 hash.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.ScheduleFileForRestart(System.String,System.String)">
+            <summary>
+            Schedules a file to be replaced/removed on next reboot.
+            Uses MoveFileEx with MOVEFILE_DELAY_UNTIL_REBOOT.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.IsFileLocked(System.String)">
+            <summary>Checks if a file is currently locked by another process.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.CreateSystemRestorePoint(System.String)">
+            <summary>Creates a Windows System Restore point before installation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.AddFirewallRule(System.String,System.String,System.String,System.String)">
+            <summary>Adds a Windows Firewall inbound rule.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RemoveFirewallRule(System.String)">
+            <summary>Removes a Windows Firewall rule.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RegisterFileAssociation(System.String,System.String,System.String,System.String,System.String)">
+            <summary>Registers a file extension association with an application.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.UnregisterFileAssociation(System.String,System.String)">
+            <summary>Removes a file extension association.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.BroadcastEnvironmentChange">
+            <summary>Broadcasts environment variable changes to the system.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.GetRegistryRoot(System.Boolean)">
+            <summary>Gets the appropriate registry root for the install scope.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.GetDefaultInstallPath(System.String,System.Boolean)">
+            <summary>Gets the default install path for the given scope.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallLogger">
+            <summary>
+            File-based structured logger for installation operations.
+            Writes to %TEMP%\Beep_Install_{timestamp}.log and copies to install dir on completion.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.PauseResumeManager">
+            <summary>
+            Provides pause/resume capability for long installations.
+            Integrates with SetupCheckpointStore for persistent state.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.PauseResumeManager.Pause(System.String,System.String,System.Int32)">
+            <summary>Pauses the installation at the current stage.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.PauseResumeManager.Resume">
+            <summary>Resumes the installation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.PauseResumeManager.WaitWhilePaused(System.Threading.CancellationToken)">
+            <summary>Blocks until resume is called. Returns false if cancelled.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.PauseResumeManager.LoadState(System.String)">
+            <summary>Loads a previously saved state. Returns null if no state exists.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.PauseResumeManager.ClearState">
+            <summary>Deletes the saved state file (call on successful completion).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.RollbackManager">
+            <summary>
+            Transactional rollback manager. Each install operation registers a revert action.
+            On failure, actions are executed in reverse order to undo the installation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterFileCreated(System.String)">
+            <summary>Register a file that was copied (revert: delete it).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterDirectoryCreated(System.String)">
+            <summary>Register a directory that was created (revert: delete if empty).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterRegistryWrite(System.String,System.String)">
+            <summary>Register a registry value that was written (revert: delete value).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterShortcutCreated(System.String)">
+            <summary>Register a shortcut that was created (revert: delete .lnk).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.Rollback">
+            <summary>Executes all revert actions in reverse order. Returns number of actions rolled back.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.Commit">
+            <summary>Clear all pending actions (call on successful completion).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.DownloadOnDemandStep">
+            <summary>Downloads components on-demand during installation with progress.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.ComRegistrationStep">
+            <summary>Registers/unregisters COM components.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.ScheduledTaskStep">
+            <summary>Creates/removes Windows Scheduled Tasks.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.BootstrapperStep">
+            <summary>
+            Downloads and silently installs prerequisite packages in sequence.
+            Each bootstrapper item has a detection command, download URL, and silent install args.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.ConfigGenerationStep">
+            <summary>Generates configuration files (appsettings.json, connection strings) from templates.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.CustomActionStep">
+            <summary>
+            Executes custom actions (scripts, executables) at defined install points.
+            Actions are read from context.Properties["CustomActions"] filtered by timing.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.DirectoryCreateStep">
+            <summary>
+            Creates the installation directory structure. Reads paths from context properties.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.FileAssociationStep">
+            <summary>Registers/unregisters file extension associations.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.FileCopyStep">
+            <summary>
+            Copies installation files with per-file progress reporting.
+            Reads <see cref="T:TheTechIdea.Beep.Installer.InstallConfig"/> from context properties.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.FirewallStep">
+            <summary>Adds/removes Windows Firewall rules for the application.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.FontInstallStep">
+            <summary>Installs/uninstalls fonts to the Windows Fonts directory.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.CertificateInstallStep">
+            <summary>Installs/uninstalls certificates to the Windows certificate store.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.PrerequisiteCheckStep">
+            <summary>
+            Validates system prerequisites: OS version, .NET runtime, admin rights, disk space.
+            Optionally downloads and silently installs missing prerequisites.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.RegistryWriteStep">
+            <summary>Writes registry entries for the installation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.ServiceInstallStep">
+            <summary>Installs/uninstalls Windows Services.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.ShortcutCreateStep">
+            <summary>Creates Windows shortcuts (.lnk files) for desktop, start menu, and startup.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.SystemRestoreStep">
+            <summary>Creates a Windows System Restore point before installation begins.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.UninstallStep">
+            <summary>
+            Reads the install-manifest.json, reverses all install operations, and removes the application.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.VerifyInstallStep">
+            <summary>Verifies the installation: checks files exist, validates manifest, reports results.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.UpgradeEngine">
+            <summary>
+            Handles version detection, backup, and upgrade migration for existing installations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.DetectExisting(System.String)">
+            <summary>Detects an existing installation and returns its version and path, or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.Backup(System.String,System.Threading.CancellationToken)">
+            <summary>Backs up the existing installation to a .backup directory.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.RestoreFromBackup(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Restores from backup if upgrade fails.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.IsNewer(System.String,System.String)">
+            <summary>Compares two version strings. Returns true if newVersion is greater.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.MigrateUserConfig(System.String,System.String)">
+            <summary>Migrates user configuration files from old install to new.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.JsonLoaderService.IEnhancedJsonLoader">
             <summary>
             Enhanced interface for JSON loading and saving operations
@@ -41074,6 +41287,56 @@
             </summary>
             <param name="obj">The JSON JToken to Check.</param>
             <returns>The string type name .</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Json.Helpers.JsonCrudHelper">
+            <summary>
+            CRUD operations for JSON-backed entities. Operates on a shared JToken root
+            and resolves entity paths via JsonPathNavigator.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonCrudHelper.Insert(System.String,System.Object)">
+            <summary>Inserts a record into the target entity's JSON array.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonCrudHelper.Update(System.String,System.Object)">
+            <summary>Updates a record matched by primary key.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonCrudHelper.Delete(System.String,TheTechIdea.Beep.Report.AppFilter)">
+            <summary>Deletes records matching a key filter.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonCrudHelper.EnsureSyntheticKey(TheTechIdea.Beep.DataBase.EntityStructure,Newtonsoft.Json.Linq.JObject)">
+            <summary>Generates a synthetic GUID primary key if the entity's PK is a string and is missing.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Json.Helpers.JsonSchemaPersistenceHelper">
+            <summary>
+            Tracks known entity fields and persists schema changes when new fields are discovered.
+            Thread-safe via consistent locking on all mutable state access.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Json.Helpers.JsonSharedUtils">
+            <summary>
+            Shared static utilities for JSON helper classes.
+            Eliminates duplicated ConvertToken, InferClrType, and property-map building logic.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonSharedUtils.ConvertToken(Newtonsoft.Json.Linq.JToken,System.Type)">
+            <summary>
+            Converts a JToken value to the target CLR type. Handles $oid unwrapping, nulls, and arrays.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonSharedUtils.PrimitiveOrString(Newtonsoft.Json.Linq.JToken)">
+            <summary>
+            Converts a JToken to its primitive representation (for graph hydration).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonSharedUtils.InferClrType(Newtonsoft.Json.Linq.JToken)">
+            <summary>
+            Infers a CLR type string from a JToken value. Used for schema field type detection.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.Helpers.JsonSharedUtils.BuildPropertyMap(System.Type,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Builds a case-insensitive property-name-to-PropertyInfo map for a given type and entity structure.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Json.JsonDataSource">
             <summary>
@@ -41429,6 +41692,68 @@
             <summary>
             Scans the current JSON data for an entity and adds any missing fields to its EntityStructure.
             Marks schema as dirty so it will be persisted on Commit/Close.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Json.JsonMultiFileDataSource">
+             <summary>
+             Multi-file JSON data source that treats each .json file in a directory as a separate entity.
+             Like tables in an RDBMS, each file is an independent entity with its own schema, data, and CRUD operations.
+            
+             Directory structure:
+               /datasource/
+                 customers.json    → entity "customers"
+                 orders.json       → entity "orders"
+                 products.json     → entity "products"
+            
+             Each file can contain either a JSON array of records or a single JSON object.
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Json.JsonMultiFileDataSource.DataDirectory">
+            <summary>Directory path containing the .json entity files.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.DiscoverEntities">
+            <summary>
+            Scans the data directory for .json files and builds entity structures from them.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.LoadEntityFromFile(System.String,System.String)">
+            <summary>
+            Loads a single JSON file as an entity, parsing its schema from the data.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.RefreshEntity(System.String)">
+            <summary>
+            Reloads a specific entity from its backing file, discarding in-memory changes.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.AddEntityFile(System.String,System.String)">
+            <summary>
+            Manually registers a specific JSON file as an entity, overriding the standard naming convention.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.GetEntityFilePath(System.String)">
+            <summary>
+            Gets the file path for an entity, checking custom paths first, then the standard convention.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.ReloadEntity(System.String)">
+            <summary>
+            Reloads a specific entity from its backing file (internal use).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.UpdateEntityStructureFromRecord(Newtonsoft.Json.Linq.JObject,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Ensures any new fields discovered in JSON records are added to the entity schema.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.SaveEntityToFile(System.String)">
+            <summary>
+            Saves a single entity's data to its backing .json file.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.SaveAllDirtyEntities">
+            <summary>
+            Saves all entities that have been modified.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Winform.Controls.BeepConnectionRepository">
@@ -51924,6 +52249,9 @@
             will be executed. Useful for partial / incremental seeding scenarios.
             When <c>null</c> (default), all registered seeders run.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Utils.Util.ResolveFieldCategory(System.Type)">
+            <summary>Resolves a CLR type to its DbFieldCategory. Shared by all SetField overloads.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIAuthenticationHelper">
             <summary>

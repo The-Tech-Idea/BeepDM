@@ -26,6 +26,7 @@ namespace TheTechIdea.Beep.SetUp
         private string _wizardId = "default-setup";
         private ILogger<SetupWizard>? _logger;
         private IServiceProvider? _services;
+        private ISetupWizardAdapter? _adapter;
 
         public SetupWizardBuilder WithId(string wizardId)
         {
@@ -36,6 +37,12 @@ namespace TheTechIdea.Beep.SetUp
         public SetupWizardBuilder WithLogger(ILogger<SetupWizard>? logger)
         {
             _logger = logger;
+            return this;
+        }
+
+        public SetupWizardBuilder WithAdapter(ISetupWizardAdapter? adapter)
+        {
+            _adapter = adapter;
             return this;
         }
 
@@ -144,7 +151,7 @@ namespace TheTechIdea.Beep.SetUp
         public ISetupWizard Build()
         {
             ValidateDependencyOrder();
-            return new SetupWizard(_wizardId, _steps, _options, _logger);
+            return new SetupWizard(_wizardId, _steps, _options, _logger, _adapter);
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────

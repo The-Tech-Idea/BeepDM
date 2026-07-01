@@ -18,6 +18,7 @@ namespace TheTechIdea.Beep.SetUp
         private readonly string _wizardId;
         private readonly List<ISetupStep> _steps;
         private readonly ILogger<SetupWizard>? _logger;
+        private readonly ISetupWizardAdapter? _adapter;
         private SetupReport _lastReport;
 
         public IReadOnlyList<ISetupStep> Steps => _steps.AsReadOnly();
@@ -25,12 +26,13 @@ namespace TheTechIdea.Beep.SetUp
         public SetupOptions Options { get; }
 
         public SetupWizard(string wizardId, IEnumerable<ISetupStep> steps, SetupOptions options,
-            ILogger<SetupWizard>? logger = null)
+            ILogger<SetupWizard>? logger = null, ISetupWizardAdapter? adapter = null)
         {
             _wizardId = wizardId ?? "default-setup";
             _steps = new List<ISetupStep>(steps);
             Options = options ?? new SetupOptions();
             _logger = logger;
+            _adapter = adapter;
         }
 
         /// <inheritdoc/>
@@ -117,6 +119,7 @@ namespace TheTechIdea.Beep.SetUp
                     }
 
                     // ── Execute ──────────────────────────────────────────────────
+                    _adapter?.ShowStep(step, i, total);
                     context.ProgressReporter?.ReportStepStart(step.StepId, step.StepName, i + 1, total);
                     progress?.Report(new PassedArgs
                     {
@@ -189,6 +192,7 @@ namespace TheTechIdea.Beep.SetUp
             progress?.Report(new PassedArgs { ParameterInt1 = 100, Messege = "Setup completed." });
 
             _lastReport = BuildReport(results, true, started, runOptions.Environment);
+            _adapter?.ShowResult(_lastReport);
             _logger?.LogInformation("Setup wizard '{WizardId}' completed successfully. RunId={RunId}, Steps={StepCount}",
                 _wizardId, State.RunId, results.Count);
             context.ProgressReporter?.ReportWizardComplete(_lastReport);
