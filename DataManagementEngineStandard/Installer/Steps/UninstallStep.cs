@@ -21,6 +21,17 @@ namespace TheTechIdea.Beep.Installer.Steps
         public string Description => "Removes all installed files, shortcuts, and registry entries.";
         public IReadOnlyList<string> DependsOn => Array.Empty<string>();
 
+        private readonly string _sharedDllKeyPath = SharedFileCountStep.DefaultSharedDllKeyPath;
+
+        public UninstallStep() { }
+
+        /// <param name="sharedDllKeyPath">Override the SharedDLLs registry path (for testing).</param>
+        public UninstallStep(string? sharedDllKeyPath)
+        {
+            if (!string.IsNullOrWhiteSpace(sharedDllKeyPath))
+                _sharedDllKeyPath = sharedDllKeyPath;
+        }
+
         public bool CanSkip(SetupContext context) => false;
 
         public IErrorsInfo Validate(SetupContext context)
@@ -55,6 +66,7 @@ namespace TheTechIdea.Beep.Installer.Steps
 
             int removed = 0;
             var errors = new List<string>();
+            var config = context.TryGetProperty<InstallConfig>("InstallConfig");
 
             // 1. Remove shortcuts
             if (manifest.Shortcuts != null)
@@ -70,14 +82,15 @@ namespace TheTechIdea.Beep.Installer.Steps
                 }
             }
 
-            // 2. Remove registry entries
+            // 2. Remove registry entries (honor the same scope/bitness used at install time — A3.1)
             if (manifest.RegistryEntries != null)
             {
+                using var baseKey = InstallScope.OpenBaseKey(context, config);
                 foreach (var entry in manifest.RegistryEntries)
                 {
                     try
                     {
-                        using var key = Registry.LocalMachine.OpenSubKey(entry.KeyPath, writable: true);
+                        using var key = baseKey.OpenSubKey(entry.KeyPath, writable: true);
                         if (key?.GetValue(entry.ValueName) != null)
                         {
                             key.DeleteValue(entry.ValueName, throwOnMissingValue: false);
@@ -86,18 +99,23 @@ namespace TheTechIdea.Beep.Installer.Steps
                     }
                     catch (Exception ex) { errors.Add($"Registry {entry.KeyPath}: {ex.Message}"); }
                 }
-                // Remove the main key if empty
-                try { Registry.LocalMachine.DeleteSubKey(@"SOFTWARE\TheTechIdea\Beep", throwOnMissingSubKey: false); }
-                catch { }
             }
 
-            // 3. Remove installed files (reverse order — manifests last)
+            // 3. Remove installed files (reverse order — manifests last). Shared files are
+            //    refcount-decremented and only deleted when the count hits zero (Track A3.2).
+            var sharedSet = new HashSet<string>(manifest.SharedFiles ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+            using var sharedBase = InstallScope.OpenBaseKey(context, config);
             if (manifest.InstalledFiles != null)
             {
                 foreach (var file in manifest.InstalledFiles.AsEnumerable().Reverse())
                 {
                     try
                     {
+                        if (sharedSet.Contains(file))
+                        {
+                            var (_, remove) = SharedDllRefCount.Decrement(sharedBase, file, _sharedDllKeyPath);
+                            if (!remove) continue; // still referenced by another product
+                        }
                         if (File.Exists(file)) { File.Delete(file); removed++; }
                     }
                     catch (Exception ex) { errors.Add($"File {file}: {ex.Message}"); }
@@ -118,6 +136,48 @@ namespace TheTechIdea.Beep.Installer.Steps
                         }
                     }
                     catch { /* not empty or access denied — leave it */ }
+                }
+            }
+
+            // 4b. Unregister COM servers (reverse of ComRegistrationStep — A3.3)
+            if (manifest.ComRegistrations != null && manifest.ComRegistrations.Count > 0)
+            {
+                using var classes = InstallScope.OpenBaseKey(context, config)
+                    .OpenSubKey(@"Software\Classes", writable: true);
+                if (classes != null)
+                {
+                    foreach (var com in manifest.ComRegistrations)
+                    {
+                        try
+                        {
+                            if (!string.IsNullOrWhiteSpace(com.Clsid))
+                                classes.DeleteSubKeyTree($@"CLSID\{com.Clsid}", throwOnMissingSubKey: false);
+                            if (!string.IsNullOrWhiteSpace(com.ProgId))
+                                classes.DeleteSubKeyTree(com.ProgId, throwOnMissingSubKey: false);
+                            removed++;
+                        }
+                        catch (Exception ex) { errors.Add($"COM {com.Clsid}: {ex.Message}"); }
+                    }
+                }
+            }
+
+            // 4c. Remove assemblies from the GAC (best-effort — A3.3)
+            if (manifest.GacAssemblies != null)
+            {
+                var gacutil = GacInstallStep.FindGacUtil();
+                foreach (var asm in manifest.GacAssemblies)
+                {
+                    try
+                    {
+                        if (gacutil == null) { errors.Add("GAC remove skipped — gacutil.exe not found"); continue; }
+                        var name = !string.IsNullOrWhiteSpace(asm.StrongName) ? asm.StrongName : System.IO.Path.GetFileNameWithoutExtension(asm.Path);
+                        if (!string.IsNullOrWhiteSpace(name))
+                        {
+                            GacInstallStep.RunGacUtil(gacutil, $"/u \"{name}\"", out _);
+                            removed++;
+                        }
+                    }
+                    catch (Exception ex) { errors.Add($"GAC {asm.Path}: {ex.Message}"); }
                 }
             }
 

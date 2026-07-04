@@ -66,7 +66,10 @@ namespace TheTechIdea.Beep.Installer.Steps
                 CreatedDirectories = context.TryGetProperty<List<string>>("CreatedDirectories") ?? new List<string>(),
                 RegistryEntries = context.TryGetProperty<List<RegistryOperation>>("RegistryEntriesWritten") ?? new List<RegistryOperation>(),
                 Shortcuts = context.TryGetProperty<List<ShortcutDefinition>>("ShortcutsCreated") ?? new List<ShortcutDefinition>(),
-                EnvironmentVariables = context.TryGetProperty<List<EnvironmentVariableOp>>("EnvVarsSet") ?? new List<EnvironmentVariableOp>()
+                EnvironmentVariables = context.TryGetProperty<List<EnvironmentVariableOp>>("EnvVarsSet") ?? new List<EnvironmentVariableOp>(),
+                SharedFiles = context.TryGetProperty<List<string>>("SharedFiles") ?? new List<string>(),
+                ComRegistrations = context.TryGetProperty<List<ComRegistration>>("ComRegistrationsWritten") ?? new List<ComRegistration>(),
+                GacAssemblies = context.TryGetProperty<List<GacAssembly>>("GacAssembliesInstalled") ?? new List<GacAssembly>()
             };
 
             var manifestPath = Path.Combine(installPath, "install-manifest.json");

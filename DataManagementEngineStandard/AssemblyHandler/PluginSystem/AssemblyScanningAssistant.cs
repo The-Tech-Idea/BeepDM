@@ -10,6 +10,7 @@ using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.SchemaMigration;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Vis;
 
@@ -152,6 +153,25 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     var classDef = GetAssemblyClassDefinition(typeInfo, "IDM_Addin");
                     _configEditor?.Addins?.Add(classDef);
                     discoveredItems.Add(classDef);
+                }
+
+                // Check for ISchemaMigrationProvider interface (Phase 10: wire 3-tier registry
+                // discovery into the main assembly-scanning system). Types carrying the
+                // [SchemaMigrationProvider(DataSourceType, DatasourceCategory)] attribute are
+                // registered with the IMigrationProviderRegistry so the runtime can resolve
+                // them via IDMEEditor.GetMigrationProvider(IDataSource). The factory defers
+                // construction until resolve time (the registry requires an IDataSource).
+                if (typeInfo.ImplementedInterfaces.Contains(typeof(ISchemaMigrationProvider)))
+                {
+                    var providerType = typeInfo.AsType();
+                    var attr = providerType.GetCustomAttribute<SchemaMigrationProviderAttribute>();
+                    if (attr != null)
+                    {
+                        _configEditor?.MigrationProviders?.Register(attr.DataSourceType,
+                            _ => (ISchemaMigrationProvider)Activator.CreateInstance(providerType, _));
+                        _configEditor?.MigrationProviders?.RegisterCategoryFallback(attr.Category,
+                            _ => (ISchemaMigrationProvider)Activator.CreateInstance(providerType, _));
+                    }
                 }
 
                 // Check for IWorkFlowStep interface

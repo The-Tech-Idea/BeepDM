@@ -8006,6 +8006,10 @@
             Partial: Join Graph Intelligence — auto-detect joins, shortest path, adjacency list.
             </summary>
             <summary>
+            Partial: ILocalDB surface for DataView. DataView is virtual and routes file-level
+            operations to the materialized temp DB when one is available.
+            </summary>
+            <summary>
             Partial: Query and execution — preview, cache status, async materialize, execution plan.
             </summary>
             <summary>
@@ -8250,6 +8254,8 @@
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.PrepareMergedQueryDB">
             <summary>
             Prepares a temporary InMemory or Local DB, materializes all DataView entities into it, and syncs their data.
+            Honors <see cref="P:TheTechIdea.Beep.DataView.DataViewDataSource.CacheEnabled"/>: when disabled (DirectQuery mode), returns null so callers
+            route the query to the underlying sources directly.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.ExecuteSql(System.String)">
@@ -8277,7 +8283,7 @@
             <returns>The state of the connection.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.Closeconnection">
-            <summary>Closes the connection and returns the current state of the connection.</summary>
+            <summary>Closes the connection and tears down the materialized temp DB if any.</summary>
             <returns>The current state of the connection after closing.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.RunQuery(System.String)">
@@ -8315,7 +8321,7 @@
             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.RunScript(TheTechIdea.Beep.Editor.ETLScriptDet)">
-            <summary>Runs an ETL script.</summary>
+            <summary>Runs an ETL script. Resolves the data source via the script's metadata, not the stale private field.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.CreateEntities(System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityStructure})">
             <summary>Creates entities based on the provided list of entity structures.</summary>
@@ -8328,7 +8334,7 @@
             <returns>A list of ETL script details for creating entities.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.InsertEntity(System.String,System.Object)">
-            <summary>Inserts an entity into the database.</summary>
+            <summary>Inserts an entity via its source data source.</summary>
             <param name="EntityName">The name of the entity.</param>
             <param name="InsertedData">The data to be inserted.</param>
             <returns>An object containing information about any errors that occurred during the insertion process.</returns>
@@ -8535,6 +8541,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetJoinGraph">
             <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.DropEntity(System.String)">
+            <summary>Routes to the materialized temp DB when present; otherwise removes the entity from the view itself.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.DataView.DataViewDataSource.GetEntityPreview(System.String,System.Int32)">
             <inheritdoc/>
@@ -27426,6 +27435,14 @@
             Useful for diagnostics when entity types are not being found.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TryGetProviderCapabilities(TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Returns the <see cref="P:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider.Capabilities"/> for the provider bound
+            to <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.MigrateDataSource"/> when it matches <paramref name="type"/>; otherwise
+            null (caller falls back to helper probing). Used so the capability profile reflects the
+            real provider rather than a synthetic SQL probe.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetRecommendationProfile(System.Nullable{TheTechIdea.Beep.Utilities.DataSourceType},System.Nullable{TheTechIdea.Beep.Utilities.DatasourceCategory})">
             <summary>
             Returns a versioned recommendation profile for the resolved datasource type/category.
@@ -27803,6 +27820,76 @@
             suffix keeps summary ids unique even when the same plan runs
             multiple times. See the class doc comment for the full conventions.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.ExternalReadOnlyMigrationProvider">
+            <summary>
+            Tier-2 fallback for data sources whose schema is owned externally and cannot be mutated
+            from BeepDM: SaaS/REST connectors (Salesforce, Slack…), messaging (Kafka, RabbitMQ…),
+            and web APIs. Every mutating operation returns <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/> with a clear
+            "managed externally" message; <see cref="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities.IsReadOnly"/> is true.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.FileMutationMigrationProvider">
+            <summary>
+            Tier-2 fallback for <see cref="F:TheTechIdea.Beep.Utilities.DatasourceCategory.FILE"/> (delimited text / spreadsheet
+            sources such as CSV, TSV, XLS). Replicates the file-mutation behavior previously inlined
+            in <c>MigrationManager.EntityOperations</c>: structural changes are applied by mutating the
+            backing file (header rewrite, <see cref="T:TheTechIdea.Beep.Helpers.FileandFolderHelpers.FileHelper"/>, etc.). Alter-column, indexes and
+            foreign keys are not supported for file sources.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry"/>. Resolves providers 3-tier:
+            exact <see cref="T:TheTechIdea.Beep.Utilities.DataSourceType"/> (Tier 1, from <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationProviderAttribute"/>
+            scan or explicit <see cref="M:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry.Register(TheTechIdea.Beep.Utilities.DataSourceType,System.Func{TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider})"/>) → <see cref="T:TheTechIdea.Beep.Utilities.DatasourceCategory"/> fallback
+            (Tier 2, from <see cref="M:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry.RegisterCategoryFallback(TheTechIdea.Beep.Utilities.DatasourceCategory,System.Func{TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider})"/>) → <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.NullMigrationProvider"/> (Tier 3).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry.Register(TheTechIdea.Beep.Utilities.DataSourceType,System.Func{TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider})">
+            <summary>Registers a Tier-1 factory for an exact data-source type.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry.RegisterCategoryFallback(TheTechIdea.Beep.Utilities.DatasourceCategory,System.Func{TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider})">
+            <summary>Registers a Tier-2 fallback factory for a data-source category.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry.Resolve(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Resolves a provider for <paramref name="dataSource"/>. Tier 1 → Tier 2 → Tier 3.
+            Never returns null.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.MigrationProviderRegistry.EnsureScanned">
+            <summary>
+            Scans all loaded assemblies exactly once for classes decorated with
+            <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationProviderAttribute"/> and registers a reflective factory
+            for each (constructor must accept a single <see cref="T:TheTechIdea.Beep.IDataSource"/>).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.NullMigrationProvider">
+            <summary>
+            Tier-3 fallback provider. Every operation returns <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/> with an
+            explicit "unsupported" message. Used when no Tier-1 override and no Tier-2 category
+            fallback is registered for a data source — guarantees <see cref="M:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry.Resolve(TheTechIdea.Beep.IDataSource)"/>
+            never returns null.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.NullMigrationProvider.Capabilities">
+            <summary>Read-only; no operation is supported.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.RdbmsSqlMigrationProvider">
+            <summary>
+            Tier-2 fallback for <see cref="F:TheTechIdea.Beep.Utilities.DatasourceCategory.RDBMS"/> (and SQL-speaking cloud engines).
+            Behavior-preserving: it reproduces exactly what <c>MigrationManager.EntityOperations</c>
+            did before the Phase 10 rewire — generate SQL via <see cref="T:TheTechIdea.Beep.Editor.IDataSourceHelper"/> and run it
+            through <see cref="M:TheTechIdea.Beep.IDataSource.ExecuteSql(System.String)"/>. RDBMS subclass overrides (SQLite table-rebuild,
+            Oracle windows) live in their datasource folders and derive from this class.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.RdbmsSqlMigrationProvider.Helper">
+            <summary>Resolved lazily from <see cref="P:TheTechIdea.Beep.IDataSource.DMEEditor"/> and cached.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.RdbmsSqlMigrationProvider.RunHelper(System.String,System.String,System.String,System.Func{System.ValueTuple{System.String,System.Boolean,System.String}})">
+            <summary>Generate-via-helper → execute, centralizing the "empty SQL = NoOp" rule.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.ISchemaFingerprinter">
             <summary>
@@ -30142,6 +30229,11 @@
             This is the Class that encapsulate all functionality of Data Management.
             </summary>
             <summary>
+            DMEEditor partial class for the Phase 10 schema-migration-provider framework.
+            Owns the <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry"/> and exposes
+            <see cref="M:TheTechIdea.Beep.DMEEditor.GetMigrationProvider(TheTechIdea.Beep.IDataSource)"/> required by <see cref="T:TheTechIdea.Beep.Editor.IDMEEditor"/>.
+            </summary>
+            <summary>
             DMEEditor partial class that exposes the Phase 15 core services
             (EntityDiscoveryService, DatasourceManagementService, MigrationTrackingService)
             as lazy-initialized properties. These services wrap existing BeepDM
@@ -30392,6 +30484,19 @@
             <param name="pdatasourcename"></param>
             <param name="ClassDBHandlerName"></param>
             <returns></returns>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.MigrationProviders">
+            <summary>
+            The migration-provider registry. Lazily created and configured with the built-in
+            Tier-2 category fallbacks. Tier-1 overrides are discovered automatically via
+            <c>[SchemaMigrationProvider]</c> attribute scan on first resolution.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DMEEditor.GetMigrationProvider(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Resolves the <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider"/> for the given data source
+            (3-tier: exact type → category fallback → null). Never returns null.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.DMEEditor.EntityDiscovery">
             <summary>
@@ -40997,6 +41102,22 @@
         <member name="M:TheTechIdea.Beep.Installer.ConfigManager.Validate(TheTechIdea.Beep.Installer.InstallConfig)">
             <summary>Validates an InstallConfig and returns warnings.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.CheckSchemaVersion(TheTechIdea.Beep.Installer.InstallConfig)">
+            <summary>
+            Returns a non-null warning string if the config's schema version is missing or
+            does not match the current runtime contract (P0-3). Empty string when OK.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.ResolvePayloadRoot(TheTechIdea.Beep.Installer.InstallConfig)">
+            <summary>
+            Resolves the payload root directory. Rebased source paths are relative to this.
+            Order: config.ConfigDirectory/payloadFolder, then AppContext.BaseDirectory/payloadFolder,
+            then AppContext.BaseDirectory.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ConfigManager.ResolveSourcePath(System.String,System.String)">
+            <summary>Resolves a source path: absolute paths are used as-is; relative paths resolve against the payload root.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Installer.ConfigManager.ExpandVariables(System.String)">
             <summary>Expands %Variable% patterns in a path.</summary>
         </member>
@@ -41056,6 +41177,27 @@
             File-based structured logger for installation operations.
             Writes to %TEMP%\Beep_Install_{timestamp}.log and copies to install dir on completion.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallScope">
+            <summary>
+            Resolves registry hive/view and program-file location for the active install scope
+            (Track A3.1 — 64-bit install mode). Pure helpers shared by the install/uninstall steps.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallScope.HiveFor(System.Boolean)">
+            <summary>Per-user installs write under HKCU; per-machine under HKLM.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallScope.ViewFor(System.Boolean)">
+            <summary>64-bit installs use the 64-bit registry view; 32-bit use WOW6432 (Registry32).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallScope.IsPerUser(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>True when the current run is a per-user install (reads the runtime flag).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallScope.Is64Bit(TheTechIdea.Beep.Installer.InstallConfig)">
+            <summary>True when the config targets 64-bit (defaults to true when unset).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallScope.OpenBaseKey(TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Installer.InstallConfig)">
+            <summary>Opens the base key for the active scope (hive + bitness view).</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.PauseResumeManager">
             <summary>
@@ -41117,6 +41259,21 @@
             Each bootstrapper item has a detection command, download URL, and silent install args.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.ComServerRegistrationStep">
+            <summary>
+            Registers COM in-process servers (Track A3.3). For every selected component's
+            <see cref="T:TheTechIdea.Beep.Installer.ComRegistration"/>, writes the HKCR\CLSID\{Clsid}\InprocServer32 tree and the
+            ProgId alias. Scope-aware: per-user → HKCU\Software\Classes, per-machine → HKLM\Software\Classes.
+            Runs after <see cref="T:TheTechIdea.Beep.Installer.Steps.FileCopyStep"/>. Reversed by <see cref="T:TheTechIdea.Beep.Installer.Steps.UninstallStep"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.GacInstallStep">
+            <summary>
+            Installs assemblies into the GAC via <c>gacutil.exe</c> (Track A3.3). Best-effort: if
+            gacutil isn't on PATH / the Windows SDK, the step reports OK with a note rather than
+            failing the install (modern .NET rarely uses the GAC). Reversed by <see cref="T:TheTechIdea.Beep.Installer.Steps.UninstallStep"/>.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ConfigGenerationStep">
             <summary>Generates configuration files (appsettings.json, connection strings) from templates.</summary>
         </member>
@@ -41161,6 +41318,34 @@
         <member name="T:TheTechIdea.Beep.Installer.Steps.ServiceInstallStep">
             <summary>Installs/uninstalls Windows Services.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.SharedFileCountStep">
+            <summary>
+            MSI-style shared-file reference counting (Track A3.2). For every installed file flagged
+            <see cref="P:TheTechIdea.Beep.Installer.FileCopyOperation.SharedCount"/>, increments the Windows <c>SharedDLLs</c>
+            refcount. Uninstall (<see cref="T:TheTechIdea.Beep.Installer.Steps.UninstallStep"/>) decrements and only deletes the file
+            when the count reaches zero, so a DLL shared between products survives the first uninstall.
+            Runs after <see cref="T:TheTechIdea.Beep.Installer.Steps.FileCopyStep"/>. Hive/view honor the active install scope (A3.1).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Installer.Steps.SharedFileCountStep.DefaultSharedDllKeyPath">
+            <summary>Default Windows SharedDLLs registry location.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.SharedDllRefCount">
+            <summary>Pure SharedDLLs refcount math (testable against any hive/key path).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.SharedDllRefCount.Increment(Microsoft.Win32.RegistryKey,System.String,System.String)">
+            <summary>Increments the refcount for <paramref name="filePath"/>; returns the new count.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.SharedDllRefCount.Decrement(Microsoft.Win32.RegistryKey,System.String,System.String)">
+            <summary>
+            Decrements the refcount for <paramref name="filePath"/>.
+            Returns the resulting count and whether the caller should now remove the file
+            (true only when the count reached zero, at which point the registry value is deleted).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.SharedDllRefCount.Get(Microsoft.Win32.RegistryKey,System.String,System.String)">
+            <summary>Reads the current refcount (0 when absent).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ShortcutCreateStep">
             <summary>Creates Windows shortcuts (.lnk files) for desktop, start menu, and startup.</summary>
         </member>
@@ -41171,6 +41356,9 @@
             <summary>
             Reads the install-manifest.json, reverses all install operations, and removes the application.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.UninstallStep.#ctor(System.String)">
+            <param name="sharedDllKeyPath">Override the SharedDLLs registry path (for testing).</param>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.VerifyInstallStep">
             <summary>Verifies the installation: checks files exist, validates manifest, reports results.</summary>

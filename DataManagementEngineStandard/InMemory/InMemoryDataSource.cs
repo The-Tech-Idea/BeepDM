@@ -445,5 +445,24 @@ namespace TheTechIdea.Beep.InMemory
         }
         #endregion
 
+        // ── IInMemoryDB additions for the expanded contract (Track C) ──
+        public event EventHandler<PassedArgs>? StructureChanged;
+        public event EventHandler<PassedArgs>? DataChanged;
+        public event EventHandler<PassedArgs>? StateChanged;
+        public bool IsStructureLoaded { get; set; }
+
+        public IErrorsInfo OpenInMemory(string databaseName)
+            => new ErrorsInfo { Flag = TheTechIdea.Beep.ConfigUtil.Errors.Ok, Message = "OpenInMemory not implemented" };
+        public string GetInMemoryConnectionString() => string.Empty;
+        public IErrorsInfo ResetInMemory()
+            => new ErrorsInfo { Flag = TheTechIdea.Beep.ConfigUtil.Errors.Ok, Message = "ResetInMemory not implemented" };
+        public IErrorsInfo LoadStructure(IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+            => new ErrorsInfo { Flag = TheTechIdea.Beep.ConfigUtil.Errors.Ok, Message = "LoadStructure not implemented" };
+        public IErrorsInfo LoadStructureWithData(IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+            => new ErrorsInfo { Flag = TheTechIdea.Beep.ConfigUtil.Errors.Ok, Message = "LoadStructureWithData not implemented" };
+        public IErrorsInfo FillFromDataSource(IDataSource source, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+            => new ErrorsInfo { Flag = TheTechIdea.Beep.ConfigUtil.Errors.Ok, Message = "FillFromDataSource not implemented" };
+        public IErrorsInfo ExportToDataSource(IDataSource target, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+            => new ErrorsInfo { Flag = TheTechIdea.Beep.ConfigUtil.Errors.Ok, Message = "ExportToDataSource not implemented" };
     }
 }

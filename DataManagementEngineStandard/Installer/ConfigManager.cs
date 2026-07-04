@@ -40,11 +40,18 @@ namespace TheTechIdea.Beep.Installer
                 if (config == null)
                     return (null, "Failed to parse config — file may be empty or invalid JSON.");
 
+                // Remember where the config was loaded from so relative (rebased)
+                // payload paths can be resolved at runtime.
+                try { config.ConfigDirectory = Path.GetDirectoryName(Path.GetFullPath(path)); }
+                catch { /* path may be invalid in edge cases — leave null */ }
+
+                var schemaWarn = CheckSchemaVersion(config);
+
                 var errors = Validate(config);
                 if (errors.Count > 0)
-                    return (config, $"Validation warnings: {string.Join("; ", errors)}");
+                    return (config, $"Validation warnings: {string.Join("; ", errors)}{schemaWarn}");
 
-                return (config, null);
+                return (config, string.IsNullOrEmpty(schemaWarn) ? null : schemaWarn.Trim());
             }
             catch (JsonException ex)
             {
@@ -68,6 +75,9 @@ namespace TheTechIdea.Beep.Installer
             if (config.Components == null || config.Components.Count == 0)
                 warnings.Add("No components defined — nothing will be installed.");
 
+            // Payload root for resolving rebased (relative) source paths.
+            var payloadRoot = ResolvePayloadRoot(config);
+
             foreach (var comp in config.Components ?? Enumerable.Empty<InstallComponent>())
             {
                 if (string.IsNullOrWhiteSpace(comp.Id))
@@ -76,13 +86,57 @@ namespace TheTechIdea.Beep.Installer
                 {
                     foreach (var file in comp.Files)
                     {
-                        if (!File.Exists(ExpandVariables(file.SourcePath)))
+                        var resolved = ResolveSourcePath(file.SourcePath, payloadRoot);
+                        if (!File.Exists(resolved))
                             warnings.Add($"File not found: {file.SourcePath} (component: {comp.Name})");
                     }
                 }
             }
 
             return warnings;
+        }
+
+        /// <summary>
+        /// Returns a non-null warning string if the config's schema version is missing or
+        /// does not match the current runtime contract (P0-3). Empty string when OK.
+        /// </summary>
+        public static string CheckSchemaVersion(InstallConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(config.SchemaVersion))
+                return $" Config has no schemaVersion — expected v{InstallConfig.CurrentSchemaVersion}.";
+            if (!string.Equals(config.SchemaVersion, InstallConfig.CurrentSchemaVersion, StringComparison.OrdinalIgnoreCase))
+                return $" Config schemaVersion '{config.SchemaVersion}' != runtime v{InstallConfig.CurrentSchemaVersion} — behavior may differ.";
+            return "";
+        }
+
+        /// <summary>
+        /// Resolves the payload root directory. Rebased source paths are relative to this.
+        /// Order: config.ConfigDirectory/payloadFolder, then AppContext.BaseDirectory/payloadFolder,
+        /// then AppContext.BaseDirectory.
+        /// </summary>
+        public static string ResolvePayloadRoot(InstallConfig config)
+        {
+            var folder = "payload";
+            var bases = new List<string>();
+            if (!string.IsNullOrWhiteSpace(config.ConfigDirectory))
+                bases.Add(config.ConfigDirectory);
+            bases.Add(AppContext.BaseDirectory);
+
+            foreach (var b in bases)
+            {
+                var candidate = Path.Combine(b, folder);
+                if (Directory.Exists(candidate)) return candidate;
+            }
+            return bases[0];
+        }
+
+        /// <summary>Resolves a source path: absolute paths are used as-is; relative paths resolve against the payload root.</summary>
+        public static string ResolveSourcePath(string sourcePath, string payloadRoot)
+        {
+            var expanded = ExpandVariables(sourcePath ?? "").Replace('/', '\\').Trim();
+            if (string.IsNullOrEmpty(expanded)) return expanded;
+            if (Path.IsPathRooted(expanded)) return expanded;
+            return Path.Combine(payloadRoot ?? AppContext.BaseDirectory, expanded);
         }
 
         /// <summary>Expands %Variable% patterns in a path.</summary>

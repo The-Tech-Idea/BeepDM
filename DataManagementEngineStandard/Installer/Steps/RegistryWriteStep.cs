@@ -43,9 +43,11 @@ namespace TheTechIdea.Beep.Installer.Steps
                 return StepErrorHelpers.Ok("No registry entries to write.");
 
             var written = new List<RegistryOperation>();
+            // Honor install scope: per-user → HKCU, 32-bit → WOW6432 view (A3.1).
+            using var baseKey = InstallScope.OpenBaseKey(context, config);
             foreach (var entry in entries)
             {
-                using var key = Registry.LocalMachine.CreateSubKey(entry.KeyPath);
+                using var key = baseKey.CreateSubKey(entry.KeyPath);
                 if (key != null)
                 {
                     key.SetValue(entry.ValueName, entry.Value, entry.ValueKind);

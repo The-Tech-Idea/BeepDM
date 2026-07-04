@@ -105,7 +105,7 @@ namespace TheTechIdea.Beep.Utilities
         NONE, Oracle, SqlServer, Mysql, SqlCompact, SqlLite, Postgre, FireBird, DB2, SnowFlake, Hana, Cockroach, Spanner, TerraData, Vertica, AzureSQL, AWSRDS,
 
         // NoSQL Databases
-        MongoDB, CouchDB, RavenDB, Couchbase, Redis, DynamoDB, Firebase, LiteDB, ArangoDB, Neo4j, Cassandra, OrientDB, ElasticSearch, ClickHouse, InfluxDB, VistaDB,
+        MongoDB, CouchDB, RavenDB, Couchbase, CouchBaseLite, Redis, DynamoDB, Firebase, LiteDB, ArangoDB, Neo4j, Cassandra, OrientDB, ElasticSearch, ClickHouse, InfluxDB, VistaDB,
 
         // Graph Databases
         TigerGraph, JanusGraph,
@@ -116,11 +116,14 @@ namespace TheTechIdea.Beep.Utilities
         // In-Memory
         RealIM, Petastorm, RocketSet, H2Database, Memcached, GridGain, Hazelcast, ApacheIgnite, ChronicleMap,InMemoryCache,CachedMemory,
 
+        // Embedded / Local Key-Value Stores (Phase 11)
+        RocksDB, LevelDB, LMDB,
+
         // Cloud Services
-        AWSRedshift, GoogleBigQuery, AWSGlue, AWSAthena, AzureCloud, DataBricks, Firebolt, Hologres, Supabase,
+        AWSRedshift, AWSSQS,GoogleBigQuery, AWSGlue, AWSAthena, AzureCloud, DataBricks, Firebolt, Hologres, Supabase,
 
         // Streaming and Messaging
-        Kafka, RabbitMQ, ActiveMQ, Pulsar, MassTransit, Nats, ZeroMQ, AWSKinesis, AWSSQS, AWSSNS, AzureServiceBus,
+        Kafka, RabbitMQ, ActiveMQ, Pulsar, MassTransit, Nats, ZeroMQ, AWSKinesis, AmazonSQS, AWSSNS, AzureServiceBus,
 
         // Stream Processing Frameworks
          ApacheFlink, ApacheStorm, ApacheSparkStreaming, 
@@ -129,7 +132,7 @@ namespace TheTechIdea.Beep.Utilities
         TFRecord, ONNX, PyTorchData, ScikitLearnData,
 
         // File Formats
-        FlatFile, CSV, TSV, Text, YAML, Json, Markdown, Log, INI, XML, Xls, Doc, Docx, PPT, PPTX, PDF, Onnx, RecordIO,
+        FlatFile, CSV, TSV, Text, YAML, Json,JsonMultiFile, Markdown, Log, INI, XML, Xls, Doc, Docx, PPT, PPTX, PDF, Onnx, RecordIO,
 
         // Specialized Formats
         Hdf5, LibSVM, GraphML, DICOM, LAS,
@@ -147,7 +150,7 @@ namespace TheTechIdea.Beep.Utilities
         OPC,
 
         // Miscellaneous
-        DuckDB, GoogleSheets, MiModel, Presto, Trino, TimeScale, WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO,
+         DuckDB, GoogleSheets, GooglePubSub, MiModel, Presto, Trino, TimeScale, WebApi, RestApi, GraphQL, OData, ODBC, OLEDB, ADO,
 
         //VectorDB
         ChromaDB,
@@ -189,27 +192,30 @@ namespace TheTechIdea.Beep.Utilities
 
         Other
     }
-    public enum DatasourceCategory
+public enum DatasourceCategory
     {
         RDBMS,
         FILE,
+        FILES,
         WEBAPI,
         NOSQL,
         CLOUD,
         VIEWS,
         STREAM,
         QUEUE,
+        MessageQueue,
         NONE,
         INMEMORY,
         Workflow,
-      
+       
         MLModel,
-      
+       
         IoT,
         VectorDB,
         Connector, // Added new category for connectors
         Blockchain, // Added for distributed ledger technologies
-        Proxy // Beep internal proxy/cluster data sources
+        Proxy, // Beep internal proxy/cluster data sources
+        KVStore // Embedded / local key-value stores (Phase 11: RocksDB, LevelDB, LMDB, NitriteDB)
     }
 
     public enum FileTypes

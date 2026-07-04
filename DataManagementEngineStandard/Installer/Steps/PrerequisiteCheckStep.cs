@@ -68,14 +68,48 @@ namespace TheTechIdea.Beep.Installer.Steps
 
             // 3. .NET runtime
             progress?.Report(new PassedArgs { Messege = "Checking .NET runtime..." });
-            var dotnetVersion = GetDotNetRuntimeVersion();
-            if (dotnetVersion == null)
+            var isSelfContained = context.Properties.TryGetValue("IsSelfContained", out var sc) && sc is true;
+            if (isSelfContained)
             {
-                results.Add("FAIL: .NET runtime not found. Please install .NET 9.0 or later.");
-                allMet = false;
+                results.Add("PASS: .NET runtime is bundled with the application (self-contained).");
             }
             else
-                results.Add($"PASS: .NET {dotnetVersion} detected.");
+            {
+                var dotnetVersion = GetDotNetRuntimeVersion();
+                if (dotnetVersion == null)
+                {
+                    results.Add("FAIL: .NET runtime not found. Please install .NET 8.0 or later from https://dotnet.microsoft.com/download");
+                    allMet = false;
+                }
+                else
+                {
+                    var dotnetPrereq = config.Prerequisites?.FirstOrDefault(p =>
+                        string.Equals(p.DetectionCommand, "dotnet --list-runtimes", StringComparison.OrdinalIgnoreCase));
+                    if (dotnetPrereq != null && !string.IsNullOrWhiteSpace(dotnetPrereq.VersionRequired))
+                    {
+                        try
+                        {
+                            var installed = new Version(dotnetVersion);
+                            var required = new Version(dotnetPrereq.VersionRequired);
+                            if (installed < required)
+                            {
+                                results.Add($"FAIL: .NET {dotnetVersion} is installed, but {dotnetPrereq.VersionRequired} or later is required.");
+                                allMet = false;
+                            }
+                            else
+                                results.Add($"PASS: .NET {dotnetVersion} detected (requires {dotnetPrereq.VersionRequired}+).");
+                        }
+                        catch
+                        {
+                            results.Add($"PASS: .NET {dotnetVersion} detected.");
+                        }
+                    }
+                    else
+                    {
+                        results.Add($"PASS: .NET {dotnetVersion} detected.");
+                    }
+                }
+            }
 
             // 4. Disk space
             progress?.Report(new PassedArgs { Messege = "Checking disk space..." });
@@ -138,6 +172,23 @@ namespace TheTechIdea.Beep.Installer.Steps
 
         private static string? GetDotNetRuntimeVersion()
         {
+            var version = TryDotNetCli();
+            if (version != null) return version;
+
+            version = ScanSharedRuntimeFolders();
+            if (version != null) return version;
+
+            version = GetCurrentProcessRuntimeVersion();
+            if (version != null) return version;
+
+            version = GetRegistryDotNetVersion();
+            if (version != null) return version;
+
+            return null;
+        }
+
+        private static string? TryDotNetCli()
+        {
             try
             {
                 var process = new Process
@@ -155,13 +206,74 @@ namespace TheTechIdea.Beep.Installer.Steps
                 var output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit(5000);
 
-                // Parse: Microsoft.NETCore.App 9.0.0 [C:\...]
-                var match = Regex.Match(output, @"Microsoft\.NETCore\.App\s+([\d.]+)");
-                return match.Success ? match.Groups[1].Value : null;
+                var matches = Regex.Matches(output, @"Microsoft\.NETCore\.App\s+([\d.]+)");
+                Version? best = null;
+                foreach (Match m in matches)
+                {
+                    if (Version.TryParse(m.Groups[1].Value, out var v) && (best == null || v > best))
+                        best = v;
+                }
+                return best?.ToString();
             }
             catch
             {
-                // dotnet CLI not found
+                return null;
+            }
+        }
+
+        private static string? ScanSharedRuntimeFolders()
+        {
+            try
+            {
+                var sharedDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    "dotnet", "shared", "Microsoft.NETCore.App");
+                if (!Directory.Exists(sharedDir)) return null;
+
+                Version? best = null;
+                foreach (var dir in Directory.EnumerateDirectories(sharedDir))
+                {
+                    var name = Path.GetFileName(dir);
+                    if (Version.TryParse(name, out var v) && (best == null || v > best))
+                        best = v;
+                }
+                return best?.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string? GetCurrentProcessRuntimeVersion()
+        {
+            try
+            {
+                var desc = RuntimeInformation.FrameworkDescription;
+                var m = Regex.Match(desc, @"(\d+\.\d+(?:\.\d+)?)");
+                if (m.Success && Version.TryParse(m.Groups[1].Value, out var v))
+                    return v.ToString();
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string? GetRegistryDotNetVersion()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost");
+                var value = key?.GetValue("Version") as string;
+                if (value != null && Version.TryParse(value, out var _))
+                    return value;
+                return null;
+            }
+            catch
+            {
                 return null;
             }
         }

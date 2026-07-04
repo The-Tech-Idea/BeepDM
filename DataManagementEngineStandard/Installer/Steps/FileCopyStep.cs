@@ -43,6 +43,11 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (config == null || string.IsNullOrWhiteSpace(installPath))
                 return StepErrorHelpers.Fail("Configuration missing.");
 
+            // Resolve the payload root: explicit context value (Url/extracted) wins,
+            // otherwise fall back to the config directory, then the exe directory.
+            var payloadRoot = context.TryGetProperty<string>("PayloadRoot")
+                              ?? ConfigManager.ResolvePayloadRoot(config);
+
             var allFiles = new List<FileCopyOperation>();
             foreach (var component in config.Components.Where(c => c.Selected || c.Required))
                 allFiles.AddRange(component.Files);
@@ -57,28 +62,41 @@ namespace TheTechIdea.Beep.Installer.Steps
             for (int i = 0; i < total; i++)
             {
                 var op = allFiles[i];
+                var srcPath = ConfigManager.ResolveSourcePath(op.SourcePath, payloadRoot);
                 var destPath = Path.Combine(installPath, op.DestinationPath);
                 var destDir = Path.GetDirectoryName(destPath);
 
                 if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
                     Directory.CreateDirectory(destDir);
 
+                if (!File.Exists(srcPath))
+                {
+                    var msg = $"Source file not found: {op.SourcePath} (resolved: {srcPath})";
+                    if (op.IsRequired)
+                        return StepErrorHelpers.Fail(msg);
+                    progress?.Report(new PassedArgs { Messege = $"Skipped (missing): {op.SourcePath}", ParameterInt1 = (int)((i + 1) * 100.0 / total) });
+                    continue;
+                }
+
                 if (File.Exists(destPath) && !op.Overwrite)
                 {
-                    if (op.SkipIfNewer && File.GetLastWriteTimeUtc(op.SourcePath) <= File.GetLastWriteTimeUtc(destPath))
+                    if (op.SkipIfNewer && File.GetLastWriteTimeUtc(srcPath) <= File.GetLastWriteTimeUtc(destPath))
                         continue;
                 }
 
                 progress?.Report(new PassedArgs
                 {
-                    Messege = op.Description ?? Path.GetFileName(op.SourcePath),
+                    Messege = op.Description ?? Path.GetFileName(srcPath),
                     ParameterInt1 = (int)((i + 1) * 100.0 / total),
                     ParameterInt2 = i + 1,
-                    ParameterString1 = op.SourcePath
+                    ParameterString1 = srcPath
                 });
 
-                File.Copy(op.SourcePath, destPath, overwrite: true);
+                File.Copy(srcPath, destPath, overwrite: true);
                 copied.Add(destPath);
+
+                // Register rollback so a later step failure undoes this copy.
+                (context.TryGetProperty<RollbackManager>("RollbackManager"))?.RegisterFileCreated(destPath);
 
                 if (File.Exists(destPath))
                     totalBytes += new FileInfo(destPath).Length;

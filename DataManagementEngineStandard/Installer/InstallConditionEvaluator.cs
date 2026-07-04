@@ -126,19 +126,4 @@ namespace TheTechIdea.Beep.Installer
             catch { return string.Compare(a, b, StringComparison.OrdinalIgnoreCase); }
         }
     }
-
-    public class InstallCondition
-    {
-        public ConditionType Type { get; set; }
-        public string? Value { get; set; }
-        public string? Value2 { get; set; }
-        public string Operator { get; set; } = "==";
-    }
-
-    public enum ConditionType
-    {
-        AlwaysTrue, AlwaysFalse, OsVersion, Architecture,
-        RegistryExists, RegistryValue, FileExists, DirectoryExists,
-        CommandReturns, IsAdmin
-    }
 }

@@ -32,7 +32,7 @@ namespace TheTechIdea.Beep.Json
     ///
     /// Each file can contain either a JSON array of records or a single JSON object.
     /// </summary>
-    [AddinAttribute(Category = DatasourceCategory.FILE, DatasourceType = DataSourceType.Json)]
+    [AddinAttribute(Category = DatasourceCategory.FILES, DatasourceType = DataSourceType.JsonMultiFile)]
     public class JsonMultiFileDataSource : IDataSource, IDisposable
     {
         #region "Constructor"

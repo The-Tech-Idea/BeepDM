@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.SchemaMigration;
 using TheTechIdea.Beep.Helpers.FileandFolderHelpers;
 using TheTechIdea.Beep.Utilities;
 
@@ -291,41 +292,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-            {
-                var fileResult = DeleteFile(entityName);
-                TrackMigration("DropEntity", entityName, null, string.Empty, fileResult);
-                EmitDdlEvidence("DropEntity", entityName, null, null, null,
-                    fileResult.Flag == Errors.Ok ? DdlOperationOutcome.Emulated : DdlOperationOutcome.Failed,
-                    DdlHelperSource.FileMutation, fileResult.Flag == Errors.Ok ? "DDL-FILE-DROP" : "DDL-FILE-DROP-FAILED");
-                return fileResult;
-            }
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.DropEntity))
+                return UnsupportedOperation("DropEntity", entityName, null, null, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("DropEntity", entityName, null, null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            var (sql, success, errorMessage) = helper.GenerateDropTableSql(entityName);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate drop SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("DropEntity", entityName, null, string.Empty, noDdlResult);
-                EmitDdlEvidence("DropEntity", entityName, null, null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var dropResult = ExecuteSql(sql);
-            TrackMigration("DropEntity", entityName, null, sql, dropResult);
-            EmitDdlEvidence("DropEntity", entityName, null, null, sql,
-                dropResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var dropResult = provider.DropEntity(entityName);
+            TrackMigration("DropEntity", entityName, null, string.Empty, dropResult);
+            EmitDdlEvidence("DropEntity", entityName, null, null, null,
+                OutcomeFor(dropResult), DdlHelperSource.Direct,
+                dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return dropResult;
         }
 
@@ -337,41 +312,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-            {
-                var fileResult = TruncateFile(entityName);
-                TrackMigration("TruncateEntity", entityName, null, string.Empty, fileResult);
-                EmitDdlEvidence("TruncateEntity", entityName, null, null, null,
-                    fileResult.Flag == Errors.Ok ? DdlOperationOutcome.Emulated : DdlOperationOutcome.Failed,
-                    DdlHelperSource.FileMutation, fileResult.Flag == Errors.Ok ? "DDL-FILE-TRUNCATE" : "DDL-FILE-TRUNCATE-FAILED");
-                return fileResult;
-            }
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.TruncateEntity))
+                return UnsupportedOperation("TruncateEntity", entityName, null, null, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("TruncateEntity", entityName, null, null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            var (sql, success, errorMessage) = helper.GenerateTruncateTableSql(entityName);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate truncate SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("TruncateEntity", entityName, null, string.Empty, noDdlResult);
-                EmitDdlEvidence("TruncateEntity", entityName, null, null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var truncateResult = ExecuteSql(sql);
-            TrackMigration("TruncateEntity", entityName, null, sql, truncateResult);
-            EmitDdlEvidence("TruncateEntity", entityName, null, null, sql,
-                truncateResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, truncateResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var truncateResult = provider.TruncateEntity(entityName);
+            TrackMigration("TruncateEntity", entityName, null, string.Empty, truncateResult);
+            EmitDdlEvidence("TruncateEntity", entityName, null, null, null,
+                OutcomeFor(truncateResult), DdlHelperSource.Direct,
+                truncateResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return truncateResult;
         }
 
@@ -383,41 +332,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-            {
-                var fileResult = RenameFile(oldName, newName);
-                TrackMigration("RenameEntity", $"{oldName}->{newName}", null, string.Empty, fileResult);
-                EmitDdlEvidence("RenameEntity", oldName, null, null, null,
-                    fileResult.Flag == Errors.Ok ? DdlOperationOutcome.Emulated : DdlOperationOutcome.Failed,
-                    DdlHelperSource.FileMutation, fileResult.Flag == Errors.Ok ? "DDL-FILE-RENAME" : "DDL-FILE-RENAME-FAILED");
-                return fileResult;
-            }
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.RenameEntity))
+                return UnsupportedOperation("RenameEntity", oldName, null, null, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("RenameEntity", oldName, null, null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            var (sql, success, errorMessage) = helper.GenerateRenameTableSql(oldName, newName);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate rename SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("RenameEntity", $"{oldName}->{newName}", null, string.Empty, noDdlResult);
-                EmitDdlEvidence("RenameEntity", oldName, null, null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var renameResult = ExecuteSql(sql);
-            TrackMigration("RenameEntity", $"{oldName}->{newName}", null, sql, renameResult);
-            EmitDdlEvidence("RenameEntity", oldName, null, null, sql,
-                renameResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, renameResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var renameResult = provider.RenameEntity(oldName, newName);
+            TrackMigration("RenameEntity", $"{oldName}->{newName}", null, string.Empty, renameResult);
+            EmitDdlEvidence("RenameEntity", oldName, null, null, null,
+                OutcomeFor(renameResult), DdlHelperSource.Direct,
+                renameResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return renameResult;
         }
 
@@ -429,34 +352,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-                return CreateErrorsInfo(Errors.Failed, "Alter column is not supported for file datasources");
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.AlterColumn))
+                return UnsupportedOperation("AlterColumn", entityName, columnName, null, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("AlterColumn", entityName, columnName, null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            var (sql, success, errorMessage) = helper.GenerateAlterColumnSql(entityName, columnName, newColumn);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate alter SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("AlterColumn", entityName, columnName, string.Empty, noDdlResult);
-                EmitDdlEvidence("AlterColumn", entityName, columnName, null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var alterResult = ExecuteSql(sql);
-            TrackMigration("AlterColumn", entityName, columnName, sql, alterResult);
-            EmitDdlEvidence("AlterColumn", entityName, columnName, null, sql,
-                alterResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, alterResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var alterResult = provider.AlterColumn(entityName, columnName, newColumn);
+            TrackMigration("AlterColumn", entityName, columnName, string.Empty, alterResult);
+            EmitDdlEvidence("AlterColumn", entityName, columnName, null, null,
+                OutcomeFor(alterResult), DdlHelperSource.Direct,
+                alterResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return alterResult;
         }
 
@@ -468,41 +372,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-            {
-                var fileResult = RemoveColumnFromFile(entityName, columnName);
-                TrackMigration("DropColumn", entityName, columnName, string.Empty, fileResult);
-                EmitDdlEvidence("DropColumn", entityName, columnName, null, null,
-                    fileResult.Flag == Errors.Ok ? DdlOperationOutcome.Emulated : DdlOperationOutcome.Failed,
-                    DdlHelperSource.FileMutation, fileResult.Flag == Errors.Ok ? "DDL-FILE-DROP-COL" : "DDL-FILE-DROP-COL-FAILED");
-                return fileResult;
-            }
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.DropColumn))
+                return UnsupportedOperation("DropColumn", entityName, columnName, null, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("DropColumn", entityName, columnName, null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            var (sql, success, errorMessage) = helper.GenerateDropColumnSql(entityName, columnName);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate drop-column SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("DropColumn", entityName, columnName, string.Empty, noDdlResult);
-                EmitDdlEvidence("DropColumn", entityName, columnName, null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var dropResult = ExecuteSql(sql);
-            TrackMigration("DropColumn", entityName, columnName, sql, dropResult);
-            EmitDdlEvidence("DropColumn", entityName, columnName, null, sql,
-                dropResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var dropResult = provider.DropColumn(entityName, columnName);
+            TrackMigration("DropColumn", entityName, columnName, string.Empty, dropResult);
+            EmitDdlEvidence("DropColumn", entityName, columnName, null, null,
+                OutcomeFor(dropResult), DdlHelperSource.Direct,
+                dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return dropResult;
         }
 
@@ -514,41 +392,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-            {
-                var fileResult = RenameColumnInFile(entityName, oldColumnName, newColumnName);
-                TrackMigration("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", string.Empty, fileResult);
-                EmitDdlEvidence("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", null, null,
-                    fileResult.Flag == Errors.Ok ? DdlOperationOutcome.Emulated : DdlOperationOutcome.Failed,
-                    DdlHelperSource.FileMutation, fileResult.Flag == Errors.Ok ? "DDL-FILE-RENAME-COL" : "DDL-FILE-RENAME-COL-FAILED");
-                return fileResult;
-            }
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.RenameColumn))
+                return UnsupportedOperation("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", null, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            var (sql, success, errorMessage) = helper.GenerateRenameColumnSql(entityName, oldColumnName, newColumnName);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate rename-column SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", string.Empty, noDdlResult);
-                EmitDdlEvidence("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var renameResult = ExecuteSql(sql);
-            TrackMigration("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", sql, renameResult);
-            EmitDdlEvidence("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", null, sql,
-                renameResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, renameResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var renameResult = provider.RenameColumn(entityName, oldColumnName, newColumnName);
+            TrackMigration("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", string.Empty, renameResult);
+            EmitDdlEvidence("RenameColumn", entityName, $"{oldColumnName}->{newColumnName}", null, null,
+                OutcomeFor(renameResult), DdlHelperSource.Direct,
+                renameResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return renameResult;
         }
 
@@ -560,30 +412,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-                return CreateErrorsInfo(Errors.Failed, "Indexes are not supported for file datasources");
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.CreateIndex))
+                return UnsupportedOperation("CreateIndex", entityName, null, indexName, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-
-            var (sql, success, errorMessage) = helper.GenerateCreateIndexSql(entityName, indexName, columns, options);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate create-index SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("CreateIndex", entityName, indexName, string.Empty, noDdlResult);
-                EmitDdlEvidence("CreateIndex", entityName, null, indexName, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var indexResult = ExecuteSql(sql);
-            TrackMigration("CreateIndex", entityName, indexName, sql, indexResult);
-            EmitDdlEvidence("CreateIndex", entityName, null, indexName, sql,
-                indexResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, indexResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var indexResult = provider.CreateIndex(entityName, indexName, columns, options);
+            TrackMigration("CreateIndex", entityName, indexName, string.Empty, indexResult);
+            EmitDdlEvidence("CreateIndex", entityName, null, indexName, null,
+                OutcomeFor(indexResult), DdlHelperSource.Direct,
+                indexResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return indexResult;
         }
 
@@ -598,73 +435,21 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-                return CreateErrorsInfo(Errors.Failed, "Indexes are not supported for file datasources");
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.DropIndex))
+                return UnsupportedOperation("DropIndex", entityName, null, indexName, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            // The universal RDBMS helper exposes GenerateDropIndexSql; check there first
-            // and fall back to IDataSourceHelper via reflection for custom helpers.
-            (string Sql, bool Success, string ErrorMessage) genResult = helper switch
-            {
-                Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper rh
-                    => rh.GenerateDropIndexSql(entityName, indexName),
-                _ => TryGenerateDropIndexViaInterface(helper, entityName, indexName)
-            };
-
-            if (!genResult.Success)
-            {
-                EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
-                    DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-GEN-FAILED");
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate drop-index SQL: {genResult.ErrorMessage}");
-            }
-
-            if (string.IsNullOrWhiteSpace(genResult.Sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("DropIndex", entityName, indexName, string.Empty, noDdlResult);
-                EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
-                    DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var dropResult = ExecuteSql(genResult.Sql);
-            TrackMigration("DropIndex", entityName, indexName, genResult.Sql, dropResult);
-            EmitDdlEvidence("DropIndex", entityName, null, indexName, genResult.Sql,
-                dropResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var dropResult = provider.DropIndex(entityName, indexName);
+            TrackMigration("DropIndex", entityName, indexName, string.Empty, dropResult);
+            EmitDdlEvidence("DropIndex", entityName, null, indexName, null,
+                OutcomeFor(dropResult), DdlHelperSource.Direct,
+                dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return dropResult;
         }
 
-        // Reflection-based fallback for custom IDataSourceHelper implementations that
-        // expose their own GenerateDropIndexSql method.
-        private static (string Sql, bool Success, string ErrorMessage) TryGenerateDropIndexViaInterface(
-            IDataSourceHelper helper,
-            string tableName, string indexName)
-        {
-            try
-            {
-                var mi = helper.GetType().GetMethod("GenerateDropIndexSql",
-                    new[] { typeof(string), typeof(string) });
-                if (mi != null)
-                {
-                    var result = mi.Invoke(helper, new object[] { tableName, indexName });
-                    if (result is ValueTuple<string, bool, string> tuple)
-                        return tuple;
-                }
-                return ("", false, "Helper does not support index drop");
-            }
-            catch (Exception ex)
-            {
-                return ("", false, ex.Message);
-            }
-        }
+        // Reflection-based fallbacks for custom IDataSourceHelper implementations were removed
+        // in Phase 10 — index/FK generation now lives inside the ISchemaMigrationProvider
+        // (RdbmsSqlMigrationProvider.InvokeHelperReturningSql handles helper-specific overloads).
 
         public IErrorsInfo AddForeignKey(
             string entityName,
@@ -693,57 +478,19 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-                return CreateErrorsInfo(Errors.Failed, "Foreign keys are not supported for file datasources");
-
             constraintName = string.IsNullOrWhiteSpace(constraintName)
                 ? BuildForeignKeyName(entityName, referencedEntityName, columnNames)
                 : constraintName.Trim();
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.AddForeignKey))
+                return UnsupportedOperation("AddForeignKey", entityName, null, constraintName, "DDL-UNSUPPORTED-PROVIDER");
 
-            // The universal RDBMS helper is the only one that currently exposes
-            // GenerateAddForeignKeySql with the full action set; check there first
-            // and fall back to IDataSourceHelper if the helper is a custom one.
-            (string Sql, bool Success, string ErrorMessage) genResult = helper switch
-            {
-                Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper rh
-                    => rh.GenerateAddForeignKeySql(entityName, columnNames, referencedEntityName,
-                        referencedColumnNames, onDeleteBehavior, onUpdateBehavior, constraintName),
-                _ => TryGenerateAddForeignKeyViaInterface(helper, entityName, columnNames,
-                        referencedEntityName, referencedColumnNames, onDeleteBehavior,
-                        onUpdateBehavior, constraintName)
-            };
-
-            if (!genResult.Success)
-            {
-                EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
-                    DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-GEN-FAILED");
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate add-FK SQL: {genResult.ErrorMessage}");
-            }
-
-            if (string.IsNullOrWhiteSpace(genResult.Sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No FK DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("AddForeignKey", entityName, constraintName ?? string.Join(",", columnNames),
-                    string.Empty, noDdlResult);
-                EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
-                    DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var fkResult = ExecuteSql(genResult.Sql);
-            TrackMigration("AddForeignKey", entityName, constraintName ?? string.Join(",", columnNames),
-                genResult.Sql, fkResult);
-            EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, genResult.Sql,
-                fkResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, fkResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var fkResult = provider.AddForeignKey(entityName, columnNames, referencedEntityName, referencedColumnNames, onDeleteBehavior, onUpdateBehavior, constraintName);
+            TrackMigration("AddForeignKey", entityName, constraintName ?? string.Join(",", columnNames), string.Empty, fkResult);
+            EmitDdlEvidence("AddForeignKey", entityName, null, constraintName, null,
+                OutcomeFor(fkResult), DdlHelperSource.Direct,
+                fkResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return fkResult;
         }
 
@@ -758,188 +505,72 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-                return CreateErrorsInfo(Errors.Failed, "Foreign keys are not supported for file datasources");
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.DropForeignKey))
+                return UnsupportedOperation("DropForeignKey", entityName, null, constraintName, "DDL-UNSUPPORTED-PROVIDER");
 
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
-            {
-                EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
-            }
-
-            (string Sql, bool Success, string ErrorMessage) genResult = helper switch
-            {
-                Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper rh
-                    => rh.GenerateDropForeignKeySql(entityName, constraintName),
-                _ => TryGenerateDropForeignKeyViaInterface(helper, entityName, constraintName)
-            };
-
-            if (!genResult.Success)
-            {
-                EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
-                    DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-GEN-FAILED");
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate drop-FK SQL: {genResult.ErrorMessage}");
-            }
-
-            if (string.IsNullOrWhiteSpace(genResult.Sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No FK DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("DropForeignKey", entityName, constraintName, string.Empty, noDdlResult);
-                EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
-                    DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var dropResult = ExecuteSql(genResult.Sql);
-            TrackMigration("DropForeignKey", entityName, constraintName, genResult.Sql, dropResult);
-            EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, genResult.Sql,
-                dropResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            var dropResult = provider.DropForeignKey(entityName, constraintName);
+            TrackMigration("DropForeignKey", entityName, constraintName, string.Empty, dropResult);
+            EmitDdlEvidence("DropForeignKey", entityName, null, constraintName, null,
+                OutcomeFor(dropResult), DdlHelperSource.Direct,
+                dropResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
             return dropResult;
         }
 
-        // Fallback for non-RdbmsHelper IDataSourceHelper implementations that already
-        // expose GenerateAddForeignKeySql through the interface.
-        private static (string Sql, bool Success, string ErrorMessage) TryGenerateAddForeignKeyViaInterface(
-            IDataSourceHelper helper,
-            string tableName, string[] columnNames, string referencedTableName, string[] referencedColumnNames,
-            string onDeleteBehavior, string onUpdateBehavior, string constraintName)
-        {
-            try
-            {
-                // Most custom helpers expose only the 4-arg signature; the constraint name
-                // and behavior are ignored in that case (helpers return CASCADE behavior).
-                var mi = helper.GetType().GetMethod("GenerateAddForeignKeySql",
-                    new[] { typeof(string), typeof(string[]), typeof(string), typeof(string[]) });
-                if (mi != null)
-                {
-                    var result = mi.Invoke(helper, new object[] { tableName, columnNames, referencedTableName, referencedColumnNames });
-                    if (result is ValueTuple<string, bool, string> tuple)
-                        return tuple;
-                }
-                return ("", false, "Helper does not support foreign-key generation");
-            }
-            catch (Exception ex)
-            {
-                return ("", false, ex.Message);
-            }
-        }
-
-        private static (string Sql, bool Success, string ErrorMessage) TryGenerateDropForeignKeyViaInterface(
-            IDataSourceHelper helper,
-            string tableName, string constraintName)
-        {
-            try
-            {
-                var mi = helper.GetType().GetMethod("GenerateDropForeignKeySql",
-                    new[] { typeof(string), typeof(string) });
-                if (mi != null)
-                {
-                    var result = mi.Invoke(helper, new object[] { tableName, constraintName });
-                    if (result is ValueTuple<string, bool, string> tuple)
-                        return tuple;
-                }
-                return ("", false, "Helper does not support foreign-key drop");
-            }
-            catch (Exception ex)
-            {
-                return ("", false, ex.Message);
-            }
-        }
+        // (TryGenerateAddForeignKeyViaInterface / TryGenerateDropForeignKeyViaInterface removed —
+        // FK generation now lives inside ISchemaMigrationProvider. See note after DropIndex.)
 
         private IErrorsInfo AddColumn(EntityStructure entity, EntityField column)
         {
             if (MigrateDataSource == null)
                 return CreateErrorsInfo(Errors.Failed, "Migration data source is not set");
 
-            if (IsFileDataSource(MigrateDataSource))
-            {
-                var fileResult = AddColumnToFile(column);
-                TrackMigration("AddColumn", entity.EntityName, column.FieldName, string.Empty, fileResult);
-                EmitDdlEvidence("AddColumn", entity.EntityName, column.FieldName, null, null,
-                    fileResult.Flag == Errors.Ok ? DdlOperationOutcome.Emulated : DdlOperationOutcome.Failed,
-                    DdlHelperSource.FileMutation, fileResult.Flag == Errors.Ok ? "DDL-FILE-ADD-COL" : "DDL-FILE-ADD-COL-FAILED");
-                return fileResult;
-            }
-
-            var helper = _editor.GetDataSourceHelper(MigrateDataSource.DatasourceType);
-            if (helper == null)
+            var provider = ResolveProvider();
+            if (!provider.Capabilities.Supports(SchemaMigrationOp.AddColumn))
             {
                 EmitDdlEvidence("AddColumn", entity.EntityName, column.FieldName, null, null,
-                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-NO-HELPER");
-                return CreateErrorsInfo(Errors.Failed, $"No helper registered for '{MigrateDataSource.DatasourceType}'");
+                    DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, "DDL-UNSUPPORTED-PROVIDER");
+                var unsup = CreateErrorsInfo(Errors.Failed, $"'AddColumn' is not supported for {MigrateDataSource.DatasourceType}.");
+                TrackMigration("AddColumn", entity.EntityName, column.FieldName, string.Empty, unsup);
+                return unsup;
             }
 
-            var (sql, success, errorMessage) = helper.GenerateAddColumnSql(entity.EntityName, column);
-            if (!success)
-                return CreateErrorsInfo(Errors.Failed, $"Failed to generate add-column SQL: {errorMessage}");
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                var noDdlResult = CreateErrorsInfo(Errors.Ok, $"No DDL required for '{MigrateDataSource.DatasourceType}'");
-                TrackMigration("AddColumn", entity.EntityName, column.FieldName, string.Empty, noDdlResult);
-                EmitDdlEvidence("AddColumn", entity.EntityName, column.FieldName, null, null, DdlOperationOutcome.NoOp, DdlHelperSource.UniversalRdbmsHelper, "DDL-NOOP-EMPTY-SQL");
-                return noDdlResult;
-            }
-
-            var result = MigrateDataSource.ExecuteSql(sql);
-            if (result == null)
-            {
-                var noResult = CreateErrorsInfo(Errors.Failed, "Datasource returned no result for add-column SQL");
-                TrackMigration("AddColumn", entity.EntityName, column.FieldName, sql, noResult);
-                EmitDdlEvidence("AddColumn", entity.EntityName, column.FieldName, null, sql, DdlOperationOutcome.Failed, DdlHelperSource.UniversalRdbmsHelper, "DDL-NO-RESULT");
-                return noResult;
-            }
-
-            var finalResult = result.Flag == Errors.Ok
-                ? CreateErrorsInfo(Errors.Ok, $"Added column '{column.FieldName}'")
-                : result;
-            TrackMigration("AddColumn", entity.EntityName, column.FieldName, sql, finalResult);
-            EmitDdlEvidence("AddColumn", entity.EntityName, column.FieldName, null, sql,
-                finalResult.Flag == Errors.Ok ? DdlOperationOutcome.Executed : DdlOperationOutcome.Failed,
-                DdlHelperSource.UniversalRdbmsHelper, finalResult.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
-            return finalResult;
+            var result = provider.AddColumn(entity.EntityName, column);
+            TrackMigration("AddColumn", entity.EntityName, column.FieldName, string.Empty, result);
+            EmitDdlEvidence("AddColumn", entity.EntityName, column.FieldName, null, null,
+                OutcomeFor(result), DdlHelperSource.Direct,
+                result.Flag == Errors.Ok ? "DDL-EXECUTED" : "DDL-EXEC-FAILED");
+            return result;
         }
 
-        private IErrorsInfo AddColumnToFile(EntityField column)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
+        // ── Phase 10 provider dispatch ─────────────────────────────────────
+        //
+        // All schema operations are routed through ISchemaMigrationProvider (resolved 3-tier:
+        // exact DataSourceType → DatasourceCategory fallback → NullMigrationProvider).
+        // The provider executes against the data source's NATIVE API and returns an
+        // IErrorsInfo outcome; the manager wraps it with the existing TrackMigration /
+        // EmitDdlEvidence instrumentation. FILE/Connector/Queue/Stream/WebApi categories
+        // are covered by their category-fallback providers; the IsFileDataSource branches
+        // and the inlined file-mutation helpers were removed in Phase 10.3.
 
-            var ok = FileHelper.AddColumnToFile(filePath, column.FieldName, column.DefaultValue ?? string.Empty);
-            return ok
-                ? CreateErrorsInfo(Errors.Ok, $"Added column '{column.FieldName}' to file")
-                : CreateErrorsInfo(Errors.Failed, $"Failed to add column '{column.FieldName}' to file");
+        private ISchemaMigrationProvider ResolveProvider()
+            => _editor.GetMigrationProvider(MigrateDataSource);
+
+        private static DdlOperationOutcome OutcomeFor(IErrorsInfo result)
+        {
+            if (result == null || result.Flag != Errors.Ok)
+                return DdlOperationOutcome.Failed;
+            return (result.Message?.IndexOf("No DDL", StringComparison.OrdinalIgnoreCase) >= 0)
+                ? DdlOperationOutcome.NoOp
+                : DdlOperationOutcome.Executed;
         }
 
-        private static bool IsFileDataSource(IDataSource dataSource)
+        private IErrorsInfo UnsupportedOperation(string operationName, string entityName, string columnName, string indexName, string reasonCode)
         {
-            var props = dataSource?.Dataconnection?.ConnectionProp;
-            return dataSource?.Category == DatasourceCategory.FILE || (props?.IsFile ?? false);
-        }
-
-        private static string GetFilePath(IDataSource dataSource)
-        {
-            var props = dataSource?.Dataconnection?.ConnectionProp;
-            if (props == null)
-                return null;
-
-            if (!string.IsNullOrWhiteSpace(props.FilePath) && !string.IsNullOrWhiteSpace(props.FileName))
-                return Path.Combine(props.FilePath, props.FileName);
-
-            return props.FilePath;
-        }
-
-        private IErrorsInfo ExecuteSql(string sql)
-        {
-            var result = MigrateDataSource.ExecuteSql(sql);
-            if (result == null)
-                return CreateErrorsInfo(Errors.Failed, "Datasource returned no result for SQL execution");
-
-            return result.Flag == Errors.Ok ? CreateErrorsInfo(Errors.Ok, "DDL executed successfully") : result;
+            var msg = $"'{operationName}' is not supported for {MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown}.";
+            EmitDdlEvidence(operationName, entityName, columnName, indexName, null,
+                DdlOperationOutcome.Unsupported, DdlHelperSource.Direct, reasonCode);
+            return CreateErrorsInfo(Errors.Failed, msg);
         }
 
         /// <summary>
@@ -1183,117 +814,6 @@ namespace TheTechIdea.Beep.Editor.Migration
                 failures.Add($"foreign key '{targetForeignKeyName}' was not found on entity '{entity.EntityName}'.");
 
             return failures.Count == 0 ? null : failures;
-        }
-
-        private IErrorsInfo CreateFileFromEntity(EntityStructure entity)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
-
-            var delimiter = GetFileDelimiter(MigrateDataSource);
-            var header = string.Join(delimiter, entity.Fields?.Select(f => f.FieldName) ?? Enumerable.Empty<string>());
-            var directory = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-                Directory.CreateDirectory(directory);
-            File.WriteAllText(filePath, header + Environment.NewLine);
-            return CreateErrorsInfo(Errors.Ok, $"File created at '{filePath}'");
-        }
-
-        private IErrorsInfo TruncateFile(string entityName)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
-
-            if (!File.Exists(filePath))
-                return CreateErrorsInfo(Errors.Failed, $"File '{filePath}' does not exist");
-
-            var lines = File.ReadAllLines(filePath);
-            var header = lines.Length > 0 ? lines[0] : string.Empty;
-            File.WriteAllText(filePath, string.IsNullOrEmpty(header) ? string.Empty : header + Environment.NewLine);
-            return CreateErrorsInfo(Errors.Ok, $"File '{filePath}' truncated");
-        }
-
-        private IErrorsInfo DeleteFile(string entityName)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
-
-            if (!File.Exists(filePath))
-                return CreateErrorsInfo(Errors.Failed, $"File '{filePath}' does not exist");
-
-            File.Delete(filePath);
-            return CreateErrorsInfo(Errors.Ok, $"File '{filePath}' deleted");
-        }
-
-        private IErrorsInfo RenameFile(string oldName, string newName)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
-
-            if (!File.Exists(filePath))
-                return CreateErrorsInfo(Errors.Failed, $"File '{filePath}' does not exist");
-
-            var dir = Path.GetDirectoryName(filePath);
-            var newPath = Path.Combine(dir ?? string.Empty, newName);
-            File.Move(filePath, newPath);
-            return CreateErrorsInfo(Errors.Ok, $"File renamed to '{newPath}'");
-        }
-
-        private IErrorsInfo RemoveColumnFromFile(string entityName, string columnName)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
-
-            if (!File.Exists(filePath))
-                return CreateErrorsInfo(Errors.Failed, $"File '{filePath}' does not exist");
-
-            var updated = new EntityStructure(entityName) { Fields = new List<EntityField> { new EntityField { FieldName = columnName } } };
-            var ok = FileHelper.UpdateFileStructure(_editor, updated, filePath, addColumn: false);
-            return ok
-                ? CreateErrorsInfo(Errors.Ok, $"Removed column '{columnName}' from file")
-                : CreateErrorsInfo(Errors.Failed, $"Failed to remove column '{columnName}' from file");
-        }
-
-        private IErrorsInfo RenameColumnInFile(string entityName, string oldColumnName, string newColumnName)
-        {
-            var filePath = GetFilePath(MigrateDataSource);
-            if (string.IsNullOrWhiteSpace(filePath))
-                return CreateErrorsInfo(Errors.Failed, "File path is missing for file-based datasource");
-
-            if (!File.Exists(filePath))
-                return CreateErrorsInfo(Errors.Failed, $"File '{filePath}' does not exist");
-
-            var delimiter = GetFileDelimiter(MigrateDataSource);
-            var lines = File.ReadAllLines(filePath).ToList();
-            if (lines.Count == 0)
-                return CreateErrorsInfo(Errors.Failed, "File has no header row");
-
-            var headers = lines[0].Split(delimiter);
-            var idx = Array.FindIndex(headers, h => string.Equals(h, oldColumnName, StringComparison.OrdinalIgnoreCase));
-            if (idx < 0)
-                return CreateErrorsInfo(Errors.Failed, $"Column '{oldColumnName}' not found");
-
-            headers[idx] = newColumnName;
-            lines[0] = string.Join(delimiter, headers);
-            File.WriteAllLines(filePath, lines);
-            return CreateErrorsInfo(Errors.Ok, $"Renamed column '{oldColumnName}' to '{newColumnName}'");
-        }
-
-        private static char GetFileDelimiter(IDataSource dataSource)
-        {
-            var props = dataSource?.Dataconnection?.ConnectionProp;
-            if (props != null && props.Delimiter != default(char))
-                return props.Delimiter;
-
-            if (!string.IsNullOrWhiteSpace(dataSource?.ColumnDelimiter))
-                return dataSource.ColumnDelimiter[0];
-
-            return ',';
         }
 
         // NOTE: EnsureEntityStructureTypes, InferDataSourceTypeFromNetType, and

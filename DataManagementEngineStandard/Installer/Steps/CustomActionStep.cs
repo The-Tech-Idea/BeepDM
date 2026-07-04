@@ -143,13 +143,25 @@ namespace TheTechIdea.Beep.Installer.Steps
         private static string ExpandPath(string path, SetupContext context)
         {
             var installPath = context.TryGetProperty<string>("InstallPath") ?? "";
-            return path
+            var config = context.TryGetProperty<InstallConfig>("InstallConfig");
+            var expanded = path
                 .Replace("{InstallPath}", installPath)
+                .Replace("{ProductName}", config?.ProductName ?? "")
+                .Replace("{Version}", config?.ProductVersion ?? "")
+                .Replace("{Publisher}", config?.Publisher ?? "")
                 .Replace("{Temp}", Path.GetTempPath())
                 .Replace("{Windows}", Environment.GetFolderPath(Environment.SpecialFolder.Windows))
                 .Replace("{System}", Environment.SystemDirectory)
                 .Replace("{ProgramFiles}", Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles))
                 .Replace("{Desktop}", Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+
+            // {Custom:fieldId} — values collected from custom wizard pages (Track A1.3).
+            if (context.Properties.TryGetValue("CustomValues", out var cv) && cv is Dictionary<string, string> custom)
+            {
+                foreach (var kv in custom)
+                    expanded = expanded.Replace("{Custom:" + kv.Key + "}", kv.Value ?? "");
+            }
+            return expanded;
         }
     }
 

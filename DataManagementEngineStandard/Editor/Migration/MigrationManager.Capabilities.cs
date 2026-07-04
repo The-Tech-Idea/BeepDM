@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Core;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.SchemaMigration;
 using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core;
 using TheTechIdea.Beep.Utilities;
 
@@ -12,6 +13,42 @@ namespace TheTechIdea.Beep.Editor.Migration
         private MigrationProviderCapabilityProfile BuildProviderCapabilityProfile(DataSourceType type, DatasourceCategory category)
         {
             var capabilities = GetCapabilities(type, category);
+
+            // Phase 10: when a migration provider is bound to the active data source, its
+            // declared ISchemaMigrationProvider.Capabilities are authoritative for the
+            // relational flags — the plan/dry-run then reflects what the provider can really
+            // do (e.g. Mongo → SupportsForeignKeys=false, SupportsIndexes=true). Falls back to
+            // the universal-helper probe path when no provider is available (type-only planning).
+            var providerCaps = TryGetProviderCapabilities(type);
+            if (providerCaps != null)
+            {
+                var providerProfile = new MigrationProviderCapabilityProfile
+                {
+                    DataSourceType = type,
+                    DataSourceCategory = category,
+                    SupportsAlterColumn = providerCaps.Supports(SchemaMigrationOp.AlterColumn),
+                    SupportsRenameEntity = providerCaps.Supports(SchemaMigrationOp.RenameEntity),
+                    SupportsRenameColumn = providerCaps.Supports(SchemaMigrationOp.RenameColumn),
+                    SupportsTransactionalDdl = providerCaps.SupportsTransactionalDdl,
+                    SupportsForeignKeys = providerCaps.Supports(SchemaMigrationOp.AddForeignKey)
+                                          || providerCaps.Supports(SchemaMigrationOp.DropForeignKey),
+                    SupportsIndexes = providerCaps.Supports(SchemaMigrationOp.CreateIndex)
+                                      || providerCaps.Supports(SchemaMigrationOp.DropIndex),
+                    RequiresOfflineWindowForSchemaChanges = category == DatasourceCategory.RDBMS &&
+                        (type == DataSourceType.Oracle || type == DataSourceType.SqlLite
+                         || !providerCaps.SupportsTransactionalDdl),
+                    PortabilityWarning = BuildPortabilityWarning(type, category),
+                    Constraints = BuildCapabilityConstraints(type, category, capabilities)
+                };
+
+                if (providerCaps.IsReadOnly)
+                    providerProfile.Constraints.Add("Provider reports IsReadOnly — schema is managed externally; no mutating DDL is available.");
+                else
+                    providerProfile.Constraints.Add("Provider-capability profile applied (Phase 10).");
+
+                return providerProfile;
+            }
+
             var helper = ResolveHelper(type);
 
             var alterProbe = ProbeAlterColumnSupport(helper);
@@ -128,6 +165,26 @@ namespace TheTechIdea.Beep.Editor.Migration
             // Always route through the Core universal helper entrypoint so
             // migration planning uses the same helper behavior as runtime.
             return new GeneralDataSourceHelper(type, _editor);
+        }
+
+        /// <summary>
+        /// Returns the <see cref="ISchemaMigrationProvider.Capabilities"/> for the provider bound
+        /// to <see cref="MigrateDataSource"/> when it matches <paramref name="type"/>; otherwise
+        /// null (caller falls back to helper probing). Used so the capability profile reflects the
+        /// real provider rather than a synthetic SQL probe.
+        /// </summary>
+        private SchemaMigrationCapabilities TryGetProviderCapabilities(DataSourceType type)
+        {
+            try
+            {
+                if (MigrateDataSource == null || _editor == null) return null;
+                if (MigrateDataSource.DatasourceType != type) return null;
+                return _editor.GetMigrationProvider(MigrateDataSource)?.Capabilities;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static (bool IsSupported, string Reason) ProbeAlterColumnSupport(IDataSourceHelper helper)

@@ -1533,6 +1533,50 @@
         <member name="P:TheTechIdea.Beep.DataBase.EntityIndex.Options">
             <summary>Optional opaque options dictionary passed through to <c>IDataSourceHelper</c>.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IInMemoryDB">
+             <summary>
+             Contract for data sources that can persist all data in-memory (no external DB roundtrip per op).
+            
+             Implementers: SQLite (`:memory:`), DuckDB (in-memory mode), LiteDB (MemoryStream),
+             RocksDB / LevelDB / LMDB (temp-dir fallback), Couchbase Lite (in-memory mode),
+             Realm (in-memory Realm).
+            
+             Lifecycle:
+               OpenInMemory(name) → CreateStructure / LoadStructure → LoadData
+               SyncData / RefreshData ↔ external sources
+               FillFromDataSource / ExportToDataSource for bulk movement
+               SaveStructure / LoadData for persistence round-trips
+               ResetInMemory to clear data + schema without dropping the connection
+               Dispose to release the in-memory engine
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IInMemoryDB.OpenInMemory(System.String)">
+            <summary>Opens (or re-opens) the in-memory engine with the given logical database name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IInMemoryDB.GetInMemoryConnectionString">
+            <summary>Returns the in-memory connection string (e.g. SQLite ":memory:", LiteDB "memory").</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IInMemoryDB.ResetInMemory">
+            <summary>Drops all data + schema without closing the connection. Reuse for a fresh in-memory session.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IInMemoryDB.LoadStructureWithData(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>Load structure AND hydrate rows from the backing store.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IInMemoryDB.FillFromDataSource(TheTechIdea.Beep.IDataSource,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>Bulk-copy all rows from <paramref name="source"/> into the in-memory engine.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IInMemoryDB.ExportToDataSource(TheTechIdea.Beep.IDataSource,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>Bulk-copy all in-memory rows into <paramref name="target"/>.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.DataBase.IInMemoryDB.StructureChanged">
+            <summary>Raised whenever the schema (InMemoryStructures) changes — created, dropped, or modified.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.DataBase.IInMemoryDB.DataChanged">
+            <summary>Raised whenever row data changes — LoadData, SyncData, RefreshData, FillFrom, ExportTo.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.DataBase.IInMemoryDB.StateChanged">
+            <summary>Raised whenever any state flag (IsCreated / IsLoaded / IsSaved / IsSynced) flips.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.DataBase.RelationShipKeys.OnDeleteBehavior">
             <summary>
             On-delete behavior for this relation. Valid values: "Cascade", "Restrict",
@@ -10847,6 +10891,20 @@
             Check the capability matrix first to determine supported operations.
             </remarks>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.IDMEEditor.GetMigrationProvider(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Resolves the <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider"/> that translates logical schema
+            operations (create/alter/drop column, index, FK, ...) into the data source's NATIVE
+            API. Resolution is 3-tier: exact <paramref name="dataSource"/>'s
+            <see cref="T:TheTechIdea.Beep.Utilities.DataSourceType"/> override → <see cref="T:TheTechIdea.Beep.Utilities.DatasourceCategory"/> fallback →
+            the null provider. Never returns null.
+            </summary>
+            <remarks>
+            This is the schema-migration counterpart to <see cref="M:TheTechIdea.Beep.Editor.IDMEEditor.GetDataSourceHelper(TheTechIdea.Beep.Utilities.DataSourceType)"/>. The
+            returned provider is bound to the live <paramref name="dataSource"/> instance, so it
+            always reflects the current connection.
+            </remarks>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.IDMEEditor.SolutionDiscovery">
             <summary>Solution discovery: scan .sln, parse .csproj, build dependency graph.</summary>
         </member>
@@ -11340,6 +11398,127 @@
             When false, the plan continues to the next step on failure, recording the
             failed step in <c>MigrationExecutionResult.FailedSteps</c>. Dependency
             blocks and pre-flight gates always abort regardless of this flag.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry">
+            <summary>
+            Resolves an <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider"/> for a given data source using a
+            3-tier strategy:
+            <list type="number">
+              <item><description><b>Tier 1 — exact type override</b>: a provider registered for the
+                exact <see cref="T:TheTechIdea.Beep.Utilities.DataSourceType"/> (typically discovered via
+                <c>SchemaMigrationProviderAttribute</c>).</description></item>
+              <item><description><b>Tier 2 — category fallback</b>: a provider registered as the
+                default for the <see cref="T:TheTechIdea.Beep.Utilities.DatasourceCategory"/> (e.g. RDBMS → SQL provider,
+                Connector → read-only provider).</description></item>
+              <item><description><b>Tier 3 — null</b>: the null provider, which
+                reports every operation as unsupported.</description></item>
+            </list>
+            <see cref="M:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry.Resolve(TheTechIdea.Beep.IDataSource)"/> never returns null.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry.Register(TheTechIdea.Beep.Utilities.DataSourceType,System.Func{TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider})">
+            <summary>
+            Registers a Tier-1 factory for an exact <see cref="T:TheTechIdea.Beep.Utilities.DataSourceType"/>.
+            The factory receives the live <see cref="T:TheTechIdea.Beep.IDataSource"/> being migrated.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry.RegisterCategoryFallback(TheTechIdea.Beep.Utilities.DatasourceCategory,System.Func{TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider})">
+            <summary>
+            Registers a Tier-2 fallback factory for a <see cref="T:TheTechIdea.Beep.Utilities.DatasourceCategory"/>.
+            Used when no exact-type override is registered.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry.Resolve(TheTechIdea.Beep.IDataSource)">
+            <summary>
+            Resolves a provider for the given data source. Never returns null.
+            Order: exact type → category fallback → <see cref="!:NullMigrationProvider"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry.RegisteredTypes">
+            <summary>Snapshot of every Tier-1 type currently registered (for diagnostics/tests).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationOp">
+            <summary>
+            Logical schema operations a <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider"/> can perform.
+            These are intentionally provider-agnostic — never SQL strings. Each provider
+            translates an operation into its data source's native API.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities">
+            <summary>
+            Declares which <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationOp"/>s a provider can execute natively.
+            All flags default to false except <see cref="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities.SupportsCreateEntity"/>; providers
+            opt in to the operations their data source genuinely supports.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities.SupportsTransactionalDdl">
+            <summary>True when the provider can wrap mutating DDL in a transaction.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities.IsReadOnly">
+            <summary>
+            True when the data source's schema is owned externally and cannot be mutated
+            (SaaS APIs, queues, streams, read-only model files). All mutating ops return
+            <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/> with an explicit "unsupported" message.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities.Supports(TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationOp)">
+            <summary>Returns true if the provider declares support for the given operation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider">
+            <summary>
+            Translates logical <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationOp"/>s into a data source's NATIVE API.
+            Providers NEVER return SQL strings to the caller — they execute directly and return
+            an <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> outcome. A provider is constructed with the owning
+            <see cref="T:TheTechIdea.Beep.IDataSource"/> so it always reflects the live connection.
+            </summary>
+            <remarks>
+            Resolution is 3-tier (see <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry"/>):
+            exact <c>DataSourceType</c> override → <c>DatasourceCategory</c> fallback →
+            the null provider. Operations a provider does not support return
+            <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/> with a clear message — they never throw and never no-op.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider.DataSourceType">
+            <summary>The data source type this provider serves.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider.Category">
+            <summary>The data source category this provider serves.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider.Capabilities">
+            <summary>What this provider can do natively.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationProviderAttribute">
+            <summary>
+            Marks a class as a Tier-1 <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.ISchemaMigrationProvider"/> override for a
+            specific <see cref="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationProviderAttribute.DataSourceType"/>. Mirrors the existing
+            <c>[AddinAttribute]</c> discovery pattern. The class must expose a public
+            constructor taking a single <see cref="T:TheTechIdea.Beep.IDataSource"/> argument (the live data source
+            being migrated); the registry invokes it reflectively.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationProviderAttribute.DataSourceType">
+            <summary>The data source type this provider overrides.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationProviderAttribute.Category">
+            <summary>The data source category this provider belongs to.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationResults">
+            <summary>
+            Builds <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> outcomes for schema-migration providers. Shared so every
+            provider (engine-resident bases and datasource-colocated overrides) returns consistent
+            error shapes. <see cref="T:TheTechIdea.Beep.ConfigUtil.Errors"/> has no dedicated "unsupported" value, so unsupported
+            operations are expressed as <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/> with a stable message prefix.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationResults.UnsupportedPrefix">
+            <summary>Prefix used for "operation not supported" messages so callers can detect them.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationResults.Unsupported(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Standard "this provider cannot perform this operation on this data source" outcome.
+            Providers return this for every operation their <see cref="T:TheTechIdea.Beep.Editor.SchemaMigration.SchemaMigrationCapabilities"/>
+            does not declare as supported.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.Sum(System.String)">
@@ -14065,11 +14244,51 @@
             Complete configuration for a Beep application installation.
             </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Installer.InstallConfig.CurrentSchemaVersion">
+            <summary>
+            Schema version of the install-config.json contract. The builder stamps the
+            current version; the runtime warns on mismatch (P0-3 handshake).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.SchemaVersion">
+            <summary>Schema version stamped by the generator. Defaults to current.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.ConfigDirectory">
+            <summary>
+            Runtime-only: directory the install-config.json was loaded from. Used to
+            resolve rebased (relative) payload paths. Not serialized.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.Prefer64Bit">
+            <summary>
+            When true (default), per-machine installs resolve to the 64-bit Program Files and the
+            64-bit registry view (non-WOW6432). Set false for 32-bit (x86) installers.
+            Stamped by the builder from <c>BuildOptions.Architecture</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.UpdateMode">
+            <summary>How the on-launch updater behaves when a newer version is available (Track B3).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.InstallComponent">
             <summary>Selectable feature in the installer.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallComponent.Conditions">
+            <summary>
+            Conditions that must all evaluate true for this component to be selectable/visible
+            on the components page (OS/arch/registry/etc.). Evaluated via InstallConditionEvaluator.
+            Empty/null means always available.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.FileCopyOperation">
             <summary>File copy definition for installation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.FileCopyOperation.SharedCount">
+            <summary>
+            When true, the file participates in MSI-style shared-file reference counting
+            (SharedDLLs). Each install increments the count; uninstall only removes the file
+            when the count reaches zero, so a DLL shared between products survives the first
+            uninstall. (Track A3.2.)
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.RegistryOperation">
             <summary>Registry key/value operation.</summary>
@@ -14080,11 +14299,33 @@
         <member name="T:TheTechIdea.Beep.Installer.EnvironmentVariableOp">
             <summary>Environment variable operation.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.ComRegistration">
+            <summary>
+            COM in-process server registration (Track A3.3). Written to HKCR\CLSID\{Clsid}
+            (+ ProgId). DllPath may use the <c>{InstallPath}</c> macro. Scope-aware: per-user
+            registrations go to HKCU\Software\Classes, per-machine to HKLM\Software\Classes.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.GacAssembly">
+            <summary>An assembly to install/remove from the GAC (Track A3.3).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Prerequisite">
             <summary>Required prerequisite for installation.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.UninstallManifest">
             <summary>Record of all items installed for clean uninstall.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.UninstallManifest.SharedFiles">
+            <summary>Installed files under SharedDLLs reference counting (kept until count hits 0).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.UninstallManifest.ComRegistrations">
+            <summary>COM servers registered during install (reversed on uninstall).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.UninstallManifest.GacAssemblies">
+            <summary>Assemblies installed to the GAC during install (removed on uninstall).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallCondition">
+            <summary>Condition evaluated by InstallConditionEvaluator to gate component visibility.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.InstallerBranding">
             <summary>Branding configuration for the installer UI.</summary>

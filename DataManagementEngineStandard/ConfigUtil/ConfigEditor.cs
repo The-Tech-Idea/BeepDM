@@ -12,6 +12,7 @@ using TheTechIdea.Beep.AppManager;
 using TheTechIdea.Beep.Composite;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.SchemaMigration;
 using TheTechIdea.Beep.FileManager;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
@@ -146,6 +147,29 @@ namespace TheTechIdea.Beep.ConfigUtil
         {
             get => _connectionManager.CatalogRepository;
             set => _connectionManager.CatalogRepository = value;
+        }
+
+        // ── Phase 10: schema-migration provider registry ───────────────
+        // Lazily-constructed, thread-safe via a lock, mirroring the DMEEditor.MigrationProviders
+        // pattern. Populated by the assembly-scanning system (ISchemaMigrationProvider +
+        // [SchemaMigrationProvider] detection) at startup. Resolved via IDMEEditor.GetMigrationProvider.
+        private IMigrationProviderRegistry? _migrationProviders;
+        private readonly object _migrationProvidersLock = new object();
+        public IMigrationProviderRegistry? MigrationProviders
+        {
+            get
+            {
+                if (_migrationProviders == null)
+                {
+                    lock (_migrationProvidersLock)
+                    {
+                        if (_migrationProviders == null)
+                            _migrationProviders = new MigrationProviderRegistry(Logger);
+                    }
+                }
+                return _migrationProviders;
+            }
+            set => _migrationProviders = value;
         }
 
 		// Delegated properties to managers

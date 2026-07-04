@@ -17,6 +17,7 @@ using TheTechIdea.Beep.FileManager;
 using System;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.SchemaMigration;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Composite;
 using System.Runtime.CompilerServices;
@@ -165,6 +166,13 @@ namespace TheTechIdea.Beep.ConfigUtil
         TheTechIdea.Beep.Editor.Importing.DataImportConfiguration LoadImportConfiguration(string datasourceName);
         List<string> GetSavedImportConfigNames();
         void DeleteImportConfiguration(string datasourceName);
+
+        // ── Schema-migration provider framework (Phase 10) ───────────────
+        // Exposed so the assembly-scanning system can populate this registry at startup
+        // (alongside IDataSource / IDM_Addin discovery) by registering types that carry the
+        // [SchemaMigrationProvider] attribute. Resolved at runtime via
+        // IDMEEditor.GetMigrationProvider(IDataSource).
+        IMigrationProviderRegistry MigrationProviders { get; }
 
         // ── Catalog-aware connection management ──────────────────────
         /// <summary>Catalog repository for scope/profile-aware connection persistence. Set by the host.</summary>

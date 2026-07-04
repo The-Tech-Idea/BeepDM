@@ -15,6 +15,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Services.AppMap;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
+using TheTechIdea.Beep.Editor.SchemaMigration;
 
 
 namespace TheTechIdea.Beep.Editor
@@ -133,6 +134,24 @@ namespace TheTechIdea.Beep.Editor
         IDataSourceHelper GetDataSourceHelper(DataSourceType datasourceType);
 
         #endregion "Universal DataSource Helpers - Phase 2"
+
+        #region "Schema Migration Providers - Phase 10"
+
+        /// <summary>
+        /// Resolves the <see cref="ISchemaMigrationProvider"/> that translates logical schema
+        /// operations (create/alter/drop column, index, FK, ...) into the data source's NATIVE
+        /// API. Resolution is 3-tier: exact <paramref name="dataSource"/>'s
+        /// <see cref="DataSourceType"/> override → <see cref="DatasourceCategory"/> fallback →
+        /// the null provider. Never returns null.
+        /// </summary>
+        /// <remarks>
+        /// This is the schema-migration counterpart to <see cref="GetDataSourceHelper"/>. The
+        /// returned provider is bound to the live <paramref name="dataSource"/> instance, so it
+        /// always reflects the current connection.
+        /// </remarks>
+        ISchemaMigrationProvider GetMigrationProvider(IDataSource dataSource);
+
+        #endregion "Schema Migration Providers - Phase 10"
 
         #region "AppMap & Deployment Services"
 

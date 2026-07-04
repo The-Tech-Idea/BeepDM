@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.DataView
     /// <summary>
     /// Represents a data source for a data view.
     /// </summary>
-    public partial class DataViewDataSource : IDataSource, IDataViewOperations, IDisposable
+    public partial class DataViewDataSource : IDataSource, ILocalDB, IDataViewOperations, IDisposable
     {
         /// <summary>
         /// Event that is raised when a specific event is passed.
@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.DataView
         public IDMEEditor DMEEditor { get; set; }
         /// <summary>Gets or sets the current connection status.</summary>
         /// <value>The current connection status.</value>
-        public ConnectionState ConnectionStatus { get { return Dataconnection.ConnectionStatus; } set { } }
+        public ConnectionState ConnectionStatus { get { return Dataconnection?.ConnectionStatus ?? ConnectionState.Closed; } set { if (Dataconnection != null) Dataconnection.ConnectionStatus = value; } }
         /// <summary>Gets or sets the source entity data.</summary>
         /// <value>The source entity data.</value>
         public DataTable SourceEntityData { get; set; }
@@ -189,7 +189,6 @@ namespace TheTechIdea.Beep.DataView
         string FileName;
         public bool FileLoaded { get; set; } = false;
         int EntityIndex { get; set; } = 0;
-        IDataSource ds;
 
         // ── Federation Cache Control ────────────────────────────────────────
         /// <summary>Whether caching is enabled at all. Set to false for always-live "DirectQuery" mode.</summary>
@@ -303,15 +302,22 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>An object that provides information about any errors that occurred during the transaction.</returns>
         public virtual IErrorsInfo BeginTransaction(PassedArgs args)
         {
-            ErrorObject.Flag = Errors.Ok;
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-
+                RefreshCacheIfExpired();
+                var db = _tempDb;
+                if (db != null && db.ConnectionStatus == ConnectionState.Open)
+                {
+                    return db.BeginTransaction(args);
+                }
+                DMEEditor.AddLogMessage("Warning", "BeginTransaction: no materialized temp DB; returning Ok (no-op).", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"BeginTransaction: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
             }
             return DMEEditor.ErrorObject;
         }
@@ -321,15 +327,21 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>An object containing information about any errors that occurred during the transaction.</returns>
         public virtual IErrorsInfo EndTransaction(PassedArgs args)
         {
-            ErrorObject.Flag = Errors.Ok;
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-
+                var db = _tempDb;
+                if (db != null && db.ConnectionStatus == ConnectionState.Open)
+                {
+                    return db.EndTransaction(args);
+                }
+                DMEEditor.AddLogMessage("Warning", "EndTransaction: no materialized temp DB; returning Ok (no-op).", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in end Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"EndTransaction: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
             }
             return DMEEditor.ErrorObject;
         }
@@ -339,15 +351,21 @@ namespace TheTechIdea.Beep.DataView
         /// <returns>An object implementing the IErrorsInfo interface that provides information about any errors that occurred during the commit process.</returns>
         public virtual IErrorsInfo Commit(PassedArgs args)
         {
-            ErrorObject.Flag = Errors.Ok;
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
             try
             {
-
+                var db = _tempDb;
+                if (db != null && db.ConnectionStatus == ConnectionState.Open)
+                {
+                    return db.Commit(args);
+                }
+                DMEEditor.AddLogMessage("Warning", "Commit: no materialized temp DB; returning Ok (no-op).", DateTime.Now, 0, null, Errors.Ok);
             }
             catch (Exception ex)
             {
-
-                DMEEditor.AddLogMessage("Beep", $"Error in Begin Transaction {ex.Message} ", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.AddLogMessage("Fail", $"Commit: {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
             }
             return DMEEditor.ErrorObject;
         }
@@ -671,10 +689,16 @@ namespace TheTechIdea.Beep.DataView
 
         /// <summary>
         /// Prepares a temporary InMemory or Local DB, materializes all DataView entities into it, and syncs their data.
+        /// Honors <see cref="CacheEnabled"/>: when disabled (DirectQuery mode), returns null so callers
+        /// route the query to the underlying sources directly.
         /// </summary>
         private IDataSource PrepareMergedQueryDB()
         {
             if (_tempDb != null) return _tempDb;
+            if (!CacheEnabled || ExecutionMode == FederationExecutionMode.DirectQuery)
+            {
+                return null; // Caller should fall back to per-source execution.
+            }
 
             IDataSource targetDB = null;
 
@@ -708,7 +732,7 @@ namespace TheTechIdea.Beep.DataView
 
             if (targetDB is IInMemoryDB memDB)
             {
-                memDB.OpenDatabaseInMemory("TempDataView_" + Guid.NewGuid().ToString("N"));
+                memDB.OpenInMemory("TempDataView_" + Guid.NewGuid().ToString("N"));
             }
 
             bool isDuckDbTarget = targetDB.DatasourceType == DataSourceType.DuckDB;
@@ -881,10 +905,33 @@ namespace TheTechIdea.Beep.DataView
             }
             return ConnectionStatus;
         }
-        /// <summary>Closes the connection and returns the current state of the connection.</summary>
+        /// <summary>Closes the connection and tears down the materialized temp DB if any.</summary>
         /// <returns>The current state of the connection after closing.</returns>
         public ConnectionState Closeconnection()
         {
+            try
+            {
+                // Tear down the materialized temp DB first (frees its in-memory engine and file locks).
+                if (_tempDb != null && _tempDb != Dataconnection)
+                {
+                    try { _tempDb.Closeconnection(); } catch { }
+                    _tempDb = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Warning", $"Closeconnection: failed to dispose _tempDb: {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
+            }
+            try
+            {
+                ConnectionStatus = Dataconnection?.CloseConn() ?? ConnectionState.Closed;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Warning", $"Closeconnection: Dataconnection close failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
+                ConnectionStatus = ConnectionState.Closed;
+            }
+            CacheLastRefresh = DateTime.MinValue;
             return ConnectionStatus;
         }
 
@@ -957,16 +1004,37 @@ namespace TheTechIdea.Beep.DataView
                     return Entities[EntityListIndex(fnd.EntityName)];
             }
         }
-        /// <summary>Runs an ETL script.</summary>
+        /// <summary>Runs an ETL script. Resolves the data source via the script's metadata, not the stale private field.</summary>
         public IErrorsInfo RunScript(ETLScriptDet dDLScripts)
         {
-            // Fixed: was reading ds.ConnectionStatus before getting ds (null ref), and ignoring the new ds.
-            ds = DMEEditor.GetDataSource(DatasourceName);
-            if (ds?.ConnectionStatus == ConnectionState.Open)
+            try
             {
-                return ds.RunScript(dDLScripts);
+                if (dDLScripts == null)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    DMEEditor.ErrorObject.Message = "Script is null.";
+                    return DMEEditor.ErrorObject;
+                }
+                // Resolve the data source from the script (not the stale `ds` field)
+                var target = !string.IsNullOrWhiteSpace(dDLScripts.DestinationDataSourceName)
+                    ? DMEEditor.GetDataSource(dDLScripts.DestinationDataSourceName)
+                    : DMEEditor.GetDataSource(DatasourceName);
+                if (target == null)
+                {
+                    DMEEditor.AddLogMessage("Error", $"Could not find DataSource for RunScript.", DateTime.Now, 0, DatasourceName, Errors.Failed);
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    return DMEEditor.ErrorObject;
+                }
+                if (target.ConnectionStatus != ConnectionState.Open)
+                    target.Openconnection();
+                return target.RunScript(dDLScripts);
             }
-            DMEEditor.AddLogMessage("Error", $"Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("Fail", $"RunScript failed: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+            }
             return DMEEditor.ErrorObject;
         }
         /// <summary>Creates entities based on the provided list of entity structures.</summary>
@@ -985,37 +1053,48 @@ namespace TheTechIdea.Beep.DataView
             List<ETLScriptDet> ls = new List<ETLScriptDet>();
             foreach (EntityStructure item in entities)
             {
-                ds = DMEEditor.GetDataSource(item.DataSourceID);
-                if (ds.ConnectionStatus == ConnectionState.Open)
+                var source = DMEEditor.GetDataSource(item.DataSourceID);
+                if (source != null && source.ConnectionStatus == ConnectionState.Open)
                 {
-                    List<EntityStructure> lsent = new List<EntityStructure>();
-                    lsent.Add(item);
-                    ls.AddRange(ds.GetCreateEntityScript(lsent));
+                    List<EntityStructure> lsent = new List<EntityStructure> { item };
+                    ls.AddRange(source.GetCreateEntityScript(lsent));
                 }
                 else
                 {
-                    DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {item.DataSourceID}", DateTime.Now, 0, item.DataSourceID, Errors.Failed);
+                    DMEEditor.AddLogMessage("Error", $"Could not find open DataSource for entity '{item.DataSourceID}'.", DateTime.Now, 0, item.DataSourceID, Errors.Failed);
                 }
             }
             return ls;
         }
-        /// <summary>Inserts an entity into the database.</summary>
+        /// <summary>Inserts an entity via its source data source.</summary>
         /// <param name="EntityName">The name of the entity.</param>
         /// <param name="InsertedData">The data to be inserted.</param>
         /// <returns>An object containing information about any errors that occurred during the insertion process.</returns>
         public IErrorsInfo InsertEntity(string EntityName, object InsertedData)
         {
-            IDataSource ds = GetDataSourceObject(EntityName);
-            if (ds.ConnectionStatus == ConnectionState.Open)
+            DMEEditor.ErrorObject.Flag = Errors.Ok;
+            try
             {
-
-                return ds.InsertEntity(EntityName, InsertedData);
+                var source = GetDataSourceObject(EntityName);
+                if (source == null)
+                {
+                    DMEEditor.ErrorObject.Flag = Errors.Failed;
+                    DMEEditor.ErrorObject.Message = $"Could not find data source for entity '{EntityName}'.";
+                    DMEEditor.AddLogMessage("Fail", DMEEditor.ErrorObject.Message, DateTime.Now, 0, EntityName, Errors.Failed);
+                    return DMEEditor.ErrorObject;
+                }
+                if (source.ConnectionStatus != ConnectionState.Open)
+                    source.Openconnection();
+                return source.InsertEntity(EntityName, InsertedData);
             }
-            else
+            catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("Error", "$Could not Find DataSource {DatasourceName}", DateTime.Now, 0, DatasourceName, Errors.Failed);
-                return null;
+                DMEEditor.ErrorObject.Flag = Errors.Failed;
+                DMEEditor.ErrorObject.Ex = ex;
+                DMEEditor.ErrorObject.Message = $"InsertEntity('{EntityName}') failed: {ex.Message}";
+                DMEEditor.AddLogMessage("Fail", DMEEditor.ErrorObject.Message, DateTime.Now, -1, EntityName, Errors.Failed);
             }
+            return DMEEditor.ErrorObject;
         }
         /// <summary>Retrieves an entity asynchronously.</summary>
         public Task<IEnumerable<object>> GetEntityAsync(string EntityName, List<AppFilter> Filter)
