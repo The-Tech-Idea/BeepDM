@@ -5,6 +5,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Migration;
 
 namespace TheTechIdea.Beep.SetUp
 {
@@ -17,8 +18,8 @@ namespace TheTechIdea.Beep.SetUp
         public ISetupProgressReporter ProgressReporter { get; set; }
 
         public ConnectionProperties ConnectionProperties { get; set; }
-        public MigrationPlanArtifact MigrationPlan { get; set; }
-        public MigrationExecutionResult MigrationResult { get; set; }
+        public IMigrationPlanArtifact MigrationPlan { get; set; }
+        public IMigrationExecutionResult MigrationResult { get; set; }
 
         public IReadOnlyCollection<string> CompletedSeederIds =>
             State?.CompletedSeederIds ?? (IReadOnlyCollection<string>)Array.Empty<string>();

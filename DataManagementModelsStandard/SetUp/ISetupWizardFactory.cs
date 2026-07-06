@@ -22,6 +22,6 @@ namespace TheTechIdea.Beep.SetUp
         (ISetupWizard wizard, SetupContext context) Create(
             IDMEEditor editor,
             SetupOptions options,
-            Action<SetupWizardBuilder> configure);
+            Action<ISetupWizardBuilder> configure);
     }
 }

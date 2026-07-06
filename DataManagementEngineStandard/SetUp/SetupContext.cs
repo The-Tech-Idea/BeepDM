@@ -5,6 +5,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Migration;
 
 namespace TheTechIdea.Beep.SetUp
 {

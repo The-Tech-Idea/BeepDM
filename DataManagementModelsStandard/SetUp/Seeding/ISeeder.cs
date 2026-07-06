@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using System.Reflection;
+using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.SetUp.Seeding
 {

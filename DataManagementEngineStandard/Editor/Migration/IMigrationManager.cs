@@ -250,7 +250,7 @@ namespace TheTechIdea.Beep.Editor.Migration
     /// <summary>
     /// First-class migration plan artifact generated before applying schema changes.
     /// </summary>
-    public class MigrationPlanArtifact
+    public class MigrationPlanArtifact : IMigrationPlanArtifact
     {
         public string PlanId { get; set; } = Guid.NewGuid().ToString("N");
         public string PlanHash { get; set; } = string.Empty;
@@ -460,7 +460,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         public List<MigrationExecutionStep> Steps { get; set; } = new List<MigrationExecutionStep>();
     }
 
-    public class MigrationExecutionResult
+    public class MigrationExecutionResult : IMigrationExecutionResult
     {
         public string ExecutionToken { get; set; } = string.Empty;
         public bool ResumedFromCheckpoint { get; set; }
