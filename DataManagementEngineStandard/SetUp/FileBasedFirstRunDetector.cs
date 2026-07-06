@@ -6,14 +6,10 @@ using TheTechIdea.Beep.Editor;
 
 namespace TheTechIdea.Beep.SetUp
 {
-    public interface IFirstRunDetector
-    {
-        Task<bool> IsFirstRunAsync();
-        Task MarkSetupCompleteAsync();
-        Task ClearSetupFlagAsync();
-        bool WasSetupCompleted { get; }
-    }
-
+    /// <summary>
+    /// File-based <see cref="IFirstRunDetector"/> that records setup completion in a marker
+    /// file under the configuration directory.
+    /// </summary>
     public class FileBasedFirstRunDetector : IFirstRunDetector
     {
         private readonly IDMEEditor _editor;

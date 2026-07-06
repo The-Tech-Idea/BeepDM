@@ -41,6 +41,14 @@ namespace TheTechIdea.Beep.SetUp.Steps
             _logger = logger;
         }
 
+        /// <summary>
+        /// Public accessor for the typed options. UI shells (and other consumers) use this to
+        /// read and write the option values directly without going through reflection or a
+        /// string-keyed Properties dictionary. The canonical <see cref="Execute"/> pipeline
+        /// reads from the same object, so UI mutations take effect immediately.
+        /// </summary>
+        public ConnectionConfigStepOptions Options => _opts;
+
         // ── ISetupStep ───────────────────────────────────────────────────────
 
         public string StepId => "connection-config";

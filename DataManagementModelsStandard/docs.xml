@@ -18289,6 +18289,47 @@
             Used during clean shutdown.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ConnectionSavedEventArgs">
+            <summary>
+            Published by the connection UI step when the user saves a <see cref="P:TheTechIdea.Beep.SetUp.ConnectionSavedEventArgs.ConnectionProperties"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.ConnectionTestCompletedEventArgs">
+            <summary>
+            Published by the connection UI step when a connection test completes.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.DriverPackageInstalledEventArgs">
+            <summary>
+            Published by the driver-provision UI step when a NuGet package install completes.
+            Carries the package id, version, success flag, and a human-readable message.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SchemaSummaryEventArgs">
+            <summary>
+            Published by the schema UI step when its migration plan summary changes.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.MigrationSummary">
+            <summary>
+            Result of evaluating a schema migration plan. The canonical
+            <see cref="!:SchemaSetupStep"/> produces a richer report; this is a UI-side
+            summary used by the shell to display pending-migration counts and policy state.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SeedingSummaryEventArgs">
+            <summary>
+            Published by the seeding UI step when its seeder-registry summary changes.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.SetupCompletedEventArgs">
+            <summary>
+            Published when the canonical ISetupWizard completes execution (success or failure).
+            Carries the derived summary fields so callers (e.g. the shell form) don't need to
+            re-run the wizard to get a status string. The full canonical SetupReport lives
+            in the engine project; this is the contract-side projection.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.StreamandEvents.ClaimTicket">
             <summary>
             Compact reference to a large payload stored in an <see cref="T:TheTechIdea.Beep.StreamandEvents.IPayloadStore"/>.

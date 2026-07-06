@@ -1,18 +1,21 @@
 # MASTER TODO TRACKER
-# OBL / UOW / FormsManager Enhancement Plan
+# BeepDM Enhancement Plans
 
-**Goal:** Systematically enhance the three core layers — `ObservableBindingList<T>`,
-`UnitofWork<T>`, and `FormsManager` — to unlock richer data-management capabilities
-with clean API delegation all the way from the UI (`BeepDataBlock`) down to the database.
+**Goal:** Systematically enhance the core data-management layers in `BeepDM`
+to reach enterprise parity with documented phase roadmaps, and ship the
+WinForms UI shells that wrap each subsystem using the canonical
+`beep-winform-design` skill.
+
+---
+
+## Phase Overview
+
+### Track A — Core Enhancements (Phase 1–4)
 
 **Repos:**
 - OBL: `c:\...\BeepDM\DataManagementModelsStandard\ObservableBindingList\`
 - UOW: `c:\...\BeepDM\DataManagementEngineStandard\Editor\UOW\`
 - FormsManager: `c:\...\BeepDM\DataManagementEngineStandard\Editor\Forms\`
-
----
-
-## Phase Overview
 
 | # | Phase | Document | Status |
 |---|---|---|---|
@@ -20,6 +23,23 @@ with clean API delegation all the way from the UI (`BeepDataBlock`) down to the 
 | 2 | UOW Enhancements | [PHASE-02](PHASE-02-UOW-Enhancements.md) | [x] |
 | 3 | UOW ↔ FormsManager Bridge | [PHASE-03](PHASE-03-UOW-FormsManager-Bridge.md) | [x] |
 | 4 | FormsManager Advanced Operations | [PHASE-04](PHASE-04-FormsManager-Advanced.md) | [x] |
+
+### Track B — Editor Managers parity + WinForms shells (Phase 5–10)
+
+**Repos:**
+- Engines: `c:\...\BeepDM\DataManagementEngineStandard\Editor\BeepSync\`,
+  `…\Editor\Migration\`, `…\Editor\Defaults\`, `…\Editor\Mapping\`, `…\Editor\Importing\`
+- UI: `c:\...\Beep.Winform.Data.Integrated\Beep.Winform.Data.Integrated.Views\Configuration\`
+- Master tracker: [editor-managers/MASTER-EDITOR-MANAGERS-TRACKER.md](editor-managers/MASTER-EDITOR-MANAGERS-TRACKER.md)
+
+| # | Phase | Document | Status |
+|---|---|---|---|
+| 5 | BeepSyncManager parity + rollout | [PHASE-05](editor-managers/PHASE-05-BeepSyncManager.md) | [ ] |
+| 6 | MigrationManager parity (examples) | [PHASE-06](editor-managers/PHASE-06-MigrationManager.md) | [ ] |
+| 7 | DefaultsManager parity | [PHASE-07](editor-managers/PHASE-07-DefaultsManager.md) | [ ] |
+| 8 | MappingManager parity | [PHASE-08](editor-managers/PHASE-08-MappingManager.md) | [ ] |
+| 9 | DataImportManager parity (.plans + examples) | [PHASE-09](editor-managers/PHASE-09-DataImportManager.md) | [ ] |
+| 10 | WinForms Configuration shells (design skill) | [PHASE-10](editor-managers/PHASE-10-WinForms-Configuration-Shells.md) | [ ] |
 
 ---
 

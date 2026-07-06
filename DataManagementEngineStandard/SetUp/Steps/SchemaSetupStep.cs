@@ -48,6 +48,12 @@ namespace TheTechIdea.Beep.SetUp.Steps
             _discovery = discovery;
         }
 
+        /// <summary>
+        /// Public accessor for the typed options. UI shells use this to read and write
+        /// EntityTypes, ExtraAssemblies, DetectRelationships, StrictPolicyMode, ApproverLabel.
+        /// </summary>
+        public SchemaSetupStepOptions Options => _opts;
+
         // ── ISetupStep ───────────────────────────────────────────────────────
 
         public string StepId => "schema-setup";

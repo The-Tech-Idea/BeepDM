@@ -32,6 +32,12 @@ namespace TheTechIdea.Beep.SetUp.Steps
             _logger = logger;
         }
 
+        /// <summary>
+        /// Public accessor for the typed options. UI shells use this to read and write
+        /// Registry and SeederFilter.
+        /// </summary>
+        public SeedingStepOptions Options => _opts;
+
         // ── ISetupStep ───────────────────────────────────────────────────────
 
         public string StepId => "seeding";

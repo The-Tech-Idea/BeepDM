@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults;
 using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 

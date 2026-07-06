@@ -52275,6 +52275,14 @@
               7. Optionally open the datasource and populate context.DataSource
              </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep.Options">
+            <summary>
+            Public accessor for the typed options. UI shells (and other consumers) use this to
+            read and write the option values directly without going through reflection or a
+            string-keyed Properties dictionary. The canonical <see cref="M:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep.Execute(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/> pipeline
+            reads from the same object, so UI mutations take effect immediately.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions">
             <summary>
             Configuration options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep"/>.
@@ -52327,6 +52335,12 @@
              After any State 2/3 work: ConfigEditor.SaveConnectionDriversConfigValues()
              </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.Options">
+            <summary>
+            Public accessor for the typed options. UI shells use this to read and write the
+            option values directly (PackageName, Version, NuGetSources, AppInstallPath).
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions">
             <summary>
             Configuration options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep"/>.
@@ -52372,6 +52386,12 @@
              signatures changed. The hash includes type names and all public instance property
              name+type pairs to detect structual schema drift.
              </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.Options">
+            <summary>
+            Public accessor for the typed options. UI shells use this to read and write
+            EntityTypes, ExtraAssemblies, DetectRelationships, StrictPolicyMode, ApproverLabel.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions">
             <summary>
@@ -52422,6 +52442,12 @@
               - Partial progress is persisted to <see cref="P:TheTechIdea.Beep.SetUp.SetupState.CompletedSeederIds"/>
                 after each seeder so a failed run can resume.
              </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStep.Options">
+            <summary>
+            Public accessor for the typed options. UI shells use this to read and write
+            Registry and SeederFilter.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions">
             <summary>

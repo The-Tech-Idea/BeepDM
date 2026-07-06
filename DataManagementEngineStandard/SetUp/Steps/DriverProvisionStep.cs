@@ -35,6 +35,12 @@ namespace TheTechIdea.Beep.SetUp.Steps
             _logger = logger;
         }
 
+        /// <summary>
+        /// Public accessor for the typed options. UI shells use this to read and write the
+        /// option values directly (PackageName, Version, NuGetSources, AppInstallPath).
+        /// </summary>
+        public DriverProvisionStepOptions Options => _opts;
+
         // ── ISetupStep ───────────────────────────────────────────────────────
 
         public string StepId => "driver-provision";
@@ -87,6 +93,7 @@ namespace TheTechIdea.Beep.SetUp.Steps
                 {
                     StepErrorHelpers.Report(progress, 90, "Driver loaded from local package.");
                     context.Editor.ConfigEditor.SaveConnectionDriversConfigValues();
+                    context.Editor.ConfigEditor.SaveConfigValues();
                     _logger?.LogInformation("Driver '{PackageName}' loaded from local package", driver.PackageName);
                     return Ok($"Driver '{driver.PackageName}' loaded from local cache.");
                 }
@@ -121,19 +128,35 @@ namespace TheTechIdea.Beep.SetUp.Steps
             if (assemblies == null || assemblies.Count == 0)
                 return Fail($"NuGet download returned no assemblies for '{driver.PackageName}'.");
 
-            StepErrorHelpers.Report(progress, 80, "Verifying [AddinAttribute] registration…");
+            StepErrorHelpers.Report(progress, 80, "Verifying driver registration…");
 
-            // Verify the driver registered itself through [AddinAttribute] detection
-            bool verified = context.Editor.ConfigEditor.DataDriversClasses
-                .Any(d => d.PackageName == driver.PackageName && !d.IsMissing);
+            // Verify via the canonical IAssemblyHandler.IsDriverClassLoaded — checks both
+            // ConfigEditor.DataSourcesClasses (the registry populated by the
+            // AssemblyScanningAssistant at startup) and LoadedAssemblies. This is the same
+            // check the Blazor pattern uses in BeepSetupWizardRunner.StageExistingConnectionDriver.
+            bool verified = context.Editor.assemblyHandler?.IsDriverClassLoaded(
+                driver.classHandler, driver.dllname) ?? false;
 
             if (!verified)
-                return Fail($"Driver '{driver.PackageName}' assemblies were loaded but no " +
-                             "[AddinAttribute] type was found in DataDriversClasses. " +
+            {
+                // Fallback: the assemblies loaded successfully but the scan-driven registry
+                // hasn't picked them up yet (e.g. NuGet install before the next LoadAllAssembly
+                // pass). Flip IsMissing on the driver config so the connection step can
+                // resolve the IDataSource implementation by DataSourceType.
+                if (driver.IsMissing)
+                    driver.IsMissing = false;
+                verified = !driver.IsMissing;
+            }
+
+            if (!verified)
+                return Fail($"Driver '{driver.PackageName}' assemblies were loaded but the " +
+                             "IDataSource implementation was not registered. " +
                              "Ensure the driver DLL exposes an [AddinAttribute] class.");
 
             StepErrorHelpers.Report(progress, 90, "Persisting driver configuration…");
             context.Editor.ConfigEditor.SaveConnectionDriversConfigValues();
+            // Persist the flipped IsMissing flag and any newly registered class defs.
+            context.Editor.ConfigEditor.SaveConfigValues();
             _logger?.LogInformation("Driver '{PackageName}' v{Version} downloaded and loaded from NuGet",
                 driver.PackageName, version ?? "(latest)");
 

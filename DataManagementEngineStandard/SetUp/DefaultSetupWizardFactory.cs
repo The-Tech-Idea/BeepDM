@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.SetUp.Steps;
 
@@ -34,11 +38,21 @@ namespace TheTechIdea.Beep.SetUp
             var options = new SetupOptions();
             var context = new SetupContext { Editor = editor, Options = options };
 
-            var wizard = new SetupWizardBuilder()
+            // Read driver package names directly from ConfigEditor — same pattern as
+            // Beep.Razor.Components BeepSetupWizardRunner.StageExistingConnectionDriver.
+            // One DriverProvisionStep per AutoLoad driver so each can be verified
+            // independently and CanSkip returns true for the ones already loaded.
+            var driverSteps = BuildDriverSteps(editor);
+
+            var builder = new SetupWizardBuilder()
                 .WithId("standard-setup")
                 .WithOptions(options)
-                .WithLogger(_logger)
-                .AddStep(new DriverProvisionStep(new DriverProvisionStepOptions()))
+                .WithLogger(_logger);
+
+            foreach (var step in driverSteps)
+                builder.AddStep(step);
+
+            var wizard = builder
                 .AddStep(new ConnectionConfigStep(new ConnectionConfigStepOptions()))
                 .AddStep(new SchemaSetupStep(new SchemaSetupStepOptions()))
                 .AddStep(new DefaultsSetupStep(new DefaultsSetupStepOptions()))
@@ -66,6 +80,37 @@ namespace TheTechIdea.Beep.SetUp
             var wizard = builder.Build();
 
             return (wizard, context);
+        }
+
+        /// <summary>
+        /// Reads <c>ConfigEditor.DataDriversClasses</c> and returns one
+        /// <see cref="DriverProvisionStep"/> per distinct <c>PackageName</c>.
+        /// Drivers with <c>AutoLoad == true</c> are preferred; if none are
+        /// present, every distinct package is included so a first-run install
+        /// still stages the auto-loadable drivers from the bundled config.
+        /// </summary>
+        private static IReadOnlyList<DriverProvisionStep> BuildDriverSteps(IDMEEditor editor)
+        {
+            var drivers = editor?.ConfigEditor?.DataDriversClasses?
+                .Where(d => d != null && !string.IsNullOrWhiteSpace(d.PackageName))
+                .ToList() ?? new List<ConnectionDriversConfig>();
+
+            var selected = drivers.Where(d => d.AutoLoad).ToList();
+            if (selected.Count == 0)
+                selected = drivers;
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var result = new List<DriverProvisionStep>();
+            foreach (var d in selected)
+            {
+                if (!seen.Add(d.PackageName)) continue;
+                result.Add(new DriverProvisionStep(new DriverProvisionStepOptions
+                {
+                    PackageName = d.PackageName,
+                    Version = d.NuggetVersion
+                }));
+            }
+            return result;
         }
     }
 }
