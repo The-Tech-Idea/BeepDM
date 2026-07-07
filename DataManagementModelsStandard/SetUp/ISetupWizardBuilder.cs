@@ -7,13 +7,18 @@ namespace TheTechIdea.Beep.SetUp
     /// and implements this marker interface so the models project can carry the type
     /// without taking a dependency on engine-only code.
     /// </summary>
-    /// <remarks>
-    /// The fluent builder API (<c>WithId</c>, <c>WithOptions</c>, <c>AddStep</c>, …) is
-    /// only consumed inside the engine and host projects. The models project only needs
-    /// the type itself for the factory callback signature.
-    /// </remarks>
     public interface ISetupWizardBuilder
     {
+        /// <summary>Sets the wizard identifier.</summary>
+        ISetupWizardBuilder WithId(string wizardId);
+
+        /// <summary>Sets the target environment label.</summary>
+        ISetupWizardBuilder WithEnvironment(string env);
+
+        /// <summary>Adds a setup step to the pipeline.</summary>
+        ISetupWizardBuilder AddStep(ISetupStep step);
+
+        /// <summary>Builds and returns the configured wizard.</summary>
         ISetupWizard Build();
     }
 }

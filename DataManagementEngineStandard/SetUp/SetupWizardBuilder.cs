@@ -19,7 +19,7 @@ namespace TheTechIdea.Beep.SetUp
     ///     .Build();
     /// </code>
     /// </example>
-    public class SetupWizardBuilder
+    public class SetupWizardBuilder : ISetupWizardBuilder
     {
         private readonly List<ISetupStep> _steps = new();
         private SetupOptions _options = new SetupOptions();
@@ -153,6 +153,12 @@ namespace TheTechIdea.Beep.SetUp
             ValidateDependencyOrder();
             return new SetupWizard(_wizardId, _steps, _options, _logger, _adapter);
         }
+
+        // ── ISetupWizardBuilder explicit implementations ─────────────────────
+
+        ISetupWizardBuilder ISetupWizardBuilder.WithId(string wizardId) => WithId(wizardId);
+        ISetupWizardBuilder ISetupWizardBuilder.WithEnvironment(string env) => WithEnvironment(env);
+        ISetupWizardBuilder ISetupWizardBuilder.AddStep(ISetupStep step) => AddStep(step);
 
         // ── Helpers ──────────────────────────────────────────────────────────
 

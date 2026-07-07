@@ -67,7 +67,7 @@ namespace TheTechIdea.Beep.SetUp
         public (ISetupWizard wizard, SetupContext context) Create(
             IDMEEditor editor,
             SetupOptions options,
-            Action<SetupWizardBuilder> configure)
+            Action<ISetupWizardBuilder> configure)
         {
             if (editor == null) throw new ArgumentNullException(nameof(editor));
             if (configure == null) throw new ArgumentNullException(nameof(configure));
