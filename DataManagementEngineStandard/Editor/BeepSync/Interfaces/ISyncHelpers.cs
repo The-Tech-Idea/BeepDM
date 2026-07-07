@@ -151,6 +151,17 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Interfaces
             DataSyncSchema schema,
             out int qualityScore,
             out string qualityBand);
+
+        // ── Phase 9: DevEx / CI ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Run the schema lint rule registry against <paramref name="schema"/> and return
+        /// a <see cref="SyncCiGateResult"/>. Pure function — does not mutate the schema.
+        /// Default rules: <c>sync.schema.id-required</c>, <c>sync.schema.mappings-non-empty</c>,
+        /// <c>sync.schema.watermark-policy-present</c> (for incremental schemas),
+        /// <c>sync.schema.conflict-policy-declared</c> (for bidirectional schemas).
+        /// </summary>
+        SyncCiGateResult RunSyncSchemaLint(DataSyncSchema schema);
     }
 
     /// <summary>

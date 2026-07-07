@@ -112,5 +112,12 @@ namespace TheTechIdea.Beep.Editor.Defaults
         (IErrorsInfo validation, DefaultValue defaultValue) CreateDefaultValue(
             IDMEEditor editor, string fieldName, string value, string rule = null);
         IErrorsInfo ValidateDefaultValue(IDMEEditor editor, DefaultValue defaultValue);
+
+        // ── Migration toolkit (Phase 7) ─────────────────────────────────────────
+        // NOTE: Phase-7 helpers are NOT on the IDefaultsManager contract — they live
+        // as static utility classes in
+        //   TheTechIdea.Beep.Editor.Defaults.Migration.*
+        // and can be invoked directly without going through the interface. This
+        // keeps the IDefaultsManager surface focused on its core lifecycle.
     }
 }

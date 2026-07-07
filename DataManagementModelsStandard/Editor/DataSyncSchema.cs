@@ -232,6 +232,29 @@ namespace TheTechIdea.Beep.Editor
             set { SetProperty(ref _currentschemaversion, value); }
         }
 
+        // ── Rollout governance (Phase 10) ───────────────────────────────────────
+
+        private SyncRolloutWave _currentWave = SyncRolloutWave.Draft;
+        /// <summary>
+        /// Current rollout wave for this plan. Promoted by
+        /// <c>BeepSyncManager.PromoteWave</c> after a successful
+        /// <c>EvaluateRolloutGovernance</c> call.
+        /// </summary>
+        public SyncRolloutWave CurrentWave
+        {
+            get { return _currentWave; }
+            set { SetProperty(ref _currentWave, value); }
+        }
+
+        private DateTime _lastModifiedAt;
+        /// <summary>UTC last-modified timestamp. Stamped by
+        /// <c>BeepSyncManager.PromoteWave</c> and DevEx automation hooks.</summary>
+        public DateTime LastModifiedAt
+        {
+            get { return _lastModifiedAt; }
+            set { SetProperty(ref _lastModifiedAt, value); }
+        }
+
         // ── Incremental / CDC (Phase 3) ──────────────────────────────────────────
 
         private WatermarkPolicy _watermarkpolicy;

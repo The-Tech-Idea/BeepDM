@@ -17654,6 +17654,14 @@
             Modern sync orchestrator — split into focused partial classes.
             Core: fields, constructors, public state properties, and Dispose.
             </summary>
+            <summary>
+            Phase 9 — DevEx / CI partial. Adds plan-level CI validation, schema diff, and
+            artifact-bundle export on top of the existing <see cref="T:TheTechIdea.Beep.Editor.BeepSyncManager"/> core.
+            </summary>
+            <summary>
+            Phase 10 — Rollout governance partial. Evaluates promotion eligibility for a
+            sync plan based on measured KPIs and a caller-supplied threshold policy.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncAllDataAsync(System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <summary>Runs all registered schemas sequentially.</summary>
@@ -17707,6 +17715,24 @@
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.SyncIntegrationContext)">
             <summary>Advanced constructor with pre-built integration context.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.ValidatePlanForCiAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Run the schema lint rule registry + plan diff and bundle the results on disk.
+            Returns a <see cref="T:TheTechIdea.Beep.Editor.BeepSync.SyncCiValidationReport"/> describing what was produced.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.BuildSyncPlanDiff(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Compare <paramref name="current"/> against <paramref name="baseline"/> and return
+            a human-readable diff summary. Both must be non-null.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.ExportSyncArtifactsAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Write the schema JSON + lint report + plan diff into a directory and return
+            the bundle metadata. The directory is created if missing.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.RunPreflightAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken)">
             <summary>
             Runs all preflight checks against <paramref name="schema"/> without executing any data movement.
@@ -17724,6 +17750,22 @@
             Decides whether a previously saved checkpoint is still safe to resume.
             Evaluates <c>sync.checkpoint.resume-safe</c> via the Rule Engine when available;
             falls back to the resume-window hours from <see cref="T:TheTechIdea.Beep.Editor.BeepSync.RetryPolicy"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.EvaluateRolloutGovernance(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.BeepSync.SyncMetrics,TheTechIdea.Beep.Editor.BeepSync.SyncKpiThresholds)">
+            <summary>
+            Compare the supplied <paramref name="measured"/> KPIs against
+            <paramref name="thresholds"/> and return a <see cref="T:TheTechIdea.Beep.Editor.BeepSync.SyncGovernanceReport"/>
+            describing whether the plan may be promoted. Promotion walks the wave enum
+            forward by one step (Draft → Canary → EarlyAdopter → GA) when allowed; never
+            skips a wave.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.PromoteWave(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave)">
+            <summary>
+            Stamp <paramref name="schema"/>'s <see cref="P:TheTechIdea.Beep.Editor.DataSyncSchema.CurrentWave"/>
+            with <paramref name="targetWave"/> and persist the change. Returns
+            <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> with the outcome.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.PromoteSchemaAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.String,System.String,System.Threading.CancellationToken)">
@@ -17783,6 +17825,17 @@
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Examples.Example08_PerformanceAndParallel">
             <summary>
             Phase 8 — High-throughput sync configuration and parallel fan-out of multiple schemas.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Examples.Example09_DevExCicd">
+            <summary>
+            Phase 9 — CI-style validation: lint gate + plan diff + artifact bundle.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.Examples.Example10_RolloutGovernance">
+            <summary>
+            Phase 10 — Wave promotion: evaluate the plan's measured KPIs against the threshold
+            policy and call <c>PromoteWave</c> when the gates pass.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.DataSourceHelper">
@@ -18055,6 +18108,9 @@
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.CheckMappingQualityGate(TheTechIdea.Beep.Editor.DataSyncSchema,System.Int32@,System.String@)">
             <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper.CheckMappingQualityGate(TheTechIdea.Beep.Editor.DataSyncSchema,System.Int32@,System.String@)"/>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper.RunSyncSchemaLint(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <inheritdoc />
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IDataSourceHelper">
             <summary>
             Interface for data source operations in sync processes
@@ -18181,6 +18237,15 @@
             the score is below <see cref="P:TheTechIdea.Beep.Editor.BeepSync.SyncMappingPolicy.MinQualityScore"/>.
             Populates <paramref name="qualityScore"/> and <paramref name="qualityBand"/> so
             the caller can stamp the reconciliation report.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncValidationHelper.RunSyncSchemaLint(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Run the schema lint rule registry against <paramref name="schema"/> and return
+            a <see cref="T:TheTechIdea.Beep.Editor.BeepSync.SyncCiGateResult"/>. Pure function — does not mutate the schema.
+            Default rules: <c>sync.schema.id-required</c>, <c>sync.schema.mappings-non-empty</c>,
+            <c>sync.schema.watermark-policy-present</c> (for incremental schemas),
+            <c>sync.schema.conflict-policy-declared</c> (for bidirectional schemas).
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISyncProgressHelper">
@@ -18454,120 +18519,6 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncPlanMetadata.MappingVersion">
             <summary>Version of the mapping plan recorded at the time this metadata was last saved.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics">
-            <summary>
-            Represents synchronization metrics for monitoring sync operations
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SchemaID">
-            <summary>
-            Unique identifier for the sync schema
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SyncDate">
-            <summary>
-            Date and time when the sync operation started
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.TotalRecords">
-            <summary>
-            Total number of records to be synchronized
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SuccessfulRecords">
-            <summary>
-            Number of records successfully synchronized
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FailedRecords">
-            <summary>
-            Number of records that failed to synchronize
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SkippedRecords">
-            <summary>
-            Number of records that were skipped during synchronization
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsInserted">
-            <summary>
-            Number of records inserted during synchronization
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsUpdated">
-            <summary>
-            Number of records updated during synchronization
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsDeleted">
-            <summary>
-            Number of records deleted during synchronization
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.Duration">
-            <summary>
-            Duration of the sync operation
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.AverageRecordProcessingTime">
-            <summary>
-            Average processing time per record
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SuccessRate">
-            <summary>
-            Success rate as a percentage
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.IsSuccessful">
-            <summary>
-            Indicates if the sync operation completed successfully (no failures)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.ErrorMessages">
-            <summary>
-            Error messages collected during synchronization
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.Metadata">
-            <summary>
-            Additional metadata about the sync operation
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.MappingPlanVersion">
-            <summary>Mapping governance version used during this run.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.CorrelationId">
-            <summary>
-            Composite correlation ID: <c>{SchemaID}.{RunId}.{MappingPlanVersion}</c>.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RejectRate">
-            <summary>Fraction of records rejected by the DQ gate (0.0–1.0).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.ConflictRate">
-            <summary>Fraction of records that triggered a conflict (0.0–1.0).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FreshnessLagSeconds">
-            <summary>Seconds elapsed since the source data was last modified (freshness lag).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RetryCount">
-            <summary>Number of retry attempts made during the run (0 = first attempt succeeded).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RuleEvaluationCount">
-            <summary>Total number of rule evaluations recorded via <c>RuleEngine.RuleEvaluated</c>.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SloComplianceTier">
-            <summary>SLO compliance tier computed at the end of the run: <c>Green</c>, <c>Yellow</c>, or <c>Red</c>.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.MappingDriftDetected">
-            <summary>When <c>true</c>, mapping drift was detected during preflight but the run was allowed to proceed.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FromImportRunRecord(TheTechIdea.Beep.Editor.Importing.ImportRunRecord)">
-            <summary>
-            Creates a SyncMetrics instance from a completed ImportRunRecord.
-            </summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncRuleExecutionPolicies">
             <summary>
             Pre-built <see cref="T:TheTechIdea.Beep.Rules.RuleExecutionPolicy"/> profiles for BeepSync rule evaluations.
@@ -18642,6 +18593,23 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.Apply(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.Data.DataRow,TheTechIdea.Beep.Addin.IPassedArgs)">
             <summary>Applies the registered profile defaults to a DataRow.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.ScanProfile(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)">
+            <summary>Phase 7 — pass-through to <see cref="M:TheTechIdea.Beep.Editor.Defaults.Migration.RuleScanner.ScanProfile(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.BuildCompatibilityReport(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)">
+            <summary>Phase 7 — pass-through to <see cref="M:TheTechIdea.Beep.Editor.Defaults.Migration.CompatibilityReport.FromProfile(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.SuggestFixes(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)">
+            <summary>Phase 7 — pass-through to <see cref="M:TheTechIdea.Beep.Editor.Defaults.Migration.AutoFixHelper.SuggestFixes(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.DefaultsManager.ApplyWaveSettings(TheTechIdea.Beep.Editor.Defaults.Migration.WaveRolloutSettings)">
+            <summary>
+            Phase 7 — apply per-resolver wave-rollout settings. Disabled resolvers are
+            removed from the runtime pipeline until re-enabled. No-op if <paramref name="settings"/>
+            is null. Returns the engine-side summary; the actual resolver re-registration
+            is the caller's responsibility.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Defaults.FieldDefaultRule">
             <summary>
@@ -19161,6 +19129,51 @@
             Short hex fingerprint of the normalized rule, used as a cache/log key.
             Computed from the FNV-1a hash of <see cref="P:TheTechIdea.Beep.Editor.Defaults.Interfaces.ResolverExecutionResult.NormalizedRule"/>.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Defaults.Migration.AutoFixSuggestion">
+            <summary>
+            For each <see cref="T:TheTechIdea.Beep.Editor.Defaults.RuleParsing.RuleDiagnostic"/> produced by <see cref="T:TheTechIdea.Beep.Editor.Defaults.Migration.RuleScanner"/>,
+            suggest a modernised replacement rule. Read-only — does not mutate the profile.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.Migration.AutoFixHelper.SuggestFixes(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)">
+            <summary>
+            Walk <paramref name="profile"/> and emit a fix suggestion per field that uses
+            a deprecated token. Fields with no rule, or with a rule that's already canonical,
+            produce no suggestion.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Defaults.Migration.CompatibilityReport">
+            <summary>
+            Grouped compatibility report for an <see cref="T:TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile"/>:
+             - rule-syntax version counts (per <see cref="T:TheTechIdea.Beep.Editor.Defaults.RuleParsing.RuleSyntaxVersion"/>)
+             - dialect counts (per operator / legacy token)
+             - ordered list of <see cref="T:TheTechIdea.Beep.Editor.Defaults.RuleParsing.RuleDiagnostic"/> issues
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Defaults.Migration.RuleScanner">
+            <summary>
+            Scans an <see cref="T:TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile"/> for legacy / deprecated rule forms
+            and emits a list of <see cref="T:TheTechIdea.Beep.Editor.Defaults.RuleParsing.RuleDiagnostic"/> codes matching the normalizer's
+            <c>legacyExpressionTokens</c> set.
+            Pure function — does not mutate the profile.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.Migration.RuleScanner.ScanProfile(TheTechIdea.Beep.Editor.Defaults.EntityDefaultsProfile)">
+            <summary>
+            Scan every rule string in <paramref name="profile"/>'s fields and return
+            the diagnostics emitted by the normalizer, scoped to legacy-token usage.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Defaults.Migration.WaveRolloutSettings">
+            <summary>
+            Per-resolver wave-rollout policy. Each entry disables / enables a resolver family
+            for the named rollout environment, allowing phased adoption of the new defaults
+            system without breaking existing pipelines.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Defaults.Migration.WaveRolloutSettings.Resolvers">
+            <summary>Map of resolver name → enabled flag. Missing entries default to enabled.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Defaults.Registry.DefaultResolverDescriptor">
             <summary>
@@ -24763,6 +24776,40 @@
             Helper class for tracking import progress with detailed metrics
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.Examples.PreflightSyncDraftExamples">
+            <summary>
+            Phase 3 — preflight + sync draft for a given import configuration.
+            The engine already runs the preflight via <c>ISchemaManager</c>; this example
+            documents the contract and provides a pure setup the host can invoke.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.Examples.QualityProfilingExamples">
+            <summary>
+            Phase 4 — quality rules, error store, and watermark store.
+            BUILD-compatible: calls only the currently available engine surface.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Examples.QualityProfilingExamples.BuildRules">
+            <summary>
+            Build a list of built-in quality rules using the constructor-only API.
+            All rules take a field name + failure action via constructor params.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Examples.QualityProfilingExamples.RunErrorStoreDemo">
+            <summary>
+            Demonstrate the JSON-file error store.
+            <c>JsonFileImportErrorStore</c> persists errors at
+              <c>{configRoot}/Importing/Errors/&lt;key&gt;.errors.jsonl</c>.
+            The <c>DataSourceImportErrorStore</c> follows the same contract for DB-backed
+            environments and is interchangeable at the <c>IImportErrorStore</c> level.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Importing.Examples.QualityProfilingExamples.RunWatermarkStoreDemo">
+            <summary>
+            Demonstrate the in-memory watermark store.
+            <c>FileWatermarkStore</c> follows the same <c>IWatermarkStore</c> contract.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Factories.LocalStoreFactory">
             <summary>
             Creates the correct store implementations based on what is available in the environment.
@@ -25355,6 +25402,71 @@
             <summary>
             In-memory watermark store — suitable for unit tests and short-lived processes.
             Values are lost when the process exits.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.Adapters.BeepSyncMappingAdapter">
+            <summary>
+            Adapter that bridges a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/>'s mapped fields to the
+            engine's <see cref="T:TheTechIdea.Beep.Editor.Mapping.MappingManager"/> so the sync field mappings can be
+            expressed as an <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL"/> reused by CRUD / migration
+            / import.
+            </summary>
+            <remarks>
+            Phase 9 — Mapping ↔ BeepSync integration. The adapter is one-way (read-only)
+            in this revision: it consumes the sync schema's mapped fields and produces
+            an <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL"/>; it does not write back to the schema.
+            That keeps the schema the single source of truth for sync routing.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.Adapters.BeepSyncMappingAdapter.FromSchema(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Read the <paramref name="schema"/>'s <c>MappedFields</c> collection and
+            project each <see cref="T:TheTechIdea.Beep.Editor.FieldSyncData"/> into a <see cref="T:TheTechIdea.Beep.Workflow.Mapping_rep_fields"/>
+            entry on a fresh <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL"/>. The destination entity
+            name becomes the map's <c>EntityName</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.Adapters.BeepSyncMappingAdapter.ToSchema(System.String,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+            <summary>
+            Build a fresh <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/> whose <c>MappedFields</c> are
+            derived from <paramref name="map"/>. Useful when the user authors a
+            mapping in the Mapping UI and wants to push it into a sync schema.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.Adapters.DataImportMappingAdapter">
+            <summary>
+            Adapter that bridges the engine's <see cref="T:TheTechIdea.Beep.Editor.Mapping.MappingManager"/> to a
+            <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration"/> so a user-authored mapping can be
+            reused by the import pipeline. Produces a ready-to-run
+            <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration"/> with the same source / destination
+            entity + datasource pair as the mapping.
+            </summary>
+            <remarks>
+            Phase 9 — Mapping ↔ DataImport integration. The adapter is one-way: it
+            reads a mapping's <see cref="P:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL.EntityName"/> and the
+            optional <c>DestEntityName</c> hint to populate a fresh import
+            configuration. It does not overwrite an existing import configuration's
+            field mappings because <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration"/> does not carry
+            per-field mappings — it relies on column-name parity between source /
+            destination entities at run time.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.Adapters.DataImportMappingAdapter.ToImportConfig(TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.String,System.String,System.String)">
+            <summary>
+            Build a fresh <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration"/> from the supplied
+            mapping. The mapping's <see cref="P:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL.EntityName"/> becomes
+            the source entity; the destination entity / datasource come from the
+            explicit <paramref name="destEntityName"/> / <paramref name="destDataSource"/>
+            arguments (or fall back to the source values when null / empty).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.Adapters.DataImportMappingAdapter.FromImportConfig(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
+            <summary>
+            Round-trip: read the <paramref name="config"/>'s source / destination
+            pair and emit a stub <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL"/>. The resulting map
+            has no field-level entries — column-name parity is the import
+            pipeline's contract — but the entity / datasource metadata is preserved
+            for downstream tooling.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Mapping.AutoObjMapperOptions">
@@ -26288,6 +26400,10 @@
             <summary>
             Provides utility methods to create and manage entity mappings between source and destination entities.
             </summary>
+            <summary>
+            Phase 10 — Rollout governance partial. Adds promotion-evaluation helpers
+            on top of the existing mapping manager core.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.AutoMapByConventionWithScoring(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.Mapping.Models.NameMatchMode,TheTechIdea.Beep.Editor.Mapping.AutoMatchOptions)">
             <summary>
@@ -26362,6 +26478,22 @@
             Persists a mapping through MappingManager so cache invalidation and governance hooks are applied.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.EvaluateRolloutGovernance(TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave,TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiSnapshot,TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiThresholds)">
+            <summary>
+            Compare the supplied <paramref name="snapshot"/> against
+            <paramref name="thresholds"/> and return a promotion decision for
+            <paramref name="current"/>. Promotion walks the wave enum forward by
+            one step when allowed; never skips a wave.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.BuildKpiSnapshot(TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL)">
+            <summary>
+            Build a <see cref="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiSnapshot"/> from an <see cref="T:TheTechIdea.Beep.Workflow.Mapping.EntityDataMap"/>
+            by computing the per-field auto-match coverage and a quality score
+            from the available diagnostics. Used by the governance evaluation
+            above and by external dashboards.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Mapping.MappingValidationResult">
             <summary>
             Describes the outcome of <see cref="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.ValidateMappingAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)"/>.
@@ -26391,6 +26523,13 @@
             <summary>
             Fields whose destination-field name or type changed between the two versions.
             Each entry is the <em>current</em> field (after change).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.MappingRolloutDecision">
+            <summary>
+            Output of <see cref="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.EvaluateRolloutGovernance(TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave,TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiSnapshot,TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiThresholds)"/>: the
+            recommended wave, the measured KPIs, and the blocker reasons when
+            promotion is denied.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Mapping.Models.NameMatchMode">
@@ -26501,6 +26640,62 @@
             Creates a new mapper with diagnostic configuration
             </summary>
             <returns>Diagnostic configured mapper</returns>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example00_Overview">
+            <summary>
+            Marker class that documents the example order. Run any individual example
+            from a test harness by calling its static `Run(...)` method.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example01_PlanAndPolicy">
+            <summary>
+            Phase 1 — build a plan from a known set of CLR types, then run the policy
+            evaluator to detect destructive changes.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example02_DryRunPreflightImpact">
+            <summary>
+            Phase 4 — generate dry-run, preflight, and impact reports so a reviewer
+            can see what the migration will do without applying it.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example03_ExecutionCheckpointResume">
+            <summary>
+            Phase 5 — execute the plan with a retry policy, capture the checkpoint on
+            failure, and resume from the last completed step.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example04_RollbackCompensation">
+            <summary>
+            Phase 6 — build a compensation plan, check rollback readiness, and run
+            rollback when an execution has failed.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example05_CiAndArtifacts">
+            <summary>
+            Phase 9 — collect the migration artifacts (plan JSON, dry-run, impact,
+            telemetry snapshot) into a directory that CI can publish as a build
+            artifact.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example06_RolloutGovernance">
+            <summary>
+            Phase 10 — evaluate the plan against a wave + KPI thresholds + hard-stop
+            policy before promoting to a higher rollout wave.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example07_EfCoreInterop">
+            <summary>
+            Phase 7 — bridge an ORM/EF Core DbContext into the engine via the
+            `MigrationModel` POCO and `BuildMigrationPlanForModel`.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.Examples.Example07_EfCoreInterop.RunFromAnnotatedTypes(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.IDataSource,System.Collections.Generic.IEnumerable{System.Type})">
+            <summary>
+            Pure reflection path that mirrors EF Core data annotations — no EF Core
+            dependency required. Use this when the entity types are decorated with
+            `[Table]`, `[Column]`, `[Key]`, `[Required]`, `[MaxLength]`, etc.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationSummary">
             <summary>

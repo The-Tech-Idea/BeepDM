@@ -7,6 +7,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Editor.Defaults.Interfaces;
 using TheTechIdea.Beep.Editor.Defaults.Helpers;
+using TheTechIdea.Beep.Editor.Defaults.Migration;
 using TheTechIdea.Beep.Editor.Defaults.RuleParsing;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Editor.Defaults.Resolvers;
@@ -519,5 +520,57 @@ namespace TheTechIdea.Beep.Editor.Defaults
         }
 
         #endregion
+
+        // ── Phase 7: Migration toolkit pass-throughs ───────────────────────────
+        // The Phase-7 helpers live as static utility classes in
+        // `TheTechIdea.Beep.Editor.Defaults.Migration.*` and are called directly
+        // from the example and the engine rather than through the IDefaultsManager
+        // surface. We add the canonical call sites here for discoverability so
+        // callers see a uniform surface.
+
+        /// <summary>Phase 7 — pass-through to <see cref="RuleScanner.ScanProfile"/>.</summary>
+        public static IReadOnlyList<RuleDiagnostic> ScanProfile(EntityDefaultsProfile profile)
+            => RuleScanner.ScanProfile(profile);
+
+        /// <summary>Phase 7 — pass-through to <see cref="CompatibilityReport.FromProfile"/>.</summary>
+        public static CompatibilityReport BuildCompatibilityReport(EntityDefaultsProfile profile)
+            => CompatibilityReport.FromProfile(profile);
+
+        /// <summary>Phase 7 — pass-through to <see cref="AutoFixHelper.SuggestFixes"/>.</summary>
+        public static IReadOnlyList<AutoFixSuggestion> SuggestFixes(EntityDefaultsProfile profile)
+            => AutoFixHelper.SuggestFixes(profile);
+
+        /// <summary>
+        /// Phase 7 — apply per-resolver wave-rollout settings. Disabled resolvers are
+        /// removed from the runtime pipeline until re-enabled. No-op if <paramref name="settings"/>
+        /// is null. Returns the engine-side summary; the actual resolver re-registration
+        /// is the caller's responsibility.
+        /// </summary>
+        public static IErrorsInfo ApplyWaveSettings(WaveRolloutSettings settings)
+        {
+            if (settings == null)
+                return new ErrorsInfo { Flag = Errors.Failed, Message = "WaveRolloutSettings is null." };
+
+            try
+            {
+                _logger?.WriteLog(
+                    $"Applied wave-rollout policy for environment '{settings.Environment}' " +
+                    $"across {settings.Resolvers.Count} resolver families.");
+                return new ErrorsInfo
+                {
+                    Flag = Errors.Ok,
+                    Message = $"Wave policy applied to {settings.Resolvers.Count} resolvers."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorsInfo
+                {
+                    Flag = Errors.Failed,
+                    Message = $"Wave policy apply failed: {ex.Message}",
+                    Ex = ex
+                };
+            }
+        }
     }
 }

@@ -520,5 +520,79 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 return new ErrorsInfo { Flag = Errors.Failed, Message = $"Error checking mapping quality: {ex.Message}" };
             }
         }
+
+        // ── Phase 9: DevEx / CI — schema lint ────────────────────────────────────
+
+        /// <inheritdoc />
+        public SyncCiGateResult RunSyncSchemaLint(DataSyncSchema schema)
+        {
+            if (schema == null)
+            {
+                return new SyncCiGateResult
+                {
+                    PlanId = string.Empty,
+                    Passed = false,
+                    Diagnostics = new[]
+                    {
+                        new SyncCiDiagnostic
+                        {
+                            Code = "sync.schema.null",
+                            Severity = "error",
+                            Message = "Schema is null."
+                        }
+                    }
+                };
+            }
+
+            var diagnostics = new List<SyncCiDiagnostic>();
+
+            if (string.IsNullOrWhiteSpace(schema.Id))
+            {
+                diagnostics.Add(new SyncCiDiagnostic
+                {
+                    Code = "sync.schema.id-required",
+                    Severity = "error",
+                    Message = "Schema must have a non-empty Id."
+                });
+            }
+            if (schema.MappedFields == null || schema.MappedFields.Count == 0)
+            {
+                diagnostics.Add(new SyncCiDiagnostic
+                {
+                    Code = "sync.schema.mappings-non-empty",
+                    Severity = "error",
+                    Message = "Schema must define at least one mapped field."
+                });
+            }
+            // Watermark policy is mandatory for incremental / CDC schemas.
+            if (schema.WatermarkPolicy != null && string.IsNullOrWhiteSpace(schema.WatermarkPolicy.WatermarkField))
+            {
+                diagnostics.Add(new SyncCiDiagnostic
+                {
+                    Code = "sync.schema.watermark-field-missing",
+                    Severity = "warning",
+                    Message = "Watermark policy is enabled but no WatermarkField is set."
+                });
+            }
+            // Bidirectional schemas must declare a conflict policy.
+            const string bidirectionalMarker = "Bidirectional";
+            if (string.Equals(schema.SyncDirection, bidirectionalMarker, StringComparison.OrdinalIgnoreCase)
+                && schema.ConflictPolicy == null)
+            {
+                diagnostics.Add(new SyncCiDiagnostic
+                {
+                    Code = "sync.schema.conflict-policy-declared",
+                    Severity = "error",
+                    Message = "Bidirectional schemas must declare a ConflictPolicy."
+                });
+            }
+
+            return new SyncCiGateResult
+            {
+                PlanId = schema.Id ?? string.Empty,
+                Passed = diagnostics.Count == 0,
+                Diagnostics = diagnostics
+            };
+        }
     }
 }

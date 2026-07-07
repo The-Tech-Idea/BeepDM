@@ -2172,6 +2172,61 @@
             Requires <see cref="P:TheTechIdea.Beep.Editor.BeepSync.SyncDefaultsPolicy.ApplyOnInsert"/> to also be set.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncCiGateResult">
+            <summary>
+            Result of a CI lint gate for a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/>.
+            <see cref="P:TheTechIdea.Beep.Editor.BeepSync.SyncCiGateResult.Passed"/> is true when <see cref="P:TheTechIdea.Beep.Editor.BeepSync.SyncCiGateResult.Diagnostics"/> is empty.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncCiDiagnostic">
+            <summary>
+            One diagnostic emitted by the schema lint rule registry. Code is the rule
+            identifier (e.g. <c>"sync.schema.id-required"</c>).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncCiValidationReport">
+            <summary>
+            Composite CI report: the lint gate, the plan diff summary, and the artifact bundle
+            that the export produced. The diff is a human-readable summary string; the
+            artifact bundle is the on-disk path the caller can re-locate.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncGovernanceReport">
+            <summary>
+            Output of <c>BeepSyncManager.EvaluateRolloutGovernance</c>: the recommended
+            wave, the snapshot of measured KPIs, and a list of human-readable blocker
+            reasons when promotion is denied.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncKpiThresholds">
+            <summary>
+            Quantitative thresholds that gate promotion to the next <see cref="T:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave"/>.
+            Defaults match the Phase 7 SLO profile values so existing plans can promote
+            without reconfiguration.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave">
+            <summary>
+            Rollout wave for a sync plan promotion. Determines how many production
+            traffic-shares a plan is allowed to serve before being promoted to the
+            next wave.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave.Draft">
+            <summary>Plan is in the queue but not yet deployed.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave.Canary">
+            <summary>1% production traffic — diagnostic only.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave.EarlyAdopter">
+            <summary>10% production traffic — close monitoring.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave.GeneralAvailability">
+            <summary>100% production traffic — fully promoted.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.BeepSync.SyncRolloutWave.Deprecation">
+            <summary>Plan is deprecated; new runs should pick a newer plan.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.ProjectDataSourceBinding">
             <summary>
             Maps a project to a specific datasource in a given environment.
@@ -2305,7 +2360,7 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SloProfile.AlertRuleKeys">
             <summary>
-            Ordered list of alert rule keys evaluated against <see cref="!:SyncMetrics"/> at the
+            Ordered list of alert rule keys evaluated against <see cref="T:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics"/> at the
             end of each run.  E.g. <c>sync.alert.low-success-rate</c>.
             </summary>
         </member>
@@ -2409,6 +2464,120 @@
             <summary>
             Primary-key value of the last successfully written record in this run.
             Used as the idempotency anchor when resuming from a partial batch.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics">
+            <summary>
+            Represents synchronization metrics for monitoring sync operations
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SchemaID">
+            <summary>
+            Unique identifier for the sync schema
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SyncDate">
+            <summary>
+            Date and time when the sync operation started
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.TotalRecords">
+            <summary>
+            Total number of records to be synchronized
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SuccessfulRecords">
+            <summary>
+            Number of records successfully synchronized
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FailedRecords">
+            <summary>
+            Number of records that failed to synchronize
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SkippedRecords">
+            <summary>
+            Number of records that were skipped during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsInserted">
+            <summary>
+            Number of records inserted during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsUpdated">
+            <summary>
+            Number of records updated during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RecordsDeleted">
+            <summary>
+            Number of records deleted during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.Duration">
+            <summary>
+            Duration of the sync operation
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.AverageRecordProcessingTime">
+            <summary>
+            Average processing time per record
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SuccessRate">
+            <summary>
+            Success rate as a percentage
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.IsSuccessful">
+            <summary>
+            Indicates if the sync operation completed successfully (no failures)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.ErrorMessages">
+            <summary>
+            Error messages collected during synchronization
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.Metadata">
+            <summary>
+            Additional metadata about the sync operation
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.MappingPlanVersion">
+            <summary>Mapping governance version used during this run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.CorrelationId">
+            <summary>
+            Composite correlation ID: <c>{SchemaID}.{RunId}.{MappingPlanVersion}</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RejectRate">
+            <summary>Fraction of records rejected by the DQ gate (0.0–1.0).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.ConflictRate">
+            <summary>Fraction of records that triggered a conflict (0.0–1.0).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FreshnessLagSeconds">
+            <summary>Seconds elapsed since the source data was last modified (freshness lag).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RetryCount">
+            <summary>Number of retry attempts made during the run (0 = first attempt succeeded).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.RuleEvaluationCount">
+            <summary>Total number of rule evaluations recorded via <c>RuleEngine.RuleEvaluated</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.SloComplianceTier">
+            <summary>SLO compliance tier computed at the end of the run: <c>Green</c>, <c>Yellow</c>, or <c>Red</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.MappingDriftDetected">
+            <summary>When <c>true</c>, mapping drift was detected during preflight but the run was allowed to proceed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics.FromImportRunRecord(TheTechIdea.Beep.Editor.Importing.ImportRunRecord)">
+            <summary>
+            Creates a SyncMetrics instance from a completed ImportRunRecord.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncPerformanceProfile">
@@ -3187,6 +3356,17 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.DataSyncSchema.CurrentSchemaVersion">
             <summary>Most recent version artifact stamped when this schema was last saved or promoted.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataSyncSchema.CurrentWave">
+            <summary>
+            Current rollout wave for this plan. Promoted by
+            <c>BeepSyncManager.PromoteWave</c> after a successful
+            <c>EvaluateRolloutGovernance</c> call.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.DataSyncSchema.LastModifiedAt">
+            <summary>UTC last-modified timestamp. Stamped by
+            <c>BeepSyncManager.PromoteWave</c> and DevEx automation hooks.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.DataSyncSchema.WatermarkPolicy">
             <summary>
@@ -11383,6 +11563,44 @@
         </member>
         <member name="E:TheTechIdea.Beep.Editor.IUnitofWork.ItemChanged">
             <summary>Fires when a field changes on a tracked item.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiSnapshot">
+            <summary>
+            Snapshot of the mapping's measured KPIs at the time of the latest
+            promotion check. The mapping manager compares the values in this
+            snapshot against the thresholds in
+            <c>MappingKpiThresholds</c> to decide whether to advance the wave.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiThresholds">
+            <summary>
+            Thresholds that gate promotion to the next <see cref="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave"/>.
+            Defaults match the existing quality bands from
+            <c>MappingQualityBand</c> so existing mappings can promote without
+            reconfiguration.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave">
+            <summary>
+            Rollout wave for a mapping. The mapping manager reads this to gate
+            promotion to higher waves (Canary → EarlyAdopter → GA) based on
+            measured KPIs and threshold policy.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave.Draft">
+            <summary>Plan is in the queue but not yet deployed.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave.Canary">
+            <summary>1% production traffic — diagnostic only.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave.EarlyAdopter">
+            <summary>10% production traffic — close monitoring.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave.GeneralAvailability">
+            <summary>100% production traffic — fully promoted.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Mapping.Models.MappingRolloutWave.Deprecation">
+            <summary>Mapping is deprecated; new mappings should be authored.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.IMigrationExecutionResult">
             <summary>
