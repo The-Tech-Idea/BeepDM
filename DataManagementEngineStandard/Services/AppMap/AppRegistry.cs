@@ -27,7 +27,8 @@ public sealed class AppRegistry : IAppRegistry
         // Must complete before any caller reads/writes _apps — otherwise the
         // connector (RegisterWithAppRegistry) races the load and creates a
         // duplicate on every startup.
-        LoadAsync().GetAwaiter().GetResult();
+        // Use Task.Run to avoid UI-thread deadlock (no SynchronizationContext on thread pool).
+        Task.Run(() => LoadAsync()).GetAwaiter().GetResult();
     }
 
     public AppDefinition RegisterApp(AppDefinition app)
