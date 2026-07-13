@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio.Apps;
 
@@ -21,7 +22,14 @@ namespace TheTechIdea.Beep.Studio.Apps;
 internal sealed class AppDataWorkflow : IAppDataWorkflow
 {
     private readonly IDMEEditor _editor;
+    private readonly IMigrationLedger? _ledger;
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    public AppDataWorkflow(IDMEEditor editor, IMigrationLedger? ledger = null)
+    {
+        _editor = editor;
+        _ledger = ledger;
+    }
 
     public AppDataWorkflow(IDMEEditor editor) => _editor = editor;
 
@@ -132,6 +140,26 @@ internal sealed class AppDataWorkflow : IAppDataWorkflow
 
         report.Succeeded = report.EntitiesCopied > 0;
         if (string.IsNullOrWhiteSpace(report.Message)) report.Message = label;
+
+        if (_ledger != null && report.Succeeded)
+        {
+            var entry = new MigrationLedgerEntry
+            {
+                Kind = MigrationKind.Data,
+                Direction = MigrationDirection.Up,
+                Status = MigrationLedgerStatus.Succeeded,
+                AppId = appId,
+                SourceEnv = fromEnv,
+                TargetEnv = toEnv,
+                RowsAffected = (int)report.RowsCopied,
+                StepCount = report.EntitiesCopied,
+                AppliedBy = "system",
+                AppliedAt = DateTimeOffset.UtcNow,
+                CompletedAt = DateTimeOffset.UtcNow,
+            };
+            _ = _ledger.RecordAsync(entry);
+        }
+
         return StudioResult<DataSyncReport>.Ok(report);
     }
 

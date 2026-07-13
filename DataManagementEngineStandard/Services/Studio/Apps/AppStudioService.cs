@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio.Apps;
 
@@ -22,10 +23,12 @@ namespace TheTechIdea.Beep.Studio.Apps;
 public sealed class AppStudioService : IAppStudioService
 {
     private readonly IDMEEditor _editor;
+    private readonly IMigrationLedger? _ledger;
 
-    public AppStudioService(IDMEEditor editor)
+    public AppStudioService(IDMEEditor editor, IMigrationLedger? ledger = null)
     {
         _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+        _ledger = ledger;
     }
 
     private IAppRegistry? Registry => _editor.AppRegistry;
@@ -41,9 +44,9 @@ public sealed class AppStudioService : IAppStudioService
     private IScenarioWorkflow? _scenarios;
 
     /// <inheritdoc />
-    public IAppMigrationWorkflow Migrations => _migrations ??= new AppMigrationWorkflow(_editor);
+    public IAppMigrationWorkflow Migrations => _migrations ??= new AppMigrationWorkflow(_editor, _ledger);
     /// <inheritdoc />
-    public IAppDataWorkflow Data => _data ??= new AppDataWorkflow(_editor);
+    public IAppDataWorkflow Data => _data ??= new AppDataWorkflow(_editor, _ledger);
     /// <inheritdoc />
     public IAppGovernanceWorkflow Governance => _governance ??= new AppGovernanceWorkflow(_editor);
     /// <inheritdoc />

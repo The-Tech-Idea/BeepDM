@@ -16,6 +16,9 @@ using TheTechIdea.Beep.Studio.Schema;
 using TheTechIdea.Beep.Studio.Source;
 using TheTechIdea.Beep.Studio.Stubs;
 using TheTechIdea.Beep.Studio.Sync;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
+using TheTechIdea.Beep.Services.Studio.Migration.Ledger;
+using Microsoft.Extensions.Options;
 
 namespace TheTechIdea.Beep.Studio;
 
@@ -66,7 +69,8 @@ public static class BeepServiceExtensions
         //     IAppRegistry + DatasourceManagementService. Resolved lazily from
         //     IBeepService.DMEEditor so registration is order-independent.
         services.TryAddSingleton<IAppStudioService>(sp => new AppStudioService(
-            sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor));
+            sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor,
+            sp.GetService<IMigrationLedger>()));
 
         // 3. Register the sub-service facades. Each one defaults to a stub that
         //    returns HostNotSupported; the real implementations land in their
@@ -92,7 +96,8 @@ public static class BeepServiceExtensions
             sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor));
         // PR 4: IMigrationStudioService → real MigrationStudioService (wraps IMigrationManager).
         services.TryAddSingleton<IMigrationStudioService>(sp => new MigrationStudioService(
-            sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor));
+            sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor,
+            sp.GetService<IMigrationLedger>()));
         // PR 5: ISyncStudioService → real SyncStudioService (wraps BeepSyncManager).
         services.TryAddSingleton<ISyncStudioService>(sp => new SyncStudioService(
             sp.GetRequiredService<TheTechIdea.Beep.Services.IBeepService>().DMEEditor));
@@ -109,6 +114,12 @@ public static class BeepServiceExtensions
         // PR 7: IDeploymentMetadataService → real DeploymentMetadataService
         // (resolves code revision, mints/verifies HMAC approval tokens).
         services.TryAddSingleton<IDeploymentMetadataService>(_ => new DeploymentMetadataService());
+        services.TryAddSingleton<IMigrationLedger>(sp =>
+        {
+            var opts = sp.GetRequiredService<StudioOptions>();
+            return new JsonMigrationLedger(opts.DataRoot ?? System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BeepDM", "Studio"));
+        });
 
         return services;
     }

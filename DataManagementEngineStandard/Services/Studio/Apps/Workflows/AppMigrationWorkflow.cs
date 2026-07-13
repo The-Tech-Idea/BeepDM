@@ -8,6 +8,7 @@ using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio.Apps;
 
@@ -19,7 +20,9 @@ namespace TheTechIdea.Beep.Studio.Apps;
 internal sealed class AppMigrationWorkflow : IAppMigrationWorkflow
 {
     private readonly IDMEEditor _editor;
-    public AppMigrationWorkflow(IDMEEditor editor) => _editor = editor;
+    private readonly TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger? _ledger;
+    public AppMigrationWorkflow(IDMEEditor editor, TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger? ledger = null)
+    { _editor = editor; _ledger = ledger; }
 
     public Task<StudioResult<EnvMigrationReport>> MigrateAsync(string appId, string envId, MigrationOptions? options = null, CancellationToken ct = default)
         => RunMigrationAsync(appId, envId, dryRun: false, options, ct);

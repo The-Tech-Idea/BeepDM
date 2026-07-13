@@ -36,6 +36,9 @@ public interface IMigrationStudioService
     // ---- history & state ----
     Task<StudioResult<IReadOnlyList<MigrationHistoryItem>>> GetHistoryAsync(string? sourceName = null, int skip = 0, int take = 100, CancellationToken ct = default);
     Task<StudioResult<MigrationExecutionState>> GetExecutionStateAsync(string executionToken, CancellationToken ct = default);
+
+    /// <summary>The unified migration ledger (schema + data history, EF-like).</summary>
+    Ledger.IMigrationLedger Ledger { get; }
 }
 
 /// <summary>A request to build a migration plan.</summary>

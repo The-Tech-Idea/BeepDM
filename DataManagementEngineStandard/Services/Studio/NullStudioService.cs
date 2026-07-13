@@ -240,6 +240,8 @@ internal sealed class NullMigrationStudioService : IMigrationStudioService
         Task.FromResult(StudioResult<IReadOnlyList<MigrationHistoryItem>>.Ok(Array.Empty<MigrationHistoryItem>()));
     public Task<StudioResult<MigrationExecutionState>> GetExecutionStateAsync(string t, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<MigrationExecutionState>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Migration.Ledger.IMigrationLedger Ledger => new TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger(
+        System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BeepDM", "Studio"));
 }
 
 internal sealed class NullSyncStudioService : ISyncStudioService

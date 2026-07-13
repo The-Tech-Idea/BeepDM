@@ -23547,6 +23547,9 @@
             and a <see cref="T:TheTechIdea.Beep.Studio.IStudioProgress"/> reporter.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Studio.Migration.IMigrationStudioService.Ledger">
+            <summary>The unified migration ledger (schema + data history, EF-like).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Migration.MigrationRequest">
             <summary>A request to build a migration plan.</summary>
         </member>
@@ -23672,6 +23675,30 @@
         </member>
         <member name="M:TheTechIdea.Beep.Studio.Migration.MigrationHistoryItem.#ctor(System.String,System.DateTimeOffset,System.String,System.Int32,System.Boolean,System.String,System.String)">
             <summary>A history row for a previously-applied migration.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger">
+            <summary>
+            Unified, queryable ledger for schema and data migrations.
+            Records every Apply, DryRun, Rollback, and data-sync operation.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.RecordAsync(TheTechIdea.Beep.Studio.Migration.Ledger.MigrationLedgerEntry,System.Threading.CancellationToken)">
+            <summary>Record a new migration event. Returns the persisted entry.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.UpdateStatusAsync(System.String,TheTechIdea.Beep.Studio.Migration.Ledger.MigrationLedgerStatus,System.String,System.Threading.CancellationToken)">
+            <summary>Update the status of an existing entry (e.g. Pending → Succeeded).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.QueryAsync(TheTechIdea.Beep.Studio.Migration.Ledger.MigrationLedgerQuery,System.Threading.CancellationToken)">
+            <summary>Query ledger entries with optional filters.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.IsAppliedAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Return true if a migration with the given PlanHash has already been applied (idempotency gate).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.GetRollbackChainAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Get the rollback chain for a given entry (parent → children).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.CountAsync(TheTechIdea.Beep.Studio.Migration.Ledger.MigrationLedgerQuery,System.Threading.CancellationToken)">
+            <summary>Count ledger entries by status for a scope.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Studio.Schema.ISchemaService">
             <summary>

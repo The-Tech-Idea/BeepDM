@@ -11,8 +11,10 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Migration;
 using TheTechIdea.Beep.Studio.Migration;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 using TheTechIdea.Beep.Studio.Schema;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Services.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio.Migration;
 
@@ -28,6 +30,16 @@ public sealed class MigrationStudioService : IMigrationStudioService
 {
     private readonly IDMEEditor _editor;
     private readonly IMigrationManager _migration;
+    private readonly IMigrationLedger _ledger;
+
+    public IMigrationLedger Ledger => _ledger;
+
+    public MigrationStudioService(IDMEEditor editor, IMigrationLedger? ledger = null)
+    {
+        _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+        _ledger = ledger ?? new JsonMigrationLedger(
+            System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BeepDM", "Studio"));
+    }
 
     /// <summary>Map of plan hash → last built plan handle (per-target). Re-used for dry-run / preflight / apply.</summary>
     private readonly Dictionary<string, MigrationPlanHandle> _planCache = new(StringComparer.OrdinalIgnoreCase);
@@ -251,6 +263,14 @@ public sealed class MigrationStudioService : IMigrationStudioService
         var plan = ResolvePlan(planHandle);
         if (plan == null) return StudioResult<MigrationExecutionHandle>.Fail(StudioErrorCode.NotFound, "Plan not in cache.");
 
+        if (!string.IsNullOrWhiteSpace(planHandle.PlanHash))
+        {
+            var applied = await _ledger.IsAppliedAsync(planHandle.PlanHash, planHandle.TargetSourceName);
+            if (applied.IsSuccess && applied.Value)
+                return StudioResult<MigrationExecutionHandle>.Fail(StudioErrorCode.AlreadyExists,
+                    $"Plan already applied — idempotency gate skipped.");
+        }
+
         var enginePolicy = new MigrationExecutionPolicy
         {
             MaxTransientRetries = policy.MaxTransientRetries,
@@ -289,11 +309,31 @@ public sealed class MigrationStudioService : IMigrationStudioService
                 Timestamp: DateTimeOffset.UtcNow,
                 Payload: new Dictionary<string, object?> { ["token"] = result.ExecutionToken, ["applied"] = result.AppliedCount }));
 
-            return result.Success
-                ? StudioResult<MigrationExecutionHandle>.Ok(new MigrationExecutionHandle(
+            if (result.Success)
+            {
+                // Record ledger entry
+                var entry = new MigrationLedgerEntry
+                {
+                    Kind = MigrationKind.Schema,
+                    Direction = MigrationDirection.Up,
+                    Status = MigrationLedgerStatus.Succeeded,
+                    PlanId = planHandle.PlanId,
+                    PlanHash = planHandle.PlanHash,
+                    ExecutionToken = result.ExecutionToken,
+                    DatasourceName = planHandle.TargetSourceName ?? planHandle.SourceSourceName ?? "unknown",
+                    StepCount = planHandle.Operations?.Count ?? 0,
+                    AppliedBy = "system",
+                    AppliedAt = DateTimeOffset.UtcNow,
+                    CompletedAt = DateTimeOffset.UtcNow,
+                };
+                _ = _ledger.RecordAsync(entry);
+
+                return StudioResult<MigrationExecutionHandle>.Ok(new MigrationExecutionHandle(
                     ExecutionToken: result.ExecutionToken, PlanId: plan.PlanId, PlanHash: plan.PlanHash,
-                    StartedAt: DateTimeOffset.UtcNow, State: state))
-                : StudioResult<MigrationExecutionHandle>.Fail(StudioErrorCode.ApplyFailed, result.Message);
+                    StartedAt: DateTimeOffset.UtcNow, State: state));
+            }
+            else
+                return StudioResult<MigrationExecutionHandle>.Fail(StudioErrorCode.ApplyFailed, result.Message);
         }
         catch (OperationCanceledException)
         {
@@ -362,9 +402,27 @@ public sealed class MigrationStudioService : IMigrationStudioService
         try
         {
             var result = _migration.RollbackFailedExecution(executionToken, dryRun: policy.UseCompensationPlan);
+
+            // Record ledger entry for rollback
+            if (result.Success)
+            {
+                var entry = new MigrationLedgerEntry
+                {
+                    Kind = MigrationKind.Schema,
+                    Direction = MigrationDirection.Down,
+                    Status = MigrationLedgerStatus.RolledBack,
+                    ExecutionToken = executionToken,
+                    DatasourceName = "rollback",
+                    AppliedBy = "system",
+                    AppliedAt = DateTimeOffset.UtcNow,
+                    CompletedAt = DateTimeOffset.UtcNow,
+                };
+                _ = _ledger.RecordAsync(entry);
+            }
+
             return Task.FromResult(StudioResult<MigrationRollbackReport>.Ok(new MigrationRollbackReport(
                 Success: result.Success,
-                RolledBackOperations: 0,                            // engine exposes ExecutedActions but not a step count
+                RolledBackOperations: 0,
                 TotalOperations: 0,
                 Warnings: result.ExecutedActions ?? new List<string>(),
                 ErrorMessage: result.Success ? null : result.Message)));
