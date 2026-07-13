@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
@@ -68,6 +69,21 @@ namespace TheTechIdea.Beep.Container
         IBeepServiceBuilder WithAssemblyHandler(AssemblyHandlerType handlerType);
 
         /// <summary>
+        /// Enables reflection-based discovery of <see cref="IDM_Addin"/> views and
+        /// <see cref="IBeepViewModel"/> view models during <see cref="Build"/>.
+        /// Discovered types are registered as keyed services keyed on their type name.
+        /// Defaults to <c>true</c> when called with no argument.
+        /// </summary>
+        IBeepServiceBuilder WithViewDiscovery(bool enable = true);
+
+        /// <summary>
+        /// Constrains view / view-model discovery (see <see cref="WithViewDiscovery"/>)
+        /// to the supplied set of assemblies. When not set, discovery inspects every
+        /// relevant loaded assembly.
+        /// </summary>
+        IBeepServiceBuilder WithAssembliesToScan(IEnumerable<Assembly> assemblies);
+
+        /// <summary>
         /// Registers BeepService as a singleton (recommended for desktop applications).
         /// </summary>
         IBeepServiceBuilder AsSingleton();
@@ -102,6 +118,13 @@ namespace TheTechIdea.Beep.Container
             _services = services ?? throw new ArgumentNullException(nameof(services));
             _options = new BeepServiceOptions();
         }
+
+        // Fluent state for the add-in / view-model discovery hooks. Default to "enabled"
+        // so the common case (Desktop host calling AddBeepServices().Build()) discovers
+        // views/VMs without an extra call - matching the legacy RegisterServicesInternal
+        // behaviour where EnableViewDiscovery defaulted to true.
+        private bool _enableViewDiscovery = true;
+        private IEnumerable<Assembly> _assembliesToScan;
 
         public IBeepServiceBuilder WithDirectory(string directoryPath)
         {
@@ -157,6 +180,18 @@ namespace TheTechIdea.Beep.Container
             return this;
         }
 
+        public IBeepServiceBuilder WithViewDiscovery(bool enable = true)
+        {
+            _enableViewDiscovery = enable;
+            return this;
+        }
+
+        public IBeepServiceBuilder WithAssembliesToScan(IEnumerable<Assembly> assemblies)
+        {
+            _assembliesToScan = assemblies;
+            return this;
+        }
+
         public IBeepServiceBuilder AsSingleton()
         {
             _options.ServiceLifetime = ServiceLifetime.Singleton;
@@ -177,7 +212,38 @@ namespace TheTechIdea.Beep.Container
 
         public IBeepService Build()
         {
-            return BeepServiceRegistration.RegisterBeepServicesInternal(_services, _options);
+            var beepService = BeepServiceRegistration.RegisterBeepServicesInternal(_services, _options);
+
+            // Load plugin assemblies BEFORE discovery so the reflection scan can see them.
+            // Activates the previously-dormant EnableAssemblyLoading option. LoadAssemblies is
+            // idempotent (guarded by BeepService.isassembliesloaded), so a later call from
+            // BeepDesktopServices.StartLoading is a safe no-op.
+            if (_options.EnableAssemblyLoading)
+            {
+                try
+                {
+                    beepService.LoadAssemblies();
+                }
+                catch (Exception ex)
+                {
+                    // Non-fatal: discovery will still scan whatever is already in the AppDomain.
+                    System.Diagnostics.Debug.WriteLine($"[BeepServiceBuilder] Assembly loading failed: {ex.Message}");
+                }
+            }
+
+            // Optional add-in / view-model discovery. Runs after the load above so folder-loaded
+            // plugin add-ins (Addin / DataSources / ConnectionDriver) are discoverable here.
+            if (_enableViewDiscovery)
+            {
+                // Prefer the AssemblyHandler's LoadedAssemblies when available - that is the
+                // authoritative list of what just got loaded and is robust against isolated
+                // AssemblyLoadContexts. Falls back to a full AppDomain scan otherwise.
+                var loader = beepService.LLoader;
+                _services.AddBeepViewModels(loader);
+                _services.AddBeepViews(loader);
+            }
+
+            return beepService;
         }
     }
 

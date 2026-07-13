@@ -32610,6 +32610,21 @@
             Sets the assembly handler type to use.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Container.IBeepServiceBuilder.WithViewDiscovery(System.Boolean)">
+            <summary>
+            Enables reflection-based discovery of <see cref="T:TheTechIdea.Beep.Addin.IDM_Addin"/> views and
+            <see cref="T:TheTechIdea.Beep.Addin.IBeepViewModel"/> view models during <see cref="M:TheTechIdea.Beep.Container.IBeepServiceBuilder.Build"/>.
+            Discovered types are registered as keyed services keyed on their type name.
+            Defaults to <c>true</c> when called with no argument.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Container.IBeepServiceBuilder.WithAssembliesToScan(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})">
+            <summary>
+            Constrains view / view-model discovery (see <see cref="M:TheTechIdea.Beep.Container.IBeepServiceBuilder.WithViewDiscovery(System.Boolean)"/>)
+            to the supplied set of assemblies. When not set, discovery inspects every
+            relevant loaded assembly.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Container.IBeepServiceBuilder.AsSingleton">
             <summary>
             Registers BeepService as a singleton (recommended for desktop applications).
@@ -46928,6 +46943,199 @@
             when parsing fails for any reason.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions">
+            <summary>
+            Cross-platform reflection-based discovery and registration of Beep add-in
+            views (<see cref="T:TheTechIdea.Beep.Addin.IDM_Addin"/>) and view models (<see cref="T:TheTechIdea.Beep.Addin.IBeepViewModel"/>).
+            </summary>
+            <remarks>
+            <para>
+            These extensions live in the cross-platform <c>DataManagementEngineStandard</c>
+            assembly and carry no Windows / WinForms dependency. They can be used from any
+            host (Desktop / Web / Blazor / Console on any OS) and are also reachable from the
+            fluent builder via <see cref="!:IBeepServiceBuilder.WithViewDiscovery"/>.
+            </para>
+            <para>
+            Discovered types are registered with keyed DI so they can be resolved by their
+            C# type name - matching the existing add-in lookup convention. A single failing
+            type never aborts the whole scan: the error is logged and the next type is tried.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.RegisterBeepViewModelEventHandler">
+            <summary>
+            Delegate invoked when additional view models are being registered.
+            Receives the service collection so subscribers can register extra types.
+            </summary>
+            <param name="services">The service collection add-ins are being registered into.</param>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.RegisterAddinEventHandler">
+            <summary>
+            Delegate invoked when additional add-in views are being registered.
+            Receives the service collection so subscribers can register extra types.
+            </summary>
+            <param name="services">The service collection views are being registered into.</param>
+        </member>
+        <member name="E:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.OnRegisterViewModels">
+            <summary>
+            Raised from <see cref="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViewModels(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)"/> after auto-discovery completes,
+            so subscribers can register further view models imperatively. This event was
+            previously declared (but never raised) on the desktop-only
+            <c>BeepDesktopServices</c>; it now fires here for every host.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.OnRegisterAddins">
+            <summary>
+            Raised from <see cref="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViews(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)"/> after auto-discovery completes,
+            so subscribers can register further add-ins imperatively. This event was
+            previously declared (but never raised) on the desktop-only
+            <c>BeepDesktopServices</c>; it now fires here for every host.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViewModels(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Discovers concrete (non-abstract, non-interface) <see cref="T:TheTechIdea.Beep.Addin.IBeepViewModel"/>
+            types across the supplied assemblies - or all relevant loaded assemblies when
+            <paramref name="assembliesToScan"/> is <c>null</c> - and registers each as a
+            keyed transient keyed on its type name.
+            </summary>
+            <param name="services">The service collection to extend.</param>
+            <param name="assembliesToScan">
+            Optional explicit set of assemblies to scan. When <c>null</c>, the scanner
+            inspects the executing / calling / entry assemblies, the
+            <see cref="T:Microsoft.Extensions.DependencyModel.DependencyContext"/> runtime libraries, and every assembly already
+            loaded into the current <see cref="T:System.AppDomain"/> (system assemblies excluded).
+            </param>
+            <param name="logger">
+            Optional logger that receives per-type failures. When <c>null</c>, failures are
+            written to <see cref="T:System.Diagnostics.Debug"/>.
+            </param>
+            <returns>The service collection for method chaining.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViewModels(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Tools.IAssemblyHandler,TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Discovers concrete <see cref="T:TheTechIdea.Beep.Addin.IBeepViewModel"/> types using the assemblies a
+            <see cref="T:TheTechIdea.Beep.Tools.IAssemblyHandler"/> has loaded. Prefer this overload in hosts that
+            have already called <c>IBeepService.LoadAssemblies()</c> (directly or via the
+            fluent <c>.WithAssemblyLoading()</c>): it scans exactly what the handler loaded
+            and is robust against isolated <c>AssemblyLoadContext</c>s where loaded
+            assemblies may not appear in <see cref="P:System.AppDomain.CurrentDomain"/>.
+            </summary>
+            <param name="services">The service collection to extend.</param>
+            <param name="loader">
+            The assembly handler whose <see cref="P:TheTechIdea.Beep.Tools.IAssemblyHandler.LoadedAssemblies"/> should
+            be scanned. When <c>null</c>, falls back to a full AppDomain scan.
+            </param>
+            <param name="logger">Optional logger that receives per-type failures.</param>
+            <returns>The service collection for method chaining.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.RegisterViewModels(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.List{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Shared worker for the <see cref="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViewModels(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)"/>
+            overloads. Performs the reflection scan and the keyed-transient registrations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViews(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Discovers <see cref="T:TheTechIdea.Beep.Addin.IDM_Addin"/> types decorated with
+            <see cref="T:TheTechIdea.Beep.Vis.AddinAttribute"/> across the supplied assemblies - or all relevant
+            loaded assemblies when <paramref name="assembliesToScan"/> is <c>null</c> -
+            and registers each one with a lifetime driven by
+            <see cref="P:TheTechIdea.Beep.Vis.AddinAttribute.ScopeCreateType"/>:
+            <see cref="F:TheTechIdea.Beep.Vis.AddinScopeCreateType.Single"/> becomes singleton (plus a keyed
+            singleton on the type name); anything else becomes transient (plus a keyed
+            transient).
+            </summary>
+            <param name="services">The service collection to extend.</param>
+            <param name="assembliesToScan">
+            Optional explicit set of assemblies to scan. When <c>null</c>, the scanner
+            inspects the executing / calling / entry assemblies, the
+            <see cref="T:Microsoft.Extensions.DependencyModel.DependencyContext"/> runtime libraries, and every assembly already
+            loaded into the current <see cref="T:System.AppDomain"/> (system assemblies excluded).
+            </param>
+            <param name="logger">
+            Optional logger that receives per-type failures. When <c>null</c>, failures are
+            written to <see cref="T:System.Diagnostics.Debug"/>.
+            </param>
+            <returns>The service collection for method chaining.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViews(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Tools.IAssemblyHandler,TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Discovers <see cref="T:TheTechIdea.Beep.Addin.IDM_Addin"/> views using the assemblies a
+            <see cref="T:TheTechIdea.Beep.Tools.IAssemblyHandler"/> has loaded. Prefer this overload in hosts that
+            have already called <c>IBeepService.LoadAssemblies()</c> (directly or via the
+            fluent <c>.WithAssemblyLoading()</c>): it scans exactly what the handler loaded
+            and is robust against isolated <c>AssemblyLoadContext</c>s.
+            </summary>
+            <param name="services">The service collection to extend.</param>
+            <param name="loader">
+            The assembly handler whose <see cref="P:TheTechIdea.Beep.Tools.IAssemblyHandler.LoadedAssemblies"/> should
+            be scanned. When <c>null</c>, falls back to a full AppDomain scan.
+            </param>
+            <param name="logger">Optional logger that receives per-type failures.</param>
+            <returns>The service collection for method chaining.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.RegisterViews(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.List{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Shared worker for the <see cref="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViews(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},TheTechIdea.Beep.Logger.IDMLogger)"/> overloads.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepView(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Addin.IDM_Addin,TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Registers a single add-in view. Inspects its <see cref="T:TheTechIdea.Beep.Vis.AddinAttribute"/> and
+            uses a singleton lifetime when <see cref="P:TheTechIdea.Beep.Vis.AddinAttribute.ScopeCreateType"/> is
+            <see cref="F:TheTechIdea.Beep.Vis.AddinScopeCreateType.Single"/>, otherwise transient. Each registration
+            is also keyed on the type name against <see cref="T:TheTechIdea.Beep.Addin.IDM_Addin"/>.
+            </summary>
+            <param name="services">The service collection to extend.</param>
+            <param name="addin">The add-in instance whose type should be registered.</param>
+            <param name="logger">Optional logger that receives registration failures.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.AddBeepViewModel(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Addin.IBeepViewModel,TheTechIdea.Beep.Logger.IDMLogger)">
+            <summary>
+            Registers a single view model by its concrete type as a keyed transient keyed
+            on the type name. The supplied <paramref name="viewModel"/> instance is used
+            only to obtain the type; resolution still goes through the DI container.
+            </summary>
+            <param name="services">The service collection to extend.</param>
+            <param name="viewModel">The view model whose type should be registered.</param>
+            <param name="logger">Optional logger that receives registration failures.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceAddinDiscoveryExtensions.LogAddinError(TheTechIdea.Beep.Logger.IDMLogger,System.String)">
+            <summary>
+            Writes an add-in discovery error to the supplied logger when present,
+            otherwise to <see cref="T:System.Diagnostics.Debug"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.BeepAssemblyScanner">
+            <summary>
+            Assembly scanning helpers used by the add-in / view-model discovery extensions.
+            Centralised here so the discovery surface and the scanning strategy evolve together,
+            and so the original desktop behaviour is preserved exactly when the helpers moved
+            out of <c>BeepDesktopServices</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepAssemblyScanner.GetRelevantAssemblies">
+            <summary>
+            Collects the executing, calling and entry assemblies, every non-system runtime
+            library from <see cref="P:Microsoft.Extensions.DependencyModel.DependencyContext.Default"/>, and every assembly
+            already loaded into the current <see cref="T:System.AppDomain"/>. Duplicates are removed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepAssemblyScanner.GetTypesFromAssembly(System.Reflection.Assembly)">
+            <summary>
+            Returns the types defined by <paramref name="assembly"/>. A
+            <see cref="T:System.Reflection.ReflectionTypeLoadException"/> is swallowed and the partial set of
+            types it managed to surface is returned; any other exception yields an empty
+            sequence so scanning continues with the next assembly.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepAssemblyScanner.IsSystemAssembly(System.String)">
+            <summary>
+            Returns <c>true</c> when <paramref name="assemblyName"/> starts with one of the
+            well-known system / framework prefixes (case-insensitive), or is empty.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Services.BeepServiceAuditExtensions">
             <summary>
             Registration helpers for the Beep audit-trail feature.
@@ -46991,6 +47199,54 @@
             is opt-in on this host because IDB quota is shared with
             the page; callers must call this method explicitly.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.BeepServiceDataSourceExtensions">
+            <summary>
+            Base helper for fluent data-source driver registration.
+            </summary>
+            <remarks>
+            <para>
+            Per-datasource extension methods (<c>AddOracleDatabase</c>, <c>AddSqliteDatabase</c>,
+            <c>AddCsvFiles</c>, ...) live in each <c>IDataSource</c> implementation's own project
+            (under <c>BeepDataSources/DataSourcesPluginsCore/&lt;Name&gt;DataSourceCore/</c>) and
+            delegate to <see cref="M:TheTechIdea.Beep.Services.BeepServiceDataSourceExtensions.AddDataSourceDriver(TheTechIdea.Beep.Services.IBeepService,TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,System.Boolean)"/>.
+            </para>
+            <para>
+            That way a fluent method only appears in IntelliSense when the developer has referenced
+            the matching datasource project / NuGet - a true opt-in surface.
+            </para>
+            <para>
+            The driver config is appended to <see cref="P:TheTechIdea.Beep.ConfigUtil.IConfigEditor.DataDriversClasses"/>, deduped
+            by <see cref="P:TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig.classHandler"/> (case-insensitive). That is the same
+            field <c>DMEEditor.CreateNewDataSourceConnection</c> uses to resolve the
+            <see cref="T:TheTechIdea.Beep.IDataSource"/> implementation class at runtime, so deduping on it keeps the
+            config list consistent with how drivers are looked up.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceDataSourceExtensions.AddDataSourceDriver(TheTechIdea.Beep.Services.IBeepService,TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,System.Boolean)">
+            <summary>
+            Adds a data source driver configuration to
+            <see cref="P:TheTechIdea.Beep.ConfigUtil.IConfigEditor.DataDriversClasses"/>. No-op when a config with the same
+            <see cref="P:TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig.classHandler"/> is already present.
+            </summary>
+            <param name="beep">The Beep service whose <see cref="P:TheTechIdea.Beep.Services.IBeepService.Config_editor"/> holds the driver list.</param>
+            <param name="driverConfig">The driver config to register (typically from <c>ConnectionHelper.Create&lt;X&gt;Config()</c>).</param>
+            <param name="skipIfPresent">
+            When <c>true</c> (default), the config is skipped if its <see cref="P:TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig.classHandler"/>
+            already exists in the list (case-insensitive match). Set <c>false</c> to force-append a duplicate.
+            </param>
+            <returns>The <paramref name="beep"/> instance for chaining.</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.BeepServiceDataSourceExtensions.AddDataSourceDriver(TheTechIdea.Beep.Services.IBeepService,System.Func{TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig},System.Boolean)">
+            <summary>
+            Factory overload - pass the <c>Create&lt;X&gt;Config</c> method group directly.
+            Resolves the config lazily and forwards to
+            <see cref="M:TheTechIdea.Beep.Services.BeepServiceDataSourceExtensions.AddDataSourceDriver(TheTechIdea.Beep.Services.IBeepService,TheTechIdea.Beep.DriversConfigurations.ConnectionDriversConfig,System.Boolean)"/>.
+            </summary>
+            <example>
+            <code>beep.AddDataSourceDriver(ConnectionHelper.CreateOracleConfig);</code>
+            </example>
         </member>
         <member name="T:TheTechIdea.Beep.Services.BeepServiceDesktopExtensions">
             <summary>

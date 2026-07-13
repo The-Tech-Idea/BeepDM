@@ -521,10 +521,187 @@ builder.Services.AddBeepForBlazorWasm()
 
 ---
 
+## Add-in & View Model Discovery (`BeepServiceAddinDiscoveryExtensions`)
+
+Reflection-based discovery of `IDM_Addin` views and `IBeepViewModel` view models lives in
+**`BeepServiceExtensions.AddinDiscovery.cs`**. These extensions are cross-platform
+(no Windows / WinForms dependency), so any host — Desktop, Web API, Blazor, or Console on
+any OS — can use them.
+
+### Standalone usage
+
+```csharp
+using TheTechIdea.Beep.Services;
+
+// Scan every relevant loaded assembly, register each concrete IBeepViewModel as a
+// keyed transient (keyed on the type name).
+services.AddBeepViewModels();
+
+// Scan and register each [AddinAttribute]-decorated IDM_Addin. Lifetime follows
+// AddinAttribute.ScopeCreateType (Single => singleton, otherwise transient). Each is also
+// keyed on the type name against IDM_Addin.
+services.AddBeepViews();
+
+// Optional: constrain the scan, and route per-type failures to a logger.
+services.AddBeepViewModels(assembliesToScan: new[] { typeof(MyVm).Assembly },
+                           logger: hostLogger);
+```
+
+Single-item registration helpers are also available for imperative registration:
+
+```csharp
+services.AddBeepView(existingAddin);
+services.AddBeepViewModel(existingViewModel);
+```
+
+### Fluent builder usage
+
+The discovery hooks are wired into the fluent builder. `Build()` loads plugin assemblies
+**first** (via `IBeepService.LoadAssemblies()` → `LLoader.LoadAllAssembly()`), then runs the
+reflection scan against `LLoader.LoadedAssemblies`. This means folder-loaded plugin add-ins
+(`Addin` / `DataSources` / `ConnectionDriver`) are discoverable, not just statically-referenced ones.
+
+```csharp
+services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyApp")
+    .WithMapping()
+    .WithAssemblyLoading()              // Build() loads plugin DLLs before discovery (default: on)
+    .WithViewDiscovery()                // then scans LLoader.LoadedAssemblies (default: on)
+    .WithAssembliesToScan(new[] { asm })// optional; overrides the LLoader/AppDomain scan with an explicit list
+    .AsSingleton()
+    .Build();
+```
+
+The load step is idempotent — `IBeepService.LoadAssemblies` is guarded by an internal flag,
+so calling it again later (e.g. from a desktop `StartLoading` flow) is a safe no-op.
+
+### Explicit load-first call order
+
+If you prefer to drive the order imperatively, use the `Action<BeepServiceOptions>` overload
+(which returns the `IBeepService`) and pass its `LLoader` to the discovery extensions:
+
+```csharp
+var beep = services.AddBeepServices(opts =>
+{
+    opts.DirectoryPath = AppContext.BaseDirectory;
+    opts.AppRepoName   = "MyApp";
+});
+
+beep.LoadAssemblies();                  // load plugin DLLs NOW
+services.AddBeepViewModels(beep.LLoader); // scan what LLoader loaded
+services.AddBeepViews(beep.LLoader);
+```
+
+### Discovery events
+
+Two events previously declared (but never raised) on the WinForms-only `BeepDesktopServices`
+have moved here and now actually fire:
+
+```csharp
+BeepServiceAddinDiscoveryExtensions.OnRegisterViewModels += services => { /* register extra VMs */ };
+BeepServiceAddinDiscoveryExtensions.OnRegisterAddins     += services => { /* register extra add-ins */ };
+```
+
+They fire at the end of `AddBeepViewModels` / `AddBeepViews` respectively.
+
+---
+
+## Data Source Drivers (`BeepServiceDataSourceExtensions`)
+
+Each `IDataSource` implementation project (under `BeepDataSources/DataSourcesPluginsCore/<Name>DataSourceCore/`)
+ships a tiny fluent extension that registers its driver config. The method **only appears in IntelliSense
+when the developer has referenced that datasource's project / NuGet** — a true opt-in surface.
+
+### Usage
+
+```csharp
+var beep = services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyApp")
+    .Build();
+
+// Register only the drivers your app needs. Each is idempotent (deduped by classHandler).
+beep.AddOracleDatabase();
+beep.AddSqliteDatabase();
+beep.AddMySqlDatabase();
+beep.AddPostgreDatabase();
+```
+
+### How it works
+
+- The base helper `AddDataSourceDriver(config)` lives in
+  **`BeepServiceExtensions.DataSources.cs`** (this project). It appends the
+  `ConnectionDriversConfig` to `ConfigEditor.DataDriversClasses`, deduped by
+  `classHandler` (case-insensitive — the same field `DMEEditor.CreateNewDataSourceConnection`
+  uses to resolve the `IDataSource` class at runtime).
+- Each per-datasource extension file (e.g. `OracleDataSourceServiceExtensions.cs`)
+  is a one-liner that calls `ConnectionHelper.CreateOracleConfig()` and forwards
+  to the base helper.
+- The `classHandler` field on each config **is** the `IDataSource` implementation
+  class name (e.g. `"OracleDataSource"`), so deduping on it keeps the config list
+  consistent with runtime driver lookup.
+
+### Available RDBMS drivers (Slice 1)
+
+| Fluent method | Project folder | `classHandler` |
+|---|---|---|
+| `AddOracleDatabase` | `OracleDataSourceCore` | `OracleDataSource` |
+| `AddSqlServerDatabase` | `SQlServerDataSourceCore` | `SQLServerDataSource` |
+| `AddSqliteDatabase` | `SqliteDatasourceCore` | `SQLiteDataSource` |
+| `AddMySqlDatabase` | `MySqlDataSourceCore` | `MySQLDataSource` |
+| `AddPostgreDatabase` | `PostgreDataSourceCore` | `PostgreDataSource` |
+| `AddFirebirdDatabase` | `FirebirdDataSourceCore` | `FireBirdDataSource` |
+| `AddSnowFlakeDatabase` | `SnowFlakeDataSource` | `SnowFlakeDataSource` |
+| `AddHanaDatabase` | `HanaDataSource` | `HanaDataSource` |
+| `AddSpannerDatabase` | `SpannerDataSourceCore` | `SpannerDataSource` |
+| `AddCockroachDatabase` | `CockroachDBDataSourceCore` | `CockroachDBDataSource` |
+| `AddTimeScaleDatabase` | `TimeScaleDBDataSource` | `TimeScaleDBDataSource` |
+| `AddTerraDataDatabase` | `TerraDataDataSource` | `TerraDataDataSource` |
+| `AddVerticaDatabase` | `VerticaDataSource` | `VerticaDataSource` |
+| `AddSqlCompactDatabase` | `SqlCompactDatasourceCore` | `SQLCompactDataSource` |
+
+> **Note:** `DuckDB`, `DB2`, `VistaDB`, `AWSRDS`, `AzureSQL` have `Create*Config()` entries in
+> `ConnectionHelper` but no corresponding `IDataSource` implementation project yet, so they have
+> no fluent method. Add the project first, then drop in the template file.
+
+### Adding a new datasource to the fluent surface
+
+1. Create `<Name>DataSourceServiceExtensions.cs` in the datasource's project folder.
+2. Use this template (substitute `<Name>`, the namespace suffix, and the `Create*Config` method):
+
+```csharp
+using TheTechIdea.Beep.DriversConfigurations;
+using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.Services;
+
+namespace TheTechIdea.Beep.DataBase.<Name>
+{
+    public static class <Name>DataSourceServiceExtensions
+    {
+        public static IBeepService Add<Name>Database(this IBeepService beep)
+            => beep.AddDataSourceDriver(ConnectionHelper.Create<Name>Config);
+    }
+}
+```
+
+3. The project must reference `TheTechIdea.Beep.DataManagementEngine` (already the case for all
+   `DataSourcesPluginsCore` projects).
+
+### Build note
+
+Each datasource project references the engine via NuGet (`TheTechIdea.Beep.DataManagementEngine`).
+After adding `AddDataSourceDriver` to the engine, **publish a new engine NuGet** (or switch the
+datasource projects to a `ProjectReference`) so they can resolve the new method.
+
+---
+
 ## Key Files
 
 - **`BeepService.cs`**: Core BeepService implementation
 - **`RegisterBeepinServiceCollection.cs`**: Core registration API and fluent builder
+- **`BeepServiceExtensions.AddinDiscovery.cs`**: Cross-platform add-in / view-model discovery
+- **`BeepServiceExtensions.DataSources.cs`**: Base helper for fluent data-source driver registration
 - **`BeepServiceExtensions.Desktop.cs`**: Desktop-specific helpers
 - **`BeepServiceExtensions.Web.cs`**: Web-specific helpers
 - **`BeepServiceExtensions.Blazor.cs`**: Blazor-specific helpers

@@ -376,6 +376,31 @@ builder.Services.AddBeepForBlazorServer(opts =>
 
 ---
 
+## Add-in / View-Model Discovery Moved Out of `BeepDesktopServices`
+
+The reflection-based view / view-model discovery helpers previously lived on the
+WinForms-only `BeepDesktopServices` (in `TheTechIdea.Beep.Desktop.Common`). They have
+moved to the cross-platform `BeepServiceAddinDiscoveryExtensions` in
+`DataManagementEngineStandard` so any host (Desktop / Web / Blazor / Console on any OS)
+can use them.
+
+| Old (desktop-only)                       | New (cross-platform)                                |
+|------------------------------------------|-----------------------------------------------------|
+| `services.AddViewModels(assemblies)`     | `services.AddBeepViewModels(assemblies, logger)`    |
+| `services.AddViews(assemblies)`          | `services.AddBeepViews(assemblies, logger)`         |
+| `services.AddView(addin)`                | `services.AddBeepView(addin, logger)`               |
+| `services.AddViewModel(viewModel)`       | `services.AddBeepViewModel(viewModel, logger)`      |
+| `BeepDesktopServices.OnRegisterAddins`   | `BeepServiceAddinDiscoveryExtensions.OnRegisterAddins`     |
+| `BeepDesktopServices.OnRegisterViewModels` | `BeepServiceAddinDiscoveryExtensions.OnRegisterViewModels` |
+
+Notes:
+- The new names also exist on the fluent builder via `.WithViewDiscovery()` (default `true`) and `.WithAssembliesToScan(assemblies)`.
+- The discovery events previously declared but **never raised** on `BeepDesktopServices` now actually fire from the new extensions.
+- The desktop shell members (`AddAppManager`, `AddRoutingServices`, `AddKeyHandling`, `AddControlServices`, `StartLoading`, graphics/fonts loading, `WaitForm` integration) remain on `BeepDesktopServices` because they are structurally WinForms-bound.
+- `DesktopServiceOptions.ContainerName` is now `[Obsolete]`; set `AppRepoName` instead.
+
+---
+
 ## Deprecation Timeline
 
 ### Version 2.0 (Current)
