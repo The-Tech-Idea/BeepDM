@@ -18540,6 +18540,22 @@
             Published by the connection UI step when a connection test completes.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ConnectionTestCompletedEventArgs.#ctor(TheTechIdea.Beep.ConfigUtil.ConnectionProperties,System.Boolean,System.String)">
+            <summary>
+            Reports the outcome of testing <paramref name="connectionProperties"/>. A handler
+            watching more than one connection needs the properties to know which one this
+            result belongs to.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ConnectionTestCompletedEventArgs.#ctor(System.Boolean,System.String)">
+            <summary>
+            Reports an outcome without identifying the connection. Prefer the overload that
+            takes <see cref="P:TheTechIdea.Beep.SetUp.ConnectionTestCompletedEventArgs.ConnectionProperties"/> so handlers can attribute the result.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ConnectionTestCompletedEventArgs.ConnectionProperties">
+            <summary>The connection that was tested, or null when the caller did not supply it.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.DriverPackageInstalledEventArgs">
             <summary>
             Published by the driver-provision UI step when a NuGet package install completes.
@@ -18707,8 +18723,20 @@
             <summary>
             Published when the canonical ISetupWizard completes execution (success or failure).
             Carries the derived summary fields so callers (e.g. the shell form) don't need to
-            re-run the wizard to get a status string. The full canonical SetupReport lives
-            in the engine project; this is the contract-side projection.
+            re-run the wizard to get a status string, plus the full canonical
+            <see cref="T:TheTechIdea.Beep.SetUp.SetupReport"/> for callers that need per-step detail.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupCompletedEventArgs.Report">
+            <summary>
+            The canonical report produced by the run, or null when the wizard never executed.
+            <see cref="T:TheTechIdea.Beep.SetUp.SetupReport"/> ships in this same assembly and namespace, so callers get
+            the per-step results without re-running the wizard.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupCompletedEventArgs.StagedDrivers">
+            <summary>
+            Driver packages staged from ConfigEditor for this run. Empty when none were staged.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.SetupOptions">

@@ -245,6 +245,59 @@ Legend: `[ ]` open · `[~]` in-progress · `[x]` done · `[!]` blocked
 
 ---
 
+## Phase 11 — App-Scoped Workflow Gaps · [`11-phase11-app-scoped-workflow-gaps.md`](./11-phase11-app-scoped-workflow-gaps.md)
+
+> Raised by re-pointing the WPF AppStudio from the flat services onto `IAppStudioService.Apps.*`.
+> All engine/contract work. Ordered by the phase doc's suggested order, not by id.
+
+**P11-C — `RunSoloDevAsync` does not seed** (`ScenarioWorkflow.cs:66-71` reports success for a path that merely exists)
+
+- [ ] P11-C-01 Call `AppQuickStartWorkflow.SeedAsync` instead of the `File.Exists` check.
+- [ ] P11-C-02 Report *why* seeding failed in `SoloDevResult.Message`.
+- [ ] P11-C-03 Verify `SeedAsync` actually inserts — `:127` passes a boxed `JsonElement` to `InsertEntity`.
+
+**P11-D — QuickStart templates ship no entities** (`AppQuickStartWorkflow.cs:26-32`; `SchemaApplied` can never be true)
+
+- [ ] P11-D-01 Populate `EntityTypeNames`, or drop the templates that promise a schema.
+- [ ] P11-D-02 Honour or remove `AppTemplate.IsBlittableOnLocal` (declared, never read).
+- [ ] P11-D-03 Make the message honest when a template claimed entities and none were applied.
+
+**P11-A — App-scoped migration planning** (unblocks the last flat-tree consumer)
+
+- [ ] P11-A-01 Add `EnvMigrationPlan` + `EnvMigrationOperation`.
+- [ ] P11-A-02 Add `EnvPreflightReport` + `EnvExecutionHandle`.
+- [ ] P11-A-03 Extend `IAppMigrationWorkflow` with BuildPlan / DryRunPlan / Preflight / ApplyPlan / RollbackExecution.
+- [ ] P11-A-04 Implement in `AppMigrationWorkflow`, reusing `ResolveDatasource` + `ResolveEntityTypes`.
+- [ ] P11-A-05 Thread `IStudioProgress` through the App-scoped migration API.
+- [ ] P11-A-06 Re-point `PromotionPipelineViewModel` + `PromotionPipelineView` onto `Apps.Migrations`.
+- [ ] P11-A-07 Migrate `PromotionPipelineViewModel` onto `StudioViewModelBase`.
+- [ ] P11-A-08 Mark flat `IStudioService.Migrations` `[Obsolete]`.
+
+**P11-B — App-scoped governance policy** (restores configurable approvals; `AppGovernanceWorkflow.cs:59` hardcodes `2`)
+
+- [ ] P11-B-01 Add `AppGovernancePolicy` scoped to app + env tier.
+- [ ] P11-B-02 Extend `IAppGovernanceWorkflow` with List/Upsert/Delete policy.
+- [ ] P11-B-03 Add `Policies` to the JSON store record (`:117`).
+- [ ] P11-B-04 `RequestApprovalAsync` reads `RequiredApproverCount` from policy.
+- [ ] P11-B-05 `EvaluateAsync` honours `BlockedOperations` / `AllowedApproverRoles` / cooldown.
+- [ ] P11-B-06 Restore the policy-authoring tab in `GovernanceView`.
+- [ ] P11-B-07 Decide `VerifyAuditIntegrityAsync` — the App store has **no hash chain**.
+
+**P11-E — `SeedAsync` contract vs implementation** (doc says folder/CSV/assembly; impl is one JSON file)
+
+- [ ] P11-E-01 Widen the implementation or narrow the doc.
+- [ ] P11-E-02 Match the WPF seed tooltips to whichever wins.
+
+**P11-F — Deprecation cleanup** (after P11-A + P11-B)
+
+- [ ] P11-F-01 `[Obsolete]` the flat `Migrations` + `Governance` accessors.
+- [ ] P11-F-02 Delete the orphaned flat policy CRUD, or document why two policy stores coexist.
+- [ ] P11-F-03 Check `BeepWeb` + `Beep.Desktop` before removing anything.
+
+> Phase 11 status: not started. Raised 2026-07-15 from the AppStudio re-point; contracts unchanged.
+
+---
+
 ## Cumulative counts (rev 2)
 
 | Phase | Complete | In Progress | Remaining |
@@ -260,7 +313,8 @@ Legend: `[ ]` open · `[~]` in-progress · `[x]` done · `[!]` blocked
 | Phase 08 — Adapters | 0 | 0 | 12 |
 | Phase 09 — Manifest | 0 | 0 | 15 |
 | Phase 10 — Deployment | 0 | 0 | 16 |
-| **Total (engine, rev 2)** | **6** | **0** | **158** |
+| Phase 11 — App-scoped gaps | 0 | 0 | 26 |
+| **Total (engine, rev 2)** | **6** | **0** | **184** |
 
 ---
 

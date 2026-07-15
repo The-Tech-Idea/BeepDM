@@ -21,11 +21,32 @@ namespace TheTechIdea.Beep.SetUp
     /// </summary>
     public sealed class ConnectionTestCompletedEventArgs : EventArgs
     {
-        public ConnectionTestCompletedEventArgs(bool success, string message)
+        /// <summary>
+        /// Reports the outcome of testing <paramref name="connectionProperties"/>. A handler
+        /// watching more than one connection needs the properties to know which one this
+        /// result belongs to.
+        /// </summary>
+        public ConnectionTestCompletedEventArgs(
+            ConnectionProperties? connectionProperties,
+            bool success,
+            string message)
         {
+            ConnectionProperties = connectionProperties;
             Success = success;
             Message = message;
         }
+
+        /// <summary>
+        /// Reports an outcome without identifying the connection. Prefer the overload that
+        /// takes <see cref="ConnectionProperties"/> so handlers can attribute the result.
+        /// </summary>
+        public ConnectionTestCompletedEventArgs(bool success, string message)
+            : this(null, success, message)
+        {
+        }
+
+        /// <summary>The connection that was tested, or null when the caller did not supply it.</summary>
+        public ConnectionProperties? ConnectionProperties { get; }
 
         public bool Success { get; }
         public string Message { get; }
