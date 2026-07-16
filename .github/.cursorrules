@@ -70,6 +70,10 @@ BeepDM uses partial classes for complex components:
 - Never throw exceptions for expected failures
 - Always set `ErrorObject.Flag` and `ErrorObject.Message`
 - Log via `Logger.WriteLog(message)` for diagnostics
+- **Never swallow exceptions** — no bare `catch { }`. Every catch reports the exception through the
+  in-scope channel: `editor?.AddLogMessage("<Class>", $"<ctx>: {ex.Message}", DateTime.Now, 0, null, Errors.Warning)`,
+  else a class logger, else `System.Diagnostics.Debug.WriteLine` + a comment (low-level classes only).
+  Don't add an editor/logger dependency just to log; the flow may still continue after reporting.
 - Use `IErrorsInfo` return type for operation results
 - Raise `PassEvent?.Invoke(this, args)` for state changes
 

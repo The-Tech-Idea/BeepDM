@@ -914,7 +914,7 @@ namespace TheTechIdea.Beep.DataView
                 // Tear down the materialized temp DB first (frees its in-memory engine and file locks).
                 if (_tempDb != null && _tempDb != Dataconnection)
                 {
-                    try { _tempDb.Closeconnection(); } catch { }
+                    try { _tempDb.Closeconnection(); } catch (Exception ex) { DMEEditor?.AddLogMessage("DataViewDataSource", $"Closeconnection: temp DB close failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                     _tempDb = null;
                 }
             }
@@ -2063,7 +2063,7 @@ namespace TheTechIdea.Beep.DataView
                     // Close the federated temp DB connection on disposal
                     if (_tempDb != null)
                     {
-                        try { _tempDb.Closeconnection(); } catch { }
+                        try { _tempDb.Closeconnection(); } catch (Exception ex) { DMEEditor?.AddLogMessage("DataViewDataSource", $"Dispose: temp DB close failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                         _tempDb = null;
                     }
                 }

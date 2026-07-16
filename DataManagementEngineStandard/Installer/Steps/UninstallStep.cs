@@ -135,7 +135,8 @@ namespace TheTechIdea.Beep.Installer.Steps
                             removed++;
                         }
                     }
-                    catch { /* not empty or access denied — leave it */ }
+                    // Non-empty/locked dir is expected — report but don't add to errors so the uninstall still reports success.
+                    catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: leaving directory '{dir}': {ex.Message}" }); }
                 }
             }
 
@@ -182,8 +183,9 @@ namespace TheTechIdea.Beep.Installer.Steps
             }
 
             // 5. Remove manifest itself
+            // Best-effort: a locked manifest must not add to errors (that would flip the result to Fail) — report and continue.
             try { if (File.Exists(manifestPath)) File.Delete(manifestPath); }
-            catch { }
+            catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: failed to delete manifest '{manifestPath}': {ex.Message}" }); }
 
             progress?.Report(new PassedArgs { ParameterInt1 = 100, Messege = $"Removed {removed} items." });
 

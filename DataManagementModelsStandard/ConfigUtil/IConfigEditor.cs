@@ -178,6 +178,12 @@ namespace TheTechIdea.Beep.ConfigUtil
         /// <summary>Catalog repository for scope/profile-aware connection persistence. Set by the host.</summary>
         IConnectionCatalogRepository? ConnectionCatalogRepository { get; set; }
 
+        // ── Migration history (per-datasource) ───────────────────────
+        // Persisted record of applied migrations, used by MigrationManager for durable
+        // checkpoint/resume and idempotency (IsMigrationApplied / RecordMigration).
+        MigrationHistory LoadMigrationHistory(string dataSourceName);
+        void SaveMigrationHistory(MigrationHistory history);
+        void AppendMigrationRecord(string dataSourceName, DataSourceType dataSourceType, MigrationRecord record);
 
     }
 }

@@ -159,9 +159,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Failed to find main DLL
+                // Non-fatal: could not enumerate DLLs; caller falls back to null.
+                _logger?.LogWithContext($"FindMainDllWithDepsJson: Failed to inspect directory {directoryPath}", ex);
             }
 
             return null;
@@ -200,9 +201,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     _logger?.LogWithContext($"[DependencyResolution] Resolved '{assemblyName.Name}' from .deps.json: {assemblyPath}", null);
                     return LoadFromAssemblyPath(assemblyPath);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Keep walking the resolution chain.
+                    // Load from the resolved path failed; keep walking the resolution chain.
+                    _logger?.LogWithContext($"[DependencyResolution] Failed to load '{assemblyName.Name}' from {assemblyPath}", ex);
                 }
             }
 
@@ -285,16 +287,18 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                         {
                             return LoadFromAssemblyPath(path);
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Try next path
+                            // This probing path failed; try the next candidate.
+                            _logger?.LogWithContext($"TryLoadFromProbingPaths: Failed to load '{assemblyName.Name}' from {path}", ex);
                         }
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Probing failed
+                // Non-fatal: probing failed entirely; caller continues with other strategies.
+                _logger?.LogWithContext($"TryLoadFromProbingPaths: Probing failed for '{assemblyName?.Name}'", ex);
             }
 
             return null;
@@ -338,17 +342,19 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                             {
                                 return LoadFromAssemblyPath(frameworkPath);
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                // Try next framework
+                                // This framework's copy failed to load; try the next framework.
+                                _logger?.LogWithContext($"TryLoadFromNuGetCache: Failed to load '{assemblyName.Name}' from {frameworkPath}", ex);
                             }
                         }
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // NuGet cache resolution failed
+                // Non-fatal: NuGet cache resolution failed; caller continues with fallbacks.
+                _logger?.LogWithContext($"TryLoadFromNuGetCache: Cache resolution failed for '{assemblyName?.Name}'", ex);
             }
 
             return null;
@@ -959,8 +965,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     NuggetInfo = nuggetInfo, 
                     Message = $"Nugget {nuggetId} loaded in shared context as plugin" 
                 });
-                try { _messageBus?.Publish("nugget.loaded", nuggetInfo); } catch { }
-                try { _pluginRegistry?.Register(new InstalledPluginInfo { Id = nuggetInfo.Id, Name = nuggetInfo.Name, Version = nuggetInfo.Version, InstallPath = nuggetInfo.SourcePath, Source = nuggetInfo.SourcePath, State = "Loaded" }); } catch { }
+                try { _messageBus?.Publish("nugget.loaded", nuggetInfo); }
+                catch (Exception ex) { _logger?.LogWithContext($"Failed to publish nugget.loaded event for {nuggetInfo.Id}", ex); }
+                try { _pluginRegistry?.Register(new InstalledPluginInfo { Id = nuggetInfo.Id, Name = nuggetInfo.Name, Version = nuggetInfo.Version, InstallPath = nuggetInfo.SourcePath, Source = nuggetInfo.SourcePath, State = "Loaded" }); }
+                catch (Exception ex) { _logger?.LogWithContext($"Failed to register nugget {nuggetInfo.Id} in plugin registry", ex); }
 
                 return nuggetInfo;
             }
@@ -1157,8 +1165,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     NuggetInfo = nuggetInfo, 
                     Message = $"Nugget {nuggetId} unloaded from shared context with memory cleanup" 
                 });
-                try { _messageBus?.Publish("nugget.unloaded", nuggetInfo); } catch { }
-                try { _pluginRegistry?.UpdateState(nuggetId, "Unloaded"); } catch { }
+                try { _messageBus?.Publish("nugget.unloaded", nuggetInfo); }
+                catch (Exception ex) { _logger?.LogWithContext($"Failed to publish nugget.unloaded event for {nuggetId}", ex); }
+                try { _pluginRegistry?.UpdateState(nuggetId, "Unloaded"); }
+                catch (Exception ex) { _logger?.LogWithContext($"Failed to update plugin registry state for {nuggetId}", ex); }
 
                 return true;
             }
@@ -1230,7 +1240,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                                             _typeOriginMap[type.FullName] = nuggetId;
                                         }
                                     }
-                                    catch { }
+                                    catch (Exception ex)
+                                    {
+                                        // Best-effort origin tracking; type stays cached without an origin mapping.
+                                        _logger?.LogWithContext($"CacheAssemblyTypes: Failed to track origin for type {type.FullName}", ex);
+                                    }
                                 }
                             }
                         }
@@ -1310,7 +1324,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     assemblyToken = parts[1].Trim();
                 }
             }
-            catch { /* ignore split errors */ }
+            catch (Exception ex)
+            {
+                // Parsing the assembly token is best-effort; fall back to name-only resolution.
+                _logger?.LogWithContext($"GetType: Failed to parse assembly token from '{fullTypeName}'", ex);
+            }
             
             // Check cache using both full input and parsed type name
             if (_sharedTypeCache.TryGetValue(fullTypeName, out var weak) ||
@@ -1370,7 +1388,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                             return resolved;
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // This assembly could not resolve the type; continue scanning the rest.
+                        _logger?.LogWithContext($"GetType: Failed to probe '{typeNameOnly}' in {asm?.GetName()?.Name}", ex);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1547,7 +1569,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                             return contextAssembly;
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // This context could not be queried; continue with the remaining contexts.
+                        _logger?.LogWithContext($"ResolveAssembly: Failed to query context {context?.ContextId} for {assemblyName.Name}", ex);
+                    }
                 }
 
                 // CRITICAL: Check if assembly is already loaded in AppDomain but not yet registered
@@ -1847,7 +1873,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                                     _sharedTypeCache[fullTypeName] = new WeakReference<Type>(t);
                                 }
                             }
-                            catch { }
+                            catch (Exception ex)
+                            {
+                                // Best-effort late type caching; the final CreateInstance attempt still runs below.
+                                _logger?.LogWithContext($"CreateInstanceFromAssembly: Failed to resolve/cache type {fullTypeName} from {dllOrPath}", ex);
+                            }
                         }
                     }
                     catch (Exception ex)

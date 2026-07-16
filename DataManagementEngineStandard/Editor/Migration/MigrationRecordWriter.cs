@@ -273,10 +273,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             DataSourceType datasourceType,
             MigrationRecord record)
         {
-            if (editor?.ConfigEditor is ConfigEditor configEditor)
-            {
-                configEditor.AppendMigrationRecord(datasourceName, datasourceType, record);
-            }
+            editor?.ConfigEditor?.AppendMigrationRecord(datasourceName, datasourceType, record);
         }
 
         // ── MigrationId helpers ─────────────────────────────────────────────

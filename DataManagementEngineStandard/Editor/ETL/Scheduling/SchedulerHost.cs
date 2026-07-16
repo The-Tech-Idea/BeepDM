@@ -120,7 +120,13 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
             _cts?.Cancel();
 
             foreach (var s in _schedulers.Values)
-                try { await s.StopAsync().ConfigureAwait(false); } catch { }
+                try { await s.StopAsync().ConfigureAwait(false); }
+                catch (Exception ex)
+                {
+                    _editor?.AddLogMessage(nameof(SchedulerHost),
+                        $"StopAsync: scheduler stop failed: {ex.Message}",
+                        DateTime.Now, -1, null, Errors.Warning);
+                }
 
             if (_dispatchTask != null)
                 try { await _dispatchTask.ConfigureAwait(false); }
@@ -135,7 +141,13 @@ namespace TheTechIdea.Beep.Pipelines.Scheduling
         public async Task ReloadAsync()
         {
             foreach (var s in _schedulers.Values)
-                try { await s.StopAsync().ConfigureAwait(false); } catch { }
+                try { await s.StopAsync().ConfigureAwait(false); }
+                catch (Exception ex)
+                {
+                    _editor?.AddLogMessage(nameof(SchedulerHost),
+                        $"ReloadAsync: scheduler stop failed: {ex.Message}",
+                        DateTime.Now, -1, null, Errors.Warning);
+                }
 
             _schedulers.Clear();
             _schedules.Clear();

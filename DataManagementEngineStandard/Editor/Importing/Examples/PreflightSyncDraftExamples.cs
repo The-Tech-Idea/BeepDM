@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
 {
     /// <summary>
     /// Phase 3 — preflight + sync draft for a given import configuration.
-    /// The engine already runs the preflight via <c>ISchemaManager</c>; this example
+    /// The engine already runs the preflight via <c>SyncSchemaPreflight</c>; this example
     /// documents the contract and provides a pure setup the host can invoke.
     /// </summary>
     public static class PreflightSyncDraftExamples

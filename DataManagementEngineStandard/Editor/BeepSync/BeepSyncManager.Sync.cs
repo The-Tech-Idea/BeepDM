@@ -40,7 +40,7 @@ namespace TheTechIdea.Beep.Editor
             // Runs after structural validation and before the schema-governance preflight.
             try
             {
-                var schemaPre = await SchemaManager.RunPreflightAsync(new SchemaRequest
+                var schemaPre = await SyncSchemaPreflight.RunPreflightAsync(_editor, new SchemaRequest
                 {
                     SourceDataSourceName         = schema.SourceDataSourceName,
                     SourceEntityName             = schema.SourceEntityName,

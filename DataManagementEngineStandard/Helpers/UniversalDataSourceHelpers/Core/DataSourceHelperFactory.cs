@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Editor;
@@ -23,12 +24,15 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.Core
     public class DataSourceHelperFactory
     {
         private readonly IDMEEditor _dmeEditor;
-        private readonly Dictionary<DataSourceType, Func<IDMEEditor, IDataSourceHelper>> _helperFactories;
+
+        // Concurrent: a single factory instance is held for the lifetime of a DMEEditor, so
+        // RegisterHelper can be called while other threads are resolving via CreateHelper.
+        private readonly ConcurrentDictionary<DataSourceType, Func<IDMEEditor, IDataSourceHelper>> _helperFactories;
 
         public DataSourceHelperFactory(IDMEEditor dmeEditor)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
-            _helperFactories = InitializeFactories();
+            _helperFactories = new ConcurrentDictionary<DataSourceType, Func<IDMEEditor, IDataSourceHelper>>(InitializeFactories());
         }
 
         private Dictionary<DataSourceType, Func<IDMEEditor, IDataSourceHelper>> InitializeFactories()

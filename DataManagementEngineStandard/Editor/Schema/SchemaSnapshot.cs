@@ -47,24 +47,4 @@ namespace TheTechIdea.Beep.Editor.Schema
         public string CurrentType  { get; init; } = string.Empty;
         public string Description  { get; init; } = string.Empty;
     }
-
-    /// <summary>A single schema change operation.</summary>
-    public sealed class SchemaChange
-    {
-        public string ChangeType { get; init; } = string.Empty;
-        public string FieldName { get; init; } = string.Empty;
-        public string DataType { get; init; } = string.Empty;
-        public bool IsNullable { get; init; }
-        public int MaxLength { get; init; }
-        public string Description { get; init; } = string.Empty;
-    }
-
-    /// <summary>A change plan derived from drift between two schema snapshots.</summary>
-    public sealed class SchemaChangePlan
-    {
-        public SchemaSnapshot Baseline { get; init; } = null!;
-        public SchemaSnapshot Current { get; init; } = null!;
-        public List<SchemaChange> Changes { get; init; } = new();
-        public bool HasChanges => Changes.Count > 0;
-    }
 }

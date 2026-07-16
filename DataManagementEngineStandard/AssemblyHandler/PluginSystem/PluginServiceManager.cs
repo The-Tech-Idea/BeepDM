@@ -339,7 +339,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                     {
                         scope.Dispose();
                     }
-                    catch { } // Ignore disposal errors
+                    catch (Exception ex)
+                    {
+                        // Best-effort disposal; continue disposing the remaining scopes.
+                        _logger?.LogWithContext("Dispose: Failed to dispose a plugin service scope", ex);
+                    }
                 }
 
                 _pluginServiceScopes.Clear();

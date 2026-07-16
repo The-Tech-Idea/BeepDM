@@ -119,6 +119,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 serviceSb.AppendLine("using System;");
                 serviceSb.AppendLine("using System.Threading.Tasks;");
                 serviceSb.AppendLine("using Grpc.Core;");
+                serviceSb.AppendLine("using TheTechIdea.Beep.Editor;");
+                serviceSb.AppendLine("using TheTechIdea.Beep.Editor.UOW;");
                 serviceSb.AppendLine();
                 serviceSb.AppendLine($"namespace {namespaceName}");
                 serviceSb.AppendLine("{");
@@ -162,8 +164,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 serviceSb.AppendLine($"                if (request?.Data == null)");
                 serviceSb.AppendLine($"                    throw new RpcException(new Status(StatusCode.InvalidArgument, \"Data is required\"));");
                 serviceSb.AppendLine();
-                serviceSb.AppendLine($"                var uow = _dmeEditor.CreateUnitOfWork<{entity.EntityName}>();");
-                serviceSb.AppendLine("                uow.AddNew(request.Data);");
+                serviceSb.AppendLine($"                var uow = new UnitofWork<{entity.EntityName}>(_dmeEditor, \"{entity.DataSourceID}\", \"{entity.EntityName}\");");
+                serviceSb.AppendLine("                uow.Add(request.Data);");
                 serviceSb.AppendLine("                uow.Commit();");
                 serviceSb.AppendLine();
                 serviceSb.AppendLine($"                var response = new {entity.EntityName}Response");
@@ -187,8 +189,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 serviceSb.AppendLine($"                if (string.IsNullOrEmpty(request.Id) || request?.Data == null)");
                 serviceSb.AppendLine($"                    throw new RpcException(new Status(StatusCode.InvalidArgument, \"ID and Data are required\"));");
                 serviceSb.AppendLine();
-                serviceSb.AppendLine($"                var uow = _dmeEditor.CreateUnitOfWork<{entity.EntityName}>();");
-                serviceSb.AppendLine("                uow.Modify(request.Data);");
+                serviceSb.AppendLine($"                var uow = new UnitofWork<{entity.EntityName}>(_dmeEditor, \"{entity.DataSourceID}\", \"{entity.EntityName}\");");
+                serviceSb.AppendLine("                uow.Update(request.Data);");
                 serviceSb.AppendLine("                uow.Commit();");
                 serviceSb.AppendLine();
                 serviceSb.AppendLine($"                var response = new {entity.EntityName}Response");

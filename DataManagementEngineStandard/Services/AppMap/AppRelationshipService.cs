@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Services.AppMap
 {
@@ -140,7 +141,12 @@ namespace TheTechIdea.Beep.Services.AppMap
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                 await File.WriteAllTextAsync(_persistPath, JsonSerializer.Serialize(_links, JsonOpts), token);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _editor?.AddLogMessage("AppRelationshipService",
+                    $"SaveAsync: could not persist app relationships to '{_persistPath}': {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
         }
 
         public async Task LoadAsync(CancellationToken token = default)

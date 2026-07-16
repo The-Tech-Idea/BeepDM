@@ -29,7 +29,11 @@ namespace TheTechIdea.Beep.Rules.BuiltinRules.Validate
                 var addr = new System.Net.Mail.MailAddress(email);
                 valid = string.Equals(addr.Address, email, StringComparison.OrdinalIgnoreCase);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // A malformed address is simply not valid; leave valid=false and continue.
+                System.Diagnostics.Debug.WriteLine($"ValidEmail.SolveRule: could not parse '{email}' ignored: {ex}");
+            }
 
             output["Result"] = valid;
             output["Value"]  = email;

@@ -34,10 +34,22 @@ namespace TheTechIdea.Beep.Editor.Migration
                             if (refAsm != null && !refAsm.IsDynamic)
                                 asmSet.Add((refAsm, AssemblySourceKind.EntryReference));
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            // Skipped, but surfaced: a genuine load fault (missing/locked/bad-image/version
+                            // conflict) is reported rather than silently swallowed.
+                            _editor?.AddLogMessage("MigrationManager",
+                                $"DiscoverEntityTypes: could not load referenced assembly '{refName?.Name}': {ex.Message}",
+                                DateTime.Now, 0, null, Errors.Warning);
+                        }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _editor?.AddLogMessage("MigrationManager",
+                        $"DiscoverEntityTypes: failed enumerating references of '{assembly.FullName}': {ex.Message}",
+                        DateTime.Now, 0, null, Errors.Warning);
+                }
                 assemblyWithSources = asmSet;
             }
             else
@@ -969,11 +981,21 @@ namespace TheTechIdea.Beep.Editor.Migration
                             var refAsm = Assembly.Load(referencedName);
                             TryAdd(refAsm, AssemblySourceKind.EntryReference);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _editor?.AddLogMessage("MigrationManager",
+                                $"Assembly discovery: could not load entry-referenced assembly '{referencedName?.Name}': {ex.Message}",
+                                DateTime.Now, 0, null, Errors.Warning);
+                        }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _editor?.AddLogMessage("MigrationManager",
+                    $"Assembly discovery: failed enumerating entry-assembly references: {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
 
             // 3. Calling assembly and its references
             try
@@ -989,11 +1011,21 @@ namespace TheTechIdea.Beep.Editor.Migration
                             var refAsm = Assembly.Load(referencedName);
                             TryAdd(refAsm, AssemblySourceKind.CallingReference);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _editor?.AddLogMessage("MigrationManager",
+                                $"Assembly discovery: could not load calling-referenced assembly '{referencedName?.Name}': {ex.Message}",
+                                DateTime.Now, 0, null, Errors.Warning);
+                        }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _editor?.AddLogMessage("MigrationManager",
+                    $"Assembly discovery: failed enumerating calling-assembly references: {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
 
             // 4. All currently loaded assemblies from AppDomain
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())

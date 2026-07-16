@@ -113,7 +113,13 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
             {
                 _editor.CloseDataSource(name);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Non-fatal: proceed with removal even if closing the live connection failed.
+                _editor?.AddLogMessage("DatasourceMgr",
+                    $"RemoveDatasource: closing '{name}' before removal failed: {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
 
             var result = _editor.RemoveDataDource(name);
             if (result)
@@ -246,17 +252,16 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
                     return result;
                 }
 
-                // ── NEW: schema diff BEFORE migration (compares .NET class to live DB table)
-                var schema = new SchemaManager(_editor);
-                result.SchemaDrift = await schema.InspectManyAsync(typesList, ds);
-                _editor.AddLogMessage("DatasourceMgr",
-                    $"Schema drift report: {result.SchemaDrift.Count} entities inspected before migration",
-                    DateTime.Now, 0, null, Errors.Ok);
-
                 var migration = new MigrationManager(_editor, ds)
                 {
                     MigrateDataSource = ds
                 };
+
+                // Schema diff BEFORE migration (full drift: .NET class vs live DB), via MigrationManager.
+                result.SchemaDrift = migration.InspectDrift(typesList);
+                _editor.AddLogMessage("DatasourceMgr",
+                    $"Schema drift report: {result.SchemaDrift.Count} entities inspected before migration",
+                    DateTime.Now, 0, null, Errors.Ok);
 
                 var plan = migration.BuildMigrationPlanForTypes(
                     typesList,
@@ -317,8 +322,8 @@ namespace TheTechIdea.Beep.Services.DatasourceManagement
             if (connState != ConnectionState.Open)
                 return new Dictionary<string, TheTechIdea.Beep.Editor.Schema.SchemaDriftReport>();
 
-            var schema = new SchemaManager(_editor);
-            return await schema.InspectManyAsync(entityTypes, ds, token).ConfigureAwait(false);
+            var migration = new MigrationManager(_editor, ds) { MigrateDataSource = ds };
+            return migration.InspectDrift(entityTypes);
         }
 
         private void AppendSchemaToHistory(string datasourceName, IDataSource ds, MigrationExecutionResult result, MigrationPlanArtifact plan)

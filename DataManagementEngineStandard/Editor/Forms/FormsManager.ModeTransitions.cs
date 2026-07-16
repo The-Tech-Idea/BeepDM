@@ -21,7 +21,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public async void EnteringQueryModeAsync(string blockName)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return;
-            try { await EnterQueryAsync(blockName); } catch { }
+            try { await EnterQueryAsync(blockName); }
+            catch (Exception ex) { LogError($"Error entering Query mode for block '{blockName}'", ex, blockName); }
         }
 
         public async void ExitingQueryModeAsync(string blockName)
@@ -35,7 +36,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     await ExecuteQueryAsync(blockName);
                 }
             }
-            catch { }
+            catch (Exception ex) { LogError($"Error exiting Query mode for block '{blockName}'", ex, blockName); }
         }
 
         /// <summary>

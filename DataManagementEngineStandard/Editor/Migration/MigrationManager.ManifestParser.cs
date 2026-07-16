@@ -184,7 +184,14 @@ namespace TheTechIdea.Beep.Editor.Migration
                         if (t != null) return (t, null);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // GetType(throwOnError:false) returns null when the type is simply absent, so this
+                    // catch only fires on a real load fault — surface it instead of swallowing.
+                    _editor?.AddLogMessage("MigrationManager",
+                        $"ResolveType: assembly hint '{entry.AssemblyHint}' failed to load for '{entry.TypeFullName}': {ex.Message}",
+                        DateTime.Now, 0, null, Errors.Warning);
+                }
             }
 
             // Pass 2 — registered assemblies (RegisterAssembly / RegisterAssemblies)
@@ -198,7 +205,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                     var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
                     if (t != null) return (t, null);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _editor?.AddLogMessage("MigrationManager",
+                        $"ResolveType: probing registered assembly '{asm.GetName()?.Name}' for '{entry.TypeFullName}' faulted: {ex.Message}",
+                        DateTime.Now, 0, null, Errors.Warning);
+                }
             }
 
             // Pass 3 — editor's assembly handler (plugin assemblies). These are
@@ -214,7 +226,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                         var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
                         if (t != null) return (t, null);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _editor?.AddLogMessage("MigrationManager",
+                            $"ResolveType: probing plugin assembly '{asm.GetName()?.Name}' for '{entry.TypeFullName}' faulted: {ex.Message}",
+                            DateTime.Now, 0, null, Errors.Warning);
+                    }
                 }
             }
 
@@ -228,7 +245,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                         var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
                         if (t != null) return (t, null);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _editor?.AddLogMessage("MigrationManager",
+                            $"ResolveType: probing loaded plugin assembly '{asm.GetName()?.Name}' for '{entry.TypeFullName}' faulted: {ex.Message}",
+                            DateTime.Now, 0, null, Errors.Warning);
+                    }
                 }
             }
 
@@ -241,7 +263,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                     var t = asm.GetType(entry.TypeFullName, throwOnError: false, ignoreCase: false);
                     if (t != null) return (t, null);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _editor?.AddLogMessage("MigrationManager",
+                        $"ResolveType: probing loaded assembly '{asm.GetName()?.Name}' for '{entry.TypeFullName}' faulted: {ex.Message}",
+                        DateTime.Now, 0, null, Errors.Warning);
+                }
             }
 
             return (null, $"MIG-MANIFEST-003: type '{entry.TypeFullName}' could not be resolved");

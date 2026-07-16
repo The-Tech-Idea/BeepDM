@@ -180,7 +180,9 @@ namespace TheTechIdea.Beep.Installer.Steps
             foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "")
                 .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
             {
-                try { var c = Path.Combine(dir, "gacutil.exe"); if (File.Exists(c)) return c; } catch { }
+                // A bad PATH entry must not stop the scan — report and continue to the next dir.
+                try { var c = Path.Combine(dir, "gacutil.exe"); if (File.Exists(c)) return c; }
+                catch (Exception ex) { Debug.WriteLine($"GacInstallStep.FindGacUtil: probing '{dir}' ignored: {ex}"); }
             }
             return null;
         }

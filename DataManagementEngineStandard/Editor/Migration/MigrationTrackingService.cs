@@ -214,7 +214,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
-        private static bool OpenWithRetrySync(IDataSource ds)
+        private bool OpenWithRetrySync(IDataSource ds)
         {
             const int maxRetries = 3;
             var attempt = 0;
@@ -225,7 +225,14 @@ namespace TheTechIdea.Beep.Editor.Migration
                     var state = ds.Openconnection();
                     if (state == ConnectionState.Open) return true;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Transient open failure: retry up to maxRetries, but surface each attempt so a
+                    // persistent connectivity fault is visible rather than silently retried away.
+                    _editor?.AddLogMessage("MigrationManager",
+                        $"OpenWithRetrySync: connection attempt {attempt + 1}/{maxRetries} failed: {ex.Message}",
+                        DateTime.Now, 0, null, Errors.Warning);
+                }
                 attempt++;
             }
             return false;
@@ -276,7 +283,13 @@ namespace TheTechIdea.Beep.Editor.Migration
                     dsType = conn.DatabaseType;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _editor?.AddLogMessage("MigrationManager",
+                    $"ResolveCompensationSteps: could not resolve connection metadata for '{record.Name}', " +
+                    $"falling back to NONE/Unknown: {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
 
             var plan = new MigrationPlanArtifact
             {

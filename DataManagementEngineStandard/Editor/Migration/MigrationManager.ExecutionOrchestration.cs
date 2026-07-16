@@ -44,13 +44,13 @@ namespace TheTechIdea.Beep.Editor.Migration
             return checkpoint;
         }
 
-        public MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null)
+        public MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null, MigrationPolicyOptions policyOptions = null)
         {
             // Task.Run must wrap the CALL: invoking an async method runs it synchronously to its
             // first await, where it captures the caller's SynchronizationContext. Starting it on
             // the pool means there is no context to capture, so a UI caller blocked here in
             // GetResult() cannot deadlock against its own continuation.
-            return Task.Run(() => ExecuteMigrationPlanAsync(plan, policy, executionToken, progress, CancellationToken.None))
+            return Task.Run(() => ExecuteMigrationPlanAsync(plan, policy, executionToken, progress, CancellationToken.None, policyOptions))
                 .GetAwaiter().GetResult();
         }
 
@@ -59,7 +59,8 @@ namespace TheTechIdea.Beep.Editor.Migration
             MigrationExecutionPolicy policy = null,
             string executionToken = null,
             IProgress<PassedArgs> progress = null,
-            CancellationToken token = default)
+            CancellationToken token = default,
+            MigrationPolicyOptions policyOptions = null)
         {
             var result = new MigrationExecutionResult();
             policy ??= new MigrationExecutionPolicy();
@@ -132,7 +133,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return result;
             }
 
-            plan.PreflightReport = RunPreflightChecks(plan);
+            // Honor caller-supplied governance options (approver/override for high-risk or
+            // destructive plans) so an approved destructive plan can pass the preflight policy gate.
+            plan.PreflightReport = RunPreflightChecks(plan, policyOptions);
             if (!plan.PreflightReport.CanApply)
             {
                 result.Success = false;
@@ -353,7 +356,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             return result;
         }
 
-        public MigrationExecutionResult ResumeMigrationPlan(string executionToken, MigrationExecutionPolicy policy = null, IProgress<PassedArgs> progress = null)
+        public MigrationExecutionResult ResumeMigrationPlan(string executionToken, MigrationExecutionPolicy policy = null, IProgress<PassedArgs> progress = null, MigrationPolicyOptions policyOptions = null)
         {
             policy ??= new MigrationExecutionPolicy();
             if (string.IsNullOrWhiteSpace(executionToken))
@@ -365,7 +368,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 };
             }
 
+            // In-memory first, then fall back to the persisted snapshot so resume survives a restart.
             if (!ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var checkpoint))
+                checkpoint = TryLoadPersistedCheckpoint(executionToken);
+
+            if (checkpoint == null)
             {
                 return new MigrationExecutionResult
                 {
@@ -392,7 +399,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 ExecutionPlans[checkpoint.ExecutionToken] = plan;
             }
 
-            var result = ExecuteMigrationPlan(plan, policy, checkpoint.ExecutionToken, progress);
+            var result = ExecuteMigrationPlan(plan, policy, checkpoint.ExecutionToken, progress, policyOptions);
             result.ResumedFromCheckpoint = true;
             return result;
         }
@@ -402,8 +409,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(executionToken))
                 return null;
 
-            ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var checkpoint);
-            return checkpoint;
+            // In-memory first, then fall back to the persisted snapshot (survives a restart).
+            return ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var checkpoint)
+                ? checkpoint
+                : TryLoadPersistedCheckpoint(executionToken);
         }
 
         private static MigrationExecutionCheckpoint BuildNewCheckpoint(MigrationPlanArtifact plan, string token)
@@ -570,6 +579,75 @@ namespace TheTechIdea.Beep.Editor.Migration
                         return CreateErrorsInfo(Errors.Failed, $"DropIndex step is missing the index name (TargetName) for entity '{step.EntityName}'; the plan must supply the index name.");
                     return DropIndex(step.EntityName, step.TargetName);
 
+                case MigrationPlanOperationKind.DropColumn:
+                {
+                    // Destructive: each column dropped via the per-datasource provider (no raw DDL here).
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "DropColumn step is missing the entity name.");
+                    if (step.MissingColumns == null || step.MissingColumns.Count == 0)
+                        return CreateErrorsInfo(Errors.Warning, $"No columns recorded to drop for '{step.EntityName}'.");
+
+                    var dropFailures = new List<string>();
+                    foreach (var columnName in step.MissingColumns)
+                    {
+                        var dropResult = DropColumn(step.EntityName, columnName);
+                        if (!IsStepSuccess(dropResult))
+                            dropFailures.Add($"{columnName}: {dropResult?.Message}");
+                    }
+                    if (dropFailures.Count > 0)
+                        return CreateErrorsInfo(Errors.Failed, string.Join("; ", dropFailures));
+                    return CreateErrorsInfo(Errors.Ok, $"Dropped {step.MissingColumns.Count} column(s) from '{step.EntityName}'.");
+                }
+
+                case MigrationPlanOperationKind.AlterColumn:
+                {
+                    if (desired == null)
+                        return CreateErrorsInfo(Errors.Failed, $"Cannot resolve entity metadata for '{step.EntityName}'.");
+                    if (step.MissingColumns == null || step.MissingColumns.Count == 0)
+                        return CreateErrorsInfo(Errors.Warning, $"No columns recorded to alter for '{step.EntityName}'.");
+
+                    var alterFailures = new List<string>();
+                    foreach (var columnName in step.MissingColumns)
+                    {
+                        var field = desired.Fields?.FirstOrDefault(candidate =>
+                            candidate != null &&
+                            string.Equals(candidate.FieldName, columnName, StringComparison.OrdinalIgnoreCase));
+                        if (field == null)
+                        {
+                            alterFailures.Add($"Column metadata not found for '{columnName}'.");
+                            continue;
+                        }
+                        var alterResult = AlterColumn(step.EntityName, columnName, field);
+                        if (!IsStepSuccess(alterResult))
+                            alterFailures.Add($"{columnName}: {alterResult?.Message}");
+                    }
+                    if (alterFailures.Count > 0)
+                        return CreateErrorsInfo(Errors.Failed, string.Join("; ", alterFailures));
+                    return CreateErrorsInfo(Errors.Ok, $"Altered {step.MissingColumns.Count} column(s) on '{step.EntityName}'.");
+                }
+
+                case MigrationPlanOperationKind.DropEntity:
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "DropEntity step is missing the entity name.");
+                    return DropEntity(step.EntityName);
+
+                case MigrationPlanOperationKind.TruncateEntity:
+                    if (string.IsNullOrWhiteSpace(step.EntityName))
+                        return CreateErrorsInfo(Errors.Failed, "TruncateEntity step is missing the entity name.");
+                    return TruncateEntity(step.EntityName);
+
+                case MigrationPlanOperationKind.RenameEntity:
+                    // Convention: EntityName = current name, TargetName = new name.
+                    if (string.IsNullOrWhiteSpace(step.EntityName) || string.IsNullOrWhiteSpace(step.TargetName))
+                        return CreateErrorsInfo(Errors.Failed, "RenameEntity step requires the current name (EntityName) and the new name (TargetName).");
+                    return RenameEntity(step.EntityName, step.TargetName);
+
+                case MigrationPlanOperationKind.RenameColumn:
+                    // Convention: MissingColumns[0] = old column, TargetName = new column.
+                    if (string.IsNullOrWhiteSpace(step.EntityName) || step.MissingColumns == null || step.MissingColumns.Count == 0 || string.IsNullOrWhiteSpace(step.TargetName))
+                        return CreateErrorsInfo(Errors.Failed, "RenameColumn step requires EntityName, the old column (MissingColumns[0]) and the new column (TargetName).");
+                    return RenameColumn(step.EntityName, step.MissingColumns[0], step.TargetName);
+
                 default:
                     return CreateErrorsInfo(Errors.Failed, $"Operation '{step.OperationKind}' is not yet supported by execution orchestration.");
             }
@@ -648,6 +726,47 @@ namespace TheTechIdea.Beep.Editor.Migration
                 checkpoint,
                 MigrateDataSource?.DatasourceName ?? string.Empty,
                 MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown);
+        }
+
+        /// <summary>
+        /// Loads the most recent persisted execution checkpoint for <paramref name="executionToken"/>
+        /// from migration history (the JSON snapshot <see cref="PersistExecutionCheckpoint"/> writes to
+        /// <c>MigrationRecord.Notes</c>). This is what makes resume survive a process restart: when the
+        /// in-memory <see cref="ExecutionCheckpoints"/> is empty, the checkpoint is re-hydrated from disk.
+        /// Returns null when no persisted snapshot exists.
+        /// </summary>
+        private MigrationExecutionCheckpoint TryLoadPersistedCheckpoint(string executionToken)
+        {
+            if (string.IsNullOrWhiteSpace(executionToken)) return null;
+            try
+            {
+                var configEditor = _editor?.ConfigEditor;
+                if (configEditor == null) return null;
+                var dsName = MigrateDataSource?.DatasourceName ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(dsName)) return null;
+
+                var history = configEditor.LoadMigrationHistory(dsName);
+                var record = history?.Migrations?
+                    .Where(r => r != null
+                                && string.Equals(r.MigrationId, executionToken.Trim(), StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(r.Name, "ExecuteMigrationPlan.Checkpoint", StringComparison.Ordinal)
+                                && !string.IsNullOrWhiteSpace(r.Notes))
+                    .OrderBy(r => r.AppliedOnUtc)
+                    .LastOrDefault();
+                if (record == null) return null;
+
+                var checkpoint = JsonSerializer.Deserialize<MigrationExecutionCheckpoint>(record.Notes);
+                if (checkpoint != null)
+                    ExecutionCheckpoints[checkpoint.ExecutionToken] = checkpoint; // re-hydrate for the execute loop
+                return checkpoint;
+            }
+            catch (Exception ex)
+            {
+                _editor?.AddLogMessage("MigrationManager",
+                    $"TryLoadPersistedCheckpoint: could not load persisted checkpoint for '{executionToken}': {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+                return null;
+            }
         }
     }
 }

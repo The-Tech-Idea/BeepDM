@@ -12,9 +12,12 @@ namespace TheTechIdea.Beep.Editor.Migration
     public partial class MigrationManager
     {
         /// <summary>
-        /// Builds a non-destructive migration plan using discovery-based entity resolution.
+        /// Builds a migration plan using discovery-based entity resolution. Additive by default;
+        /// pass <paramref name="includeDestructive"/> to also plan drops of columns that exist in
+        /// the live datasource but are no longer present in the model (data loss — opt-in, gated by
+        /// policy). See <see cref="BuildMigrationPlanForTypes"/> for the destructive-planning notes.
         /// </summary>
-        public MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
+        public MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false, bool includeDestructive = false)
         {
             if (MigrateDataSource == null)
                 return CreatePlanArtifactWithError(usesDiscovery: true, "datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before generating a migration plan.");
@@ -33,13 +36,22 @@ namespace TheTechIdea.Beep.Editor.Migration
                     "Register the required assemblies explicitly or use BuildMigrationPlanForTypes.");
             }
 
-            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: true, detectRelationships: detectRelationships, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: true, detectRelationships: detectRelationships, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes, includeDestructive: includeDestructive);
         }
 
         /// <summary>
-        /// Builds a non-destructive migration plan using explicit entity types.
+        /// Builds a migration plan using explicit entity types.
         /// </summary>
-        public MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
+        /// <param name="includeDestructive">
+        /// When <c>true</c>, the planner also emits <see cref="MigrationPlanOperationKind.DropColumn"/>
+        /// operations for columns present in the live datasource but absent from the model. These are
+        /// marked <see cref="MigrationPlanOperation.IsDestructive"/> = true and high-risk, so the policy
+        /// engine can block them in protected environments and compensation/rollback engage. Default
+        /// <c>false</c> — dropping a column is data loss and must be an explicit choice. (Column
+        /// <em>type</em> changes are NOT auto-planned: a reflected .NET type vs a live DB type is not a
+        /// reliable equality signal; use the imperative <see cref="AlterColumn"/> for those.)
+        /// </param>
+        public MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false, bool includeDestructive = false)
         {
             if (MigrateDataSource == null)
                 return CreatePlanArtifactWithError(usesDiscovery: false, "datasource-not-set", "Migration data source is not set", "Configure MigrateDataSource before generating a migration plan.");
@@ -47,10 +59,10 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (entityTypes == null)
                 return CreatePlanArtifactWithError(usesDiscovery: false, "entity-types-null", "Entity types collection cannot be null", "Pass explicit entity types or use discovery-based planning.");
 
-            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: false, detectRelationships: detectRelationships, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes);
+            return BuildMigrationPlanInternal(entityTypes, usesDiscovery: false, detectRelationships: detectRelationships, applyForeignKeys: applyForeignKeys, applyIndexes: applyIndexes, includeDestructive: includeDestructive);
         }
 
-        private MigrationPlanArtifact BuildMigrationPlanInternal(IEnumerable<Type> entityTypes, bool usesDiscovery, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false)
+        private MigrationPlanArtifact BuildMigrationPlanInternal(IEnumerable<Type> entityTypes, bool usesDiscovery, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false, bool includeDestructive = false)
         {
             var plan = CreateBasePlanArtifact(usesDiscovery);
             var typeList = entityTypes
@@ -95,8 +107,9 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 foreach (var entityType in typeList)
                 {
-                    var op = BuildPlanOperation(entityType, plan.DataSourceCategory, plan.DataSourceType, plan.ProviderCapabilities);
-                    plan.Operations.Add(op);
+                    var ops = BuildPlanOperations(entityType, plan.DataSourceCategory, plan.DataSourceType, plan.ProviderCapabilities, includeDestructive);
+                    plan.Operations.AddRange(ops);
+                    var primary = ops.Count > 0 ? ops[0] : null;
 
                     // Emit FK/Index plan ops alongside the entity op when the caller
                     // opted in. This ensures the dry-run previews them, the policy
@@ -104,11 +117,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                     // The structures used here are the same ones TryGetEntityStructure
                     // returns (which honors the model-interop cache), so EF Core-shaped
                     // FKs/indexes are also picked up when applicable.
-                    if (op.EntityTypeName != null && detectRelationships)
+                    if (primary?.EntityTypeName != null && detectRelationships)
                     {
                         var structure = TryGetEntityStructure(entityType);
-                        if (structure != null && !string.IsNullOrWhiteSpace(op.EntityName))
-                            structure.EntityName = op.EntityName;
+                        if (structure != null && !string.IsNullOrWhiteSpace(primary.EntityName))
+                            structure.EntityName = primary.EntityName;
                         EmitRelationalArtifactsForEntity(structure, plan.Operations, effectiveApplyForeignKeys, effectiveApplyIndexes);
                     }
                 }
@@ -177,9 +190,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             return artifact;
         }
 
-        private MigrationPlanOperation BuildPlanOperation(Type entityType, DatasourceCategory category, DataSourceType type, MigrationProviderCapabilityProfile providerProfile)
+        /// <summary>
+        /// Builds the plan operation(s) for one entity type. An existing entity can yield more than
+        /// one operation: an additive <see cref="MigrationPlanOperationKind.AddMissingColumns"/> and,
+        /// when <paramref name="includeDestructive"/> is set, a <see cref="MigrationPlanOperationKind.DropColumn"/>
+        /// for columns the live datasource still has but the model dropped.
+        /// </summary>
+        private List<MigrationPlanOperation> BuildPlanOperations(Type entityType, DatasourceCategory category, DataSourceType type, MigrationProviderCapabilityProfile providerProfile, bool includeDestructive)
         {
-            var operation = new MigrationPlanOperation
+            var baseOp = new MigrationPlanOperation
             {
                 EntityTypeName = entityType.FullName ?? entityType.Name
             };
@@ -188,79 +207,113 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 var desired = TryGetEntityStructure(entityType);
                 var entityName = GetEntityName(entityType, desired);
-                operation.EntityName = entityName;
+                baseOp.EntityName = entityName;
 
                 if (desired == null)
                 {
-                    operation.Kind = MigrationPlanOperationKind.Error;
-                    operation.RiskLevel = MigrationPlanRiskLevel.High;
-                    operation.Note = $"Could not convert '{entityType.Name}' to EntityStructure.";
-                    operation.ProviderAssumptions.Add("Verify classCreator availability and entity metadata conversion before apply.");
-                    return operation;
+                    baseOp.Kind = MigrationPlanOperationKind.Error;
+                    baseOp.RiskLevel = MigrationPlanRiskLevel.High;
+                    baseOp.Note = $"Could not convert '{entityType.Name}' to EntityStructure.";
+                    baseOp.ProviderAssumptions.Add("Verify classCreator availability and entity metadata conversion before apply.");
+                    return new List<MigrationPlanOperation> { baseOp };
                 }
 
                 if (string.IsNullOrWhiteSpace(entityName))
                 {
-                    operation.Kind = MigrationPlanOperationKind.Error;
-                    operation.RiskLevel = MigrationPlanRiskLevel.High;
-                    operation.Note = $"Entity name resolution failed for '{entityType.Name}'.";
-                    operation.ProviderAssumptions.Add("Add a stable class name or [Table] attribute.");
-                    return operation;
+                    baseOp.Kind = MigrationPlanOperationKind.Error;
+                    baseOp.RiskLevel = MigrationPlanRiskLevel.High;
+                    baseOp.Note = $"Entity name resolution failed for '{entityType.Name}'.";
+                    baseOp.ProviderAssumptions.Add("Add a stable class name or [Table] attribute.");
+                    return new List<MigrationPlanOperation> { baseOp };
                 }
 
                 var exists = MigrateDataSource.CheckEntityExist(entityName);
                 if (!exists)
                 {
-                    operation.Kind = MigrationPlanOperationKind.CreateEntity;
-                    operation.RiskLevel = ClassifyCreateEntityRisk(category, type);
-                    operation.Note = $"Entity '{entityName}' does not exist and will be created.";
-                    operation.ProviderAssumptions.AddRange(GetOperationAssumptions(category, type, operation.Kind));
-                    operation.FallbackTasks.AddRange(GetFallbackTasks(operation.Kind, entityName, providerProfile));
-                    return operation;
+                    baseOp.Kind = MigrationPlanOperationKind.CreateEntity;
+                    baseOp.RiskLevel = ClassifyCreateEntityRisk(category, type);
+                    baseOp.Note = $"Entity '{entityName}' does not exist and will be created.";
+                    baseOp.ProviderAssumptions.AddRange(GetOperationAssumptions(category, type, baseOp.Kind));
+                    baseOp.FallbackTasks.AddRange(GetFallbackTasks(baseOp.Kind, entityName, providerProfile));
+                    return new List<MigrationPlanOperation> { baseOp };
                 }
 
                 var current = MigrateDataSource.GetEntityStructure(entityName, true);
                 if (current == null)
                 {
-                    operation.Kind = MigrationPlanOperationKind.Error;
-                    operation.RiskLevel = MigrationPlanRiskLevel.High;
-                    operation.Note = $"Current entity structure could not be read for '{entityName}'.";
-                    operation.ProviderAssumptions.Add("Validate datasource connectivity and metadata permissions before apply.");
-                    return operation;
+                    baseOp.Kind = MigrationPlanOperationKind.Error;
+                    baseOp.RiskLevel = MigrationPlanRiskLevel.High;
+                    baseOp.Note = $"Current entity structure could not be read for '{entityName}'.";
+                    baseOp.ProviderAssumptions.Add("Validate datasource connectivity and metadata permissions before apply.");
+                    return new List<MigrationPlanOperation> { baseOp };
                 }
 
+                var ops = new List<MigrationPlanOperation>();
+
+                // Additive — columns in the model that the live datasource is missing.
                 var missingColumns = GetMissingColumns(current, desired);
                 if (missingColumns.Count > 0)
                 {
-                    operation.Kind = MigrationPlanOperationKind.AddMissingColumns;
-                    operation.MissingColumns = missingColumns
+                    baseOp.Kind = MigrationPlanOperationKind.AddMissingColumns;
+                    baseOp.MissingColumns = missingColumns
                         .Where(column => column != null && !string.IsNullOrWhiteSpace(column.FieldName))
                         .Select(column => column.FieldName)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .OrderBy(columnName => columnName)
                         .ToList();
-                    operation.RiskLevel = ClassifyAddColumnsRisk(category, type, operation.MissingColumns.Count);
-                    operation.Note = $"Entity '{entityName}' requires {operation.MissingColumns.Count} missing column(s).";
-                    operation.ProviderAssumptions.AddRange(GetOperationAssumptions(category, type, operation.Kind));
-                    operation.FallbackTasks.AddRange(GetFallbackTasks(operation.Kind, entityName, providerProfile));
+                    baseOp.RiskLevel = ClassifyAddColumnsRisk(category, type, baseOp.MissingColumns.Count);
+                    baseOp.Note = $"Entity '{entityName}' requires {baseOp.MissingColumns.Count} missing column(s).";
+                    baseOp.ProviderAssumptions.AddRange(GetOperationAssumptions(category, type, baseOp.Kind));
+                    baseOp.FallbackTasks.AddRange(GetFallbackTasks(baseOp.Kind, entityName, providerProfile));
+                    ops.Add(baseOp);
                 }
-                else
+
+                // Destructive (opt-in) — columns the live datasource still has but the model dropped.
+                if (includeDestructive)
                 {
-                    operation.Kind = MigrationPlanOperationKind.UpToDate;
-                    operation.RiskLevel = MigrationPlanRiskLevel.Low;
-                    operation.Note = $"Entity '{entityName}' is up to date.";
-                    operation.ProviderAssumptions.Add("No structural action required.");
+                    var droppedColumns = GetMissingColumns(desired, current)
+                        .Where(column => column != null && !string.IsNullOrWhiteSpace(column.FieldName))
+                        .Select(column => column.FieldName)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(columnName => columnName)
+                        .ToList();
+
+                    if (droppedColumns.Count > 0)
+                    {
+                        var dropOp = new MigrationPlanOperation
+                        {
+                            EntityTypeName = baseOp.EntityTypeName,
+                            EntityName = entityName,
+                            Kind = MigrationPlanOperationKind.DropColumn,
+                            MissingColumns = droppedColumns,
+                            IsDestructive = true,
+                            RiskLevel = MigrationPlanRiskLevel.High,
+                            Note = $"Entity '{entityName}' has {droppedColumns.Count} column(s) no longer in the model; they will be dropped."
+                        };
+                        dropOp.ProviderAssumptions.Add("Destructive: dropping a column permanently removes its data — ensure a verified backup and policy approval before apply.");
+                        ops.Add(dropOp);
+                    }
                 }
+
+                if (ops.Count == 0)
+                {
+                    baseOp.Kind = MigrationPlanOperationKind.UpToDate;
+                    baseOp.RiskLevel = MigrationPlanRiskLevel.Low;
+                    baseOp.Note = $"Entity '{entityName}' is up to date.";
+                    baseOp.ProviderAssumptions.Add("No structural action required.");
+                    ops.Add(baseOp);
+                }
+
+                return ops;
             }
             catch (Exception ex)
             {
-                operation.Kind = MigrationPlanOperationKind.Error;
-                operation.RiskLevel = MigrationPlanRiskLevel.Critical;
-                operation.Note = $"Planning error for '{entityType.Name}': {ex.Message}";
-                operation.ProviderAssumptions.Add("Resolve planning-time exceptions before executing migration operations.");
+                baseOp.Kind = MigrationPlanOperationKind.Error;
+                baseOp.RiskLevel = MigrationPlanRiskLevel.Critical;
+                baseOp.Note = $"Planning error for '{entityType.Name}': {ex.Message}";
+                baseOp.ProviderAssumptions.Add("Resolve planning-time exceptions before executing migration operations.");
+                return new List<MigrationPlanOperation> { baseOp };
             }
-
-            return operation;
         }
 
         private static MigrationPlanRiskLevel ClassifyCreateEntityRisk(DatasourceCategory category, DataSourceType type)

@@ -87,7 +87,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                     var w = JsonSerializer.Deserialize<MigrationWave>(json, _json);
                     if (w != null) result.Add(w);
                 }
-                catch { /* skip corrupt files */ }
+                catch (Exception ex)
+                {
+                    // Skip corrupt/unreadable wave file; continue loading the rest.
+                    System.Diagnostics.Debug.WriteLine(
+                        $"MigrationManager.LoadAllWavesAsync: skipping '{file}': {ex}");
+                }
             }
             return result.OrderBy(w => (int)w.Tier).ToList();
         }
@@ -384,7 +389,12 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                         if (result.Count >= limit) break;
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Skip corrupt/unreadable comparison file; continue scanning history.
+                    System.Diagnostics.Debug.WriteLine(
+                        $"MigrationManager.GetComparisonHistoryAsync: skipping '{file}': {ex}");
+                }
             }
             return result;
         }

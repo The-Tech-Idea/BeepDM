@@ -12,38 +12,24 @@ namespace TheTechIdea.Beep.Editor.Importing
 {
     /// <summary>
     /// Schema-related entry points exposed on <see cref="IDataImportManager"/>.
-    /// These are now thin back-compat shims that delegate to the unified
-    /// <see cref="ISchemaManager"/> (in <c>Editor/Schema/</c>). New code should call
-    /// the schema manager directly.
+    /// These are thin shims over <see cref="SyncSchemaPreflight"/> (in <c>Editor/Schema/</c>),
+    /// the shared cross-datasource sync preflight/draft helper.
     /// </summary>
     public partial class DataImportManager
     {
-        // The service is resolved per-call so consumers who swap the implementation
-        // at runtime (e.g. in tests) get the new one without re-constructing the
-        // import manager. We cache the default once it's first resolved.
-        private ISchemaManager? _schemaManager;
-
-        protected ISchemaManager SchemaManagerSvc =>
-            _schemaManager ??= ResolveSchemaManager();
-
-        private ISchemaManager ResolveSchemaManager()
-        {
-            return new SchemaManager(_editor);
-        }
-
         #region RunMigrationPreflightAsync (back-compat shim)
 
         /// <summary>
         /// Validates schema compatibility between source and destination before running a migration.
-        /// Delegates to <see cref="ISchemaManager.RunPreflightAsync"/>; kept on
+        /// Delegates to <see cref="SyncSchemaPreflight.RunPreflightAsync"/>; kept on
         /// <see cref="IDataImportManager"/> for back-compat with existing callers.
         /// </summary>
         public async Task<IErrorsInfo> RunMigrationPreflightAsync(
             DataImportConfiguration config,
             Action<string>? log = null)
         {
-            var preflight = await SchemaManagerSvc.RunPreflightAsync(
-                ToRequest(config), log, CancellationToken.None).ConfigureAwait(false);
+            var preflight = await SyncSchemaPreflight.RunPreflightAsync(
+                _editor, ToRequest(config), log, CancellationToken.None).ConfigureAwait(false);
 
             LogPreflight(preflight, log);
             return preflight.Status;
@@ -55,12 +41,12 @@ namespace TheTechIdea.Beep.Editor.Importing
 
         /// <summary>
         /// Builds a <see cref="DataSyncSchema"/> that describes what a sync run would do,
-        /// without executing any data movement. Delegates to <see cref="ISchemaManager.BuildSyncDraftAsync"/>.
+        /// without executing any data movement. Delegates to <see cref="SyncSchemaPreflight.BuildSyncDraftAsync"/>.
         /// </summary>
         public async Task<DataSyncSchema> BuildSyncDraftAsync(DataImportConfiguration config)
         {
-            var result = await SchemaManagerSvc.BuildSyncDraftAsync(
-                ToRequest(config), CancellationToken.None).ConfigureAwait(false);
+            var result = await SyncSchemaPreflight.BuildSyncDraftAsync(
+                _editor, ToRequest(config), CancellationToken.None).ConfigureAwait(false);
 
             if (result?.Draft != null)
             {

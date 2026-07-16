@@ -55,7 +55,9 @@ namespace TheTechIdea.Beep.Installer.Steps
 
                 if (_isUninstall)
                 {
-                    try { File.Delete(destPath); processed++; } catch { }
+                    // Best-effort removal: a locked/missing font file must not abort the loop — report and continue.
+                    try { File.Delete(destPath); processed++; }
+                    catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"FontInstallStep: failed to remove font '{destPath}': {ex.Message}" }); }
                     RemoveFontResource(destPath);
                 }
                 else

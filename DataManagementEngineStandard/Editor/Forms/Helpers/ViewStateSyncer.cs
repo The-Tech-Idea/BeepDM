@@ -45,8 +45,10 @@ public sealed class ViewStateSyncer
                 dynamic units = uow.Units;
                 int currentIdx = 0;
                 int count = 0;
-                try { currentIdx = (int)(units.CurrentIndex); } catch { }
-                try { count = units.Count; } catch { }
+                try { currentIdx = (int)(units.CurrentIndex); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ViewStateSyncer.SyncRecordPosition: CurrentIndex read ignored: {ex}"); }
+                try { count = units.Count; }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ViewStateSyncer.SyncRecordPosition: Count read ignored: {ex}"); }
                 viewState.RecordPositionText = $"{currentIdx + 1}/{count}";
             }
             catch { viewState.RecordPositionText = "1/?"; }

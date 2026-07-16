@@ -51,7 +51,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                         try
             {
                 // Ensure shared context mode is set according to preference
-                try { await _loaderAssistant.SetSharedContextModeAsync(useSingleSharedContext); } catch { }
+                try { await _loaderAssistant.SetSharedContextModeAsync(useSingleSharedContext); }
+                catch (Exception ex)
+                {
+                    // Non-fatal: proceed with whatever context mode is already active.
+                    _logger?.LogWithContext($"LoadNuggetAsPluginAsync: Failed to set shared context mode for {packageName}", ex);
+                }
 
                 var packages = await _downloader.DownloadPackageWithDependenciesAsync(packageName, version, sources);
                 foreach (var kvp in packages)
@@ -64,7 +69,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                         // Optionally copy to app directory for runtime resolution
                         if (!string.IsNullOrWhiteSpace(appInstallPath))
                         {
-                            try { _downloader.InstallPackageToAppDirectory(path, appInstallPath); } catch { }
+                            try { _downloader.InstallPackageToAppDirectory(path, appInstallPath); }
+                            catch (Exception ex)
+                            {
+                                // Non-fatal: pre-copy to app dir failed; loading continues from the package folder.
+                                _logger?.LogWithContext($"LoadNuggetAsPluginAsync: Failed to pre-copy package {package} to {appInstallPath}", ex);
+                            }
                         }
                         // If an appInstallPath is provided, determine plugin id and version and create manifest & register
                         if (!string.IsNullOrWhiteSpace(appInstallPath))
@@ -79,7 +89,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                                 {
                                     var manifest = new PluginManifest { Id = pluginId, Name = pluginId, Version = pluginVersion, Source = (sources != null ? string.Join(';', sources) : "nuget"), Signed = false };
                                     var manifestPath = Path.Combine(installDir, "plugin.json");
-                                    try { File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })); } catch { }
+                                    try { File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })); }
+                                    catch (Exception exManifest)
+                                    {
+                                        // Non-fatal: manifest write failed; registration below still proceeds.
+                                        _logger?.LogWithContext($"LoadNuggetAsPluginAsync: Failed to write plugin manifest at {manifestPath}", exManifest);
+                                    }
                                     try
                                     {
                                         _registry?.Register(new InstalledPluginInfo { Id = pluginId, Name = manifest.Name, Version = manifest.Version, Source = manifest.Source, InstallPath = installDir, State = "Installed" });
@@ -108,7 +123,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                                     }
                                 }
                             }
-                            catch { }
+                            catch (Exception exInstall)
+                            {
+                                // Non-fatal: app-dir install/manifest/process-host setup failed; assembly load continues below.
+                                _logger?.LogWithContext($"LoadNuggetAsPluginAsync: App-directory install step failed for package {package}", exInstall);
+                            }
                         }
 
                         // Load via AssemblyLoadingAssistant - the helper adds to assembly handler and returns a status string

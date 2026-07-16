@@ -74,7 +74,12 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                 if (types == null || types.Length == 0) return;
                 foreach (var t in types)
                 {
-                    try { ProcessTypeInfo(t.GetTypeInfo(), targetList); } catch { }
+                    try { ProcessTypeInfo(t.GetTypeInfo(), targetList); }
+                    catch (Exception ex)
+                    {
+                        // Skip a single unprocessable type; continue scanning the rest.
+                        _logger?.LogWithContext($"ScanAssembly: Failed to process a type in {assembly.GetName().Name}", ex);
+                    }
                 }
             }
             catch (Exception ex)
@@ -303,7 +308,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                         xcls.Order = cls.Order;
                         cls = null;
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        // IOrder ordering is optional; keep the default order if it cannot be read.
+                        _logger?.LogWithContext($"GetAssemblyClassDefinition: Failed to read IOrder from {type?.FullName}", ex);
+                    }
                 }
             }
 

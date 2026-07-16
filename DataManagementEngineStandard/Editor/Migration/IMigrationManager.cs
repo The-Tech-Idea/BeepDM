@@ -8,6 +8,7 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Editor.UOW.Helpers;
 using TheTechIdea.Beep.Editor.UOW.Interfaces;
 using TheTechIdea.Beep.Utilities;
@@ -1221,6 +1222,14 @@ namespace TheTechIdea.Beep.Editor.Migration
         IErrorsInfo EnsureEntity(Type pocoType, bool createIfMissing = true, bool addMissingColumns = true, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
         IReadOnlyList<EntityField> GetMissingColumns(EntityStructure current, EntityStructure desired);
 
+        // ── Schema-drift detection (full field-level: added/removed/altered) ──
+        SchemaDriftReport InspectDrift(Type entityType);
+        Dictionary<string, SchemaDriftReport> InspectDrift(IEnumerable<Type> entityTypes);
+
+        // ── Idempotency (per-datasource migration history) ──
+        bool IsMigrationApplied(string migrationName);
+        IErrorsInfo RecordMigration(string migrationName, bool success = true, string notes = null);
+
         IErrorsInfo CreateEntity(EntityStructure entity);
         IErrorsInfo DropEntity(string entityName);
         IErrorsInfo TruncateEntity(string entityName);
@@ -1399,7 +1408,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// <see cref="ApplyMigrations(string, Assembly, bool, bool, IProgress{PassedArgs}, bool, bool)"/>.
         /// </para>
         /// </summary>
-        MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+        MigrationPlanArtifact BuildMigrationPlan(string namespaceName = null, Assembly assembly = null, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false, bool includeDestructive = false);
 
         /// <summary>
         /// Builds a migration plan artifact (preview only) from explicit entity types.
@@ -1412,7 +1421,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// <see cref="ApplyMigrationsForTypes(IEnumerable{Type}, bool, bool, IProgress{PassedArgs}, bool, bool)"/>.
         /// </para>
         /// </summary>
-        MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false);
+        MigrationPlanArtifact BuildMigrationPlanForTypes(IEnumerable<Type> entityTypes, bool detectRelationships = true, bool applyForeignKeys = false, bool applyIndexes = false, bool includeDestructive = false);
 
         /// <summary>
         /// Evaluates a migration plan against compatibility and safety policies.
@@ -1445,19 +1454,19 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Executes a migration plan with deterministic retry and checkpoint tracking.
         /// Supports resumable execution via execution token.
         /// </summary>
-        MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null);
+        MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null, MigrationPolicyOptions policyOptions = null);
 
         /// <summary>
         /// Async overload of <see cref="ExecuteMigrationPlan"/>. Required by the
         /// shared <c>IRetryPipeline</c> for per-step retry. New code should prefer
         /// this method; the sync overload is a thin wrapper for back-compat.
         /// </summary>
-        Task<MigrationExecutionResult> ExecuteMigrationPlanAsync(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null, CancellationToken token = default);
+        Task<MigrationExecutionResult> ExecuteMigrationPlanAsync(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null, CancellationToken token = default, MigrationPolicyOptions policyOptions = null);
 
         /// <summary>
         /// Resumes a previously checkpointed execution by token.
         /// </summary>
-        MigrationExecutionResult ResumeMigrationPlan(string executionToken, MigrationExecutionPolicy policy = null, IProgress<PassedArgs> progress = null);
+        MigrationExecutionResult ResumeMigrationPlan(string executionToken, MigrationExecutionPolicy policy = null, IProgress<PassedArgs> progress = null, MigrationPolicyOptions policyOptions = null);
 
         /// <summary>
         /// Gets a stored execution checkpoint by token.

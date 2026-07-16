@@ -460,7 +460,11 @@ namespace TheTechIdea.Beep.ConfigUtil
                         names.Add(Path.GetFileNameWithoutExtension(f).Replace("ImportConfig_", ""));
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Enumeration failure just yields whatever names were collected so far.
+                Logger?.WriteLog($"ConfigEditor.GetSavedImportConfigNames: could not enumerate import configs in '{ConfigPath}': {ex.Message}");
+            }
             return names;
         }
 

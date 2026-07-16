@@ -339,7 +339,9 @@ namespace TheTechIdea.Beep.Logger
                         
                         CleanupOldFiles(dir, name, ext);
                     }
-                    catch { } // Ignore file write errors
+                    // This IS the logging sink; routing the failure back through the logger could
+                    // re-enter WriteLog under the held _lock and recurse. Report out-of-band only.
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"DMLogger.RollingFileLoggerProvider.WriteLog: file write ignored: {ex}"); }
                 }
             }
 
@@ -360,7 +362,8 @@ namespace TheTechIdea.Beep.Logger
                         }
                     }
                 }
-                catch { }
+                // Out-of-band only: never route the logger's own cleanup failure back through the logger.
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"DMLogger.RollingFileLoggerProvider.CleanupOldFiles: ignored: {ex}"); }
             }
 
             private class RollingFileLogger : Microsoft.Extensions.Logging.ILogger

@@ -17699,12 +17699,6 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunReconciliationReport">
             <summary>Reconciliation report from the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)"/> call.</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.SchemaManager">
-            <summary>
-            Schema manager used by <see cref="!:BeepSyncManager.Sync.cs"/> to run a strict
-            destination-acceptance preflight before the import starts. Lazily resolved.
-            </summary>
-        </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.RetryPipeline">
             <summary>
             Retry pipeline used by <see cref="!:BeepSyncManager.Sync.cs"/> to run the
@@ -24422,9 +24416,8 @@
             </summary>
             <summary>
             Schema-related entry points exposed on <see cref="T:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager"/>.
-            These are now thin back-compat shims that delegate to the unified
-            <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/> (in <c>Editor/Schema/</c>). New code should call
-            the schema manager directly.
+            These are thin shims over <see cref="T:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight"/> (in <c>Editor/Schema/</c>),
+            the shared cross-datasource sync preflight/draft helper.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.InitializeDataSources(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
@@ -24690,14 +24683,14 @@
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.RunMigrationPreflightAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Action{System.String})">
             <summary>
             Validates schema compatibility between source and destination before running a migration.
-            Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.RunPreflightAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Action{System.String},System.Threading.CancellationToken)"/>; kept on
+            Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight.RunPreflightAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Action{System.String},System.Threading.CancellationToken)"/>; kept on
             <see cref="T:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportManager"/> for back-compat with existing callers.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
             Builds a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/> that describes what a sync run would do,
-            without executing any data movement. Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.
+            without executing any data movement. Delegates to <see cref="M:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayFailedRecordsAsync(System.String,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
@@ -24786,7 +24779,7 @@
         <member name="T:TheTechIdea.Beep.Editor.Importing.Examples.PreflightSyncDraftExamples">
             <summary>
             Phase 3 — preflight + sync draft for a given import configuration.
-            The engine already runs the preflight via <c>ISchemaManager</c>; this example
+            The engine already runs the preflight via <c>SyncSchemaPreflight</c>; this example
             documents the contract and provides a pure setup the host can invoke.
             </summary>
         </member>
@@ -27347,7 +27340,7 @@
             Backward-compatible alias for older provider-named guidance calls.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a migration plan artifact (preview only) from discovery-based entity resolution.
             This method does not apply schema changes.
@@ -27360,7 +27353,7 @@
             </para>
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a migration plan artifact (preview only) from explicit entity types.
             This method does not apply schema changes.
@@ -27400,20 +27393,20 @@
             Creates (or refreshes) a migration execution checkpoint for a plan.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlan(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlan(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
             <summary>
             Executes a migration plan with deterministic retry and checkpoint tracking.
             Supports resumable execution via execution token.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlanAsync(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlanAsync(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
             <summary>
-            Async overload of <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlan(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>. Required by the
+            Async overload of <see cref="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ExecuteMigrationPlan(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)"/>. Required by the
             shared <c>IRetryPipeline</c> for per-step retry. New code should prefer
             this method; the sync overload is a thin wrapper for back-compat.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ResumeMigrationPlan(System.String,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.IMigrationManager.ResumeMigrationPlan(System.String,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
             <summary>
             Resumes a previously checkpointed execution by token.
             </summary>
@@ -27582,6 +27575,23 @@
             Core MigrationManager shell.
             Feature groups are implemented in dedicated partial files.
             </summary>
+             <summary>
+             Schema-drift DETECTION for the migration datasource. This is the single home for
+             "how does the desired schema (from a .NET type) differ from the live datasource?" —
+             previously duplicated in the removed <c>SchemaManager</c>. It reads structure through
+             <see cref="T:TheTechIdea.Beep.IDataSource"/> interface calls (no DDL) and compares via the shared
+             <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaComparator"/>, producing a FULL <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaDriftReport"/>
+             (added / removed / altered fields — unlike the additive-only plan diff).
+            
+             Detection only: this does not change plan/execute behavior, which stays additive and
+             routed through the per-datasource <c>ISchemaMigrationProvider</c>.
+             </summary>
+            <summary>
+            Idempotency gate over the per-datasource migration history. Lets a caller record a named
+            migration once and skip it on subsequent runs — closing the "history is write-only, never
+            queried" gap. History is read/written through <see cref="T:TheTechIdea.Beep.ConfigUtil.IConfigEditor"/> (the same store the
+            execution checkpoints and plan artifacts persist to).
+            </summary>
             <summary>
             Parses migration manifest .txt files that declare entity types for filesystem-based
             discovery (source = <see cref="F:TheTechIdea.Beep.Editor.Migration.EntityMigrationSource.DiscoveryFileSystem"/>).
@@ -27736,6 +27746,16 @@
             Used by Phase 4 discovery evidence.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InspectDrift(System.Type)">
+            <summary>
+            Full field-level drift between a .NET type (desired) and the live entity on
+            <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.MigrateDataSource"/> (actual). Semantics preserved from the former
+            <c>SchemaManager.InspectAsync</c>: comparison is <c>Compare(baseline: desired, current: actual)</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InspectDrift(System.Collections.Generic.IEnumerable{System.Type})">
+            <summary>Batch <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InspectDrift(System.Type)"/> keyed by type name.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIndexesForEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>
             Applies all indexes declared on an entity. Returns null when the entity
@@ -27766,6 +27786,27 @@
             <c>rel.RalationName</c> or the auto-generated fallback
             <c>FK_{EntityName}_{RelatedEntityID}_{EntityColumnID}</c> — the
             same naming convention used by the plan builder.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TryLoadPersistedCheckpoint(System.String)">
+            <summary>
+            Loads the most recent persisted execution checkpoint for <paramref name="executionToken"/>
+            from migration history (the JSON snapshot <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.PersistExecutionCheckpoint(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint)"/> writes to
+            <c>MigrationRecord.Notes</c>). This is what makes resume survive a process restart: when the
+            in-memory <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationManager.ExecutionCheckpoints"/> is empty, the checkpoint is re-hydrated from disk.
+            Returns null when no persisted snapshot exists.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.IsMigrationApplied(System.String)">
+            <summary>
+            True when a <b>successful</b> migration record with <paramref name="migrationName"/> (matched
+            on either <c>MigrationId</c> or <c>Name</c>) already exists in the current datasource's history.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RecordMigration(System.String,System.Boolean,System.String)">
+            <summary>
+            Appends a named migration record to the current datasource's history so later runs can gate on
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.IsMigrationApplied(System.String)"/>.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ParseManifestFile(System.String)">
@@ -27885,14 +27926,34 @@
             requiring callers to walk audit events.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
-            Builds a non-destructive migration plan using discovery-based entity resolution.
+            Builds a migration plan using discovery-based entity resolution. Additive by default;
+            pass <paramref name="includeDestructive"/> to also plan drops of columns that exist in
+            the live datasource but are no longer present in the model (data loss — opt-in, gated by
+            policy). See <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.Boolean)"/> for the destructive-planning notes.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlanForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
-            Builds a non-destructive migration plan using explicit entity types.
+            Builds a migration plan using explicit entity types.
+            </summary>
+            <param name="includeDestructive">
+            When <c>true</c>, the planner also emits <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind.DropColumn"/>
+            operations for columns present in the live datasource but absent from the model. These are
+            marked <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperation.IsDestructive"/> = true and high-risk, so the policy
+            engine can block them in protected environments and compensation/rollback engage. Default
+            <c>false</c> — dropping a column is data loss and must be an explicit choice. (Column
+            <em>type</em> changes are NOT auto-planned: a reflected .NET type vs a live DB type is not a
+            reliable equality signal; use the imperative <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.AlterColumn(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)"/> for those.)
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildPlanOperations(System.Type,TheTechIdea.Beep.Utilities.DatasourceCategory,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Editor.Migration.MigrationProviderCapabilityProfile,System.Boolean)">
+            <summary>
+            Builds the plan operation(s) for one entity type. An existing entity can yield more than
+            one operation: an additive <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind.AddMissingColumns"/> and,
+            when <paramref name="includeDestructive"/> is set, a <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationPlanOperationKind.DropColumn"/>
+            for columns the live datasource still has but the model dropped.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ExecuteEntityMigrationPipeline(System.Collections.Generic.IReadOnlyList{System.Type},System.Boolean,TheTechIdea.Beep.Editor.Migration.EntityMigrationSource,System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
@@ -28098,30 +28159,6 @@
             Stable, comparable fingerprints for BeepDM schema artifacts.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager">
-            <summary>
-            Single-responsibility service for ALL schema concerns in BeepDM.
-            Owns:
-            <list type="bullet">
-              <item>Data-source resolution + entity-structure loading (used by everyone).</item>
-              <item>Cross-datasource preflight (will the destination accept the source?).</item>
-              <item>Sync-draft production (DataSyncSchema for downstream execution).</item>
-              <item>Entity existence + creation (thin wrapper over IDataSource.CreateEntityAs).</item>
-              <item>Schema snapshots (capture, persist, compare, drift report).</item>
-            </list>
-            Does NOT: move data (DataImportManager), execute DDL plans (MigrationManager),
-            or run sync pipelines (BeepSyncManager). It only plans and validates.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.InspectManyAsync(System.Collections.Generic.IEnumerable{System.Type},TheTechIdea.Beep.IDataSource,System.Threading.CancellationToken)">
-            <summary>Same as the string-name overload but accepts a pre-resolved <see cref="T:TheTechIdea.Beep.IDataSource"/>.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.GenerateChangePlanAsync(TheTechIdea.Beep.Editor.Schema.SchemaDriftReport,System.Threading.CancellationToken)">
-            <summary>Generates a DDL change plan from a drift report without executing it.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaResolutionResult">
-            <summary>Result of resolving a data source by name (and auto-opening it if not open).</summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.RuleAuditScope">
              <summary>
              Disposable scope that increments a counter every time the bound rule engine
@@ -28203,17 +28240,9 @@
             <param name="defaultMaxDepth">Default MaxDepth when caller did not specify one.</param>
             <param name="defaultMaxMs">Default MaxExecutionMs when caller did not specify one.</param>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaManager">
-            <summary>
-            Default <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/> implementation. Owns ALL schema concerns
-            in BeepDM: preflight, draft, drift, snapshot, structure resolution, entity existence,
-            and entity creation. Other services (MigrationManager, BeepSyncManager, DataImportManager,
-            ETLEditor) call into this for any schema work.
-            </summary>
-        </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaRequest">
             <summary>
-            Input contract for <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/>.
+            Input contract for <see cref="T:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight"/>.
             Datasource-agnostic. Any pair of <see cref="T:TheTechIdea.Beep.IDataSource"/> can be source or target.
             </summary>
         </member>
@@ -28221,10 +28250,7 @@
             <summary>Output of a preflight run.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaDraftResult">
-            <summary>Output of <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaEntityResult">
-            <summary>Output of <see cref="M:TheTechIdea.Beep.Editor.Schema.ISchemaManager.CreateEntityAsync(System.String,TheTechIdea.Beep.DataBase.EntityStructure,System.Threading.CancellationToken)"/>.</summary>
+            <summary>Output of <see cref="M:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaSnapshot">
             <summary>
@@ -28241,20 +28267,21 @@
         <member name="T:TheTechIdea.Beep.Editor.Schema.FieldTypeDrift">
             <summary>Describes a type-level change to a single field.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaChange">
-            <summary>A single schema change operation.</summary>
+        <member name="T:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight">
+            <summary>
+            Stateless helper for cross-datasource SYNC preflight and sync-draft production —
+            "will the destination accept the source, and here is the field mapping." This is a
+            data-movement concern (source → destination), NOT single-datasource schema evolution;
+            schema changes go through <c>MigrationManager</c>. Extracted verbatim from the removed
+            <c>SchemaManager</c> so both <c>DataImportManager</c> and <c>BeepSyncManager</c> can share
+            one implementation without either owning it.
+            </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaChangePlan">
-            <summary>A change plan derived from drift between two schema snapshots.</summary>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight.RunPreflightAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Action{System.String},System.Threading.CancellationToken)">
+            <summary>Cross-datasource preflight: resolves source+destination and checks compatibility.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.ISchemaSnapshotStore">
-            <summary>Contract for persisting and retrieving <see cref="T:TheTechIdea.Beep.Editor.Schema.SchemaSnapshot"/> instances.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.FileSchemaSnapshotStore">
-            <summary>JSON-file backed schema snapshot store. Files under <c>&lt;BeepRoot&gt;/Schema/Snapshots/</c>.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.Editor.Schema.InMemorySchemaSnapshotStore">
-            <summary>In-memory schema snapshot store — for unit tests and ephemeral pipelines.</summary>
+        <member name="M:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)">
+            <summary>Builds a <see cref="T:TheTechIdea.Beep.Editor.DataSyncSchema"/> draft (field mapping) without moving data.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Examples.UnitofWorkExamples">
             <summary>
@@ -30777,6 +30804,13 @@
             <summary>
             Tree catalog service — read-only access to tree-building metadata
             (branches, functions, object types, category folders).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.DataSourceHelperFactoryInstance">
+            <summary>
+            The datasource-helper factory. Lazily created and held for the lifetime of this
+            DMEEditor so that helpers registered via <see cref="M:TheTechIdea.Beep.DMEEditor.RegisterDataSourceHelper(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Editor.IDataSourceHelper)"/>
+            remain visible to later <see cref="M:TheTechIdea.Beep.DMEEditor.GetDataSourceHelper(TheTechIdea.Beep.Utilities.DataSourceType)"/> calls.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.DMEEditor.InitializeUniversalDataSourceHelpers">
@@ -41419,7 +41453,7 @@
         <member name="T:TheTechIdea.Beep.Installer.PauseResumeManager">
             <summary>
             Provides pause/resume capability for long installations.
-            Integrates with SetupCheckpointStore for persistent state.
+            Integrates with the setup state store for persistent state.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Installer.PauseResumeManager.Pause(System.String,System.String,System.Int32)">
@@ -47408,13 +47442,13 @@
         </member>
         <member name="T:TheTechIdea.Beep.Services.BeepServiceSchemaExtensions">
             <summary>
-            DI registration for the unified schema manager and its dependencies.
+            DI registration for the shared schema primitives (comparison + fingerprinting).
+            Schema-change/drift is owned by <c>MigrationManager</c>; cross-datasource sync
+            preflight/draft is the stateless <c>SyncSchemaPreflight</c> helper — neither needs DI.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Services.BeepServiceSchemaExtensions.AddBeepSchemaManager(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
-            <summary>
-            Registers <see cref="T:TheTechIdea.Beep.Editor.Schema.ISchemaManager"/> and its dependencies as singletons.
-            </summary>
+            <summary>Registers the shared schema comparison + fingerprint primitives as singletons.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Services.BeepServiceWebExtensions">
             <summary>
@@ -52147,16 +52181,16 @@
              </code>
              </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ReportProgress(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>Routes progress to this adapter's <see cref="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnProgress(TheTechIdea.Beep.Addin.PassedArgs)"/> extension point.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnCancelledAsync(TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnFailedAsync(System.Exception,TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
-            <inheritdoc/>
-        </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnCompletedAsync(TheTechIdea.Beep.SetUp.SetupReport,TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorServerSetupWizardAdapter.OnProgress(TheTechIdea.Beep.Addin.PassedArgs)">
@@ -52193,16 +52227,19 @@
         <member name="P:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.StateStorageKey">
             <summary>Key used to persist <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/> in the backing store.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnRunStartingAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>Resume: restore persisted state if available.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ReportProgress(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>Routes progress to this adapter's <see cref="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnProgress(TheTechIdea.Beep.Addin.PassedArgs)"/> extension point.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnCancelledAsync(TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnFailedAsync(System.Exception,TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)">
-            <inheritdoc/>
-        </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.OnCompletedAsync(TheTechIdea.Beep.SetUp.SetupReport,TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.BlazorWasmSetupWizardAdapter.LoadStateAsync(System.String)">
@@ -52226,8 +52263,11 @@
              and override <see cref="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowProgress(System.String,System.Int32,System.String)"/> and <see cref="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)"/>.
              </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
-            <inheritdoc/>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.OnRunStartingAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Prints the first step before the run. Note this always shows step 1 regardless of resume
+            position — see P1-10 in the setup plan.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
             <inheritdoc/>
@@ -52237,6 +52277,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
             <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.ConsoleSetupWizardAdapter.ShortHash(System.String)">
+            <summary>Hash prefix for display. Guards a short/absent hash on a partial report.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter">
              <summary>
@@ -52260,8 +52303,12 @@
             </param>
             <param name="completedCallback">Called once when the wizard finishes.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
-            <inheritdoc/>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.ReportProgress(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Passes the wizard's original <see cref="T:TheTechIdea.Beep.Addin.PassedArgs"/> straight through. The base's
+            default would rebuild one from (stepId, percent, message) and drop every other field
+            (Flag, ErrorObject, …) that existing desktop callbacks may read.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.DesktopSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
             <inheritdoc/>
@@ -52298,8 +52345,20 @@
             <param name="progressAction">Invoked with (percentComplete, message) for each progress event.</param>
             <param name="completedAction">Invoked with the final report when the wizard finishes.</param>
         </member>
-        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.ReportProgress(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>Progress is fire-and-forget by design — a UI tick must not block the run.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.OnCancelledAsync(TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.OnFailedAsync(System.Exception,TheTechIdea.Beep.SetUp.SetupContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.OnCompletedAsync(TheTechIdea.Beep.SetUp.SetupReport,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Awaited, not fire-and-forget: callers rely on the completion callback having run on the
+            main thread before <c>RunAsync</c> returns.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.MauiSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
             <inheritdoc/>
@@ -52345,6 +52404,61 @@
         <member name="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.Report">
             <summary>Populated after the wizard finishes (<see cref="P:TheTechIdea.Beep.SetUp.Adapters.SetupAdapterStatus.State"/> == Completed or Failed).</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase">
+             <summary>
+             Shared <see cref="M:TheTechIdea.Beep.SetUp.ISetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)"/> implementation.
+            
+             <para>
+             Every adapter ran the same body — build an <see cref="T:System.IProgress`1"/>, run the wizard on a
+             worker thread, catch cancellation, return <c>GetReport()</c>. Only one of the six also caught
+             unexpected exceptions, so an adapter's behavior on a throw depended on which platform you
+             happened to be running. This base gives them one behavior; subclasses override only the hooks
+             they genuinely differ on.
+             </para>
+             <para>
+             The hooks are <see cref="T:System.Threading.Tasks.Task"/>-returning on purpose: Maui must <c>await</c> marshalling its
+             completion callback to the main thread, which a <c>void</c> hook would silently turn into
+             fire-and-forget.
+             </para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.ReportProgress(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Addin.PassedArgs)">
+            <summary>
+            Routes a progress callback to <see cref="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.ShowProgress(System.String,System.Int32,System.String)"/>, resolving the active step as
+            the first not-yet-completed one. Override to attribute progress differently or to pass
+            the raw <see cref="T:TheTechIdea.Beep.Addin.PassedArgs"/> through.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.OnRunStartingAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>Called before the wizard starts. Default: no-op.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.OnCancelledAsync(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>Called when the run was cancelled. Default: reports a progress message.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.OnFailedAsync(System.Exception,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Called when the run threw an unexpected exception. Default: reports a progress message.
+            The exception is deliberately not rethrown — the partial report is the result.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.OnCompletedAsync(TheTechIdea.Beep.SetUp.SetupReport,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Called once the report is available, before <c>RunAsync</c> returns.
+            Default: hands it to <see cref="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.ShowProgress(System.String,System.Int32,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.SetupWizardAdapterBase.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
+            <inheritdoc/>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter">
              <summary>
              Runs the setup wizard on a background thread and exposes status via
@@ -52359,6 +52473,24 @@
             <summary>Live status updated throughout the wizard run.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.RunAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <summary>
+            Wraps the shared run to preserve this adapter's never-null contract — a polling HTTP
+            endpoint must always get a report body, even when the wizard produced none.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.OnRunStartingAsync(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.ReportProgress(TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Addin.PassedArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.OnCancelledAsync(TheTechIdea.Beep.SetUp.SetupContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.OnFailedAsync(System.Exception,TheTechIdea.Beep.SetUp.SetupContext)">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.OnCompletedAsync(TheTechIdea.Beep.SetUp.SetupReport,TheTechIdea.Beep.SetUp.SetupContext)">
             <inheritdoc/>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.ShowStep(TheTechIdea.Beep.SetUp.ISetupStep,System.Int32,System.Int32)">
@@ -52369,6 +52501,37 @@
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Adapters.WebApiSetupWizardAdapter.ShowResult(TheTechIdea.Beep.SetUp.SetupReport)">
             <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Audit.BeepAuditSetupSink">
+            <summary>
+            Enterprise <see cref="T:TheTechIdea.Beep.SetUp.Audit.ISetupAuditSink"/>: adapts setup events onto the tamper-evident,
+            hash-chained <see cref="T:TheTechIdea.Beep.Services.Audit.IBeepAudit"/> pipeline.
+            </summary>
+            <remarks>
+            The mapping is deliberate: <see cref="T:TheTechIdea.Beep.Services.Audit.IBeepAudit"/>'s <c>AuditEvent</c> has its own field
+            names (<c>Operation</c>, <c>Category</c>, <c>Outcome</c>, <c>CorrelationId</c>, …) — the same
+            drift the Studio effort tripped on. Setup-specific fields that don't map to a first-class
+            column go into <c>Properties</c> so nothing is lost.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Audit.BeepAuditSetupSink.QueryAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Not supported: the engine chain stores <c>AuditEvent</c>s, not <c>SetupAuditEvent</c>s, so
+            a faithful round-trip isn't possible here. Query the underlying <see cref="T:TheTechIdea.Beep.Services.Audit.IBeepAudit"/>
+            directly (filter <c>Source == "SetUp"</c>). Honest empty rather than a lossy reconstruction.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Audit.JsonlSetupAuditSink">
+            <summary>
+            Solo-default <see cref="T:TheTechIdea.Beep.SetUp.Audit.ISetupAuditSink"/>: one append-only <c>.jsonl</c> line per event.
+            </summary>
+            <remarks>
+            Append-only is the whole point — the old checkpoint was overwritten in place, destroying the
+            prior run's record. Records are appended, never rewritten, so every run's history survives.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Audit.NullSetupAuditSink">
+            <summary>No-op sink used when no audit is configured. Records nothing.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory">
              <summary>
@@ -52381,11 +52544,16 @@
              NOTE: <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateDefault(TheTechIdea.Beep.Editor.IDMEEditor)"/> creates steps with EMPTY options objects.
              The returned wizard will fail validation unless the caller populates
              <see cref="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.PackageName"/>,
-             <see cref="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.ConnectionProperties"/>,
-             <see cref="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypes"/>, and
-             <see cref="P:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions.Registry"/> before running.
+             <see cref="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.ConnectionProperties"/>, and
+             <see cref="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypes"/> before running.
              Use <see cref="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.ISetupWizardBuilder})"/> with a configure callback for production use.
              </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.BuildDataImportDependencies(System.Boolean)">
+            <summary>
+            DataImport depends on seeding only when a SeedingStep was actually added —
+            naming an absent step would fail the builder's unknown-dependency check.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.ISetupWizardBuilder})">
             <inheritdoc/>
@@ -52399,24 +52567,146 @@
             still stages the auto-loadable drivers from the bundled config.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.JsonSetupDefinitionSerializer">
+            <summary>
+            <see cref="T:TheTechIdea.Beep.SetUp.Definition.ISetupDefinitionSerializer"/> over <c>System.Text.Json</c> — matching the
+            neighbouring setup code (the local state store), not the engine's Newtonsoft dependency.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Definition.JsonSetupDefinitionSerializer.Canonicalize(TheTechIdea.Beep.SetUp.Definition.SetupDefinition)">
+            <summary>
+            Returns a copy with deterministic ordering so the same logical definition always
+            serializes and hashes identically.
+            <para>
+            <c>DependsOn</c> is sorted because it is a set, not a sequence — reordering it changes
+            nothing semantically and must not churn the hash. <c>Steps</c> order is preserved: it is
+            load-bearing today (the builder enforces dependencies-declared-first, see P1-06).
+            </para>
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinitionValidator">
+            <summary>
+            Structural validation of a <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/>.
+            </summary>
+            <remarks>
+            Deliberately needs no <c>IDMEEditor</c> and no live datasource: this is what a CI job runs on
+            a pull request to catch a broken definition before it ever reaches a database.
+            Returns <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> per repo convention — a bad document is data, not an
+            exceptional condition.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Definition.SetupDefinitionValidator.FindCycle(System.Collections.Generic.List{TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition})">
+            <summary>Kahn's algorithm over dependency → dependent edges. Returns null when acyclic.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.SetupStepFactory">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.SetUp.Definition.ISetupStepFactory"/>, pre-registered with the six built-in step types.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.SetupStepFactory.TypeKeys">
+            <summary>Type keys for the built-in steps.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Definition.SetupStepFactory.#ctor(TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry)">
+            <param name="seeders">
+            Injected from DI, never from a definition file — <see cref="P:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions.Registry"/>
+            is a live object graph and is <c>[JsonIgnore]</c>d for exactly that reason.
+            </param>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.FileBasedFirstRunDetector">
             <summary>
             File-based <see cref="T:TheTechIdea.Beep.SetUp.IFirstRunDetector"/> that records setup completion in a marker
             file under the configuration directory.
             </summary>
         </member>
-        <member name="T:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1">
+        <member name="T:TheTechIdea.Beep.SetUp.Rollback.NoBackupConfirmationProvider">
             <summary>
-            Convenience base for seeders that insert a fixed, immutable list of reference records
-            (status codes, role types, country codes, etc.) into a single entity/table.
+            Solo default: reports no confirmed backup, and warns. Honest — there is no backup — rather
+            than the old inverted logic that claimed one existed whenever strict mode was off.
             </summary>
-            <typeparam name="T">The entity type whose records are inserted.</typeparam>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Rollback.RollbackOrchestrator">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.SetUp.Rollback.IRollbackOrchestrator"/>: walks completed steps in reverse and asks each
+            to undo itself.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.AutoApprovalProvider">
+            <summary>
+            Solo default: approves, and records the approval as self-granted rather than dressing it up.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.SeparationOfDutyApprovalProvider">
+            <summary>
+            Enterprise approval: the requester and the approver must differ. A principal cannot approve
+            its own plan — that's the entire point of an approval gate.
+            </summary>
+            <remarks>
+            Delegates the "did an approver actually sign off" decision to <paramref name="approverLookup"/>
+            (returns the approver's id, or null if none). Binds the approval to <c>planHash</c> so it
+            can't be replayed against a different plan.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.AllowAllAuthorizer">
+            <summary>
+            Solo default: allows everything. Keeps zero-config setup working — registering it changes
+            nothing about behaviour, which is the point of the no-op default.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.RoleBasedSetupAuthorizer">
+            <summary>
+            Enterprise authorizer: allows a permission only when the principal holds one of the roles
+            mapped to it. Unmapped permissions are denied by default (fail closed).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1">
+             <summary>
+             Convenience base for seeders that insert a fixed, immutable list of reference records
+             (status codes, role types, country codes, etc.) into a single entity/table.
+            
+             <para>
+             Inserts run inside a transaction when the datasource supports one, so a partial failure
+             leaves no rows behind. This matters because idempotency here is count-based
+             (<see cref="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.IsAlreadySeeded(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)"/>): a half-inserted batch that survived would either be
+             re-inserted as duplicates or — worse — be mistaken for a complete seed.
+             </para>
+             </summary>
+             <typeparam name="T">The entity type whose records are inserted.</typeparam>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.GetRecords">
             <summary>Returns the full set of reference records to insert.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.UseTransaction">
+            <summary>
+            When true (default) the insert batch is wrapped in a datasource transaction.
+            Set false for datasources whose transaction support is unreliable — note that a
+            partial failure then leaves committed rows requiring manual cleanup.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.IsAlreadySeeded(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Count-based idempotency: seeded only when the target already holds at least as many
+            rows as this seeder would insert.
+            <para>
+            The inherited "any rows at all" check is unsafe for reference data — a batch that
+            failed partway (49 of 100 rows) would report "already seeded" forever, silently
+            leaving records 50-100 missing.
+            </para>
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.SeedCore(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.TryBeginTransaction(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Begins a transaction, tolerating datasources that don't support one. Returns false
+            when the batch must proceed unprotected.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.ReferenceDataSeederBase`1.RollbackAndDescribe(TheTechIdea.Beep.IDataSource,System.Boolean,System.Int32)">
+            <summary>
+            Rolls back when in a transaction and returns text describing what the caller is left
+            with — an unprotected partial batch must be reported, never implied to be clean.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Seeding.SeederBase">
             <summary>
@@ -52480,6 +52770,9 @@
         <member name="M:TheTechIdea.Beep.SetUp.Seeding.SeederRegistry.GetOrderedSeeders">
             <inheritdoc/>
         </member>
+        <member name="F:TheTechIdea.Beep.SetUp.SetupWizard.LeaseTtl">
+            <summary>How long a run holds the setup lease before it is reclaimable after a crash.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.Run(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
             <inheritdoc/>
         </member>
@@ -52494,16 +52787,68 @@
         <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.GetReport">
             <inheritdoc/>
         </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.EmitAudit(TheTechIdea.Beep.SetUp.Audit.SetupAuditAction,System.String,System.Boolean,System.String,System.TimeSpan)">
+            <summary>Emits a setup audit event. Auditing never fails the run — errors are swallowed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.StartStepActivity(TheTechIdea.Beep.SetUp.ISetupStep)">
+            <summary>Starts a per-step telemetry span, tagged for dashboards. Zero-cost when unlistened.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.ResolveStore(TheTechIdea.Beep.SetUp.SetupOptions)">
+            <summary>
+            Chooses the state store for this run: an injected store wins; otherwise a legacy explicit
+            <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.StateFilePath"/> maps to a local file store; otherwise null
+            (checkpointing disabled, matching the historical no-path behaviour).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.LoadState(System.Boolean)">
+            <summary>Loads persisted state through the run store and merges it into <see cref="P:TheTechIdea.Beep.SetUp.SetupWizard.State"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.AcceptStateVersion(TheTechIdea.Beep.SetUp.SetupState)">
+            <summary>
+            Version gate: an older document is accepted (and upgraded in place when a migration is
+            added); a newer/unknown one is refused rather than reinterpreted — guessing at a newer
+            shape risks re-running completed migrations. Single place so every store is consistent.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.PersistState">
+            <summary>Persists <see cref="P:TheTechIdea.Beep.SetUp.SetupWizard.State"/> through the run store under the held lease.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.Bridge``1(System.Func{System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Bridges an async store call from the synchronous wizard. <see cref="M:System.Threading.Tasks.Task.Run``1(System.Func{System.Threading.Tasks.Task{``0}})"/>
+            moves the await off any caller SynchronizationContext, avoiding the sync-over-async
+            deadlock (same pattern as DriverProvisionStep's NuGet load).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.WarnOnSilentOptionOverride(TheTechIdea.Beep.SetUp.SetupOptions)">
+            <summary>
+            The context's options win outright over the wizard's own. A caller who sets DryRun on
+            the builder but passes a context carrying a default SetupOptions gets a live run — the
+            most expensive silent failure in this framework. Warn loudly when the two differ.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.FailStep(TheTechIdea.Beep.SetUp.SetupContext,System.Collections.Generic.List{TheTechIdea.Beep.SetUp.SetupStepResult},System.DateTimeOffset,TheTechIdea.Beep.SetUp.SetupOptions,System.String,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,System.Boolean)">
             <summary>
             Handles the common step-failure path: marks failed step, syncs state,
             builds report, persists checkpoint, and returns the error.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.RunRollback(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Rolls back completed steps and stashes the report JSON on the context so
+            <see cref="M:TheTechIdea.Beep.SetUp.SetupWizard.BuildReport(System.Collections.Generic.List{TheTechIdea.Beep.SetUp.SetupStepResult},System.Boolean,System.DateTimeOffset,System.String,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.SetUp.SetupOptions)"/> surfaces it via <see cref="P:TheTechIdea.Beep.SetUp.SetupReport.RollbackReportJson"/>.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.SyncAndPersist(TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.SetUp.SetupOptions)">
             <summary>
             Pulls state from context into wizard, then pushes back and persists.
             Used after every step that writes state (success, partial failure).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.WriteReportIfConfigured(TheTechIdea.Beep.SetUp.SetupReport,TheTechIdea.Beep.SetUp.SetupOptions)">
+            <summary>
+            Writes the report to <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.ReportOutputPath"/> when set.
+            Timestamped per run so a later run cannot erase an earlier record.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.SetupWizard.SyncFromContext(TheTechIdea.Beep.SetUp.SetupContext)">
@@ -52535,6 +52880,38 @@
             </code>
             </example>
         </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithStateStore(TheTechIdea.Beep.SetUp.State.ISetupStateStore)">
+            <summary>
+            Sets the state store. When unset, the wizard falls back to a local file store keyed by
+            <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.StateFilePath"/>, or disables checkpointing if that's unset too.
+            Inject a <c>RemoteSetupStateStore</c> for shared/enterprise state.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithRollbackOrchestrator(TheTechIdea.Beep.SetUp.Rollback.IRollbackOrchestrator)">
+            <summary>
+            Sets the rollback orchestrator. When unset, a default <c>RollbackOrchestrator</c> is used;
+            rollback only runs when <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.AutoRollbackOnFailure"/> is set.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithSecurity(TheTechIdea.Beep.SetUp.Security.ISetupPrincipal,TheTechIdea.Beep.SetUp.Security.ISetupAuthorizer)">
+            <summary>
+            Sets who is running the setup and how permissions are checked. Both default to the solo
+            no-op providers (anonymous principal, allow-all authorizer) when unset.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithAudit(TheTechIdea.Beep.SetUp.Audit.ISetupAuditSink)">
+            <summary>
+            Sets the audit sink. When unset, an append-only JSONL sink is derived from
+            <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.ReportOutputPath"/>; if that's unset too, auditing is a no-op.
+            Inject a <c>BeepAuditSetupSink</c> for the tamper-evident enterprise chain.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithAppId(System.String)">
+            <summary>
+            Scopes this wizard's state to an application, so several apps in one solution can share a
+            state store without colliding (the <c>SetupStateKey.AppId</c> slot). Null for single-app.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.WithDryRun(System.Boolean)">
             <summary>Toggles dry-run mode.</summary>
         </member>
@@ -52554,6 +52931,93 @@
             earlier steps in the sequence; throws <see cref="T:System.InvalidOperationException"/>
             if a dependency is missing or declared out of order.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.ResolveAudit">
+            <summary>
+            Injected sink wins; else a JSONL sink under <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.ReportOutputPath"/>;
+            else no-op (matching the "no path = no persistence" pattern used for state and reports).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.FromDefinition(TheTechIdea.Beep.SetUp.Definition.SetupDefinition,TheTechIdea.Beep.SetUp.Definition.ISetupStepFactory,Microsoft.Extensions.Logging.ILogger{TheTechIdea.Beep.SetUp.SetupWizard})">
+            <summary>
+            Builds a builder from a serialized <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/>.
+            </summary>
+            <remarks>
+            Steps are created through <paramref name="factory"/>, which is the allow-list: a
+            definition names a registered type key, never an arbitrary type.
+            Disabled steps are omitted entirely.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupWizardBuilder.ToDefinition">
+            <summary>
+            Projects the configured steps back into a serializable <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/>.
+            </summary>
+            <remarks>
+            Steps that don't override <c>ISetupStep.SerializeOptions</c> contribute no options and
+            are logged — the result would otherwise be a definition that looks complete but rebuilds
+            into a differently-configured wizard.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Solution.SetupWizardResolver">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.SetUp.Solution.ISetupWizardResolver"/>: reads an app's <c>SetupDefinition</c> JSON and
+            builds a per-app wizard from it.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Solution.SetupWizardResolver.ResolvePath(TheTechIdea.Beep.AppMap.AppDefinition)">
+            <summary>Absolute path as-is; a relative path is resolved against the solution directory.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Solution.SolutionSetupOrchestrator">
+            <summary>Default <see cref="T:TheTechIdea.Beep.SetUp.Solution.ISolutionSetupOrchestrator"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Solution.SolutionSetupOrchestrator.OrderApps(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.AppMap.AppDefinition},System.Collections.Generic.IReadOnlyDictionary{System.String,System.Collections.Generic.IReadOnlyList{System.String}})">
+            <summary>
+            Topological order over inter-app dependencies (Kahn). Falls back to input order for apps
+            not in the graph, and — for a cycle — leaves the remaining apps in input order rather than
+            dropping them (the wizard-level dependency checks still guard correctness).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.LocalJsonSetupStateStore">
+            <summary>
+            Solo-default <see cref="T:TheTechIdea.Beep.SetUp.State.ISetupStateStore"/>: one JSON file per key, plus a sibling
+            <c>.lock</c> file for a cross-process lease.
+            </summary>
+            <remarks>
+            Ports the atomic write (temp file + <see cref="M:System.IO.File.Move(System.String,System.String,System.Boolean)"/> with retries)
+            from the former <c>SetupCheckpointStore</c>, and adds the lease that store never had — its
+            lock was an in-process <c>ConcurrentDictionary</c>, so two processes sharing a path interleaved.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.LocalJsonSetupStateStore.#ctor(System.String,Microsoft.Extensions.Logging.ILogger)">
+            <param name="root">
+            Base directory for key-derived state files. State lands at
+            <c>{root}/setup/{appId|_}/{environment}/{wizardId}.state.json</c>.
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.LocalJsonSetupStateStore.ForExplicitFile(System.String,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Legacy-compatible store that reads and writes exactly <paramref name="stateFilePath"/>,
+            ignoring the key. Backs <c>SetupOptions.StateFilePath</c>.
+            </summary>
+            <remarks>
+            An explicit path is literal, so it does <b>not</b> get per-wizard isolation — two wizards
+            pointed at the same file still collide, exactly as before. The key-based constructor is
+            the one that fixes that.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.LocalJsonSetupStateStore.FileLease.IsStillHeld">
+            <summary>The lock file still exists and still names this run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.RemoteSetupStateStore">
+            <summary>
+            Enterprise <see cref="T:TheTechIdea.Beep.SetUp.State.ISetupStateStore"/>: shared state behind an ETag-versioned transport,
+            with optimistic concurrency on save and a lease resource for exclusion.
+            </summary>
+            <remarks>
+            The local store's file lease only guards processes on one machine. Here two runners may be
+            on different machines, so the transport's compare-and-set (ETag / If-Match) is the source of
+            truth: a stale save is refused rather than silently interleaved.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep">
              <summary>
@@ -52581,6 +53045,18 @@
             reads from the same object, so UI mutations take effect immediately.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep.RequiredPermission">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStep.SerializeOptions">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.DataImportStep.SerializeOptions">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.DefaultsSetupStep.SerializeOptions">
+            <inheritdoc/>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep">
              <summary>
              Ensures that the connection driver for a specific package is available in the
@@ -52598,11 +53074,41 @@
              After any State 2/3 work: ConfigEditor.SaveConnectionDriversConfigValues()
              </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.BaseStepId">
+            <summary>
+            Bare step id used when no package name is set. Retained so single-driver
+            wizards and any existing <c>DependsOn</c> references keep resolving.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.BuildStepId(System.String)">
+            <summary>
+            Conventional qualified step id for a package (e.g. <c>"driver-provision:SQLite"</c>).
+            Step ids must be unique within a wizard, so a wizard carrying one driver step per
+            package must qualify them — an unqualified constant makes N&gt;1 drivers collide on
+            <see cref="T:TheTechIdea.Beep.SetUp.SetupWizardBuilder"/>'s step-id dictionary.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.ContainsDriverClass(System.Collections.Generic.IEnumerable{System.Reflection.Assembly},System.String)">
+            <summary>
+            True when any of <paramref name="assemblies"/> declares a type named
+            <paramref name="classHandler"/>. Used to confirm a freshly downloaded driver really
+            carries its IDataSource class before clearing <c>IsMissing</c>.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.Options">
             <summary>
             Public accessor for the typed options. UI shells use this to read and write the
             option values directly (PackageName, Version, NuGetSources, AppInstallPath).
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.TypeKey">
+            <summary>Bare type key — StepId may be qualified per package.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.RequiredPermission">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep.SerializeOptions">
+            <inheritdoc/>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep">
              <summary>
@@ -52620,10 +53126,49 @@
              name+type pairs to detect structual schema drift.
              </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep._resolvedTypes">
+            <summary>
+            Resolved entity types, cached for the life of the step so CanSkip's hash and Execute's
+            plan are computed from the same list.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.Options">
             <summary>
             Public accessor for the typed options. UI shells use this to read and write
             EntityTypes, ExtraAssemblies, DetectRelationships, StrictPolicyMode, ApproverLabel.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.SerializeOptions">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.SupportsRollback">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.RequiredPermission">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Rolls back the applied migration using the execution token recorded on the state.
+            </summary>
+            <remarks>
+            Uses <c>MigrationManager.RollbackFailedExecution(token)</c> — which undoes what was
+            actually executed — rather than re-deriving a plan (the live schema may have drifted, and
+            re-planning could compute a different, wrong compensation).
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.TryResolveEntityTypes(TheTechIdea.Beep.SetUp.SetupContext,System.Boolean,System.Collections.Generic.IReadOnlyList{System.Type}@,System.String@)">
+            <summary>
+            Resolves the entity types for this run, in priority order:
+            explicit <c>EntityTypes</c> (legacy) → <c>EntityTypeNames</c> → auto-discovery.
+            Cached, so the hash in <see cref="M:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)"/> and the plan in <c>Execute</c> agree.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStep.ResolveTypeName(TheTechIdea.Beep.SetUp.SetupContext,System.String)">
+            <summary>
+            Resolves a type name through the assembly handler's cache first (it knows about
+            plugin-loaded assemblies that <see cref="M:System.Type.GetType(System.String)"/> cannot see), then
+            falls back to the CLR and finally to a scan of the configured extra assemblies.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.SeedingStep">
@@ -52644,6 +53189,28 @@
             <summary>
             Public accessor for the typed options. UI shells use this to read and write
             Registry and SeederFilter.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.SeedingStep.SerializeOptions">
+            <summary>Registry is [JsonIgnore]d and re-injected from DI by the step factory.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStep.SupportsRollback">
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStep.RequiredPermission">
+            <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Steps.SeedingStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Unseeds completed seeders in reverse. Seeders that don't implement
+            <see cref="T:TheTechIdea.Beep.SetUp.Seeding.IUndoableSeeder"/> are recorded as <em>skipped</em>, never as a clean undo.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Telemetry.SetupActivitySource">
+            <summary>
+            The setup framework's <see cref="T:System.Diagnostics.ActivitySource"/>. Zero-cost when nothing listens, so there
+            is no opt-out for solo. Subscribe with an <see cref="T:System.Diagnostics.ActivityListener"/> for the source name
+            <c>TheTechIdea.Beep.SetUp</c>, or via OpenTelemetry's <c>AddSource(...)</c>.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Utils.Util.ResolveFieldCategory(System.Type)">

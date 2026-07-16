@@ -139,6 +139,13 @@
         <member name="P:TheTechIdea.Beep.AppMap.AppDefinition.SolutionPath">
             <summary>Optional path to the .sln this app was registered from.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.AppMap.AppDefinition.SetupDefinitionPath">
+            <summary>
+            Optional path to this app's <c>SetupDefinition</c> JSON (absolute, or relative to
+            <see cref="P:TheTechIdea.Beep.AppMap.AppDefinition.SolutionPath"/>'s directory). The setup framework reads it to provision the app;
+            null means the app has no setup definition and is skipped by the solution orchestrator.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.AppMap.AppDefinition.Projects">
             <summary>The projects that compose this app/solution. The schema comes from the
             <see cref="P:TheTechIdea.Beep.AppMap.AppProject.IsDataProject"/> entries (their entity assemblies).</summary>
@@ -18530,6 +18537,23 @@
             Used during clean shutdown.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Audit.ISetupAuditSink">
+            <summary>
+            Where setup events are recorded so a run is answerable: who ran what, against which
+            environment, when, with what result.
+            </summary>
+            <remarks>
+            Before this, <c>SetupReport</c> was in-memory and dropped, and the checkpoint was overwritten
+            in place — each run destroyed the prior run's record. A sink is append-only (solo) or backed
+            by the tamper-evident <c>IBeepAudit</c> chain (enterprise).
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Audit.SetupAuditEvent.DefinitionHash">
+            <summary>The Phase 2 definition ContentHash — <em>what</em> was applied.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Audit.SetupAuditEvent.ActorAuthenticated">
+            <summary>Never imply a solo run was authenticated.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.ConnectionSavedEventArgs">
             <summary>
             Published by the connection UI step when the user saves a <see cref="P:TheTechIdea.Beep.SetUp.ConnectionSavedEventArgs.ConnectionProperties"/>.
@@ -18555,6 +18579,148 @@
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.ConnectionTestCompletedEventArgs.ConnectionProperties">
             <summary>The connection that was tested, or null when the caller did not supply it.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.ISetupDefinitionSerializer">
+            <summary>
+            Round-trips a <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/> to and from JSON.
+            </summary>
+            <remarks>
+            Output must be <b>diff-stable</b>: the artifact is meant to be reviewed in a pull request,
+            so serializing the same definition twice must produce byte-identical text, and a cosmetic
+            change must not churn the diff.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Definition.ISetupDefinitionSerializer.ComputeContentHash(TheTechIdea.Beep.SetUp.Definition.SetupDefinition)">
+            <summary>
+            Stable SHA-256 over the canonical form, excluding <see cref="P:TheTechIdea.Beep.SetUp.Definition.SetupDefinition.ContentHash"/>
+            itself. Audit binds "what was applied" to this value.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.ISetupDefinitionValidator">
+            <summary>
+            Validates a <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/> without executing it.
+            </summary>
+            <remarks>
+            Runs with no <c>IDMEEditor</c> and no datasource, so a CI job can gate a pull request on a
+            definition's structure before it touches a database.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.ISetupStepFactory">
+            <summary>
+            Builds an <see cref="T:TheTechIdea.Beep.SetUp.ISetupStep"/> from a <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition"/>.
+            </summary>
+            <remarks>
+            This is the <b>allow-list</b>. A definition names a registered type key, never an
+            assembly-qualified type, so a definition arriving from a shared store (Phase 3) cannot cause
+            arbitrary type instantiation. Unknown keys are rejected, not probed.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Definition.ISetupStepFactory.Register(System.String,System.Func{System.Nullable{System.Text.Json.JsonElement},TheTechIdea.Beep.SetUp.ISetupStep})">
+            <summary>Registers how to build a step type from its serialized options payload.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Definition.ISetupStepFactory.Create(TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition)">
+            <summary>Builds the step. Throws <see cref="T:System.InvalidOperationException"/> on an unknown key.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition">
+             <summary>
+             A setup wizard expressed as <b>data</b> rather than a C# object graph.
+            
+             <para>
+             This is the artifact the rest of the roadmap hangs off: a definition can be versioned in Git,
+             diffed in review, shipped to a second app, driven from a CLI, validated in CI, stored
+             remotely, and authorized. A <c>SetupWizardBuilder</c> call chain can be none of those things.
+             </para>
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupDefinition.SchemaVersion">
+            <summary>
+            Schema version of THIS document. Bump on any breaking shape change and teach
+            <c>ISetupDefinitionUpgrader</c> how to migrate the previous version.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Definition.SetupDefinition.CurrentSchemaVersion">
+            <summary>The version this build writes and understands.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupDefinition.Id">
+            <summary>Wizard id. Also keys persisted state, so it must be stable across runs.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupDefinition.Environment">
+            <summary>
+            Free-form environment label, matching <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.Environment"/>.
+            Promoted to a resolved environment in Phase 7.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupDefinition.ContentHash">
+            <summary>
+            Stable SHA-256 over the canonical JSON, excluding this field. Audit (Phase 6) binds
+            "what was applied" to this value. Computed by <c>ISetupDefinitionSerializer</c>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition">
+            <summary>One step in a <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition.StepId">
+            <summary>
+            Unique within the definition; matches <c>ISetupStep.StepId</c>. Steps of the same type
+            must qualify their id (e.g. <c>"driver-provision:SQLite"</c>).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition.Type">
+            <summary>
+            Registered step-type key (e.g. <c>"driver-provision"</c>) — <b>not</b> an
+            assembly-qualified type name.
+            <para>
+            An AQN here would leak internal namespaces into a user-editable file, break on any
+            refactor or version bump, and become an arbitrary-type-instantiation vector once
+            definitions can arrive from a shared store. <c>ISetupStepFactory</c> is the allow-list.
+            </para>
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition.Enabled">
+            <summary>When false the step is omitted from the built wizard entirely.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition.Options">
+            <summary>
+            Step-specific options; the shape is owned by the step type named in <see cref="P:TheTechIdea.Beep.SetUp.Definition.SetupStepDefinition.Type"/>.
+            Non-serializable options (e.g. <c>SeedingStepOptions.Registry</c>) are never carried
+            here — the factory injects those from DI.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.JsonElementNullableConverter">
+            <summary>
+            Round-trips a nullable <see cref="T:System.Text.Json.JsonElement"/>. The default converter cannot write
+            <c>JsonElement?</c>, which would silently drop every step's options on serialize.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Definition.SetupJson">
+            <summary>
+            The single JSON configuration used everywhere a <see cref="T:TheTechIdea.Beep.SetUp.Definition.SetupDefinition"/> or a step's
+            options are read or written.
+            </summary>
+            <remarks>
+            <para>
+            <b>Enums are written as names, not numbers.</b> This is not cosmetic:
+            </para>
+            <list type="bullet">
+              <item>A definition is hand-authored and reviewed — <c>"SqlLite"</c> is meaningful in a diff,
+                    <c>27</c> is not.</item>
+              <item>Numeric values are positional. Inserting a value into <c>DataSourceType</c> would
+                    silently re-point every stored definition at a different datasource — a catastrophic,
+                    invisible failure. Names are stable across enum edits.</item>
+              <item>System.Text.Json rejects string enums by default, so a hand-written definition would
+                    fail to bind without this.</item>
+            </list>
+            <para>
+            Any code that serializes step options must use these settings, or a definition written by one
+            path won't be readable by another.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupJson.Options">
+            <summary>Canonical settings for reading and writing definitions and step options.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Definition.SetupJson.IndentedOptions">
+            <summary>Same as <see cref="P:TheTechIdea.Beep.SetUp.Definition.SetupJson.Options"/>, indented for the on-disk artifact.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.DriverPackageInstalledEventArgs">
             <summary>
@@ -18582,6 +18748,43 @@
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.ISetupProgressReporter.ReportWizardComplete(TheTechIdea.Beep.SetUp.SetupReport)">
             <summary>Called when the entire wizard finishes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.TypeKey">
+            <summary>
+            Registered step-type key used when this step is written into a <c>SetupDefinition</c>.
+            Defaults to <see cref="P:TheTechIdea.Beep.SetUp.ISetupStep.StepId"/>; steps whose id is qualified (e.g.
+            <c>"driver-provision:SQLite"</c>) must override this with the bare type key.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupStep.SerializeOptions">
+            <summary>
+            This step's options as JSON, for <c>SetupWizardBuilder.ToDefinition()</c>.
+            Returns null by default — a step opts in by overriding.
+            </summary>
+            <remarks>
+            A step that returns null round-trips <b>lossily</b> (its options are dropped);
+            <c>ToDefinition()</c> warns rather than silently emitting an incomplete definition.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.SupportsRollback">
+            <summary>
+            True when <see cref="M:TheTechIdea.Beep.SetUp.ISetupStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)"/> actually undoes something. Lets the rollback
+            orchestrator report a step as <em>skipped</em> (nothing to undo) rather than a clean
+            undo that never happened. Default false — most steps are forward-only.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.ISetupStep.RequiredPermission">
+            <summary>
+            Permission the running principal must hold to execute this step. Checked by the wizard
+            before <see cref="M:TheTechIdea.Beep.SetUp.ISetupStep.Execute(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})"/>. Default <see cref="F:TheTechIdea.Beep.SetUp.Security.SetupPermission.RunSetup"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.ISetupStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Undoes this step's effects. Called in reverse order by the rollback orchestrator after a
+            failed run. Default: a no-op success — the step declares itself non-compensating via
+            <see cref="P:TheTechIdea.Beep.SetUp.ISetupStep.SupportsRollback"/>.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.ISetupWizardAdapter">
             <summary>
@@ -18640,6 +18843,32 @@
             for adding custom steps.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Rollback.IBackupConfirmationProvider">
+            <summary>
+            Answers whether a datasource backup is confirmed to exist before a schema change runs.
+            </summary>
+            <remarks>
+            Replaces the inverted <c>CheckRollbackReadiness(backupConfirmed: !strict)</c>, which asserted
+            a backup existed precisely when nobody had checked. The solo default returns false and warns
+            (honest: no backup); strict mode requires a real true. Never claim a backup that wasn't verified.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Rollback.IRollbackOrchestrator">
+            <summary>
+            Undoes a failed setup run by rolling its completed steps back in reverse order.
+            </summary>
+            <remarks>
+            Without this, a failure at step N left steps 1..N-1 applied with no automated undo — schema
+            created, reference data half-inserted. The orchestrator is best-effort: one step's failed
+            rollback does not abort the rest, because stopping halfway strands <em>more</em> state.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Rollback.RollbackReport">
+            <summary>Outcome of a rollback pass.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Rollback.RollbackStepResult.Skipped">
+            <summary>The step did not support rollback; nothing was undone (not a failure).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.SchemaSummaryEventArgs">
             <summary>
             Published by the schema UI step when its migration plan summary changes.
@@ -18650,6 +18879,47 @@
             Result of evaluating a schema migration plan. The canonical
             <see cref="!:SchemaSetupStep"/> produces a richer report; this is a UI-side
             summary used by the shell to display pending-migration counts and policy state.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.ISetupApprovalProvider">
+            <summary>
+            Obtains approval for a schema change, bound to the plan hash so an approval can't be replayed
+            against a different plan.
+            </summary>
+            <remarks>
+            Replaces the self-granted approval (label <c>"SetupWizard"</c>, note "Auto-approved by setup
+            wizard"). The solo default approves and records <see cref="P:TheTechIdea.Beep.SetUp.Security.SetupApproval.IsSelfApproved"/> =
+            true — honest, not laundered. An enterprise provider rejects self-approval.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Security.SetupApproval.IsSelfApproved">
+            <summary>The approver is the same principal that requested it (solo) — recorded, not hidden.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.SetupPermission">
+            <summary>Permissions a setup run and its steps require.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.ISetupAuthorizer">
+            <summary>
+            Decides whether a <see cref="T:TheTechIdea.Beep.SetUp.Security.ISetupPrincipal"/> may perform a <see cref="T:TheTechIdea.Beep.SetUp.Security.SetupPermission"/>.
+            </summary>
+            <remarks>
+            A denial is a step <em>failure</em> (returns to the wizard as <c>Errors.Failed</c>), never a
+            thrown exception. The solo default (<c>AllowAllAuthorizer</c>) allows everything, so
+            zero-config setup is unaffected.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.ISetupPrincipal">
+            <summary>
+            Who is running a setup. Bound onto <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/> / <see cref="T:TheTechIdea.Beep.SetUp.SetupReport"/> so an
+            audit trail (Phase 6) can say who did what.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Security.ISetupPrincipal.IsAuthenticated">
+            <summary>False for the solo/anonymous default — never let an audit imply it was true.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Security.AnonymousSetupPrincipal">
+            <summary>
+            Solo default: identifies the local OS user without authenticating them.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.SeedingSummaryEventArgs">
@@ -18719,6 +18989,18 @@
         <member name="M:TheTechIdea.Beep.SetUp.Seeding.ISeederRegistry.Get(System.String)">
             <summary>Returns the seeder registered with <paramref name="seederId"/>, or <c>null</c>.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Seeding.IUndoableSeeder">
+            <summary>
+            A seeder that can remove the data it inserted, so <c>SeedingStep</c> can participate in a
+            rollback. Seeders that don't implement this are reported as <em>skipped</em> during rollback
+            (nothing undone), never as a clean undo that didn't happen.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Seeding.IUndoableSeeder.Unseed(TheTechIdea.Beep.IDataSource,TheTechIdea.Beep.Editor.IDMEEditor,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>
+            Removes the rows this seeder inserted. Must not throw; return <c>Errors.Ok</c> on success.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.SetupCompletedEventArgs">
             <summary>
             Published when the canonical ISetupWizard completes execution (success or failure).
@@ -18739,6 +19021,12 @@
             Driver packages staged from ConfigEditor for this run. Empty when none were staged.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.SetUp.SetupContext.TryGetCompensationPlan">
+            <summary>
+            The compensation plan recorded by the schema step, if any. Rollback must replay what
+            was actually applied rather than re-deriving a plan against possibly-drifted schema.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.SetupOptions">
             <summary>
             Configuration flags that control overall wizard behaviour.
@@ -18751,6 +19039,16 @@
             datasource.  Steps should read from context and report what they would do.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.AutoRollbackOnFailure">
+            <summary>
+            When true, a failed run automatically rolls back its completed steps in reverse.
+            </summary>
+            <remarks>
+            Opt-in, not default: silently undoing a partial setup can destroy the very state a human
+            needs to diagnose the failure. The rollback outcome is always recorded on
+            <see cref="P:TheTechIdea.Beep.SetUp.SetupReport.RollbackReportJson"/> regardless of this flag.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.SetupStepResult">
             <summary>
             Per-step outcome record included in <see cref="T:TheTechIdea.Beep.SetUp.SetupReport"/>.
@@ -18762,14 +19060,38 @@
             Contains per-step results, timing, and a SHA-256 content hash.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupReport.ActorId">
+            <summary>Principal that ran the setup (Phase 5).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.SetupState">
             <summary>
             Serializable snapshot of wizard progress used for checkpointing and resume.
             Persist to JSON so runs can resume after a crash or user interruption.
             </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.SetUp.SetupState.CurrentSchemaVersion">
+            <summary>The state-document version this build writes and understands.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.SchemaVersion">
+            <summary>
+            Schema version of this persisted document.
+            </summary>
+            <remarks>
+            Without this, a shape change made <c>LoadPersistedState</c> fail deserialization, swallow
+            the error, and start a "fresh" run — which on a live database is not a reset, it is a
+            re-migration. <c>ISetupStateUpgrader</c> migrates older documents; unknown/newer versions
+            fail loudly.
+            </remarks>
+        </member>
         <member name="P:TheTechIdea.Beep.SetUp.SetupState.RunId">
             <summary>Unique identifier for this wizard run, regenerated on each fresh start. Used to detect stale/concurrent checkpoints.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.Revision">
+            <summary>
+            Monotonic write counter, incremented on every save. A remote store uses it for
+            optimistic concurrency (the enterprise equivalent of the local lease); a local store
+            leaves it advancing but relies on the lease + atomic file replace.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.SetupState.CompletedStepIds">
             <summary>Set of step IDs that have completed successfully.</summary>
@@ -18792,6 +19114,12 @@
         <member name="P:TheTechIdea.Beep.SetUp.SetupState.LastUpdatedAt">
             <summary>UTC timestamp of the last completed step.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.ActorId">
+            <summary>Id of the principal that ran this setup (Phase 5); null for anonymous.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupState.ActorAuthenticated">
+            <summary>Whether the actor was authenticated. Never inferred — an anonymous run records false.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.SetUp.SetupState.Metadata">
             <summary>Arbitrary key-value bag for step-specific persisted state.</summary>
         </member>
@@ -18799,6 +19127,165 @@
             <summary>
             Returns true when <paramref name="stepId"/> has been completed or skipped,
             meaning the wizard should not re-execute it.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Solution.ISetupWizardResolver">
+            <summary>
+            Builds the setup wizard for one app in a solution, from that app's
+            <see cref="P:TheTechIdea.Beep.AppMap.AppDefinition.SetupDefinitionPath"/>.
+            </summary>
+            <remarks>
+            The wizard is keyed by <c>SetupStateKey(wizardId, environment, appId)</c>, so several apps
+            sharing one state store don't collide. Returns null when the app has no setup definition.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Solution.ISetupWizardResolver.GetStateKeyAsync(TheTechIdea.Beep.AppMap.AppDefinition,System.String,System.Threading.CancellationToken)">
+            <summary>
+            The state key an app's wizard would use, without building the wizard — so a status view
+            can read persisted state. Null when the app has no setup definition.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Solution.ISolutionSetupOrchestrator">
+            <summary>
+            Sets up every app in a solution — the "single place" that provisions a whole solution rather
+            than one app.
+            </summary>
+            <remarks>
+            Apps run in dependency order. One app's failure does <b>not</b> abort the others; only apps
+            that <em>depend</em> on a failed app are skipped. There is deliberately no cross-app
+            distributed transaction — the report says honestly which apps succeeded and which need
+            attention.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.Solution.ISolutionSetupOrchestrator.GetStatusAsync(System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.AppMap.AppDefinition},System.String,System.Threading.CancellationToken)">
+            <summary>
+            Reads each app's persisted setup state and reports where the solution stands — the
+            "single place" status view. Does not run anything.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Solution.AppSetupStatus.CompletedSteps">
+            <summary>Completed step ids from the persisted checkpoint, if any.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Solution.SolutionSetupOptions.Dependencies">
+            <summary>
+            Inter-app dependencies: appId → the appIds it depends on. Apps whose dependencies fail
+            are skipped. When null/empty, apps run in the order supplied.
+            </summary>
+            <remarks>
+            AppMap models project-level references, not inter-app order, so this is supplied
+            explicitly rather than derived — honest about what the data actually contains.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Solution.SolutionSetupOptions.StopOnFirstFailure">
+            <summary>Stop the whole solution on the first app failure instead of continuing. Default false.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Solution.AppSetupResult.Report">
+            <summary>The per-app wizard report, when the app actually ran.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Solution.AppSetupOutcome.SkippedDependencyFailed">
+            <summary>Skipped because a dependency failed or was itself skipped.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Solution.AppSetupOutcome.SkippedNoDefinition">
+            <summary>Skipped because the app has no setup definition.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.ISetupStateStore">
+            <summary>
+            Where a wizard's <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/> is loaded from and saved to.
+            </summary>
+            <remarks>
+            Substitutable so the <b>same product</b> runs solo (local JSON, no lease contention) and
+            enterprise (shared/remote store with optimistic concurrency and leases). The old
+            <c>SetupCheckpointStore</c> was <c>internal static</c> — not replaceable, and its lock was
+            per-process, so two machines sharing a path would interleave.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateStore.LoadAsync(TheTechIdea.Beep.SetUp.State.SetupStateKey,System.Threading.CancellationToken)">
+            <summary>
+            Loads the state for <paramref name="key"/>, or null if none is stored.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateStore.SaveAsync(TheTechIdea.Beep.SetUp.State.SetupStateKey,TheTechIdea.Beep.SetUp.SetupState,TheTechIdea.Beep.SetUp.State.ISetupStateLease,System.Threading.CancellationToken)">
+            <summary>
+            Persists the state for <paramref name="key"/>.
+            </summary>
+            <remarks>
+            Implementations that support optimistic concurrency throw
+            <see cref="T:TheTechIdea.Beep.SetUp.State.SetupStateConflictException"/> when the stored version changed since it was
+            last loaded under the held <paramref name="lease"/>.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateStore.TryAcquireLeaseAsync(TheTechIdea.Beep.SetUp.State.SetupStateKey,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Attempts to acquire an exclusive lease on <paramref name="key"/>.
+            Returns null when another runner already holds an unexpired lease.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.ISetupStateLease">
+            <summary>
+            An exclusive claim on a <see cref="T:TheTechIdea.Beep.SetUp.State.SetupStateKey"/>. Dispose releases it.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.State.ISetupStateLease.RunId">
+            <summary>The run that holds this lease; written into <see cref="P:TheTechIdea.Beep.SetUp.SetupState.RunId"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateLease.RenewAsync(System.Threading.CancellationToken)">
+            <summary>Extends the lease. Returns false if it was lost (expired and reclaimed).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.SetupStateConflictException">
+            <summary>
+            Thrown by <see cref="M:TheTechIdea.Beep.SetUp.State.ISetupStateStore.SaveAsync(TheTechIdea.Beep.SetUp.State.SetupStateKey,TheTechIdea.Beep.SetUp.SetupState,TheTechIdea.Beep.SetUp.State.ISetupStateLease,System.Threading.CancellationToken)"/> when a concurrent writer changed the
+            stored state — the caller's view is stale and the save was refused.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.ISetupStateTransport">
+            <summary>
+            The minimal ETag-versioned key/value transport that <c>RemoteSetupStateStore</c> builds
+            optimistic concurrency and leases on top of.
+            </summary>
+            <remarks>
+            Kept behind an interface so the concurrency logic is testable with an in-memory fake, and so
+            a team can back it with any store (HTTP, blob, table) without reimplementing the semantics.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateTransport.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Reads a resource, or null when it does not exist.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateTransport.PutAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Conditionally writes a resource and returns the new ETag.
+            </summary>
+            <param name="ifMatchETag">
+            The ETag the caller last saw: null means "create only if absent". A mismatch — the
+            resource changed, or already exists when create was expected — throws
+            <see cref="T:TheTechIdea.Beep.SetUp.State.SetupStateConflictException"/>.
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.ISetupStateTransport.DeleteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Deletes a resource if its ETag still matches. A mismatch is ignored.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.TransportEntry">
+            <summary>A resource body plus its current ETag.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.State.SetupStateKey">
+            <summary>
+            Identity of a stored <see cref="T:TheTechIdea.Beep.SetUp.SetupState"/> record.
+            </summary>
+            <remarks>
+            <para>
+            <see cref="P:TheTechIdea.Beep.SetUp.State.SetupStateKey.WizardId"/> is part of the identity on purpose: the old store keyed only off a
+            bare file path, so two wizards pointed at the same <c>StateFilePath</c> silently overwrote
+            each other's checkpoints. <see cref="P:TheTechIdea.Beep.SetUp.State.SetupStateKey.AppId"/> is the hook Phase 7 needs to run setup per app
+            without reshaping the store.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.State.SetupStateKey.AppId">
+            <summary>Optional application scope (Phase 7); null for a single-app setup.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.State.SetupStateKey.ToToken">
+            <summary>
+            Stable, filesystem- and url-safe token identifying this key. Used as a local file name
+            and a remote resource id, so it must not vary across runs for the same logical key.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions">
@@ -18836,15 +19323,72 @@
             Default: true.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.ConnectionConfigStepOptions.DependsOnStepIds">
+            <summary>
+            Step ids this step depends on. When null, defaults to the single bare
+            <c>"driver-provision"</c> id.
+            <para>
+            A wizard carrying one driver step per package has per-package ids
+            (<c>"driver-provision:SQLite"</c>), so the connection step must name them all —
+            a hard-coded single id would leave the other drivers unordered.
+            </para>
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.DataImportStepOptions">
+            <summary>
+            Configuration options for <c>DataImportStep</c>.
+            </summary>
+            <remarks>
+            Lives in the Models project alongside the other step options: a <c>SetupDefinition</c>
+            serializes these shapes, and consumers of a definition (CLI, CI validator) must be able to
+            read them without referencing the engine.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DataImportStepOptions.EntityNames">
+            <summary>Entities to verify. When empty the step skips.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DataImportStepOptions.DependsOnStepIds">
+            <summary>
+            Step ids this step depends on. When null, defaults to
+            <c>{ "defaults-setup", "seeding" }</c>.
+            <para>
+            A wizard built without a seeding step must not name <c>"seeding"</c> — the builder
+            rejects a dependency on an unregistered step.
+            </para>
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.DefaultsSetupStepOptions">
+            <summary>
+            Configuration options for <c>DefaultsSetupStep</c>.
+            </summary>
+            <remarks>
+            Lives in the Models project alongside the other step options: a <c>SetupDefinition</c>
+            serializes these shapes, and consumers of a definition (CLI, CI validator) must be able to
+            read them without referencing the engine.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DefaultsSetupStepOptions.ApplyDefaults">
+            <summary>When false the step reports success without writing any defaults.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions">
             <summary>
             Configuration options for <see cref="!:DriverProvisionStep"/>.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.PackageName">
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.StepId">
             <summary>
             The <see cref="!:TheTechIdea.Beep.ConfigUtil.ConnectionDriversConfig.PackageName"/>
             of the driver to ensure is loaded.
+            </summary>
+            <summary>
+            Overrides this step's id. When null, the step uses the bare
+            <c>"driver-provision"</c> id.
+            <para>
+            Only needed when a wizard carries more than one driver step — step ids must be unique,
+            so the composer assigns qualified ids (e.g. <c>"driver-provision:SQLite"</c>) via
+            <c>DriverProvisionStep.BuildStepId</c>. Single-driver wizards leave this null and keep
+            the bare id.
+            </para>
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStepOptions.Version">
@@ -18874,13 +19418,32 @@
         <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypes">
             <summary>
             .NET entity types whose schemas must be created in the target datasource.
-            At least one type is required.
+            </summary>
+            <remarks>
+            Still honoured, and takes precedence over <see cref="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypeNames"/> when both are set.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypeNames">
+            <summary>
+            Names of the entity types whose schemas must be created — assembly-qualified, or simple
+            names resolvable via <c>IAssemblyHandler</c>. At least one is required.
+            <para>
+            Names rather than <see cref="T:System.Type"/> objects are what make a definition portable: this is
+            the property a <c>SetupDefinition</c> serializes.
+            </para>
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.ExtraAssemblies">
             <summary>
             Extra assemblies to register with <c>MigrationManager</c> for type discovery.
             Optional — only needed when entity types reside in assemblies not yet loaded.
+            </summary>
+            <remarks>Not serializable; use <see cref="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.ExtraAssemblyNames"/> in a definition.</remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.ExtraAssemblyNames">
+            <summary>
+            Names of extra assemblies to probe when resolving <see cref="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.EntityTypeNames"/>.
+            The serializable counterpart to <see cref="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.ExtraAssemblies"/>.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.SchemaSetupStepOptions.DetectRelationships">
@@ -18908,7 +19471,14 @@
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions.Registry">
-            <summary>Registry containing all seeders to run. Required.</summary>
+            <summary>
+            Registry containing all seeders to run. Required.
+            </summary>
+            <remarks>
+            Never serialized into a <c>SetupDefinition</c>: it is a live object graph, and
+            deserializing seeders named in a file would be an arbitrary-code-execution vector once
+            definitions can arrive from a shared store. <c>ISetupStepFactory</c> injects it from DI.
+            </remarks>
         </member>
         <member name="P:TheTechIdea.Beep.SetUp.Steps.SeedingStepOptions.SeederFilter">
             <summary>

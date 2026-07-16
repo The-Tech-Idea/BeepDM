@@ -21,8 +21,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         public override IEnumerable<string> SupportedRuleTypes => new[]
         {
-            "NOW", "TODAY", "YESTERDAY", "TOMORROW", 
+            "NOW", "TODAY", "YESTERDAY", "TOMORROW",
             "CURRENTDATE", "CURRENTTIME", "CURRENTDATETIME",
+            "UTCNOW", "UTCTODAY", "CURRENTUTCDATETIME",
             "ADDDAYS", "ADDHOURS", "ADDMINUTES", "ADDMONTHS", "ADDYEARS",
             "FORMAT", "DATEFORMAT", "STARTOFMONTH", "ENDOFMONTH",
             "STARTOFYEAR", "ENDOFYEAR", "STARTOFWEEK", "ENDOFWEEK"
@@ -40,6 +41,10 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 return upperRule switch
                 {
                     "NOW" or "CURRENTDATETIME" => DateTime.Now,
+                    // UTC variants: audit columns (CreatedAt/UpdatedAt) must not drift with
+                    // the host's time zone.
+                    "UTCNOW" or "CURRENTUTCDATETIME" => DateTime.UtcNow,
+                    "UTCTODAY" => DateTime.UtcNow.Date,
                     "TODAY" or "CURRENTDATE" => DateTime.Today,
                     "YESTERDAY" => DateTime.Today.AddDays(-1),
                     "TOMORROW" => DateTime.Today.AddDays(1),

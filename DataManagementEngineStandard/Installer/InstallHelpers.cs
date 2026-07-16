@@ -181,8 +181,11 @@ namespace TheTechIdea.Beep.Installer
         /// <summary>Removes a file extension association.</summary>
         public static void UnregisterFileAssociation(string extension, string progId)
         {
-            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}", throwOnMissingSubKey: false); } catch { }
-            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}", throwOnMissingSubKey: false); } catch { }
+            // Best-effort cleanup: a missing/locked key must not abort unregistration — report and continue.
+            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}", throwOnMissingSubKey: false); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"InstallHelpers.UnregisterFileAssociation: delete progId '{progId}' ignored: {ex}"); }
+            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}", throwOnMissingSubKey: false); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"InstallHelpers.UnregisterFileAssociation: delete extension '{extension}' ignored: {ex}"); }
             SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
         }
 

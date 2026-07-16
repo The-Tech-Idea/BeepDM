@@ -195,7 +195,10 @@ namespace TheTechIdea.Beep.Json
                         Entities = ents.ToList()
                     });
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    DMEEditor?.AddLogMessage("JsonDataSourceAdvanced", $"PersistSchemaIfDirty: saving entity structures failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
+                }
             });
         }
 
@@ -237,7 +240,7 @@ namespace TheTechIdea.Beep.Json
                     {
                         var backupPath = _filePath + ".bak";
                         File.Replace(tempPath, _filePath, backupPath, ignoreMetadataErrors: true);
-                        try { File.Delete(backupPath); } catch { }
+                        try { File.Delete(backupPath); } catch (Exception ex) { DMEEditor?.AddLogMessage("JsonDataSourceAdvanced", $"PersistDataIfDirty: cleanup of backup file failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                     }
                     else
                     {
@@ -259,7 +262,10 @@ namespace TheTechIdea.Beep.Json
                           
                         });
                     }
-                    catch { }
+                    catch (Exception ex2)
+                    {
+                        DMEEditor?.AddLogMessage("JsonDataSourceAdvanced", $"PersistDataIfDirty: raising persist-failure event failed: {ex2.Message}", DateTime.Now, 0, null, Errors.Warning);
+                    }
                 }
             }
         }

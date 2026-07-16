@@ -2031,7 +2031,11 @@ namespace TheTechIdea.Beep.Tools
                                 }
                             }
                         }
-                        catch { }
+                        catch (Exception exInstall)
+                        {
+                            // Non-fatal: post-load install/process-host step failed; the package is already loaded.
+                            Logger?.LogWithContext($"LoadNuggetFromNuGetAsync: Post-load install step failed for {packageName}", exInstall);
+                        }
 
                         _loadStatistics.NuGetPackagesLoaded++;
                     }

@@ -1,18 +1,16 @@
 # Setup Framework Guide
 
-## Overview
+Wizard-based first-run initialization for a BeepDM application across Desktop, Console, Web API,
+Blazor (Server + WASM), and MAUI.
 
-The Setup Framework provides wizard-based automated initialization for BeepDM applications across all platforms (Desktop, Blazor, MAUI, CLI, Web API).
+**Canonical reference:** [`DataManagementEngineStandard/SetUp/README.md`](../DataManagementEngineStandard/SetUp/README.md)
+— it documents the contracts, the real step/adapter inventory, and the current gaps.
+**Roadmap:** [`.plans/setup/MASTER-SETUP-TRACKER.md`](../.plans/setup/MASTER-SETUP-TRACKER.md).
 
-## Purpose
+> Scope today is **one app, one connection, local disk, forward-only**. No solution/app aggregate,
+> no multi-app, no identity/RBAC, no remote state, no rollback execution.
 
-Wizard-based automated initialization including:
-- Driver provisioning
-- Connection setup
-- Schema creation
-- Data seeding
-
-## Entry Point
+## Entry point
 
 ```csharp
 var wizard = new SetupWizardBuilder()
@@ -20,44 +18,74 @@ var wizard = new SetupWizardBuilder()
     .AddStep(new DriverProvisionStep(driverOpts))
     .AddStep(new ConnectionConfigStep(connOpts))
     .AddStep(new SchemaSetupStep(schemaOpts))
-    .AddStep(new SeedingStep(seedingOpts))
+    .AddStep(new SeedingStep(new SeedingStepOptions { Registry = registry }))
     .Build();
 
-var adapter = new DesktopSetupWizardAdapter(progressCallback, completeCallback);
-var report = await adapter.RunAsync(wizard, context);
+var context = new SetupContext { Editor = dmeEditor, Options = options, State = new SetupState() };
+var adapter = new ConsoleSetupWizardAdapter();
+SetupReport report = await adapter.RunAsync(wizard, context, ct);
 ```
+
+Pass the **same `SetupOptions` instance** to the builder and the context — `SetupWizard.Run` uses
+`context.Options ?? Options`, so a context with default options silently overrides `DryRun`.
+
+`SeedingStepOptions.Registry` is required; `SeedingStep.Validate` fails without it.
 
 ## Steps
 
-### 1. DriverProvisionStep
-Downloads and installs required drivers from NuGet or local sources.
+Six steps, in dependency order:
 
-### 2. ConnectionConfigStep
-Configures data connections with validation and testing.
+| Step | `StepId` | Depends on |
+|---|---|---|
+| `DriverProvisionStep` | `driver-provision` | — |
+| `ConnectionConfigStep` | `connection-config` | `driver-provision` |
+| `SchemaSetupStep` | `schema-setup` | `connection-config` |
+| `DefaultsSetupStep` | `defaults-setup` | `schema-setup` |
+| `SeedingStep` | `seeding` | `schema-setup` |
+| `DataImportStep` | `data-import` | `defaults-setup`, `seeding` |
 
-### 3. SchemaSetupStep
-Creates database schema based on entity definitions.
-
-### 4. SeedingStep
-Populates initial data from seeders.
+`DataImportStep` verifies and counts rows — it does **not** import. Use `DataImportManager` for that.
 
 ## Adapters
 
-Platform-specific adapters:
-- **DesktopSetupWizardAdapter** - WinForms/WPF
-- **WebSetupWizardAdapter** - ASP.NET Core
-- **BlazorSetupWizardAdapter** - Blazor Server/WASM
-- **MauiSetupWizardAdapter** - .NET MAUI
-- **CliSetupWizardAdapter** - Command-line
+All six live in `SetUp/Adapters/` and are platform-agnostic (no WinForms/WPF/MAUI/JSInterop
+references):
 
-## File Locations
+- `DesktopSetupWizardAdapter` — WinForms/WPF
+- `ConsoleSetupWizardAdapter` — CLI output (not an arg-parsing CLI)
+- `WebApiSetupWizardAdapter` — ASP.NET Core, exposes `SetupAdapterStatus`
+- `BlazorServerSetupWizardAdapter` — Blazor Server
+- `BlazorWasmSetupWizardAdapter` — Blazor WASM, resumes state via JSON
+- `MauiSetupWizardAdapter` — .NET MAUI
 
-- `DataManagementEngineStandard/SetUp/SetupWizard.cs`
-- `DataManagementEngineStandard/SetUp/Steps/`
-- `DataManagementEngineStandard/SetUp/Adapters/`
-- `DataManagementEngineStandard/SetUp/Seeding/`
+## Options
 
-## Related Documentation
+`SetupOptions` (all `init`-only): `DryRun`, `SkipSeeding`, `SkipSchema`, `Environment`
+(default `"Development"`, a free-form label), `StrictPolicyMode`, `StateFilePath`, `ReportOutputPath`.
 
-- [Core Architecture](CoreArchitecture.md)
-- [Service Registration](ServiceRegistration.md)
+Checkpointing is **off unless `StateFilePath` is set** — it silently no-ops otherwise.
+`ReportOutputPath` is currently never read.
+
+Only `SchemaSetupStep` performs real dry-run work; other steps skip when `DryRun` is set.
+
+## DI
+
+```csharp
+services.AddSetupWizard();       // one ISetupWizard, singleton
+services.AddBeepBootstrapper();  // first-run detection + wizard + adapter
+```
+
+`BeepBootstrapper` runs the wizard only when `IFirstRunDetector` reports a first run, then writes a
+`.setup_complete` marker under `ConfigEditor.ConfigPath`.
+
+## File locations
+
+- Contracts — `DataManagementModelsStandard/SetUp/`
+- Implementation — `DataManagementEngineStandard/SetUp/`
+- Steps — `DataManagementEngineStandard/SetUp/Steps/`
+- Adapters — `DataManagementEngineStandard/SetUp/Adapters/`
+- Seeding — `DataManagementEngineStandard/SetUp/Seeding/`
+
+## Related
+
+- [Core Architecture](CoreArchitecture.md) · [Service Registration](ServiceRegistration.md)

@@ -4,8 +4,8 @@ using System.Reflection;
 namespace TheTechIdea.Beep.Editor.Migration.Tests;
 
 /// <summary>
-/// Phase 4: verify the core execution path (checkpoint, resume, gate sequence) and pin gap #2 —
-/// resume is process-static, so it does not survive a restart despite the JSON persistence.
+/// Phase 4: verify the core execution path (checkpoint, resume, gate sequence), including durable
+/// resume — the checkpoint is re-hydrated from persisted history after the in-memory store is gone.
 /// </summary>
 public class ExecutionCheckpointResumeTests
 {
@@ -62,20 +62,24 @@ public class ExecutionCheckpointResumeTests
     }
 
     [Fact]
-    public void Resume_DoesNotSurviveA_Restart_ProcessStaticCheckpoints()
+    public void Resume_SurvivesA_Restart_FromPersistedCheckpoint()
     {
-        // PINNED GAP #2: checkpoints live in a static dict; ResumeMigrationPlan reads only that dict
-        // and never loads the persisted JSON. Simulate a restart by clearing the static store, then
-        // resume by the token that was just executed — it is not found.
+        // Durable resume: checkpoints are persisted to migration history as a JSON snapshot. Simulate a
+        // restart by clearing the process-static store; the checkpoint is re-hydrated from history, so
+        // GetExecutionCheckpoint finds it and ResumeMigrationPlan succeeds.
         var (m, plan) = NewAdditive();
         var result = m.ExecuteMigrationPlan(plan);
         var token = result.ExecutionToken;
 
-        ClearStaticCheckpointStores();   // == process restart
+        ClearStaticCheckpointStores();   // == process restart (in-memory stores gone)
+
+        var fetched = m.GetExecutionCheckpoint(token);
+        Assert.NotNull(fetched);
+        Assert.Equal(token, fetched.ExecutionToken);
 
         var resumed = m.ResumeMigrationPlan(token);
-        Assert.False(resumed.Success);
-        Assert.Contains("No checkpoint found", resumed.Message);
+        Assert.True(resumed.Success, resumed.Message);
+        Assert.True(resumed.ResumedFromCheckpoint);
     }
 
     [Fact]

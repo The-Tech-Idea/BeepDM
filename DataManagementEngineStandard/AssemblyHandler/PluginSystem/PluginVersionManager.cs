@@ -357,7 +357,11 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                             File.Delete(backup.BackupPath);
                         }
                     }
-                    catch { } // Ignore cleanup errors
+                    catch (Exception ex)
+                    {
+                        // Best-effort cleanup; continue deleting the remaining backups.
+                        _logger?.LogWithContext($"Dispose: Failed to delete backup file {backup?.BackupPath}", ex);
+                    }
                 }
 
                 _pluginVersionHistory.Clear();

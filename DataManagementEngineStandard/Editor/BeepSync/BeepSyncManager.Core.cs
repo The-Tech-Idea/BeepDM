@@ -34,7 +34,6 @@ namespace TheTechIdea.Beep.Editor
         private readonly ISyncValidationHelper _validationHelper;
         private readonly ISchemaPersistenceHelper _persistenceHelper;
         private readonly ISyncProgressHelper _progressHelper;
-        private ISchemaManager? _schemaManager;
         private IRetryPipeline? _retryPipeline;
 
         /// <summary>Optional integration context: Rule Engine, Defaults Manager, mapping-plan state.</summary>
@@ -52,12 +51,6 @@ namespace TheTechIdea.Beep.Editor
         public string Filepath { get; set; }
         public IDMEEditor Editor => _editor;
         public ObservableBindingList<DataSyncSchema> SyncSchemas { get; set; }
-
-        /// <summary>
-        /// Schema manager used by <see cref="BeepSyncManager.Sync.cs"/> to run a strict
-        /// destination-acceptance preflight before the import starts. Lazily resolved.
-        /// </summary>
-        protected ISchemaManager SchemaManager => _schemaManager ??= new SchemaManager(_editor);
 
         /// <summary>
         /// Retry pipeline used by <see cref="BeepSyncManager.Sync.cs"/> to run the

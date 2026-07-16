@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace TheTechIdea.Beep.Editor.Schema
 {
     /// <summary>
-    /// Input contract for <see cref="ISchemaManager"/>.
+    /// Input contract for <see cref="SyncSchemaPreflight"/>.
     /// Datasource-agnostic. Any pair of <see cref="IDataSource"/> can be source or target.
     /// </summary>
     public sealed class SchemaRequest
@@ -47,17 +47,10 @@ namespace TheTechIdea.Beep.Editor.Schema
         public SchemaSnapshot? DestinationSnapshot { get; init; }
     }
 
-    /// <summary>Output of <see cref="ISchemaManager.BuildSyncDraftAsync"/>.</summary>
+    /// <summary>Output of <see cref="SyncSchemaPreflight.BuildSyncDraftAsync"/>.</summary>
     public sealed class SchemaDraftResult
     {
         public DataSyncSchema? Draft { get; init; }
         public IErrorsInfo Status { get; init; } = new ErrorsInfo { Flag = Errors.Ok, Message = "Draft not built." };
-    }
-
-    /// <summary>Output of <see cref="ISchemaManager.CreateEntityAsync"/>.</summary>
-    public sealed class SchemaEntityResult
-    {
-        public IErrorsInfo Status { get; init; } = new ErrorsInfo { Flag = Errors.Ok, Message = "Entity not created." };
-        public bool Created { get; init; }
     }
 }

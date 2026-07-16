@@ -77,10 +77,11 @@ public class PlanningPolicyTests
     }
 
     [Fact]
-    public void Planner_NeverEmits_ColumnOrTable_DestructiveOps()
+    public void Planner_DefaultPlan_IsAdditiveSafe_NoColumnOrTableDestructiveOps()
     {
-        // PINNED GAP #1 (planning side, precise): the planner can emit Drop FK/Index (constraint
-        // reversals), but NEVER AlterColumn/DropColumn/DropEntity/RenameEntity/RenameColumn/Truncate.
+        // The DEFAULT plan (includeDestructive not set) stays additive-safe: it may emit Drop FK/Index
+        // (constraint reversals) but never a column/table-destructive op. DropColumn is available only
+        // via BuildMigrationPlanForTypes(..., includeDestructive: true) — covered in CharacterizationTests.
         var desired = MigrationTestHarness.Entity("Product", "Id");            // drops Name, retypes nothing
         var current = MigrationTestHarness.Entity("Product", "Id", "Name");
         new MigrationTestHarness().WithDesired(typeof(Product), desired).WithExisting(current)

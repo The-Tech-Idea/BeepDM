@@ -17,6 +17,32 @@ namespace TheTechIdea.Beep
     {
         #region "Universal DataSource Helpers - Phase 2 Implementation"
 
+        private DataSourceHelperFactory _dataSourceHelperFactory;
+        private readonly object _dataSourceHelperFactoryLock = new object();
+
+        /// <summary>
+        /// The datasource-helper factory. Lazily created and held for the lifetime of this
+        /// DMEEditor so that helpers registered via <see cref="RegisterDataSourceHelper"/>
+        /// remain visible to later <see cref="GetDataSourceHelper"/> calls.
+        /// </summary>
+        private DataSourceHelperFactory DataSourceHelperFactoryInstance
+        {
+            get
+            {
+                if (_dataSourceHelperFactory == null)
+                {
+                    lock (_dataSourceHelperFactoryLock)
+                    {
+                        if (_dataSourceHelperFactory == null)
+                        {
+                            _dataSourceHelperFactory = new DataSourceHelperFactory(this);
+                        }
+                    }
+                }
+                return _dataSourceHelperFactory;
+            }
+        }
+
         /// <summary>
         /// Initializes the Universal DataSource Helpers components.
         /// Called during DMEEditor initialization to set up datasource helpers registry.
@@ -45,9 +71,7 @@ namespace TheTechIdea.Beep
         {
             try
             {
-                // Use factory to create helper
-                var factory = new DataSourceHelperFactory(this);
-                var helper = factory.CreateHelper(datasourceType);
+                var helper = DataSourceHelperFactoryInstance.CreateHelper(datasourceType);
 
                 if (helper != null)
                 {
@@ -86,9 +110,7 @@ namespace TheTechIdea.Beep
                     throw new ArgumentNullException(nameof(helper));
                 }
 
-                // Register with factory - create factory instance and register
-                var factory = new DataSourceHelperFactory(this);
-                factory.RegisterHelper(datasourceType, (dme) => helper);
+                DataSourceHelperFactoryInstance.RegisterHelper(datasourceType, (dme) => helper);
                 Logger?.WriteLog($"Registered custom helper for datasource {datasourceType}");
             }
             catch (Exception ex)

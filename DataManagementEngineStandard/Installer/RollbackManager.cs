@@ -48,7 +48,7 @@ namespace TheTechIdea.Beep.Installer
                         if (Directory.Exists(dirPath) && !Directory.EnumerateFileSystemEntries(dirPath).Any())
                             Directory.Delete(dirPath, recursive: false);
                     }
-                    catch { /* not empty or access denied */ }
+                    catch (Exception ex) { _logger?.Warn("Rollback", $"RegisterDirectoryCreated revert: could not remove '{dirPath}': {ex.Message}"); }
                 }
             });
         }
@@ -66,7 +66,7 @@ namespace TheTechIdea.Beep.Installer
                         using var key = Registry.LocalMachine.OpenSubKey(keyPath, writable: true);
                         key?.DeleteValue(valueName, throwOnMissingValue: false);
                     }
-                    catch { }
+                    catch (Exception ex) { _logger?.Warn("Rollback", $"RegisterRegistryWrite revert: could not remove '{keyPath}\\{valueName}': {ex.Message}"); }
                 }
             });
         }

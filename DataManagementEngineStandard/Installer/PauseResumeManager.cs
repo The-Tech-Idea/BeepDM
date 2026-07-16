@@ -79,7 +79,9 @@ namespace TheTechIdea.Beep.Installer
         /// <summary>Deletes the saved state file (call on successful completion).</summary>
         public void ClearState()
         {
-            try { if (File.Exists(_statePath)) File.Delete(_statePath); } catch { }
+            // Best-effort cleanup: leftover state file is harmless — report and continue.
+            try { if (File.Exists(_statePath)) File.Delete(_statePath); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"PauseResumeManager.ClearState: delete '{_statePath}' ignored: {ex}"); }
         }
 
         private void PersistState()
@@ -88,7 +90,8 @@ namespace TheTechIdea.Beep.Installer
             {
                 File.WriteAllText(_statePath, JsonSerializer.Serialize(CurrentState));
             }
-            catch { }
+            // Best-effort persistence: failing to save state must not break pause — report and continue.
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"PauseResumeManager.PersistState: write '{_statePath}' ignored: {ex}"); }
         }
     }
 

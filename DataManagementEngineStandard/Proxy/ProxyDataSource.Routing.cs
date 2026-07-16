@@ -216,7 +216,7 @@ namespace TheTechIdea.Beep.Proxy
                 // Broken socket can succeed silently while the underlying handle is dead.
                 if (state == ConnectionState.Broken)
                 {
-                    try { connection.DataSource.Dispose(); } catch { /* best-effort */ }
+                    try { connection.DataSource.Dispose(); } catch (Exception ex) { LogSafe($"GetPooledConnection: disposing broken connection for {dsName} failed.", ex); }
                     return _dmeEditor.GetDataSource(dsName);
                 }
 
@@ -227,7 +227,7 @@ namespace TheTechIdea.Beep.Proxy
                         var opened = connection.DataSource.Openconnection();
                         if (opened == ConnectionState.Broken)
                         {
-                            try { connection.DataSource.Dispose(); } catch { }
+                            try { connection.DataSource.Dispose(); } catch (Exception ex) { LogSafe($"GetPooledConnection: disposing broken reopened connection for {dsName} failed.", ex); }
                             return _dmeEditor.GetDataSource(dsName);
                         }
                     }
@@ -250,7 +250,7 @@ namespace TheTechIdea.Beep.Proxy
             }
             else
             {
-                try { connection.Closeconnection(); } catch { /* best-effort */ }
+                try { connection.Closeconnection(); } catch (Exception ex) { LogSafe($"ReturnConnection: closing surplus connection for {dsName} failed.", ex); }
             }
         }
 
@@ -265,7 +265,7 @@ namespace TheTechIdea.Beep.Proxy
                 if (now - conn.LastUsed < ConnectionTimeout)
                     newPool.Enqueue(conn);
                 else
-                    try { conn.DataSource.Closeconnection(); } catch { /* best-effort */ }
+                    try { conn.DataSource.Closeconnection(); } catch (Exception ex) { LogSafe($"CleanupConnectionPool: closing expired connection for {dsName} failed.", ex); }
             }
 
             _connectionPools[dsName] = newPool;
@@ -498,7 +498,7 @@ namespace TheTechIdea.Beep.Proxy
         private void RaiseRecoveryEvent(string dsName)
         {
             try { OnRecovery?.Invoke(this, new RecoveryEventArgs { DataSourceName = dsName, RecoveredAt = DateTime.UtcNow }); }
-            catch { /* don't let handler exceptions break health-check loop */ }
+            catch (Exception ex) { LogSafe($"RaiseRecoveryEvent: recovery handler for {dsName} threw.", ex); /* don't let handler exceptions break health-check loop */ }
         }
     }
 }

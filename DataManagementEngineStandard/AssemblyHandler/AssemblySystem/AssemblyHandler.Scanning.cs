@@ -62,7 +62,11 @@ namespace TheTechIdea.Beep.Tools
                             TypeInfo typeInfo = type.GetTypeInfo();
                             typeInfoCollection.Add(typeInfo);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            // Skip a single unreadable type; scanning of the rest must continue.
+                            Logger?.WriteLog($"ScanAssembly: Failed to read type info in {asm?.GetName()?.Name}: {ex.Message}");
+                        }
                     });
 
                     // Process the collected TypeInfo objects
@@ -81,7 +85,11 @@ namespace TheTechIdea.Beep.Tools
                             TypeInfo typeInfo = type.GetTypeInfo();
                             ProcessTypeInfo(typeInfo, asm);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            // Skip a single unprocessable type; continue with the rest.
+                            Logger?.WriteLog($"ScanAssembly: Failed to process type in {asm?.GetName()?.Name}: {ex.Message}");
+                        }
                     }
                 }
 

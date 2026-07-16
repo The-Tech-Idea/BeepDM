@@ -989,9 +989,8 @@ namespace TheTechIdea.Beep.Editor.ETL
             try
             {
                 token.ThrowIfCancellationRequested();
-                // Use the dedicated schema manager directly — no need to
+                // Shared cross-datasource sync preflight helper — no need to
                 // spin up a full DataImportManager just to run a preflight.
-                var schemaService = new SchemaManager(DMEEditor);
                 var request = new SchemaRequest
                 {
                     SourceDataSourceName         = step.SourceDataSourceName,
@@ -1002,7 +1001,8 @@ namespace TheTechIdea.Beep.Editor.ETL
                     AddMissingColumns            = true
                 };
 
-                var preflight = await schemaService.RunPreflightAsync(
+                var preflight = await SyncSchemaPreflight.RunPreflightAsync(
+                    DMEEditor,
                     request,
                     msg =>
                     {

@@ -83,7 +83,7 @@ namespace TheTechIdea.Beep.Proxy
                 var line = JsonSerializer.Serialize(entry);
                 _queue.TryAdd(line);   // non-blocking; drops silently if at capacity
             }
-            catch { /* never throw on data path */ }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"FileProxyAuditSink.Write: audit entry dropped: {ex.Message}"); /* never throw on data path */ }
         }
 
         private void DrainLoop()
@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Proxy
                         var path = Path.Combine(_directory, $"proxy-audit-{DateTime.UtcNow:yyyyMMdd}.jsonl");
                         File.AppendAllText(path, line + Environment.NewLine);
                     }
-                    catch { /* ignore individual write errors */ }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"FileProxyAuditSink.DrainLoop: audit file write failed: {ex.Message}"); /* ignore individual write errors, keep draining */ }
                 }
             }
             catch (OperationCanceledException) { }

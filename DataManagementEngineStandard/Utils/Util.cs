@@ -605,7 +605,7 @@ namespace TheTechIdea.Beep.Utils
                                 if (targetType != null)
                                 {
                                     try { prop.SetValue(x, Convert.ChangeType(row[item.ColumnName], targetType), null); }
-                                    catch { /* skip conversion failures */ }
+                                    catch (Exception ex) { DME?.AddLogMessage("Util", $"GetBindingListByDataTable: could not convert field '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning); /* skip conversion failures */ }
                                 }
                             }
                         }
@@ -651,7 +651,7 @@ namespace TheTechIdea.Beep.Utils
                                 if (tp != null)
                                 {
                                     try { prop.SetValue(x, Convert.ChangeType(row[item.ColumnName], tp), null); }
-                                    catch { /* skip conversion failures */ }
+                                    catch (Exception ex) { DME?.AddLogMessage("Util", $"GetListByDataTable: could not convert field '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning); /* skip conversion failures */ }
                                 }
                             }
                         }
@@ -897,24 +897,25 @@ namespace TheTechIdea.Beep.Utils
                         {
                             x.IsAutoIncrement = item.AutoIncrement;
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-
+                            DME?.AddLogMessage("Util", $"GetEntityStructureFromListorTable: could not read AutoIncrement for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
                         }
                         try
                         {
                             x.AllowDBNull = item.AllowDBNull;
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
+                            DME?.AddLogMessage("Util", $"GetEntityStructureFromListorTable: could not read AllowDBNull for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
                         }
                         try
                         {
                             x.IsUnique = item.Unique;
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-
+                            DME?.AddLogMessage("Util", $"GetEntityStructureFromListorTable: could not read Unique for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
                         }
                     }
                     catch (Exception ex)
@@ -955,8 +956,8 @@ namespace TheTechIdea.Beep.Utils
                         }
                         catch (Exception ex)
                         {
-                            // Log the exception or handle it accordingly
-                            // Consider how you want to handle the case where the conversion fails
+                            // Conversion failed for this field; leave it unset and continue.
+                            DME?.AddLogMessage("Util", $"ConvertTableToList: could not convert field '{col?.FieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
                         }
                     }
                     else if (propertyInfo != null)
@@ -1027,10 +1028,10 @@ namespace TheTechIdea.Beep.Utils
                     Fieldtype = item.DataType.FullName,
                     FieldCategory = ResolveFieldCategory(item.DataType)
                 };
-                try { f.IsAutoIncrement = item.AutoIncrement; } catch { }
-                try { f.AllowDBNull = item.AllowDBNull; } catch { }
-                try { f.Size1 = item.MaxLength; } catch { }
-                try { f.IsUnique = item.Unique; } catch { }
+                try { f.IsAutoIncrement = item.AutoIncrement; } catch (Exception ex) { DME?.AddLogMessage("Util", $"GetFieldFromGeneratedObject: could not read AutoIncrement for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
+                try { f.AllowDBNull = item.AllowDBNull; } catch (Exception ex) { DME?.AddLogMessage("Util", $"GetFieldFromGeneratedObject: could not read AllowDBNull for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
+                try { f.Size1 = item.MaxLength; } catch (Exception ex) { DME?.AddLogMessage("Util", $"GetFieldFromGeneratedObject: could not read MaxLength for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
+                try { f.IsUnique = item.Unique; } catch (Exception ex) { DME?.AddLogMessage("Util", $"GetFieldFromGeneratedObject: could not read Unique for '{item?.ColumnName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                 retval.Add(f);
             }
             return retval;
@@ -1063,7 +1064,11 @@ namespace TheTechIdea.Beep.Utils
                         if (prop != null)
                             result = prop.GetValue(UploadDataRow) ?? DBNull.Value;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // Value stays DBNull for this field; continue mapping the rest.
+                        DME?.AddLogMessage("Util", $"GetDataRowFromobject: could not read field '{col?.FieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
+                    }
                     dr[col.FieldName] = result;
                 }
             }
@@ -1080,12 +1085,12 @@ namespace TheTechIdea.Beep.Utils
                     PropertyInfo DestPropAInfo = destobj.GetType().GetProperty(col.ToFieldName);
                     var val= SrcPropAInfo.GetValue(sourceobj, null);
                     DestPropAInfo.SetValue(destobj, val, null);
-                   
+
                 }
                 catch (Exception ex)
                 {
-
-
+                    // Skip this field mapping and continue with the rest.
+                    DME?.AddLogMessage("Util", $"MapObjectToAnother: could not map '{col?.FromFieldName}'->'{col?.ToFieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
                 }
               
             }

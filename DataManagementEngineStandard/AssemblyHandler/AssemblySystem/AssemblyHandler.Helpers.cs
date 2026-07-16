@@ -149,7 +149,11 @@ namespace TheTechIdea.Beep.Tools
                             return type;
                         }
                     }
-                    catch (MissingMethodException) { }
+                    catch (MissingMethodException ex)
+                    {
+                        // Type not resolvable from this assembly; keep probing the others.
+                        Logger?.WriteLog($"GetType: MissingMethodException probing '{strFullyQualifiedName}' in {asm?.GetName()?.Name}: {ex.Message}");
+                    }
                 }
 
                 // Then check referenced assemblies
@@ -184,7 +188,11 @@ namespace TheTechIdea.Beep.Tools
                             return type;
                         }
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        // Type not resolvable from this loaded assembly; keep probing the others.
+                        Logger?.WriteLog($"GetType: Error probing '{strFullyQualifiedName}' in {assembly?.GetName()?.Name}: {ex.Message}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -384,7 +392,11 @@ namespace TheTechIdea.Beep.Tools
                         xcls.Order = cls.Order;
                         cls = null;
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        // IOrder ordering is optional; keep the default order if it cannot be read.
+                        Logger?.WriteLog($"GetAssemblyClassDefinition: Failed to read IOrder from {type?.FullName}: {ex.Message}");
+                    }
                 }
             }
 

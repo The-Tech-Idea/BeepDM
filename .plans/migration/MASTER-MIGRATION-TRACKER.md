@@ -36,7 +36,7 @@ execution → rollback **without a live DB**. Build the harness first; everythin
 | 3 | Dry-run / preflight / impact verification | [PHASE-03](PHASE-03-DryRun-Preflight-Impact.md) | [x] |
 | 4 | Execution, checkpoint & resume verification | [PHASE-04](PHASE-04-Execution-Checkpoint-Resume.md) | [x] |
 | 5 | Rollback & compensation verification | [PHASE-05](PHASE-05-Rollback-Compensation.md) | [x] |
-| 6 | Hygiene: catches, dedup, doc drift, honest README | [PHASE-06](PHASE-06-Hygiene-Docs.md) | [~] |
+| 6 | Hygiene: catches, dedup, doc drift, honest README | [PHASE-06](PHASE-06-Hygiene-Docs.md) | [x] |
 
 ## Not in this plan (future, opt-in)
 
@@ -88,8 +88,24 @@ gets an **empty** compensation plan and `RollbackFailedExecution` undoes nothing
 **Phase 6 (in progress):** Honest `Editor/Migration/README.md` header written (documents real
 capabilities + all pinned gaps + known hygiene items). Doc drift fixed (`SKILL.md` nonexistent
 `Checkpoints.cs` reference). Dead `ConfigEditor.MigrationProviders` registry annotated in-code.
-**Deferred (tracked):** the doubled `MigrationHistory` POCO dedup (subtle cross-assembly type change —
-own change) and per-catch logging on the 13 swallowing `catch{}` (untested paths — annotate-only, low
-value/some risk).
+All **13 previously-silent `catch{}`** (6 in `Discovery.cs`, 5 in `ManifestParser.cs`, 2 in
+`MigrationTrackingService.cs`) now **report through `IDMEEditor.AddLogMessage(..., Errors.Warning)`**
+with assembly/type context + the exception message (per user direction — don't swallow, route to the
+editor's error management). They still fall through to the next candidate (best-effort resolution/
+retry), but a genuine load fault (bad-image/version-conflict assembly, `TypeLoadException`, transient
+connection failure) is now visible. Manifest probes use `GetType(throwOnError:false)`, so these logs
+fire only on real faults, not on every "type absent here" miss. `OpenWithRetrySync` was made an
+instance method (was `static`) so it can reach `_editor`; single caller, instance context. **236/236 green.**
+**POCO dedup — DONE (user-approved go).** Deleted the `DataManagementEngine` copy of
+`MigrationHistory.cs`; the canonical `MigrationHistory`/`MigrationRecord`/`MigrationStep` now live only
+in `DataManagementModels`, with `[assembly: TypeForwardedTo]` in new `DataManagementEngineStandard/TypeForwards.cs`
+preserving binary compat. This removed the latent **CS0433** for consumers referencing both packages
+and cleared ~62 in-tree **CS0436** warnings (3829 → 3767). Verified: 0 errors, **236/236 green**, no
+CS0433/CS0436 remain for these types.
+
+**Phase 6 CLOSED.** Verify+hygiene plan complete (Phases 1–6 all `[x]`). Remaining architectural
+hygiene (dead `ConfigEditor` registry — annotated; `CreateEntity`/`EnsureEntity` provider bypass;
+`SchemaManager` vs `MigrationManager` dual stacks) is catalogued below as opt-in future work, not part
+of this scope.
 
 **236/236 green** (migration 30, setup 152, forms 54); solution builds 0 errors.

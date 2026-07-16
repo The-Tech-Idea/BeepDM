@@ -247,15 +247,21 @@ namespace TheTechIdea.Beep.Editor.Migration
             var providerProfile = plan.ProviderCapabilities ??
                 BuildProviderCapabilityProfile(plan.DataSourceType, plan.DataSourceCategory);
 
+            // Rebuild with the same destructive setting the stored plan used, else a plan that
+            // included DropColumn ops would always diverge from a non-destructive rebuild.
+            var incDestructive = plan.Operations.Any(op =>
+                op != null && op.Kind == MigrationPlanOperationKind.DropColumn);
+
             var currentOperations = new List<MigrationPlanOperation>();
             foreach (var type in types)
             {
-                var operation = BuildPlanOperation(type, plan.DataSourceCategory, plan.DataSourceType, providerProfile);
-                currentOperations.Add(operation);
+                var operations = BuildPlanOperations(type, plan.DataSourceCategory, plan.DataSourceType, providerProfile, incDestructive);
+                currentOperations.AddRange(operations);
+                var primary = operations.Count > 0 ? operations[0] : null;
 
                 var structure = TryGetEntityStructure(type);
-                if (structure != null && !string.IsNullOrWhiteSpace(operation.EntityName))
-                    structure.EntityName = operation.EntityName;
+                if (structure != null && primary != null && !string.IsNullOrWhiteSpace(primary.EntityName))
+                    structure.EntityName = primary.EntityName;
 
                 EmitRelationalArtifactsForEntity(structure, currentOperations, afk, aix);
             }

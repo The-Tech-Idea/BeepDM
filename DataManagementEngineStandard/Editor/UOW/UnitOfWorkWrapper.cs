@@ -193,7 +193,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                         .GetEvent("CurrentChanged")
                         ?.AddEventHandler(_unitOfWork, value);
                 }
-                catch { }
+                catch (Exception ex) { LogError($"Error adding CurrentChanged handler: {ex.Message}"); }
             }
             remove
             {
@@ -203,7 +203,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                         .GetEvent("CurrentChanged")
                         ?.RemoveEventHandler(_unitOfWork, value);
                 }
-                catch { }
+                catch (Exception ex) { LogError($"Error removing CurrentChanged handler: {ex.Message}"); }
             }
         }
 

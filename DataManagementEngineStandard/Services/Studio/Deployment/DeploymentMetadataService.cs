@@ -194,7 +194,11 @@ public sealed class DeploymentMetadataService : IDeploymentMetadataService
                 var m = JsonSerializer.Deserialize<DeploymentMetadata>(envJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 if (m != null && !string.IsNullOrWhiteSpace(m.CodeRevisionSha)) return m;
             }
-            catch { /* fall through to next source */ }
+            catch (Exception ex)
+            {
+                // Malformed env JSON is not fatal — fall through to the next metadata source below.
+                System.Diagnostics.Debug.WriteLine($"DeploymentMetadataService.ResolveMetadata: env deployment JSON ignored: {ex}");
+            }
         }
 
         // 2. BEEP_CODE_REVISION_SHA + BEEP_CODE_REVISION_REF env vars
@@ -228,7 +232,11 @@ public sealed class DeploymentMetadataService : IDeploymentMetadataService
                     Labels: null);
             }
         }
-        catch { /* fall through */ }
+        catch (Exception ex)
+        {
+            // git unavailable or not a repo — fall through to the assembly version source.
+            System.Diagnostics.Debug.WriteLine($"DeploymentMetadataService.ResolveMetadata: git rev-parse ignored: {ex}");
+        }
 
         // 4. Assembly InformationalVersion
         var v = GetAssemblyInformationalVersion();
@@ -256,7 +264,11 @@ public sealed class DeploymentMetadataService : IDeploymentMetadataService
             var refr = RunProcess("git", "symbolic-ref --short HEAD")?.Trim();
             if (!string.IsNullOrEmpty(sha) && !string.IsNullOrEmpty(refr)) return (sha!, "refs/heads/" + refr);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // git not available — return empty so the caller falls through to the next source.
+            System.Diagnostics.Debug.WriteLine($"DeploymentMetadataService.RunGitRevParse: ignored: {ex}");
+        }
         return (string.Empty, string.Empty);
     }
 

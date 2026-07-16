@@ -24,6 +24,33 @@ WinForms UI shells that wrap each subsystem using the canonical
 | 3 | UOW ↔ FormsManager Bridge | [PHASE-03](PHASE-03-UOW-FormsManager-Bridge.md) | [x] |
 | 4 | FormsManager Advanced Operations | [PHASE-04](PHASE-04-FormsManager-Advanced.md) | [x] |
 
+### Track C — Setup Framework → Solution Control Plane (Phase 1–8)
+
+**Goal:** Grow `SetUp/` from a single-app first-run wizard into the one place a developer manages a
+solution and its parts — same product for solo (local JSON) and enterprise (shared/remote + RBAC).
+
+**Repos:**
+- Setup: `c:\...\BeepDM\DataManagementEngineStandard\SetUp\` + `…\DataManagementModelsStandard\SetUp\`
+- Solution aggregate (Phase 7): `c:\...\BeepDM\DataManagementEngineStandard\Services\AppMap\`
+- Master tracker: [setup/MASTER-SETUP-TRACKER.md](setup/MASTER-SETUP-TRACKER.md)
+
+| # | Phase | Document | Status |
+|---|---|---|---|
+| 1 | Stabilize & correctness | [PHASE-01](setup/PHASE-01-Stabilize-Correctness.md) | [ ] |
+| 2 | Serializable `SetupDefinition` (keystone) | [PHASE-02](setup/PHASE-02-Serializable-SetupDefinition.md) | [ ] |
+| 3 | Pluggable state store + concurrency | [PHASE-03](setup/PHASE-03-State-Store-And-Concurrency.md) | [ ] |
+| 4 | Rollback & compensation | [PHASE-04](setup/PHASE-04-Rollback-And-Compensation.md) | [ ] |
+| 5 | Identity, RBAC & approvals | [PHASE-05](setup/PHASE-05-Identity-RBAC-Approvals.md) | [ ] |
+| 6 | Audit, reporting & telemetry | [PHASE-06](setup/PHASE-06-Audit-Reporting-Telemetry.md) | [ ] |
+| 7 | Solution aggregate & multi-app | [PHASE-07](setup/PHASE-07-Solution-Aggregate-MultiApp.md) | [ ] |
+| 8 | CLI, unattended & CI | [PHASE-08](setup/PHASE-08-CLI-Unattended-CI.md) | [ ] |
+
+> Phase 1 must land first — three of its bugs make the *default* wizard unusable. Phase 2 is the
+> keystone: until a setup definition is data rather than C#, phases 3–8 are all blocked.
+> Current docs: [`SetUp/README.md`](../DataManagementEngineStandard/SetUp/README.md).
+
+---
+
 ### Track B — Editor Managers parity + WinForms shells (Phase 5–10)
 
 **Repos:**

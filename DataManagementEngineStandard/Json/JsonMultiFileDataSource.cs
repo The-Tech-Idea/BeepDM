@@ -481,7 +481,10 @@ namespace TheTechIdea.Beep.Json
                         foreach (var t in tokens)
                             allResults.Add(t.Type == JTokenType.Object ? JObjectToDictionary((JObject)t) : t.ToObject<object>());
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        DMEEditor?.AddLogMessage("JsonMultiFileDataSource", $"RunQuery: JSONPath evaluation failed for entity '{entityName2}': {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
+                    }
                 }
             }
             return allResults;

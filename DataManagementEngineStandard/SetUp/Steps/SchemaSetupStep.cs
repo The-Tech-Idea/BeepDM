@@ -35,7 +35,6 @@ namespace TheTechIdea.Beep.SetUp.Steps
     {
         private readonly SchemaSetupStepOptions _opts;
         private readonly ILogger<SchemaSetupStep>? _logger;
-        private readonly ISchemaManager? _schemaManager;
         private readonly IEntityDiscoveryService? _discovery;
 
         /// <summary>
@@ -51,7 +50,6 @@ namespace TheTechIdea.Beep.SetUp.Steps
         public SchemaSetupStep(
             SchemaSetupStepOptions opts,
             ILogger<SchemaSetupStep>? logger = null,
-            ISchemaManager? schemaManager = null,
             IEntityDiscoveryService? discovery = null,
             Rollback.IBackupConfirmationProvider? backupConfirmation = null,
             Security.ISetupApprovalProvider? approvalProvider = null,
@@ -59,7 +57,6 @@ namespace TheTechIdea.Beep.SetUp.Steps
         {
             _opts = opts ?? throw new ArgumentNullException(nameof(opts));
             _logger = logger;
-            _schemaManager = schemaManager;
             _discovery = discovery;
             _backupConfirmation = backupConfirmation;
             _approvalProvider = approvalProvider;
@@ -358,13 +355,10 @@ namespace TheTechIdea.Beep.SetUp.Steps
             if (dryRun != null)
                 context.SetDryRunReport(JsonSerializer.Serialize(dryRun));
 
-            // ── C2. Per-entity schema drift (.NET class vs live DB) ───
+            // ── C2. Per-entity schema drift (.NET class vs live DB), via MigrationManager ───
             try
             {
-                var schema = _schemaManager ?? new SchemaManager(editor);
-                // Task.Run keeps the inspection's awaits off the caller's SynchronizationContext,
-                // so a UI caller blocked here in GetResult() cannot deadlock against them.
-                var drift = Task.Run(() => schema.InspectManyAsync(entityTypes, ds)).GetAwaiter().GetResult();
+                var drift = migration.InspectDrift(entityTypes);
                 if (drift != null && drift.Count > 0)
                 {
                     context.Properties["SchemaDrift"] = drift;

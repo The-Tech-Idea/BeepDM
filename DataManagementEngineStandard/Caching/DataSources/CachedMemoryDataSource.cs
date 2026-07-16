@@ -435,8 +435,11 @@ namespace TheTechIdea.Beep.Caching
                     return comparable.CompareTo(convertedFilter);
                 }
             }
-            catch { }
-            
+            catch (Exception ex)
+            {
+                DMEEditor?.AddLogMessage("CachedMemoryDataSource", $"CompareValues: typed comparison failed, falling back to string compare: {ex.Message}", DateTime.Now, 0, null, Errors.Warning);
+            }
+
             return string.Compare(fieldValue?.ToString(), filterValue, StringComparison.OrdinalIgnoreCase);
         }
         #endregion

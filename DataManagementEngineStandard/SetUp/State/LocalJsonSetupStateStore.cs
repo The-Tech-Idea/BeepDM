@@ -134,7 +134,8 @@ namespace TheTechIdea.Beep.SetUp.State
             }
             finally
             {
-                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                try { if (File.Exists(tmp)) File.Delete(tmp); }
+                catch (Exception ex) { _logger?.LogWarning(ex, "Could not delete temporary setup-state file '{Path}'.", tmp); }
             }
             return Task.CompletedTask;
         }
@@ -203,7 +204,8 @@ namespace TheTechIdea.Beep.SetUp.State
             // Only delete if it's still ours — never stomp a lease that was reclaimed.
             var current = ReadLock(lockPath);
             if (current == null || current.RunId != runId) return;
-            try { File.Delete(lockPath); } catch { }
+            try { File.Delete(lockPath); }
+            catch (Exception ex) { _logger?.LogWarning(ex, "Could not delete setup lease file '{Path}'.", lockPath); }
         }
 
         private static string ReadShared(string path)

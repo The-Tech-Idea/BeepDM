@@ -21,9 +21,10 @@ BeepDM is the orchestration engine providing interfaces and implementation for m
 5. **Populate Entities list** — Initialize in Openconnection()
 6. **Support async variants** — GetEntityAsync, GetScalarAsync required
 7. **Log via Logger.WriteLog()** — Don't use Console.WriteLine
-8. **Configure via JSON** — DataConnections.json, QueryList.json, etc.
-9. **Singleton pattern** — DMEEditor should be shared across application
-10. **Use partial classes** — Organize complex classes by feature
+8. **Never swallow exceptions** — No bare `catch { }`. Report via `editor?.AddLogMessage("<Class>", $"<ctx>: {ex.Message}", DateTime.Now, 0, null, Errors.Warning)`, else a class logger, else `Debug.WriteLine` + comment (low-level classes only). Don't add a dependency just to log; flow may still continue after reporting.
+9. **Configure via JSON** — DataConnections.json, QueryList.json, etc.
+10. **Singleton pattern** — DMEEditor should be shared across application
+11. **Use partial classes** — Organize complex classes by feature
 
 ## Implementation Checklist (New IDataSourceHelper)
 

@@ -263,6 +263,7 @@ namespace TheTechIdea.Beep.FileManager
                             }
                             catch (Exception Fieldex)
                             {
+                                DMEEditor?.AddLogMessage("CSVDataSource", $"GetFieldsbyTableScan: field type inference failed for '{f?.FieldName}': {Fieldex.Message}", DateTime.Now, 0, null, Errors.Warning);
 
                             }
                             try
@@ -285,6 +286,7 @@ namespace TheTechIdea.Beep.FileManager
                             }
                             catch (Exception stringsizeex)
                             {
+                                DMEEditor?.AddLogMessage("CSVDataSource", $"GetFieldsbyTableScan: string size scan failed for '{f?.FieldName}': {stringsizeex.Message}", DateTime.Now, 0, null, Errors.Warning);
 
                             }
                             try
@@ -310,6 +312,7 @@ namespace TheTechIdea.Beep.FileManager
                             }
                             catch (Exception decimalsizeex)
                             {
+                                DMEEditor?.AddLogMessage("CSVDataSource", $"GetFieldsbyTableScan: decimal size scan failed for '{f?.FieldName}': {decimalsizeex.Message}", DateTime.Now, 0, null, Errors.Warning);
                             }
                             j++;
                         }
@@ -318,6 +321,7 @@ namespace TheTechIdea.Beep.FileManager
                 }
                 catch (Exception rowex)
                 {
+                    DMEEditor?.AddLogMessage("CSVDataSource", $"GetFieldsbyTableScan: row scan failed: {rowex.Message}", DateTime.Now, 0, null, Errors.Warning);
 
                 }
 
@@ -547,6 +551,7 @@ namespace TheTechIdea.Beep.FileManager
                             }
                             catch (Exception fieldex)
                             {
+                                DMEEditor?.AddLogMessage("CSVDataSource", $"GetData: field value conversion failed: {fieldex.Message}", DateTime.Now, 0, null, Errors.Warning);
 
                                
                             }
@@ -1812,7 +1817,7 @@ namespace TheTechIdea.Beep.FileManager
                     {
                         var backup = CombineFilePath + ".bak";
                         File.Replace(tempPath, CombineFilePath, backup, ignoreMetadataErrors: true);
-                        try { File.Delete(backup); } catch { }
+                        try { File.Delete(backup); } catch (Exception ex) { DMEEditor?.AddLogMessage("CSVDataSource", $"Cleanup of backup file failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                     }
                     else
                     {
@@ -1822,7 +1827,7 @@ namespace TheTechIdea.Beep.FileManager
                 }
                 else
                 {
-                    try { File.Delete(tempPath); } catch { }
+                    try { File.Delete(tempPath); } catch (Exception ex) { DMEEditor?.AddLogMessage("CSVDataSource", $"Cleanup of temp file failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                     Logger.WriteLog($"No matching record found to update in entity '{entityName}'.");
                 }
             }
@@ -1909,7 +1914,7 @@ namespace TheTechIdea.Beep.FileManager
                     {
                         var backup = CombineFilePath + ".bak";
                         File.Replace(tempPath, CombineFilePath, backup, ignoreMetadataErrors: true);
-                        try { File.Delete(backup); } catch { }
+                        try { File.Delete(backup); } catch (Exception ex) { DMEEditor?.AddLogMessage("CSVDataSource", $"Cleanup of backup file failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                     }
                     else
                     {
@@ -1919,7 +1924,7 @@ namespace TheTechIdea.Beep.FileManager
                 }
                 else
                 {
-                    try { File.Delete(tempPath); } catch { }
+                    try { File.Delete(tempPath); } catch (Exception ex) { DMEEditor?.AddLogMessage("CSVDataSource", $"Cleanup of temp file failed: {ex.Message}", DateTime.Now, 0, null, Errors.Warning); }
                     Logger.WriteLog($"No matching record found to delete in entity '{entityName}'.");
                 }
             }

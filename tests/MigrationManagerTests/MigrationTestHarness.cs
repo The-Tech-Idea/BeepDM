@@ -22,6 +22,10 @@ public sealed class MigrationTestHarness
     private readonly Mock<IDataSource> _ds = new(MockBehavior.Loose);
     private readonly Mock<IDMEEditor> _editor = new(MockBehavior.Loose);
     private readonly Mock<IClassCreator> _classCreator = new(MockBehavior.Loose);
+    private readonly Mock<IConfigEditor> _config = new(MockBehavior.Loose);
+
+    /// <summary>In-memory per-datasource migration history — persists checkpoints + named records.</summary>
+    public MigrationHistory History { get; } = new() { DataSourceName = "testdb", DataSourceType = DataSourceType.SqlServer };
 
     /// <summary>Entity name → desired structure, as the class-creator would produce from a POCO.</summary>
     private readonly Dictionary<Type, EntityStructure> _desiredByType = new();
@@ -62,6 +66,12 @@ public sealed class MigrationTestHarness
         _editor.SetupGet(e => e.ErrorObject).Returns(new ErrorsInfo { Flag = Errors.Ok });
         _editor.Setup(e => e.GetMigrationProvider(It.IsAny<IDataSource>()))
                .Returns(() => new RecordingProvider(this));
+
+        // In-memory migration-history store so checkpoint persistence / idempotency round-trip.
+        _config.Setup(c => c.LoadMigrationHistory(It.IsAny<string>())).Returns(() => History);
+        _config.Setup(c => c.AppendMigrationRecord(It.IsAny<string>(), It.IsAny<DataSourceType>(), It.IsAny<MigrationRecord>()))
+               .Callback<string, DataSourceType, MigrationRecord>((_, _, record) => History.Migrations.Add(record));
+        _editor.SetupGet(e => e.ConfigEditor).Returns(() => _config.Object);
     }
 
     public IDataSource DataSource => _ds.Object;

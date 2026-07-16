@@ -59,6 +59,7 @@ Multi-modal AI code assistant instructions for BeepDM orchestration engine.
 | Support async/await consistently | 🟠 High | Provide async variants; use .ConfigureAwait(false) |
 | Use partial classes for DMEEditor | 🟠 High | Organize by feature (DataSources, Logging, ETL) |
 | Log via Logger.WriteLog() | 🟠 High | Never use Console.WriteLine |
+| Never swallow exceptions | 🔴 Critical | No bare `catch { }`. Report via `editor?.AddLogMessage("<Class>", $"<ctx>: {ex.Message}", DateTime.Now, 0, null, Errors.Warning)`, else class logger, else `Debug.WriteLine` + comment. Don't add an editor/logger dependency just to log; flow may still continue after reporting. |
 | Thread-safe singleton pattern | 🟠 High | DMEEditor must be thread-safe for concurrent access |
 | Validate configuration at startup | 🟡 Medium | Check for missing connections, drivers, type mappings |
 | Cache datasources and types | 🟡 Medium | Avoid repeated creation/reflection |

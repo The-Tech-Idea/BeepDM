@@ -261,9 +261,21 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 if (result.Status != RunStatus.Success)
                 {
                     if (sinkBegan && sink != null)
-                        try { await sink.RollbackAsync(ctx, CancellationToken.None); } catch { }
+                        try { await sink.RollbackAsync(ctx, CancellationToken.None); }
+                        catch (Exception ex)
+                        {
+                            _editor?.AddLogMessage(nameof(PipelineEngine),
+                                $"Sink rollback for pipeline '{def.Name}' failed: {ex.Message}",
+                                DateTime.Now, -1, null, Errors.Warning);
+                        }
                     if (errorSinkBegan && errorSink != null)
-                        try { await errorSink.RollbackAsync(ctx, CancellationToken.None); } catch { }
+                        try { await errorSink.RollbackAsync(ctx, CancellationToken.None); }
+                        catch (Exception ex)
+                        {
+                            _editor?.AddLogMessage(nameof(PipelineEngine),
+                                $"Error-sink rollback for pipeline '{def.Name}' failed: {ex.Message}",
+                                DateTime.Now, -1, null, Errors.Warning);
+                        }
                 }
 
                 result.FinishedAtUtc     = DateTime.UtcNow;

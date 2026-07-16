@@ -141,6 +141,8 @@ namespace TheTechIdea.Beep.Tools.Helpers
 
                 sb.AppendLine("@page \"/form\"");
                 sb.AppendLine($"@namespace {namespaceName}");
+                sb.AppendLine("@using TheTechIdea.Beep.Services");
+                sb.AppendLine("@using TheTechIdea.Beep.Editor.UOW");
                 sb.AppendLine("@inject IBeepService BeepService");
                 sb.AppendLine("@inject NavigationManager Navigation");
                 sb.AppendLine();
@@ -210,10 +212,10 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 sb.AppendLine($"        try");
                 sb.AppendLine($"        {{");
                 sb.AppendLine($"            isSaving = true;");
-                sb.AppendLine($"            var uow = BeepService.DMEEditor.CreateUnitOfWork<{entity.EntityName}>();");
+                sb.AppendLine($"            var uow = new UnitofWork<{entity.EntityName}>(BeepService.DMEEditor, \"{entity.DataSourceID}\", \"{entity.EntityName}\");");
                 sb.AppendLine($"            if (entity != null)");
                 sb.AppendLine($"            {{");
-                sb.AppendLine($"                uow.AddNew(entity);");
+                sb.AppendLine($"                uow.Add(entity);");
                 sb.AppendLine($"                uow.Commit();");
                 sb.AppendLine($"            }}");
                 sb.AppendLine($"            Navigation.NavigateTo(\"/\");");

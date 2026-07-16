@@ -361,7 +361,12 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
                             }
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // PrimaryKeys reflection/instantiation failed; fall through to return empty.
+                        System.Diagnostics.Debug.WriteLine(
+                            $"EntityDiscoveryService.DetectPrimaryKeyNames: '{type?.FullName}' ignored: {ex}");
+                    }
                 }
             }
 

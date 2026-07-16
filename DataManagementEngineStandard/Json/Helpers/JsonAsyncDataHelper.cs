@@ -108,7 +108,11 @@ namespace TheTechIdea.Beep.Json.Helpers
                     object val = ConvertToken(p.Value, pi.PropertyType);
                     pi.SetValue(inst, val);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Best-effort: skip properties that fail to convert/set and keep materializing the rest.
+                    System.Diagnostics.Debug.WriteLine($"JsonAsyncDataHelper.TryMaterializeTyped: property '{p.Name}' set failed, skipped: {ex}");
+                }
             }
             return inst;
         }
