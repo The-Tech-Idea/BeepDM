@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Distributed.Observability;
 using TheTechIdea.Beep.Distributed.Performance;
 using TheTechIdea.Beep.Distributed.Routing;
@@ -179,7 +180,12 @@ namespace TheTechIdea.Beep.Distributed
             {
                 // Rate limiter first — cheaper to reject upstream than
                 // hold a semaphore while waiting for a token.
-                _rateLimiter?.AcquireAsync(shardId, PerformanceOptions.ShardPermitWait, cancellationToken).GetAwaiter().GetResult();
+                // Explicit null check rather than _rateLimiter?.AcquireAsync(...): Task.Run would
+                // be handed a null Task when there is no limiter and throw. Task.Run is what keeps
+                // the limiter's awaits off the caller's SynchronizationContext, so a UI caller
+                // blocked in GetResult() cannot deadlock against its own continuation.
+                if (_rateLimiter != null)
+                    Task.Run(() => _rateLimiter.AcquireAsync(shardId, PerformanceOptions.ShardPermitWait, cancellationToken)).GetAwaiter().GetResult();
                 return _concurrencyGate.AcquireShard(shardId, PerformanceOptions.ShardPermitWait, cancellationToken);
             }
             catch (BackpressureException bp)

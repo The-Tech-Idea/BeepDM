@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
@@ -113,17 +114,24 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
             var sources = BuildSourceList(driver.NuggetSource);
 
-            var downloadTask = context.Editor.assemblyHandler.LoadNuggetFromNuGetAsync(
+            // Block: this method is called from a synchronous ISetupStep.Execute.
+            //
+            // Task.Run wraps the CALL, and that placement is the whole point. Two things that do
+            // NOT work here:
+            //  - ConfigureAwait(false) on the returned task: it only affects how an `await`
+            //    resumes, and this code blocks with GetAwaiter().GetResult() rather than awaiting,
+            //    so it changes nothing. It also cannot help, because the awaits that capture the
+            //    context are the ones INSIDE LoadNuggetFromNuGetAsync.
+            //  - Wrapping the already-created task: invoking an async method runs it synchronously
+            //    to its first await, capturing the caller's SynchronizationContext right there.
+            // Starting the method inside Task.Run means there is no context to capture at all, so
+            // a UI caller blocked here cannot deadlock against its own continuation.
+            var assemblies = Task.Run(() => context.Editor.assemblyHandler.LoadNuggetFromNuGetAsync(
                 packageName: driver.PackageName,
                 version: version,
                 sources: sources,
                 useSingleSharedContext: true,
-                appInstallPath: _opts.AppInstallPath);
-
-            // Block: this method is called from a synchronous ISetupStep.Execute.
-            // Use ConfigureAwait(false).GetAwaiter().GetResult() to avoid deadlocks
-            // if a SynchronizationContext is captured by the caller.
-            var assemblies = downloadTask.ConfigureAwait(false).GetAwaiter().GetResult();
+                appInstallPath: _opts.AppInstallPath)).GetAwaiter().GetResult();
 
             if (assemblies == null || assemblies.Count == 0)
                 return Fail($"NuGet download returned no assemblies for '{driver.PackageName}'.");

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
@@ -119,7 +120,9 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     return result;
                 }
 
-                var state = DataSourceLifecycleHelper.OpenWithRetryAsync(ds, 3).GetAwaiter().GetResult();
+                // Task.Run keeps the retry loop's awaits off the caller's SynchronizationContext,
+                // so a UI caller blocked here in GetResult() cannot deadlock against them.
+                var state = Task.Run(() => DataSourceLifecycleHelper.OpenWithRetryAsync(ds, 3)).GetAwaiter().GetResult();
                 if (state != ConnectionState.Open)
                 {
                     result.Flag = Errors.Failed;

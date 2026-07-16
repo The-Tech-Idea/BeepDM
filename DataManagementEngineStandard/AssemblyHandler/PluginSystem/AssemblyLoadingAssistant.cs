@@ -114,7 +114,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
 
                 // Load via shared context manager for true isolation
                 var nuggetId = $"SingleAssembly_{Path.GetFileNameWithoutExtension(assemblyPath)}_{DateTime.UtcNow.Ticks}";
-                var nuggetInfo = _sharedContextManager.LoadNuggetAsync(assemblyPath, nuggetId).GetAwaiter().GetResult();
+                // Task.Run keeps the load's awaits off the caller's SynchronizationContext, so a
+                // UI caller blocked here in GetResult() cannot deadlock against its own
+                // continuation. (SharedContextAssemblyHandler already does this at its own sites.)
+                var nuggetInfo = Task.Run(() => _sharedContextManager.LoadNuggetAsync(assemblyPath, nuggetId)).GetAwaiter().GetResult();
                 
                 if (nuggetInfo?.LoadedAssemblies.Count > 0)
                 {
@@ -149,7 +152,7 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
             {
                 // Use SharedContextManager for true isolation and unloading
                 var nuggetId = $"Directory_{fileTypes}_{Path.GetFileName(path)}_{DateTime.UtcNow.Ticks}";
-                var nuggetInfo = _sharedContextManager.LoadNuggetAsync(path, nuggetId).GetAwaiter().GetResult();
+                var nuggetInfo = Task.Run(() => _sharedContextManager.LoadNuggetAsync(path, nuggetId)).GetAwaiter().GetResult();
 
                 if (nuggetInfo != null)
                 {

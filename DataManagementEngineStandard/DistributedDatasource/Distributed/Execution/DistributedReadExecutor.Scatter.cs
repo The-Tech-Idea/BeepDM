@@ -176,12 +176,16 @@ namespace TheTechIdea.Beep.Distributed.Execution
             Func<IProxyCluster, T>      readOperation,
             DistributedExecutionContext ctx)
         {
-            return ScatterAsync<T>(
+            // The outer Task.Run wraps the CALL to ScatterAsync so it starts with no
+            // SynchronizationContext to capture; a UI caller blocked here in GetResult() then has
+            // no continuation queued to it, so it cannot deadlock. (The inner Task.Run is
+            // unrelated — it offloads the synchronous readOperation per cluster.)
+            return Task.Run(() => ScatterAsync<T>(
                 decision,
                 targetShardIds,
                 (cluster, _) => Task.Run(() => readOperation(cluster)),
                 ctx,
-                cancellationToken: CancellationToken.None).GetAwaiter().GetResult();
+                cancellationToken: CancellationToken.None)).GetAwaiter().GetResult();
         }
 
         private async Task<(IReadOnlyList<T> results, int failureCount)> ScatterAsync<T>(

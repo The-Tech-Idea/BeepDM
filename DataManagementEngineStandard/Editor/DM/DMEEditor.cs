@@ -711,7 +711,10 @@ namespace TheTechIdea.Beep
                 // Prefer lifecycle helper to create datasource (centralized logic). Keep fallback to existing implementation.
                 try
                 {
-                    var ds = DataSourceLifecycleHelper.CreateDataSourceAsync(cn, this).GetAwaiter().GetResult();
+                    // Task.Run keeps this sync bridge off the caller's SynchronizationContext:
+                    // the awaits inside resume on the thread pool instead of being posted back to
+                    // a UI thread that is blocked here in GetResult() — which would deadlock.
+                    var ds = Task.Run(() => DataSourceLifecycleHelper.CreateDataSourceAsync(cn, this)).GetAwaiter().GetResult();
                     if (ds != null)
                         return ds;
                 }

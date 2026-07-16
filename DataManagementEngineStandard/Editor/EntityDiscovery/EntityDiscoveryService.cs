@@ -51,8 +51,11 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
 
         public List<DiscoveredEntity> Discover(EntityDiscoveryOptions options)
         {
-            return DiscoverAsync(options, null, CancellationToken.None)
-                .ConfigureAwait(false).GetAwaiter().GetResult();
+            // Task.Run, not ConfigureAwait(false): ConfigureAwait only helps if EVERY await down
+            // the chain uses it — one that does not posts its continuation back to the caller's
+            // context, and a UI thread blocked here in GetResult() can never run it. Task.Run
+            // removes the context entirely, so the whole chain resumes on the thread pool.
+            return Task.Run(() => DiscoverAsync(options, null, CancellationToken.None)).GetAwaiter().GetResult();
         }
 
         public async Task<List<DiscoveredEntity>> DiscoverAsync(
@@ -68,8 +71,7 @@ namespace TheTechIdea.Beep.Editor.EntityDiscovery
             {
                 var cached = _cache.GetOrAdd(cacheKey, () =>
                 {
-                    return DiscoverCoreAsync(options, progress, token)
-                        .ConfigureAwait(false).GetAwaiter().GetResult()
+                    return Task.Run(() => DiscoverCoreAsync(options, progress, token)).GetAwaiter().GetResult()
                         .ToList().AsReadOnly();
                 });
                 return cached.ToList();

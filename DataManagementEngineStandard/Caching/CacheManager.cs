@@ -190,7 +190,11 @@ namespace TheTechIdea.Beep.Caching
         /// <returns>The cached or newly created value.</returns>
         public static T GetOrCreate<T>(string key, Func<T> factory, TimeSpan? expiry = null)
         {
-            return GetOrCreateAsync(key, () => Task.FromResult(factory()), expiry).GetAwaiter().GetResult();
+            // Task.Run starts the async work on a thread-pool thread, where
+            // SynchronizationContext.Current is null, so its awaits resume on the pool. Awaiting
+            // directly would post the continuation back to the caller's context — and a UI-thread
+            // caller is blocked here in GetResult(), unable to run it. That is the deadlock.
+            return Task.Run(() => GetOrCreateAsync(key, () => Task.FromResult(factory()), expiry)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -516,7 +520,7 @@ namespace TheTechIdea.Beep.Caching
         /// <returns>The cached value or default(T) if not found.</returns>
         public static T Get<T>(string key)
         {
-            return GetAsync<T>(key).GetAwaiter().GetResult();
+            return Task.Run(() => GetAsync<T>(key)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -529,7 +533,7 @@ namespace TheTechIdea.Beep.Caching
         /// <returns>True if the value was cached successfully.</returns>
         public static bool Set<T>(string key, T value, TimeSpan? expiry = null)
         {
-            return SetAsync(key, value, expiry).GetAwaiter().GetResult();
+            return Task.Run(() => SetAsync(key, value, expiry)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -539,7 +543,7 @@ namespace TheTechIdea.Beep.Caching
         /// <returns>True if the value was removed.</returns>
         public static bool Remove(string key)
         {
-            return RemoveAsync(key).GetAwaiter().GetResult();
+            return Task.Run(() => RemoveAsync(key)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -549,7 +553,7 @@ namespace TheTechIdea.Beep.Caching
         /// <returns>True if the key exists.</returns>
         public static bool Contains(string key)
         {
-            return ExistsAsync(key).GetAwaiter().GetResult();
+            return Task.Run(() => ExistsAsync(key)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -558,7 +562,7 @@ namespace TheTechIdea.Beep.Caching
         /// <param name="pattern">Pattern to match keys for removal.</param>
         public static void InvalidateCache(string pattern = "*")
         {
-            ClearAsync(pattern == "*" ? null : pattern).GetAwaiter().GetResult();
+            Task.Run(() => ClearAsync(pattern == "*" ? null : pattern)).GetAwaiter().GetResult();
         }
         #endregion
 

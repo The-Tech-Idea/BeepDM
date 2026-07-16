@@ -56,10 +56,12 @@ namespace TheTechIdea.Beep.Installer.Steps
                         }
                     }
 
-                    var response = _http.GetAsync(item.Url, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
+                    // Task.Run keeps HttpClient's awaits off the caller's SynchronizationContext,
+                    // so a UI caller blocked here in GetResult() cannot deadlock against them.
+                    var response = Task.Run(() => _http.GetAsync(item.Url, HttpCompletionOption.ResponseHeadersRead)).GetAwaiter().GetResult();
                     response.EnsureSuccessStatusCode();
 
-                    using var stream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+                    using var stream = Task.Run(() => response.Content.ReadAsStreamAsync()).GetAwaiter().GetResult();
                     using var fileStream = File.Create(dest);
                     var buffer = new byte[8192];
                     long downloaded = 0;

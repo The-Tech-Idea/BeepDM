@@ -1828,7 +1828,10 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
                         // Load on-demand if path exists and not yet loaded
                         if (asm == null && (File.Exists(dllOrPath) || Directory.Exists(dllOrPath)))
                         {
-                            var nugget = LoadNuggetAsync(dllOrPath).GetAwaiter().GetResult();
+                            // Task.Run keeps the load's awaits off the caller's
+                            // SynchronizationContext, so a UI caller blocked here in GetResult()
+                            // cannot deadlock against its own continuation.
+                            var nugget = Task.Run(() => LoadNuggetAsync(dllOrPath)).GetAwaiter().GetResult();
                             asm = nugget?.LoadedAssemblies.FirstOrDefault(a => a.GetName().Name.Equals(dllBase, StringComparison.OrdinalIgnoreCase) || a.ManifestModule.Name.Equals(dllNameOnly, StringComparison.OrdinalIgnoreCase));
                         }
 

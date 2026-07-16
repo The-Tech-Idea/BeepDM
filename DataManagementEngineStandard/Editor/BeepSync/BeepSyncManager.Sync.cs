@@ -280,12 +280,19 @@ namespace TheTechIdea.Beep.Editor
             return lastResult;
         }
 
-        /// <summary>Synchronous overload for backward compatibility.</summary>
-        public void SyncData(DataSyncSchema schema) => SyncDataAsync(schema).GetAwaiter().GetResult();
+        /// <summary>
+        /// Synchronous overload for backward compatibility.
+        /// Task.Run starts the async work on a thread-pool thread with no SynchronizationContext,
+        /// so its awaits resume on the pool rather than being posted back to the caller. Without
+        /// it, a UI-thread caller blocks in GetResult() waiting for a continuation only that same
+        /// blocked thread could run — a deadlock. Prefer <see cref="SyncDataAsync(DataSyncSchema)"/>
+        /// and await it; this overload still blocks the caller for the duration.
+        /// </summary>
+        public void SyncData(DataSyncSchema schema) => Task.Run(() => SyncDataAsync(schema)).GetAwaiter().GetResult();
 
-        /// <summary>Synchronous overload with progress and cancellation.</summary>
+        /// <summary>Synchronous overload with progress and cancellation. See <see cref="SyncData(DataSyncSchema)"/>.</summary>
         public void SyncData(DataSyncSchema schema, CancellationToken token, IProgress<PassedArgs> progress) =>
-            SyncDataAsync(schema, token, progress).GetAwaiter().GetResult();
+            Task.Run(() => SyncDataAsync(schema, token, progress)).GetAwaiter().GetResult();
 
         // ── Private helpers for SyncDataAsync ─────────────────────────────────────
 

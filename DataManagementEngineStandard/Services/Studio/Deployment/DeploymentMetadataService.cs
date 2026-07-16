@@ -61,15 +61,20 @@ public sealed class DeploymentMetadataService : IDeploymentMetadataService
 
     // ── Token issuer / verifier ─────────────────────────────────────────────
 
-    public Task<StudioResult<ApprovalToken>> IssueApprovalTokenAsync(ApprovalTokenRequest request, CancellationToken ct = default)
+    // Genuinely async, matching VerifyApprovalTokenAsync below. It previously returned Task<T>
+    // without being async and blocked on GetCurrentAsync via GetAwaiter().GetResult() — so an
+    // `await IssueApprovalTokenAsync(...)` from a UI thread blocked that thread inside the method
+    // body, before any task was returned, and deadlocked against GetCurrentAsync's continuation.
+    // Awaiting needs no Task.Run and never blocks the caller. The signature is unchanged.
+    public async Task<StudioResult<ApprovalToken>> IssueApprovalTokenAsync(ApprovalTokenRequest request, CancellationToken ct = default)
     {
-        if (request == null) return Task.FromResult(StudioResult<ApprovalToken>.Fail(StudioErrorCode.InvalidArgument, "request is required."));
+        if (request == null) return StudioResult<ApprovalToken>.Fail(StudioErrorCode.InvalidArgument, "request is required.");
 
-        // Read the current deployment on the same thread; if it fails, the
-        // verifier would later fail too — surface the error here.
-        var deployResult = GetCurrentAsync(ct).GetAwaiter().GetResult();
+        // Read the current deployment; if it fails, the verifier would later fail too —
+        // surface the error here.
+        var deployResult = await GetCurrentAsync(ct);
         if (!deployResult.IsSuccess)
-            return Task.FromResult(StudioResult<ApprovalToken>.Fail(deployResult.Error.Code, deployResult.Error.Message, deployResult.Error.Exception));
+            return StudioResult<ApprovalToken>.Fail(deployResult.Error.Code, deployResult.Error.Message, deployResult.Error.Exception);
 
         var deploy = deployResult.Value!;
         var issuedAt = request.IssuedAt == default ? DateTimeOffset.UtcNow : request.IssuedAt;
@@ -85,7 +90,7 @@ public sealed class DeploymentMetadataService : IDeploymentMetadataService
             ExpiresAt: expiresAt);
 
         var token = SignClaims(claims);
-        return Task.FromResult(StudioResult<ApprovalToken>.Ok(new ApprovalToken(token, claims, issuedAt, expiresAt)));
+        return StudioResult<ApprovalToken>.Ok(new ApprovalToken(token, claims, issuedAt, expiresAt));
     }
 
     public async Task<StudioResult<ApprovalTokenClaims>> VerifyApprovalTokenAsync(string token, CancellationToken ct = default)

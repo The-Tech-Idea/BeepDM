@@ -63,7 +63,10 @@ namespace TheTechIdea.Beep.Installer.Steps
                     progress?.Report(new PassedArgs { Messege = $"Downloading {item.Name}..." });
                     try
                     {
-                        var data = _http.GetByteArrayAsync(item.DownloadUrl).GetAwaiter().GetResult();
+                        // Task.Run keeps HttpClient's awaits off the caller's
+                        // SynchronizationContext, so a UI caller blocked here in GetResult()
+                        // cannot deadlock against them.
+                        var data = Task.Run(() => _http.GetByteArrayAsync(item.DownloadUrl)).GetAwaiter().GetResult();
                         File.WriteAllBytes(installerPath, data);
                     }
                     catch (Exception ex)

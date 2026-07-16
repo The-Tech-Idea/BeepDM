@@ -501,7 +501,9 @@ namespace TheTechIdea.Beep.Proxy.Remote
             if (_disposed) return ProxyRemoteResponse.Fail(req.CorrelationId, "Transport disposed.");
             try
             {
-                return _transport.SendAsync(req, CancellationToken.None)
+                // Task.Run keeps the transport's awaits off the caller's SynchronizationContext,
+                // so a UI caller blocked here in GetResult() cannot deadlock against them.
+                return Task.Run(() => _transport.SendAsync(req, CancellationToken.None))
                     .GetAwaiter().GetResult();
             }
             catch (Exception ex)

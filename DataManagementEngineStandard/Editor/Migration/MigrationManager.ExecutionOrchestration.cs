@@ -46,7 +46,11 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         public MigrationExecutionResult ExecuteMigrationPlan(MigrationPlanArtifact plan, MigrationExecutionPolicy policy = null, string executionToken = null, IProgress<PassedArgs> progress = null)
         {
-            return ExecuteMigrationPlanAsync(plan, policy, executionToken, progress, CancellationToken.None)
+            // Task.Run must wrap the CALL: invoking an async method runs it synchronously to its
+            // first await, where it captures the caller's SynchronizationContext. Starting it on
+            // the pool means there is no context to capture, so a UI caller blocked here in
+            // GetResult() cannot deadlock against its own continuation.
+            return Task.Run(() => ExecuteMigrationPlanAsync(plan, policy, executionToken, progress, CancellationToken.None))
                 .GetAwaiter().GetResult();
         }
 

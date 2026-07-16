@@ -239,8 +239,10 @@ namespace TheTechIdea.Beep.Editor.UOW
         {
             if (Units == null || Units.Count == 0)
             {
-                // Await the async Get to ensure data is loaded before querying
-                Get(new List<AppFilter>() { new AppFilter() {FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } }).GetAwaiter().GetResult();
+                // Await the async Get to ensure data is loaded before querying.
+                // Task.Run keeps the awaits inside off the caller's SynchronizationContext, so a
+                // UI-thread caller blocked here in GetResult() cannot deadlock against them.
+                Task.Run(() => Get(new List<AppFilter>() { new AppFilter() {FieldName = PrimaryKey, Operator = "=", FilterValue = PrimaryKeyid } })).GetAwaiter().GetResult();
             }
 
             if (string.IsNullOrEmpty(PrimaryKey))

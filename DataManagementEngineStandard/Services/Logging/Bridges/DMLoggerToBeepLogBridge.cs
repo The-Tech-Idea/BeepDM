@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Logger;
 
 namespace TheTechIdea.Beep.Services.Logging.Bridges
@@ -104,7 +105,9 @@ namespace TheTechIdea.Beep.Services.Logging.Bridges
         {
             try
             {
-                _log.FlushAsync().GetAwaiter().GetResult();
+                // Task.Run keeps the flush's awaits off the caller's SynchronizationContext, so a
+                // UI caller blocked here in GetResult() cannot deadlock against its continuation.
+                Task.Run(() => _log.FlushAsync()).GetAwaiter().GetResult();
             }
             catch
             {

@@ -2273,13 +2273,16 @@ namespace TheTechIdea.Beep.Editor.ETL
                 var candidateCount = CountRows(sourcePayload);
 
                 var copier = new ETLDataCopier(DMEEditor);
-                var copyInfo = copier.CopyEntityDataAsync(
+                // Task.Run wraps the CALL so the copy starts with no SynchronizationContext to
+                // capture; a UI caller blocked here in GetResult() then has no continuation
+                // queued to it and cannot deadlock.
+                var copyInfo = Task.Run(() => copier.CopyEntityDataAsync(
                     sourceDs,
                     destDs,
                     sourceEntity,
                     destinationEntity,
                     progress,
-                    token).GetAwaiter().GetResult();
+                    token)).GetAwaiter().GetResult();
 
                 result.Flag = copyInfo?.Flag ?? Errors.Unknown;
                 result.RecordCount = result.Flag == Errors.Ok ? candidateCount : 0;

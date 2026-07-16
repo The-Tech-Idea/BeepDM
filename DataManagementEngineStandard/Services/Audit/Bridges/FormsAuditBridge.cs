@@ -46,7 +46,10 @@ namespace TheTechIdea.Beep.Services.Audit.Bridges
         {
             try
             {
-                ForwardAsync(entry, CancellationToken.None).GetAwaiter().GetResult();
+                // Task.Run keeps the forward's awaits off the caller's SynchronizationContext.
+                // This bridge is called from Forms code on the UI thread, where awaiting directly
+                // would post the continuation to the very thread blocked here in GetResult().
+                Task.Run(() => ForwardAsync(entry, CancellationToken.None)).GetAwaiter().GetResult();
             }
             catch
             {

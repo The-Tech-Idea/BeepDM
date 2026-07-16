@@ -105,7 +105,9 @@ namespace TheTechIdea.Beep.Proxy
         /// </summary>
         public void DrainNode(string nodeId, int timeoutMs = 30_000)
         {
-            DrainNodeAsync(nodeId, timeoutMs).GetAwaiter().GetResult();
+            // Task.Run keeps the awaits inside off the caller's SynchronizationContext, so a UI
+            // caller blocked here in GetResult() cannot deadlock waiting on its own continuation.
+            Task.Run(() => DrainNodeAsync(nodeId, timeoutMs)).GetAwaiter().GetResult();
         }
 
         /// <inheritdoc cref="DrainNode"/>

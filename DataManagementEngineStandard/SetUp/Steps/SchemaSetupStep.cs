@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor.EntityDiscovery;
@@ -158,7 +159,9 @@ namespace TheTechIdea.Beep.SetUp.Steps
             try
             {
                 var schema = _schemaManager ?? new SchemaManager(editor);
-                var drift = schema.InspectManyAsync(_opts.EntityTypes, ds).GetAwaiter().GetResult();
+                // Task.Run keeps the inspection's awaits off the caller's SynchronizationContext,
+                // so a UI caller blocked here in GetResult() cannot deadlock against them.
+                var drift = Task.Run(() => schema.InspectManyAsync(_opts.EntityTypes, ds)).GetAwaiter().GetResult();
                 if (drift != null && drift.Count > 0)
                 {
                     context.Properties["SchemaDrift"] = drift;

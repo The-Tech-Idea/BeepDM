@@ -345,7 +345,9 @@ namespace TheTechIdea.Beep.NuGetManagement.Services
                 {
                     if (reader != null)
                     {
-                        return _sdkHelper.ReadPackageMetadataAsync(reader).GetAwaiter().GetResult();
+                        // Task.Run keeps the read's awaits off the caller's SynchronizationContext,
+                        // so a UI caller blocked here in GetResult() cannot deadlock against them.
+                        return Task.Run(() => _sdkHelper.ReadPackageMetadataAsync(reader)).GetAwaiter().GetResult();
                     }
                 }
             }

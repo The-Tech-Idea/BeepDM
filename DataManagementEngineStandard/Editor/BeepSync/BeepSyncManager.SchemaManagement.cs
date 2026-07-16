@@ -41,11 +41,16 @@ namespace TheTechIdea.Beep.Editor
         public async Task SaveSchemasAsync() =>
             await _persistenceHelper.SaveSchemasAsync(SyncSchemas);
 
-        public void SaveSchemas() => SaveSchemasAsync().GetAwaiter().GetResult();
+        // Task.Run is what makes the sync bridge safe: it starts the async method on a
+        // thread-pool thread where SynchronizationContext.Current is null, so the awaits inside
+        // resume on the pool. Awaiting the task directly here would post the continuation back
+        // to the caller's context — and when the caller is the UI thread, that thread is blocked
+        // in GetResult() waiting for the very continuation it must run. That is the deadlock.
+        public void SaveSchemas() => Task.Run(() => SaveSchemasAsync()).GetAwaiter().GetResult();
 
         public async Task<ObservableBindingList<DataSyncSchema>> LoadSchemasAsync() =>
             SyncSchemas = await _persistenceHelper.LoadSchemasAsync();
 
-        public void LoadSchemas() => LoadSchemasAsync().GetAwaiter().GetResult();
+        public void LoadSchemas() => Task.Run(() => LoadSchemasAsync()).GetAwaiter().GetResult();
     }
 }

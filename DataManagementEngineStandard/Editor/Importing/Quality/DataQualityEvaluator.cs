@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Importing.ErrorStore;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
 
@@ -60,13 +61,20 @@ namespace TheTechIdea.Beep.Editor.Importing.Quality
                 {
                     case DataQualityAction.Block:
                         lock (status) { status.RecordsBlocked++; }
-                        errorStore?.SaveAsync(errorRecord).GetAwaiter().GetResult();
+                        // Explicit null check rather than errorStore?.SaveAsync(...): Task.Run
+                        // would be handed a null Task when errorStore is null and throw. Task.Run
+                        // itself is what keeps the store's awaits off the caller's
+                        // SynchronizationContext, so a UI caller blocked in GetResult() cannot
+                        // deadlock against its own continuation.
+                        if (errorStore != null)
+                            Task.Run(() => errorStore.SaveAsync(errorRecord)).GetAwaiter().GetResult();
                         blocked = true;
                         break;
 
                     case DataQualityAction.Quarantine:
                         lock (status) { status.RecordsQuarantined++; }
-                        errorStore?.SaveAsync(errorRecord).GetAwaiter().GetResult();
+                        if (errorStore != null)
+                            Task.Run(() => errorStore.SaveAsync(errorRecord)).GetAwaiter().GetResult();
                         blocked = true;
                         break;
 

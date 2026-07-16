@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.Caching;
 using TheTechIdea.Beep.Caching.Providers;
 using TheTechIdea.Beep.Report;
@@ -87,13 +88,16 @@ namespace TheTechIdea.Beep.Proxy
 
             if (string.IsNullOrEmpty(entityName))
             {
-                _cacheScope.ClearAsync().GetAwaiter().GetResult();
+                // Task.Run starts the async work with no SynchronizationContext, so its awaits
+                // resume on the thread pool rather than being posted back to a caller that is
+                // blocked here in GetResult() — which on a UI thread would deadlock.
+                Task.Run(() => _cacheScope.ClearAsync()).GetAwaiter().GetResult();
                 _dmeEditor.AddLogMessage($"[Proxy:{DatasourceName}] Cache cleared (all entities).");
             }
             else
             {
-                _cacheScope.ClearAsync($"{entityName}~").GetAwaiter().GetResult();
-                _cacheScope.RemoveAsync(entityName).GetAwaiter().GetResult();
+                Task.Run(() => _cacheScope.ClearAsync($"{entityName}~")).GetAwaiter().GetResult();
+                Task.Run(() => _cacheScope.RemoveAsync(entityName)).GetAwaiter().GetResult();
                 _dmeEditor.AddLogMessage($"[Proxy:{DatasourceName}] Cache cleared for entity: {entityName}.");
             }
         }

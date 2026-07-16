@@ -254,14 +254,17 @@ namespace TheTechIdea.Beep.Proxy
             if (_policy.WriteMode == ProxyWriteMode.FanOut ||
                 _policy.WriteMode == ProxyWriteMode.QuorumWrite)
             {
-                var fanTask = ExecuteFanOutWriteAsync<T>(
+                // The Task.Run must wrap the CALL, not the returned task. Invoking an async method
+                // runs it synchronously to its first await, where it captures the caller's
+                // SynchronizationContext — so awaiting the already-started task on the pool would
+                // still deadlock a blocked UI caller. Starting it inside Task.Run means there is
+                // no context to capture in the first place.
+                var (fanOk, fanResult, fanSucceeded) = Task.Run(() => ExecuteFanOutWriteAsync<T>(
                     operationName,
                     ds => Task.FromResult(operation(ds)),
                     successPredicate,
                     ctx,
-                    CancellationToken.None);
-                fanTask.GetAwaiter().GetResult();
-                var (fanOk, fanResult, fanSucceeded) = fanTask.Result;
+                    CancellationToken.None)).GetAwaiter().GetResult();
                 _auditSink.Write(new ProxyAuditEntry
                 {
                     CorrelationId   = ctx.CorrelationId,
