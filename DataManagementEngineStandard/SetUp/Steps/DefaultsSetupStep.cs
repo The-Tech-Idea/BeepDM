@@ -9,10 +9,9 @@ using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
-    public class DefaultsSetupStepOptions
-    {
-        public bool ApplyDefaults { get; set; } = true;
-    }
+    // DefaultsSetupStepOptions moved to DataManagementModelsStandard/SetUp/Steps/ so a
+    // SetupDefinition's option shapes live with the contracts. Same namespace; a TypeForwardedTo
+    // in Engine keeps already-compiled consumers resolving.
 
     public class DefaultsSetupStep : IDefaultsSetupStep
     {
@@ -26,6 +25,10 @@ namespace TheTechIdea.Beep.SetUp.Steps
         }
 
         public string StepId => "defaults-setup";
+
+        /// <inheritdoc/>
+        public System.Text.Json.JsonElement? SerializeOptions()
+            => System.Text.Json.JsonSerializer.SerializeToElement(_options, Definition.SetupJson.Options);
         public string StepName => "Apply Entity Defaults";
         public string Description => "Configures default values (audit timestamps) for the datasource.";
         public IReadOnlyList<string> DependsOn => new[] { "schema-setup" };
@@ -70,10 +73,14 @@ namespace TheTechIdea.Beep.SetUp.Steps
                     if (existing.Any(d => string.Equals(d.PropertyName, fieldName, StringComparison.OrdinalIgnoreCase)))
                         continue;
 
+                    // Rule-based, not Static: a Static DefaultValue captures the value once, here,
+                    // so every row inserted for the life of the app would carry the setup run's
+                    // timestamp. DateTimeResolver resolves "UTCNOW" per insert.
                     existing.Add(new DefaultValue
                     {
                         PropertyName = fieldName,
-                        PropertyValue = DateTime.UtcNow,
+                        propertyType = DefaultValueType.Rule,
+                        Rule = "UTCNOW",
                         IsEnabled = true
                     });
                     added++;

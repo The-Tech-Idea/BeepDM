@@ -37,7 +37,8 @@ description: Use when designing, running, or governing schema migrations with Be
 - `MigrationManager.DryRunAndPreflight.cs` — DDL previews + impact reports
 - `MigrationManager.PerformanceScale.cs` — perf annotations and sizing
 - `MigrationManager.ExecutionOrchestration.cs` — retries, deterministic step state
-- `MigrationManager.Checkpoints.cs` — checkpoint persistence + resume
+- `MigrationManager.ExecutionOrchestration.cs` — execution, checkpoint persistence + resume (note:
+  checkpoints are process-static; resume does not survive a restart — see `Editor/Migration/README.md`)
 - `MigrationManager.RollbackCompensation.cs` — compensation plans + rollback simulation
 - `MigrationManager.RolloutGovernance.cs` — wave promotion + KPI/hard-stop rules
 - `MigrationManager.Observability.cs` — telemetry, audit, lifecycle events

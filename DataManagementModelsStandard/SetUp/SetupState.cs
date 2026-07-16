@@ -9,8 +9,29 @@ namespace TheTechIdea.Beep.SetUp
     /// </summary>
     public class SetupState
     {
+        /// <summary>The state-document version this build writes and understands.</summary>
+        public const int CurrentSchemaVersion = 1;
+
+        /// <summary>
+        /// Schema version of this persisted document.
+        /// </summary>
+        /// <remarks>
+        /// Without this, a shape change made <c>LoadPersistedState</c> fail deserialization, swallow
+        /// the error, and start a "fresh" run — which on a live database is not a reset, it is a
+        /// re-migration. <c>ISetupStateUpgrader</c> migrates older documents; unknown/newer versions
+        /// fail loudly.
+        /// </remarks>
+        public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+
         /// <summary>Unique identifier for this wizard run, regenerated on each fresh start. Used to detect stale/concurrent checkpoints.</summary>
         public string RunId { get; set; }
+
+        /// <summary>
+        /// Monotonic write counter, incremented on every save. A remote store uses it for
+        /// optimistic concurrency (the enterprise equivalent of the local lease); a local store
+        /// leaves it advancing but relies on the lease + atomic file replace.
+        /// </summary>
+        public long Revision { get; set; }
 
         /// <summary>Set of step IDs that have completed successfully.</summary>
         public HashSet<string> CompletedStepIds { get; set; } = new HashSet<string>(StringComparer.Ordinal);
@@ -32,6 +53,12 @@ namespace TheTechIdea.Beep.SetUp
 
         /// <summary>UTC timestamp of the last completed step.</summary>
         public DateTimeOffset? LastUpdatedAt { get; set; }
+
+        /// <summary>Id of the principal that ran this setup (Phase 5); null for anonymous.</summary>
+        public string ActorId { get; set; }
+
+        /// <summary>Whether the actor was authenticated. Never inferred — an anonymous run records false.</summary>
+        public bool ActorAuthenticated { get; set; }
 
         /// <summary>Arbitrary key-value bag for step-specific persisted state.</summary>
         public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>(StringComparer.Ordinal);

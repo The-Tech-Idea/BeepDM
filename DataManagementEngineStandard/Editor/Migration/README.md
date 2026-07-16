@@ -1,5 +1,43 @@
 # Migration Manager
 
+> **Read this first — verified status (code + tests, not aspiration).** `MigrationManager` is real,
+> sophisticated code (~10.8k LOC, 18 partials) — but until recently it had **zero tests**. A test
+> harness now exists (`tests/MigrationManagerTests`, a Moq recording fake that drives the real manager
+> with no live DB). Verification confirmed the additive path is correct and consistent, and pinned
+> several **structural gaps where a documented capability is unreachable via the normal planning path**.
+> The rest of this document describes the intended design; the gaps below are what actually holds today.
+>
+> **Verified structural gaps (pinned by `tests/MigrationManagerTests`):**
+> 1. **The governed pipeline is additive-only.** `BuildMigrationPlan*` only ever emits
+>    `CreateEntity`/`AddMissingColumns`/FK/Index/`UpToDate`/`Error`. It **never** emits
+>    `AlterColumn`/`DropColumn`/`DropEntity`/`RenameEntity`/`RenameColumn`/`TruncateEntity` (it detects
+>    *missing* columns to add, never diffs a *changed* or *removed* one). So the destructive-change
+>    **policy gate, dry-run, compensation, and rollback are all guarding operations the planner can
+>    never produce.** Destructive/alter ops work only via the ungoverned imperative API
+>    (`DropEntity`, `AlterColumn`, …), which *does* route through the provider.
+> 2. **Compensation/rollback is inert for normal plans.** `BuildCompensationPlan` only emits actions
+>    for high-risk **or relational (FK/index)** ops; a plain `CreateEntity`/`AddMissingColumns` plan
+>    gets an **empty** compensation plan, so `RollbackFailedExecution` has nothing to undo — even
+>    though `CreateEntity` is *declared* reversible. This is what `SchemaSetupStep.RollbackAsync`
+>    (Setup framework) hits. The compensation engine itself is correct when fed a qualifying op.
+> 3. **Resume does not survive a process restart.** Checkpoints live in a `static` dictionary;
+>    `ResumeMigrationPlan` reads only that dictionary and never loads the persisted JSON.
+> 4. **No idempotency.** `IsMigrationApplied`/`RecordMigration` don't exist; history is write-only —
+>    appended, never queried to skip an already-applied migration.
+> 5. **`AddMissingColumns` has no auto-rollback** (forward-fix/manual only).
+> 6. **Impact/performance analysis is hardcoded heuristics** — no row-count/size probing.
+> 7. **The plan hash doesn't fingerprint a `CreateEntity`'s column set** — two different schemas for
+>    the same new entity hash identically.
+>
+> **Known hygiene items (tracked, not yet resolved):** `MigrationHistory` POCO is defined twice
+> (`DataManagementModelsStandard/ConfigUtil/MigrationHistory.cs` + `DataManagementEngineStandard/.../MigrationHistory.cs`,
+> same namespace); a second `MigrationProviderRegistry` on `ConfigEditor` is dead (no fallbacks, never
+> read); `CreateEntity`/`EnsureEntity` bypass the provider that alter/drop use; `SchemaManager` claims
+> to "own ALL schema concerns" but `MigrationManager` never calls it (two independent, non-shared
+> preflight/drift stacks). See `.plans/migration/`.
+>
+> Closing gaps 1–6 is catalogued as opt-in future work — the current effort is verify + hygiene.
+
 ## Purpose
 `MigrationManager` is the schema-migration orchestration layer for BeepDM.  
 It supports:

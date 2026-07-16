@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
     /// For DI registration, use the parameterless constructor and call
     /// <see cref="OnProgress"/> and/or wire the callbacks after construction.
     /// </summary>
-    public class DesktopSetupWizardAdapter : ISetupWizardAdapter
+    public class DesktopSetupWizardAdapter : SetupWizardAdapterBase
     {
         private readonly Action<PassedArgs> _progressCallback;
         private readonly Action<SetupReport> _completedCallback;
@@ -46,34 +46,16 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             _completedCallback = completedCallback;
         }
 
-        /// <inheritdoc/>
-        public async Task<SetupReport> RunAsync(
-            ISetupWizard wizard, SetupContext context,
-            CancellationToken cancellationToken = default)
-        {
-            var progress = new Progress<PassedArgs>(args => _progressCallback.Invoke(args));
-
-            try
-            {
-                await Task.Run(() => wizard.Run(context, progress), cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                _progressCallback.Invoke(new PassedArgs
-                {
-                    ParameterInt1 = 0,
-                    Messege = "Setup wizard cancelled."
-                });
-                // Fall through — wizard already built a partial report before re-throwing.
-            }
-
-            var report = wizard.GetReport();
-            _completedCallback?.Invoke(report);
-            return report;
-        }
+        /// <summary>
+        /// Passes the wizard's original <see cref="PassedArgs"/> straight through. The base's
+        /// default would rebuild one from (stepId, percent, message) and drop every other field
+        /// (Flag, ErrorObject, …) that existing desktop callbacks may read.
+        /// </summary>
+        protected override void ReportProgress(ISetupWizard wizard, SetupContext context, PassedArgs args)
+            => _progressCallback.Invoke(args);
 
         /// <inheritdoc/>
-        public void ShowStep(ISetupStep step, int stepIndex, int totalSteps) =>
+        public override void ShowStep(ISetupStep step, int stepIndex, int totalSteps) =>
             _progressCallback.Invoke(new PassedArgs
             {
                 Messege = $"Step {stepIndex + 1}/{totalSteps}: {step.StepName}",
@@ -81,7 +63,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             });
 
         /// <inheritdoc/>
-        public void ShowProgress(string stepId, int percentComplete, string message) =>
+        public override void ShowProgress(string stepId, int percentComplete, string message) =>
             _progressCallback.Invoke(new PassedArgs
             {
                 Messege = message,
@@ -89,7 +71,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             });
 
         /// <inheritdoc/>
-        public void ShowResult(SetupReport report) =>
+        public override void ShowResult(SetupReport report) =>
             _completedCallback?.Invoke(report);
     }
 }

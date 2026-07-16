@@ -25,7 +25,7 @@ namespace TheTechIdea.Beep.SetUp.Adapters
     /// }
     /// </code>
     /// </summary>
-    public class MauiSetupWizardAdapter : ISetupWizardAdapter
+    public class MauiSetupWizardAdapter : SetupWizardAdapterBase
     {
         private readonly Action<int, string> _progressAction;
         private readonly Action<SetupReport> _completedAction;
@@ -40,43 +40,39 @@ namespace TheTechIdea.Beep.SetUp.Adapters
             _completedAction = completedAction;
         }
 
-        /// <inheritdoc/>
-        public async Task<SetupReport> RunAsync(
-            ISetupWizard wizard, SetupContext context,
-            CancellationToken cancellationToken = default)
-        {
-            var progress = new Progress<PassedArgs>(args =>
-                _ = InvokeOnMainThreadAsync(
-                    () => _progressAction.Invoke(args.ParameterInt1, args.Messege)));
-
-            try
-            {
-                await Task.Run(() => wizard.Run(context, progress), cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                await InvokeOnMainThreadAsync(() => _progressAction.Invoke(0, "Setup wizard cancelled."));
-                // Fall through — wizard already built a partial report.
-            }
-
-            var report = wizard.GetReport();
-            await InvokeOnMainThreadAsync(() => _completedAction?.Invoke(report));
-            return report;
-        }
+        /// <summary>Progress is fire-and-forget by design — a UI tick must not block the run.</summary>
+        protected override void ReportProgress(ISetupWizard wizard, SetupContext context, PassedArgs args)
+            => _ = InvokeOnMainThreadAsync(
+                   () => _progressAction.Invoke(args?.ParameterInt1 ?? 0, args?.Messege));
 
         /// <inheritdoc/>
-        public void ShowStep(ISetupStep step, int stepIndex, int totalSteps) =>
+        protected override Task OnCancelledAsync(SetupContext context)
+            => InvokeOnMainThreadAsync(() => _progressAction.Invoke(0, "Setup wizard cancelled."));
+
+        /// <inheritdoc/>
+        protected override Task OnFailedAsync(Exception ex, SetupContext context)
+            => InvokeOnMainThreadAsync(() => _progressAction.Invoke(0, $"Setup wizard failed: {ex.Message}"));
+
+        /// <summary>
+        /// Awaited, not fire-and-forget: callers rely on the completion callback having run on the
+        /// main thread before <c>RunAsync</c> returns.
+        /// </summary>
+        protected override Task OnCompletedAsync(SetupReport report, SetupContext context)
+            => InvokeOnMainThreadAsync(() => _completedAction?.Invoke(report));
+
+        /// <inheritdoc/>
+        public override void ShowStep(ISetupStep step, int stepIndex, int totalSteps) =>
             _ = InvokeOnMainThreadAsync(() =>
                 _progressAction.Invoke(
                     totalSteps > 0 ? (int)(stepIndex * 100.0 / totalSteps) : 0,
                     step?.StepName ?? string.Empty));
 
         /// <inheritdoc/>
-        public void ShowProgress(string stepId, int percentComplete, string message) =>
+        public override void ShowProgress(string stepId, int percentComplete, string message) =>
             _ = InvokeOnMainThreadAsync(() => _progressAction.Invoke(percentComplete, message));
 
         /// <inheritdoc/>
-        public void ShowResult(SetupReport report) =>
+        public override void ShowResult(SetupReport report) =>
             _ = InvokeOnMainThreadAsync(() => _completedAction?.Invoke(report));
 
         // ── Extension point ──────────────────────────────────────────────────

@@ -29,67 +29,58 @@ namespace TheTechIdea.Beep.SetUp.Adapters
     /// }
     /// </code>
     /// </summary>
-    public class BlazorWasmSetupWizardAdapter : ISetupWizardAdapter
+    public class BlazorWasmSetupWizardAdapter : SetupWizardAdapterBase
     {
         /// <summary>Key used to persist <see cref="SetupState"/> in the backing store.</summary>
         public string StateStorageKey { get; set; } = "beep-setup-state";
 
-        /// <inheritdoc/>
-        public async Task<SetupReport> RunAsync(
-            ISetupWizard wizard, SetupContext context,
-            CancellationToken cancellationToken = default)
+        /// <summary>Resume: restore persisted state if available.</summary>
+        protected override async Task OnRunStartingAsync(ISetupWizard wizard, SetupContext context)
         {
-            // Resume: restore persisted state if available
-            var stateJson = await LoadStateAsync(StateStorageKey);
-            if (!string.IsNullOrEmpty(stateJson))
-            {
-                try
-                {
-                    var savedState = JsonSerializer.Deserialize<SetupState>(stateJson);
-                    if (savedState != null) context.State = savedState;
-                }
-                catch { /* corrupt cache — start fresh */ }
-            }
-
-            var progress = new Progress<PassedArgs>(args => OnProgress(args));
+            var stateJson = await LoadStateAsync(StateStorageKey).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(stateJson)) return;
 
             try
             {
-                await Task.Run(() => wizard.Run(context, progress), cancellationToken);
+                var savedState = JsonSerializer.Deserialize<SetupState>(stateJson);
+                if (savedState != null) context.State = savedState;
             }
-            catch (OperationCanceledException)
-            {
-                // Save partial state so a future Resume() can continue from here
-                if (context.State != null)
-                {
-                    var cancelJson = JsonSerializer.Serialize(context.State);
-                    await SaveStateAsync(StateStorageKey, cancelJson);
-                }
-                OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = "Setup wizard cancelled." });
-                // Fall through — wizard already built a partial report.
-            }
+            catch { /* corrupt cache — start fresh */ }
+        }
 
-            var report = wizard.GetReport();
+        /// <summary>Routes progress to this adapter's <see cref="OnProgress"/> extension point.</summary>
+        protected override void ReportProgress(ISetupWizard wizard, SetupContext context, PassedArgs args)
+            => OnProgress(args);
 
-            // Persist updated state for potential resume
-            if (context.State != null)
-            {
-                var json = JsonSerializer.Serialize(context.State);
-                await SaveStateAsync(StateStorageKey, json);
-            }
-
-            OnComplete(report);
-            return report;
+        /// <inheritdoc/>
+        protected override async Task OnCancelledAsync(SetupContext context)
+        {
+            // Save partial state so a future Resume() can continue from here.
+            await PersistStateAsync(context).ConfigureAwait(false);
+            OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = "Setup wizard cancelled." });
         }
 
         /// <inheritdoc/>
-        public void ShowStep(ISetupStep step, int stepIndex, int totalSteps) { }
+        protected override async Task OnFailedAsync(Exception ex, SetupContext context)
+        {
+            await PersistStateAsync(context).ConfigureAwait(false);
+            OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = $"Setup wizard failed: {ex.Message}" });
+        }
 
         /// <inheritdoc/>
-        public void ShowProgress(string stepId, int percentComplete, string message) { }
+        protected override async Task OnCompletedAsync(SetupReport report, SetupContext context)
+        {
+            // Persist updated state for potential resume.
+            await PersistStateAsync(context).ConfigureAwait(false);
+            OnComplete(report);
+        }
 
-        /// <inheritdoc/>
-        public void ShowResult(SetupReport report) { }
+        private async Task PersistStateAsync(SetupContext context)
+        {
+            if (context?.State == null) return;
+            var json = JsonSerializer.Serialize(context.State);
+            await SaveStateAsync(StateStorageKey, json).ConfigureAwait(false);
+        }
 
         // ── Extension points ─────────────────────────────────────────────────
 

@@ -52,9 +52,17 @@ namespace TheTechIdea.Beep.SetUp.Steps
         // ── ISetupStep ───────────────────────────────────────────────────────
 
         public string StepId => "connection-config";
+
+        /// <inheritdoc/>
+        public Security.SetupPermission RequiredPermission => Security.SetupPermission.ConfigureConnection;
+
+        /// <inheritdoc/>
+        public System.Text.Json.JsonElement? SerializeOptions()
+            => System.Text.Json.JsonSerializer.SerializeToElement(_opts, Definition.SetupJson.Options);
         public string StepName => "Connection Configuration";
         public string Description => $"Configure and persist connection '{_opts.ConnectionProperties?.ConnectionName}'.";
-        public IReadOnlyList<string> DependsOn => new[] { "driver-provision" };
+        public IReadOnlyList<string> DependsOn =>
+            _opts.DependsOnStepIds ?? new[] { DriverProvisionStep.BaseStepId };
 
         public bool CanSkip(SetupContext context)
         {

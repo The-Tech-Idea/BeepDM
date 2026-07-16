@@ -27,13 +27,66 @@ namespace TheTechIdea.Beep.SetUp.Steps
     /// </summary>
     public class DriverProvisionStep : IDriverProvisionStep
     {
+        /// <summary>
+        /// Bare step id used when no package name is set. Retained so single-driver
+        /// wizards and any existing <c>DependsOn</c> references keep resolving.
+        /// </summary>
+        public const string BaseStepId = "driver-provision";
+
         private readonly DriverProvisionStepOptions _opts;
         private readonly ILogger<DriverProvisionStep>? _logger;
+        private readonly string _stepId;
 
         public DriverProvisionStep(DriverProvisionStepOptions opts, ILogger<DriverProvisionStep>? logger = null)
         {
             _opts = opts ?? throw new ArgumentNullException(nameof(opts));
             _logger = logger;
+            // Default to the bare id: qualifying unconditionally would change the id of every
+            // existing single-driver wizard and break their DependsOn references. Composers that
+            // add more than one driver step assign qualified ids via BuildStepId.
+            _stepId = string.IsNullOrWhiteSpace(opts.StepId) ? BaseStepId : opts.StepId;
+        }
+
+        /// <summary>
+        /// Conventional qualified step id for a package (e.g. <c>"driver-provision:SQLite"</c>).
+        /// Step ids must be unique within a wizard, so a wizard carrying one driver step per
+        /// package must qualify them — an unqualified constant makes N&gt;1 drivers collide on
+        /// <see cref="SetupWizardBuilder"/>'s step-id dictionary.
+        /// </summary>
+        public static string BuildStepId(string packageName)
+            => string.IsNullOrWhiteSpace(packageName)
+                ? BaseStepId
+                : $"{BaseStepId}:{packageName}";
+
+        /// <summary>
+        /// True when any of <paramref name="assemblies"/> declares a type named
+        /// <paramref name="classHandler"/>. Used to confirm a freshly downloaded driver really
+        /// carries its IDataSource class before clearing <c>IsMissing</c>.
+        /// </summary>
+        private static bool ContainsDriverClass(IEnumerable<System.Reflection.Assembly> assemblies, string classHandler)
+        {
+            if (assemblies == null || string.IsNullOrWhiteSpace(classHandler)) return false;
+
+            foreach (var asm in assemblies)
+            {
+                if (asm == null) continue;
+
+                Type[] types;
+                try
+                {
+                    types = asm.GetTypes();
+                }
+                catch (System.Reflection.ReflectionTypeLoadException ex)
+                {
+                    // Partially loadable assembly: inspect what did resolve rather than
+                    // discarding the whole assembly.
+                    types = ex.Types.Where(t => t != null).ToArray();
+                }
+
+                if (types.Any(t => string.Equals(t.Name, classHandler, StringComparison.OrdinalIgnoreCase)))
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -44,7 +97,17 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
         // ── ISetupStep ───────────────────────────────────────────────────────
 
-        public string StepId => "driver-provision";
+        public string StepId => _stepId;
+
+        /// <summary>Bare type key — StepId may be qualified per package.</summary>
+        public string TypeKey => BaseStepId;
+        /// <inheritdoc/>
+        public Security.SetupPermission RequiredPermission => Security.SetupPermission.ProvisionDriver;
+
+        /// <inheritdoc/>
+        public System.Text.Json.JsonElement? SerializeOptions()
+            => System.Text.Json.JsonSerializer.SerializeToElement(_opts, Definition.SetupJson.Options);
+
         public string StepName => "Driver Provisioning";
         public string Description => $"Ensure driver '{_opts.PackageName}' is loaded in the current process.";
         public IReadOnlyList<string> DependsOn => Array.Empty<string>();
@@ -147,18 +210,22 @@ namespace TheTechIdea.Beep.SetUp.Steps
 
             if (!verified)
             {
-                // Fallback: the assemblies loaded successfully but the scan-driven registry
-                // hasn't picked them up yet (e.g. NuGet install before the next LoadAllAssembly
-                // pass). Flip IsMissing on the driver config so the connection step can
-                // resolve the IDataSource implementation by DataSourceType.
-                if (driver.IsMissing)
+                // Fallback for scan lag: the assemblies loaded but the scan-driven registry
+                // hasn't picked them up yet (NuGet install before the next LoadAllAssembly pass),
+                // and IsDriverClassLoaded's dll-name check can miss a package whose DLL is named
+                // differently from driver.dllname.
+                //
+                // Verify against the assemblies we just loaded rather than assuming: only clear
+                // IsMissing when the class genuinely exists. Asserting it here would let a broken
+                // driver through to ConnectionConfigStep, which then fails far from the cause.
+                verified = ContainsDriverClass(assemblies, driver.classHandler);
+                if (verified)
                     driver.IsMissing = false;
-                verified = !driver.IsMissing;
             }
 
             if (!verified)
                 return Fail($"Driver '{driver.PackageName}' assemblies were loaded but the " +
-                             "IDataSource implementation was not registered. " +
+                            $"IDataSource implementation '{driver.classHandler}' was not found. " +
                              "Ensure the driver DLL exposes an [AddinAttribute] class.");
 
             StepErrorHelpers.Report(progress, 90, "Persisting driver configuration…");

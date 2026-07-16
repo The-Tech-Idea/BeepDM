@@ -150,9 +150,11 @@ namespace TheTechIdea.Beep.ConfigUtil
         }
 
         // ── Phase 10: schema-migration provider registry ───────────────
-        // Lazily-constructed, thread-safe via a lock, mirroring the DMEEditor.MigrationProviders
-        // pattern. Populated by the assembly-scanning system (ISchemaMigrationProvider +
-        // [SchemaMigrationProvider] detection) at startup. Resolved via IDMEEditor.GetMigrationProvider.
+        // NOTE (verified): this registry is DEAD. It is never populated with the Tier-2 category
+        // fallbacks and nothing in the migration execution path reads it — the live registry is
+        // DMEEditor.MigrationProviders (see DMEEditor.MigrationProviders.cs), which is what
+        // IDMEEditor.GetMigrationProvider resolves through. Retained for binary compatibility; do
+        // not build on it. Tracked for removal in .plans/migration/ (hygiene).
         private IMigrationProviderRegistry? _migrationProviders;
         private readonly object _migrationProvidersLock = new object();
         public IMigrationProviderRegistry? MigrationProviders

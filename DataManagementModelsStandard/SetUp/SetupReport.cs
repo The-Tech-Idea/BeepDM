@@ -34,5 +34,9 @@ namespace TheTechIdea.Beep.SetUp
         public string RollbackReportJson { get; init; }
         public string DryRunReportJson { get; init; }
         public string Environment { get; init; }
+
+        /// <summary>Principal that ran the setup (Phase 5).</summary>
+        public string ActorId { get; init; }
+        public bool ActorAuthenticated { get; init; }
     }
 }

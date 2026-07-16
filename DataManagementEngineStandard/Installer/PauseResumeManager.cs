@@ -7,7 +7,7 @@ namespace TheTechIdea.Beep.Installer
 {
     /// <summary>
     /// Provides pause/resume capability for long installations.
-    /// Integrates with SetupCheckpointStore for persistent state.
+    /// Integrates with the setup state store for persistent state.
     /// </summary>
     public class PauseResumeManager
     {

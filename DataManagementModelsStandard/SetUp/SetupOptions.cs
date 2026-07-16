@@ -17,5 +17,15 @@ namespace TheTechIdea.Beep.SetUp
         public bool StrictPolicyMode { get; init; }
         public string StateFilePath { get; init; }
         public string ReportOutputPath { get; init; }
+
+        /// <summary>
+        /// When true, a failed run automatically rolls back its completed steps in reverse.
+        /// </summary>
+        /// <remarks>
+        /// Opt-in, not default: silently undoing a partial setup can destroy the very state a human
+        /// needs to diagnose the failure. The rollback outcome is always recorded on
+        /// <see cref="SetupReport.RollbackReportJson"/> regardless of this flag.
+        /// </remarks>
+        public bool AutoRollbackOnFailure { get; init; }
     }
 }

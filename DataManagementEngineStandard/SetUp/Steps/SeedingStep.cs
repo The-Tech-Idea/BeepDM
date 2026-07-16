@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.SetUp.Seeding;
@@ -41,6 +42,68 @@ namespace TheTechIdea.Beep.SetUp.Steps
         // ── ISetupStep ───────────────────────────────────────────────────────
 
         public string StepId => "seeding";
+
+        /// <summary>Registry is [JsonIgnore]d and re-injected from DI by the step factory.</summary>
+        public System.Text.Json.JsonElement? SerializeOptions()
+            => System.Text.Json.JsonSerializer.SerializeToElement(_opts, Definition.SetupJson.Options);
+
+        /// <inheritdoc/>
+        public bool SupportsRollback => true;
+
+        /// <inheritdoc/>
+        public Security.SetupPermission RequiredPermission => Security.SetupPermission.Seed;
+
+        /// <summary>
+        /// Unseeds completed seeders in reverse. Seeders that don't implement
+        /// <see cref="IUndoableSeeder"/> are recorded as <em>skipped</em>, never as a clean undo.
+        /// </summary>
+        public Task<IErrorsInfo> RollbackAsync(SetupContext context,
+            IProgress<PassedArgs> progress = null, System.Threading.CancellationToken token = default)
+        {
+            var editor = context?.Editor;
+            var ds = context?.DataSource;
+            if (editor == null || ds == null)
+                return Task.FromResult<IErrorsInfo>(Fail("Cannot unseed: editor or datasource missing."));
+            if (_opts.Registry == null)
+                return Task.FromResult<IErrorsInfo>(Ok("No registry; nothing to unseed."));
+
+            var completed = context.State?.CompletedSeederIds ?? new HashSet<string>();
+            // Reverse dependency order so a seeder is removed before whatever it depended on.
+            var ordered = _opts.Registry.GetOrderedSeeders()
+                .Where(s => completed.Contains(s.SeederId))
+                .Reverse()
+                .ToList();
+
+            var failures = new List<string>();
+            foreach (var seeder in ordered)
+            {
+                token.ThrowIfCancellationRequested();
+                if (seeder is not IUndoableSeeder undoable)
+                {
+                    _logger?.LogWarning("Seeder '{Id}' is not undoable; leaving its rows in place.", seeder.SeederId);
+                    continue;
+                }
+
+                IErrorsInfo r;
+                try { r = undoable.Unseed(ds, editor, progress); }
+                catch (Exception ex) { r = Fail($"Unseed '{seeder.SeederId}' threw: {ex.Message}", ex); }
+
+                if (r == null || r.Flag == Errors.Failed)
+                {
+                    failures.Add(seeder.SeederId);
+                    _logger?.LogError("Unseed of '{Id}' failed: {Msg}", seeder.SeederId, r?.Message);
+                }
+                else
+                {
+                    context.State?.CompletedSeederIds?.Remove(seeder.SeederId);
+                }
+            }
+
+            return Task.FromResult<IErrorsInfo>(failures.Count == 0
+                ? Ok("Seed data rolled back.")
+                : Fail($"Unseed failed for: {string.Join(", ", failures)}."));
+        }
+
         public string StepName => "Seed Initial Data";
         public string Description => "Runs all registered seeders in dependency order.";
         public IReadOnlyList<string> DependsOn => new[] { "schema-setup" };

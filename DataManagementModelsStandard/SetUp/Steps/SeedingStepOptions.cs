@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using TheTechIdea.Beep.SetUp.Seeding;
 
 namespace TheTechIdea.Beep.SetUp.Steps
@@ -7,7 +8,15 @@ namespace TheTechIdea.Beep.SetUp.Steps
     /// </summary>
     public class SeedingStepOptions
     {
-        /// <summary>Registry containing all seeders to run. Required.</summary>
+        /// <summary>
+        /// Registry containing all seeders to run. Required.
+        /// </summary>
+        /// <remarks>
+        /// Never serialized into a <c>SetupDefinition</c>: it is a live object graph, and
+        /// deserializing seeders named in a file would be an arbitrary-code-execution vector once
+        /// definitions can arrive from a shared store. <c>ISetupStepFactory</c> injects it from DI.
+        /// </remarks>
+        [JsonIgnore]
         public ISeederRegistry Registry { get; set; }
 
         /// <summary>

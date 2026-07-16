@@ -13,46 +13,20 @@ namespace TheTechIdea.Beep.SetUp.Adapters
     /// For Spectre.Console / AnsiConsole styling, subclass this adapter in the CLI project
     /// and override <see cref="ShowProgress"/> and <see cref="ShowResult"/>.
     /// </summary>
-    public class ConsoleSetupWizardAdapter : ISetupWizardAdapter
+    public class ConsoleSetupWizardAdapter : SetupWizardAdapterBase
     {
-        /// <inheritdoc/>
-        public async Task<SetupReport> RunAsync(
-            ISetupWizard wizard, SetupContext context,
-            CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Prints the first step before the run. Note this always shows step 1 regardless of resume
+        /// position — see P1-10 in the setup plan.
+        /// </summary>
+        protected override Task OnRunStartingAsync(ISetupWizard wizard, SetupContext context)
         {
             ShowStep(wizard.Steps.FirstOrDefault(), 0, wizard.Steps.Count);
-
-            var progress = new Progress<PassedArgs>(args =>
-            {
-                // Find the currently executing step by consulting wizard state
-                // Guard: context.State may be null before the wizard initialises it
-                var state = context.State;
-                var activeStep = state == null
-                    ? null
-                    : wizard.Steps.FirstOrDefault(s => !state.IsStepCompleted(s.StepId));
-                if (activeStep != null)
-                    ShowProgress(activeStep.StepId, args.ParameterInt1, args.Messege);
-                else if (!string.IsNullOrEmpty(args.Messege))
-                    ShowProgress(string.Empty, args.ParameterInt1, args.Messege);
-            });
-
-            try
-            {
-                await Task.Run(() => wizard.Run(context, progress), cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                ShowProgress(string.Empty, 0, "Setup wizard cancelled.");
-                // Fall through — wizard already built a partial report.
-            }
-
-            var report = wizard.GetReport();
-            ShowResult(report);
-            return report;
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public void ShowStep(ISetupStep step, int stepIndex, int totalSteps)
+        public override void ShowStep(ISetupStep step, int stepIndex, int totalSteps)
         {
             if (step == null) return;
             Console.WriteLine();
@@ -62,18 +36,19 @@ namespace TheTechIdea.Beep.SetUp.Adapters
         }
 
         /// <inheritdoc/>
-        public void ShowProgress(string stepId, int percentComplete, string message) =>
+        public override void ShowProgress(string stepId, int percentComplete, string message) =>
             Console.WriteLine($"    [{percentComplete,3}%] {message}");
 
         /// <inheritdoc/>
-        public void ShowResult(SetupReport report)
+        public override void ShowResult(SetupReport report)
         {
+            if (report == null) return;
             Console.WriteLine();
             Console.WriteLine(new string('─', 72));
             Console.WriteLine($"  {"STEP",-28}  {"RESULT",-8}  {"ELAPSED",-10}  MESSAGE");
             Console.WriteLine(new string('─', 72));
 
-            foreach (var r in report.StepResults)
+            foreach (var r in report.StepResults ?? Array.Empty<SetupStepResult>())
             {
                 var result = r.Skipped ? "SKIP" : (r.Succeeded ? "OK" : "FAIL");
                 var elapsed = r.Elapsed.ToString(@"mm\:ss\.fff");
@@ -83,9 +58,15 @@ namespace TheTechIdea.Beep.SetUp.Adapters
 
             Console.WriteLine(new string('─', 72));
             Console.WriteLine(report.Succeeded
-                ? $"  Setup SUCCEEDED  (hash: {report.ContentHash?[..12]}…)"
+                ? $"  Setup SUCCEEDED  (hash: {ShortHash(report.ContentHash)})"
                 : $"  Setup FAILED");
             Console.WriteLine();
         }
+
+        /// <summary>Hash prefix for display. Guards a short/absent hash on a partial report.</summary>
+        private static string ShortHash(string hash)
+            => string.IsNullOrEmpty(hash)
+                ? "n/a"
+                : (hash.Length <= 12 ? hash : hash[..12] + "…");
     }
 }

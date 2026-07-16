@@ -43,5 +43,12 @@ namespace TheTechIdea.Beep.SetUp
 
         public void SetCompensationPlan(string json)
             => Properties["CompensationPlanJson"] = json;
+
+        /// <summary>
+        /// The compensation plan recorded by the schema step, if any. Rollback must replay what
+        /// was actually applied rather than re-deriving a plan against possibly-drifted schema.
+        /// </summary>
+        public string? TryGetCompensationPlan()
+            => TryGetProperty<string>("CompensationPlanJson");
     }
 }

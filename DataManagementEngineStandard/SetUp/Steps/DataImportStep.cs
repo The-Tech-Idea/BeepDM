@@ -9,11 +9,9 @@ using static TheTechIdea.Beep.SetUp.StepErrorHelpers;
 
 namespace TheTechIdea.Beep.SetUp.Steps
 {
-    public class DataImportStepOptions
-    {
-        public List<string> EntityNames { get; set; } = new();
-        public bool SkipIfTargetHasData { get; set; } = true;
-    }
+    // DataImportStepOptions moved to DataManagementModelsStandard/SetUp/Steps/ so a
+    // SetupDefinition's option shapes live with the contracts. Same namespace; a TypeForwardedTo
+    // in Engine keeps already-compiled consumers resolving.
 
     public class DataImportStep : IDataImportStep
     {
@@ -27,9 +25,14 @@ namespace TheTechIdea.Beep.SetUp.Steps
         }
 
         public string StepId => "data-import";
+
+        /// <inheritdoc/>
+        public System.Text.Json.JsonElement? SerializeOptions()
+            => System.Text.Json.JsonSerializer.SerializeToElement(_options, Definition.SetupJson.Options);
         public string StepName => "Import Initial Data";
         public string Description => "Verifies that key entities exist and reports their record counts. Use DataImportManager separately for actual data import.";
-        public IReadOnlyList<string> DependsOn => new[] { "defaults-setup", "seeding" };
+        public IReadOnlyList<string> DependsOn =>
+            _options.DependsOnStepIds ?? new[] { "defaults-setup", "seeding" };
 
         public bool CanSkip(SetupContext context)
         {

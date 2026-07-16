@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DriversConfigurations;
 using TheTechIdea.Beep.Editor;
+using TheTechIdea.Beep.SetUp.Seeding;
 using TheTechIdea.Beep.SetUp.Steps;
 
 namespace TheTechIdea.Beep.SetUp
@@ -19,18 +20,19 @@ namespace TheTechIdea.Beep.SetUp
     /// NOTE: <see cref="CreateDefault"/> creates steps with EMPTY options objects.
     /// The returned wizard will fail validation unless the caller populates
     /// <see cref="DriverProvisionStepOptions.PackageName"/>,
-    /// <see cref="ConnectionConfigStepOptions.ConnectionProperties"/>,
-    /// <see cref="SchemaSetupStepOptions.EntityTypes"/>, and
-    /// <see cref="SeedingStepOptions.Registry"/> before running.
+    /// <see cref="ConnectionConfigStepOptions.ConnectionProperties"/>, and
+    /// <see cref="SchemaSetupStepOptions.EntityTypes"/> before running.
     /// Use <see cref="Create"/> with a configure callback for production use.
     /// </summary>
     public class DefaultSetupWizardFactory : ISetupWizardFactory
     {
         private readonly ILogger<SetupWizard>? _logger;
+        private readonly ISeederRegistry? _seeders;
 
-        public DefaultSetupWizardFactory(ILogger<SetupWizard>? logger = null)
+        public DefaultSetupWizardFactory(ILogger<SetupWizard>? logger = null, ISeederRegistry? seeders = null)
         {
             _logger = logger;
+            _seeders = seeders;
         }
 
         public (ISetupWizard wizard, SetupContext context) CreateDefault(IDMEEditor editor)
@@ -52,16 +54,43 @@ namespace TheTechIdea.Beep.SetUp
             foreach (var step in driverSteps)
                 builder.AddStep(step);
 
-            var wizard = builder
-                .AddStep(new ConnectionConfigStep(new ConnectionConfigStepOptions()))
+            // Each driver step carries a per-package id, so the connection step must name
+            // them all. Falls back to the bare id when no drivers were discovered.
+            var driverStepIds = driverSteps.Count > 0
+                ? driverSteps.Select(s => s.StepId).ToArray()
+                : new[] { DriverProvisionStep.BaseStepId };
+
+            builder
+                .AddStep(new ConnectionConfigStep(new ConnectionConfigStepOptions
+                {
+                    DependsOnStepIds = driverStepIds
+                }))
                 .AddStep(new SchemaSetupStep(new SchemaSetupStepOptions()))
-                .AddStep(new DefaultsSetupStep(new DefaultsSetupStepOptions()))
-                .AddStep(new SeedingStep(new SeedingStepOptions()))
-                .AddStep(new DataImportStep(new DataImportStepOptions()))
+                .AddStep(new DefaultsSetupStep(new DefaultsSetupStepOptions()));
+
+            // Only add SeedingStep when a registry is available. SeedingStep.Validate hard-fails
+            // without one, so adding it unconditionally would ship a wizard that can never run.
+            if (_seeders != null)
+                builder.AddStep(new SeedingStep(new SeedingStepOptions { Registry = _seeders }));
+
+            var wizard = builder
+                .AddStep(new DataImportStep(new DataImportStepOptions
+                {
+                    DependsOnStepIds = BuildDataImportDependencies(_seeders != null)
+                }))
                 .Build();
 
             return (wizard, context);
         }
+
+        /// <summary>
+        /// DataImport depends on seeding only when a SeedingStep was actually added —
+        /// naming an absent step would fail the builder's unknown-dependency check.
+        /// </summary>
+        private static string[] BuildDataImportDependencies(bool hasSeeding)
+            => hasSeeding
+                ? new[] { "defaults-setup", "seeding" }
+                : new[] { "defaults-setup" };
 
         /// <inheritdoc/>
         public (ISetupWizard wizard, SetupContext context) Create(
@@ -100,12 +129,24 @@ namespace TheTechIdea.Beep.SetUp
                 selected = drivers;
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var result = new List<DriverProvisionStep>();
+            var distinct = new List<ConnectionDriversConfig>();
             foreach (var d in selected)
             {
                 if (!seen.Add(d.PackageName)) continue;
+                distinct.Add(d);
+            }
+
+            // Qualify step ids only when there is more than one driver. Step ids must be unique,
+            // but a single-driver wizard keeps the bare "driver-provision" id so existing
+            // DependsOn references and callers are unaffected.
+            bool qualify = distinct.Count > 1;
+
+            var result = new List<DriverProvisionStep>(distinct.Count);
+            foreach (var d in distinct)
+            {
                 result.Add(new DriverProvisionStep(new DriverProvisionStepOptions
                 {
+                    StepId = qualify ? DriverProvisionStep.BuildStepId(d.PackageName) : null,
                     PackageName = d.PackageName,
                     Version = d.NuggetVersion
                 }));

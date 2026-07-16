@@ -28,38 +28,32 @@ namespace TheTechIdea.Beep.SetUp.Adapters
     /// }
     /// </code>
     /// </summary>
-    public class BlazorServerSetupWizardAdapter : ISetupWizardAdapter
+    public class BlazorServerSetupWizardAdapter : SetupWizardAdapterBase
     {
+        /// <summary>Routes progress to this adapter's <see cref="OnProgress"/> extension point.</summary>
+        protected override void ReportProgress(ISetupWizard wizard, SetupContext context, PassedArgs args)
+            => OnProgress(args);
+
         /// <inheritdoc/>
-        public async Task<SetupReport> RunAsync(
-            ISetupWizard wizard, SetupContext context,
-            CancellationToken cancellationToken = default)
+        protected override Task OnCancelledAsync(SetupContext context)
         {
-            var progress = new Progress<PassedArgs>(args => OnProgress(args));
-
-            try
-            {
-                await Task.Run(() => wizard.Run(context, progress), cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = "Setup wizard cancelled." });
-                // Fall through — wizard already built a partial report.
-            }
-
-            var report = wizard.GetReport();
-            OnComplete(report);
-            return report;
+            OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = "Setup wizard cancelled." });
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public void ShowStep(ISetupStep step, int stepIndex, int totalSteps) { }
+        protected override Task OnFailedAsync(Exception ex, SetupContext context)
+        {
+            OnProgress(new PassedArgs { ParameterInt1 = 0, Messege = $"Setup wizard failed: {ex.Message}" });
+            return Task.CompletedTask;
+        }
 
         /// <inheritdoc/>
-        public void ShowProgress(string stepId, int percentComplete, string message) { }
-
-        /// <inheritdoc/>
-        public void ShowResult(SetupReport report) { }
+        protected override Task OnCompletedAsync(SetupReport report, SetupContext context)
+        {
+            OnComplete(report);
+            return Task.CompletedTask;
+        }
 
         // ── Extension points ─────────────────────────────────────────────────
 

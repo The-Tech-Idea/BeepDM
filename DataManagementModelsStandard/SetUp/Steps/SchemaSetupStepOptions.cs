@@ -11,15 +11,37 @@ namespace TheTechIdea.Beep.SetUp.Steps
     {
         /// <summary>
         /// .NET entity types whose schemas must be created in the target datasource.
-        /// At least one type is required.
         /// </summary>
+        /// <remarks>
+        /// Still honoured, and takes precedence over <see cref="EntityTypeNames"/> when both are set.
+        /// </remarks>
+        [Obsolete("Use EntityTypeNames. CLR Types cannot be serialized into a SetupDefinition, " +
+                  "which blocks versioning, CLI/CI use, and remote storage. " +
+                  "This property will be removed in the next major version.")]
         public IReadOnlyList<Type> EntityTypes { get; set; }
+
+        /// <summary>
+        /// Names of the entity types whose schemas must be created — assembly-qualified, or simple
+        /// names resolvable via <c>IAssemblyHandler</c>. At least one is required.
+        /// <para>
+        /// Names rather than <see cref="Type"/> objects are what make a definition portable: this is
+        /// the property a <c>SetupDefinition</c> serializes.
+        /// </para>
+        /// </summary>
+        public IReadOnlyList<string> EntityTypeNames { get; set; }
 
         /// <summary>
         /// Extra assemblies to register with <c>MigrationManager</c> for type discovery.
         /// Optional — only needed when entity types reside in assemblies not yet loaded.
         /// </summary>
+        /// <remarks>Not serializable; use <see cref="ExtraAssemblyNames"/> in a definition.</remarks>
         public IReadOnlyList<Assembly> ExtraAssemblies { get; set; }
+
+        /// <summary>
+        /// Names of extra assemblies to probe when resolving <see cref="EntityTypeNames"/>.
+        /// The serializable counterpart to <see cref="ExtraAssemblies"/>.
+        /// </summary>
+        public IReadOnlyList<string> ExtraAssemblyNames { get; set; }
 
         /// <summary>
         /// Pass <c>true</c> to ask <c>MigrationManager</c> to auto-detect foreign-key

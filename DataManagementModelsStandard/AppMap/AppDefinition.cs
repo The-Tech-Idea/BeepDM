@@ -22,6 +22,13 @@ public sealed class AppDefinition
     /// <summary>Optional path to the .sln this app was registered from.</summary>
     public string? SolutionPath { get; set; }
 
+    /// <summary>
+    /// Optional path to this app's <c>SetupDefinition</c> JSON (absolute, or relative to
+    /// <see cref="SolutionPath"/>'s directory). The setup framework reads it to provision the app;
+    /// null means the app has no setup definition and is skipped by the solution orchestrator.
+    /// </summary>
+    public string? SetupDefinitionPath { get; set; }
+
     /// <summary>The projects that compose this app/solution. The schema comes from the
     /// <see cref="AppProject.IsDataProject"/> entries (their entity assemblies).</summary>
     public List<AppProject> Projects { get; set; } = new();

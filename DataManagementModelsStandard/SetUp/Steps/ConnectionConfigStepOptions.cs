@@ -34,5 +34,16 @@ namespace TheTechIdea.Beep.SetUp.Steps
         /// Default: true.
         /// </summary>
         public bool OpenConnection { get; set; } = true;
+
+        /// <summary>
+        /// Step ids this step depends on. When null, defaults to the single bare
+        /// <c>"driver-provision"</c> id.
+        /// <para>
+        /// A wizard carrying one driver step per package has per-package ids
+        /// (<c>"driver-provision:SQLite"</c>), so the connection step must name them all —
+        /// a hard-coded single id would leave the other drivers unordered.
+        /// </para>
+        /// </summary>
+        public System.Collections.Generic.IReadOnlyList<string> DependsOnStepIds { get; set; }
     }
 }
