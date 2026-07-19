@@ -37,6 +37,7 @@ execution → rollback **without a live DB**. Build the harness first; everythin
 | 4 | Execution, checkpoint & resume verification | [PHASE-04](PHASE-04-Execution-Checkpoint-Resume.md) | [x] |
 | 5 | Rollback & compensation verification | [PHASE-05](PHASE-05-Rollback-Compensation.md) | [x] |
 | 6 | Hygiene: catches, dedup, doc drift, honest README | [PHASE-06](PHASE-06-Hygiene-Docs.md) | [x] |
+| 7 | Class reader: one canonical Type→EntityStructure path | [PHASE-07](PHASE-07-Class-Reader-Enhancements.md) | [~] |
 
 ## Not in this plan (future, opt-in)
 

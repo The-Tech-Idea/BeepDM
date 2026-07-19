@@ -267,8 +267,18 @@ silently reset — a re-run against a live DB is a re-migration, not a reset).
 exception `IsFirstRunAsync` returns `true` (fails open → re-runs setup).
 
 `BeepBootstrapper` composes first-run detection + wizard + adapter. It does **not** reference
-`BeepService`; it takes a `Func<IDMEEditor>` accessor so resolution is deferred until a first run is
-actually detected. `BootstrapPhase.Verification` is a label only — no verification logic exists.
+`BeepService`; it takes a `Func<IDMEEditor>` accessor so resolution is deferred until a run is
+actually detected.
+
+On a **non-first run** it can now run a **version-gate upgrade pass** (Phase 9) instead of returning
+immediately: pass the optional `upgradeWizardFactory` delegate (e.g.
+`e => factory.CreateUpgrade(e, options, gate)`), which builds a `"standard-upgrade"` wizard — its own
+state key, so its state starts empty each launch and the wizard's skip-completed-steps guard can't
+suppress the gate. The gate compares the declared schema version and the entity model against the
+version recorded **in the target database** (`__BeepSchemaVersion`, via `DbSchemaVersionStore`) and
+applies pending migrations, surfacing movement on `BootstrapResult.MigratedFrom`/`MigratedTo` under
+`BootstrapPhase.VersionCheck`. Omit the delegate and the historical first-run-only behaviour is
+unchanged. See [`.plans/setup/PHASE-09`](../../.plans/setup/PHASE-09-Versioned-Migrate-On-Startup.md).
 
 ## DI
 

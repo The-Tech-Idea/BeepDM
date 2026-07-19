@@ -39,6 +39,9 @@ public sealed class MigrationTestHarness
     /// <summary>When set, the recording provider fails ops whose name is in this set.</summary>
     public HashSet<string> FailOps { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Number of times the fake class-creator was asked to convert a type (Phase 7 cache probe).</summary>
+    public int ConversionCount { get; private set; }
+
     public MigrationTestHarness()
     {
         _ds.SetupGet(d => d.DatasourceType).Returns(DataSourceType.SqlServer);
@@ -60,7 +63,10 @@ public sealed class MigrationTestHarness
         _classCreator.Setup(c => c.ConvertToEntityStructure(It.IsAny<Type>(),
                 It.IsAny<KeyDetectionStrategy>(), It.IsAny<string>()))
             .Returns<Type, KeyDetectionStrategy, string>((t, _, _) =>
-                _desiredByType.TryGetValue(t, out var s) ? s : null);
+            {
+                ConversionCount++;
+                return _desiredByType.TryGetValue(t, out var s) ? s : null;
+            });
 
         _editor.SetupGet(e => e.classCreator).Returns(() => _classCreator.Object);
         _editor.SetupGet(e => e.ErrorObject).Returns(new ErrorsInfo { Flag = Errors.Ok });

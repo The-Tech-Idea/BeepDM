@@ -22,6 +22,12 @@ namespace TheTechIdea.Beep.Editor.Migration
         private readonly HashSet<Assembly> _registeredAssemblies = new HashSet<Assembly>();
         private readonly object _assemblyLock = new object();
 
+        // Phase 7: cache the reflection Type→EntityStructure conversion so planning, CanSkip hashing,
+        // drift, and each execution step don't re-reflect the same type. Keyed by Type; the resolved
+        // structure is deterministic per type, and the model-interop cache still wins ahead of it.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Type, EntityStructure> _entityStructureCache
+            = new System.Collections.Concurrent.ConcurrentDictionary<Type, EntityStructure>();
+
         // Phase 4: stores the evidence snapshot from the most recent DiscoverEntityTypes call
         private AssemblyDiscoveryEvidence _lastDiscoveryEvidence;
 
@@ -30,6 +36,24 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         public IDMEEditor DMEEditor => _editor;
         public IDataSource MigrateDataSource { get; set; }
+
+        private EntityReadOptions _readOptions = EntityReadOptions.Default;
+
+        /// <summary>
+        /// Phase 7 (C0): options controlling how .NET entity classes are read into structures during
+        /// planning/drift (enum storage, nullable-reference-type nullability, relations/indexes, key
+        /// policy). Defaults to <see cref="EntityReadOptions.Default"/>. Changing it clears the
+        /// conversion cache so the next plan re-reads with the new options.
+        /// </summary>
+        public EntityReadOptions ReadOptions
+        {
+            get => _readOptions;
+            set
+            {
+                _readOptions = value ?? EntityReadOptions.Default;
+                ClearEntityStructureCache();
+            }
+        }
 
         public MigrationManager(IDMEEditor editor, IDataSource dataSource = null)
         {

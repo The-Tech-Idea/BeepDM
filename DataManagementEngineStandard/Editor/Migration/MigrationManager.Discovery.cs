@@ -878,6 +878,9 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (type.IsGenericTypeDefinition) return false;
             if (type.IsNested && !type.IsNestedPublic) return false;
 
+            // Phase 7 (W9): [BeepIgnore] wins over every acceptance rule.
+            if (type.GetCustomAttribute<BeepIgnoreAttribute>() != null) return false;
+
             // Check if type inherits from Entity class
             var baseType = type.BaseType;
             bool inheritsFromEntity = false;
@@ -900,20 +903,25 @@ namespace TheTechIdea.Beep.Editor.Migration
                     i.FullName == "TheTechIdea.Beep.Editor.IEntity");
             }
 
-            // If the type does not inherit from Entity / IEntity, check whether
-            // the ClassCreator recognises it as an EF Core decorated type or a
-            // discoverable POCO. This lets the discovery pipeline pick up plain
-            // EF Core POCOs (with Table/Column/Key/ForeignKey attributes) and
-            // clean POCOs (concrete, public, parameterless-ctor) without forcing
-            // the caller to subclass Entity.
-            if (!inheritsFromEntity)
+            // Phase 7 (W9): explicit opt-in accepts even in an unscoped scan.
+            bool accept = inheritsFromEntity || type.GetCustomAttribute<BeepEntityAttribute>() != null;
+
+            // Otherwise, let the ClassCreator recognise EF-decorated types (always) or plain
+            // discoverable POCOs — but a bare POCO is only accepted when a namespace filter scopes
+            // the scan, so an unscoped "scan everything loaded" no longer sweeps up arbitrary DTOs.
+            if (!accept)
             {
                 var cc = _editor?.classCreator;
-                if (cc != null && (cc.IsEfDecoratedType(type) || cc.IsDiscoverablePoco(type)))
-                    inheritsFromEntity = true;
+                if (cc != null)
+                {
+                    if (cc.IsEfDecoratedType(type))
+                        accept = true;
+                    else if (cc.IsDiscoverablePoco(type) && !string.IsNullOrWhiteSpace(namespaceFilter))
+                        accept = true;
+                }
             }
 
-            if (!inheritsFromEntity) return false;
+            if (!accept) return false;
 
             // Check namespace filter
             if (string.IsNullOrWhiteSpace(namespaceFilter))

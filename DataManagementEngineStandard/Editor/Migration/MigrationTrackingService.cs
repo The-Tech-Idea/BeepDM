@@ -33,7 +33,8 @@ namespace TheTechIdea.Beep.Editor.Migration
             bool detectRelationships = true,
             IProgress<PassedArgs> progress = null,
             bool applyForeignKeys = false,
-            bool applyIndexes = false)
+            bool applyIndexes = false,
+            string declaredVersion = null)
         {
             if (string.IsNullOrWhiteSpace(datasourceName))
                 return CreateError("Datasource name is required.");
@@ -84,6 +85,12 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 MigrationRecordWriter.WritePlanExecution(_editor, datasourceName, dataSourceType, plan, result);
 
+                // Stamp the new database version — in the DB (authoritative) and the JSON audit
+                // mirror. Only reached when the plan had operations (an up-to-date plan returned
+                // above), so an idempotent no-op run never advances the version.
+                if (result?.Success == true)
+                    StampVersion(datasourceName, declaredVersion, plan, typesList.Count);
+
                 _editor.AddLogMessage("MigrationTracker",
                     result?.Success == true
                         ? $"Migration applied to '{datasourceName}': {result.AppliedCount} operations"
@@ -97,6 +104,112 @@ namespace TheTechIdea.Beep.Editor.Migration
             catch (Exception ex)
             {
                 return CreateError($"Migration failed: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Records the resulting database version after a successful, non-empty migration: writes the
+        /// in-DB marker (authoritative, cross-machine) and the JSON audit mirror. Best-effort — a
+        /// stamping failure is logged, never fatal to the migration that already succeeded.
+        /// </summary>
+        private void StampVersion(string datasourceName, string declaredVersion, MigrationPlanArtifact plan, int entityCount)
+        {
+            try
+            {
+                var store = new DbSchemaVersionStore(_editor);
+                var current = store.Read(datasourceName) ?? _editor.Version?.GetLatestVersion(datasourceName);
+                var next = BuildNextVersion(datasourceName, declaredVersion, current, plan, entityCount);
+
+                store.Write(datasourceName, next);          // authoritative, in the database
+                _editor.Version?.RecordDatabaseVersion(next); // audit mirror / history
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("MigrationTracker",
+                    $"Version stamp failed for '{datasourceName}': {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Computes the version to record: the declared version when parseable; otherwise a patch bump
+        /// over the current version; otherwise the initial 1.0.0.
+        /// </summary>
+        private static DatabaseVersion BuildNextVersion(string datasourceName, string declaredVersion,
+            DatabaseVersion current, MigrationPlanArtifact plan, int entityCount)
+        {
+            int major, minor, patch;
+            if (ConfigUtil.SemVer.TryParse(declaredVersion, out major, out minor, out patch))
+            {
+                // declared wins verbatim
+            }
+            else if (current != null)
+            {
+                major = current.Major; minor = current.Minor; patch = current.Patch + 1;
+            }
+            else
+            {
+                major = 1; minor = 0; patch = 0;
+            }
+
+            var planHash = plan?.PlanHash ?? string.Empty;
+            return new DatabaseVersion
+            {
+                DatasourceName = datasourceName,
+                Major = major,
+                Minor = minor,
+                Patch = patch,
+                Version = $"{major}.{minor}.{patch}",
+                SchemaHash = planHash,
+                MigrationPlanHash = planHash,
+                EntityCount = entityCount,
+                AppliedAt = DateTime.UtcNow,
+                AppliedBy = "MigrationTrackingService"
+            };
+        }
+
+        /// <summary>
+        /// Reads the version currently recorded in the target datasource, or null when unversioned.
+        /// Thin entry point so UIs can display the DB version without touching <see cref="DbSchemaVersionStore"/>.
+        /// </summary>
+        public DatabaseVersion GetCurrentDatabaseVersion(string datasourceName)
+        {
+            if (string.IsNullOrWhiteSpace(datasourceName)) return null;
+            try { return new DbSchemaVersionStore(_editor).Read(datasourceName); }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("MigrationTracker",
+                    $"Could not read version for '{datasourceName}': {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Records the resulting database version after a plan the caller executed itself (e.g. a UI that
+        /// drives <c>ExecuteMigrationPlan</c> directly). Public, best-effort counterpart to the stamping
+        /// <see cref="ExecuteTrackedMigration"/> does — so UIs stay thin and never recompute versions.
+        /// Writes the in-DB marker + the JSON mirror and returns the version, or null on failure.
+        /// </summary>
+        public DatabaseVersion StampDatabaseVersion(string datasourceName, MigrationPlanArtifact plan, string declaredVersion = null)
+        {
+            if (string.IsNullOrWhiteSpace(datasourceName) || plan == null) return null;
+            try
+            {
+                var store = new DbSchemaVersionStore(_editor);
+                var current = store.Read(datasourceName) ?? _editor.Version?.GetLatestVersion(datasourceName);
+                var next = BuildNextVersion(datasourceName, declaredVersion, current, plan, plan.EntityTypeCount);
+
+                store.Write(datasourceName, next);
+                _editor.Version?.RecordDatabaseVersion(next);
+                return next;
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("MigrationTracker",
+                    $"Version stamp failed for '{datasourceName}': {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+                return null;
             }
         }
 

@@ -158,9 +158,27 @@ namespace TheTechIdea.Beep.Tools
         public EntityStructure ConvertEntityTypeToEntityStructure(Type EntityType,
             KeyDetectionStrategy strategy = KeyDetectionStrategy.AttributeThenConvention,
             string entityName = null, string datasourceName = null)
+            => ConvertEntityTypeToEntityStructure(EntityType, new EntityReadOptions
+            {
+                KeyStrategy = strategy,
+                EntityNameOverride = entityName,
+                DatasourceName = datasourceName
+            });
+
+        /// <summary>
+        /// Phase 7 canonical reader: Type→EntityStructure with full metadata fidelity —
+        /// relations (navigation + <c>[ForeignKey]</c>), indexes (<c>[Index]</c> + unique fields),
+        /// precision/scale (<c>[Precision]</c> / <c>[Column(TypeName)]</c>), enum storage, and
+        /// nullable-reference-type nullability — controlled by <see cref="EntityReadOptions"/>.
+        /// </summary>
+        public EntityStructure ConvertEntityTypeToEntityStructure(Type EntityType, EntityReadOptions options)
         {
             if (EntityType == null)
                 throw new ArgumentNullException(nameof(EntityType));
+            options ??= EntityReadOptions.Default;
+            var strategy = options.KeyStrategy;
+            var entityName = options.EntityNameOverride;
+            var datasourceName = options.DatasourceName;
 
             // Step 1: Use FromType extension to populate basic structure from reflection
             EntityStructure entity = new EntityStructure();
@@ -170,7 +188,7 @@ namespace TheTechIdea.Beep.Tools
             if (!string.IsNullOrWhiteSpace(datasourceName))
             {
                 entity.DataSourceID = datasourceName;
-               
+
             }
 
             // Step 3: Override entity name if provided, or from [Table] attribute
@@ -200,8 +218,10 @@ namespace TheTechIdea.Beep.Tools
             {
                 propertyMap[prop.Name] = prop;
             }
+            var nrtContext = new NullabilityInfoContext();
 
-            // Step 5: Remove [NotMapped] fields and navigation properties
+            // Step 5: Remove [NotMapped] fields and navigation properties (capturing relations first)
+            entity.Relations ??= new List<RelationShipKeys>();
             var fieldsToRemove = new List<EntityField>();
             foreach (var field in entity.Fields)
             {
@@ -214,6 +234,10 @@ namespace TheTechIdea.Beep.Tools
                     }
                     if (IsNavigationProperty(prop.PropertyType))
                     {
+                        // Phase 7 (W1): a navigation property is removed from the columns, but its
+                        // relationship is captured so applyForeignKeys can emit FK ops.
+                        if (options.DetectRelationships)
+                            CaptureNavigationRelationship(entity, prop, propertyMap);
                         fieldsToRemove.Add(field);
                         continue;
                     }
@@ -306,18 +330,28 @@ namespace TheTechIdea.Beep.Tools
                     entity.HasDataAnnotations = true;
                 }
 
+                // Phase 7 metadata passes (W4/W5/W6 + defaults/row-version)
+                ApplyEnumStorage(field, prop, options);      // enum → int/string per strategy
+                ApplyNullability(field, prop, options, nrtContext); // NRT-aware AllowDBNull
+                ApplyPrecisionScale(field, prop);            // [Precision] / [Column(TypeName)]
+                ApplyMiscMetadata(field, prop);              // [DefaultValue], [Timestamp]
+
                 if (field.IsKey)
                 {
                     entity.PrimaryKeys.Add(field);
                 }
             }
 
+            // Step 6b: indexes from [Index] attributes and unique fields (W1)
+            if (options.ReadIndexes)
+                ReadIndexes(entity, EntityType);
+
             // Step 7: Convention-based key detection if no [Key] found
             if (entity.PrimaryKeys.Count == 0 &&
                 (strategy == KeyDetectionStrategy.ConventionOnly ||
                  strategy == KeyDetectionStrategy.AttributeThenConvention))
             {
-                ApplyConventionBasedKeyDetection(entity, EntityType);
+                ApplyConventionBasedKeyDetection(entity, EntityType, options.ConventionKeyImpliesIdentity);
             }
 
             return entity;
@@ -357,7 +391,12 @@ namespace TheTechIdea.Beep.Tools
         /// <summary>
         /// Applies convention-based key detection: looks for "Id" or "{TypeName}Id" properties.
         /// </summary>
-        private static void ApplyConventionBasedKeyDetection(EntityStructure entity, Type entityType)
+        /// <param name="impliesIdentity">
+        /// Phase 7 (W7): when false (default), a convention key is NOT silently marked auto-increment —
+        /// identity must be declared with <c>[DatabaseGenerated(Identity)]</c>. Set true for the
+        /// historical behavior.
+        /// </param>
+        private static void ApplyConventionBasedKeyDetection(EntityStructure entity, Type entityType, bool impliesIdentity = false)
         {
             var idField = entity.Fields.FirstOrDefault(f =>
                 string.Equals(f.FieldName, "Id", StringComparison.OrdinalIgnoreCase) ||
@@ -376,12 +415,242 @@ namespace TheTechIdea.Beep.Tools
                 idField.IsKey = true;
                 entity.PrimaryKeys.Add(idField);
 
-                if (idField.Fieldtype == typeof(int).FullName ||
-                    idField.Fieldtype == typeof(long).FullName)
+                if (impliesIdentity &&
+                    (idField.Fieldtype == typeof(int).FullName ||
+                     idField.Fieldtype == typeof(long).FullName))
                 {
                     idField.IsAutoIncrement = true;
                 }
             }
+        }
+
+        // ── Phase 7 reader helpers ─────────────────────────────────────────────
+
+        /// <summary>Enum column storage per <see cref="EnumStorageStrategy"/> (W5).</summary>
+        private static void ApplyEnumStorage(EntityField field, PropertyInfo prop, EntityReadOptions options)
+        {
+            var t = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            if (!t.IsEnum) return;
+
+            field.FieldCategory = DbFieldCategory.Enum;
+            if (options.EnumStorage == EnumStorageStrategy.String)
+            {
+                field.Fieldtype = typeof(string).FullName;
+                var names = Enum.GetNames(t);
+                int max = names.Length == 0 ? 32 : names.Max(n => n.Length);
+                if (field.Size1 <= 0) field.Size1 = Math.Max(max, 1);
+                field.MaxLength = field.Size1;
+            }
+            else
+            {
+                field.Fieldtype = typeof(int).FullName;
+            }
+        }
+
+        /// <summary>NRT-aware nullability (W6). Never loosens a [Key]/[Required] column.</summary>
+        private static void ApplyNullability(EntityField field, PropertyInfo prop, EntityReadOptions options, NullabilityInfoContext ctx)
+        {
+            if (field.IsKey || field.IsRequired)
+            {
+                field.AllowDBNull = false;
+                return;
+            }
+            var t = prop.PropertyType;
+            if (t.IsValueType) return; // FromType already handled Nullable<T> vs value type
+            if (!options.HonorNullableReferenceTypes)
+            {
+                field.AllowDBNull = true;
+                return;
+            }
+            try
+            {
+                var info = ctx.Create(prop);
+                field.AllowDBNull = info.ReadState != NullabilityState.NotNull;
+            }
+            catch
+            {
+                field.AllowDBNull = true;
+            }
+        }
+
+        /// <summary>Numeric precision/scale from EF-Core [Precision] (by name) or [Column(TypeName="decimal(p,s)")] (W4).</summary>
+        private static void ApplyPrecisionScale(EntityField field, PropertyInfo prop)
+        {
+            foreach (var attr in prop.GetCustomAttributes())
+            {
+                if (attr.GetType().Name != "PrecisionAttribute") continue;
+                var p = attr.GetType().GetProperty("Precision")?.GetValue(attr);
+                var s = attr.GetType().GetProperty("Scale")?.GetValue(attr);
+                if (p != null) field.NumericPrecision = (short)Convert.ToInt32(p);
+                if (s != null) field.NumericScale = (short)Convert.ToInt32(s);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(field.ColumnTypeName))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(field.ColumnTypeName, @"\((\d+)\s*,\s*(\d+)\)");
+                if (m.Success)
+                {
+                    field.NumericPrecision = (short)int.Parse(m.Groups[1].Value);
+                    field.NumericScale = (short)int.Parse(m.Groups[2].Value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// [DefaultValue] → default value; [Timestamp]/[ConcurrencyCheck] → row-version/concurrency;
+        /// EF-Core [Comment] (by name) → field description. (W10)
+        /// </summary>
+        private static void ApplyMiscMetadata(EntityField field, PropertyInfo prop)
+        {
+            var dv = prop.GetCustomAttribute<System.ComponentModel.DefaultValueAttribute>();
+            if (dv?.Value != null && string.IsNullOrEmpty(field.DefaultValue))
+                field.DefaultValue = Convert.ToString(dv.Value);
+
+            // Both mark a column used for optimistic concurrency.
+            if (prop.GetCustomAttribute<TimestampAttribute>() != null ||
+                prop.GetCustomAttribute<ConcurrencyCheckAttribute>() != null)
+                field.IsRowVersion = true;
+
+            // EF-Core [Unicode(false)] — read by name (no EF package reference).
+            foreach (var attr in prop.GetCustomAttributes())
+            {
+                if (attr.GetType().Name != "UnicodeAttribute") continue;
+                if (attr.GetType().GetProperty("IsUnicode")?.GetValue(attr) is bool isUnicode)
+                    field.IsUnicode = isUnicode;
+                break;
+            }
+
+            // EF-Core [Comment("...")] — read by name (no EF package reference).
+            if (string.IsNullOrWhiteSpace(field.Description))
+            {
+                foreach (var attr in prop.GetCustomAttributes())
+                {
+                    if (attr.GetType().Name != "CommentAttribute") continue;
+                    var comment = attr.GetType().GetProperty("Comment")?.GetValue(attr) as string;
+                    if (string.IsNullOrWhiteSpace(comment))
+                    {
+                        // fall back to the first string ctor arg exposed as any string property
+                        comment = attr.GetType().GetProperties()
+                            .Select(p => p.GetValue(attr) as string)
+                            .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+                    }
+                    if (!string.IsNullOrWhiteSpace(comment)) field.Description = comment;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Reads type-level [Index] (EF-Core, by name) plus single-column unique-field indexes (W1).</summary>
+        private static void ReadIndexes(EntityStructure entity, Type type)
+        {
+            entity.Indexes ??= new List<EntityIndex>();
+
+            foreach (var attr in type.GetCustomAttributes())
+            {
+                if (attr.GetType().Name != "IndexAttribute") continue;
+                var propNames = attr.GetType().GetProperty("PropertyNames")?.GetValue(attr) as System.Collections.IEnumerable;
+                var cols = propNames?.Cast<object>().Select(o => o?.ToString())
+                    .Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? new List<string>();
+                if (cols.Count == 0) continue;
+
+                var mapped = cols.Select(c => ColumnNameFor(entity, c)).ToList();
+                var name = attr.GetType().GetProperty("Name")?.GetValue(attr) as string;
+                var isUnique = attr.GetType().GetProperty("IsUnique")?.GetValue(attr) is bool b && b;
+
+                entity.Indexes.Add(new EntityIndex
+                {
+                    EntityName = entity.EntityName,
+                    Name = string.IsNullOrWhiteSpace(name) ? $"IX_{entity.EntityName}_{string.Join("_", mapped)}" : name,
+                    Columns = mapped,
+                    IsUnique = isUnique
+                });
+            }
+
+            foreach (var f in entity.Fields.Where(f => f.IsUnique && !f.IsKey))
+            {
+                var col = string.IsNullOrWhiteSpace(f.ColumnName) ? f.FieldName : f.ColumnName;
+                if (entity.Indexes.Any(ix => ix.Columns.Count == 1 &&
+                        string.Equals(ix.Columns[0], col, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                entity.Indexes.Add(new EntityIndex
+                {
+                    EntityName = entity.EntityName,
+                    Name = $"UX_{entity.EntityName}_{col}",
+                    Columns = new List<string> { col },
+                    IsUnique = true
+                });
+            }
+        }
+
+        private static string ColumnNameFor(EntityStructure entity, string propertyName)
+        {
+            var f = entity.Fields.FirstOrDefault(x =>
+                string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase));
+            return f != null && !string.IsNullOrWhiteSpace(f.ColumnName) ? f.ColumnName : propertyName;
+        }
+
+        /// <summary>Captures a relationship from a navigation property (or its [ForeignKey]) into Relations (W1).</summary>
+        private static void CaptureNavigationRelationship(EntityStructure entity, PropertyInfo navProp, Dictionary<string, PropertyInfo> propertyMap)
+        {
+            var relatedType = GetRelatedEntityType(navProp.PropertyType);
+            if (relatedType == null) return;
+
+            string relatedName = relatedType.Name;
+            var relTable = relatedType.GetCustomAttribute<TableAttribute>();
+            if (relTable != null && !string.IsNullOrWhiteSpace(relTable.Name))
+                relatedName = relTable.Name;
+
+            // FK column on THIS entity: [ForeignKey] on the nav prop, else "{Related}Id"/"{Nav}Id" convention.
+            string fk = navProp.GetCustomAttribute<ForeignKeyAttribute>()?.Name;
+            if (string.IsNullOrWhiteSpace(fk))
+            {
+                var byType = relatedType.Name + "Id";
+                var byNav = navProp.Name + "Id";
+                if (propertyMap.ContainsKey(byType)) fk = byType;
+                else if (propertyMap.ContainsKey(byNav)) fk = byNav;
+            }
+            // No local FK column (e.g. a collection navigation) — the relation is owned by the other side.
+            if (string.IsNullOrWhiteSpace(fk)) return;
+
+            entity.Relations ??= new List<RelationShipKeys>();
+            if (entity.Relations.Any(r =>
+                    string.Equals(r.EntityColumnID, fk, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(r.RelatedEntityID, relatedName, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            entity.Relations.Add(new RelationShipKeys
+            {
+                EntityColumnID = fk,
+                RelatedEntityID = relatedName,
+                RelatedEntityColumnID = "Id",
+                RalationName = navProp.Name
+            });
+        }
+
+        /// <summary>The related entity type behind a navigation property (unwraps Nullable, collections, arrays).</summary>
+        private static Type GetRelatedEntityType(Type propType)
+        {
+            var underlying = Nullable.GetUnderlyingType(propType);
+            if (underlying != null)
+                return underlying.IsClass && underlying != typeof(string) ? underlying : null;
+
+            if (propType.IsArray)
+            {
+                var el = propType.GetElementType();
+                return el != null && el.IsClass && el != typeof(string) && el != typeof(byte[]) ? el : null;
+            }
+
+            if (propType.IsGenericType)
+            {
+                var arg = propType.GetGenericArguments().FirstOrDefault();
+                return arg != null && arg.IsClass && arg != typeof(string) ? arg : null;
+            }
+
+            if (propType.IsClass && propType != typeof(string) && propType != typeof(byte[]))
+                return propType;
+
+            return null;
         }
 #endregion
         #region Cache Management
@@ -414,6 +683,15 @@ namespace TheTechIdea.Beep.Tools
             string entityName = null)
         {
             return ConvertEntityTypeToEntityStructure(pocoType, strategy, entityName);
+        }
+
+        /// <summary>
+        /// Phase 7: converts a runtime type to <see cref="EntityStructure"/> with tunable
+        /// <see cref="EntityReadOptions"/> (enum storage, NRT nullability, relations/indexes, key policy).
+        /// </summary>
+        public EntityStructure ConvertToEntityStructure(Type pocoType, EntityReadOptions options)
+        {
+            return ConvertEntityTypeToEntityStructure(pocoType, options);
         }
 
         /// <summary>
@@ -722,22 +1000,7 @@ namespace TheTechIdea.Beep.Tools
                 throw new FileNotFoundException("EF classes file not found.", efClassesFilePath);
 
             var source = File.ReadAllText(efClassesFilePath);
-            var syntaxTree = CSharpSyntaxTree.ParseText(source);
-            var root = syntaxTree.GetRoot();
-            var classNodes = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
-                .Where(c => c.Modifiers.Any(m => m.Text == "public"))
-                .ToList();
-            var knownEntityNames = new HashSet<string>(classNodes.Select(c => c.Identifier.Text), StringComparer.OrdinalIgnoreCase);
-
-            var entities = new List<EntityStructure>();
-            foreach (var classNode in classNodes)
-            {
-                var entity = BuildEntityFromClassSyntax(classNode, knownEntityNames);
-                if (entity != null && entity.Fields.Count > 0)
-                {
-                    entities.Add(entity);
-                }
-            }
+            var entities = ParseSourceToEntityStructures(source);
 
             if (entities.Count == 0)
             {
@@ -784,6 +1047,32 @@ namespace TheTechIdea.Beep.Tools
             }
 
             return outputPath;
+        }
+
+        /// <summary>
+        /// Phase 7: parses C# source text into <see cref="EntityStructure"/>s via the Roslyn class-syntax
+        /// reader (the same path <see cref="ConvertEFClassesFileToEntity"/> uses). Exposes the parser's
+        /// output so its annotation semantics can be compared against the reflection reader.
+        /// Only <c>public</c> classes with at least one mapped field are returned.
+        /// </summary>
+        public List<EntityStructure> ParseSourceToEntityStructures(string sourceCode)
+        {
+            var entities = new List<EntityStructure>();
+            if (string.IsNullOrWhiteSpace(sourceCode)) return entities;
+
+            var root = CSharpSyntaxTree.ParseText(sourceCode).GetRoot();
+            var classNodes = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+                .Where(c => c.Modifiers.Any(m => m.Text == "public"))
+                .ToList();
+            var knownEntityNames = new HashSet<string>(classNodes.Select(c => c.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var classNode in classNodes)
+            {
+                var entity = BuildEntityFromClassSyntax(classNode, knownEntityNames);
+                if (entity != null && entity.Fields.Count > 0)
+                    entities.Add(entity);
+            }
+            return entities;
         }
 
         private EntityStructure BuildEntityFromClassSyntax(ClassDeclarationSyntax classNode, HashSet<string> knownEntityNames = null)

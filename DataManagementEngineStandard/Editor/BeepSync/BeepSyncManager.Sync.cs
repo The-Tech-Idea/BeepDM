@@ -38,6 +38,22 @@ namespace TheTechIdea.Beep.Editor
             // Strict destination-acceptance preflight via the schema manager.
             // Catches "destination doesn't have the column" before the import starts.
             // Runs after structural validation and before the schema-governance preflight.
+            //
+            // CreateDestinationIfNotExists comes from the schema: this preflight is the gate that
+            // decides whether a missing destination aborts the run, and pinning it to false made
+            // DataSyncSchema.CreateDestinationIfNotExists a dead property — the veto fired before
+            // the import config built from it was ever used. It defaults to false, so strict
+            // behaviour is still the default; only callers that opt in see a change.
+            //
+            // AddMissingColumns stays pinned to false, deliberately. Passing true here would only
+            // skip the missing-column check (SyncSchemaPreflight) — no code would then add the
+            // columns: the import pipeline's sole schema-mutating step is CreateEntityAs in
+            // DataImportManager.EnsureDestinationEntityExists, which creates whole entities and
+            // never alters one. DataImportConfiguration.AddMissingColumns is read only by the
+            // back-compat shims in DataImportManager.Migration.cs, which RunImportAsync does not
+            // call. So honouring it would drop the veto and deliver nothing, letting rows move into
+            // a destination that cannot hold them. Until an add-column path exists, failing fast is
+            // the honest behaviour.
             try
             {
                 var schemaPre = await SyncSchemaPreflight.RunPreflightAsync(_editor, new SchemaRequest
@@ -46,8 +62,8 @@ namespace TheTechIdea.Beep.Editor
                     SourceEntityName             = schema.SourceEntityName,
                     DestinationDataSourceName    = schema.DestinationDataSourceName,
                     DestinationEntityName        = schema.DestinationEntityName,
-                    AddMissingColumns            = false,   // BeepSync is strict; fail fast
-                    CreateDestinationIfNotExists = false
+                    AddMissingColumns            = false,
+                    CreateDestinationIfNotExists = schema.CreateDestinationIfNotExists
                 }, msg =>
                 {
                     _editor.AddLogMessage("BeepSync", $"Schema preflight: {msg}", DateTime.Now, -1, "", Errors.Ok);

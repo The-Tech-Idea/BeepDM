@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "lWEnS473f1U=",
+  "dgSpecHash": "P00s6Yu0Z7o=",
   "success": true,
-  "projectFilePath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\tests\\SetupWizardTests\\SetupWizardTests.csproj",
+  "projectFilePath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\SetupWizardTests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\f_ald\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\f_ald\\.nuget\\packages\\grpc.core.api\\2.80.0\\grpc.core.api.2.80.0.nupkg.sha512",

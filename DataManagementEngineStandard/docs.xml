@@ -3513,16 +3513,53 @@
             Supports both Entity-derived types and plain POCOs.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertEntityTypeToEntityStructure(System.Type,TheTechIdea.Beep.Editor.EntityReadOptions)">
+            <summary>
+            Phase 7 canonical reader: Type→EntityStructure with full metadata fidelity —
+            relations (navigation + <c>[ForeignKey]</c>), indexes (<c>[Index]</c> + unique fields),
+            precision/scale (<c>[Precision]</c> / <c>[Column(TypeName)]</c>), enum storage, and
+            nullable-reference-type nullability — controlled by <see cref="T:TheTechIdea.Beep.Editor.EntityReadOptions"/>.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.IsNavigationProperty(System.Type)">
             <summary>
             Checks if a property type is a navigation property (collection or complex type)
             that should be excluded from entity fields.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyConventionBasedKeyDetection(TheTechIdea.Beep.DataBase.EntityStructure,System.Type)">
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyConventionBasedKeyDetection(TheTechIdea.Beep.DataBase.EntityStructure,System.Type,System.Boolean)">
             <summary>
             Applies convention-based key detection: looks for "Id" or "{TypeName}Id" properties.
             </summary>
+            <param name="impliesIdentity">
+            Phase 7 (W7): when false (default), a convention key is NOT silently marked auto-increment —
+            identity must be declared with <c>[DatabaseGenerated(Identity)]</c>. Set true for the
+            historical behavior.
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyEnumStorage(TheTechIdea.Beep.DataBase.EntityField,System.Reflection.PropertyInfo,TheTechIdea.Beep.Editor.EntityReadOptions)">
+            <summary>Enum column storage per <see cref="T:TheTechIdea.Beep.Editor.EnumStorageStrategy"/> (W5).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyNullability(TheTechIdea.Beep.DataBase.EntityField,System.Reflection.PropertyInfo,TheTechIdea.Beep.Editor.EntityReadOptions,System.Reflection.NullabilityInfoContext)">
+            <summary>NRT-aware nullability (W6). Never loosens a [Key]/[Required] column.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyPrecisionScale(TheTechIdea.Beep.DataBase.EntityField,System.Reflection.PropertyInfo)">
+            <summary>Numeric precision/scale from EF-Core [Precision] (by name) or [Column(TypeName="decimal(p,s)")] (W4).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ApplyMiscMetadata(TheTechIdea.Beep.DataBase.EntityField,System.Reflection.PropertyInfo)">
+            <summary>
+            [DefaultValue] → default value; [Timestamp]/[ConcurrencyCheck] → row-version/concurrency;
+            EF-Core [Comment] (by name) → field description. (W10)
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ReadIndexes(TheTechIdea.Beep.DataBase.EntityStructure,System.Type)">
+            <summary>Reads type-level [Index] (EF-Core, by name) plus single-column unique-field indexes (W1).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.CaptureNavigationRelationship(TheTechIdea.Beep.DataBase.EntityStructure,System.Reflection.PropertyInfo,System.Collections.Generic.Dictionary{System.String,System.Reflection.PropertyInfo})">
+            <summary>Captures a relationship from a navigation property (or its [ForeignKey]) into Relations (W1).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.GetRelatedEntityType(System.Type)">
+            <summary>The related entity type behind a navigation property (unwraps Nullable, collections, arrays).</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ClearPocoToEntityCache">
             <summary>
@@ -3539,6 +3576,12 @@
             <summary>
             Converts a runtime POCO/Entity type to EntityStructure with KeyDetectionStrategy.
             Uses ConvertEntityTypeToEntityStructure which handles both Entity and POCO types.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertToEntityStructure(System.Type,TheTechIdea.Beep.Editor.EntityReadOptions)">
+            <summary>
+            Phase 7: converts a runtime type to <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/> with tunable
+            <see cref="T:TheTechIdea.Beep.Editor.EntityReadOptions"/> (enum storage, NRT nullability, relations/indexes, key policy).
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertToEntityStructure(System.Object,TheTechIdea.Beep.Editor.KeyDetectionStrategy,System.String)">
@@ -3607,6 +3650,14 @@
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertEFClassesFileToEntity(System.String,System.String,System.String,System.Boolean)">
             <summary>
             Converts EF classes defined in a C# source file to framework Entity classes.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.ClassCreator.ParseSourceToEntityStructures(System.String)">
+            <summary>
+            Phase 7: parses C# source text into <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>s via the Roslyn class-syntax
+            reader (the same path <see cref="M:TheTechIdea.Beep.Tools.ClassCreator.ConvertEFClassesFileToEntity(System.String,System.String,System.String,System.Boolean)"/> uses). Exposes the parser's
+            output so its annotation semantics can be compared against the reflection reader.
+            Only <c>public</c> classes with at least one mapped field are returned.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.ClassCreator.IsNavigationProperty(System.Type,System.String)">
@@ -18050,6 +18101,12 @@
             Creates a reverse DataImportConfiguration for bidirectional sync (destination → source).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.GetBatchSize(TheTechIdea.Beep.Editor.DataSyncSchema)">
+            <summary>
+            Batch size from the schema, falling back to 50 when unset. The fallback matters:
+            BatchSize is a plain int defaulting to 0, and a 0-row batch would stall the import.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncValidationHelper">
             <summary>
             Helper class for sync validation operations
@@ -24485,7 +24542,36 @@
             <summary>
             Gets the current import status
             </summary>
+            <remarks>
+            Returns a snapshot of the live <c>_status</c> that RunImportAsync maintains under
+            <c>_statusLock</c> — record/batch counts, state, timings and the last message.
+            <para>
+            This used to build a fresh <see cref="T:TheTechIdea.Beep.Editor.Importing.ImportStatus"/> instead, which silently discarded
+            all of that: every caller got State=Idle with zero counts. Its flags were derived from
+            <c>_importTask</c> and <c>_internalCancellationTokenSource</c>, neither of which is ever
+            assigned, so IsRunning/IsCompleted/IsCancelled were hardcoded false in practice. The
+            run-state flags are now derived from the tracked <see cref="T:TheTechIdea.Beep.Editor.Importing.ImportState"/>.
+            </para>
+            <para>
+            Note that <see cref="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.CancelImport"/> still cancels the unassigned
+            <c>_internalCancellationTokenSource</c> and so does nothing; cancel a run by passing a
+            token to <c>RunImportAsync</c>. IsCancelled below reflects the token the run actually
+            observed, not that dead field.
+            </para>
+            </remarks>
             <returns>Import status information</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.HasLoggedErrors">
+            <summary>
+            Best-effort scan of the import log for error entries.
+            </summary>
+            <remarks>
+            Copying <c>DataImportProgressHelper.ImportLogData</c> races with the import thread
+            appending to the same unsynchronized list, so it can throw. That must not escape: callers
+            poll GetImportStatus while a run is in flight, and a status built by a catch-all would
+            report the default State (Idle) — reading as terminal and stopping the poll mid-run. A
+            missed error flag on one poll is recoverable; a frozen progress UI is not.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.TestImportConfigurationAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration)">
             <summary>
@@ -26641,6 +26727,74 @@
             </summary>
             <returns>Diagnostic configured mapper</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord">
+            <summary>
+            Row shape of the in-database schema-version marker table
+            (<see cref="F:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.MarkerEntityName"/>). One current-version row is kept per
+            datasource; full history lives in the JSON audit mirror (<c>IVersionManagementService</c>).
+            Property names map 1:1 to the marker columns, so a datasource can insert/update an instance
+            directly.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.Id">
+            <summary>Single-row upsert key. Always 1 — the marker holds the current version, not history.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.Version">
+            <summary>Last-applied semantic version string (e.g. "2.3.1").</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.SchemaHash">
+            <summary>SHA-256 of the entity list at this version (matches SetupState.SchemaHash).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.MigrationPlanHash">
+            <summary>Hash of the migration plan that produced this version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.AppliedBy">
+            <summary>Actor that applied this version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.PayloadJson">
+            <summary>Lossless JSON of the full <c>DatabaseVersion</c>, so a reader reconstructs it exactly.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore">
+            <summary>
+            Reads and writes the authoritative schema-version marker <em>inside the target database</em>
+            (table <see cref="F:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.MarkerEntityName"/>), EF-Core-<c>__EFMigrationsHistory</c> style, so any
+            machine that opens the datasource can learn its version without machine-local state. A single
+            current-version row is kept; full history is the JSON audit mirror on
+            <c>IVersionManagementService</c>.
+            </summary>
+            <remarks>
+            Degrades gracefully: on a datasource that cannot create the marker table (many NoSQL / file /
+            REST providers), <see cref="M:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.Read(System.String)"/> returns null and <see cref="M:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.Write(System.String,TheTechIdea.Beep.ConfigUtil.DatabaseVersion)"/> reports a warning —
+            callers then treat the JSON mirror as authoritative. Nothing here throws to the caller.
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.MarkerEntityName">
+            <summary>Name of the in-database marker table. Double-underscore, EF-style; providers quote it.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.Read(System.String)">
+            <summary>
+            Returns the version recorded in the datasource, or null when the marker is absent, the
+            datasource can't be opened, or the read fails. Null means "unknown / never versioned".
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.Write(System.String,TheTechIdea.Beep.ConfigUtil.DatabaseVersion)">
+            <summary>
+            Upserts the current-version row into the datasource, creating the marker table first if
+            needed. Returns a warning (never throws) when the datasource can't host the marker.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.EnsureMarker(TheTechIdea.Beep.IDataSource,System.String)">
+            <summary>
+            Ensures the marker table exists by routing the <see cref="T:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord"/> POCO
+            through <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationManager"/> — the same plan → execute path (and per-datasource
+            <c>ISchemaMigrationProvider</c> / <c>IDataSource.CreateEntityAs</c>) every other entity uses.
+            No hand-rolled DDL or EntityStructure. Returns false when the datasource cannot host the
+            marker (many NoSQL / file / REST providers) — the caller then falls back to the JSON mirror.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore.GetField(System.Object,System.String)">
+            <summary>Reads a field from a row of unknown shape: dictionary, DataRow, or POCO.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.Examples.Example00_Overview">
             <summary>
             Marker class that documents the example order. Run any individual example
@@ -27661,6 +27815,14 @@
             Uses the current <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.MigrateDataSource"/> when parameters are null.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.ReadOptions">
+            <summary>
+            Phase 7 (C0): options controlling how .NET entity classes are read into structures during
+            planning/drift (enum storage, nullable-reference-type nullability, relations/indexes, key
+            policy). Defaults to <see cref="P:TheTechIdea.Beep.Editor.EntityReadOptions.Default"/>. Changing it clears the
+            conversion cache so the next plan re-reads with the new options.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetDiscoveryEvidence">
             <summary>
             Returns the assembly discovery evidence snapshot from the most recent DiscoverEntityTypes call.
@@ -27755,6 +27917,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InspectDrift(System.Collections.Generic.IEnumerable{System.Type})">
             <summary>Batch <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.InspectDrift(System.Type)"/> keyed by type name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EffectiveColumnName(TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>The datasource column name a field maps to: its <c>[Column]</c> name when set, else its field name.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ApplyIndexesForEntity(TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>
@@ -27982,6 +28147,12 @@
             multiple operations.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ClearEntityStructureCache">
+            <summary>
+            Clears the per-instance Type→EntityStructure conversion cache (Phase 7). Called when the
+            registered-assembly set changes; also public for callers that mutate entity types at runtime.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.EnsureDatabaseCreatedForTypes(System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)">
             <summary>
             Ensures database is created for the given entity types.
@@ -28040,7 +28211,7 @@
              <summary>
              Build and append a record that maps plan operations to their execution
              outcomes, with a top-level message. Used by
-             <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.ExecuteTrackedMigration(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean)"/> (with
+             <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.ExecuteTrackedMigration(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean,System.String)"/> (with
              <c>namePrefix = "Migration"</c>) and
              <c>DatasourceManagementService.AppendSchemaToHistory</c> (with
              <c>namePrefix = "Schema"</c>). The prefix appears in the persisted
@@ -28082,6 +28253,33 @@
             summary records traceable to the plan that produced them; the
             suffix keeps summary ids unique even when the same plan runs
             multiple times. See the class doc comment for the full conventions.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.StampVersion(System.String,System.String,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,System.Int32)">
+            <summary>
+            Records the resulting database version after a successful, non-empty migration: writes the
+            in-DB marker (authoritative, cross-machine) and the JSON audit mirror. Best-effort — a
+            stamping failure is logged, never fatal to the migration that already succeeded.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.BuildNextVersion(System.String,System.String,TheTechIdea.Beep.ConfigUtil.DatabaseVersion,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,System.Int32)">
+            <summary>
+            Computes the version to record: the declared version when parseable; otherwise a patch bump
+            over the current version; otherwise the initial 1.0.0.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.GetCurrentDatabaseVersion(System.String)">
+            <summary>
+            Reads the version currently recorded in the target datasource, or null when unversioned.
+            Thin entry point so UIs can display the DB version without touching <see cref="T:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.StampDatabaseVersion(System.String,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,System.String)">
+            <summary>
+            Records the resulting database version after a plan the caller executed itself (e.g. a UI that
+            drives <c>ExecuteMigrationPlan</c> directly). Public, best-effort counterpart to the stamping
+            <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.ExecuteTrackedMigration(System.String,System.Collections.Generic.IEnumerable{System.Type},System.Boolean,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Boolean,System.Boolean,System.String)"/> does — so UIs stay thin and never recompute versions.
+            Writes the in-DB marker + the JSON mirror and returns the version, or null on failure.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.ExternalReadOnlyMigrationProvider">
@@ -40682,6 +40880,13 @@
             Generates SQL to add a column to an existing table.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.ApplyUnicodePreference(System.String,System.Boolean)">
+            <summary>
+            Downgrades a Unicode string SQL type to its non-Unicode form when <paramref name="isUnicode"/>
+            is false (e.g. <c>nvarchar(50)</c> → <c>varchar(50)</c>). No-op when unicode is requested or the
+            type has no Unicode/non-Unicode distinction (e.g. Postgres <c>text</c>). Preserves length/casing.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateAlterColumnSql(System.String,System.String,TheTechIdea.Beep.DataBase.EntityField)">
             <summary>
             Generates SQL to modify an existing column definition.
@@ -52533,6 +52738,28 @@
         <member name="T:TheTechIdea.Beep.SetUp.Audit.NullSetupAuditSink">
             <summary>No-op sink used when no audit is configured. Records nothing.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.SetUp.BootstrapResult.MigratedFrom">
+            <summary>Database version before the upgrade pass ran (null on first run / when no gate ran).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.BootstrapResult.MigratedTo">
+            <summary>Database version after the upgrade pass ran (equals <see cref="P:TheTechIdea.Beep.SetUp.BootstrapResult.MigratedFrom"/> when up to date).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.BeepBootstrapper.#ctor(TheTechIdea.Beep.SetUp.IFirstRunDetector,TheTechIdea.Beep.SetUp.ISetupWizardFactory,System.Func{TheTechIdea.Beep.Editor.IDMEEditor},TheTechIdea.Beep.SetUp.ISetupWizardAdapter,Microsoft.Extensions.Logging.ILogger{TheTechIdea.Beep.SetUp.BeepBootstrapper},System.Func{TheTechIdea.Beep.Editor.IDMEEditor,System.Nullable{System.ValueTuple{TheTechIdea.Beep.SetUp.ISetupWizard,TheTechIdea.Beep.SetUp.SetupContext}}})">
+            <param name="upgradeWizardFactory">
+            Optional. Builds the per-startup <em>upgrade pass</em> (typically a single
+            <c>VersionGateStep</c>) run when setup was already completed. Its wizard should use its own
+            state key so its state starts empty each launch — otherwise the wizard's skip-completed-steps
+            guard would suppress the gate. Return null to skip the upgrade pass for a given editor.
+            When this is null, a completed setup starts normally with no version check (legacy behaviour).
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.BeepBootstrapper.RunUpgradePassAsync(System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Runs the per-startup upgrade pass: resolves the editor, builds the configured upgrade wizard
+            (version gate), executes it, and reports any version movement. A null wizard for this editor
+            means "nothing to upgrade" and starts normally.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory">
              <summary>
              Default <see cref="T:TheTechIdea.Beep.SetUp.ISetupWizardFactory"/> implementation.
@@ -52557,6 +52784,15 @@
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.Create(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,System.Action{TheTechIdea.Beep.SetUp.ISetupWizardBuilder})">
             <inheritdoc/>
+        </member>
+        <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.CreateUpgrade(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.SetUp.SetupOptions,TheTechIdea.Beep.SetUp.Steps.VersionGateStepOptions)">
+            <summary>
+            Builds the per-startup <em>upgrade pass</em> wizard: a single <see cref="T:TheTechIdea.Beep.SetUp.Steps.VersionGateStep"/>
+            under the wizard id <c>"standard-upgrade"</c>. The distinct id gives it its own state key, so
+            its <c>SetupState</c> starts empty each launch and the gate is never suppressed by the wizard's
+            skip-completed-steps guard. Pass this as <c>BeepBootstrapper</c>'s <c>upgradeWizardFactory</c>:
+            <code>editor => factory.CreateUpgrade(editor, options, gate)</code>
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.SetUp.DefaultSetupWizardFactory.BuildDriverSteps(TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
@@ -53205,6 +53441,39 @@
             Unseeds completed seeders in reverse. Seeders that don't implement
             <see cref="T:TheTechIdea.Beep.SetUp.Seeding.IUndoableSeeder"/> are recorded as <em>skipped</em>, never as a clean undo.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.VersionGateStepOptions">
+            <summary>Options for <see cref="T:TheTechIdea.Beep.SetUp.Steps.VersionGateStep"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.VersionGateStepOptions.EntityTypes">
+            <summary>Explicit entity types to gate on. Highest priority; else resolved from options.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.VersionGateStepOptions.DatasourceName">
+            <summary>Datasource to migrate. Falls back to <c>SetupContext.DataSource</c> when empty.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.Steps.VersionGateStepOptions.DeclaredVersion">
+            <summary>Explicit declared version. Falls back to <c>SetupOptions.DeclaredSchemaVersion</c>, then the assembly attribute.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.SetUp.Steps.VersionGateStep">
+            <summary>
+            The startup version gate: compares the declared schema version and the entity model against the
+            version recorded <em>in the target database</em>, and applies pending migrations when the app has
+            moved ahead or the model has drifted. Composes as an ordinary <see cref="T:TheTechIdea.Beep.SetUp.ISetupStep"/> so it
+            honours DryRun, RBAC, audit, and progress like every other step.
+            </summary>
+            <remarks>
+            Trigger is <b>both</b>: the entity-model diff (<c>BuildMigrationPlanForTypes</c>) decides <i>what</i>
+            to apply; the declared-vs-recorded semver compare is the coarse gate deciding <i>whether</i> to look.
+            Migration and version-stamping are delegated to <see cref="T:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService"/>, so the DB
+            marker and JSON mirror advance together. Intended to run in a dedicated upgrade-pass wizard whose
+            state starts empty each launch, so the wizard's skip-completed-steps guard never suppresses it.
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Steps.VersionGateStep.MigratedFromKey">
+            <summary>Context property key holding the version the datasource was at before this run.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.SetUp.Steps.VersionGateStep.MigratedToKey">
+            <summary>Context property key holding the version the datasource is at after this run.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.Telemetry.SetupActivitySource">
             <summary>

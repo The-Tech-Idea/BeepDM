@@ -270,15 +270,36 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // Cache lookup is best-effort; fall through to classCreator.
             }
 
+            // Phase 7: per-instance conversion cache (checked after the model-interop cache, so an
+            // ORM-supplied structure always wins). Avoids re-reflecting the same type on every
+            // planning/drift/execution call.
+            if (_entityStructureCache.TryGetValue(entityType, out var cachedStructure))
+                return cachedStructure;
+
             try
             {
-                return _editor?.classCreator?.ConvertToEntityStructure(entityType);
+                var cc = _editor?.classCreator;
+                // Use the options-aware reader when the concrete ClassCreator is available (the
+                // EntityReadOptions overload isn't on IClassCreator, to keep that contract stable);
+                // otherwise fall back to the interface's default-options conversion.
+                var converted = (cc is TheTechIdea.Beep.Tools.ClassCreator concrete)
+                    ? concrete.ConvertToEntityStructure(entityType, _readOptions)
+                    : cc?.ConvertToEntityStructure(entityType);
+                if (converted != null)
+                    _entityStructureCache[entityType] = converted;
+                return converted;
             }
             catch
             {
                 return null;
             }
         }
+
+        /// <summary>
+        /// Clears the per-instance Type→EntityStructure conversion cache (Phase 7). Called when the
+        /// registered-assembly set changes; also public for callers that mutate entity types at runtime.
+        /// </summary>
+        public void ClearEntityStructureCache() => _entityStructureCache.Clear();
 
         private static string GetEntityName(Type entityType, EntityStructure entityStructure = null)
         {

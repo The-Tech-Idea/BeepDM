@@ -1171,6 +1171,22 @@
             Gets or sets a value indicating whether the token needs to be refreshed.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.SemVer">
+            <summary>
+            Minimal semantic-version parse/compare shared by the version-tracking and migrate-on-startup
+            paths. Pre-release/build metadata is parsed off but ignored for ordering (Major.Minor.Patch
+            only) — sufficient for the gate's "declared &gt; recorded" decision.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.SemVer.TryParse(System.String,System.Int32@,System.Int32@,System.Int32@)">
+            <summary>Parses "M.m.p", "M.m", "M", optionally with a "-prerelease" or "+build" suffix.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.SemVer.Compare(System.String,System.String)">
+            <summary>-1 / 0 / +1 comparing a against b by Major.Minor.Patch. Unparsable sides sort as 0.0.0.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.SemVer.Compare(TheTechIdea.Beep.ConfigUtil.DatabaseVersion,TheTechIdea.Beep.ConfigUtil.DatabaseVersion)">
+            <summary>Compares two <see cref="T:TheTechIdea.Beep.ConfigUtil.DatabaseVersion"/> by their numeric components.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.VersionChangeEntry">
             <summary>
             Describes what changed between two versions.
@@ -1529,6 +1545,13 @@
             into <c>applyIndexes=true</c>.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.DataBase.EntityField.IsUnicode">
+            <summary>
+            Whether a string column should use a Unicode type (e.g. SQL Server <c>nvarchar</c>) rather
+            than a non-Unicode one (<c>varchar</c>). Defaults true to preserve historical DDL; set false
+            via EF-Core <c>[Unicode(false)]</c>. Only affects providers that distinguish the two.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataBase.EntityIndex">
             <summary>
             Index descriptor associated with an <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>.
@@ -1847,160 +1870,68 @@
         <member name="P:TheTechIdea.Beep.DataBase.IDMDataView.CacheLastRefresh">
             <summary>Timestamp of the last successful cache refresh. Used to evaluate TTL expiry.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.DataView.DMDataView">
+        <member name="T:TheTechIdea.Beep.Editor.EnumStorageStrategy">
+            <summary>How an enum property is stored when a .NET type is read into an <c>EntityStructure</c>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EnumStorageStrategy.Int">
+            <summary>Store as the underlying integer (default). Field type becomes <c>System.Int32</c>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.EnumStorageStrategy.String">
+            <summary>Store as the enum member name. Field type becomes <c>System.String</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.EntityReadOptions">
             <summary>
-            Pure data model for a federated DataView definition.
-            This class IS the data — it is serialised to/from JSON by the DataViewDataSource engine.
-            It does NOT contain any engine logic (generating views, writing files, running queries).
-            
-            For the engine behaviour, see DataViewDataSource which implements IDataViewOperations.
+            Options controlling how a .NET class is read into an <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>
+            (Phase 7). Defaults reflect the improved reader; each switch can restore the historical behavior
+            for a caller that depends on it.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.DMDataView.Description">
-            <summary>Optional human-readable description for UI display.</summary>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.KeyStrategy">
+            <summary>How the primary key is detected (attribute, convention, or both).</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.DMDataView.LocalEngineConnectionName">
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.DetectRelationships">
+            <summary>Populate <c>EntityStructure.Relations</c> from navigation properties and <c>[ForeignKey]</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.ReadIndexes">
+            <summary>Populate <c>EntityStructure.Indexes</c> from <c>[Index]</c> attributes and unique fields.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.EnumStorage">
+            <summary>How enum fields are stored.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.HonorNullableReferenceTypes">
             <summary>
-            The registered connection name of the local/in-memory engine (DuckDB, SQLite, etc.)
-            used to evaluate federated queries. Null = auto-discover at runtime.
+            Honor C# nullable-reference-type annotations for reference-typed columns (<c>string</c> vs
+            <c>string?</c>). When false, the historical rule (all reference types nullable) applies.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.DMDataView.JoinDefinitions">
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.ConventionKeyImpliesIdentity">
             <summary>
-            Cross-source virtual join definitions. These are logical join conditions, not physical FKs.
-            Populated automatically from FK discovery, or manually via the Relation Builder API.
+            When true (historical behavior), a convention-detected int/long key is marked auto-increment
+            even without <c>[DatabaseGenerated(Identity)]</c>. Default false — identity must be declared.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.DMDataView.ExecutionMode">
-            <summary>Default to Cached for performance. Set to DirectQuery for always-live data.</summary>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.EntityNameOverride">
+            <summary>Overrides the entity name (else <c>[Table]</c> or the type name).</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.DMDataView.CacheTTLSeconds">
-            <summary>Duration in seconds the materialized cache is valid. Default: 5 minutes.</summary>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.DatasourceName">
+            <summary>Datasource id stamped onto the structure.</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.DMDataView.CacheLastRefresh">
-            <summary>Timestamp of last successful cache refresh.</summary>
+        <member name="P:TheTechIdea.Beep.Editor.EntityReadOptions.Default">
+            <summary>The reader defaults.</summary>
         </member>
-        <member name="T:TheTechIdea.Beep.DataView.FederatedJoinType">
-            <summary>Defines the type of JOIN to apply between two federated entities.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.DataView.FederatedJoinDefinition">
+        <member name="T:TheTechIdea.Beep.Editor.BeepEntityAttribute">
             <summary>
-            Describes a virtual join relationship between two entities in a federated DataView.
-            Unlike EntityStructure.Relations (physical FK within one source),
-            this describes cross-source logical join conditions that may be auto-discovered
-            from FK metadata or manually defined via the Relation Builder API.
+            Explicit opt-in marker: the decorated class is a migration entity. Lets entity discovery pick
+            up a plain POCO without subclassing <c>Entity</c> or carrying EF-Core attributes, and makes it
+            eligible even in an unscoped (no-namespace-filter) scan. See also <see cref="T:TheTechIdea.Beep.Editor.BeepIgnoreAttribute"/>.
             </summary>
         </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.GuidID">
-            <summary>Unique identifier for this join definition.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftEntityName">
-            <summary>The logical name of the left entity as it appears in the DataView.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftColumn">
-            <summary>The column of the left entity to join on.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftDataSourceID">
-            <summary>The datasource connection name that owns the left entity.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightEntityName">
-            <summary>The logical name of the right entity as it appears in the DataView.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightColumn">
-            <summary>The column of the right entity to join on.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightDataSourceID">
-            <summary>The datasource connection name that owns the right entity.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.JoinType">
-            <summary>The type of SQL JOIN to apply.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.IsManuallyDefined">
+        <member name="T:TheTechIdea.Beep.Editor.BeepIgnoreAttribute">
             <summary>
-            True if this join was defined manually via the Relation Builder API.
-            False if auto-discovered from FK metadata (GetChildTablesList).
+            Explicit opt-out marker: the decorated class is never treated as a migration entity, even if it
+            otherwise looks discoverable (public, concrete, parameterless ctor, EF-decorated). Takes priority
+            over every acceptance rule.
             </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.AdditionalCondition">
-            <summary>
-            Optional additional filter condition appended to the JOIN ON clause.
-            E.g. "ORDERS.YEAR = 2024" → ON L.col = R.col AND (ORDERS.YEAR = 2024)
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.Description">
-            <summary>Optional description/label for UI display.</summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.DataView.FederationExecutionMode">
-            <summary>
-            Defines how a federated DataView resolves its data at query time.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.DataView.FederationExecutionMode.Cached">
-            <summary>
-            Data is materialized into a local/in-memory engine and cached for CacheTTLSeconds.
-            Best for read-heavy analytical workloads.
-            </summary>
-        </member>
-        <member name="F:TheTechIdea.Beep.DataView.FederationExecutionMode.DirectQuery">
-            <summary>
-            Data is always fetched live from source databases on every query.
-            Best for real-time or low-volume data where staleness is unacceptable.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.DataView.RestrictionValue">
-            <summary>
-            Represents a filter restriction for DataView queries.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.RestrictionValue.Fieldname">
-            <summary>
-            The name of the field to filter on.
-            </summary>
-        </member>
-        <!-- Badly formed XML comment ignored for member "P:TheTechIdea.Beep.DataView.RestrictionValue.Operator" -->
-        <member name="P:TheTechIdea.Beep.DataView.RestrictionValue.value">
-            <summary>
-            The value to compare against.
-            </summary>
-        </member>
-        <member name="T:TheTechIdea.Beep.DataView.ViewSummary">
-            <summary>
-            Lightweight snapshot of a DataView's current health and structure.
-            Returned by <see cref="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetViewSummary"/>.
-            </summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.EntityCount">
-            <summary>Total number of entities in the view.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.JoinCount">
-            <summary>Total join definitions (manual + auto-discovered).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.ManualJoinCount">
-            <summary>Joins that were created manually via the Relation Builder.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.DataSourceCount">
-            <summary>Number of distinct DataSource IDs referenced by entities.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.IsValid">
-            <summary>True if ValidateView() returned no errors.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.Warnings">
-            <summary>Validation warnings or errors (empty when IsValid=true).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.UnconnectedEntities">
-            <summary>Entities not connected to any join (potential orphans).</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.BrokenEntities">
-            <summary>Entities whose datasource is currently unavailable.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.CacheLastRefresh">
-            <summary>Last time the local cache was successfully materialised.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.CacheTTLSeconds">
-            <summary>Configured cache TTL in seconds.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.IsCacheExpired">
-            <summary>Whether the cache has expired and needs re-materialisation.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.ConflictEvidence">
             <summary>
@@ -13241,6 +13172,161 @@
         <member name="P:TheTechIdea.Beep.Editor.ValidationEventArgs`1.TriggerProperty">
             <summary>The property that triggered validation (null for full-item validation).</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.DataView.DMDataView">
+            <summary>
+            Pure data model for a federated DataView definition.
+            This class IS the data — it is serialised to/from JSON by the DataViewDataSource engine.
+            It does NOT contain any engine logic (generating views, writing files, running queries).
+            
+            For the engine behaviour, see DataViewDataSource which implements IDataViewOperations.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.Description">
+            <summary>Optional human-readable description for UI display.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.LocalEngineConnectionName">
+            <summary>
+            The registered connection name of the local/in-memory engine (DuckDB, SQLite, etc.)
+            used to evaluate federated queries. Null = auto-discover at runtime.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.JoinDefinitions">
+            <summary>
+            Cross-source virtual join definitions. These are logical join conditions, not physical FKs.
+            Populated automatically from FK discovery, or manually via the Relation Builder API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.ExecutionMode">
+            <summary>Default to Cached for performance. Set to DirectQuery for always-live data.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.CacheTTLSeconds">
+            <summary>Duration in seconds the materialized cache is valid. Default: 5 minutes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.DMDataView.CacheLastRefresh">
+            <summary>Timestamp of last successful cache refresh.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.FederatedJoinType">
+            <summary>Defines the type of JOIN to apply between two federated entities.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.FederatedJoinDefinition">
+            <summary>
+            Describes a virtual join relationship between two entities in a federated DataView.
+            Unlike EntityStructure.Relations (physical FK within one source),
+            this describes cross-source logical join conditions that may be auto-discovered
+            from FK metadata or manually defined via the Relation Builder API.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.GuidID">
+            <summary>Unique identifier for this join definition.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftEntityName">
+            <summary>The logical name of the left entity as it appears in the DataView.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftColumn">
+            <summary>The column of the left entity to join on.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.LeftDataSourceID">
+            <summary>The datasource connection name that owns the left entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightEntityName">
+            <summary>The logical name of the right entity as it appears in the DataView.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightColumn">
+            <summary>The column of the right entity to join on.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.RightDataSourceID">
+            <summary>The datasource connection name that owns the right entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.JoinType">
+            <summary>The type of SQL JOIN to apply.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.IsManuallyDefined">
+            <summary>
+            True if this join was defined manually via the Relation Builder API.
+            False if auto-discovered from FK metadata (GetChildTablesList).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.AdditionalCondition">
+            <summary>
+            Optional additional filter condition appended to the JOIN ON clause.
+            E.g. "ORDERS.YEAR = 2024" → ON L.col = R.col AND (ORDERS.YEAR = 2024)
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.FederatedJoinDefinition.Description">
+            <summary>Optional description/label for UI display.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.FederationExecutionMode">
+            <summary>
+            Defines how a federated DataView resolves its data at query time.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataView.FederationExecutionMode.Cached">
+            <summary>
+            Data is materialized into a local/in-memory engine and cached for CacheTTLSeconds.
+            Best for read-heavy analytical workloads.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataView.FederationExecutionMode.DirectQuery">
+            <summary>
+            Data is always fetched live from source databases on every query.
+            Best for real-time or low-volume data where staleness is unacceptable.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.RestrictionValue">
+            <summary>
+            Represents a filter restriction for DataView queries.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.RestrictionValue.Fieldname">
+            <summary>
+            The name of the field to filter on.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:TheTechIdea.Beep.DataView.RestrictionValue.Operator" -->
+        <member name="P:TheTechIdea.Beep.DataView.RestrictionValue.value">
+            <summary>
+            The value to compare against.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataView.ViewSummary">
+            <summary>
+            Lightweight snapshot of a DataView's current health and structure.
+            Returned by <see cref="M:TheTechIdea.Beep.DataBase.IDataViewOperations.GetViewSummary"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.EntityCount">
+            <summary>Total number of entities in the view.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.JoinCount">
+            <summary>Total join definitions (manual + auto-discovered).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.ManualJoinCount">
+            <summary>Joins that were created manually via the Relation Builder.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.DataSourceCount">
+            <summary>Number of distinct DataSource IDs referenced by entities.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.IsValid">
+            <summary>True if ValidateView() returned no errors.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.Warnings">
+            <summary>Validation warnings or errors (empty when IsValid=true).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.UnconnectedEntities">
+            <summary>Entities not connected to any join (potential orphans).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.BrokenEntities">
+            <summary>Entities whose datasource is currently unavailable.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.CacheLastRefresh">
+            <summary>Last time the local cache was successfully materialised.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.CacheTTLSeconds">
+            <summary>Configured cache TTL in seconds.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataView.ViewSummary.IsCacheExpired">
+            <summary>Whether the cache has expired and needs re-materialisation.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Enums.DynamicEnumEntry">
             <summary>
             Represents one entry in DynamicEnum.
@@ -18537,6 +18623,30 @@
             Used during clean shutdown.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.SetUp.AppSchemaVersionAttribute">
+            <summary>
+            Declares the schema version an application expects its datasource to satisfy. A developer
+            bumps this when the entity model changes; the next bootstrap upgrade pass compares it against
+            the version recorded in the database and migrates when the app has moved ahead.
+            </summary>
+            <remarks>
+            Place on the assembly that owns the entity types, e.g.
+            <c>[assembly: AppSchemaVersion("2.3.0")]</c>. This is the coarse "version gate" trigger; the
+            entity-model diff (<c>MigrationManager.BuildMigrationPlanForTypes</c>) remains the authority on
+            what actually gets applied. When no attribute (and no explicit
+            <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.DeclaredSchemaVersion"/>) is present, the gate falls back to diff-only
+            and never blocks a needed migration.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.AppSchemaVersionAttribute.Version">
+            <summary>Semantic version the app declares, e.g. "2.3.0".</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.AppSchemaVersionAttribute.MinDatabaseVersion">
+            <summary>
+            Optional minimum database version this build refuses to run below. When set and the
+            recorded DB version is older, the gate treats the datasource as needing migration.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.SetUp.Audit.ISetupAuditSink">
             <summary>
             Where setup events are recorded so a run is answerable: who ran what, against which
@@ -19048,6 +19158,33 @@
             needs to diagnose the failure. The rollback outcome is always recorded on
             <see cref="P:TheTechIdea.Beep.SetUp.SetupReport.RollbackReportJson"/> regardless of this flag.
             </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.MigrateOnStartup">
+            <summary>
+            When true (the default), the bootstrap upgrade pass compares the declared schema version
+            and the entity model against the version recorded in the target database on every startup,
+            and applies pending migrations. Set false for a locked-down deployment that requires an
+            explicit admin action to migrate.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.DeclaredSchemaVersion">
+            <summary>
+            Explicit declared schema version, e.g. "2.3.0". Wins over the <see cref="T:TheTechIdea.Beep.SetUp.AppSchemaVersionAttribute"/>
+            on the entity assembly. When null and no attribute is present, the version gate falls back to
+            entity-diff only (a needed migration is never blocked for lack of a declared version).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.EntityAssemblies">
+            <summary>
+            Assembly-qualified or simple names of assemblies whose entity types feed the schema/version
+            steps. Used by the upgrade pass to resolve the model when the app didn't pass explicit types.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.SetUp.SetupOptions.EntityTypeNames">
+            <summary>
+            Explicit entity type names (full names) to migrate, resolved via the assembly handler. When
+            set, these take priority over <see cref="P:TheTechIdea.Beep.SetUp.SetupOptions.EntityAssemblies"/> discovery.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.SetUp.SetupStepResult">
             <summary>

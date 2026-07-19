@@ -31,30 +31,36 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             var dsName = MigrateDataSource?.DatasourceName ?? string.Empty;
 
+            // Phase 7 (W3): resolve the live entity via the SAME name planning uses (honours [Table]),
+            // so a [Table("TBL_X")] class drifts against TBL_X — not a non-existent table named after
+            // the CLR class (which made everything read as "added").
+            var desiredStructure = TryGetEntityStructure(entityType);
+            var resolvedName = GetEntityName(entityType, desiredStructure);
+
             var desired = new SchemaSnapshot
             {
-                ContextKey     = $"{dsName}/{entityType.Name}",
+                ContextKey     = $"{dsName}/{resolvedName}",
                 CapturedAt     = DateTime.UtcNow,
                 DataSourceName = dsName,
-                EntityName     = entityType.Name,
-                Fields         = ReadSnapshotFields(TryGetEntityStructure(entityType))
+                EntityName     = resolvedName,
+                Fields         = ReadSnapshotFields(desiredStructure)
             };
 
             EntityStructure current = null;
-            try { current = MigrateDataSource?.GetEntityStructure(entityType.Name, true); }
+            try { current = MigrateDataSource?.GetEntityStructure(resolvedName, true); }
             catch (Exception ex)
             {
                 _editor?.AddLogMessage("MigrationManager",
-                    $"InspectDrift: could not read live structure for '{entityType.Name}': {ex.Message}",
+                    $"InspectDrift: could not read live structure for '{resolvedName}': {ex.Message}",
                     DateTime.Now, 0, null, Errors.Warning);
             }
 
             var actual = new SchemaSnapshot
             {
-                ContextKey     = $"{dsName}/{entityType.Name}",
+                ContextKey     = $"{dsName}/{resolvedName}",
                 CapturedAt     = DateTime.UtcNow,
                 DataSourceName = dsName,
-                EntityName     = entityType.Name,
+                EntityName     = resolvedName,
                 Fields         = ReadSnapshotFields(current)
             };
 

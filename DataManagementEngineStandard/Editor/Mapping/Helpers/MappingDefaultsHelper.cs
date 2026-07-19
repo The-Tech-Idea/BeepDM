@@ -50,6 +50,14 @@ namespace TheTechIdea.Beep.Editor.Mapping.Helpers
                 if (def == null || string.IsNullOrWhiteSpace(def.PropertyName))
                     continue;
 
+                // Skip defaults the user switched off. This has to be checked here as well as in
+                // DefaultsManager.ResolveDefaultValue: the static branch below reads PropertyValue
+                // directly and never enters the resolver, and static is the most common kind — so
+                // gating only the resolver would leave one checkbox with two opposite behaviours
+                // depending on which path applied the default.
+                if (!def.IsEnabled)
+                    continue;
+
                 if (destFieldNames.Count > 0 && !destFieldNames.Contains(def.PropertyName))
                     continue; // not part of entity
 

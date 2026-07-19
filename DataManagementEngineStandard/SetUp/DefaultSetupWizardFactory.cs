@@ -112,6 +112,31 @@ namespace TheTechIdea.Beep.SetUp
         }
 
         /// <summary>
+        /// Builds the per-startup <em>upgrade pass</em> wizard: a single <see cref="VersionGateStep"/>
+        /// under the wizard id <c>"standard-upgrade"</c>. The distinct id gives it its own state key, so
+        /// its <c>SetupState</c> starts empty each launch and the gate is never suppressed by the wizard's
+        /// skip-completed-steps guard. Pass this as <c>BeepBootstrapper</c>'s <c>upgradeWizardFactory</c>:
+        /// <code>editor => factory.CreateUpgrade(editor, options, gate)</code>
+        /// </summary>
+        public (ISetupWizard wizard, SetupContext context) CreateUpgrade(
+            IDMEEditor editor, SetupOptions options = null, VersionGateStepOptions gateOptions = null)
+        {
+            if (editor == null) throw new ArgumentNullException(nameof(editor));
+
+            var opts = options ?? new SetupOptions();
+            var context = new SetupContext { Editor = editor, Options = opts };
+
+            var wizard = new SetupWizardBuilder()
+                .WithId("standard-upgrade")
+                .WithOptions(opts)
+                .WithLogger(_logger)
+                .AddStep(new VersionGateStep(gateOptions ?? new VersionGateStepOptions()))
+                .Build();
+
+            return (wizard, context);
+        }
+
+        /// <summary>
         /// Reads <c>ConfigEditor.DataDriversClasses</c> and returns one
         /// <see cref="DriverProvisionStep"/> per distinct <c>PackageName</c>.
         /// Drivers with <c>AutoLoad == true</c> are preferred; if none are

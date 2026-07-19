@@ -716,10 +716,31 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                 int? size = column.Size > 0 ? column.Size : null;
                 int? precision = column.NumericPrecision > 0 ? column.NumericPrecision : null;
                 int? scale = column.NumericScale > 0 ? column.NumericScale : null;
-                return MapClrTypeToDatasourceType(clrType, size, precision, scale);
+                var mapped = MapClrTypeToDatasourceType(clrType, size, precision, scale);
+                // Honour [Unicode(false)] on string columns (default true preserves nvarchar/nchar/ntext).
+                return clrType == typeof(string) ? ApplyUnicodePreference(mapped, column.IsUnicode) : mapped;
             }
 
             return column.Fieldtype;
+        }
+
+        /// <summary>
+        /// Downgrades a Unicode string SQL type to its non-Unicode form when <paramref name="isUnicode"/>
+        /// is false (e.g. <c>nvarchar(50)</c> → <c>varchar(50)</c>). No-op when unicode is requested or the
+        /// type has no Unicode/non-Unicode distinction (e.g. Postgres <c>text</c>). Preserves length/casing.
+        /// </summary>
+        public static string ApplyUnicodePreference(string sqlType, bool isUnicode)
+        {
+            if (isUnicode || string.IsNullOrWhiteSpace(sqlType))
+                return sqlType;
+
+            // Strip a leading 'n'/'N' from nvarchar / nchar / ntext only.
+            foreach (var uni in new[] { "nvarchar", "nchar", "ntext" })
+            {
+                if (sqlType.StartsWith(uni, StringComparison.OrdinalIgnoreCase))
+                    return sqlType.Substring(1); // drop the leading 'n'/'N'
+            }
+            return sqlType;
         }
 
         private static Type ResolveClrType(string fieldType)

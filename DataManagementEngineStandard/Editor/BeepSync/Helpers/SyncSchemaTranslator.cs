@@ -45,7 +45,16 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 UpsertKeyColumns = new List<string> { schema.DestinationSyncDataField ?? schema.SourceSyncDataField ?? string.Empty },
                 ErrorStore = errorStore,
                 RunHistoryStore = historyStore,
-                CreateDestinationIfNotExists = true,
+
+                // Tracks the schema rather than being hardcoded true. The upstream SyncSchemaPreflight
+                // gate is not a substitute: it only consults this flag when the destination is
+                // absent (`if (!destExists && !request.CreateDestinationIfNotExists)`), and it decides
+                // "absent" with GetEntitesList while the import re-decides with CheckEntityExist.
+                // Those two genuinely disagree — FileDataSource answers the first from its in-memory
+                // EntitiesNames and the second with File.Exists — so an entity that is registered but
+                // not yet written reads as present to the preflight and missing to the import. With
+                // true hardcoded here, that case created an entity a caller had explicitly forbidden.
+                CreateDestinationIfNotExists = schema.CreateDestinationIfNotExists,
                 ApplyDefaults = true
             };
 
@@ -94,11 +103,12 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             return config;
         }
 
-        private static int GetBatchSize(DataSyncSchema schema)
-        {
-            // DataSyncSchema may have BatchSize property in future; use default 50 for now
-            return 50;
-        }
+        /// <summary>
+        /// Batch size from the schema, falling back to 50 when unset. The fallback matters:
+        /// BatchSize is a plain int defaulting to 0, and a 0-row batch would stall the import.
+        /// </summary>
+        private static int GetBatchSize(DataSyncSchema schema) =>
+            schema?.BatchSize > 0 ? schema.BatchSize : 50;
 
         private static object GetLastWatermarkValue(DataSyncSchema schema)
         {

@@ -64,6 +64,7 @@ services.AddBeepSetup().AsEnterprise(o => {   // swaps providers; same steps, sa
 | 6 | Audit, reporting & telemetry | [PHASE-06](PHASE-06-Audit-Reporting-Telemetry.md) | P5 | [x] |
 | 7 | Solution aggregate & multi-app | [PHASE-07](PHASE-07-Solution-Aggregate-MultiApp.md) | P2, P3 | [x] |
 | 8 | CLI, unattended & CI | [PHASE-08](PHASE-08-CLI-Unattended-CI.md) | P2 | [ ] |
+| 9 | App/DB versioning & migrate-on-startup | [PHASE-09](PHASE-09-Versioned-Migrate-On-Startup.md) | P1 | [~] |
 
 ---
 

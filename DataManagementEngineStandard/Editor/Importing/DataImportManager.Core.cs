@@ -357,24 +357,59 @@ namespace TheTechIdea.Beep.Editor.Importing
         /// <summary>
         /// Gets the current import status
         /// </summary>
+        /// <remarks>
+        /// Returns a snapshot of the live <c>_status</c> that RunImportAsync maintains under
+        /// <c>_statusLock</c> — record/batch counts, state, timings and the last message.
+        /// <para>
+        /// This used to build a fresh <see cref="ImportStatus"/> instead, which silently discarded
+        /// all of that: every caller got State=Idle with zero counts. Its flags were derived from
+        /// <c>_importTask</c> and <c>_internalCancellationTokenSource</c>, neither of which is ever
+        /// assigned, so IsRunning/IsCompleted/IsCancelled were hardcoded false in practice. The
+        /// run-state flags are now derived from the tracked <see cref="ImportState"/>.
+        /// </para>
+        /// <para>
+        /// Note that <see cref="CancelImport"/> still cancels the unassigned
+        /// <c>_internalCancellationTokenSource</c> and so does nothing; cancel a run by passing a
+        /// token to <c>RunImportAsync</c>. IsCancelled below reflects the token the run actually
+        /// observed, not that dead field.
+        /// </para>
+        /// </remarks>
         /// <returns>Import status information</returns>
         public ImportStatus GetImportStatus()
         {
+            ImportStatus snapshot;
+            lock (_statusLock) { snapshot = _status.Snapshot(); }
+
+            snapshot.IsRunning = snapshot.State == ImportState.Running;
+            snapshot.IsCompleted = snapshot.State == ImportState.Completed;
+            snapshot.IsCancelled = snapshot.State == ImportState.Cancelled;
+            snapshot.IsPaused = !_pauseEvent.IsSet;
+            snapshot.HasErrors = snapshot.State == ImportState.Faulted || HasLoggedErrors();
+
+            return snapshot;
+        }
+
+        /// <summary>
+        /// Best-effort scan of the import log for error entries.
+        /// </summary>
+        /// <remarks>
+        /// Copying <c>DataImportProgressHelper.ImportLogData</c> races with the import thread
+        /// appending to the same unsynchronized list, so it can throw. That must not escape: callers
+        /// poll GetImportStatus while a run is in flight, and a status built by a catch-all would
+        /// report the default State (Idle) — reading as terminal and stopping the poll mid-run. A
+        /// missed error flag on one poll is recoverable; a frozen progress UI is not.
+        /// </remarks>
+        private bool HasLoggedErrors()
+        {
             try
             {
-                return new ImportStatus
-                {
-                    IsRunning = _importTask?.Status == TaskStatus.Running,
-                    IsPaused = !_pauseEvent.IsSet,
-                    IsCancelled = _internalCancellationTokenSource?.Token.IsCancellationRequested ?? false,
-                    IsCompleted = _importTask?.IsCompleted ?? false,
-                    HasErrors = _progressHelper.ImportLogData.Any(log => log.Level == ImportLogLevel.Error)
-                };
+                return _progressHelper.ImportLogData.Any(log => log.Level == ImportLogLevel.Error);
             }
             catch (Exception ex)
             {
-                _progressHelper.LogError("Error getting import status", ex);
-                return new ImportStatus { HasErrors = true };
+                System.Diagnostics.Debug.WriteLine(
+                    $"GetImportStatus: could not scan the import log ({ex.Message}); reporting no errors for this poll.");
+                return false;
             }
         }
 

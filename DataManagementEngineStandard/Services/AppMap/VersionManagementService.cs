@@ -44,12 +44,34 @@ namespace TheTechIdea.Beep.Services.AppMap
         public VersionComparison CompareVersions(DatabaseVersion v1, DatabaseVersion v2)
         {
             var comparison = new VersionComparison { Version1 = v1, Version2 = v2 };
-            // Placeholder — real implementation would diff entity structures
-            comparison.Changes = new List<VersionChangeEntry>
+            if (v1 == null || v2 == null) return comparison;
+
+            var order = SemVer.Compare(v1, v2);
+            // A major-version change is breaking; so is a drop in entity count (entities removed).
+            bool majorBump = v1.Major != v2.Major;
+            int entityDelta = v2.EntityCount - v1.EntityCount;
+
+            // No numeric movement and identical schema fingerprint ⇒ genuinely equal, no entries.
+            bool sameSchema = !string.IsNullOrEmpty(v1.SchemaHash)
+                && string.Equals(v1.SchemaHash, v2.SchemaHash, StringComparison.OrdinalIgnoreCase);
+            if (order == 0 && sameSchema && entityDelta == 0)
+                return comparison;
+
+            var change = new VersionChangeEntry
             {
-                new() { EntityName = "(comparison)", ChangeType = VersionChangeType.Modified,
-                    FromVersion = v1.VersionString, ToVersion = v2.VersionString, IsBreaking = v1.Major != v2.Major }
+                EntityName = "(schema)",
+                FromVersion = v1.VersionString,
+                ToVersion = v2.VersionString,
+                ChangeType = entityDelta > 0 ? VersionChangeType.Added
+                           : entityDelta < 0 ? VersionChangeType.Removed
+                           : VersionChangeType.Modified,
+                IsBreaking = majorBump || entityDelta < 0
             };
+            if (entityDelta != 0)
+                change.PropertyChanges.Add($"Entity count {v1.EntityCount} → {v2.EntityCount}");
+            if (!sameSchema)
+                change.PropertyChanges.Add("Schema hash changed");
+            comparison.Changes.Add(change);
             return comparison;
         }
 

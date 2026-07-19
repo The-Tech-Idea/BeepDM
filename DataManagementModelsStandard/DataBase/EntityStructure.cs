@@ -538,6 +538,12 @@ private int _id;
         public string ColumnTypeName { get; set; }
         public string DatabaseGeneratedOptionName { get; set; }
         public bool IsNotMapped { get; set; }
+        /// <summary>
+        /// Whether a string column should use a Unicode type (e.g. SQL Server <c>nvarchar</c>) rather
+        /// than a non-Unicode one (<c>varchar</c>). Defaults true to preserve historical DDL; set false
+        /// via EF-Core <c>[Unicode(false)]</c>. Only affects providers that distinguish the two.
+        /// </summary>
+        public bool IsUnicode { get; set; } = true;
         public EntityField()
         {
             Fieldtype = "Text";

@@ -265,6 +265,22 @@ namespace TheTechIdea.Beep.Editor.Migration
                     baseOp.Note = $"Entity '{entityName}' requires {baseOp.MissingColumns.Count} missing column(s).";
                     baseOp.ProviderAssumptions.AddRange(GetOperationAssumptions(category, type, baseOp.Kind));
                     baseOp.FallbackTasks.AddRange(GetFallbackTasks(baseOp.Kind, entityName, providerProfile));
+
+                    // Phase 7 (W2 lint): a missing column whose [Column] name differs from its CLR
+                    // name, while a live column still matches the CLR name, is a likely rename — the
+                    // additive plan ADDS the new column but neither drops nor copies the old one.
+                    var renameHints = missingColumns
+                        .Where(f => f != null && !string.IsNullOrWhiteSpace(f.ColumnName) &&
+                                    !string.Equals(f.ColumnName, f.FieldName, StringComparison.OrdinalIgnoreCase) &&
+                                    current.Fields.Any(cf => string.Equals(EffectiveColumnName(cf), f.FieldName, StringComparison.OrdinalIgnoreCase)))
+                        .Select(f => $"{f.FieldName}→{f.ColumnName}")
+                        .ToList();
+                    if (renameHints.Count > 0)
+                        baseOp.ProviderAssumptions.Add(
+                            $"Possible column rename(s) detected ({string.Join(", ", renameHints)}). " +
+                            "Column rename is not automated — the plan adds the new column and leaves the old one; " +
+                            "use RenameColumn (and migrate data) if a rename was intended.");
+
                     ops.Add(baseOp);
                 }
 

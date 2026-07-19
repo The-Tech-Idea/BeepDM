@@ -24,6 +24,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 if (_registeredAssemblies.Add(assembly))
                 {
+                    ClearEntityStructureCache(); // resolution set changed — drop cached conversions
                     _editor?.AddLogMessage("Beep",
                         $"MigrationManager: Registered assembly '{assembly.GetName().Name}' for entity discovery",
                         DateTime.Now, 0, null, Errors.Ok);
@@ -50,6 +51,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 if (_registeredAssemblies.Remove(assembly))
                 {
+                    ClearEntityStructureCache(); // resolution set changed — drop cached conversions
                     _editor?.AddLogMessage("Beep",
                         $"MigrationManager: Unregistered assembly '{assembly.GetName().Name}' from entity discovery",
                         DateTime.Now, 0, null, Errors.Ok);

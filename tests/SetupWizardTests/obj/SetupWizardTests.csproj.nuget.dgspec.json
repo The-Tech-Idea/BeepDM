@@ -1,24 +1,28 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\tests\\SetupWizardTests\\SetupWizardTests.csproj": {}
+    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\SetupWizardTests.csproj": {}
   },
   "projects": {
-    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementEngineStandard\\DataManagementEngine.csproj": {
+    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementEngineStandard\\DataManagementEngine.csproj": {
       "version": "3.1.1",
       "restore": {
-        "projectUniqueName": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementEngineStandard\\DataManagementEngine.csproj",
+        "projectUniqueName": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementEngineStandard\\DataManagementEngine.csproj",
         "projectName": "TheTechIdea.Beep.DataManagementEngine",
-        "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementEngineStandard\\DataManagementEngine.csproj",
+        "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementEngineStandard\\DataManagementEngine.csproj",
         "packagesPath": "C:\\Users\\f_ald\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementEngineStandard\\obj\\",
+        "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementEngineStandard\\obj\\",
         "projectStyle": "PackageReference",
         "crossTargeting": true,
         "fallbackFolders": [
+          "C:\\Users\\f_ald\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder",
+          "C:\\Program Files\\DevExpress 23.1\\Components\\Offline Packages",
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
           "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\config\\Godot.Offline.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\DevExpress 23.1.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -29,6 +33,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\DevExpress 23.1\\Components\\System\\Components\\Packages": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
           "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles": {},
           "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles\\DataSources": {},
@@ -39,8 +44,8 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj": {
-                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj"
+              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj": {
+                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj"
               }
             }
           },
@@ -48,8 +53,8 @@
             "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj": {
-                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj"
+              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj": {
+                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj"
               }
             }
           },
@@ -57,8 +62,8 @@
             "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj": {
-                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj"
+              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj": {
+                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj"
               }
             }
           }
@@ -164,7 +169,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -668,7 +673,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,8.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,8.0.32767]",
@@ -1178,7 +1183,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,9.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,9.0.32767]",
@@ -1604,21 +1609,25 @@
         }
       }
     },
-    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj": {
+    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj": {
       "version": "3.1.1",
       "restore": {
-        "projectUniqueName": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj",
+        "projectUniqueName": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj",
         "projectName": "TheTechIdea.Beep.DataManagementModels",
-        "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\DataManagementModels.csproj",
+        "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\DataManagementModels.csproj",
         "packagesPath": "C:\\Users\\f_ald\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementModelsStandard\\obj\\",
+        "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementModelsStandard\\obj\\",
         "projectStyle": "PackageReference",
         "crossTargeting": true,
         "fallbackFolders": [
+          "C:\\Users\\f_ald\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder",
+          "C:\\Program Files\\DevExpress 23.1\\Components\\Offline Packages",
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
           "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\config\\Godot.Offline.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\DevExpress 23.1.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -1629,6 +1638,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\DevExpress 23.1\\Components\\System\\Components\\Packages": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
           "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles": {},
           "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles\\DataSources": {},
@@ -1683,7 +1693,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1978,7 +1988,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.3.32767]",
@@ -2281,7 +2291,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -2569,20 +2579,24 @@
         }
       }
     },
-    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\tests\\SetupWizardTests\\SetupWizardTests.csproj": {
+    "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\SetupWizardTests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\tests\\SetupWizardTests\\SetupWizardTests.csproj",
+        "projectUniqueName": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\SetupWizardTests.csproj",
         "projectName": "SetupWizardTests",
-        "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\tests\\SetupWizardTests\\SetupWizardTests.csproj",
+        "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\SetupWizardTests.csproj",
         "packagesPath": "C:\\Users\\f_ald\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\tests\\SetupWizardTests\\obj\\",
+        "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
+          "C:\\Users\\f_ald\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder",
+          "C:\\Program Files\\DevExpress 23.1\\Components\\Offline Packages",
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
           "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\config\\Godot.Offline.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\DevExpress 23.1.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -2591,6 +2605,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\DevExpress 23.1\\Components\\System\\Components\\Packages": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
           "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles": {},
           "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles\\DataSources": {},
@@ -2601,8 +2616,8 @@
             "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementEngineStandard\\DataManagementEngine.csproj": {
-                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\beepdm\\DataManagementEngineStandard\\DataManagementEngine.csproj"
+              "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementEngineStandard\\DataManagementEngine.csproj": {
+                "projectPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\DataManagementEngineStandard\\DataManagementEngine.csproj"
               }
             }
           }
@@ -2657,7 +2672,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

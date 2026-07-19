@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SetupWizardTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d6e190f81ef804a7f1f457e961ce91eb651b0c9f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+82284a632eca1ce68a2066ed396061c13dbd6a72")]
 [assembly: System.Reflection.AssemblyProductAttribute("SetupWizardTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SetupWizardTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

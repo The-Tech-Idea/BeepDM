@@ -86,17 +86,24 @@ namespace TheTechIdea.Beep.WebAPI
                 var paginationConfig = _configHelper.GetPaginationConfiguration();
                 var url = _dataHelper.BuildEndpointUrl(_configHelper.BaseUrl, endpointConfig.ListEndpoint, filter, pageNumber, pageSize);
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
-                
+
+                // Ensure authentication before making request.
+                // This overload used to add the auth HEADERS without first acquiring the token, so a
+                // caller that reached the paged read before anything else had authenticated sent an
+                // unauthenticated request and got an empty PagedResult back — silently, since the
+                // failure is only logged. The unbounded GetEntity above has always done this.
+                _authHelper.EnsureAuthenticatedAsync().Wait();
+
                 // Add headers from configuration
                 var headers = _configHelper.GetHeaders();
                 foreach (var header in headers)
                 {
                     request.Headers.Add(header.Key, header.Value);
                 }
-                
+
                 // Add authentication headers
                 _authHelper.AddAuthenticationHeaders(request);
-                
+
                 var response = _requestHelper.SendWithRetryAsync(request, $"GetEntityPaged-{EntityName}").Result;
 
                 if (response.IsSuccessStatusCode)

@@ -217,12 +217,20 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (current?.Fields == null || desired?.Fields == null)
                 return new List<EntityField>();
 
+            // Phase 7 (W2): compare by the EFFECTIVE datasource column name — a field's [Column("x")]
+            // rename means its live column is "x", not the CLR property name. Comparing FieldName-only
+            // made a [Column]-renamed property look perpetually "missing" and re-planned every run.
             var existing = new HashSet<string>(
-                current.Fields.Select(f => f.FieldName),
+                current.Fields.Select(EffectiveColumnName),
                 StringComparer.OrdinalIgnoreCase);
 
-            return desired.Fields.Where(f => !existing.Contains(f.FieldName)).ToList();
+            return desired.Fields.Where(f => !existing.Contains(EffectiveColumnName(f))).ToList();
         }
+
+        /// <summary>The datasource column name a field maps to: its <c>[Column]</c> name when set, else its field name.</summary>
+        private static string EffectiveColumnName(EntityField field)
+            => field == null ? string.Empty
+             : (!string.IsNullOrWhiteSpace(field.ColumnName) ? field.ColumnName : field.FieldName);
 
         public IErrorsInfo CreateEntity(EntityStructure entity)
         {

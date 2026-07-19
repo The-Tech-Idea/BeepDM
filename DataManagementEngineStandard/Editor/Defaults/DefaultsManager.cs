@@ -193,6 +193,14 @@ namespace TheTechIdea.Beep.Editor.Defaults
         {
             EnsureInitialized(editor);
             if (defaultValue == null) return null;
+
+            // Honour the switch. DefaultValue.IsEnabled was declared, defaulted true, and assigned by
+            // every editor that writes defaults — but read by no consuming code, so a default the user
+            // had explicitly disabled was still resolved and applied. It defaults true, so existing
+            // definitions are unaffected; only the ones someone deliberately turned off change, and
+            // they change to what turning them off was supposed to mean.
+            if (!defaultValue.IsEnabled) return null;
+
             try
             {
                 if (!string.IsNullOrEmpty(defaultValue.Rule))

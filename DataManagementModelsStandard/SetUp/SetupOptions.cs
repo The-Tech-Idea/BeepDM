@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace TheTechIdea.Beep.SetUp
 {
     /// <summary>
@@ -27,5 +29,34 @@ namespace TheTechIdea.Beep.SetUp
         /// <see cref="SetupReport.RollbackReportJson"/> regardless of this flag.
         /// </remarks>
         public bool AutoRollbackOnFailure { get; init; }
+
+        // ── Versioned migrate-on-startup (Phase 9) ────────────────────────────
+
+        /// <summary>
+        /// When true (the default), the bootstrap upgrade pass compares the declared schema version
+        /// and the entity model against the version recorded in the target database on every startup,
+        /// and applies pending migrations. Set false for a locked-down deployment that requires an
+        /// explicit admin action to migrate.
+        /// </summary>
+        public bool MigrateOnStartup { get; init; } = true;
+
+        /// <summary>
+        /// Explicit declared schema version, e.g. "2.3.0". Wins over the <see cref="AppSchemaVersionAttribute"/>
+        /// on the entity assembly. When null and no attribute is present, the version gate falls back to
+        /// entity-diff only (a needed migration is never blocked for lack of a declared version).
+        /// </summary>
+        public string DeclaredSchemaVersion { get; init; }
+
+        /// <summary>
+        /// Assembly-qualified or simple names of assemblies whose entity types feed the schema/version
+        /// steps. Used by the upgrade pass to resolve the model when the app didn't pass explicit types.
+        /// </summary>
+        public IReadOnlyList<string> EntityAssemblies { get; init; }
+
+        /// <summary>
+        /// Explicit entity type names (full names) to migrate, resolved via the assembly handler. When
+        /// set, these take priority over <see cref="EntityAssemblies"/> discovery.
+        /// </summary>
+        public IReadOnlyList<string> EntityTypeNames { get; init; }
     }
 }

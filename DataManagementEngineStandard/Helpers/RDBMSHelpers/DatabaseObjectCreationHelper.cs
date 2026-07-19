@@ -281,7 +281,9 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
         /// <returns>Column definition string</returns>
         private static string GenerateColumnDefinition(EntityField field, DataSourceType databaseType)
         {
-            var dataType = MapDataType(field.Fieldtype, databaseType);
+            // Honour [Unicode(false)] on string columns (default true keeps nvarchar/nchar/ntext).
+            var dataType = UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.ApplyUnicodePreference(
+                MapDataType(field.Fieldtype, databaseType), field.IsUnicode);
             var nullable = field.AllowDBNull ? "" : " NOT NULL";
             var identity = field.IsAutoIncrement ? GetIdentityClause(databaseType) : "";
             
@@ -305,8 +307,12 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
             // Remove System. prefix if present for mapping purposes
             string baseType = normalizedType.StartsWith("SYSTEM.") ? normalizedType.Substring(7) : normalizedType;
 
-            // Try to get mappings from DataTypeFieldMappingHelper first
-            var mappings = DataTypeFieldMappingHelper.GetDataTypes(databaseType, null);
+            // Try to get mappings from DataTypeFieldMappingHelper first. The lookup dereferences an
+            // IDMEEditor internally and throws when none is available (static callers pass null), so
+            // guard it and fall through to the switch-based fallback rather than failing the whole DDL.
+            List<TheTechIdea.Beep.DriversConfigurations.DatatypeMapping> mappings = null;
+            try { mappings = DataTypeFieldMappingHelper.GetDataTypes(databaseType, null); }
+            catch { mappings = null; }
             if (mappings != null && mappings.Any())
             {
                 // Look for exact .NET type match

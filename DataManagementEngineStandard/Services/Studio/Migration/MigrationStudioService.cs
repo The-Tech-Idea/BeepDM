@@ -328,6 +328,12 @@ public sealed class MigrationStudioService : IMigrationStudioService
                 };
                 _ = _ledger.RecordAsync(entry);
 
+                // Phase 9: record the resulting database version (in-DB marker + JSON mirror), so every
+                // Studio caller (web, …) gets version tracking without recomputing it in the UI.
+                var versionedDs = planHandle.TargetSourceName ?? planHandle.SourceSourceName;
+                if (!string.IsNullOrWhiteSpace(versionedDs))
+                    new MigrationTrackingService(_editor).StampDatabaseVersion(versionedDs, plan);
+
                 return StudioResult<MigrationExecutionHandle>.Ok(new MigrationExecutionHandle(
                     ExecutionToken: result.ExecutionToken, PlanId: plan.PlanId, PlanHash: plan.PlanHash,
                     StartedAt: DateTimeOffset.UtcNow, State: state));

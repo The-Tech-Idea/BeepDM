@@ -495,7 +495,26 @@ namespace TheTechIdea.Beep.Editor.Importing
             if (config == null)
                 return CreateErrorsInfo(Errors.Failed, "Import configuration is required");
 
-            UpdateStatus(s => { s.State = ImportState.Running; s.StartedAt = DateTime.UtcNow; s.RecordsProcessed = 0; });
+            // Reset the whole snapshot, not just RecordsProcessed. A manager can be reused for
+            // several runs, and every field here is now returned to callers by GetImportStatus —
+            // so a leftover FinishedAt or PercentComplete=100 from the previous run would make the
+            // new run report as already-finished until it happened to overwrite each field.
+            UpdateStatus(s =>
+            {
+                s.State = ImportState.Running;
+                s.StartedAt = DateTime.UtcNow;
+                s.FinishedAt = null;
+                s.RecordsProcessed = 0;
+                s.TotalRecords = 0;
+                s.PercentComplete = 0;
+                s.CurrentBatch = 0;
+                s.TotalBatches = 0;
+                s.RecordsBlocked = 0;
+                s.RecordsQuarantined = 0;
+                s.RecordsWarned = 0;
+                s.LastMessage = string.Empty;
+                s.Metrics = null;
+            });
 
             try
             {
