@@ -9,6 +9,7 @@ using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
 using TheTechIdea.Beep.Studio.Migration.Ledger;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio.Apps;
 
@@ -69,6 +70,28 @@ internal sealed class AppDataWorkflow : IAppDataWorkflow
         catch (Exception ex) { return StudioResult<IReadOnlyList<MaskingRule>>.Fail(StudioErrorCode.HostNotSupported, ex.Message); }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Stage 2.7a: returns Data-kind entries from the unified ledger. When no ledger is
+    /// wired (older hosts), returns an empty list rather than failing — history is best-effort.</remarks>
+    public async Task<StudioResult<IReadOnlyList<MigrationLedgerEntry>>> GetHistoryAsync(
+        string appId, string? envId = null, string? datasourceName = null, CancellationToken ct = default)
+    {
+        if (_ledger == null)
+            return StudioResult<IReadOnlyList<MigrationLedgerEntry>>.Ok(Array.Empty<MigrationLedgerEntry>());
+
+        var query = new MigrationLedgerQuery
+        {
+            AppId = appId,
+            EnvId = envId,
+            DatasourceName = datasourceName,
+            Kind = MigrationKind.Data,
+        };
+        var result = await _ledger.QueryAsync(query, ct).ConfigureAwait(false);
+        if (!result.IsSuccess)
+            return StudioResult<IReadOnlyList<MigrationLedgerEntry>>.Fail(result.Error);
+        return StudioResult<IReadOnlyList<MigrationLedgerEntry>>.Ok(result.Value ?? Array.Empty<MigrationLedgerEntry>());
+    }
+
     // ── Core transfer logic ─────────────────────────────────────────────────
 
     private async Task<StudioResult<DataSyncReport>> RunTransferAsync(
@@ -81,6 +104,27 @@ internal sealed class AppDataWorkflow : IAppDataWorkflow
         if (srcEnv == null || tgtEnv == null) return StudioResult<DataSyncReport>.Fail(StudioErrorCode.InvalidArgument, "Both environments must exist.");
         if (srcEnv.Datasources.Count == 0 || tgtEnv.Datasources.Count == 0)
             return StudioResult<DataSyncReport>.Fail(StudioErrorCode.InvalidArgument, "Both environments need at least one datasource.");
+
+        // Stage 2.9: skip-if-applied — if this exact transfer already succeeded, return a skipped
+        // result instead of re-running. Mirrors the schema path's IsAppliedAsync gate.
+        string? planHash = null;
+        if (_ledger != null)
+        {
+            planHash = ComputeDataTransferHash(appId, fromEnv, toEnv, rowRatio, masking);
+            var already = await _ledger.IsAppliedAsync(planHash, ct: ct).ConfigureAwait(false);
+            if (already.IsSuccess && already.Value)
+            {
+                return StudioResult<DataSyncReport>.Ok(new DataSyncReport
+                {
+                    AppId = appId,
+                    FromEnv = fromEnv,
+                    ToEnv = toEnv,
+                    Succeeded = true,
+                    Message = $"Skipped: identical data transfer already recorded (plan hash {planHash[..8]}).",
+                    CompletedAt = DateTimeOffset.UtcNow,
+                });
+            }
+        }
 
         var report = new DataSyncReport { AppId = appId, FromEnv = fromEnv, ToEnv = toEnv, ColumnsMasked = masking?.Sum(m => 1) ?? 0 };
         var rules = masking?.ToList();
@@ -141,7 +185,7 @@ internal sealed class AppDataWorkflow : IAppDataWorkflow
         report.Succeeded = report.EntitiesCopied > 0;
         if (string.IsNullOrWhiteSpace(report.Message)) report.Message = label;
 
-        if (_ledger != null && report.Succeeded)
+        if (_ledger != null && report.Succeeded && planHash != null)
         {
             var entry = new MigrationLedgerEntry
             {
@@ -151,19 +195,43 @@ internal sealed class AppDataWorkflow : IAppDataWorkflow
                 AppId = appId,
                 SourceEnv = fromEnv,
                 TargetEnv = toEnv,
+                PlanHash = planHash,
                 RowsAffected = (int)report.RowsCopied,
                 StepCount = report.EntitiesCopied,
                 AppliedBy = "system",
                 AppliedAt = DateTimeOffset.UtcNow,
                 CompletedAt = DateTimeOffset.UtcNow,
             };
-            _ = _ledger.RecordAsync(entry);
+            await _ledger.RecordAsync(entry, ct).ConfigureAwait(false);
         }
 
         return StudioResult<DataSyncReport>.Ok(report);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Stage 2.9: deterministic hash of a data-transfer request, used as the ledger PlanHash for
+    /// skip-if-applied. Covers app + source env + target env + row ratio + masking-rule signature
+    /// (entity, column, strategy, constant value). Row counts and timestamps are intentionally
+    /// excluded — those vary across runs even when the request is identical.
+    /// </summary>
+    private static string ComputeDataTransferHash(
+        string appId, string fromEnv, string toEnv,
+        double? rowRatio, IReadOnlyCollection<MaskingRule>? masking)
+    {
+        // Stable, ordered serialization of the masking rules so the hash doesn't depend on list order.
+        var rulesSig = masking == null
+            ? string.Empty
+            : string.Join("|", masking
+                .OrderBy(r => r.EntityName, StringComparer.Ordinal)
+                .ThenBy(r => r.ColumnName, StringComparer.Ordinal)
+                .Select(r => $"{r.EntityName}.{r.ColumnName}:{r.Strategy}:{r.ConstantValue ?? ""}"));
+        var payload = $"data|{appId}|{fromEnv}|{toEnv}|ratio={rowRatio?.ToString("0.####") ?? "full"}|rules={rulesSig}";
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(payload));
+        // Hex of the first 8 bytes — 16 chars, plenty for collision safety in a per-app ledger.
+        return Convert.ToHexString(bytes, 0, 8).ToLowerInvariant();
+    }
 
     private static object ApplyMasking(object row, string entityName, List<MaskingRule> rules)
     {

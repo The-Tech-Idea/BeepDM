@@ -53,23 +53,39 @@ namespace TheTechIdea.Beep.Installer
             });
         }
 
-        /// <summary>Register a registry value that was written (revert: delete value).</summary>
-        public void RegisterRegistryWrite(string keyPath, string valueName)
+        /// <summary>
+        /// Register a registry value that was written (revert: delete value).
+        /// </summary>
+        /// <param name="hive">
+        /// The hive the value was written to. Required for correctness: this used to assume
+        /// HKEY_LOCAL_MACHINE, so rolling back a per-user install looked in the wrong hive and
+        /// silently left the value behind — while also probing a machine hive it may not have
+        /// had permission to write.
+        /// </param>
+        public void RegisterRegistryWrite(string keyPath, string valueName, RegistryKey hive)
         {
+            var hiveName = hive?.Name ?? "(null)";
             _actions.Push(new RollbackAction
             {
-                Description = $"Remove registry value: {keyPath}\\{valueName}",
+                Description = $"Remove registry value: {hiveName}\\{keyPath}\\{valueName}",
                 Execute = () =>
                 {
                     try
                     {
-                        using var key = Registry.LocalMachine.OpenSubKey(keyPath, writable: true);
+                        using var key = hive?.OpenSubKey(keyPath, writable: true);
                         key?.DeleteValue(valueName, throwOnMissingValue: false);
                     }
-                    catch (Exception ex) { _logger?.Warn("Rollback", $"RegisterRegistryWrite revert: could not remove '{keyPath}\\{valueName}': {ex.Message}"); }
+                    catch (Exception ex) { _logger?.Warn("Rollback", $"RegisterRegistryWrite revert: could not remove '{hiveName}\\{keyPath}\\{valueName}': {ex.Message}"); }
                 }
             });
         }
+
+        /// <summary>
+        /// Backwards-compatible overload assuming HKEY_LOCAL_MACHINE.
+        /// </summary>
+        [Obsolete("Pass the hive explicitly — assuming HKLM breaks rollback for per-user installs.")]
+        public void RegisterRegistryWrite(string keyPath, string valueName)
+            => RegisterRegistryWrite(keyPath, valueName, Registry.LocalMachine);
 
         /// <summary>Register a shortcut that was created (revert: delete .lnk).</summary>
         public void RegisterShortcutCreated(string linkPath)

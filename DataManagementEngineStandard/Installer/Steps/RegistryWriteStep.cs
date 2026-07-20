@@ -42,9 +42,17 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (entries.Count == 0)
                 return StepErrorHelpers.Ok("No registry entries to write.");
 
+            if (context.Options?.DryRun == true)
+                return StepErrorHelpers.Ok($"Dry run: {entries.Count} registry value(s) would be written. Nothing was written.");
+
             var written = new List<RegistryOperation>();
             // Honor install scope: per-user → HKCU, 32-bit → WOW6432 view (A3.1).
             using var baseKey = InstallScope.OpenBaseKey(context, config);
+
+            // Registry writes were not registered for rollback at all, so a failure after this
+            // step left the keys behind. Register against the hive actually written to.
+            var rollback = context.TryGetProperty<RollbackManager>("RollbackManager");
+
             foreach (var entry in entries)
             {
                 using var key = baseKey.CreateSubKey(entry.KeyPath);
@@ -52,6 +60,7 @@ namespace TheTechIdea.Beep.Installer.Steps
                 {
                     key.SetValue(entry.ValueName, entry.Value, entry.ValueKind);
                     written.Add(entry);
+                    rollback?.RegisterRegistryWrite(entry.KeyPath, entry.ValueName, baseKey);
                 }
             }
 

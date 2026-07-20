@@ -155,11 +155,22 @@ namespace TheTechIdea.Beep.Installer
 
         #region File Type Associations
 
-        /// <summary>Registers a file extension association with an application.</summary>
-        public static void RegisterFileAssociation(string extension, string progId, string description, string iconPath, string openCommand)
+        /// <summary>
+        /// Registers a file extension association with an application.
+        /// </summary>
+        /// <param name="perUser">
+        /// True writes to HKCU (current user only); false writes to HKLM so the association
+        /// applies to every user, which is what a per-machine install should do. This used to
+        /// be hardcoded to HKCU, so a per-machine install registered associations that only
+        /// the installing account could see.
+        /// </param>
+        public static void RegisterFileAssociation(string extension, string progId, string description,
+                                                   string iconPath, string openCommand, bool perUser = true)
         {
+            using var root = ClassesRoot(perUser);
+
             // Register ProgID
-            using (var key = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}"))
+            using (var key = root?.CreateSubKey(progId))
             {
                 key?.SetValue("", description);
                 using var iconKey = key?.CreateSubKey("DefaultIcon");
@@ -169,7 +180,7 @@ namespace TheTechIdea.Beep.Installer
             }
 
             // Associate extension
-            using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}"))
+            using (var extKey = root?.CreateSubKey(extension))
             {
                 extKey?.SetValue("", progId);
             }
@@ -178,16 +189,23 @@ namespace TheTechIdea.Beep.Installer
             SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
         }
 
-        /// <summary>Removes a file extension association.</summary>
-        public static void UnregisterFileAssociation(string extension, string progId)
+        /// <summary>Removes a file extension association. Must match the scope used to register.</summary>
+        public static void UnregisterFileAssociation(string extension, string progId, bool perUser = true)
         {
+            using var root = ClassesRoot(perUser);
+
             // Best-effort cleanup: a missing/locked key must not abort unregistration — report and continue.
-            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}", throwOnMissingSubKey: false); }
+            try { root?.DeleteSubKeyTree(progId, throwOnMissingSubKey: false); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"InstallHelpers.UnregisterFileAssociation: delete progId '{progId}' ignored: {ex}"); }
-            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}", throwOnMissingSubKey: false); }
+            try { root?.DeleteSubKeyTree(extension, throwOnMissingSubKey: false); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"InstallHelpers.UnregisterFileAssociation: delete extension '{extension}' ignored: {ex}"); }
             SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
         }
+
+        /// <summary>The <c>Software\Classes</c> subkey of the hive matching the install scope.</summary>
+        private static RegistryKey? ClassesRoot(bool perUser)
+            => (perUser ? Registry.CurrentUser : Registry.LocalMachine)
+                .CreateSubKey(@"Software\Classes");
 
         [DllImport("shell32.dll")]
         private static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2);

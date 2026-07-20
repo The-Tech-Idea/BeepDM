@@ -60,6 +60,16 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (actions.Count == 0)
                 return StepErrorHelpers.Ok($"No {_timing} actions.");
 
+            // Custom actions launch arbitrary executables, so honouring DryRun matters more
+            // here than anywhere else: a "preview" that silently runs the author's scripts is
+            // worse than no preview at all.
+            if (context.Options?.DryRun == true)
+            {
+                var names = actions.OrderBy(a => a.Order).Select(a => a.Description ?? a.Path);
+                return StepErrorHelpers.Ok(
+                    $"Dry run: {actions.Count} {_timing} action(s) would run ({string.Join(", ", names)}). Nothing was executed.");
+            }
+
             var errors = new List<string>();
             int executed = 0;
 

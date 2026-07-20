@@ -28,7 +28,24 @@ public interface IDriverService
 
     /// <summary>Unload a previously-provisioned driver. The engine keeps the package on disk.</summary>
     Task<StudioResult<bool>> UnloadAsync(string packageName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stage 6.5: list the assemblies currently loaded into the engine's assembly handler. Used by
+    /// the Schema Browser's "Discover from assembly" picker — kills the
+    /// <c>IBeepService.LLoader.Assemblies</c> bypass in the AppStudio view.
+    /// </summary>
+    Task<StudioResult<IReadOnlyList<LoadedAssemblyInfo>>> ListLoadedAssembliesAsync(CancellationToken ct = default);
 }
+
+/// <summary>
+/// Stage 6.5: a loaded-assembly entry — name + path + version, what a UI picker needs to display
+/// and what the engine needs to reload it for entity discovery.
+/// </summary>
+public sealed record LoadedAssemblyInfo(
+    string Name,
+    string? Path,
+    string? Version,
+    string? FullName);
 
 /// <summary>A registered data-source driver.</summary>
 public sealed record DriverInfo(

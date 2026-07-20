@@ -34,6 +34,20 @@ public interface ISourceService
 
     /// <summary>Browse the schema: list entities, or describe a single entity, or fetch sample rows.</summary>
     Task<StudioResult<IReadOnlyList<EntityDescriptor>>> BrowseAsync(string sourceName, string? entityName = null, int sampleRows = 0, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stage 6.4: look up the raw <c>ConnectionProperties</c> for a source — used by the AppStudio
+    /// connection-edit flow so the view can host <c>BeepWpfConnectionDialog</c> without reaching
+    /// into <c>IBeepService.Config_editor.DataConnections</c>. Returns null when the source is unknown.
+    /// </summary>
+    Task<StudioResult<TheTechIdea.Beep.ConfigUtil.ConnectionProperties?>> LookupConnectionAsync(string sourceName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stage 6.6: detect whether a source's database hosts ASP.NET Identity (or any identity-shaped
+    /// schema). Wraps the engine's <c>IdentityManagementService.DetectAsync</c> so AppStudio doesn't
+    /// construct that service directly with <c>IDMEEditor</c>.
+    /// </summary>
+    Task<StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>> DetectIdentityAsync(string sourceName, CancellationToken ct = default);
 }
 
 /// <summary>Filter for <see cref="ISourceService.ListAsync"/>.</summary>

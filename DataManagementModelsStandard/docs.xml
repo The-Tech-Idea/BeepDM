@@ -23548,6 +23548,13 @@
         <member name="M:TheTechIdea.Beep.Studio.Apps.Workflows.IAppDataWorkflow.SetMaskingRulesAsync(System.String,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Studio.Apps.Workflows.MaskingRule},System.Threading.CancellationToken)">
             <summary>Set the masking rules for an app (used by <see cref="M:TheTechIdea.Beep.Studio.Apps.Workflows.IAppDataWorkflow.MaskedCopyAsync(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyCollection{TheTechIdea.Beep.Studio.Apps.Workflows.MaskingRule},System.Threading.CancellationToken)"/> when no inline rules are supplied).</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Studio.Apps.Workflows.IAppDataWorkflow.GetHistoryAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Stage 2.7a: data-migration history for an app/env, sourced from the unified ledger.
+            Filters to <see cref="F:TheTechIdea.Beep.Studio.Migration.Ledger.MigrationKind.Data"/> entries. <paramref name="datasourceName"/>
+            optional; null returns entries for all datasources in scope.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Studio.Apps.Workflows.DataSubsetOptions.RowRatio">
             <summary>Row ratio per entity, 0.0–1.0. Default 0.1 (10%).</summary>
         </member>
@@ -23904,6 +23911,25 @@
         <member name="M:TheTechIdea.Beep.Studio.Driver.IDriverService.UnloadAsync(System.String,System.Threading.CancellationToken)">
             <summary>Unload a previously-provisioned driver. The engine keeps the package on disk.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.IDriverService.ListLoadedAssembliesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Stage 6.5: list the assemblies currently loaded into the engine's assembly handler. Used by
+            the Schema Browser's "Discover from assembly" picker — kills the
+            <c>IBeepService.LLoader.Assemblies</c> bypass in the AppStudio view.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Driver.LoadedAssemblyInfo">
+            <summary>
+            Stage 6.5: a loaded-assembly entry — name + path + version, what a UI picker needs to display
+            and what the engine needs to reload it for entity discovery.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.LoadedAssemblyInfo.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Stage 6.5: a loaded-assembly entry — name + path + version, what a UI picker needs to display
+            and what the engine needs to reload it for entity discovery.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Driver.DriverInfo">
             <summary>A registered data-source driver.</summary>
         </member>
@@ -23972,6 +23998,13 @@
             Wraps the engine's existing <c>IBeepAudit</c> pipeline (hash-chained,
             tamper-evident) with a <see cref="T:TheTechIdea.Beep.Studio.StudioResult`1"/>-shaped surface, an
             approval workflow, and a redaction policy for sensitive fields.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.IGovernanceService.ExpireApprovalAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Stage 5.7: system-driven expiry. Bypasses the user-only validation in <see cref="M:TheTechIdea.Beep.Studio.Governance.IGovernanceService.DecideApprovalAsync(System.String,TheTechIdea.Beep.Studio.Governance.ApprovalDecision,System.String,System.String,System.Threading.CancellationToken)"/>
+            (self-approval check, allowed-approver-roles) — this is a system action, not a user decision.
+            Used by <c>ApprovalExpiryService</c> and admin force-decide paths.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Studio.Governance.GovernancePolicy">
@@ -24057,6 +24090,60 @@
         <member name="M:TheTechIdea.Beep.Studio.Governance.AlertRule.#ctor(System.String,System.String,System.String,System.Double,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyDictionary{System.String,System.String})">
             <summary>An alert rule. When the engine's SLO subsystem detects a matching
             trigger, the Studio raises an alert via the configured actions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Identity.StudioUser">
+            <summary>
+            Stage 4: a Studio user. The user-store counterpart to <see cref="T:TheTechIdea.Beep.SetUp.Security.ISetupPrincipal"/> — same shape
+            (Id, DisplayName, Roles, IsAuthenticated) plus the credentials/profile fields the host needs for
+            login UI, audit, and account management.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Identity.StudioUser.Roles">
+            <summary>Roles assigned at the global scope. App-scoped role assignments live on <c>AppRoleAssignment</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal">
+            <summary>
+            Stage 4: the current user, scoped service. Solo hosts sign in <c>LocalIdentityStore.LocalAdmin</c>
+            at startup (zero-friction); enterprise hosts call <see cref="M:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal.SignIn(TheTechIdea.Beep.Studio.Identity.StudioUser)"/> from a login dialog.
+            Mirrors <see cref="T:TheTechIdea.Beep.SetUp.Security.ISetupPrincipal"/> and the WPF host's <c>AppStudioSession.CurrentUser</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal.User">
+            <summary>The full <see cref="T:TheTechIdea.Beep.Studio.Identity.StudioUser"/> record (null before sign-in).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal.IsAuthenticated">
+            <summary>Whether <see cref="P:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal.User"/> is set. Equivalent to <c>User != null</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal.CanAsync(TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Convenience: evaluate a permission for the current user at a global scope.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Identity.IIdentityStore">
+            <summary>
+            Stage 4: the user/role/credential store — the persistence-layer sibling of
+            <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/>. Solo impl returns the implicit local admin; enterprise impl
+            reads/writes a user table backed by <c>IStudioRepository</c> (Stage 3).
+            </summary>
+            <remarks>
+            <para>
+            <b>Why this is separate from <c>IIdentityManagementService</c>.</b> The latter (in
+            <c>Services/AppMap/</c>) is a per-<i>datasource</i> identity probe — it inspects whether a
+            <i>customer's</i> database has ASP.NET Identity tables. <c>IIdentityStore</c> is the Studio's
+            own user directory — the people who operate the Studio (developers, DBAs, admins). Different
+            data, different lifetime, different consumers.
+            </para>
+            <para>
+            <b>Password storage.</b> Solo impl has no passwords (the local admin is implicit and unauthenticated).
+            Enterprise impl MUST hash with PBKDF2/Argon2 — never store plaintext. <see cref="M:TheTechIdea.Beep.Studio.Identity.IIdentityStore.ValidateCredentialsAsync(System.String,System.String,System.Threading.CancellationToken)"/>
+            runs in constant time after the user lookup to avoid user-exists timing oracles.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Identity.IIdentityStore.ValidateCredentialsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Verify a credential pair. Returns the signed-in user on success, null on mismatch or locked-out
+            account. Implementations MUST take roughly constant time after the lookup to avoid leaking
+            which usernames exist.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Studio.IStudioProgress">
             <summary>
@@ -24435,6 +24522,260 @@
         <member name="M:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger.CountAsync(TheTechIdea.Beep.Studio.Migration.Ledger.MigrationLedgerQuery,System.Threading.CancellationToken)">
             <summary>Count ledger entries by status for a scope.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Studio.Notifications.NotificationChannel">
+            <summary>Where a notification should be delivered.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Notifications.NotificationChannel.Inbox">
+            <summary>Persisted inbox (always on — every notification is recorded here regardless of other channels).</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Notifications.NotificationChannel.SignalR">
+            <summary>Real-time push via SignalR (host-optional).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Notifications.NotificationSeverity">
+            <summary>How loud the notification should be in the UI.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Notifications.NotificationCategory">
+            <summary>
+            Why the notification exists. Drives the icon, the default severity, the deep-link kind, and
+            subscription filtering. Add new values at the end.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Notifications.NotificationMessage">
+            <summary>
+            A single notification addressed to one user (or a role broadcast). Always persisted to the inbox;
+            other channels are added by the service based on the recipient's <see cref="T:TheTechIdea.Beep.Studio.Notifications.NotificationSubscription"/>s.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Notifications.NotificationMessage.RecipientUserId">
+            <summary>Recipient user id. Null when <see cref="P:TheTechIdea.Beep.Studio.Notifications.NotificationMessage.RecipientRole"/> is set (role broadcast).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Notifications.NotificationMessage.RecipientRole">
+            <summary>Recipient role name (broadcast to all users with this role). Null for direct messages.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Notifications.NotificationMessage.DeepLinkKind">
+            <summary>What the notification links to — used by the host router (Stage 6.10) to deep-link.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Notifications.NotificationSubscription">
+            <summary>
+            Per-user subscription: "I want <c>MigrationCompleted</c> for app <c>X</c> delivered to <c>Email</c>."
+            The inbox is always written; subscriptions only add extra channels.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Notifications.INotificationService">
+            <summary>
+            Stage 5: the unified notification service. Persists every message to an inbox, then fans out to
+            the channels the recipient has subscribed to. Solo mode: inbox only (the local admin sees everything).
+            </summary>
+            <remarks>
+            <para>
+            <b>Always-on inbox.</b> Regardless of subscriptions, every notification is written to the recipient's
+            inbox. Subscriptions only add extra channels. This means a fresh host with no subscriptions still
+            surfaces everything in the inbox UI — no "why didn't anyone tell me?" surprises.
+            </para>
+            <para>
+            <b>Best-effort fan-out.</b> Channel adapters MUST NOT throw — failures are logged and the next
+            channel proceeds. The inbox write is the only one whose failure aborts the send.
+            </para>
+            <para>
+            <b>Recipients.</b> <see cref="M:TheTechIdea.Beep.Studio.Notifications.INotificationService.SendAsync(TheTechIdea.Beep.Studio.Notifications.NotificationMessage,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Notifications.NotificationChannel},System.Threading.CancellationToken)"/> resolves <see cref="P:TheTechIdea.Beep.Studio.Notifications.NotificationMessage.RecipientRole"/>
+            broadcasts via the optional <c>IIdentityStore</c>/<c>IStudioAuthorizer</c> (provided at impl
+            construction time) into per-user inbox writes. Direct messages (<see cref="!:RecipientUserId"/> set)
+            skip the lookup.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Notifications.INotificationService.SendAsync(TheTechIdea.Beep.Studio.Notifications.NotificationMessage,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Notifications.NotificationChannel},System.Threading.CancellationToken)">
+            <summary>
+            Send a message. Inbox is always written; other channels are added based on the recipient's
+            subscriptions. <paramref name="channels"/> overrides subscriptions (explicit one-off send).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Notifications.INotificationService.GetInboxAsync(System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>Inbox for a user. Newest first. <paramref name="unreadOnly"/> filters unread.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Permissions.StudioPermission">
+            <summary>
+            Stage 4: every operation a Studio user can be granted or denied. A superset of
+            <see cref="T:TheTechIdea.Beep.SetUp.Security.SetupPermission"/> (the first 8 values are identical, so a setup authorizer can be
+            adapted with a one-line map).
+            </summary>
+            <remarks>
+            Numeric values are stable. Do not renumber. Add new values at the end.
+            The first 8 (0-7) deliberately match <see cref="T:TheTechIdea.Beep.SetUp.Security.SetupPermission"/> so the same principal/authorizer
+            surface serves both setup-time and runtime — Stage 4.1's "unified surface" decision.
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Permissions.StudioPermission.ApproveRequest">
+            <summary>Runtime governance approval. Distinct from <see cref="F:TheTechIdea.Beep.Studio.Permissions.StudioPermission.ApproveMigration"/> (setup-time).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Permissions.PermissionEffect">
+            <summary>Allow or deny a permission. Default allow (most grants).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Permissions.PermissionGrant">
+            <summary>
+            A single grant: user X may (or may not) do Y in scope (AppId, EnvId, DatasourceName — any null
+            means "any" at that level). Scopes form a specificity hierarchy: Datasource &gt; Env &gt; App &gt; global.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Permissions.PermissionDecision">
+            <summary>
+            The result of a permission evaluation. Carries enough detail for the UI to explain the decision
+            ("Denied because explicit Deny at env=prod beats role Allow at app scope").
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer">
+            <summary>
+            Stage 4: the unified permission evaluator for both setup-time and runtime.
+            </summary>
+            <remarks>
+            <para>
+            Extends <see cref="T:TheTechIdea.Beep.SetUp.Security.ISetupAuthorizer"/> so a single DI registration covers both surfaces. The
+            setup-time <c>AuthorizeAsync(principal, SetupPermission, SetupContext)</c> delegates to
+            <see cref="M:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer.EvaluateAsync(System.String,TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String,System.Threading.CancellationToken)"/>
+            with no scope (null app/env/datasource).
+            </para>
+            <para>
+            <b>Evaluation algorithm</b> (explicit-deny-wins — the AWS IAM / GCP IAM model):
+            <list type="number">
+            <item>Collect all grants for <c>userId</c> matching <c>(action, appId, envId, datasourceName)</c>.</item>
+            <item>If ANY matching grant is <c>Deny</c> → <c>Deny</c>. Denials are absolute — a more-specific
+            <c>Allow</c> cannot punch through any matching <c>Deny</c> (privilege-escalation prevention).</item>
+            <item>Else if any matching grant is <c>Allow</c> → <c>Allow</c>.</item>
+            <item>Else <c>Deny</c> (default-deny).</item>
+            </list>
+            Specificity only narrows the <c>Allow</c> set — an app-wide Allow does not grant on unrelated
+            apps. But a single Deny at any matching scope is final.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer.EvaluateAsync(System.String,TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Evaluate whether <paramref name="userId"/> may take <paramref name="action"/> in the given
+            scope. Implementations SHOULD populate <see cref="P:TheTechIdea.Beep.Studio.Permissions.PermissionDecision.Reasons"/> so the UI can
+            explain denials.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer.GrantAsync(TheTechIdea.Beep.Studio.Permissions.PermissionGrant,System.Threading.CancellationToken)">
+            <summary>Grant a permission (allow or deny). Idempotent: replaces any existing grant with the same (user, action, scope).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer.RevokeAsync(TheTechIdea.Beep.Studio.Permissions.PermissionGrant,System.Threading.CancellationToken)">
+            <summary>Remove a grant. No-op if it doesn't exist.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer.ResolveActorsAsync(TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Resolve the users who can take <paramref name="action"/> in scope — used by governance to
+            fan out approval notifications ("who has ApproveRequest on env=prod?") and by the host to
+            populate @-mention suggestions.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Permissions.RoleTemplates">
+            <summary>
+            Role templates — the canned grant sets applied when <c>AssignRoleAsync(role)</c> is called.
+            </summary>
+            <remarks>
+            Mirrors <c>RoleBasedSetupAuthorizer</c>'s permission→roles map but inverted (role→permissions) and
+            scoped to <see cref="T:TheTechIdea.Beep.Studio.Apps.Workflows.AppMemberRole"/> (Viewer/Contributor/Operator/Admin). The template applies
+            the role's grant set at the given scope (AppId, EnvId, DatasourceName) so e.g. assigning
+            "Operator on env=prod" only grants Operator permissions on prod.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Permissions.RoleTemplates.For(TheTechIdea.Beep.Studio.Apps.Workflows.AppMemberRole)">
+            <summary>Map a role to the permission set that role grants. Used by <c>IIdentityStore.AssignRoleAsync</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.IStudioRepository">
+            <summary>
+            Stage 3: unified persistence abstraction for the Studio's long-lived metadata.
+            </summary>
+            <remarks>
+            <para>
+            <b>Why this exists.</b> Before Stage 3, every Studio concern persisted to its own JSON file
+            (<c>apps.json</c>, <c>governance-policies.json</c>, <c>env-profiles.json</c>, <c>masking/{appId}.json</c>,
+            <c>migration-ledger.json</c>), each with its own path resolution, write posture, and concurrency
+            story. Stage 3 collapses them into one storage layer so a host can swap the file backend for a
+            database backend (solo vs. enterprise) by changing exactly one line in <c>AddBeepStudio</c>.
+            </para>
+            <para>
+            <b>What this is NOT.</b> It is <b>not</b> a replacement for the domain-shaped services
+            (<c>AppRegistry</c>, <c>GovernanceService</c>, <c>EnvironmentProfileService</c>). Those keep
+            their domain operations (e.g. <c>AddEnvironment</c>, <c>SetDatasource</c>) and widely-consumed
+            signatures. <c>IStudioRepository</c> sits <i>beneath</i> them — services delegate to it for
+            persistence, callers keep calling services. This is the same layering <c>ISetupStateStore</c>
+            uses against <c>SetupWizard</c>.
+            </para>
+            <para>
+            <b>Mirrors <c>ISetupStateStore</c>.</b> The shape — load/save/lease with
+            <see cref="T:TheTechIdea.Beep.Studio.Repository.StudioRepositoryConflictException"/> on stale writes — is deliberately the same as
+            the Setup Framework's state-store pattern (Phases 3-4 of the Setup Framework) so host authors
+            have one mental model.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.IStudioRepository.Apps">
+            <summary>Apps aggregate (wraps what <c>AppRegistry</c> persists to <c>apps.json</c>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.IStudioRepository.EnvironmentProfiles">
+            <summary>Environment-profile aggregate (wraps <c>EnvironmentProfileService</c>'s JSON store).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.IStudioRepository.Governance">
+            <summary>Governance aggregate (wraps <c>GovernanceService</c>'s policies + approvals JSON files).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.IStudioRepository.MaskingRules">
+            <summary>Masking-rules aggregate (wraps <c>AppDataWorkflow</c>'s per-app masking JSON).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.IStudioRepository.MigrationLedger">
+            <summary>
+            Migration-ledger aggregate. Returns the existing <see cref="T:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger"/> (Stage 2) — the
+            repository surface doesn't replace it, just exposes it as one of the persistence concerns.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Repository.IStudioRepository.TryAcquireLeaseAsync(System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Acquire an exclusive cross-process lease on a named resource (e.g. "apps", "governance")
+            for a long-running operation. Returns <c>null</c> if the resource is already leased.
+            </summary>
+            <remarks>
+            Mirrors <c>ISetupStateStore.TryAcquireLeaseAsync</c>. File impl: sibling <c>.lock</c> file
+            (same idiom as <c>LocalJsonSetupStateStore</c>). DB impl: a row in a <c>locks</c> table.
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.IStudioRepositoryLease">
+            <summary>
+            Cross-process lease returned from <see cref="M:TheTechIdea.Beep.Studio.Repository.IStudioRepository.TryAcquireLeaseAsync(System.String,System.TimeSpan,System.Threading.CancellationToken)"/>.
+            Dispose to release; renew before the TTL expires to keep it. Mirrors <c>ISetupStateLease</c>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.IAppRepositoryStore">
+            <summary>
+            Apps aggregate persistence. The persistence-layer counterpart to <c>IAppRegistry</c> (which is
+            domain-shaped). Reads return <c>(AppDefinition, RowVersion)</c> tuples so callers can pass the
+            version back on save for optimistic concurrency.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.IEnvironmentProfileRepositoryStore">
+            <summary>Environment-profile aggregate persistence.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.IGovernanceRepositoryStore">
+            <summary>Governance aggregate persistence (policies + approvals).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.IMaskingRuleRepositoryStore">
+            <summary>Masking-rules aggregate persistence (per-app).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Studio.Repository.StudioRepositoryConflictException">
+            <summary>
+            Raised by any <c>SaveAsync</c>/<c>DeleteAsync</c> when the supplied <c>expectedRowVersion</c>
+            does not match the current version. Mirrors <c>SetupStateConflictException</c>. Hosts surface
+            this as "this was edited by someone else; refresh and try again".
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.StudioRepositoryConflictException.ResourceKey">
+            <summary>The store key (e.g. app id, env id) whose write was refused.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.StudioRepositoryConflictException.ExpectedVersion">
+            <summary>The version the caller expected (stale).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Studio.Repository.StudioRepositoryConflictException.CurrentVersion">
+            <summary>The version actually in the store at the time of the refused write.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Schema.ISchemaService">
             <summary>
             Schema discovery + design. Implemented in Phase 4. Wraps the engine's
@@ -24528,6 +24869,20 @@
         </member>
         <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.BrowseAsync(System.String,System.String,System.Int32,System.Threading.CancellationToken)">
             <summary>Browse the schema: list entities, or describe a single entity, or fetch sample rows.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.LookupConnectionAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Stage 6.4: look up the raw <c>ConnectionProperties</c> for a source — used by the AppStudio
+            connection-edit flow so the view can host <c>BeepWpfConnectionDialog</c> without reaching
+            into <c>IBeepService.Config_editor.DataConnections</c>. Returns null when the source is unknown.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.ISourceService.DetectIdentityAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Stage 6.6: detect whether a source's database hosts ASP.NET Identity (or any identity-shaped
+            schema). Wraps the engine's <c>IdentityManagementService.DetectAsync</c> so AppStudio doesn't
+            construct that service directly with <c>IDMEEditor</c>.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Studio.Source.SourceListFilter">
             <summary>Filter for <see cref="M:TheTechIdea.Beep.Studio.Source.ISourceService.ListAsync(TheTechIdea.Beep.Studio.Source.SourceListFilter,System.Threading.CancellationToken)"/>.</summary>

@@ -17,7 +17,9 @@ using TheTechIdea.Beep.Studio.Source;
 using TheTechIdea.Beep.Studio.Stubs;
 using TheTechIdea.Beep.Studio.Sync;
 using TheTechIdea.Beep.Studio.Migration.Ledger;
+using TheTechIdea.Beep.Studio.Repository;
 using TheTechIdea.Beep.Services.Studio.Migration.Ledger;
+using TheTechIdea.Beep.Services.Studio.Repository;
 using Microsoft.Extensions.Options;
 
 namespace TheTechIdea.Beep.Studio;
@@ -119,6 +121,19 @@ public static class BeepServiceExtensions
             var opts = sp.GetRequiredService<StudioOptions>();
             return new JsonMigrationLedger(opts.DataRoot ?? System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BeepDM", "Studio"));
+        });
+
+        // Stage 3.6: unified Studio repository. Solo default is FileStudioRepository (Json mode);
+        // DatabaseStudioRepository (Sqlite/Hybrid) is registered by the enterprise host extension.
+        // The repository owns the migration ledger internally (FileStudioRepository reuses the
+        // singleton JsonMigrationLedger registered above) so the two surfaces stay consistent.
+        services.TryAddSingleton<IStudioRepository>(sp =>
+        {
+            var opts = sp.GetRequiredService<StudioOptions>();
+            var dataRoot = opts.DataRoot ?? System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BeepDM", "Studio");
+            var ledger = sp.GetRequiredService<IMigrationLedger>();
+            return new FileStudioRepository(dataRoot, ledger);
         });
 
         return services;

@@ -28,6 +28,12 @@ public interface IGovernanceService
     Task<StudioResult<PolicyEvaluationResult>> EvaluateRequestAsync(ApprovalRequest request, CancellationToken ct = default);
     Task<StudioResult<ApprovalRequest>> RequestApprovalAsync(ApprovalRequest request, CancellationToken ct = default);
     Task<StudioResult<ApprovalRequest>> DecideApprovalAsync(string approvalId, ApprovalDecision decision, string decider, string? comment = null, CancellationToken ct = default);
+    /// <summary>
+    /// Stage 5.7: system-driven expiry. Bypasses the user-only validation in <see cref="DecideApprovalAsync"/>
+    /// (self-approval check, allowed-approver-roles) — this is a system action, not a user decision.
+    /// Used by <c>ApprovalExpiryService</c> and admin force-decide paths.
+    /// </summary>
+    Task<StudioResult<ApprovalRequest>> ExpireApprovalAsync(string approvalId, string actor, string? comment = null, CancellationToken ct = default);
     Task<StudioResult<IReadOnlyList<ApprovalRequest>>> ListApprovalsAsync(ApprovalListFilter? filter = null, CancellationToken ct = default);
 
     // ---- audit ----

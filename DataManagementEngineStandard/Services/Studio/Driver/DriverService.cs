@@ -213,6 +213,37 @@ public sealed class DriverService : IDriverService
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Stage 6.5: projects <c>_editor.assemblyHandler.Assemblies</c> (a list of <c>assemblies_rep</c>)
+    /// into the Studio DTO. This is the single sanctioned path for AppStudio to learn what's loaded
+    /// — killing the <c>IBeepService.LLoader.Assemblies</c> bypass in SchemaBrowserView.
+    /// </remarks>
+    public Task<StudioResult<IReadOnlyList<LoadedAssemblyInfo>>> ListLoadedAssembliesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var assemblies = _editor.assemblyHandler?.Assemblies ?? new List<TheTechIdea.Beep.Tools.assemblies_rep>();
+            var list = assemblies
+                .Where(a => a?.DllLib != null)
+                .Select(a =>
+                {
+                    var name = a.DllLib!.GetName().Name ?? a.DllName ?? a.DllLib.FullName ?? string.Empty;
+                    return new LoadedAssemblyInfo(
+                        Name: name,
+                        Path: !string.IsNullOrEmpty(a.DllLibPath) ? a.DllLibPath : a.DllLib.Location,
+                        Version: a.DllLib.GetName().Version?.ToString(),
+                        FullName: a.DllLib.FullName);
+                })
+                .ToList();
+            return Task.FromResult(StudioResult<IReadOnlyList<LoadedAssemblyInfo>>.Ok(list));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(StudioResult<IReadOnlyList<LoadedAssemblyInfo>>.Fail(StudioErrorCode.InternalError, ex.Message, ex));
+        }
+    }
+
     // ── Private helpers ─────────────────────────────────────────────────────
 
     private static (string DataSourceType, string Category) InspectTypes(Assembly asm)

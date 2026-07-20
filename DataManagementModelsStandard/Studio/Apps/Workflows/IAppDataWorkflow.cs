@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio.Apps.Workflows;
 
@@ -25,6 +26,14 @@ public interface IAppDataWorkflow
 
     /// <summary>Set the masking rules for an app (used by <see cref="MaskedCopyAsync"/> when no inline rules are supplied).</summary>
     Task<StudioResult<IReadOnlyList<MaskingRule>>> SetMaskingRulesAsync(string appId, IEnumerable<MaskingRule> rules, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stage 2.7a: data-migration history for an app/env, sourced from the unified ledger.
+    /// Filters to <see cref="MigrationKind.Data"/> entries. <paramref name="datasourceName"/>
+    /// optional; null returns entries for all datasources in scope.
+    /// </summary>
+    Task<StudioResult<IReadOnlyList<MigrationLedgerEntry>>> GetHistoryAsync(
+        string appId, string? envId = null, string? datasourceName = null, CancellationToken ct = default);
 }
 
 public sealed class DataSubsetOptions

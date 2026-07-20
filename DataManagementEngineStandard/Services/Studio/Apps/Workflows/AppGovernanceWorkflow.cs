@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
+using TheTechIdea.Beep.Studio.Permissions;
 
 namespace TheTechIdea.Beep.Studio.Apps;
 
@@ -18,10 +19,22 @@ namespace TheTechIdea.Beep.Studio.Apps;
 internal sealed class AppGovernanceWorkflow : IAppGovernanceWorkflow
 {
     private readonly IDMEEditor _editor;
+    /// <summary>
+    /// Stage 4.8: when an <see cref="IStudioAuthorizer"/> is wired (enterprise mode),
+    /// <see cref="CanUserAsync"/> delegates to it instead of the legacy role-ordinal check.
+    /// Null (solo default) preserves today's behavior byte-for-byte.
+    /// </summary>
+    private readonly IStudioAuthorizer? _authorizer;
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly object _lock = new();
 
-    public AppGovernanceWorkflow(IDMEEditor editor) => _editor = editor;
+    public AppGovernanceWorkflow(IDMEEditor editor) : this(editor, authorizer: null) { }
+
+    public AppGovernanceWorkflow(IDMEEditor editor, IStudioAuthorizer? authorizer)
+    {
+        _editor = editor;
+        _authorizer = authorizer;
+    }
 
     public Task<StudioResult<IReadOnlyList<AppRoleAssignment>>> ListMembersAsync(string appId, CancellationToken ct = default)
         => Task.FromResult(Read(appId, s => StudioResult<IReadOnlyList<AppRoleAssignment>>.Ok(s.Members)));
@@ -41,15 +54,40 @@ internal sealed class AppGovernanceWorkflow : IAppGovernanceWorkflow
     public Task<StudioResult<bool>> RevokeRoleAsync(string appId, string userId, CancellationToken ct = default)
         => Task.FromResult(Write(appId, s => { s.Members.RemoveAll(m => m.UserId == userId); return StudioResult<bool>.Ok(true); }));
 
-    public Task<StudioResult<bool>> CanUserAsync(string appId, string userId, AppMemberRole required, CancellationToken ct = default)
+    public async Task<StudioResult<bool>> CanUserAsync(string appId, string userId, AppMemberRole required, CancellationToken ct = default)
     {
-        return Task.FromResult(Read(appId, s =>
+        // Stage 4.8: when an authorizer is wired, it owns authorization. The role-based overload
+        // translates to "the user has a grant for the role's representative permission at this
+        // app scope" — equivalent to today's role-ordinal check, but evaluated by IStudioAuthorizer
+        // against the unified permission grant set.
+        if (_authorizer != null)
         {
-            var m = s.Members.FirstOrDefault(x => x.UserId == userId);
-            var has = m != null && m.Role >= required;
-            return StudioResult<bool>.Ok(has);
-        }));
+            var representativePermission = RoleToPermission(required);
+            var decision = await _authorizer.EvaluateAsync(userId, representativePermission, appId, ct: ct).ConfigureAwait(false);
+            return StudioResult<bool>.Ok(decision.Allowed);
+        }
+
+        // Solo default: legacy role-ordinal check (preserves today's behavior byte-for-byte).
+        var memberResult = Read(appId, s => StudioResult<AppRoleAssignment?>.Ok(s.Members.FirstOrDefault(x => x.UserId == userId)));
+        var member = memberResult.IsSuccess ? memberResult.Value : null;
+        var hasRole = member != null && member.Role >= required;
+        return StudioResult<bool>.Ok(hasRole);
     }
+
+    /// <summary>
+    /// Map an <see cref="AppMemberRole"/> to a single representative <see cref="StudioPermission"/>
+    /// that ALL users with that role or higher would have. Used to bridge the role-based
+    /// <see cref="CanUserAsync"/> overload to the permission-based authorizer without losing the
+    /// ordinal semantics (a Contributor also has everything a Viewer has).
+    /// </summary>
+    private static StudioPermission RoleToPermission(AppMemberRole role) => role switch
+    {
+        AppMemberRole.Viewer => StudioPermission.ViewApp,
+        AppMemberRole.Contributor => StudioPermission.EditApp,
+        AppMemberRole.Operator => StudioPermission.ApplyMigration,
+        AppMemberRole.Admin => StudioPermission.ManageMembers,
+        _ => StudioPermission.ViewApp,
+    };
 
     public Task<StudioResult<ApprovalTicket>> RequestApprovalAsync(string appId, string envId, string action, string requestedBy, string? reason = null, CancellationToken ct = default)
     {

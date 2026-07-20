@@ -31,6 +31,8 @@ public sealed class MigrationStudioService : IMigrationStudioService
     private readonly IDMEEditor _editor;
     private readonly IMigrationManager _migration;
     private readonly IMigrationLedger _ledger;
+    /// <summary>execution token → ledger EntryId of the Succeeded Up entry. Used by RollbackAsync to link the Down entry (Stage 2.8 rollback chain).</summary>
+    private readonly Dictionary<string, string> _appliedEntryByToken = new();
 
     public IMigrationLedger Ledger => _ledger;
 
@@ -311,7 +313,9 @@ public sealed class MigrationStudioService : IMigrationStudioService
 
             if (result.Success)
             {
-                // Record ledger entry
+                // Record ledger entry (Stage 2.5b: awaited, not fire-and-forget — durability ordering
+                // matters; the version stamp below should not race ahead of the ledger write).
+                var datasource = planHandle.TargetSourceName ?? planHandle.SourceSourceName ?? "unknown";
                 var entry = new MigrationLedgerEntry
                 {
                     Kind = MigrationKind.Schema,
@@ -320,19 +324,25 @@ public sealed class MigrationStudioService : IMigrationStudioService
                     PlanId = planHandle.PlanId,
                     PlanHash = planHandle.PlanHash,
                     ExecutionToken = result.ExecutionToken,
-                    DatasourceName = planHandle.TargetSourceName ?? planHandle.SourceSourceName ?? "unknown",
+                    DatasourceName = datasource,
                     StepCount = planHandle.Operations?.Count ?? 0,
                     AppliedBy = "system",
                     AppliedAt = DateTimeOffset.UtcNow,
                     CompletedAt = DateTimeOffset.UtcNow,
                 };
-                _ = _ledger.RecordAsync(entry);
+                var ledgerResult = await _ledger.RecordAsync(entry, ct).ConfigureAwait(false);
+                var appliedEntryId = ledgerResult.IsSuccess ? ledgerResult.Value?.EntryId : null;
 
                 // Phase 9: record the resulting database version (in-DB marker + JSON mirror), so every
                 // Studio caller (web, …) gets version tracking without recomputing it in the UI.
                 var versionedDs = planHandle.TargetSourceName ?? planHandle.SourceSourceName;
                 if (!string.IsNullOrWhiteSpace(versionedDs))
                     new MigrationTrackingService(_editor).StampDatabaseVersion(versionedDs, plan);
+
+                // Stash the applied entry id keyed by token so RollbackAsync can link the Down entry
+                // to this Up entry — the rollback chain (Stage 2.8).
+                if (appliedEntryId != null)
+                    _appliedEntryByToken[result.ExecutionToken] = appliedEntryId;
 
                 return StudioResult<MigrationExecutionHandle>.Ok(new MigrationExecutionHandle(
                     ExecutionToken: result.ExecutionToken, PlanId: plan.PlanId, PlanHash: plan.PlanHash,
@@ -396,46 +406,68 @@ public sealed class MigrationStudioService : IMigrationStudioService
     }
 
     /// <inheritdoc />
-    public Task<StudioResult<MigrationRollbackReport>> RollbackAsync(
+    public async Task<StudioResult<MigrationRollbackReport>> RollbackAsync(
         string executionToken,
         RollbackPolicy policy,
         IStudioProgress? progress = null,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(executionToken))
-            return Task.FromResult(StudioResult<MigrationRollbackReport>.Fail(StudioErrorCode.InvalidArgument, "executionToken is required."));
+            return StudioResult<MigrationRollbackReport>.Fail(StudioErrorCode.InvalidArgument, "executionToken is required.");
 
         try
         {
             var result = _migration.RollbackFailedExecution(executionToken, dryRun: policy.UseCompensationPlan);
 
-            // Record ledger entry for rollback
+            // Record ledger entry for rollback (Stage 2.5b awaited; Stage 2.8 parent link).
             if (result.Success)
             {
+                // Resolve the parent Up entry — first from the in-process token map (cheap, exact),
+                // then from the ledger by ExecutionToken (covers a process restart between apply
+                // and rollback).
+                string? parentId = null;
+                if (_appliedEntryByToken.TryGetValue(executionToken, out var direct))
+                    parentId = direct;
+                else
+                {
+                    var lookup = await _ledger.QueryAsync(new MigrationLedgerQuery
+                    {
+                        Kind = MigrationKind.Schema,
+                        Status = MigrationLedgerStatus.Succeeded,
+                    }, ct).ConfigureAwait(false);
+                    if (lookup.IsSuccess && lookup.Value != null)
+                    {
+                        parentId = lookup.Value
+                            .FirstOrDefault(e => e.ExecutionToken == executionToken && e.Direction == MigrationDirection.Up)?
+                            .EntryId;
+                    }
+                }
+
                 var entry = new MigrationLedgerEntry
                 {
                     Kind = MigrationKind.Schema,
                     Direction = MigrationDirection.Down,
                     Status = MigrationLedgerStatus.RolledBack,
+                    ParentEntryId = parentId,
                     ExecutionToken = executionToken,
                     DatasourceName = "rollback",
                     AppliedBy = "system",
                     AppliedAt = DateTimeOffset.UtcNow,
                     CompletedAt = DateTimeOffset.UtcNow,
                 };
-                _ = _ledger.RecordAsync(entry);
+                await _ledger.RecordAsync(entry, ct).ConfigureAwait(false);
             }
 
-            return Task.FromResult(StudioResult<MigrationRollbackReport>.Ok(new MigrationRollbackReport(
+            return StudioResult<MigrationRollbackReport>.Ok(new MigrationRollbackReport(
                 Success: result.Success,
                 RolledBackOperations: 0,
                 TotalOperations: 0,
                 Warnings: result.ExecutedActions ?? new List<string>(),
-                ErrorMessage: result.Success ? null : result.Message)));
+                ErrorMessage: result.Success ? null : result.Message));
         }
         catch (Exception ex)
         {
-            return Task.FromResult(StudioResult<MigrationRollbackReport>.Fail(StudioErrorCode.RollbackFailed, ex.Message, ex));
+            return StudioResult<MigrationRollbackReport>.Fail(StudioErrorCode.RollbackFailed, ex.Message, ex);
         }
     }
 

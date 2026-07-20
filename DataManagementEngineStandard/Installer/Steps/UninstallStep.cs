@@ -75,7 +75,7 @@ namespace TheTechIdea.Beep.Installer.Steps
                 {
                     try
                     {
-                        var linkPath = GetShortcutPath(sc);
+                        var linkPath = GetShortcutPath(sc, config, InstallScope.IsPerUser(context));
                         if (File.Exists(linkPath)) { File.Delete(linkPath); removed++; }
                     }
                     catch (Exception ex) { errors.Add($"Shortcut {sc.Name}: {ex.Message}"); }
@@ -122,7 +122,23 @@ namespace TheTechIdea.Beep.Installer.Steps
                 }
             }
 
-            // 4. Remove empty directories (bottom-up)
+            // 3b. Remove environment variables recorded at install time. Without this they
+            //     outlive the product they belonged to.
+            if (manifest.EnvironmentVariables != null && manifest.EnvironmentVariables.Count > 0)
+            {
+                removed += EnvironmentVariableStep.Remove(manifest.EnvironmentVariables);
+            }
+
+            // 4. Remove the manifest BEFORE sweeping directories.
+            //    VerifyInstallStep writes install-manifest.json inside InstallPath, so deleting
+            //    it after the sweep leaves that directory permanently non-empty and it can never
+            //    be removed. The manifest is already deserialized above, so this is safe here.
+            //    Best-effort: a locked manifest must not add to errors (that would flip the
+            //    result to Fail) — report and continue.
+            try { if (File.Exists(manifestPath)) File.Delete(manifestPath); }
+            catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: failed to delete manifest '{manifestPath}': {ex.Message}" }); }
+
+            // 5. Remove empty directories (bottom-up)
             if (manifest.CreatedDirectories != null)
             {
                 foreach (var dir in manifest.CreatedDirectories.OrderByDescending(d => d.Length))
@@ -182,11 +198,6 @@ namespace TheTechIdea.Beep.Installer.Steps
                 }
             }
 
-            // 5. Remove manifest itself
-            // Best-effort: a locked manifest must not add to errors (that would flip the result to Fail) — report and continue.
-            try { if (File.Exists(manifestPath)) File.Delete(manifestPath); }
-            catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: failed to delete manifest '{manifestPath}': {ex.Message}" }); }
-
             progress?.Report(new PassedArgs { ParameterInt1 = 100, Messege = $"Removed {removed} items." });
 
             return errors.Count > 0
@@ -197,15 +208,8 @@ namespace TheTechIdea.Beep.Installer.Steps
         public Task<IErrorsInfo> ExecuteAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
             => Task.FromResult(Execute(context, progress));
 
-        private static string GetShortcutPath(ShortcutDefinition sc) => sc.Location switch
-        {
-            ShortcutLocation.Desktop => Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), sc.Name + ".lnk"),
-            ShortcutLocation.StartMenu => Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Programs), sc.StartMenuSubfolder ?? "", sc.Name + ".lnk"),
-            ShortcutLocation.Startup => Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Startup), sc.Name + ".lnk"),
-            _ => ""
-        };
+        // Same resolver the create step uses — the two must agree or shortcuts are orphaned.
+        private static string GetShortcutPath(ShortcutDefinition sc, InstallConfig? config, bool perUser)
+            => ShortcutPathResolver.Resolve(sc, config, perUser);
     }
 }

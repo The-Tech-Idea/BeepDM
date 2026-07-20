@@ -182,6 +182,8 @@ internal sealed class NullDriverService : IDriverService
         Task.FromResult(StudioResult<DriverProvisionResult>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
     public Task<StudioResult<bool>> UnloadAsync(string n, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<bool>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<IReadOnlyList<LoadedAssemblyInfo>>> ListLoadedAssembliesAsync(CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<IReadOnlyList<LoadedAssemblyInfo>>.Ok(Array.Empty<LoadedAssemblyInfo>()));
 }
 
 internal sealed class NullSourceService : ISourceService
@@ -200,6 +202,10 @@ internal sealed class NullSourceService : ISourceService
         Task.FromResult(StudioResult<SourceTestResult>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
     public Task<StudioResult<IReadOnlyList<EntityDescriptor>>> BrowseAsync(string n, string? e = null, int r = 0, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<IReadOnlyList<EntityDescriptor>>.Ok(Array.Empty<EntityDescriptor>()));
+    public Task<StudioResult<TheTechIdea.Beep.ConfigUtil.ConnectionProperties?>> LookupConnectionAsync(string n, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<TheTechIdea.Beep.ConfigUtil.ConnectionProperties?>.Ok(null));
+    public Task<StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>> DetectIdentityAsync(string n, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
 }
 
 internal sealed class NullSchemaService : ISchemaService
@@ -295,6 +301,8 @@ internal sealed class NullGovernanceService : IGovernanceService
     public Task<StudioResult<ApprovalRequest>> RequestApprovalAsync(ApprovalRequest r, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<ApprovalRequest>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
     public Task<StudioResult<ApprovalRequest>> DecideApprovalAsync(string id, ApprovalDecision d, string dec, string? c = null, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<ApprovalRequest>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<ApprovalRequest>> ExpireApprovalAsync(string id, string actor, string? c = null, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<ApprovalRequest>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
     public Task<StudioResult<IReadOnlyList<ApprovalRequest>>> ListApprovalsAsync(ApprovalListFilter? f = null, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<IReadOnlyList<ApprovalRequest>>.Ok(Array.Empty<ApprovalRequest>()));

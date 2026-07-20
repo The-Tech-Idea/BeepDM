@@ -2,20 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Migration;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Editor.Migration
 {
     public class MigrationTrackingService
     {
         private readonly IDMEEditor _editor;
+        private readonly IMigrationLedger? _ledger;
 
-        public MigrationTrackingService(IDMEEditor editor)
+        public MigrationTrackingService(IDMEEditor editor) : this(editor, ledger: null) { }
+
+        /// <summary>
+        /// Stage 2.5a: optional unified ledger. When provided, every tracked migration and undo
+        /// is mirrored as a <see cref="MigrationLedgerEntry"/> — closing the gap where
+        /// <see cref="SetUp.Steps.VersionGateStep"/>-driven and direct engine callers previously
+        /// wrote only to the per-datasource JSON history and never the unified ledger.
+        /// </summary>
+        public MigrationTrackingService(IDMEEditor editor, IMigrationLedger? ledger)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+            _ledger = ledger;
         }
 
         public MigrationHistory GetMigrationHistory(string datasourceName)
@@ -85,6 +98,18 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 MigrationRecordWriter.WritePlanExecution(_editor, datasourceName, dataSourceType, plan, result);
 
+                // Stage 2.5a: mirror to the unified ledger. Best-effort — a ledger write failure
+                // must never fail a migration that already succeeded (mirrors WritePlanExecution's
+                // posture at MigrationRecordWriter.cs:270-277).
+                RecordSchemaLedgerEntry(
+                    datasourceName: datasourceName,
+                    planId: plan.PlanId,
+                    planHash: plan.PlanHash,
+                    stepCount: plan.Operations?.Count ?? typesList.Count,
+                    succeeded: result?.Success == true,
+                    errorMessage: result?.Success == true ? null : result?.Message,
+                    declaredVersion: declaredVersion);
+
                 // Stamp the new database version — in the DB (authoritative) and the JSON audit
                 // mirror. Only reached when the plan had operations (an up-to-date plan returned
                 // above), so an idempotent no-op run never advances the version.
@@ -104,6 +129,99 @@ namespace TheTechIdea.Beep.Editor.Migration
             catch (Exception ex)
             {
                 return CreateError($"Migration failed: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Stage 2.5a: writes a <c>Kind=Schema, Direction=Up</c> entry to the unified ledger.
+        /// Best-effort: a ledger write failure is logged but never fatal to the migration.
+        /// Called after <see cref="MigrationRecordWriter.WritePlanExecution"/> so both the legacy
+        /// per-datasource JSON history and the unified ledger are populated.
+        /// </summary>
+        private void RecordSchemaLedgerEntry(
+            string datasourceName, string? planId, string? planHash,
+            int stepCount, bool succeeded, string? errorMessage, string? declaredVersion)
+        {
+            if (_ledger == null) return;
+            try
+            {
+                var entry = new MigrationLedgerEntry
+                {
+                    Kind = MigrationKind.Schema,
+                    Direction = MigrationDirection.Up,
+                    DatasourceName = datasourceName,
+                    PlanId = planId,
+                    PlanHash = planHash,
+                    StepCount = stepCount,
+                    Status = succeeded ? MigrationLedgerStatus.Succeeded : MigrationLedgerStatus.Failed,
+                    ErrorMessage = errorMessage,
+                    AppliedBy = Environment.UserName,
+                    AppliedAt = DateTimeOffset.UtcNow,
+                    CompletedAt = DateTimeOffset.UtcNow,
+                };
+                if (!string.IsNullOrEmpty(declaredVersion))
+                {
+                    entry.Metadata = new Dictionary<string, object?> { ["DeclaredVersion"] = declaredVersion };
+                }
+                // Sync-over-async — the public API of this service is sync. Matches the posture of
+                // SetupWizard.Bridge() (Task.Run(...).GetAwaiter().GetResult()) for the same reason.
+                _ledger.RecordAsync(entry, CancellationToken.None).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("MigrationTracker",
+                    $"Ledger write skipped: {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Stage 2.5a: writes a <c>Kind=Schema, Direction=Down</c> entry whose ParentEntryId is the
+        /// most recent Succeeded Up entry for this datasource — the rollback chain. Best-effort.
+        /// </summary>
+        private void RecordSchemaRollbackLedgerEntry(string datasourceName, string? legacyMigrationId)
+        {
+            if (_ledger == null) return;
+            try
+            {
+                // Find the parent: most recent succeeded Up entry on this datasource.
+                var query = new MigrationLedgerQuery
+                {
+                    DatasourceName = datasourceName,
+                    Kind = MigrationKind.Schema,
+                    Status = MigrationLedgerStatus.Succeeded,
+                    Take = 50,
+                };
+                var history = _ledger.QueryAsync(query, CancellationToken.None).GetAwaiter().GetResult();
+                MigrationLedgerEntry? parent = null;
+                if (history.IsSuccess && history.Value != null)
+                {
+                    parent = history.Value.FirstOrDefault(e => e.Direction == MigrationDirection.Up);
+                }
+
+                var entry = new MigrationLedgerEntry
+                {
+                    Kind = MigrationKind.Schema,
+                    Direction = MigrationDirection.Down,
+                    DatasourceName = datasourceName,
+                    ParentEntryId = parent?.EntryId,
+                    PlanId = parent?.PlanId,
+                    PlanHash = parent?.PlanHash,
+                    Status = MigrationLedgerStatus.RolledBack,
+                    AppliedBy = Environment.UserName,
+                    AppliedAt = DateTimeOffset.UtcNow,
+                    CompletedAt = DateTimeOffset.UtcNow,
+                    Metadata = string.IsNullOrEmpty(legacyMigrationId)
+                        ? null
+                        : new Dictionary<string, object?> { ["LegacyMigrationId"] = legacyMigrationId },
+                };
+                _ledger.RecordAsync(entry, CancellationToken.None).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _editor.AddLogMessage("MigrationTracker",
+                    $"Ledger rollback write skipped: {ex.Message}",
+                    DateTime.Now, 0, null, Errors.Warning);
             }
         }
 
@@ -315,6 +433,12 @@ namespace TheTechIdea.Beep.Editor.Migration
 
                 var configEditor = _editor.ConfigEditor as ConfigEditor;
                 configEditor?.SaveMigrationHistory(history);
+
+                // Stage 2.5a: mirror the undo to the unified ledger as a Down entry whose
+                // ParentEntryId points at the most recent Succeeded Up entry for this datasource —
+                // the rollback chain. Best-effort, never fatal.
+                RecordSchemaRollbackLedgerEntry(datasourceName, lastMigration.MigrationId);
+
                 _editor.AddLogMessage("MigrationTracker",
                     $"Undid last migration '{lastMigration.Name}' on '{datasourceName}'",
                     DateTime.Now, 0, null, Errors.Ok);

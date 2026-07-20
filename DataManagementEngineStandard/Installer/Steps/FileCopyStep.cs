@@ -55,6 +55,16 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (allFiles.Count == 0)
                 return StepErrorHelpers.Ok("No files to copy.");
 
+            if (context.Options?.DryRun == true)
+            {
+                progress?.Report(new PassedArgs
+                {
+                    Messege = $"Dry run: would copy {allFiles.Count} file(s) to {installPath}",
+                    ParameterInt1 = 100
+                });
+                return StepErrorHelpers.Ok($"Dry run: {allFiles.Count} file(s) would be copied to '{installPath}'. Nothing was written.");
+            }
+
             var copied = new List<string>();
             int total = allFiles.Count;
             long totalBytes = 0;

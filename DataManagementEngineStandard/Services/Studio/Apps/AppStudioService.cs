@@ -10,6 +10,7 @@ using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
 using TheTechIdea.Beep.Studio.Migration.Ledger;
+using TheTechIdea.Beep.Studio.Permissions;
 
 namespace TheTechIdea.Beep.Studio.Apps;
 
@@ -24,11 +25,21 @@ public sealed class AppStudioService : IAppStudioService
 {
     private readonly IDMEEditor _editor;
     private readonly IMigrationLedger? _ledger;
+    private readonly IStudioAuthorizer? _authorizer;
 
     public AppStudioService(IDMEEditor editor, IMigrationLedger? ledger = null)
+        : this(editor, ledger, authorizer: null) { }
+
+    /// <summary>
+    /// Stage 4.8: when an <see cref="IStudioAuthorizer"/> is provided, the per-app governance
+    /// workflow delegates authorization to it; otherwise it falls back to the legacy role-ordinal
+    /// check (preserves today's solo behavior).
+    /// </summary>
+    public AppStudioService(IDMEEditor editor, IMigrationLedger? ledger, IStudioAuthorizer? authorizer)
     {
         _editor = editor ?? throw new ArgumentNullException(nameof(editor));
         _ledger = ledger;
+        _authorizer = authorizer;
     }
 
     private IAppRegistry? Registry => _editor.AppRegistry;
@@ -48,7 +59,7 @@ public sealed class AppStudioService : IAppStudioService
     /// <inheritdoc />
     public IAppDataWorkflow Data => _data ??= new AppDataWorkflow(_editor, _ledger);
     /// <inheritdoc />
-    public IAppGovernanceWorkflow Governance => _governance ??= new AppGovernanceWorkflow(_editor);
+    public IAppGovernanceWorkflow Governance => _governance ??= new AppGovernanceWorkflow(_editor, _authorizer);
     /// <inheritdoc />
     public IAppQuickStartWorkflow QuickStart => _quickStart ??= new AppQuickStartWorkflow(_editor);
     /// <inheritdoc />

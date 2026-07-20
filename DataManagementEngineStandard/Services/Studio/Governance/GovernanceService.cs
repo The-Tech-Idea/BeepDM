@@ -42,6 +42,14 @@ public sealed class GovernanceService : IGovernanceService
     private readonly string _approvalsPath;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
+    /// <summary>
+    /// Stage 5.5/5.6: optional notification fan-out for approval lifecycle events. Null (solo default)
+    /// preserves today's behavior — no notifications. Enterprise hosts inject an
+    /// <see cref="INotificationService"/> + <see cref="IStudioAuthorizer"/> so approvals reach real users.
+    /// </summary>
+    private readonly TheTechIdea.Beep.Studio.Notifications.INotificationService? _notifications;
+    private readonly TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer? _authorizer;
+
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         WriteIndented = true,
@@ -50,12 +58,25 @@ public sealed class GovernanceService : IGovernanceService
     };
 
     public GovernanceService(IBeepAudit? audit = null, string? dataRoot = null)
+        : this(audit, dataRoot, notifications: null, authorizer: null) { }
+
+    /// <summary>
+    /// Stage 5.5/5.6: enterprise constructor. Notifications and authorizer are optional; when both
+    /// are present, approval events fan out to the resolved approvers.
+    /// </summary>
+    public GovernanceService(
+        IBeepAudit? audit,
+        string? dataRoot,
+        TheTechIdea.Beep.Studio.Notifications.INotificationService? notifications,
+        TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer? authorizer)
     {
         _audit = audit ?? new TheTechIdea.Beep.Services.Audit.NullBeepAudit();
         var root = dataRoot ?? TheTechIdea.Beep.Services.EnvironmentService.CreateAppfolder("BeepDMS");
         _policiesPath = Path.Combine(root, "governance-policies.json");
         _approvalsPath = Path.Combine(root, "governance-approvals.json");
         Directory.CreateDirectory(root);
+        _notifications = notifications;
+        _authorizer = authorizer;
     }
 
     // ── Policies ─────────────────────────────────────────────────────────────
@@ -202,6 +223,10 @@ public sealed class GovernanceService : IGovernanceService
             approvals.Add(withId);
             await File.WriteAllTextAsync(_approvalsPath, JsonSerializer.Serialize(approvals, JsonOpts), ct);
             await RecordAuditAsync("Approval", "Request", $"Approval:{id}", null, JsonSerializer.Serialize(withId, JsonOpts), ct);
+
+            // Stage 5.5: fan-out to approvers (enterprise only). Best-effort — never fails the request.
+            await NotifyApproversAsync(withId, ct).ConfigureAwait(false);
+
             return StudioResult<ApprovalRequest>.Ok(withId);
         }
         catch (Exception ex)
@@ -257,6 +282,57 @@ public sealed class GovernanceService : IGovernanceService
             approvals[idx] = updated;
             await File.WriteAllTextAsync(_approvalsPath, JsonSerializer.Serialize(approvals, JsonOpts), ct);
             await RecordAuditAsync("Approval", newState.ToString(), $"Approval:{approvalId}", JsonSerializer.Serialize(current, JsonOpts), JsonSerializer.Serialize(updated, JsonOpts), ct);
+
+            // Stage 5.6: notify the requester of the decision (enterprise only). Best-effort.
+            await NotifyRequesterOfDecisionAsync(updated, ct).ConfigureAwait(false);
+
+            return StudioResult<ApprovalRequest>.Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return StudioResult<ApprovalRequest>.Fail(StudioErrorCode.InternalError, ex.Message, ex);
+        }
+        finally { _writeLock.Release(); }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Stage 5.7: bypasses the user-only validation paths in <see cref="DecideApprovalAsync"/> — this
+    /// is a system action (expiry sweep or admin force-decide), not a user decision. Self-approval
+    /// check and allowed-approver-roles check are skipped; the state flips to <see cref="ApprovalState.Expired"/>.
+    /// </remarks>
+    public async Task<StudioResult<ApprovalRequest>> ExpireApprovalAsync(string approvalId, string actor, string? comment = null, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(approvalId)) return StudioResult<ApprovalRequest>.Fail(StudioErrorCode.InvalidArgument, "approvalId is required.");
+        if (string.IsNullOrWhiteSpace(actor)) return StudioResult<ApprovalRequest>.Fail(StudioErrorCode.InvalidArgument, "actor is required.");
+
+        await _writeLock.WaitAsync(ct);
+        try
+        {
+            var approvals = LoadApprovals();
+            var idx = approvals.FindIndex(a => a.ApprovalId == approvalId);
+            if (idx < 0) return StudioResult<ApprovalRequest>.Fail(StudioErrorCode.NotFound, "Approval not found.");
+
+            var current = approvals[idx];
+            if (current.State != ApprovalState.Pending)
+                return StudioResult<ApprovalRequest>.Fail(StudioErrorCode.InvalidArgument, $"Ticket already {current.State}.");
+
+            var decisions = (current.Decisions ?? new List<ApprovalDecision>()).ToList();
+            decisions.Add(new ApprovalDecision(actor, DateTimeOffset.UtcNow, Approved: false, Comment: comment ?? "Expired."));
+
+            var updated = current with
+            {
+                Decisions = decisions,
+                State = ApprovalState.Expired,
+                DecidedAt = DateTimeOffset.UtcNow,
+            };
+            approvals[idx] = updated;
+            await File.WriteAllTextAsync(_approvalsPath, JsonSerializer.Serialize(approvals, JsonOpts), ct);
+            await RecordAuditAsync("Approval", "Expired", $"Approval:{approvalId}", JsonSerializer.Serialize(current, JsonOpts), JsonSerializer.Serialize(updated, JsonOpts), ct);
+
+            // Stage 5.6: notify the requester of the expiry (enterprise only). Best-effort.
+            await NotifyRequesterOfDecisionAsync(updated, ct).ConfigureAwait(false);
+
             return StudioResult<ApprovalRequest>.Ok(updated);
         }
         catch (Exception ex)
@@ -479,4 +555,65 @@ public sealed class GovernanceService : IGovernanceService
         CooldownBetweenRuns: TimeSpan.FromMinutes(30), RequireDryRunOnApply: true, RequirePreflightOnApply: true,
         MaxRowsAffectedPerRun: 1_000_000,
         CreatedAt: DateTimeOffset.UtcNow, UpdatedAt: DateTimeOffset.UtcNow);
+
+    // ─── Stage 5.5/5.6 notification fan-out (best-effort) ──────────────────────
+
+    /// <summary>
+    /// Stage 5.5: notify everyone who can approve the operation. Uses
+    /// <see cref="IStudioAuthorizer.ResolveActorsAsync"/> when an authorizer is wired (enterprise);
+    /// otherwise no-op (solo default — the local admin sees the request in their own inbox anyway).
+    /// </summary>
+    private async Task NotifyApproversAsync(ApprovalRequest approval, CancellationToken ct)
+    {
+        if (_notifications == null) return;
+        try
+        {
+            IReadOnlyList<string> approverIds = _authorizer != null
+                ? await _authorizer.ResolveActorsAsync(
+                    TheTechIdea.Beep.Studio.Permissions.StudioPermission.ApproveRequest,
+                    appId: null, envId: null, ct: ct).ConfigureAwait(false)
+                : Array.Empty<string>();
+
+            foreach (var approverId in approverIds)
+            {
+                // Don't notify the requester of their own request — they already know.
+                if (string.Equals(approverId, approval.RequestedBy, StringComparison.OrdinalIgnoreCase)) continue;
+
+                await _notifications.SendAsync(new TheTechIdea.Beep.Studio.Notifications.NotificationMessage
+                {
+                    Category = TheTechIdea.Beep.Studio.Notifications.NotificationCategory.ApprovalRequested,
+                    Severity = TheTechIdea.Beep.Studio.Notifications.NotificationSeverity.Warning,
+                    Title = $"Approval needed: {approval.OperationType} ({approval.Tier})",
+                    Body = $"PlanHash: {approval.PlanHash}. Requested by {approval.RequestedBy}.",
+                    RecipientUserId = approverId,
+                    DeepLinkKind = "approval",
+                    DeepLinkId = approval.ApprovalId,
+                }, ct: ct).ConfigureAwait(false);
+            }
+        }
+        catch { /* best-effort — never fail an approval request on a notification problem */ }
+    }
+
+    /// <summary>Stage 5.6: notify the requester that a decision has been made.</summary>
+    private async Task NotifyRequesterOfDecisionAsync(ApprovalRequest updated, CancellationToken ct)
+    {
+        if (_notifications == null) return;
+        if (updated.State == ApprovalState.Pending) return;  // no terminal decision yet
+        try
+        {
+            await _notifications.SendAsync(new TheTechIdea.Beep.Studio.Notifications.NotificationMessage
+            {
+                Category = TheTechIdea.Beep.Studio.Notifications.NotificationCategory.ApprovalDecided,
+                Severity = updated.State == ApprovalState.Approved
+                    ? TheTechIdea.Beep.Studio.Notifications.NotificationSeverity.Success
+                    : TheTechIdea.Beep.Studio.Notifications.NotificationSeverity.Warning,
+                Title = $"Approval {updated.State}: {updated.OperationType}",
+                Body = $"Your request for {updated.OperationType} (plan {updated.PlanHash}) was {updated.State.ToString().ToLowerInvariant()}.",
+                RecipientUserId = updated.RequestedBy,
+                DeepLinkKind = "approval",
+                DeepLinkId = updated.ApprovalId,
+            }, ct: ct).ConfigureAwait(false);
+        }
+        catch { /* best-effort */ }
+    }
 }

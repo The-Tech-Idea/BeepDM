@@ -3704,8 +3704,6 @@
   },
   "packageFolders": {
     "C:\\Users\\f_ald\\.nuget\\packages\\": {},
-    "C:\\Users\\f_ald\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder": {},
-    "C:\\Program Files\\DevExpress 23.1\\Components\\Offline Packages": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
@@ -3718,14 +3716,10 @@
       "outputPath": "C:\\Users\\f_ald\\source\\repos\\The-Tech-Idea\\BeepDM\\tests\\SetupWizardTests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "C:\\Users\\f_ald\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder",
-        "C:\\Program Files\\DevExpress 23.1\\Components\\Offline Packages",
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
         "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Users\\f_ald\\AppData\\Roaming\\NuGet\\config\\Godot.Offline.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\DevExpress 23.1.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3734,7 +3728,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\DevExpress 23.1\\Components\\System\\Components\\Packages": {},
         "C:\\Program Files\\dotnet\\library-packs": {},
         "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles": {},
         "C:\\Users\\f_ald\\source\\repos\\LocalNugetFiles\\DataSources": {},

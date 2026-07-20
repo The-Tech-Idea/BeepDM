@@ -47,13 +47,16 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (allShortcuts.Count == 0)
                 return StepErrorHelpers.Ok("No shortcuts configured.");
 
+            if (context.Options?.DryRun == true)
+                return StepErrorHelpers.Ok($"Dry run: {allShortcuts.Count} shortcut(s) would be created. Nothing was written.");
+
             var created = new List<ShortcutDefinition>();
             foreach (var sc in allShortcuts)
             {
                 var targetPath = Path.Combine(installPath, sc.TargetPath);
                 if (!File.Exists(targetPath)) continue;
 
-                var linkPath = GetShortcutPath(sc, config);
+                var linkPath = GetShortcutPath(sc, config, InstallScope.IsPerUser(context));
                 if (string.IsNullOrEmpty(linkPath)) continue;
 
                 var dir = Path.GetDirectoryName(linkPath);
@@ -74,23 +77,8 @@ namespace TheTechIdea.Beep.Installer.Steps
 
         // ── Path helpers ──────────────────────────────────────────────
 
-        private static string GetShortcutPath(ShortcutDefinition sc, InstallConfig config)
-        {
-            var name = sc.Name.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? sc.Name : sc.Name + ".lnk";
-            return sc.Location switch
-            {
-                ShortcutLocation.Desktop => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), name),
-                ShortcutLocation.StartMenu => Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Programs),
-                    string.IsNullOrEmpty(sc.StartMenuSubfolder) ? config.StartMenuFolder ?? "" : sc.StartMenuSubfolder,
-                    name),
-                ShortcutLocation.Startup => Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Startup), name),
-                ShortcutLocation.QuickLaunch => Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Microsoft\Internet Explorer\Quick Launch", name),
-                _ => ""
-            };
-        }
+        private static string GetShortcutPath(ShortcutDefinition sc, InstallConfig config, bool perUser)
+            => ShortcutPathResolver.Resolve(sc, config, perUser);
 
         // ── COM-based .lnk creator ────────────────────────────────────
 

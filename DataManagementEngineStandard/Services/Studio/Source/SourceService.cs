@@ -202,6 +202,55 @@ public sealed class SourceService : ISourceService
         return StudioResult<IReadOnlyList<EntityDescriptor>>.Ok(new[] { MapToEntityDescriptor(match) });
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Stage 6.4: pure data lookup of <c>ConnectionProperties</c>. The AppStudio connection-edit
+    /// view uses this to feed <c>BeepWpfConnectionDialog</c> without bypassing
+    /// <c>IStudioService</c> for the raw <c>IBeepService.Config_editor.DataConnections</c>.
+    /// </remarks>
+    public Task<StudioResult<ConnectionProperties?>> LookupConnectionAsync(string sourceName, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            return Task.FromResult(StudioResult<ConnectionProperties?>.Fail(StudioErrorCode.InvalidArgument, "sourceName is required."));
+
+        try
+        {
+            var conn = _editor.ConfigEditor?.DataConnections?
+                .FirstOrDefault(c => string.Equals(c.ConnectionName, sourceName, StringComparison.OrdinalIgnoreCase));
+            return Task.FromResult(StudioResult<ConnectionProperties?>.Ok(conn));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(StudioResult<ConnectionProperties?>.Fail(StudioErrorCode.InternalError, ex.Message, ex));
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Stage 6.6: thin wrapper over the engine's <c>IdentityManagementService.DetectAsync</c>.
+    /// The AppStudio <c>IdentityViewModel</c> uses this instead of constructing
+    /// <c>new IdentityManagementService(IDMEEditor)</c> directly.
+    /// </remarks>
+    public async Task<StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>> DetectIdentityAsync(string sourceName, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            return StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>.Fail(StudioErrorCode.InvalidArgument, "sourceName is required.");
+
+        try
+        {
+            // Constructed per-call (matches the engine's existing lazy-init pattern at
+            // DMEEditor.Services.cs:169). The engine IdentityManagementService is the canonical
+            // detector; we surface it through the Studio facade.
+            var identity = new Services.AppMap.IdentityManagementService(_editor);
+            var result = await identity.DetectAsync(sourceName).ConfigureAwait(false);
+            return StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>.Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StudioResult<TheTechIdea.Beep.Environments.Data.IdentityDetectionResult>.Fail(StudioErrorCode.InternalError, ex.Message, ex);
+        }
+    }
+
     // ── Private helpers ─────────────────────────────────────────────────────
 
     private StudioResult<IReadOnlyList<SourceInfo>> ListInternal(SourceListFilter? filter)

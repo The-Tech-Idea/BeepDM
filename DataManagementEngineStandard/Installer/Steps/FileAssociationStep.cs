@@ -40,13 +40,21 @@ namespace TheTechIdea.Beep.Installer.Steps
             var installPath = context.TryGetProperty<string>("InstallPath")!;
             int count = 0;
 
+            if (context.Options?.DryRun == true)
+                return StepErrorHelpers.Ok($"Dry run: {associations.Count} file association(s) would be " +
+                                           $"{(_isUninstall ? "removed" : "registered")}. Nothing was changed.");
+
+            // Associations must land in the same hive the install targets, otherwise a
+            // per-machine install registers types only the installing user can see.
+            var perUser = InstallScope.IsPerUser(context);
+
             foreach (var assoc in associations)
             {
                 progress?.Report(new PassedArgs { Messege = $"{(_isUninstall ? "Removing" : "Registering")}: {assoc.Extension}" });
 
                 if (_isUninstall)
                 {
-                    InstallHelpers.UnregisterFileAssociation(assoc.Extension, assoc.ProgId);
+                    InstallHelpers.UnregisterFileAssociation(assoc.Extension, assoc.ProgId, perUser);
                 }
                 else
                 {
@@ -56,7 +64,7 @@ namespace TheTechIdea.Beep.Installer.Steps
                         : Path.Combine(installPath, assoc.IconPath);
                     InstallHelpers.RegisterFileAssociation(
                         assoc.Extension, assoc.ProgId, assoc.Description,
-                        iconPath, $"\"{exePath}\" \"%1\"");
+                        iconPath, $"\"{exePath}\" \"%1\"", perUser);
                 }
                 count++;
             }

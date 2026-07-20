@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.AppMap;
 using TheTechIdea.Beep.Studio.Apps.Workflows;
+using TheTechIdea.Beep.Studio.Migration.Ledger;
 
 namespace TheTechIdea.Beep.Studio;
 
@@ -40,6 +41,8 @@ internal sealed class NullAppDataWorkflow : IAppDataWorkflow
         Task.FromResult(StudioResult<IReadOnlyList<MaskingRule>>.Ok(System.Array.Empty<MaskingRule>()));
     public Task<StudioResult<IReadOnlyList<MaskingRule>>> SetMaskingRulesAsync(string appId, IEnumerable<MaskingRule> rules, CancellationToken ct = default) =>
         Task.FromResult(StudioResult<IReadOnlyList<MaskingRule>>.Fail(StudioErrorCode.HostNotSupported, "NullStudioService"));
+    public Task<StudioResult<IReadOnlyList<MigrationLedgerEntry>>> GetHistoryAsync(string appId, string? envId = null, string? datasourceName = null, CancellationToken ct = default) =>
+        Task.FromResult(StudioResult<IReadOnlyList<MigrationLedgerEntry>>.Ok(System.Array.Empty<MigrationLedgerEntry>()));
 }
 
 internal sealed class NullAppGovernanceWorkflow : IAppGovernanceWorkflow

@@ -28255,6 +28255,28 @@
             multiple times. See the class doc comment for the full conventions.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger)">
+            <summary>
+            Stage 2.5a: optional unified ledger. When provided, every tracked migration and undo
+            is mirrored as a <see cref="T:TheTechIdea.Beep.Studio.Migration.Ledger.MigrationLedgerEntry"/> — closing the gap where
+            <see cref="T:TheTechIdea.Beep.SetUp.Steps.VersionGateStep"/>-driven and direct engine callers previously
+            wrote only to the per-datasource JSON history and never the unified ledger.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.RecordSchemaLedgerEntry(System.String,System.String,System.String,System.Int32,System.Boolean,System.String,System.String)">
+            <summary>
+            Stage 2.5a: writes a <c>Kind=Schema, Direction=Up</c> entry to the unified ledger.
+            Best-effort: a ledger write failure is logged but never fatal to the migration.
+            Called after <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WritePlanExecution(TheTechIdea.Beep.Editor.IDMEEditor,System.String,TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionResult,System.String)"/> so both the legacy
+            per-datasource JSON history and the unified ledger are populated.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.RecordSchemaRollbackLedgerEntry(System.String,System.String)">
+            <summary>
+            Stage 2.5a: writes a <c>Kind=Schema, Direction=Down</c> entry whose ParentEntryId is the
+            most recent Succeeded Up entry for this datasource — the rollback chain. Best-effort.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationTrackingService.StampVersion(System.String,System.String,TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,System.Int32)">
             <summary>
             Records the resulting database version after a successful, non-empty migration: writes the
@@ -41613,11 +41635,22 @@
         <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RemoveFirewallRule(System.String)">
             <summary>Removes a Windows Firewall rule.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RegisterFileAssociation(System.String,System.String,System.String,System.String,System.String)">
-            <summary>Registers a file extension association with an application.</summary>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RegisterFileAssociation(System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Registers a file extension association with an application.
+            </summary>
+            <param name="perUser">
+            True writes to HKCU (current user only); false writes to HKLM so the association
+            applies to every user, which is what a per-machine install should do. This used to
+            be hardcoded to HKCU, so a per-machine install registered associations that only
+            the installing account could see.
+            </param>
         </member>
-        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.UnregisterFileAssociation(System.String,System.String)">
-            <summary>Removes a file extension association.</summary>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.UnregisterFileAssociation(System.String,System.String,System.Boolean)">
+            <summary>Removes a file extension association. Must match the scope used to register.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.ClassesRoot(System.Boolean)">
+            <summary>The <c>Software\Classes</c> subkey of the hive matching the install scope.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.BroadcastEnvironmentChange">
             <summary>Broadcasts environment variable changes to the system.</summary>
@@ -41688,8 +41721,21 @@
         <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterDirectoryCreated(System.String)">
             <summary>Register a directory that was created (revert: delete if empty).</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterRegistryWrite(System.String,System.String,Microsoft.Win32.RegistryKey)">
+            <summary>
+            Register a registry value that was written (revert: delete value).
+            </summary>
+            <param name="hive">
+            The hive the value was written to. Required for correctness: this used to assume
+            HKEY_LOCAL_MACHINE, so rolling back a per-user install looked in the wrong hive and
+            silently left the value behind — while also probing a machine hive it may not have
+            had permission to write.
+            </param>
+        </member>
         <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterRegistryWrite(System.String,System.String)">
-            <summary>Register a registry value that was written (revert: delete value).</summary>
+            <summary>
+            Backwards-compatible overload assuming HKEY_LOCAL_MACHINE.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Installer.RollbackManager.RegisterShortcutCreated(System.String)">
             <summary>Register a shortcut that was created (revert: delete .lnk).</summary>
@@ -41699,6 +41745,35 @@
         </member>
         <member name="M:TheTechIdea.Beep.Installer.RollbackManager.Commit">
             <summary>Clear all pending actions (call on successful completion).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.ShortcutPathResolver">
+             <summary>
+             Resolves where a <see cref="T:TheTechIdea.Beep.Installer.ShortcutDefinition"/> lives on disk.
+            
+             This exists as one shared function because ShortcutCreateStep and UninstallStep each
+             had their own copy, and the copies disagreed: the create side fell back to
+             <see cref="P:TheTechIdea.Beep.Installer.InstallConfig.StartMenuFolder"/> when no subfolder was set while the remove
+             side did not, and the remove side appended ".lnk" unconditionally where the create side
+             appended it only when missing. Either mismatch orphaned the shortcut at uninstall.
+             Neither copy was scope-aware, so a per-machine install still wrote to the current
+             user's Start Menu and Desktop.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ShortcutPathResolver.Resolve(TheTechIdea.Beep.Installer.ShortcutDefinition,TheTechIdea.Beep.Installer.InstallConfig,System.Boolean)">
+            <summary>
+            Absolute path for <paramref name="shortcut"/>, or an empty string when the location
+            is not supported.
+            </summary>
+            <param name="perUser">
+            True for a per-user install (the current user's folders), false for per-machine
+            (the all-users / "Common" folders). Quick Launch is inherently per-user.
+            </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.ShortcutPathResolver.StartMenuSubfolder(TheTechIdea.Beep.Installer.ShortcutDefinition,TheTechIdea.Beep.Installer.InstallConfig)">
+            <summary>
+            Group folder for a Start Menu shortcut: its own subfolder, else the product's
+            configured folder, else the Programs root.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.DownloadOnDemandStep">
             <summary>Downloads components on-demand during installation with progress.</summary>
@@ -41742,6 +41817,28 @@
         <member name="T:TheTechIdea.Beep.Installer.Steps.DirectoryCreateStep">
             <summary>
             Creates the installation directory structure. Reads paths from context properties.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.EnvironmentVariableStep">
+             <summary>
+             Applies <see cref="P:TheTechIdea.Beep.Installer.InstallConfig.EnvironmentVariables"/>.
+            
+             Until this step existed nothing consumed that collection: an author could configure
+             environment variables, the installer would report success, and nothing was ever set.
+             <see cref="T:TheTechIdea.Beep.Installer.Steps.VerifyInstallStep"/> already expected the <c>EnvVarsSet</c> context key this
+             step writes, so the uninstall manifest recorded an empty list too.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.EnvironmentVariableStep.Remove(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Installer.EnvironmentVariableOp})">
+            <summary>
+            Removes previously applied variables and returns how many were cleared. Shared with
+            the uninstall path, which replays them from the install manifest.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.EnvironmentVariableStep.ResolveScope(System.EnvironmentVariableTarget,System.Boolean)">
+            <summary>
+            A per-user install cannot write machine-wide variables (that needs elevation), so a
+            Machine-scoped request is downgraded rather than throwing.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.FileAssociationStep">
@@ -48566,6 +48663,395 @@
             <param name="services">The service collection</param>
             <returns>The service collection for method chaining</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Identity.DatabaseIdentityStore">
+            <summary>
+            Stage 4 enterprise-mode <see cref="T:TheTechIdea.Beep.Studio.Identity.IIdentityStore"/>: persists users to a JSON file at
+            <c>{dataRoot}/identity-users.json</c>, hashing passwords with PBKDF2 via <see cref="T:TheTechIdea.Beep.Services.Studio.Identity.PasswordHasher"/>.
+            </summary>
+            <remarks>
+            <para>
+            Same Stage 2.2 hardening as <see cref="!:RoleBasedStudioAuthorizer"/>: process-wide lock, atomic
+            temp-file writes, concurrent-read-safe reads, reload-on-read.
+            </para>
+            <para>
+            <b>Name:</b> "Database" in the class name matches the existing <c>DatabaseStudioRepository</c>
+            naming convention even though the v1 persistence is JSON-backed (Stage 3 deferred the real DB
+            backing store). When <c>DatabaseStudioRepository</c> lands, this store switches its
+            persistence calls to the new sub-store without changing the public surface.
+            </para>
+            <para>
+            <b>Constant-time credential check.</b> <see cref="M:TheTechIdea.Beep.Services.Studio.Identity.DatabaseIdentityStore.ValidateCredentialsAsync(System.String,System.String,System.Threading.CancellationToken)"/> always runs a
+            throwaway PBKDF2 computation on user-not-found so the response time doesn't leak which usernames
+            are present in the directory.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Identity.DatabaseStudioPrincipal">
+            <summary>
+            Stage 4 enterprise-mode <see cref="T:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal"/>: holds the signed-in user, delegates
+            permission checks to <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore">
+            <summary>
+            Stage 4 solo-mode <see cref="T:TheTechIdea.Beep.Studio.Identity.IIdentityStore"/>: a single implicit local admin, no password.
+            </summary>
+            <remarks>
+            <para>
+            This is the Studio-scoped counterpart of <see cref="T:TheTechIdea.Beep.SetUp.Security.AnonymousSetupPrincipal"/>:
+            when no real identity is configured (solo hosts), the operating user is treated as the implicit
+            admin on everything. This preserves today's behavior — the WPF <c>AppStudioSession.CurrentUser</c>
+            defaults to <c>Environment.UserName</c> and that user is allowed to do anything.
+            </para>
+            <para>
+            <b>Validation always succeeds.</b> Solo mode has no password gate. The local admin is identified
+            by user name (case-insensitive), and <see cref="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.ValidateCredentialsAsync(System.String,System.String,System.Threading.CancellationToken)"/> returns the user for
+            any password (including null). Enterprise mode uses <see cref="T:TheTechIdea.Beep.Services.Studio.Identity.DatabaseIdentityStore"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.LocalAdminId">
+            <summary>Stable id for the solo admin. Matches <c>AnonymousSetupPrincipal.Id</c>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.LocalAdmin">
+            <summary>
+            The singleton local admin user. <see cref="P:TheTechIdea.Beep.Studio.Identity.StudioUser.UserName"/> is the OS user name, so
+            audit entries read identically to the pre-Stage-4 behavior.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.FindByIdAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.FindByNameAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.ListUsersAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.CreateAsync(TheTechIdea.Beep.Studio.Identity.StudioUser,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.UpdateAsync(TheTechIdea.Beep.Studio.Identity.StudioUser,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.ValidateCredentialsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>Solo mode has no password — any credential pair identifying the local admin succeeds.</remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.GetRolesAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>The local admin implicitly has every role. Assignment is a no-op.</remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Identity.AllowAllStudioAuthorizer">
+            <summary>
+            Stage 4 solo-mode <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/>: grants the local admin everything, denies
+            everything else. Mirrors <see cref="T:TheTechIdea.Beep.SetUp.Security.AllowAllAuthorizer"/> at
+            the App scope.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.AllowAllStudioAuthorizer.#ctor(System.String)">
+            <param name="localUserId">The user id treated as the implicit admin (typically
+            <see cref="F:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.LocalAdminId"/>). Other users are deny-by-default.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.AllowAllStudioAuthorizer.EvaluateAsync(System.String,TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.AllowAllStudioAuthorizer.AuthorizeAsync(TheTechIdea.Beep.SetUp.Security.ISetupPrincipal,TheTechIdea.Beep.SetUp.Security.SetupPermission,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>Setup-inherited: any principal is allowed in solo mode (matches AllowAllAuthorizer).</remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Identity.LocalStudioPrincipal">
+            <summary>
+            Stage 4 solo-mode <see cref="T:TheTechIdea.Beep.Studio.Identity.IStudioPrincipal"/>: auto-signed-in local admin at construction.
+            Mirrors <see cref="T:TheTechIdea.Beep.SetUp.Security.AnonymousSetupPrincipal"/> with
+            <c>IsAuthenticated = true</c> (the solo admin IS the signed-in user, even though they didn't
+            authenticate with a credential).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalStudioPrincipal.#ctor">
+            <summary>Initial state: signed in as <see cref="P:TheTechIdea.Beep.Services.Studio.Identity.LocalIdentityStore.LocalAdmin"/>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.LocalStudioPrincipal.CanAsync(TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>The solo principal has no authorizer — it allows everything while signed in. Use
+            <see cref="T:TheTechIdea.Beep.Services.Studio.Identity.DatabaseStudioPrincipal"/> for evaluated permissions.</remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Identity.PasswordHasher">
+            <summary>
+            Stage 4: PBKDF2-HMAC-SHA256 password hashing. No external dependency — uses the BCL
+            <see cref="T:System.Security.Cryptography.Rfc2898DeriveBytes"/> with 256k iterations (OWASP recommendation as of 2023) and a
+            128-bit salt. The output format is a self-describing string <c>v1.{iterations}.{saltB64}.{hashB64}</c>
+            so the iteration count can be raised later without invalidating older hashes.
+            </summary>
+            <remarks>
+            <para>
+            <b>Stage 4 implementation note:</b> the codebase had no password-hashing precedent (only
+            HMAC-SHA256 for audit and manifest signing). This is the first password hasher; future stages can
+            swap to Argon2id by changing the <c>v1.</c> prefix and the implementation — the format is
+            version-stamped so callers can detect and rehash on next login.
+            </para>
+            <para>
+            <b>Constant-time verification.</b> <see cref="M:TheTechIdea.Beep.Services.Studio.Identity.PasswordHasher.Verify(System.String,System.String)"/> uses <see cref="M:System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(System.ReadOnlySpan{System.Byte},System.ReadOnlySpan{System.Byte})"/>
+            after the PBKDF2 computation, so the hash comparison doesn't leak via timing.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.PasswordHasher.Hash(System.String,System.Int32)">
+            <summary>Hash a password, returning the self-describing wire format.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.PasswordHasher.Verify(System.String,System.String)">
+            <summary>
+            Verify a password against a stored hash. Returns false on any malformed input (never throws)
+            so callers can treat "bad hash" the same as "wrong password" — both deny login.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Identity.PasswordHasher.NeedsRehash(System.String,System.Int32)">
+            <summary>
+            True when <paramref name="stored"/> is a hash from an older iteration count — caller should
+            rehash on next successful login. Returns false for malformed input.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger">
+            <summary>
+            Default <see cref="T:TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger"/>: a JSON-file-backed ledger at <c>{dataRoot}/migration-ledger.json</c>.
+            </summary>
+            <remarks>
+            <para><b>Stage 2.2 hardening</b> (mirrors <c>SetUp/State/LocalJsonSetupStateStore</c>):</para>
+            <list type="bullet">
+            <item><b>Thread-safe</b>: every public method takes a process-wide lock — concurrent
+            <c>RecordAsync</c> calls from async workflows can't race on the in-memory list or the file.</item>
+            <item><b>Atomic file writes</b>: serialize to a temp file in the same directory, then
+            <c>File.Move(overwrite: true)</c> with retries — a crash mid-write never produces a torn ledger.
+            No partial JSON ever appears at the canonical path.</item>
+            <item><b>Concurrent-read-safe</b>: reads open with <c>FileShare.ReadWrite | FileShare.Delete</c>
+            so a read while another process is writing doesn't throw.</item>
+            <item><b>Read-on-query</b>: every query reloads from disk first, so writes from another process
+            (e.g. another Studio host, or a CLI migration runner) are visible without a restart. The ledger
+            file is small (one entry per migration), so this is cheap.</item>
+            </list>
+            <para>The previous implementation loaded once in the constructor and used plain
+            <c>File.WriteAllText</c>; both behaviors were correctness gaps under concurrent or
+            multi-process use. Stage 2 closes them.</para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger.ReloadUnsafe">
+            <summary>Reload <c>_entries</c> from disk. Called under the lock. Non-fatal on error.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger.SaveUnsafe">
+            <summary>Atomic write: temp file in the same dir, then Move(overwrite) with retries.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger.ReadShared(System.String)">
+            <summary>Open with ReadWrite|Delete sharing so concurrent writers don't block readers.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Notifications.ApprovalExpiryService">
+            <summary>
+            Stage 5.7: background sweep that expires stale <see cref="T:TheTechIdea.Beep.Studio.Governance.ApprovalRequest"/>s and notifies the
+            requester + approvers. Mirrors the BeepBootstrapper hosted-service pattern.
+            </summary>
+            <remarks>
+            <para>
+            Runs every 5 minutes by default. An approval is expired when its age exceeds
+            <see cref="!:ApprovalTtl"/> (default 7 days). When an approval expires:
+            <list type="bullet">
+            <item>State flips to <see cref="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Expired"/> via <see cref="T:TheTechIdea.Beep.Studio.Governance.IGovernanceService"/>.</item>
+            <item>A <see cref="F:TheTechIdea.Beep.Studio.Notifications.NotificationCategory.ApprovalExpired"/> notification is sent to the requester.</item>
+            </list>
+            </para>
+            <para>
+            <b>Solo mode</b>: when <see cref="T:TheTechIdea.Beep.Studio.Notifications.INotificationService"/> or <see cref="T:TheTechIdea.Beep.Studio.Governance.IGovernanceService"/> is
+            not wired, the service is a no-op (enterprise feature).
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Notifications.ApprovalExpiryService.#ctor(TheTechIdea.Beep.Studio.Governance.IGovernanceService,TheTechIdea.Beep.Studio.Notifications.INotificationService,Microsoft.Extensions.Logging.ILogger{TheTechIdea.Beep.Services.Studio.Notifications.ApprovalExpiryService},System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+            <param name="governance">Required — service is a no-op when not wired (passed as null-safe via the no-op factory).</param>
+            <param name="notifications">Required — service is a no-op when not wired.</param>
+            <param name="logger">Optional logger.</param>
+            <param name="sweepInterval">How often to sweep. Default 5 minutes.</param>
+            <param name="approvalTtl">When an approval is considered stale. Default 7 days.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Notifications.ApprovalExpiryService.SweepOnceAsync(System.Threading.CancellationToken)">
+            <summary>One sweep pass — public so tests can drive it deterministically without waiting.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Notifications.InboxNotificationService">
+            <summary>
+            Stage 5 default <see cref="T:TheTechIdea.Beep.Studio.Notifications.INotificationService"/>: inbox persisted to
+            <c>{dataRoot}/notifications/{userId}.json</c> (per-user), with optional channel adapters for
+            Email/Webhook/SignalR.
+            </summary>
+            <remarks>
+            <para>
+            Same Stage 2.2 hardening pattern: process-wide lock, atomic temp-file + <c>File.Move(overwrite:true)</c>
+            with retries, concurrent-read-safe reads, reload-on-read for cross-process visibility.
+            </para>
+            <para>
+            <b>Always-on inbox.</b> Every <see cref="M:TheTechIdea.Beep.Services.Studio.Notifications.InboxNotificationService.SendAsync(TheTechIdea.Beep.Studio.Notifications.NotificationMessage,System.Collections.Generic.IReadOnlyList{TheTechIdea.Beep.Studio.Notifications.NotificationChannel},System.Threading.CancellationToken)"/> writes the message to the recipient's inbox
+            (one file per user, kept small by a retention cap — default 200 messages; oldest trimmed). Other
+            channels are added based on the recipient's subscriptions or the explicit <c>channels</c> argument.
+            </para>
+            <para>
+            <b>Role broadcasts.</b> When a message's <see cref="P:TheTechIdea.Beep.Studio.Notifications.NotificationMessage.RecipientRole"/> is set,
+            the service resolves the role's members via the injected <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/> (or
+            <see cref="T:TheTechIdea.Beep.Studio.Identity.IIdentityStore"/> when only that's available) and writes one inbox entry per user.
+            When neither is provided (solo default), role broadcasts go to the local admin only.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Notifications.InboxNotificationService.AddChannel(TheTechIdea.Beep.Services.Studio.Notifications.INotificationChannel)">
+            <summary>Register (or replace) a channel at runtime. Stage 7's composition uses this to add Email/Webhook/SignalR.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Notifications.EmailNotificationChannel">
+            <summary>
+            SMTP email channel. Mirrors the ETL <c>EmailNotifier</c>'s mechanism (SmtpClient + token-less
+            fixed subject/body) but consumes a <see cref="T:TheTechIdea.Beep.Studio.Notifications.NotificationMessage"/> instead of a pipeline AlertEvent.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Notifications.EmailNotificationChannel.#ctor(System.Func{TheTechIdea.Beep.Studio.Notifications.NotificationMessage,System.String},System.Func{TheTechIdea.Beep.Studio.Notifications.NotificationMessage,System.ValueTuple{System.String,System.String}},System.Func{System.Net.Mail.SmtpClient},System.String)">
+            <param name="recipientResolver">Returns the recipient email address for a message (null → skip).</param>
+            <param name="contentResolver">Returns (subject, body) for the message.</param>
+            <param name="smtpFactory">Factory so the SmtpClient can be disposed per-send (SmtpClient is not reusable after Dispose).</param>
+            <param name="from">Sender address.</param>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Notifications.WebhookNotificationChannel">
+            <summary>
+            Webhook POST channel. Mirrors the ETL <c>WebhookNotifier</c>'s shape (HMAC-signed JSON payload)
+            but consumes a <see cref="T:TheTechIdea.Beep.Studio.Notifications.NotificationMessage"/>.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Notifications.LogFileNotificationChannel">
+            <summary>
+            Plain text log file channel — always available, used for auditing notification sends in dev.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Notifications.INotificationChannel">
+            <summary>
+            Stage 5: a delivery channel for notifications (Email, Webhook, SignalR, …). Adapters MUST NOT
+            throw — failures are logged by the caller and the next channel proceeds.
+            </summary>
+            <remarks>
+            <para>
+            <b>Why a new abstraction instead of wrapping the ETL notifiers.</b> The ETL notifiers
+            (<c>EmailNotifier</c>, <c>WebhookNotifier</c>, <c>LogFileNotifier</c> in
+            <c>Editor/ETL/Engine/BuiltIn/Notifiers/</c>) implement <c>IPipelineNotifier</c> and consume a
+            pipeline-specific <c>AlertEvent</c> with pipeline-specific tokens (<c>{PipelineName}</c>,
+            <c>{AlertRule}</c>, …). They are not a clean fit for user-facing notifications like "your approval
+            was requested". The SMTP/webhook *mechanism* is shared in spirit, but the contract is different
+            enough that a thin parallel channel surface is cleaner than wrapping. Future work can reconcile
+            the two under a shared base if the overlap grows.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Notifications.INotificationChannel.SendAsync(TheTechIdea.Beep.Studio.Notifications.NotificationMessage,System.String,System.Threading.CancellationToken)">
+            <summary>Deliver the message. Must not throw — log failures and return.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Permissions.PermissionEvaluator">
+            <summary>
+            Stage 4: the deny-wins evaluation algorithm, extracted as a pure function so it can be
+            unit-tested in isolation and reused by any <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/> impl.
+            </summary>
+            <remarks>
+            <para>
+            <b>Algorithm</b> (explicit-deny-wins — the AWS IAM / GCP IAM model):
+            <list type="number">
+            <item>Filter grants by <c>(userId, action)</c> AND scope match. A grant matches scope when each
+            grant scope field is null OR equals the requested value. So a global grant (all-null scope)
+            matches any request; an app-scoped grant matches only that app; etc.</item>
+            <item>If ANY matching grant is <c>Deny</c> → <c>Deny</c>. Denials are absolute — a more-specific
+            <c>Allow</c> cannot punch through any matching <c>Deny</c>. This is the privilege-escalation
+            prevention rule.</item>
+            <item>Else if ANY matching grant is <c>Allow</c> → <c>Allow</c>.</item>
+            <item>Else <c>Deny</c> (default-deny).</item>
+            </list>
+            </para>
+            <para>
+            <b>Why not "most-specific-wins".</b> A "most-specific grant wins" rule would let an app-scoped
+            Allow override a global Deny — a privilege escalation. The standard model in production RBAC
+            systems (AWS IAM, GCP IAM, Kubernetes RBAC) is "explicit deny is absolute", and that is what
+            admins expect: a regulator's prod-scoped Deny can never be overridden, period. Specificity only
+            matters for narrowing <c>Allow</c> (an app-wide Allow doesn't grant access on unrelated apps).
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Permissions.PermissionEvaluator.Evaluate(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Studio.Permissions.PermissionGrant},System.String,TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String)">
+            <summary>Evaluate the canonical algorithm against a grant set.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Permissions.PermissionEvaluator.SpecificityOf(TheTechIdea.Beep.Studio.Permissions.PermissionGrant)">
+            <summary>Specificity rank: more non-null scope fields = more specific.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Permissions.PermissionEvaluator.ScopeMatches(TheTechIdea.Beep.Studio.Permissions.PermissionGrant,System.String,System.String,System.String)">
+            <summary>
+            A grant matches the requested scope when every grant scope field is null/empty (wildcard) OR
+            equals the requested value. This makes global grants match any request.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Permissions.RoleBasedStudioAuthorizer">
+            <summary>
+            Stage 4 enterprise-mode <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/>: persists <see cref="T:TheTechIdea.Beep.Studio.Permissions.PermissionGrant"/>s
+            to a JSON file at <c>{dataRoot}/permission-grants.json</c>, evaluates them with the
+            deny-wins/most-specific-wins algorithm in <see cref="T:TheTechIdea.Beep.Services.Studio.Permissions.PermissionEvaluator"/>.
+            </summary>
+            <remarks>
+            <para>
+            Mirrors the Stage 2.2 hardening: process-wide <c>lock</c>, atomic temp-file + <c>File.Move(overwrite:true)</c>
+            with retries, concurrent-read-safe reads (<c>FileShare.ReadWrite | FileShare.Delete</c>), reload-on-read
+            so grants added from another process are visible without a restart. Same idiom as
+            <see cref="T:TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger"/> and
+            <see cref="T:TheTechIdea.Beep.Services.Studio.Repository.FileStudioRepository"/>.
+            </para>
+            <para>
+            <b>Role assignment</b>: <c>IIdentityStore.AssignRoleAsync</c> expands a role via
+            <see cref="T:TheTechIdea.Beep.Studio.Permissions.RoleTemplates"/> into one grant per permission at the requested scope. Direct
+            <see cref="M:TheTechIdea.Beep.Services.Studio.Permissions.RoleBasedStudioAuthorizer.GrantAsync(TheTechIdea.Beep.Studio.Permissions.PermissionGrant,System.Threading.CancellationToken)"/> calls are the escape hatch for fine-grained overrides (e.g. an explicit
+            <c>Deny</c> on a specific env).
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Permissions.RoleBasedStudioAuthorizer.EvaluateAsync(System.String,TheTechIdea.Beep.Studio.Permissions.StudioPermission,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Permissions.RoleBasedStudioAuthorizer.AuthorizeAsync(TheTechIdea.Beep.SetUp.Security.ISetupPrincipal,TheTechIdea.Beep.SetUp.Security.SetupPermission,TheTechIdea.Beep.SetUp.SetupContext,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Permissions.RoleBasedStudioAuthorizer.SameScope(TheTechIdea.Beep.Studio.Permissions.PermissionGrant,TheTechIdea.Beep.Studio.Permissions.PermissionGrant)">
+            <summary>True when two grants cover the same (user, action, scope) — used for idempotent upsert.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Studio.Repository.FileStudioRepository">
+            <summary>
+            Stage 3 default <see cref="T:TheTechIdea.Beep.Studio.Repository.IStudioRepository"/>: file-backed, mirroring the Stage 2.2 hardening
+            of <c>JsonMigrationLedger</c> (atomic temp-file + <c>File.Move(overwrite:true)</c> with retries,
+            concurrent-read-safe reads, process-wide lock, reload-on-read so cross-process writes are visible).
+            </summary>
+            <remarks>
+            <para>
+            This is the SOLO default — same observable behavior as the pre-Stage-3 services (<c>AppRegistry</c>,
+            <c>GovernanceService</c>, <c>EnvironmentProfileService</c>, masking-rules) but with the hardening
+            they each lacked: atomic writes, thread safety, and OCC.
+            </para>
+            <para>
+            <see cref="P:TheTechIdea.Beep.Studio.Repository.IStudioRepository.MigrationLedger"/> is satisfied by reusing the existing
+            <see cref="T:TheTechIdea.Beep.Services.Studio.Migration.Ledger.JsonMigrationLedger"/> (Stage 2.2). Apps/EnvProfiles/Governance/Masking get fresh
+            sub-stores that consolidate the previously-scattered file code under one pattern.
+            </para>
+            <para>
+            <b>RowVersion</b> = the SHA-256 of the canonical JSON (lowercased hex). The file impl validates
+            it on save when <c>expectedRowVersion</c> is non-null — this is the optimistic-concurrency gate
+            the DB impl will satisfy with a real binary token. The OCC refusal signal is always
+            <see cref="T:TheTechIdea.Beep.Studio.Repository.StudioRepositoryConflictException"/>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Repository.FileStudioRepository.ReadShared(System.String)">
+            <summary>Read with shared FileShare so concurrent writers don't block readers.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Repository.FileStudioRepository.AtomicWrite(System.String,System.String)">
+            <summary>Atomic write: temp file in the same dir, then Move(overwrite) with retries.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Studio.Repository.FileStudioRepository.RowVersionOf(System.String)">
+            <summary>Compute the RowVersion = SHA-256 of canonical JSON content.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Services.Telemetry.BackpressureMode">
             <summary>
             Behavior selected by the telemetry pipeline when its bounded queue is full.
@@ -51762,6 +52248,13 @@
             <c>IAppRegistry</c> directly.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Studio.Apps.AppStudioService.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Studio.Migration.Ledger.IMigrationLedger,TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer)">
+            <summary>
+            Stage 4.8: when an <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/> is provided, the per-app governance
+            workflow delegates authorization to it; otherwise it falls back to the legacy role-ordinal
+            check (preserves today's solo behavior).
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Studio.Apps.AppStudioService.Migrations">
             <inheritdoc />
         </member>
@@ -51892,6 +52385,19 @@
             persisted rule set; the row ratio for subsets is applied per entity.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Studio.Apps.AppDataWorkflow.GetHistoryAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>Stage 2.7a: returns Data-kind entries from the unified ledger. When no ledger is
+            wired (older hosts), returns an empty list rather than failing — history is best-effort.</remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Apps.AppDataWorkflow.ComputeDataTransferHash(System.String,System.String,System.String,System.Nullable{System.Double},System.Collections.Generic.IReadOnlyCollection{TheTechIdea.Beep.Studio.Apps.Workflows.MaskingRule})">
+            <summary>
+            Stage 2.9: deterministic hash of a data-transfer request, used as the ledger PlanHash for
+            skip-if-applied. Covers app + source env + target env + row ratio + masking-rule signature
+            (entity, column, strategy, constant value). Row counts and timestamps are intentionally
+            excluded — those vary across runs even when the request is identical.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Apps.AppDeployWorkflow">
             <summary>
             Code deployment &amp; promotion — operates on an app's
@@ -51903,6 +52409,21 @@
             Per-app governance backed by a local JSON store (members, approval tickets,
             audit entries). Production deployments should swap the JSON sink for the
             engine's <c>IBeepAudit</c> + a durable ticket store — the contract stays the same.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Apps.AppGovernanceWorkflow._authorizer">
+            <summary>
+            Stage 4.8: when an <see cref="T:TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer"/> is wired (enterprise mode),
+            <see cref="M:TheTechIdea.Beep.Studio.Apps.AppGovernanceWorkflow.CanUserAsync(System.String,System.String,TheTechIdea.Beep.Studio.Apps.Workflows.AppMemberRole,System.Threading.CancellationToken)"/> delegates to it instead of the legacy role-ordinal check.
+            Null (solo default) preserves today's behavior byte-for-byte.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Apps.AppGovernanceWorkflow.RoleToPermission(TheTechIdea.Beep.Studio.Apps.Workflows.AppMemberRole)">
+            <summary>
+            Map an <see cref="T:TheTechIdea.Beep.Studio.Apps.Workflows.AppMemberRole"/> to a single representative <see cref="T:TheTechIdea.Beep.Studio.Permissions.StudioPermission"/>
+            that ALL users with that role or higher would have. Used to bridge the role-based
+            <see cref="M:TheTechIdea.Beep.Studio.Apps.AppGovernanceWorkflow.CanUserAsync(System.String,System.String,TheTechIdea.Beep.Studio.Apps.Workflows.AppMemberRole,System.Threading.CancellationToken)"/> overload to the permission-based authorizer without losing the
+            ordinal semantics (a Contributor also has everything a Viewer has).
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Studio.Apps.AppMigrationWorkflow">
@@ -52010,6 +52531,14 @@
             a driver via the engine's <see cref="T:TheTechIdea.Beep.SetUp.Steps.DriverProvisionStep"/>.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Studio.Driver.DriverService.ListLoadedAssembliesAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>
+            Stage 6.5: projects <c>_editor.assemblyHandler.Assemblies</c> (a list of <c>assemblies_rep</c>)
+            into the Studio DTO. This is the single sanctioned path for AppStudio to learn what's loaded
+            — killing the <c>IBeepService.LLoader.Assemblies</c> bypass in SchemaBrowserView.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Studio.Driver.DriverService.SplitExtensions(System.String)">
             <summary>
             Split a comma-separated extension string into a list. Returns an
@@ -52049,6 +52578,37 @@
             engine stores in the <c>Properties</c> dictionary.
             </remarks>
         </member>
+        <member name="F:TheTechIdea.Beep.Studio.Governance.GovernanceService._notifications">
+            <summary>
+            Stage 5.5/5.6: optional notification fan-out for approval lifecycle events. Null (solo default)
+            preserves today's behavior — no notifications. Enterprise hosts inject an
+            <see cref="!:INotificationService"/> + <see cref="!:IStudioAuthorizer"/> so approvals reach real users.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.#ctor(TheTechIdea.Beep.Services.Audit.IBeepAudit,System.String,TheTechIdea.Beep.Studio.Notifications.INotificationService,TheTechIdea.Beep.Studio.Permissions.IStudioAuthorizer)">
+            <summary>
+            Stage 5.5/5.6: enterprise constructor. Notifications and authorizer are optional; when both
+            are present, approval events fan out to the resolved approvers.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.ExpireApprovalAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>
+            Stage 5.7: bypasses the user-only validation paths in <see cref="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.DecideApprovalAsync(System.String,TheTechIdea.Beep.Studio.Governance.ApprovalDecision,System.String,System.String,System.Threading.CancellationToken)"/> — this
+            is a system action (expiry sweep or admin force-decide), not a user decision. Self-approval
+            check and allowed-approver-roles check are skipped; the state flips to <see cref="F:TheTechIdea.Beep.Studio.Governance.ApprovalState.Expired"/>.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.NotifyApproversAsync(TheTechIdea.Beep.Studio.Governance.ApprovalRequest,System.Threading.CancellationToken)">
+            <summary>
+            Stage 5.5: notify everyone who can approve the operation. Uses
+            <see cref="!:IStudioAuthorizer.ResolveActorsAsync"/> when an authorizer is wired (enterprise);
+            otherwise no-op (solo default — the local admin sees the request in their own inbox anyway).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Governance.GovernanceService.NotifyRequesterOfDecisionAsync(TheTechIdea.Beep.Studio.Governance.ApprovalRequest,System.Threading.CancellationToken)">
+            <summary>Stage 5.6: notify the requester that a decision has been made.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Studio.Lifecycle.IStudioModeService">
             <summary>
             Persists and retrieves the Studio operating mode from user-local settings.
@@ -52071,6 +52631,9 @@
             execute time; v1 of the Studio surfaces a placeholder for the
             pre-execution preview.
             </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationStudioService._appliedEntryByToken">
+            <summary>execution token → ledger EntryId of the Succeeded Up entry. Used by RollbackAsync to link the Down entry (Stage 2.8 rollback chain).</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Studio.Migration.MigrationStudioService._planCache">
             <summary>Map of plan hash → last built plan handle (per-target). Re-used for dry-run / preflight / apply.</summary>
@@ -52248,6 +52811,22 @@
         </member>
         <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.BrowseAsync(System.String,System.String,System.Int32,System.Threading.CancellationToken)">
             <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.LookupConnectionAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>
+            Stage 6.4: pure data lookup of <c>ConnectionProperties</c>. The AppStudio connection-edit
+            view uses this to feed <c>BeepWpfConnectionDialog</c> without bypassing
+            <c>IStudioService</c> for the raw <c>IBeepService.Config_editor.DataConnections</c>.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Studio.Source.SourceService.DetectIdentityAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+            <remarks>
+            Stage 6.6: thin wrapper over the engine's <c>IdentityManagementService.DetectAsync</c>.
+            The AppStudio <c>IdentityViewModel</c> uses this instead of constructing
+            <c>new IdentityManagementService(IDMEEditor)</c> directly.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Studio.StudioService">
             <summary>
