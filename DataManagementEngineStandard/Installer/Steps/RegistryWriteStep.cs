@@ -46,8 +46,23 @@ namespace TheTechIdea.Beep.Installer.Steps
                 return StepErrorHelpers.Ok($"Dry run: {entries.Count} registry value(s) would be written. Nothing was written.");
 
             var written = new List<RegistryOperation>();
+            var perUser = InstallScope.IsPerUser(context);
+
             // Honor install scope: per-user → HKCU, 32-bit → WOW6432 view (A3.1).
-            using var baseKey = InstallScope.OpenBaseKey(context, config);
+            RegistryKey baseKey;
+            try
+            {
+                baseKey = InstallScope.OpenBaseKey(context, config);
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                // Writing HKLM without elevation used to surface as "step threw an unhandled
+                // exception", which tells the user nothing about how to fix it.
+                return StepErrorHelpers.Fail(
+                    "Administrator privileges are required to write per-machine registry entries. " +
+                    "Run the installer elevated, or build it for a per-user install.");
+            }
+            using var _baseKey = baseKey;
 
             // Registry writes were not registered for rollback at all, so a failure after this
             // step left the keys behind. Register against the hive actually written to.
