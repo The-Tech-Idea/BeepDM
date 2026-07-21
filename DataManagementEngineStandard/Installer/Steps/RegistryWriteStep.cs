@@ -70,12 +70,24 @@ namespace TheTechIdea.Beep.Installer.Steps
 
             foreach (var entry in entries)
             {
-                using var key = baseKey.CreateSubKey(entry.KeyPath);
-                if (key != null)
+                try
                 {
-                    key.SetValue(entry.ValueName, entry.Value, entry.ValueKind);
-                    written.Add(entry);
-                    rollback?.RegisterRegistryWrite(entry.KeyPath, entry.ValueName, baseKey);
+                    using var key = baseKey.CreateSubKey(entry.KeyPath);
+                    if (key != null)
+                    {
+                        key.SetValue(entry.ValueName, entry.Value, entry.ValueKind);
+                        written.Add(entry);
+                        rollback?.RegisterRegistryWrite(entry.KeyPath, entry.ValueName, baseKey);
+                    }
+                }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
+                {
+                    var hive = perUser ? "HKEY_CURRENT_USER" : "HKEY_LOCAL_MACHINE";
+                    return StepErrorHelpers.Fail(
+                        $"Access denied writing '{entry.KeyPath}\\{entry.ValueName}' under {hive}. " +
+                        (perUser
+                            ? "The key may be protected by policy."
+                            : "Per-machine registry entries require an elevated installer."));
                 }
             }
 
