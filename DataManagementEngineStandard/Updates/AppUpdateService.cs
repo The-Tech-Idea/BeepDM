@@ -80,7 +80,10 @@ namespace TheTechIdea.Beep.Updates
             }
 
             if (result.AnyUpdateAvailable)
+            {
                 UpdateAvailable?.Invoke(this, result);
+                await ReportAsync("check", result.LatestVersion ?? Settings.CurrentVersion, true, null, ct).ConfigureAwait(false);
+            }
 
             return result;
         }

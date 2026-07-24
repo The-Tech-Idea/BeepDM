@@ -235,6 +235,24 @@ namespace TheTechIdea.Beep.Installer.Steps
                 catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: unregister skipped: {ex.Message}" }); }
             }
 
+            // 7. Side-by-side cleanup: the whole <base> tree (all app-<ver> folders + the current
+            //    junction) is product-owned. Remove the junction first (link only, never following
+            //    it into the target), then the base tree.
+            if (context.Properties.TryGetValue("SideBySide", out var sxsVal) && sxsVal is true
+                && context.TryGetProperty<string>("InstallBaseDir") is { } baseDir
+                && Directory.Exists(baseDir))
+            {
+                try
+                {
+                    var current = Path.Combine(baseDir, "current");
+                    if (Directory.Exists(current)) Directory.Delete(current, recursive: false);
+                }
+                catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: could not remove the current junction: {ex.Message}" }); }
+
+                try { Directory.Delete(baseDir, recursive: true); removed++; }
+                catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: leaving base directory '{baseDir}': {ex.Message}" }); }
+            }
+
             progress?.Report(new PassedArgs { ParameterInt1 = 100, Messege = $"Removed {removed} items." });
 
             return errors.Count > 0

@@ -39,6 +39,9 @@ namespace TheTechIdea.Beep.Installer.Steps
         {
             var config = context.TryGetProperty<InstallConfig>("InstallConfig")!;
             var installPath = context.TryGetProperty<string>("InstallPath")!;
+            // Shortcuts target the stable launch path — <base>\current for a side-by-side install,
+            // so a version flip is transparent — which equals InstallPath for a flat install.
+            var launchPath = context.TryGetProperty<string>("LaunchPath") ?? installPath;
 
             var allShortcuts = new List<ShortcutDefinition>(config.Shortcuts ?? Enumerable.Empty<ShortcutDefinition>());
             foreach (var comp in config.Components.Where(c => c.Selected || c.Required))
@@ -53,7 +56,7 @@ namespace TheTechIdea.Beep.Installer.Steps
             var created = new List<ShortcutDefinition>();
             foreach (var sc in allShortcuts)
             {
-                var targetPath = Path.Combine(installPath, sc.TargetPath);
+                var targetPath = Path.Combine(launchPath, sc.TargetPath);
                 if (!File.Exists(targetPath)) continue;
 
                 var linkPath = GetShortcutPath(sc, config, InstallScope.IsPerUser(context));

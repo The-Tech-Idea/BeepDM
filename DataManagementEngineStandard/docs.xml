@@ -41890,6 +41890,27 @@
         <member name="T:TheTechIdea.Beep.Installer.Steps.CertificateInstallStep">
             <summary>Installs/uninstalls certificates to the Windows certificate store.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.JunctionCreateStep">
+             <summary>
+             Side-by-side layout: points <c>&lt;base&gt;\current</c> at the just-installed
+             <c>&lt;base&gt;\app-&lt;version&gt;</c> (a junction, via the shared <see cref="T:TheTechIdea.Beep.Updates.IDirectoryLink"/>),
+             so shortcuts that target <c>current</c> transparently launch this version — and a later
+             delta update flips the junction to a new version beside this one without touching the
+             running files. Also stamps the runtime install root into the shipped
+             <c>update-settings.json</c> so the app's self-updater knows where to lay new versions down.
+            
+             A no-op for a flat install (<see cref="M:TheTechIdea.Beep.Installer.Steps.JunctionCreateStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)"/> returns true), so it can sit in the graph
+             unconditionally.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.JunctionCreateStep.PatchUpdateSettings(System.String,System.String,TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Adds the runtime install root (and version) to the shipped update-settings.json so the
+            self-updater materializes new versions beside this one under the base, rather than
+            nesting them inside it. Best-effort — a missing/unreadable settings file just means the
+            app wasn't provisioned for self-update.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.PrerequisiteCheckStep">
             <summary>
             Validates system prerequisites: OS version, .NET runtime, admin rights, disk space.
