@@ -26037,6 +26037,213 @@
             migratable.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Updates.UpdateFeed">
+            <summary>
+            The static update feed (<c>feed.json</c>) an installed app polls over HTTPS. Shape aligns
+            with BeepDM's installer-service plan, extended with the two partial-update sections
+            (<see cref="P:TheTechIdea.Beep.Updates.AppReleaseInfo.Delta"/> for file-level deltas, <see cref="P:TheTechIdea.Beep.Updates.UpdateFeed.Modules"/> for the
+            NuGet module channel). No code runs server-side — this is a plain document at a stable URL.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.AppReleaseInfo">
+            <summary>The newest release on a channel, with both the full installer and the delta source.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.AppReleaseInfo.MinSupportedVersion">
+            <summary>
+            Oldest installed version a delta can start from. When the installed version is older,
+            the updater must take the <see cref="P:TheTechIdea.Beep.Updates.AppReleaseInfo.Full"/> install instead of a delta.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.AppReleaseInfo.Full">
+            <summary>The complete Setup.exe — always present; the fallback when a delta is impossible.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.AppReleaseInfo.Delta">
+            <summary>Content-addressed delta source (payload manifest + blob base URL); optional.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.ArtifactRef">
+            <summary>A downloadable artifact plus the SHA-256 that must match before it is used.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.DeltaRef">
+            <summary>
+            Delta source: the new release's <c>_payload-manifest.json</c> (path → blob sha) and the
+            base URL under which each <c>_blobs/&lt;sha256&gt;</c> is fetched. The manifest is diffed
+            against what is on disk so only missing blobs are downloaded.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.ModuleRef">
+            <summary>
+            A NuGet-packaged part of the app the feed pins to a specific version. The module channel
+            updates these individually without reinstalling the app. <see cref="P:TheTechIdea.Beep.Updates.ModuleRef.Required"/> modules
+            block app start until updated.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.ModuleRef.Feed">
+            <summary>NuGet v3 index the package is pulled from (folder feed, GitHub Packages, etc.).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.IAppUpdateService">
+            <summary>
+            App self-update, registered by any Beep-based app via <c>AddBeepAppUpdates()</c> — check a
+            static feed, apply hash-verified delta (or full) app updates side-by-side, roll back, and
+            update feed-pinned NuGet modules. Lives in BeepDM (per decision D12) so update capability
+            belongs to the deployed app, independent of how it was installed. Born cancellable:
+            async-with-<see cref="T:System.Threading.CancellationToken"/> throughout, <see cref="T:TheTechIdea.Beep.ConfigUtil.IErrorsInfo"/> results,
+            <see cref="T:TheTechIdea.Beep.Addin.PassedArgs"/> progress.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.IAppUpdateService.CheckAsync(System.Threading.CancellationToken)">
+            <summary>Fetch + verify the feed and compare it against the installed state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.IAppUpdateService.ApplyAppUpdateAsync(TheTechIdea.Beep.Updates.UpdateCheckResult,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>Apply an app update (delta when possible, full otherwise), side-by-side.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.IAppUpdateService.ApplyModuleUpdatesAsync(TheTechIdea.Beep.Updates.UpdateCheckResult,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>Update only the stale NuGet modules named in the check result.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.IAppUpdateService.RollbackAsync(System.Threading.CancellationToken)">
+            <summary>Flip back to the previous side-by-side version.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.IAppUpdateService.Settings">
+            <summary>Feed URL, channel, mode and opt-out this service was configured with.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Updates.IAppUpdateService.UpdateAvailable">
+            <summary>Raised when a check finds an update available (drives the Optional-mode notification).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.InstalledModule">
+            <summary>A NuGet-packaged module installed with the app: its id and installed version.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.ModuleUpdateOutcome">
+            <summary>The result of updating one module package.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.ModuleUpdateOutcome.PackagePath">
+            <summary>Path to the fetched .nupkg, when the provider surfaces it, so its hash can be verified.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.ModuleUpdateReport">
+            <summary>Per-module outcome of an <c>ApplyAsync</c> run.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.IModulePackageService">
+            <summary>
+            Narrow seam over the NuGet package machinery the module channel governs. Kept minimal (list
+            installed modules, update one to a pinned version) so <c>ModuleUpdater</c> is unit-testable
+            without constructing the full NuGet service graph.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.IModulePackageService.UpdateModuleAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Updates (or installs) a package to an exact version. The feed pins the version — never "latest".</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.PayloadManifest">
+            <summary>
+            The content-addressed payload manifest (<c>_payload-manifest.json</c>) — the same shape the
+            installer's solid packager writes: every file path mapped to the SHA-256 of its content
+            (<see cref="P:TheTechIdea.Beep.Updates.PayloadEntry.Blob"/>). Because identical content shares a blob, a delta update
+            diffs blob hashes rather than files, so a moved or duplicated file costs no download.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.PayloadEntry">
+            <summary>One installed file: its relative path, the blob (SHA-256) holding its content, and size.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.BlobFetch">
+            <summary>A unique blob a delta update must download, with its size for byte accounting.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.DeltaPlan">
+            <summary>
+            The output of <c>DeltaPlanner</c>: exactly which blobs to download, which files to write or
+            delete to converge the install on the new manifest, and the byte cost versus a full install.
+            Pure data — computing it touches no disk and no network.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.IsFullInstall">
+            <summary>True when there is no usable local manifest (fresh install, or a forced-full below minSupportedVersion) — every blob is fetched.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.BlobsToFetch">
+            <summary>Unique blobs not already present locally.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.FilesToWrite">
+            <summary>Files whose path is new or whose content (blob) changed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.FilesToDelete">
+            <summary>Installed files absent from the new manifest — removed to converge.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.DownloadBytes">
+            <summary>Total bytes the delta actually downloads (sum of <see cref="P:TheTechIdea.Beep.Updates.DeltaPlan.BlobsToFetch"/>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.FullBytes">
+            <summary>Total unique-blob bytes a full install would download — the baseline the delta is measured against.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.DeltaPlan.SavingsBytes">
+            <summary>Bytes saved versus taking the full install (never negative).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.UpdateCheckResult">
+            <summary>
+            The outcome of <see cref="M:TheTechIdea.Beep.Updates.IAppUpdateService.CheckAsync(System.Threading.CancellationToken)"/>: the fetched feed compared
+            against the installed state. Carries a named <see cref="P:TheTechIdea.Beep.Updates.UpdateCheckResult.Error"/> rather than surfacing a
+            null feed, so a failed check is never mistaken for "no update available".
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.Succeeded">
+            <summary>False when the feed could not be fetched/parsed; see <see cref="P:TheTechIdea.Beep.Updates.UpdateCheckResult.Error"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.Error">
+            <summary>Human-readable reason the check failed (null on success).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.Feed">
+            <summary>The parsed feed (null when the check failed).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.CurrentVersion">
+            <summary>The version the check compared against.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.LatestVersion">
+            <summary>The feed's latest version for this channel (null when the check failed).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.AppUpdateAvailable">
+            <summary>True when the feed's latest version is newer than <see cref="P:TheTechIdea.Beep.Updates.UpdateCheckResult.CurrentVersion"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.RequiresFullInstall">
+            <summary>
+            True when the installed version predates the release's <c>minSupportedVersion</c>, so a
+            delta cannot be applied and the full installer must be taken instead.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.StaleModules">
+            <summary>Feed-pinned modules whose installed version differs and should be updated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateCheckResult.AnyUpdateAvailable">
+            <summary>True when anything is available to apply — an app update or any stale module.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.UpdateSettings">
+            <summary>
+            The installed app's update configuration, stamped next to the app as
+            <c>update-settings.json</c> at build time (from the project's <c>AppUpdatesURL</c> /
+            <c>AppUpdateMode</c>) and read by <c>AddBeepAppUpdates()</c> by default. Reuses the
+            installer's <see cref="T:TheTechIdea.Beep.Installer.UpdateMode"/> rather than duplicating the enum.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.FeedUrl">
+            <summary>Stable URL of <c>feed.json</c> (HTTPS, or a local/UNC folder path for LAN feeds).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.Mode">
+            <summary><see cref="F:TheTechIdea.Beep.Installer.UpdateMode.Required"/> blocks the app until applied; <see cref="F:TheTechIdea.Beep.Installer.UpdateMode.Optional"/> notifies.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.CurrentVersion">
+            <summary>
+            The version currently installed, used as the baseline for the feed comparison.
+            Normally the running assembly's version; overridable for tests and the CLI.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.InstallRoot">
+            <summary>
+            Root under which side-by-side <c>app-&lt;version&gt;</c> directories live and the
+            <c>current</c> junction points (Stage 11.B). Defaults to the app's own directory.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.ModuleDirectory">
+            <summary>Directory the app's NuGet modules install under (<c>&lt;dir&gt;/&lt;id&gt;/&lt;version&gt;/</c>). Optional.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.Disabled">
+            <summary>
+            Managed-environment opt-out: when true the service never checks or applies. Mirrors the
+            <c>BEEP_NO_UPDATE</c> environment override honoured by the policy layer.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Vis.AddinAttribute">
             <summary>
             Attribute class to define metadata for add-ins within the system.

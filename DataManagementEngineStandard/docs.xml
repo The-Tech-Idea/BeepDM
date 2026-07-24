@@ -54180,6 +54180,176 @@
             <c>TheTechIdea.Beep.SetUp</c>, or via OpenTelemetry's <c>AddSource(...)</c>.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Updates.AppUpdateService">
+            <summary>
+            The <see cref="T:TheTechIdea.Beep.Updates.IAppUpdateService"/> façade — composes the feed client, delta planner,
+            side-by-side applier and module updater into the app-facing surface. All collaborators are
+            injectable so the whole flow is testable offline; the module service and directory link are
+            optional (an app without a module channel simply gets app-level updates).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.DeltaPlanner">
+            <summary>
+            Computes a file-level delta from the installed payload manifest to a new one — pure, so it
+            is fully unit-testable and touches neither disk nor network. The content-addressed store
+            does the hard part: a file is downloaded only when its <em>blob</em> (SHA-256) is not
+            already present locally, so a rename or a duplicate costs zero bytes.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.DeltaPlanner.ComputePlan(TheTechIdea.Beep.Updates.PayloadManifest,TheTechIdea.Beep.Updates.PayloadManifest)">
+            <summary>
+            Plans the update from <paramref name="local"/> (the installed manifest, or null for a
+            fresh / forced-full install) to <paramref name="remote"/> (the new release manifest).
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.IDirectoryLink">
+            <summary>
+            Points a stable directory path (the <c>current</c> link) at one of the side-by-side version
+            folders. Abstracted so the applier's stage/verify/flip/rollback logic is testable without
+            real filesystem junctions.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.IDirectoryLink.Point(System.String,System.String)">
+            <summary>Atomically re-points <paramref name="linkPath"/> at <paramref name="targetPath"/>, replacing any existing link.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.JunctionLink">
+            <summary>
+            Windows directory junction (<c>mklink /J</c>). Junctions are used rather than symlinks
+            because they need no elevation or Developer Mode. Removing the junction removes only the
+            reparse point, never the target's contents — the whole point of the side-by-side layout is
+            that flipping the link never writes into a version folder.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.IFeedTransport">
+            <summary>
+            Fetches feed text and artifact bytes. Abstracted so the feed client is transport-agnostic
+            (HTTPS, a local/UNC folder feed, or a fake in tests) — the whole point of decision D10 is
+            that the client only ever sees URLs, so a hosting change never touches update logic.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.HttpFeedTransport">
+            <summary>
+            Default transport: HTTPS via <see cref="T:System.Net.Http.HttpClient"/>, with a transparent fallback to the
+            local filesystem when the URL is a <c>file://</c> URI or a plain path — so a
+            <c>LocalNugetFiles</c>-style LAN folder feed works with no extra configuration.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.ModuleUpdater">
+            <summary>
+            The module channel: a thin <em>governed</em> layer over the app's existing NuGet update
+            machinery. "Governed" means the feed pins exact versions and (optionally) hashes — the
+            feed's version always wins over "latest on the source", and a required module that is stale
+            blocks app start. It updates individual packages without touching the app's own files, so a
+            module bump never reinstalls the application.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.ModuleUpdater.ComputeStaleModules(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Updates.ModuleRef},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Updates.InstalledModule})">
+            <summary>
+            Which feed modules are out of step with what is installed. Pure. The feed pins the
+            version, so an installed version that <em>differs</em> — newer or older — is stale (a
+            pin can deliberately hold a module back). An optional module that is not installed is
+            left alone; a required one that is missing must be installed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.ModuleUpdater.HasBlockingRequiredModule(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Updates.ModuleRef})">
+            <summary>True when any stale module is <c>required</c> — the policy layer blocks app start until it is updated.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.ModuleUpdater.ApplyAsync(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Updates.ModuleRef},System.String,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Updates each stale module to its feed-pinned version, verifying the fetched package's
+            SHA-256 when the feed names one. Never touches the application's own files — only the
+            module packages change.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.ModuleUpdater.GetInstalledAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Lists installed modules via the underlying package service (for a check pass).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.NuGetModulePackageService">
+            <summary>
+            Adapts BeepDM's existing <see cref="T:TheTechIdea.Beep.NuGetManagement.Services.UpdateService"/> to the narrow
+            <see cref="T:TheTechIdea.Beep.Updates.IModulePackageService"/> the module channel governs — no new NuGet logic, just
+            the seam. The installed inventory is read from the standard
+            <c>&lt;installDir&gt;/&lt;packageId&gt;/&lt;version&gt;/</c> layout the installer/loader use.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.SideBySideApplier">
+            <summary>
+            Applies an app update side-by-side: it materializes the new version into its own
+            <c>app-&lt;version&gt;</c> folder and only then flips the <c>current</c> junction. The running
+            version is never written to, so the locked-file problem disappears and an interrupted apply
+            is harmless — the junction still points at the old version until the very last step.
+            Rollback is just flipping the junction back.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.SideBySideApplier.Request.FetchBlob">
+            <summary>Resolves a blob's bytes by its SHA-256 (local store first, else download).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.SideBySideApplier.Request.CurrentVersion">
+            <summary>The live version whose files seed a delta. Null → materialize fully from blobs.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.SideBySideApplier.Request.OnApplied">
+            <summary>Invoked with the new version once the flip has committed (e.g. to record it in the version ledger).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.SideBySideApplier.Rollback(System.String)">
+            <summary>Flips <c>current</c> back to the previously-installed version.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.SideBySideApplier.RetireOldVersions(System.String)">
+            <summary>Deletes version folders other than the current and previous (post-retirement cleanup).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.UpdateFeedException">
+            <summary>Thrown when the feed cannot be fetched or is not valid — a named error, never a silent null.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.UpdateFeedClient">
+            <summary>
+            Fetches, parses and hash-verifies the update feed and its artifacts. Async from day one and
+            injectable-transport, so it carries none of the sync-over-async debt the ClickOnce updater
+            pair did. Per decision D11 (v1), transport integrity is TLS and every artifact is SHA-256
+            verified before use (<see cref="M:TheTechIdea.Beep.Installer.InstallHelpers.VerifyFileHash(System.String,System.String)"/>); the feed document itself
+            is not yet signed.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateFeedClient.Serialize(TheTechIdea.Beep.Updates.UpdateFeed)">
+            <summary>Serializes a feed to the canonical camelCase JSON (used by the publisher and tests).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateFeedClient.FetchFeedAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Fetches and parses <c>feed.json</c>. Throws <see cref="T:TheTechIdea.Beep.Updates.UpdateFeedException"/> on any failure.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateFeedClient.FetchManifestAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Fetches and parses a <c>_payload-manifest.json</c> for delta planning.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateFeedClient.FetchBlobAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Fetches raw blob bytes (the caller verifies the hash — the side-by-side applier does).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateFeedClient.DownloadVerifiedAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Downloads an artifact to <paramref name="destPath"/> and verifies its SHA-256. A hash
+            mismatch discards the file and returns a named failure — a corrupt or tampered artifact
+            is never left on disk for a later step to pick up.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Updates.UpdateServiceExtensions">
+            <summary>
+            DI registration for app self-update (decision D12: the capability lives in BeepDM). Any
+            Beep-based app calls <c>AddBeepAppUpdates()</c> alongside <c>AddBeepForDesktop()</c> and
+            resolves <see cref="T:TheTechIdea.Beep.Updates.IAppUpdateService"/> — no dependency on Beep.Installer.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateServiceExtensions.AddBeepAppUpdates(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Updates.UpdateSettings)">
+            <summary>Registers the update service with explicit settings.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateServiceExtensions.AddBeepAppUpdates(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)">
+            <summary>
+            Registers the update service, loading settings from <c>update-settings.json</c> beside
+            the app (or <paramref name="settingsPath"/> when given). A missing file yields defaults
+            — the app still resolves the service, it simply has nothing to check until provisioned.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.UpdateServiceExtensions.LoadSettings(System.String)">
+            <summary>
+            Loads <c>update-settings.json</c> (or defaults), applies the <c>BEEP_NO_UPDATE</c>
+            opt-out, and fills in the running assembly's version when the file omits it.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Utils.Util.ResolveFieldCategory(System.Type)">
             <summary>Resolves a CLR type to its DbFieldCategory. Shared by all SetField overloads.</summary>
         </member>
