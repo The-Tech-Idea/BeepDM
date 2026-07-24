@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,7 +110,11 @@ namespace TheTechIdea.Beep.Updates
                 FetchBlob = (hash, token) => _feed.FetchBlobAsync(CombineUrl(delta.BlobBaseUrl, hash), token),
                 OnApplied = v => _recordVersion?.Invoke(v)
             };
-            return await applier.ApplyAsync(request, progress, ct).ConfigureAwait(false);
+            var applied = await applier.ApplyAsync(request, progress, ct).ConfigureAwait(false);
+
+            var ok = applied.Flag == Errors.Ok;
+            await ReportAsync(ok ? "apply-success" : "apply-failure", release.Version, ok, ok ? null : applied.Message, ct).ConfigureAwait(false);
+            return applied;
         }
 
         public async Task<IErrorsInfo> ApplyModuleUpdatesAsync(UpdateCheckResult check, IProgress<PassedArgs>? progress = null, CancellationToken ct = default)
@@ -117,6 +124,10 @@ namespace TheTechIdea.Beep.Updates
 
             var report = await new ModuleUpdater(_modules)
                 .ApplyAsync(check.StaleModules, Settings.ModuleDirectory, progress, ct).ConfigureAwait(false);
+
+            await ReportAsync(report.AllSucceeded ? "modules-success" : "modules-failure",
+                check.LatestVersion ?? Settings.CurrentVersion, report.AllSucceeded,
+                report.AllSucceeded ? null : string.Join("; ", report.Failed.Select(f => $"{f.Id}: {f.Error}")), ct).ConfigureAwait(false);
 
             return report.AllSucceeded
                 ? Ok($"{report.Updated.Count} module(s) updated.")
@@ -145,6 +156,33 @@ namespace TheTechIdea.Beep.Updates
 
         private static string CombineUrl(string baseUrl, string tail)
             => baseUrl.EndsWith('/') ? baseUrl + tail : baseUrl + "/" + tail;
+
+        private static readonly HttpClient _telemetryHttp = new();
+
+        /// <summary>
+        /// Best-effort telemetry POST to the configured <see cref="UpdateSettings.TelemetryUrl"/>.
+        /// A failure here is logged and swallowed — reporting must never affect the update itself.
+        /// </summary>
+        private async Task ReportAsync(string eventType, string toVersion, bool success, string? error, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(Settings.TelemetryUrl)) return;
+            try
+            {
+                var payload = JsonSerializer.Serialize(new
+                {
+                    clientId = Settings.ClientId ?? "",
+                    channel = Settings.Channel,
+                    fromVersion = Settings.CurrentVersion,
+                    toVersion,
+                    success,
+                    error,
+                    eventType
+                });
+                using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+                await _telemetryHttp.PostAsync(Settings.TelemetryUrl, content, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) { Debug.WriteLine($"[AppUpdateService] telemetry skipped: {ex.Message}"); }
+        }
 
         internal static bool IsNewer(string current, string candidate)
         {

@@ -54188,6 +54188,12 @@
             optional (an app without a module channel simply gets app-level updates).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Updates.AppUpdateService.ReportAsync(System.String,System.String,System.Boolean,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Best-effort telemetry POST to the configured <see cref="P:TheTechIdea.Beep.Updates.UpdateSettings.TelemetryUrl"/>.
+            A failure here is logged and swallowed — reporting must never affect the update itself.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Updates.DeltaPlanner">
             <summary>
             Computes a file-level delta from the installed payload manifest to a new one — pure, so it

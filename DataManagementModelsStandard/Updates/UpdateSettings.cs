@@ -34,6 +34,15 @@ namespace TheTechIdea.Beep.Updates
         public string? ModuleDirectory { get; set; }
 
         /// <summary>
+        /// Optional endpoint the update service POSTs outcome events to (the update server's
+        /// <c>/api/telemetry</c>). Best-effort — a telemetry failure never affects an update.
+        /// </summary>
+        public string? TelemetryUrl { get; set; }
+
+        /// <summary>Stable per-install id used for telemetry and rollout cohorts. Optional.</summary>
+        public string? ClientId { get; set; }
+
+        /// <summary>
         /// Managed-environment opt-out: when true the service never checks or applies. Mirrors the
         /// <c>BEEP_NO_UPDATE</c> environment override honoured by the policy layer.
         /// </summary>

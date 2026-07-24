@@ -26238,6 +26238,15 @@
         <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.ModuleDirectory">
             <summary>Directory the app's NuGet modules install under (<c>&lt;dir&gt;/&lt;id&gt;/&lt;version&gt;/</c>). Optional.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.TelemetryUrl">
+            <summary>
+            Optional endpoint the update service POSTs outcome events to (the update server's
+            <c>/api/telemetry</c>). Best-effort — a telemetry failure never affects an update.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.ClientId">
+            <summary>Stable per-install id used for telemetry and rollout cohorts. Optional.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Updates.UpdateSettings.Disabled">
             <summary>
             Managed-environment opt-out: when true the service never checks or applies. Mirrors the
