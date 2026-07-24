@@ -86,16 +86,41 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (manifest.RegistryEntries != null)
             {
                 using var baseKey = InstallScope.OpenBaseKey(context, config);
+                var arpDeleted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var entry in manifest.RegistryEntries)
                 {
                     try
                     {
-                        using var key = baseKey.OpenSubKey(entry.KeyPath, writable: true);
-                        if (key?.GetValue(entry.ValueName) != null)
+                        // Older manifests may carry a hive-prefixed KeyPath; normalize so we open
+                        // the same hive-relative key the (now-fixed) writer created.
+                        var keyPath = InstallScope.NormalizeKeyPath(entry.KeyPath);
+
+                        // The Add/Remove Programs key is wholly product-owned: delete the whole key,
+                        // not just the values we wrote. Deleting values alone leaves an empty shell —
+                        // and the host records a LogFile value into it, so it is never actually empty.
+                        if (IsArpKey(keyPath))
                         {
-                            key.DeleteValue(entry.ValueName, throwOnMissingValue: false);
-                            removed++;
+                            if (arpDeleted.Add(keyPath))
+                            {
+                                baseKey.DeleteSubKeyTree(keyPath, throwOnMissingSubKey: false);
+                                removed++;
+                            }
+                            continue;
                         }
+
+                        using (var key = baseKey.OpenSubKey(keyPath, writable: true))
+                        {
+                            if (key?.GetValue(entry.ValueName) != null)
+                            {
+                                key.DeleteValue(entry.ValueName, throwOnMissingValue: false);
+                                removed++;
+                            }
+                        }
+
+                        // Other touched keys are removed only once our value deletion leaves them
+                        // empty — mirroring the empty-directory sweep, so we never orphan a key we
+                        // created but also never delete one another product still populates.
+                        DeleteKeyIfEmpty(baseKey, keyPath);
                     }
                     catch (Exception ex) { errors.Add($"Registry {entry.KeyPath}: {ex.Message}"); }
                 }
@@ -198,6 +223,18 @@ namespace TheTechIdea.Beep.Installer.Steps
                 }
             }
 
+            // 6. Unregister the install so upgrade detection leaves no ghost after removal.
+            //    Best-effort: a failed unregister must not flip a clean uninstall to Fail.
+            if (config != null && !string.IsNullOrWhiteSpace(config.ProductName))
+            {
+                try
+                {
+                    using var regBase = InstallScope.OpenBaseKey(context, config);
+                    new UpgradeEngine().UnregisterInstall(config.ProductName, regBase);
+                }
+                catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: unregister skipped: {ex.Message}" }); }
+            }
+
             progress?.Report(new PassedArgs { ParameterInt1 = 100, Messege = $"Removed {removed} items." });
 
             return errors.Count > 0
@@ -211,5 +248,27 @@ namespace TheTechIdea.Beep.Installer.Steps
         // Same resolver the create step uses — the two must agree or shortcuts are orphaned.
         private static string GetShortcutPath(ShortcutDefinition sc, InstallConfig? config, bool perUser)
             => ShortcutPathResolver.Resolve(sc, config, perUser);
+
+        /// <summary>True for an Add/Remove Programs uninstall key (product-owned, deleted outright).</summary>
+        private static bool IsArpKey(string keyPath)
+            => keyPath.IndexOf(@"\Microsoft\Windows\CurrentVersion\Uninstall\", StringComparison.OrdinalIgnoreCase) >= 0
+            || keyPath.StartsWith(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Deletes a subkey only if it carries no values and no subkeys.</summary>
+        private static void DeleteKeyIfEmpty(RegistryKey baseKey, string keyPath)
+        {
+            if (string.IsNullOrEmpty(keyPath)) return;
+            bool empty;
+            using (var key = baseKey.OpenSubKey(keyPath))
+            {
+                if (key == null) return;
+                empty = key.ValueCount == 0 && key.SubKeyCount == 0;
+            }
+            if (empty)
+            {
+                try { baseKey.DeleteSubKey(keyPath, throwOnMissingSubKey: false); }
+                catch { /* another writer repopulated it between the check and here — leave it */ }
+            }
+        }
     }
 }

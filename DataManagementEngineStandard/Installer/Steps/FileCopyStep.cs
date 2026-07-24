@@ -102,7 +102,32 @@ namespace TheTechIdea.Beep.Installer.Steps
                     ParameterString1 = srcPath
                 });
 
-                File.Copy(srcPath, destPath, overwrite: true);
+                try
+                {
+                    File.Copy(srcPath, destPath, overwrite: true);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // The destination is locked (in use). Elevated, we can schedule the swap for
+                    // the next reboot; unelevated, PendingFileRenameOperations cannot be written and
+                    // we must fail with an actionable message rather than throw mid-copy.
+                    if (TrySchedulePendingReplace(srcPath, destPath))
+                    {
+                        context.Properties["RebootRequired"] = true;
+                        progress?.Report(new PassedArgs
+                        {
+                            Messege = $"In use — scheduled for replacement at next reboot: {op.DestinationPath}",
+                            ParameterInt1 = (int)((i + 1) * 100.0 / total)
+                        });
+                        continue;
+                    }
+
+                    return StepErrorHelpers.Fail(
+                        $"The file '{destPath}' is in use and could not be replaced. " +
+                        "Close the application using it and retry, or reboot and run the installer again.", ex);
+                }
+
+
                 copied.Add(destPath);
 
                 // Register rollback so a later step failure undoes this copy.
@@ -121,6 +146,42 @@ namespace TheTechIdea.Beep.Installer.Steps
         {
             token.ThrowIfCancellationRequested();
             return Task.FromResult(Execute(context, progress));
+        }
+
+        /// <summary>
+        /// Stages the new file alongside the locked destination as <c>&lt;dest&gt;.pending</c> and
+        /// registers a reboot-time swap through the shared <see cref="InstallHelpers.ScheduleFileForRestart"/>
+        /// (delete the locked target, then move the staged file into its place). Returns false (and
+        /// cleans up the staged file) when scheduling is not possible — chiefly when unelevated,
+        /// since the swap is recorded in HKLM's PendingFileRenameOperations.
+        /// </summary>
+        private static bool TrySchedulePendingReplace(string srcPath, string destPath)
+        {
+            var pending = destPath + ".pending";
+            try
+            {
+                File.Copy(srcPath, pending, overwrite: true);
+
+                // Two ordered PendingFileRenameOperations: remove the locked target, then rename
+                // the staged file onto it. Both write to HKLM, so both need elevation.
+                var scheduledDelete = InstallHelpers.ScheduleFileForRestart(destPath, null);
+                var scheduledMove = InstallHelpers.ScheduleFileForRestart(pending, destPath);
+                if (scheduledDelete && scheduledMove)
+                    return true; // staged file stays until the reboot completes the move
+
+                TryDelete(pending);
+                return false;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                TryDelete(pending);
+                return false;
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { /* best effort */ }
         }
 
         private static string FormatBytes(long bytes) => bytes switch

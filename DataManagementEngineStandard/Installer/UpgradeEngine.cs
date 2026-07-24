@@ -18,12 +18,25 @@ namespace TheTechIdea.Beep.Installer
 
         public UpgradeEngine(InstallLogger? logger = null) { _logger = logger; }
 
-        /// <summary>Detects an existing installation and returns its version and path, or null.</summary>
-        public ExistingInstall? DetectExisting(string productName)
+        /// <summary>
+        /// The hive-relative registry path an install is registered under. Exposed so the same
+        /// literal is used for register, detect, unregister and test cleanup — a drift here was
+        /// exactly what let registration and detection target different keys.
+        /// </summary>
+        public static string RegistrationKeyPath(string productName)
+            => $@"SOFTWARE\TheTechIdea\{productName}";
+
+        /// <summary>
+        /// Detects an existing installation under the given base key (hive + bitness view) and
+        /// returns its version and path, or null. The caller owns <paramref name="baseKey"/> and
+        /// is responsible for disposing it; only the opened subkey is disposed here.
+        /// </summary>
+        public ExistingInstall? DetectExisting(string productName, RegistryKey baseKey)
         {
+            if (baseKey == null) return null;
             try
             {
-                using var key = Registry.LocalMachine.OpenSubKey($@"SOFTWARE\TheTechIdea\{productName}");
+                using var key = baseKey.OpenSubKey(RegistrationKeyPath(productName));
                 if (key == null) return null;
 
                 var path = key.GetValue("InstallPath")?.ToString();
@@ -124,11 +137,17 @@ namespace TheTechIdea.Beep.Installer
             }
         }
 
-        public void RegisterInstall(InstallConfig config, string installPath)
+        /// <summary>
+        /// Registers an install under the given base key (hive + bitness view), so detection uses
+        /// the same hive it was written to. Per-user installs must register under HKCU or a
+        /// per-machine detection would never see them (and vice versa).
+        /// </summary>
+        public void RegisterInstall(InstallConfig config, string installPath, RegistryKey baseKey)
         {
+            if (baseKey == null) return;
             try
             {
-                using var key = Registry.LocalMachine.CreateSubKey($@"SOFTWARE\TheTechIdea\{config.ProductName}");
+                using var key = baseKey.CreateSubKey(RegistrationKeyPath(config.ProductName));
                 key?.SetValue("InstallPath", installPath);
                 key?.SetValue("Version", config.ProductVersion);
                 key?.SetValue("Publisher", config.Publisher);
@@ -137,6 +156,21 @@ namespace TheTechIdea.Beep.Installer
             catch (Exception ex)
             {
                 _logger?.Error("Upgrade", $"Failed to register: {ex.Message}");
+            }
+        }
+
+        /// <summary>Removes the install registration under the given base key. Best-effort.</summary>
+        public void UnregisterInstall(string productName, RegistryKey baseKey)
+        {
+            if (baseKey == null) return;
+            try
+            {
+                baseKey.DeleteSubKeyTree(RegistrationKeyPath(productName), throwOnMissingSubKey: false);
+                _logger?.Info("Upgrade", $"Unregistered install: {productName}");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error("Upgrade", $"Failed to unregister: {ex.Message}");
             }
         }
 

@@ -76,6 +76,16 @@ namespace TheTechIdea.Beep.Installer.Steps
             File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
             context.Properties["ManifestPath"] = manifestPath;
 
+            // Register the install under the active scope so a later run can detect this version
+            // (UpgradeStep.DetectExisting) — without this, upgrade/downgrade handling never engages.
+            // Best-effort: a failed registration must not fail an otherwise-good install.
+            try
+            {
+                using var regBase = InstallScope.OpenBaseKey(context, config);
+                new UpgradeEngine().RegisterInstall(config, installPath, regBase);
+            }
+            catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"VerifyInstallStep: install registration skipped: {ex.Message}" }); }
+
             progress?.Report(new PassedArgs { ParameterInt1 = 100, Messege = $"Verified {verified}/{total} files." });
 
             if (missing.Count > 0)

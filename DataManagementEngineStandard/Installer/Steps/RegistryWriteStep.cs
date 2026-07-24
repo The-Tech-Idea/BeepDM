@@ -68,23 +68,44 @@ namespace TheTechIdea.Beep.Installer.Steps
             // step left the keys behind. Register against the hive actually written to.
             var rollback = context.TryGetProperty<RollbackManager>("RollbackManager");
 
+            // {InstallPath} macro (written as %InstallPath%) is not an environment variable, so
+            // RegistryValueKind.ExpandString never resolves it — it must be expanded here or the
+            // synthesized ARP UninstallString stays a literal, unrunnable "%InstallPath%\Setup.exe".
+            var installPath = context.TryGetProperty<string>("InstallPath") ?? "";
+
             foreach (var entry in entries)
             {
+                // Key paths are hive-relative: the scope decides the hive. A baked-in
+                // "HKEY_LOCAL_MACHINE\" prefix would otherwise create a literal subkey of that
+                // name under the scope hive (HKCU\HKEY_LOCAL_MACHINE\...), where Windows never looks.
+                var keyPath = InstallScope.NormalizeKeyPath(ExpandInstallPath(entry.KeyPath, installPath));
+
+                // Record and write the EXPANDED operation so uninstall (which replays the manifest)
+                // deletes the real key, not the macro form.
+                var expanded = new RegistryOperation
+                {
+                    KeyPath = keyPath,
+                    ValueName = entry.ValueName,
+                    Value = ExpandInstallPath(entry.Value, installPath),
+                    ValueKind = entry.ValueKind,
+                    CreateIfNotExists = entry.CreateIfNotExists
+                };
+
                 try
                 {
-                    using var key = baseKey.CreateSubKey(entry.KeyPath);
+                    using var key = baseKey.CreateSubKey(keyPath);
                     if (key != null)
                     {
-                        key.SetValue(entry.ValueName, entry.Value, entry.ValueKind);
-                        written.Add(entry);
-                        rollback?.RegisterRegistryWrite(entry.KeyPath, entry.ValueName, baseKey);
+                        key.SetValue(expanded.ValueName, expanded.Value, expanded.ValueKind);
+                        written.Add(expanded);
+                        rollback?.RegisterRegistryWrite(keyPath, expanded.ValueName, baseKey);
                     }
                 }
                 catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
                 {
                     var hive = perUser ? "HKEY_CURRENT_USER" : "HKEY_LOCAL_MACHINE";
                     return StepErrorHelpers.Fail(
-                        $"Access denied writing '{entry.KeyPath}\\{entry.ValueName}' under {hive}. " +
+                        $"Access denied writing '{keyPath}\\{entry.ValueName}' under {hive}. " +
                         (perUser
                             ? "The key may be protected by policy."
                             : "Per-machine registry entries require an elevated installer."));
@@ -97,5 +118,17 @@ namespace TheTechIdea.Beep.Installer.Steps
 
         public Task<IErrorsInfo> ExecuteAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
             => Task.FromResult(Execute(context, progress));
+
+        /// <summary>
+        /// Expands the <c>%InstallPath%</c> macro (case-insensitive). Deliberately targeted: other
+        /// <c>%VAR%</c> tokens are left intact so a genuine ExpandString value still resolves them.
+        /// </summary>
+        private static string ExpandInstallPath(string? input, string installPath)
+        {
+            if (string.IsNullOrEmpty(input)) return input ?? "";
+            return System.Text.RegularExpressions.Regex.Replace(
+                input, "%InstallPath%", (installPath ?? "").TrimEnd('\\'),
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
     }
 }

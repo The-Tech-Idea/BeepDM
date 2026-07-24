@@ -41685,6 +41685,15 @@
         <member name="M:TheTechIdea.Beep.Installer.InstallScope.Is64Bit(TheTechIdea.Beep.Installer.InstallConfig)">
             <summary>True when the config targets 64-bit (defaults to true when unset).</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallScope.NormalizeKeyPath(System.String)">
+            <summary>
+            Strips a leading hive token (e.g. <c>HKEY_LOCAL_MACHINE\</c>) so the path is
+            hive-relative — the scope decides the hive. A baked-in prefix would otherwise make
+            <c>CreateSubKey</c> create a literal <c>HKEY_LOCAL_MACHINE</c> subkey under the scope
+            hive (<c>HKCU\HKEY_LOCAL_MACHINE\…</c>), where Windows never looks. Applied on both
+            write and uninstall so older manifests carrying prefixed paths still resolve.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Installer.InstallScope.OpenBaseKey(TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Installer.InstallConfig)">
             <summary>Opens the base key for the active scope (hive + bitness view).</summary>
         </member>
@@ -41805,6 +41814,19 @@
             failing the install (modern .NET rarely uses the GAC). Reversed by <see cref="T:TheTechIdea.Beep.Installer.Steps.UninstallStep"/>.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.CommitUpgradeStep">
+             <summary>
+             Finalises an upgrade. Runs last, only after verification has proven the new install
+             complete: it migrates user-editable config the new payload did not carry back from the
+             backup, then discards the backup taken by <see cref="T:TheTechIdea.Beep.Installer.Steps.UpgradeStep"/>.
+            
+             Because the backup is only removed here, any failure earlier in the run leaves it intact
+             for the host to restore from. A fresh install (no backup) skips entirely.
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.CommitUpgradeStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>Nothing to commit when no upgrade backup was taken (fresh or same-version install).</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ConfigGenerationStep">
             <summary>Generates configuration files (appsettings.json, connection strings) from templates.</summary>
         </member>
@@ -41850,6 +41872,15 @@
             Reads <see cref="T:TheTechIdea.Beep.Installer.InstallConfig"/> from context properties.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.FileCopyStep.TrySchedulePendingReplace(System.String,System.String)">
+            <summary>
+            Stages the new file alongside the locked destination as <c>&lt;dest&gt;.pending</c> and
+            registers a reboot-time swap through the shared <see cref="M:TheTechIdea.Beep.Installer.InstallHelpers.ScheduleFileForRestart(System.String,System.String)"/>
+            (delete the locked target, then move the staged file into its place). Returns false (and
+            cleans up the staged file) when scheduling is not possible — chiefly when unelevated,
+            since the swap is recorded in HKLM's PendingFileRenameOperations.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.FirewallStep">
             <summary>Adds/removes Windows Firewall rules for the application.</summary>
         </member>
@@ -41867,6 +41898,42 @@
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.RegistryWriteStep">
             <summary>Writes registry entries for the installation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.RegistryWriteStep.ExpandInstallPath(System.String,System.String)">
+            <summary>
+            Expands the <c>%InstallPath%</c> macro (case-insensitive). Deliberately targeted: other
+            <c>%VAR%</c> tokens are left intact so a genuine ExpandString value still resolves them.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.RepairFilesStep">
+            <summary>
+            Repairs an installation by restoring files that are missing or have been modified since
+            install, using the staged payload as the source of truth. It converges the install toward
+            the manifest and nothing more: intact files are left untouched (not rewritten), and files
+            that were never staged in the payload are neither invented nor deleted.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.RepairFilesStep.RepairAction">
+            <summary>A single file the repair pass will restore, and why.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.Steps.RepairFilesStep.RepairAction.SourcePath">
+            <summary>Absolute path to the payload source.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.Steps.RepairFilesStep.RepairAction.DestinationPath">
+            <summary>Install-relative destination (as authored in <see cref="P:TheTechIdea.Beep.Installer.FileCopyOperation.DestinationPath"/>).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.Steps.RepairFilesStep.RepairAction.Reason">
+            <summary><c>"missing"</c> when the file is absent, <c>"modified"</c> when its content differs.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.RepairFilesStep.ComputePlan(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Installer.FileCopyOperation},System.String,System.String)">
+            <summary>
+            Computes which files need restoring without changing anything. A file is planned when it
+            is absent (<c>missing</c>) or its content differs from the payload (<c>modified</c>).
+            Files with no payload source are skipped — repair never touches what it cannot verify.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.RepairFilesStep.ContentsMatch(System.String,System.String)">
+            <summary>Streaming byte comparison; differing length short-circuits before reading content.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ServiceInstallStep">
             <summary>Installs/uninstalls Windows Services.</summary>
@@ -41913,6 +41980,37 @@
         <member name="M:TheTechIdea.Beep.Installer.Steps.UninstallStep.#ctor(System.String)">
             <param name="sharedDllKeyPath">Override the SharedDLLs registry path (for testing).</param>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.UninstallStep.IsArpKey(System.String)">
+            <summary>True for an Add/Remove Programs uninstall key (product-owned, deleted outright).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.UninstallStep.DeleteKeyIfEmpty(Microsoft.Win32.RegistryKey,System.String)">
+            <summary>Deletes a subkey only if it carries no values and no subkeys.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Installer.Steps.UpgradeStep">
+             <summary>
+             Upgrade detection. Runs before anything touches disk: it decides whether this is a fresh
+             install, a reinstall of the same version, an upgrade, or a downgrade — and refuses a
+             downgrade unless <see cref="F:TheTechIdea.Beep.Installer.Steps.UpgradeStep.ForceInstallKey"/> is set.
+            
+             When an existing install is being replaced (upgrade, or a forced downgrade) it backs the
+             current install up first via <see cref="M:TheTechIdea.Beep.Installer.UpgradeEngine.Backup(System.String,System.Threading.CancellationToken)"/> and records the backup
+             path under <see cref="F:TheTechIdea.Beep.Installer.Steps.UpgradeStep.BackupPathKey"/>. The backup is only discarded by
+             <see cref="T:TheTechIdea.Beep.Installer.Steps.CommitUpgradeStep"/> after verification succeeds; on failure the host restores
+             from it. A same-version reinstall is not backed up — there is nothing to preserve.
+             </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Installer.Steps.UpgradeStep.BackupPathKey">
+            <summary>Context key: absolute path of the pre-upgrade backup, or absent when none was taken.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Installer.Steps.UpgradeStep.PreviousVersionKey">
+            <summary>Context key: version string of the install being replaced.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Installer.Steps.UpgradeStep.ForceInstallKey">
+            <summary>Context key (boxed bool): set by the host on <c>/FORCE</c> to allow a downgrade.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.UpgradeStep.BackUp(TheTechIdea.Beep.Installer.UpgradeEngine,TheTechIdea.Beep.SetUp.SetupContext,TheTechIdea.Beep.Installer.ExistingInstall,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs})">
+            <summary>Backs up the existing install and records the backup path + previous version.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.VerifyInstallStep">
             <summary>Verifies the installation: checks files exist, validates manifest, reports results.</summary>
         </member>
@@ -41921,8 +42019,19 @@
             Handles version detection, backup, and upgrade migration for existing installations.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.DetectExisting(System.String)">
-            <summary>Detects an existing installation and returns its version and path, or null.</summary>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.RegistrationKeyPath(System.String)">
+            <summary>
+            The hive-relative registry path an install is registered under. Exposed so the same
+            literal is used for register, detect, unregister and test cleanup — a drift here was
+            exactly what let registration and detection target different keys.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.DetectExisting(System.String,Microsoft.Win32.RegistryKey)">
+            <summary>
+            Detects an existing installation under the given base key (hive + bitness view) and
+            returns its version and path, or null. The caller owns <paramref name="baseKey"/> and
+            is responsible for disposing it; only the opened subkey is disposed here.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.Backup(System.String,System.Threading.CancellationToken)">
             <summary>Backs up the existing installation to a .backup directory.</summary>
@@ -41935,6 +42044,16 @@
         </member>
         <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.MigrateUserConfig(System.String,System.String)">
             <summary>Migrates user configuration files from old install to new.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.RegisterInstall(TheTechIdea.Beep.Installer.InstallConfig,System.String,Microsoft.Win32.RegistryKey)">
+            <summary>
+            Registers an install under the given base key (hive + bitness view), so detection uses
+            the same hive it was written to. Per-user installs must register under HKCU or a
+            per-machine detection would never see them (and vice versa).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.UpgradeEngine.UnregisterInstall(System.String,Microsoft.Win32.RegistryKey)">
+            <summary>Removes the install registration under the given base key. Best-effort.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.JsonLoaderService.IEnhancedJsonLoader">
             <summary>
