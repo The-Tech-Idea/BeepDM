@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.Editor.Forms.Models;
 
@@ -96,6 +96,12 @@ public class ScannedEntityFieldDefinition
     public bool IsReadOnly { get; set; }
     public bool IsCheck { get; set; }
     public string Category { get; set; }
+
+    /// <summary>Display width of the generated control, in pixels. 0 = auto.</summary>
+    public int Width { get; set; }
+
+    /// <summary>Whether the generated control is shown. Defaults to true.</summary>
+    public bool IsVisible { get; set; } = true;
 }
 
 /// <summary>Platform-agnostic navigation bar definition for a block.</summary>

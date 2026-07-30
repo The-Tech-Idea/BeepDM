@@ -23580,6 +23580,18 @@
             Shared between WPF and WinForms UI layers.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FieldTypeMapper.GetCanonicalFieldType(System.String,System.Boolean)">
+            <summary>
+            Canonical field type from a bare type name, for callers that hold
+            field metadata but not an <see cref="T:TheTechIdea.Beep.DataBase.EntityField"/> — notably the IDE,
+            which assigns editor keys from a designer file's parsed definitions.
+            <para>
+            The runtime presenter registries switch on exactly this value, so
+            design-time and run-time must not each carry their own copy of the
+            mapping. Overload added rather than duplicating the switch.
+            </para>
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.FileAuditStore">
             <summary>
             File-backed audit store: persists each session's entries to a single JSON file.

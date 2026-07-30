@@ -9219,6 +9219,12 @@
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition">
             <summary>Platform-agnostic field definition within an entity.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition.Width">
+            <summary>Display width of the generated control, in pixels. 0 = auto.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition.IsVisible">
+            <summary>Whether the generated control is shown. Defaults to true.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedNavigationDefinition">
             <summary>Platform-agnostic navigation bar definition for a block.</summary>
         </member>

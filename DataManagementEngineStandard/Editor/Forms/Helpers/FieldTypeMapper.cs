@@ -8,9 +8,24 @@ public static class FieldTypeMapper
     public static string GetCanonicalFieldType(EntityField field)
     {
         if (field == null) return "Text";
-        if (field.IsIdentity) return "ReadOnly";
+        return GetCanonicalFieldType(field.Fieldtype, field.IsIdentity);
+    }
 
-        return field.Fieldtype?.ToLowerInvariant() switch
+    /// <summary>
+    /// Canonical field type from a bare type name, for callers that hold
+    /// field metadata but not an <see cref="EntityField"/> — notably the IDE,
+    /// which assigns editor keys from a designer file's parsed definitions.
+    /// <para>
+    /// The runtime presenter registries switch on exactly this value, so
+    /// design-time and run-time must not each carry their own copy of the
+    /// mapping. Overload added rather than duplicating the switch.
+    /// </para>
+    /// </summary>
+    public static string GetCanonicalFieldType(string? fieldType, bool isIdentity = false)
+    {
+        if (isIdentity) return "ReadOnly";
+
+        return fieldType?.ToLowerInvariant() switch
         {
             "int" or "int32" or "int64" or "integer" or "long" or "bigint" or "smallint" => "Numeric",
             "decimal" or "double" or "float" or "single" or "numeric" or "money" or "real" => "Numeric",
