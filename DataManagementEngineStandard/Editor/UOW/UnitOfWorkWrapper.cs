@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Editor.UOW
     /// Enhanced wrapper around dynamic UnitOfWork providing strongly-typed interface
     /// with improved error handling, validation, and Oracle Forms compatibility
     /// </summary>
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
@@ -34,6 +34,38 @@ namespace TheTechIdea.Beep.Editor.UOW
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             AttachUnderlyingItemChangedForwarder();
         }
+
+        #region IAggregatable
+
+        // UnitofWork<T> implements IAggregatable; this wrapper did not forward
+        // it. Callers test the capability with `as IAggregatable`, which yields
+        // null rather than failing — so FormsManager.GetBlockCount, which is
+        // `(GetUnitOfWork(name) as IAggregatable)?.Count() ?? 0`, reported
+        // **zero records** for every block whose unit of work came through this
+        // wrapper. That is every block registered by BlockFactory or
+        // DefinitionBlockRegistrar, no matter how many rows it held. Sum and
+        // Average returned 0 the same way.
+        //
+        // An optional-capability interface is silent when unimplemented, so a
+        // wrapper that drops one is worse than no wrapper at all.
+
+        // Implemented explicitly: the wrapper already exposes a `Count` property
+        // (the Oracle-Forms record count), and IAggregatable.Count is a method.
+        // Explicit implementation lets both live here without renaming a public
+        // member other code already uses.
+
+        decimal IAggregatable.Sum(string numericFieldName) =>
+            GetPropertySafely(() => (decimal)_unitOfWork.Sum(numericFieldName), 0m);
+
+        decimal IAggregatable.Average(string numericFieldName) =>
+            GetPropertySafely(() => (decimal)_unitOfWork.Average(numericFieldName), 0m);
+
+        int IAggregatable.Count(Func<object, bool> predicate) =>
+            predicate is null
+                ? Count // the property above, already the record count
+                : GetPropertySafely(() => (int)_unitOfWork.Count(predicate), 0);
+
+        #endregion
 
         #region Properties with Enhanced Error Handling
 

@@ -633,11 +633,28 @@ namespace TheTechIdea.Beep.Json
         /// Dynamically constructs a .NET Type for the given entity based on its fields.
         /// Uses DMTypeBuilder utility.
         /// </summary>
+        /// <summary>
+        /// The runtime row type for an entity, generated from its
+        /// <c>EntityStructure</c>.
+        /// </summary>
+        /// <remarks>
+        /// Delegates to the shared
+        /// <see cref="TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+        /// the same for every datasource — it is derived from the entity's
+        /// fields — so it is defined once. Each datasource used to answer it
+        /// differently and none correctly: <c>DMTypeBuilder</c> emits types
+        /// deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+        /// is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+        /// constrained to <c>T : Entity</c>. A block over such a datasource
+        /// registered and then held no records.
+        /// </remarks>
         public Type GetEntityType(string EntityName)
         {
-            DMTypeBuilder.CreateNewObject(DMEEditor, "TheTechIdea.Beep", EntityName,
-                Entities.Where(x => x.EntityName == EntityName).FirstOrDefault().Fields);
-            return DMTypeBuilder.MyType;
+            var entity = Entities?.FirstOrDefault(x =>
+                string.Equals(x.EntityName, EntityName, StringComparison.OrdinalIgnoreCase));
+
+            return TheTechIdea.Beep.Tools.EntityTypeFactory.GetOrCreate(DMEEditor, entity)
+                   ?? typeof(Dictionary<string, object>);
         }
 
         /// <summary>

@@ -285,41 +285,66 @@ namespace TheTechIdea.Beep.Editor.UOW
 
                 if (!IsInListMode && DataSource != null)
                 {
-                    // Begin transaction if supported
-                    var beginTransactionResult = DataSource.BeginTransaction(new PassedArgs());
-                    if (beginTransactionResult.Flag != Errors.Ok)
+                    // Only wrap the write in a transaction when the source has
+                    // one to offer.
+                    //
+                    // This used to call BeginTransaction unconditionally and
+                    // abort the whole commit if it did not return Ok. Every
+                    // non-transactional source — JSON, CSV, file, in-memory
+                    // cache — answers BeginTransaction with
+                    // "Transactions not supported for ... data sources", so the
+                    // commit returned Failed *before writing anything*: saving
+                    // was impossible against any file datasource, and the caller
+                    // saw only a false. A source that says it does not do
+                    // transactions is not reporting an error; it is answering
+                    // the question. Ask the capability matrix instead of
+                    // inferring capability from a failure. (2026-08-01)
+                    var useTransaction = DataSourceCapabilityMatrix.Supports(
+                        DataSource.DatasourceType, CapabilityType.SupportsTransactions);
+
+                    if (useTransaction)
                     {
-                        result.Flag = Errors.Failed;
-                        result.Message = $"Failed to begin transaction: {beginTransactionResult.Message}";
-                        return result;
+                        var beginTransactionResult = DataSource.BeginTransaction(new PassedArgs());
+                        if (beginTransactionResult.Flag != Errors.Ok)
+                        {
+                            // A source that *does* support transactions failing to
+                            // start one is a real error — writing unprotected here
+                            // would be the wrong call.
+                            result.Flag = Errors.Failed;
+                            result.Message = $"Failed to begin transaction: {beginTransactionResult.Message}";
+                            return result;
+                        }
                     }
 
                     try
                     {
                         var oblCommitResult = await CommitChangesToDataSource(progress, token);
-                        
+
                         if (!oblCommitResult.AllSucceeded)
                         {
                             // Some items failed — rollback transaction
-                            DataSource.EndTransaction(new PassedArgs());
+                            if (useTransaction) DataSource.EndTransaction(new PassedArgs());
                             result.Flag = Errors.Failed;
                             result.Message = $"Commit partially failed: {oblCommitResult.FailedCount} of {oblCommitResult.TotalCount} items failed";
                             return result;
                         }
 
                         // Commit transaction
-                        var commitResult = DataSource.Commit(new PassedArgs());
-                        if (commitResult.Flag != Errors.Ok)
+                        if (useTransaction)
                         {
-                            result.Flag = Errors.Failed;
-                            result.Message = $"Transaction commit failed: {commitResult.Message}";
-                            return result;
+                            var commitResult = DataSource.Commit(new PassedArgs());
+                            if (commitResult.Flag != Errors.Ok)
+                            {
+                                result.Flag = Errors.Failed;
+                                result.Message = $"Transaction commit failed: {commitResult.Message}";
+                                return result;
+                            }
                         }
                     }
                     catch (Exception)
                     {
                         // Rollback on error
-                        DataSource.EndTransaction(new PassedArgs());
+                        if (useTransaction) DataSource.EndTransaction(new PassedArgs());
                         throw;
                     }
                 }

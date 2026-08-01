@@ -410,14 +410,25 @@ namespace TheTechIdea.Beep.Roslyn
                 // Parse the code into a syntax tree
                 var syntaxTree = CSharpSyntaxTree.ParseText(code);
 
-                // Set up assembly references
-                // The list of necessary references might need to be adjusted based on your code's requirements
-                var references = new List<MetadataReference>
-        {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-            // Additional references can be added here
-        };
+                // Use the shared reference set, not a two-entry list.
+                //
+                // Both CreateAssembly overloads previously supplied only
+                // `object` and `Console`, so neither could compile what the
+                // engine itself generates: ClassCreator.CreateEntityClass emits
+                // a class deriving from Entity that uses DataAnnotations and
+                // SetProperty, and CreateTypeFromCode failed on every one with
+                // "The type or namespace name 'Entity' could not be found".
+                // GetCommonReferences already carried Entity,
+                // INotifyPropertyChanged, Linq and System.Runtime — these
+                // methods simply were not using it.
+                var references = GetCommonReferences(includeAdditionalReferences: true);
+
+                // The generated entity classes carry DataAnnotations attributes,
+                // which are not in the common set.
+                references.Add(MetadataReference.CreateFromFile(
+                    typeof(System.ComponentModel.DataAnnotations.KeyAttribute).Assembly.Location));
+                references.Add(MetadataReference.CreateFromFile(
+                    typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute).Assembly.Location));
 
                 // Define compilation options
                 var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
@@ -469,14 +480,25 @@ namespace TheTechIdea.Beep.Roslyn
                 // Parse the code into a syntax tree
                 var syntaxTree = CSharpSyntaxTree.ParseText(code);
 
-                // Set up assembly references
-                // The list of necessary references might need to be adjusted based on your code's requirements
-                var references = new List<MetadataReference>
-        {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-            // Additional references can be added here
-        };
+                // Use the shared reference set, not a two-entry list.
+                //
+                // Both CreateAssembly overloads previously supplied only
+                // `object` and `Console`, so neither could compile what the
+                // engine itself generates: ClassCreator.CreateEntityClass emits
+                // a class deriving from Entity that uses DataAnnotations and
+                // SetProperty, and CreateTypeFromCode failed on every one with
+                // "The type or namespace name 'Entity' could not be found".
+                // GetCommonReferences already carried Entity,
+                // INotifyPropertyChanged, Linq and System.Runtime — these
+                // methods simply were not using it.
+                var references = GetCommonReferences(includeAdditionalReferences: true);
+
+                // The generated entity classes carry DataAnnotations attributes,
+                // which are not in the common set.
+                references.Add(MetadataReference.CreateFromFile(
+                    typeof(System.ComponentModel.DataAnnotations.KeyAttribute).Assembly.Location));
+                references.Add(MetadataReference.CreateFromFile(
+                    typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute).Assembly.Location));
 
                 // Define compilation options
                 var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)

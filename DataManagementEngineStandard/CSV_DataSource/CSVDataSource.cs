@@ -1678,29 +1678,36 @@ namespace TheTechIdea.Beep.FileManager
                 return null;
 
         }
+        /// <summary>
+        /// The runtime row type for an entity, generated from its
+        /// <c>EntityStructure</c>.
+        /// </summary>
+        /// <remarks>
+        /// Delegates to the shared
+        /// <see cref="TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+        /// the same for every datasource — it is derived from the entity's
+        /// fields — so it is defined once. Each datasource used to answer it
+        /// differently and none correctly: <c>DMTypeBuilder</c> emits types
+        /// deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+        /// is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+        /// constrained to <c>T : Entity</c>. A block over such a datasource
+        /// registered and then held no records.
+        /// </remarks>
         public Type GetEntityType(string EntityName)
         {
-            if (Entities != null)
+            if (Entities == null || Entities.Count == 0)
             {
-                if (Entities.Count == 0)
-                {
-                    if (Entities[0].Fields.Count == 0)
-                    {
-                        Getfields();
-
-                    }
-                }
-            }
-            else
-            {
-              //  Entities = new List<EntityStructure>();
                 Getfields();
             }
 
-          
+            // Resolve by NAME. This previously passed Entities.FirstOrDefault()
+            // whatever was asked for, so every entity got the first entity's
+            // shape.
+            var entity = Entities?.FirstOrDefault(e =>
+                string.Equals(e.EntityName, EntityName, StringComparison.OrdinalIgnoreCase));
 
-            DMTypeBuilder.CreateNewObject(DMEEditor, "Beep.CSVDataSource", Entities.FirstOrDefault().EntityName, Entities.FirstOrDefault().Fields);
-            return DMTypeBuilder.MyType;
+            return TheTechIdea.Beep.Tools.EntityTypeFactory.GetOrCreate(DMEEditor, entity)
+                   ?? typeof(Dictionary<string, object>);
         }
          public  IEnumerable<object> RunQuery( string qrystr)
         {

@@ -20,7 +20,18 @@ public interface IBlockView
     IBeepFormsHost? FormsHost { get; }
     object? View { get; }
     IBlockNavigationBar? NavigationBar { get; set; }
-    object? Definition { get; set; }
+
+    /// <summary>
+    /// Design-time definition of this block.
+    /// <para>
+    /// Was <c>object?</c>, which is why the <c>.Designer.cs</c> the IDE emits
+    /// (<c>this._formsHost.Definition.Blocks.Add(Ord);</c>) could not compile in
+    /// the project it was written into. The type exists in BeepDM; the property
+    /// now names it.
+    /// </para>
+    /// </summary>
+    BlockDefinition? Definition { get; set; }
+
     object? ViewState { get; }
 
     int RecordCount { get; }

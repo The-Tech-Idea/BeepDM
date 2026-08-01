@@ -240,13 +240,28 @@ namespace TheTechIdea.Beep.Caching
             return fnd == null ? null : GetEntityStructure(fnd.EntityName, refresh);
         }
 
+        /// <summary>
+        /// The runtime row type for an entity, generated from its
+        /// <c>EntityStructure</c>.
+        /// </summary>
+        /// <remarks>
+        /// Delegates to the shared
+        /// <see cref="TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+        /// the same for every datasource — it is derived from the entity's
+        /// fields — so it is defined once. Each datasource used to answer it
+        /// differently and none correctly: <c>DMTypeBuilder</c> emits types
+        /// deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+        /// is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+        /// constrained to <c>T : Entity</c>. A block over such a datasource
+        /// registered and then held no records.
+        /// </remarks>
         public Type GetEntityType(string EntityName)
         {
             var entityStructure = GetEntityStructure(EntityName, false);
             if (entityStructure == null) return typeof(Dictionary<string, object>);
-            
-            // For now, return Dictionary type - could implement dynamic type creation later
-            return typeof(Dictionary<string, object>);
+
+            return TheTechIdea.Beep.Tools.EntityTypeFactory.GetOrCreate(DMEEditor, entityStructure)
+                   ?? typeof(Dictionary<string, object>);
         }
 
         private EntityStructure AutoDiscoverEntityStructure(string entityName)

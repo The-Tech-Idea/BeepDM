@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -256,6 +256,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         protected void LogError(string message, Exception ex = null, string blockName = null)
         {
             var fullMessage = blockName != null ? $"[{blockName}] {message}" : message;
+
+            // Include the exception in the logged text.
+            //
+            // This logged only the caption, so every failure in this manager
+            // arrived as e.g. "Error executing query for 'Ord'" with nothing to
+            // act on — the one piece of information the caller needed was passed
+            // in and then dropped. Inner exceptions are chained because the
+            // useful cause is usually one or two levels down.
+            if (ex != null)
+            {
+                fullMessage += $" — {ex.GetType().Name}: {ex.Message}";
+
+                for (var inner = ex.InnerException; inner != null; inner = inner.InnerException)
+                {
+                    fullMessage += $" <- {inner.GetType().Name}: {inner.Message}";
+                }
+            }
+
             _dmeEditor?.AddLogMessage("UnitofWorksManager", fullMessage, DateTime.Now, -1, null, Errors.Failed);
 
             if (!string.IsNullOrEmpty(blockName))
@@ -383,6 +401,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var detailBlock = GetBlock(relationship.DetailBlockName);
                 if (detailBlock?.UnitOfWork == null)
                     continue;
+
 
                 SuppressSync(relationship.DetailBlockName);
                 try

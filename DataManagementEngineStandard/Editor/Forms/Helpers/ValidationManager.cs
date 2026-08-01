@@ -631,8 +631,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             // 2026-06).
             rules.AddRange(GetRulesForItem(blockName, "*"));
 
-            // Filter by timing (Manual timing matches all)
-            if (timing != ValidationTiming.Manual)
+            // Filter by timing. Two timings match every rule rather than only
+            // their own:
+            //
+            //   Manual   — an explicit "validate this now" request means all rules.
+            //   OnCommit — commit is the last line of defence. A rule is scoped to
+            //              a moment so it can fire *early*, not so it can be
+            //              skipped late: filtering on exact equality here meant a
+            //              rule left at the ValidationRule default (OnBlur) was
+            //              evaluated on blur and nowhere else, so a record whose
+            //              field the user never visited committed unvalidated.
+            //              Every rule the IDE authors takes that default, so in
+            //              practice authored rules did not block a commit at all.
+            //              Oracle Forms validates the whole record on COMMIT
+            //              regardless of when each item last validated.
+            //
+            // (2026-08-01)
+            if (timing != ValidationTiming.Manual && timing != ValidationTiming.OnCommit)
             {
                 rules = rules.Where(r => r.Timing == timing || r.Timing == ValidationTiming.Manual).ToList();
             }

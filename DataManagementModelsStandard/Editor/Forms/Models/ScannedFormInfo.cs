@@ -1,185 +1,211 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace TheTechIdea.Beep.Editor.Forms.Models;
+
+// The result of scanning source for form surfaces.
+//
+// The block half of this file used to declare its own copy of the block
+// definition. It now derives from the shared one in BlockDefinition.cs, so a
+// scanned block and an authored block are the same object rather than two
+// descriptions that have to be translated between.
 
 /// <summary>Form surface hosting blocks (WinForms BeepForms or WPF BeepWpfForms).</summary>
 public class ScannedFormInfo
 {
+    /// <summary>Class name of the form.</summary>
     public string FormName { get; set; }
+
+    /// <summary>Path of the form's own source file (.cs or .xaml.cs).</summary>
     public string FormFilePath { get; set; }
+
+    /// <summary>Path of the generated half (.Designer.cs or .xaml).</summary>
     public string DesignerFilePath { get; set; }
+
+    /// <summary>Directory of the owning project.</summary>
     public string ProjectPath { get; set; }
+
+    /// <summary>Discovered on the WPF path.</summary>
     public bool IsWpf { get; set; }
+
+    /// <summary>Derives from Form or Window.</summary>
     public bool IsForm { get; set; }
+
+    /// <summary>Derives from UserControl, or from Page on the WPF path.</summary>
     public bool IsUserControl { get; set; }
+
+    /// <summary>Blocks declared on this form.</summary>
     public List<ScannedBlockInfo> Blocks { get; set; } = new();
+
+    /// <summary>Form hosts declared on this form.</summary>
     public List<ScannedHostInfo> Hosts { get; set; } = new();
+
+    /// <summary>True when the integrated Forms runtime is in play.</summary>
     public bool UsesIntegratedForms => Hosts.Count > 0 || Blocks.Exists(b => b.IsIntegrated);
+
+    /// <summary>Containers a generated block surface could be placed into.</summary>
     public List<ScannedContainerTargetInfo> EligibleContainerTargets { get; set; } = new();
 }
 
-/// <summary>A container control (Panel, GroupBox, TabPage) eligible as a block drop target.</summary>
+/// <summary>A container control (Panel, GroupBox, TabPage, Grid) eligible as a block drop target.</summary>
 public class ScannedContainerTargetInfo
 {
+    /// <summary>Control name.</summary>
     public string TargetName { get; set; }
+
+    /// <summary>Control type name.</summary>
     public string ControlType { get; set; }
+
+    /// <summary>Label shown in pickers.</summary>
     public string DisplayName { get; set; }
+
+    /// <summary>Nearest named ancestor.</summary>
     public string ParentControlName { get; set; }
 }
 
-/// <summary>A block surface (BeepBlock) discovered in a designer file.</summary>
-public class ScannedBlockInfo
+/// <summary>
+/// A block discovered by a scanner.
+/// <para>
+/// Adds nothing to <see cref="BlockDefinition"/> — it exists so
+/// <see cref="Hosts.IFormScanner"/> and its callers keep a name that says where
+/// the instance came from. A scanned block and an authored block are the same
+/// shape, because they are the same thing.
+/// </para>
+/// </summary>
+public class ScannedBlockInfo : BlockDefinition
 {
-    public string BlockName { get; set; }
-    public string Name { get => BlockName; set => BlockName = value; }
-    public string EntityName { get; set; }
-    public string ConnectionName { get; set; }
-    public string ParentBlock { get; set; }
-    public string MasterKeyPropertyName { get; set; }
-    public string ForeignKeyPropertyName { get; set; }
-    public string HostName { get; set; }
-    public string Caption { get; set; }
-    public string PresentationMode { get; set; }
-    public string ManagerBlockName { get; set; }
-    public string DefinitionVariableName { get; set; }
-    public string QueryString { get; set; }
-    public ScannedBlockRuntimeKind RuntimeKind { get; set; }
-    public List<ScannedItemInfo> Items { get; set; } = new();
-    public Dictionary<string, string> Metadata { get; set; } = new();
-    public ScannedEntityDefinition? EntityDefinition { get; set; }
-    public ScannedNavigationDefinition? Navigation { get; set; }
-    public bool IsIntegrated => RuntimeKind != ScannedBlockRuntimeKind.Legacy;
 }
 
-/// <summary>Platform-agnostic entity definition metadata for a block.</summary>
-public class ScannedEntityDefinition
+/// <summary>Entity definition of a scanned block. See <see cref="BlockEntityDefinition"/>.</summary>
+public class ScannedEntityDefinition : BlockEntityDefinition
 {
-    public string EntityName { get; set; }
-    public string ConnectionName { get; set; }
-    public string DatasourceEntityName { get; set; }
-    public string Caption { get; set; }
-    public string Description { get; set; }
-    public string ControlType { get; set; }
-    public string BindingProperty { get; set; }
-    public string DataSourceId { get; set; }
-    public string EditorKey { get; set; }
-    public string PresentationMode { get; set; }
-    public string MasterBlockName { get; set; }
-    public string MasterKeyField { get; set; }
-    public string ForeignKeyField { get; set; }
-    public bool IsMasterBlock { get; set; }
-    public List<ScannedEntityFieldDefinition> Fields { get; set; } = new();
 }
 
-/// <summary>Platform-agnostic field definition within an entity.</summary>
-public class ScannedEntityFieldDefinition
+/// <summary>Field definition of a scanned block. See <see cref="BlockFieldDefinition"/>.</summary>
+public class ScannedEntityFieldDefinition : BlockFieldDefinition
 {
-    public string FieldName { get; set; }
-    public string Caption { get; set; }
-    public string Description { get; set; }
-    public string DataType { get; set; }
-    public string ControlType { get; set; }
-    public string BindingProperty { get; set; }
-    public string EditorKey { get; set; }
-    public string Label { get; set; }
-    public int Order { get; set; }
-    public int Size { get; set; }
-    public short NumericPrecision { get; set; }
-    public short NumericScale { get; set; }
-    public bool IsRequired { get; set; }
-    public bool IsEnabled { get; set; } = true;
-    public bool AllowDBNull { get; set; }
-    public bool IsPrimaryKey { get; set; }
-    public bool IsUnique { get; set; }
-    public bool IsIndexed { get; set; }
-    public bool IsAutoIncrement { get; set; }
-    public bool IsReadOnly { get; set; }
-    public bool IsCheck { get; set; }
-    public string Category { get; set; }
-
-    /// <summary>Display width of the generated control, in pixels. 0 = auto.</summary>
-    public int Width { get; set; }
-
-    /// <summary>Whether the generated control is shown. Defaults to true.</summary>
-    public bool IsVisible { get; set; } = true;
 }
 
-/// <summary>Platform-agnostic navigation bar definition for a block.</summary>
-public class ScannedNavigationDefinition
+/// <summary>Navigation definition of a scanned block. See <see cref="BlockNavigationDefinition"/>.</summary>
+public class ScannedNavigationDefinition : BlockNavigationDefinition
 {
-    public bool Enabled { get; set; }
-    public ScannedNavigationCommand? First { get; set; }
-    public ScannedNavigationCommand? Previous { get; set; }
-    public ScannedNavigationCommand? Next { get; set; }
-    public ScannedNavigationCommand? Last { get; set; }
-    public ScannedNavigationCommand? NewRecord { get; set; }
-    public ScannedNavigationCommand? Delete { get; set; }
-    public ScannedNavigationCommand? Query { get; set; }
-    public ScannedNavigationCommand? Execute { get; set; }
-    public ScannedNavigationCommand? Save { get; set; }
-    public ScannedNavigationCommand? Rollback { get; set; }
 }
 
-/// <summary>Platform-agnostic navigation command visibility/enabled state.</summary>
-public class ScannedNavigationCommand
+/// <summary>Navigation command state. See <see cref="BlockNavigationCommand"/>.</summary>
+public class ScannedNavigationCommand : BlockNavigationCommand
 {
-    public bool Visible { get; set; }
-    public bool Enabled { get; set; }
 }
 
 /// <summary>Platform-specific host (BeepForms or BeepWpfForms).</summary>
 public class ScannedHostInfo
 {
+    /// <summary>Field name of the host in generated source.</summary>
     public string HostName { get; set; }
+
+    /// <summary>Logical form name the host registers with the engine.</summary>
     public string LogicalFormName { get; set; }
+
+    /// <summary>Window or form title.</summary>
     public string Title { get; set; }
+
+    /// <summary>Whether the host builds block surfaces from its definition.</summary>
     public bool AutoCreateBlocksFromDefinition { get; set; } = true;
+
+    /// <summary>
+    /// Variable the host's definition was assigned to in generated source, when
+    /// the generator used a local rather than <c>host.Definition</c> directly.
+    /// Blocks are matched to their host through it.
+    /// </summary>
+    public string DefinitionReferenceName { get; set; }
 }
 
 /// <summary>A control (Item) within a block.</summary>
 public class ScannedItemInfo
 {
+    /// <summary>Field name.</summary>
     public string ItemName { get; set; }
+
+    /// <summary>Control type name.</summary>
     public string ControlType { get; set; }
+
+    /// <summary>Anything carried through that has no first-class member.</summary>
     public Dictionary<string, string> Properties { get; set; } = new();
+
+    /// <summary>Triggers registered against this item.</summary>
     public List<ScannedTriggerInfo> Triggers { get; set; } = new();
+
+    /// <summary>Lists of values attached to this item.</summary>
     public List<ScannedLovInfo> LOVs { get; set; } = new();
+
+    /// <summary>Validation rules attached to this item.</summary>
     public List<ScannedValidationInfo> Validations { get; set; } = new();
 }
 
 /// <summary>Event handler (Trigger) information.</summary>
 public class ScannedTriggerInfo
 {
+    /// <summary>Trigger event name.</summary>
     public string EventName { get; set; }
+
+    /// <summary>Handler method name in the form source.</summary>
     public string HandlerName { get; set; }
+
+    /// <summary>Registered through the integrated marker regions.</summary>
     public bool IsIntegrated { get; set; }
 }
 
 /// <summary>List of Values (LOV) information.</summary>
 public class ScannedLovInfo
 {
+    /// <summary>LOV name.</summary>
     public string LOVName { get; set; }
+
+    /// <summary>Connection the LOV queries.</summary>
     public string ConnectionName { get; set; }
+
+    /// <summary>Entity the LOV queries.</summary>
     public string EntityName { get; set; }
+
+    /// <summary>Columns shown to the user.</summary>
     public List<string> DisplayFields { get; set; } = new();
+
+    /// <summary>Columns written back on selection.</summary>
     public List<string> ReturnFields { get; set; } = new();
 }
 
 /// <summary>Validation rule information.</summary>
 public class ScannedValidationInfo
 {
+    /// <summary>Rule name.</summary>
     public string ValidationName { get; set; }
+
+    /// <summary>Rendered rule summary.</summary>
     public string ValidationRule { get; set; }
+
+    /// <summary>Rule type (Range, Pattern, Required, …).</summary>
     public string RuleType { get; set; }
+
+    /// <summary>Rule expression.</summary>
     public string Expression { get; set; }
+
+    /// <summary>Message shown when the rule fails.</summary>
     public string Message { get; set; }
+
+    /// <summary>Whether the rule is active.</summary>
     public bool IsEnabled { get; set; } = true;
 }
 
+/// <summary>How a block is realised at runtime.</summary>
 public enum ScannedBlockRuntimeKind
 {
+    /// <summary>Pre-integration BeepDataBlock control.</summary>
     Legacy,
+
+    /// <summary>Integrated BeepBlock control.</summary>
     Integrated,
+
+    /// <summary>Driven by a BlockDefinition on the host.</summary>
     FormsDefinition,
+
+    /// <summary>WPF BeepWpfBlock.</summary>
     WpfIntegrated
 }

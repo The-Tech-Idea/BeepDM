@@ -172,20 +172,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Enters query mode for a block - equivalent to Oracle Forms ENTER_QUERY
+        /// Enters query mode for a block - equivalent to Oracle Forms ENTER_QUERY.
         /// </summary>
+        /// <remarks>
+        /// This is the bool-returning face of <see cref="EnterQueryModeAsync"/>, kept for
+        /// callers that only need success/failure. Until 2026-08-01 it carried its own
+        /// second implementation that just assigned <c>Mode = DataBlockMode.Query</c> —
+        /// so whichever entry point a host happened to call decided whether unsaved-change
+        /// validation, related-block validation, block clearing and the block-enter event
+        /// ran at all. Hosts call this one, so in practice ENTER_QUERY did none of them.
+        /// Keep the single implementation in ModeTransitions; do not reintroduce a
+        /// mode assignment here.
+        /// </remarks>
         public async Task<bool> EnterQueryAsync(string blockName)
         {
             try
             {
-                var blockInfo = GetBlock(blockName);
-                if (blockInfo == null)
-                    return false;
-
-                blockInfo.Mode = DataBlockMode.Query;
-                _currentBlockName = blockName;
-                Status = $"Block '{blockName}' entered query mode";
-                return true;
+                var result = await EnterQueryModeAsync(blockName);
+                return result?.Flag == Errors.Ok;
             }
             catch (Exception ex)
             {

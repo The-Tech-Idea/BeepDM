@@ -108,24 +108,54 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 var sourceType = source.GetType();
                 var targetType = typeof(T);
 
-                // Map properties from source to target
+                // A record is not always a POCO with properties.
+                //
+                // File and cache datasources return IDictionary<string, object>
+                // rows — JsonMultiFileDataSource hands back exactly that from
+                // JObjectToDictionary. Reflecting for a *property* on a
+                // dictionary finds nothing, so every target property kept its
+                // default and the entity came back blank: rows arrived from the
+                // datasource and became empty records, with no error anywhere.
+                var sourceMap = source as IDictionary<string, object>;
+
+                // Map values from source to target
                 foreach (var targetProperty in GetCachedProperties(targetType))
                 {
                     if (!targetProperty.CanWrite) continue;
 
-                    var sourceProperty = sourceType.GetProperty(targetProperty.Name, 
-                        BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    object sourceValue = null;
 
-                    if (sourceProperty != null && sourceProperty.CanRead)
+                    if (sourceMap != null)
                     {
-                        var sourceValue = sourceProperty.GetValue(source);
-                        if (sourceValue != null)
+                        // Case-insensitive: field names come from EntityStructure
+                        // and rarely match a JSON key's casing exactly.
+                        foreach (var pair in sourceMap)
                         {
-                            var convertedValue = ConvertValue(sourceValue, targetProperty.PropertyType);
-                            if (convertedValue != null)
+                            if (string.Equals(pair.Key, targetProperty.Name,
+                                    StringComparison.OrdinalIgnoreCase))
                             {
-                                targetProperty.SetValue(targetEntity, convertedValue);
+                                sourceValue = pair.Value;
+                                break;
                             }
+                        }
+                    }
+                    else
+                    {
+                        var sourceProperty = sourceType.GetProperty(targetProperty.Name,
+                            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                        if (sourceProperty != null && sourceProperty.CanRead)
+                        {
+                            sourceValue = sourceProperty.GetValue(source);
+                        }
+                    }
+
+                    if (sourceValue != null)
+                    {
+                        var convertedValue = ConvertValue(sourceValue, targetProperty.PropertyType);
+                        if (convertedValue != null)
+                        {
+                            targetProperty.SetValue(targetEntity, convertedValue);
                         }
                     }
                 }

@@ -33,6 +33,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _currentStatusMessage = new StatusMessage { Text = text, Level = level };
             Status = text;
             LogOperation($"Message [{level}]: {text}");
+
+            // Also publish through the message queue, which is what raises
+            // OnMessage.
+            //
+            // This method only recorded the message until 2026-08-01, while
+            // IDataOperations.OnMessage — documented as "UI layers subscribe to
+            // OnMessage/OnMessageCleared to display messages" — is raised solely
+            // by MessageQueueManager. So the form-level MESSAGE built-in that
+            // every host calls notified nobody, and a status line driven off the
+            // documented event stayed blank however many messages the form set.
+            // Two implementations of "set the message", and hosts reached the
+            // one that told no one.
+            // Replace rather than enqueue: MESSAGE overwrites the status line.
+            _messageManager?.ReplaceMessage(MessageScope(), text, level);
         }
 
         /// <summary>
@@ -42,7 +56,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             _currentStatusMessage = null;
             Status = "Ready";
+            _messageManager?.ClearMessage(MessageScope());
         }
+
+        /// <summary>
+        /// The queue key for a form-level message. The queue is keyed per block;
+        /// the MESSAGE built-in is form-level, so it rides on whichever block is
+        /// current, and on an empty key before any block has been entered.
+        /// </summary>
+        private string MessageScope() => _currentBlockName ?? string.Empty;
 
         #endregion
 

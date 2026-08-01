@@ -22,6 +22,16 @@ public interface IBeepFormsHost
     string? ActiveBlockName { get; }
     IUnitofWorksManager? FormsManager { get; set; }
 
+    /// <summary>
+    /// Blocks declared on this form at design time.
+    /// <para>
+    /// Generated designer code registers a block with
+    /// <c>this._formsHost.Definition.Blocks.Add(Ord);</c>. Never null, so that
+    /// line needs no guard in generated source.
+    /// </para>
+    /// </summary>
+    FormDefinition Definition { get; }
+
     event EventHandler? ActiveBlockChanged;
     event EventHandler<FormsHostMessageEventArgs>? MessageRaised;
     event EventHandler<FormsHostMessageEventArgs>? MessageCleared;

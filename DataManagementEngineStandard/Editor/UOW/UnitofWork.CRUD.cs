@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -133,16 +133,32 @@ namespace TheTechIdea.Beep.Editor.UOW
                 IsFilterOn = false;
                 return Units;
             }
-            else
-                IsFilterOn = true;
 
             if (!IsInListMode)
             {
+                // IsFilterOn stays FALSE on the datasource path.
+                //
+                // `Units` is `IsFilterOn ? _filteredunits : _units`, and
+                // _filteredunits is only ever populated by the in-memory branch
+                // below. Setting IsFilterOn here — as this did until
+                // 2026-08-01 — pointed Units at a collection this path never
+                // fills, so a filtered datasource query loaded its rows into
+                // _units and then reported **null**. Count is
+                // `Units?.Count ?? 0`, so callers saw zero records with no
+                // error anywhere: master-detail synchronisation emptied every
+                // detail block on every master move.
+                //
+                // The flag means "an in-memory filter is masking Units". Here
+                // the datasource applied the filter and the rows it returned
+                // are the whole set, so nothing is being masked.
+                IsFilterOn = false;
+
                 var retval = DataSource.GetEntity(EntityName, filters);
                 GetDataInUnits(retval);
             }
             else
             {
+                IsFilterOn = true;
                 if (filters != null && _units != null)
                 {
                     if (_units.Count > 0)

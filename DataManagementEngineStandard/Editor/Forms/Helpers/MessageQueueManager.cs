@@ -67,6 +67,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         }
 
         /// <summary>
+        /// Makes a message current immediately, replacing whatever was showing
+        /// and leaving the queue untouched.
+        /// </summary>
+        public void ReplaceMessage(string blockName, string text, MessageLevel level = MessageLevel.Info)
+        {
+            var message = new BlockMessage
+            {
+                BlockName = blockName,
+                Text = text,
+                Level = level,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _current[blockName] = message;
+            OnMessage?.Invoke(this, new BlockMessageEventArgs { Message = message });
+        }
+
+        /// <summary>
         /// Clears the current message for a block and optionally advances to the next queued message.
         /// </summary>
         public void ClearMessage(string blockName)
@@ -97,29 +115,42 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         #region Convenience
 
+        // These four are how the engine reports the outcome of an operation —
+        // FormsManager calls one after every query, save, navigation and delete.
+        // They route to ReplaceMessage, not SetMessage.
+        //
+        // They enqueued until 2026-08-01, and nothing in a running form dismisses
+        // a status message, so the first operation's message became current and
+        // every later one queued behind it forever: an unbounded queue, a status
+        // line stuck on the first thing that ever happened, and — because
+        // ClearMessage advances the queue — a later clear replaying a message
+        // from minutes earlier. "Show this now" is the intent at every call site.
+        // Callers that genuinely want queue-behind-the-current semantics still
+        // have SetMessage.
+
         /// <summary>
-        /// Queues an informational message for a block.
+        /// Shows an informational message for a block, replacing the current one.
         /// </summary>
         public void ShowInfoMessage(string blockName, string text)
-            => SetMessage(blockName, text, MessageLevel.Info);
+            => ReplaceMessage(blockName, text, MessageLevel.Info);
 
         /// <summary>
-        /// Queues a success message for a block.
+        /// Shows a success message for a block, replacing the current one.
         /// </summary>
         public void ShowSuccessMessage(string blockName, string text)
-            => SetMessage(blockName, text, MessageLevel.Success);
+            => ReplaceMessage(blockName, text, MessageLevel.Success);
 
         /// <summary>
-        /// Queues a warning message for a block.
+        /// Shows a warning message for a block, replacing the current one.
         /// </summary>
         public void ShowWarningMessage(string blockName, string text)
-            => SetMessage(blockName, text, MessageLevel.Warning);
+            => ReplaceMessage(blockName, text, MessageLevel.Warning);
 
         /// <summary>
-        /// Queues an error message for a block.
+        /// Shows an error message for a block, replacing the current one.
         /// </summary>
         public void ShowErrorMessage(string blockName, string text)
-            => SetMessage(blockName, text, MessageLevel.Error);
+            => ReplaceMessage(blockName, text, MessageLevel.Error);
 
         #endregion
 

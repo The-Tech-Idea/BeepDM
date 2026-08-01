@@ -222,6 +222,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Sets the current message for a block or enqueues it.</summary>
         void SetMessage(string blockName, string text, MessageLevel level = MessageLevel.Info);
 
+        /// <summary>
+        /// Makes a message current immediately, discarding whatever was showing
+        /// and leaving the queue alone.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="SetMessage"/> enqueues behind an undismissed message, which
+        /// suits a message the user must acknowledge but not a status line: the
+        /// Oracle Forms MESSAGE built-in overwrites the line, and nothing in a
+        /// running form dismisses status messages, so every one after the first
+        /// queued up and was replayed later in the wrong order.
+        /// </remarks>
+        void ReplaceMessage(string blockName, string text, MessageLevel level = MessageLevel.Info);
+
         /// <summary>Clears the current message for a block.</summary>
         void ClearMessage(string blockName);
 

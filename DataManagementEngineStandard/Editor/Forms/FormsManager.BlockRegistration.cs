@@ -103,8 +103,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                     EventHandler<ItemChangedEventArgs<Entity>> handler = (s, e) =>
                     {
-                        var idx = unitOfWork.Units != null
-                            ? unitOfWork.Units.IndexOf(e.Item)
+                        // Find the record's position without a dynamic call.
+                        //
+                        // This read `unitOfWork.Units.IndexOf(e.Item)` until
+                        // 2026-08-01. `Units` is dynamic, so that was a runtime
+                        // dispatch — and a dynamic call binds its *statically
+                        // typed* arguments by their compile-time type, not their
+                        // runtime one. `e.Item` is declared `Entity`, while the
+                        // list is `ObservableBindingList<orders>` (or whatever
+                        // the block's generated entity is), so the binder looked
+                        // for `IndexOf(Entity)` on `Collection<orders>`, found
+                        // only `IndexOf(orders)`, and threw RuntimeBinderException
+                        // — every time, for every block, on every field change.
+                        //
+                        // The throw escaped through the property setter, so
+                        // SetFieldValue reported failure and no edit ever reached
+                        // a record. Non-generic IList.IndexOf(object) binds
+                        // statically and takes the base type happily.
+                        object units = unitOfWork.Units;
+                        var idx = units is System.Collections.IList list
+                            ? list.IndexOf(e.Item)
                             : -1;
                         // Read the new field value off the record. Note: the
                         // previous code used `typeof(Entity).GetProperty(...)`

@@ -347,14 +347,27 @@ namespace TheTechIdea.Beep.Json
             return GetEntityStructure(fnd.EntityName, refresh);
         }
 
+        /// <summary>
+        /// The runtime row type for an entity — an <c>Entity</c>-derived class
+        /// generated from that entity's fields, one class per entity.
+        /// </summary>
+        /// <remarks>
+        /// Delegates to the shared
+        /// <see cref="TheTechIdea.Beep.Tools.EntityTypeFactory"/> rather than
+        /// building a type here. This previously used <c>DMTypeBuilder</c>,
+        /// which emits types deriving from <c>object</c>, while
+        /// <c>UnitofWork&lt;T&gt;</c> is constrained to <c>T : Entity</c> — so a
+        /// block over this datasource registered and then held no records:
+        /// nothing to query, navigate or synchronise.
+        /// </remarks>
         public Type GetEntityType(string EntityName)
         {
             var entity = Entities.FirstOrDefault(e => e.EntityName.Equals(EntityName, StringComparison.OrdinalIgnoreCase));
             if (entity?.Fields == null || !entity.Fields.Any())
                 return typeof(ExpandoObject);
 
-            DMTypeBuilder.CreateNewObject(DMEEditor, "TheTechIdea.Beep.Json", EntityName, entity.Fields);
-            return DMTypeBuilder.MyType;
+            return TheTechIdea.Beep.Tools.EntityTypeFactory.GetOrCreate(DMEEditor, entity)
+                   ?? typeof(ExpandoObject);
         }
 
         public IErrorsInfo CreateEntities(List<EntityStructure> entities)
@@ -549,35 +562,62 @@ namespace TheTechIdea.Beep.Json
                 JObject? target = null;
                 if (idProp != null)
                 {
+                    // Read the row's id case-insensitively. `item["id"]` is an
+                    // ordinal, case-SENSITIVE lookup, so a file written with
+                    // "Id" — the usual .NET casing, and what every entity
+                    // generated from a C# property produces — never matched, and
+                    // the identified-row branch silently found nothing.
                     var idValue = idProp.Value.ToString();
                     target = data.OfType<JObject>().FirstOrDefault(item =>
                     {
-                        var itemId = item["_id"]?["$oid"]?.ToString() ??
-                                     item["_id"]?.ToString() ??
-                                     item["id"]?.ToString();
+                        var itemId = PropertyValue(item, "_id")?["$oid"]?.ToString() ??
+                                     PropertyValue(item, "_id")?.ToString() ??
+                                     PropertyValue(item, "id")?.ToString();
                         return string.Equals(itemId, idValue, StringComparison.OrdinalIgnoreCase);
                     });
-                }
 
-                if (target == null)
+                    // An update that carries an identifier addresses exactly one
+                    // row. If that row is absent, the update fails — it must not
+                    // fall through to matching on a data value.
+                    //
+                    // It did until 2026-08-01, and combined with the
+                    // case-sensitivity above the result was silent corruption
+                    // rather than a failed write: updating {Id:1, Qty:50} found
+                    // no id match, fell back to "first non-id field", located a
+                    // *different* row that happened to have Qty 50, and copied
+                    // every property onto it — including Id, so that row's
+                    // identity was overwritten and two rows ended up sharing an
+                    // Id. The intended row was never touched.
+                    if (target == null)
+                        return ErrorResult(
+                            $"No record with id '{idValue}' found in '{EntityName}' to update.");
+                }
+                else
                 {
-                    // No ID match — update all matching records by first non-id field
-                    var firstField = updates.Properties().FirstOrDefault(p =>
-                        !p.Name.Equals("_id", StringComparison.OrdinalIgnoreCase) &&
-                        !p.Name.Equals("id", StringComparison.OrdinalIgnoreCase));
+                    // No identifier in the payload at all — fall back to matching
+                    // on the first field, which is the best this source can do.
+                    var firstField = updates.Properties().FirstOrDefault();
                     if (firstField == null)
                         return ErrorResult("No identifiable fields to match for update.");
 
                     var matchValue = firstField.Value.ToString();
                     target = data.OfType<JObject>().FirstOrDefault(item =>
-                        string.Equals(item[firstField.Name]?.ToString(), matchValue, StringComparison.OrdinalIgnoreCase));
+                        string.Equals(PropertyValue(item, firstField.Name)?.ToString(), matchValue,
+                            StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (target == null)
                     return ErrorResult("No matching record found to update.");
 
+                // Assign onto the row's existing property name where one matches
+                // case-insensitively, so updating "Id" does not leave the row
+                // carrying both "Id" and "id".
                 foreach (var prop in updates.Properties())
-                    target[prop.Name] = prop.Value;
+                {
+                    var existing = target.Properties().FirstOrDefault(p =>
+                        string.Equals(p.Name, prop.Name, StringComparison.OrdinalIgnoreCase));
+                    target[existing?.Name ?? prop.Name] = prop.Value;
+                }
 
                 MarkDirty(EntityName);
                 return OkResult("Record updated.");
@@ -665,6 +705,17 @@ namespace TheTechIdea.Beep.Json
         #region "File Persistence"
 
         /// <summary>
+        /// Reads a property off a row by name, ignoring case. JSON keys are
+        /// case-sensitive and <c>JObject</c>'s indexer follows suit, but the
+        /// casing in a file is whatever wrote it — so a lookup that hard-codes
+        /// one spelling silently finds nothing.
+        /// </summary>
+        private static JToken? PropertyValue(JObject row, string name) =>
+            row?.Properties()
+                .FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
+                ?.Value;
+
+        /// <summary>
         /// Saves a single entity's data to its backing .json file.
         /// </summary>
         public void SaveEntityToFile(string entityName)
@@ -705,9 +756,29 @@ namespace TheTechIdea.Beep.Json
                 SaveEntityToFile(entityName);
         }
 
+        /// <summary>
+        /// Records that an entity's in-memory data has changed and writes it
+        /// straight through to its backing file.
+        /// </summary>
+        /// <remarks>
+        /// This only set the dirty flag until 2026-08-01, and the sole flush was
+        /// in <c>Dispose</c> — <see cref="SaveAllDirtyEntities"/> had no caller
+        /// anywhere in the solution. Insert/Update/Delete therefore reported
+        /// success while leaving the file untouched, so a unit-of-work commit
+        /// returned Ok and the edit existed only in memory until the process
+        /// happened to dispose the datasource cleanly; a crash, or any host that
+        /// simply never disposed it, dropped the write with nothing logged.
+        /// <para>
+        /// Write-through is what "no transactions" means for a file source:
+        /// there is no later moment at which a batch would be committed, so
+        /// there is nothing to defer to. <c>Dispose</c> keeps its flush as a
+        /// backstop for anything that marks dirty without going through here.
+        /// </para>
+        /// </remarks>
         private void MarkDirty(string entityName)
         {
             lock (_lock) { _dirtyEntities.Add(entityName); }
+            SaveEntityToFile(entityName);
         }
 
         #endregion

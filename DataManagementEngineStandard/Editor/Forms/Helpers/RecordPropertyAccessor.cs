@@ -119,8 +119,96 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <see cref="Debug.WriteLine(string?)"/>. Bind a <paramref name="logger"/>
         /// to surface the same warning in the editor's log stream.
         /// </remarks>
+        #region Dictionary-backed records
+
+        // Not every record is a POCO with properties.
+        //
+        // File and cache datasources hand back IDictionary<string, object> or
+        // ExpandoObject rows — JsonMultiFileDataSource returns exactly that from
+        // JObjectToDictionary. Reflecting for a *property* on such a record finds
+        // nothing, and this accessor returns null on a miss, which callers cannot
+        // distinguish from "the value really is null".
+        //
+        // The consequence was silent and wide: FormsManager's master-detail sync
+        // reads the master key with GetValue, treats null as "no master value",
+        // and clears the detail block. So master-detail simply did not work over
+        // any dictionary-backed datasource — the detail emptied on every master
+        // move. Key navigation and any other field read had the same blind spot.
+        //
+        // Dictionary lookup is tried first because it is cheaper than reflection
+        // and unambiguous when the record is a map.
+
+        private static bool TryGetFromMap(object record, string fieldName, out object value)
+        {
+            value = null;
+            if (record == null || string.IsNullOrWhiteSpace(fieldName)) return false;
+
+            if (record is IDictionary<string, object> typed)
+            {
+                // Case-insensitive: field names come from EntityStructure and
+                // rarely match a JSON key's casing exactly.
+                foreach (var pair in typed)
+                {
+                    if (string.Equals(pair.Key, fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = pair.Value;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            if (record is System.Collections.IDictionary untyped)
+            {
+                foreach (System.Collections.DictionaryEntry entry in untyped)
+                {
+                    if (entry.Key is string key &&
+                        string.Equals(key, fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = entry.Value;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TrySetInMap(object record, string fieldName, object value)
+        {
+            if (record == null || string.IsNullOrWhiteSpace(fieldName)) return false;
+
+            if (record is IDictionary<string, object> typed)
+            {
+                foreach (var key in typed.Keys)
+                {
+                    if (string.Equals(key, fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        typed[key] = value;
+                        return true;
+                    }
+                }
+
+                typed[fieldName] = value;
+                return true;
+            }
+
+            if (record is System.Collections.IDictionary untyped)
+            {
+                untyped[fieldName] = value;
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
         public static object GetValue(object record, string fieldName, IDMEEditor logger = null)
         {
+            if (TryGetFromMap(record, fieldName, out var mapped))
+                return mapped;
+
             var property = ResolveProperty(record, fieldName, logger);
             if (property == null)
                 return null;
@@ -144,7 +232,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </summary>
         public static bool TryGetValue(object record, string fieldName, out object value, IDMEEditor logger = null)
         {
-            value = null;
+            if (TryGetFromMap(record, fieldName, out value))
+                return true;
+
             var property = ResolveProperty(record, fieldName, logger);
             if (property == null)
                 return false;
@@ -186,6 +276,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </remarks>
         public static bool TrySetValue(object record, string fieldName, object value, IDMEEditor logger = null)
         {
+            if (TrySetInMap(record, fieldName, value))
+                return true;
+
             var property = ResolveProperty(record, fieldName, logger);
             if (property == null)
                 return false;
@@ -493,8 +586,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             if (!ShouldLogMiss(record.GetType(), fieldName, $"err::{operation}"))
                 return;
 
+            // A property setter that throws arrives here wrapped in
+            // TargetInvocationException, whose own message ("Exception has been
+            // thrown by the target of an invocation.") names neither the real
+            // exception nor where it came from. Walk the chain — without it this
+            // log says only that something, somewhere, failed.
+            var detail = new System.Text.StringBuilder($"{ex.GetType().Name}: {ex.Message}");
+            for (var inner = ex.InnerException; inner is not null; inner = inner.InnerException)
+                detail.Append($" ---> {inner.GetType().Name}: {inner.Message}");
+
             var message = $"[RecordPropertyAccessor] {operation} on field '{fieldName}' (type {property?.PropertyType.Name ?? "?"}) " +
-                          $"on '{record.GetType().Name}' threw: {ex.GetType().Name}: {ex.Message}";
+                          $"on '{record.GetType().Name}' threw: {detail}";
             Debug.WriteLine(message);
             logger?.AddLogMessage("RecordPropertyAccessor", message, DateTime.Now, -1, ex.Message, Errors.Failed);
         }

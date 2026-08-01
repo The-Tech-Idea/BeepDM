@@ -57,10 +57,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // If already in Query mode, no need to transition
-                if (blockInfo.Mode == DataBlockMode.Query)
+                // If the user is already typing criteria, no need to transition.
+                //
+                // This compared against DataBlockMode.Query until 2026-08-01. A
+                // block is registered with Mode = Query (CreateBlockInfo), so
+                // the guard matched immediately and ENTER_QUERY became a no-op —
+                // it returned success without clearing the block or changing
+                // mode. Per DataBlockMode's own documentation, Query is "results
+                // are loaded and editable"; EnterQuery is "the user is typing
+                // example criteria", which is what this method performs.
+                if (blockInfo.Mode == DataBlockMode.EnterQuery)
                 {
-                    result.Message = $"Block '{blockName}' is already in Query mode";
+                    result.Message = $"Block '{blockName}' is already in Enter-Query mode";
                     Status = result.Message;
                     return result;
                 }
@@ -90,8 +98,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Clear the block before entering query mode (Oracle Forms behavior)
                 await ClearBlockForModeTransition(blockName);
 
-                // Set the block to Query mode
-                blockInfo.Mode = DataBlockMode.Query;
+                // Set the block to Enter-Query mode — the user is now typing
+                // criteria, not looking at results. Nothing in the engine set
+                // EnterQuery before this; it was only ever read (three sites
+                // treat Query||EnterQuery as query-ish), so hosts deriving
+                // "am I in query mode?" from the block mode — as
+                // WinFormBlockHost.SyncFromManager does — could never see it and
+                // silently dropped out of query mode on the next sync.
+                blockInfo.Mode = DataBlockMode.EnterQuery;
                 blockInfo.LastModeChange = DateTime.Now;
 
                 // Update current block reference
