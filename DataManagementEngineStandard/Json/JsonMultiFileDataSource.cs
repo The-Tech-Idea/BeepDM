@@ -2,12 +2,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
@@ -850,19 +852,116 @@ namespace TheTechIdea.Beep.Json
                 .Where(f => f != null && !string.IsNullOrWhiteSpace(f.FieldName) && !string.IsNullOrEmpty(f.FilterValue))
                 .ToList();
 
+        /// <summary>
+        /// Applies a filter set to one row.
+        /// </summary>
+        /// <remarks>
+        /// Every filter was compared with string equality until 2026-08-01 —
+        /// <c>AppFilter.Operator</c> was never read — so a query-by-example for
+        /// <c>Qty &gt; 100</c> silently behaved as <c>Qty = 100</c> and returned
+        /// the wrong rows with no error anywhere. Comparisons are numeric when
+        /// both sides parse as numbers, then by date, then ordinal-insensitive
+        /// string, so "9" &lt; "100" orders as a number rather than as text.
+        /// </remarks>
         private static bool MatchesFilters(JObject item, List<AppFilter> filters)
         {
             foreach (var f in filters)
             {
                 var token = item.Property(f.FieldName, StringComparison.OrdinalIgnoreCase)?.Value;
-                if (token == null) return false;
+
+                var op = (f.Operator ?? "=").Trim().ToLowerInvariant();
+
+                // Null tests are the only ones a missing/null field can satisfy.
+                var isNull = token == null || token.Type == JTokenType.Null;
+                if (op is "is null") { if (!isNull) return false; continue; }
+                if (op is "is not null") { if (isNull) return false; continue; }
+                if (isNull) return false;
+
                 var tokenStr = token.Type == JTokenType.Object && token["$oid"] != null
                     ? token["$oid"].ToString()
                     : token.ToString();
-                if (!string.Equals(tokenStr, f.FilterValue, StringComparison.OrdinalIgnoreCase))
+
+                if (!MatchesOperator(tokenStr, op, f.FilterValue, f.FilterValue1))
                     return false;
             }
             return true;
+        }
+
+        private static bool MatchesOperator(string value, string op, string operand, string operand2)
+        {
+            switch (op)
+            {
+                case "=":
+                case "==":
+                    return Compare(value, operand) == 0;
+                case "<>":
+                case "!=":
+                    return Compare(value, operand) != 0;
+                case ">":
+                    return Compare(value, operand) > 0;
+                case ">=":
+                    return Compare(value, operand) >= 0;
+                case "<":
+                    return Compare(value, operand) < 0;
+                case "<=":
+                    return Compare(value, operand) <= 0;
+
+                case "like":
+                    return LikeMatches(value, operand);
+                case "not like":
+                    return !LikeMatches(value, operand);
+
+                case "in":
+                case "not in":
+                {
+                    var members = (operand ?? string.Empty)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Select(m => m.Trim('\'', '"'));
+                    var hit = members.Any(m => Compare(value, m) == 0);
+                    return op == "in" ? hit : !hit;
+                }
+
+                case "between":
+                    // Oracle Forms' BETWEEN is inclusive at both ends.
+                    return Compare(value, operand) >= 0 && Compare(value, operand2) <= 0;
+
+                default:
+                    // An operator this source does not implement must not be
+                    // silently treated as equality — that is the defect this
+                    // method used to have. Reject the row so the mismatch is
+                    // visible rather than plausible.
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Numeric where both sides are numbers, then date, then ordinal
+        /// case-insensitive string.
+        /// </summary>
+        private static int Compare(string left, string right)
+        {
+            right ??= string.Empty;
+
+            if (decimal.TryParse(left, NumberStyles.Any, CultureInfo.InvariantCulture, out var ln) &&
+                decimal.TryParse(right, NumberStyles.Any, CultureInfo.InvariantCulture, out var rn))
+                return ln.CompareTo(rn);
+
+            if (DateTime.TryParse(left, CultureInfo.InvariantCulture, DateTimeStyles.None, out var ld) &&
+                DateTime.TryParse(right, CultureInfo.InvariantCulture, DateTimeStyles.None, out var rd))
+                return ld.CompareTo(rd);
+
+            return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>SQL LIKE with % and _ wildcards.</summary>
+        private static bool LikeMatches(string value, string pattern)
+        {
+            if (string.IsNullOrEmpty(pattern)) return string.IsNullOrEmpty(value);
+
+            var regex = "^" + Regex.Escape(pattern.Trim('\'', '"'))
+                .Replace("%", ".*")
+                .Replace("_", ".") + "$";
+            return Regex.IsMatch(value ?? string.Empty, regex, RegexOptions.IgnoreCase);
         }
 
         private static Dictionary<string, object> JObjectToDictionary(JObject obj)
