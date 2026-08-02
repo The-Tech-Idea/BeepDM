@@ -523,6 +523,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
+                // POST-RECORD fires on the record being left, before the move.
+                //
+                // No record-level trigger had a fire point anywhere in the engine
+                // until 2026-08-02. PreRecord, PostRecord and
+                // WhenNewRecordInstance existed in the enum, in TriggerLibrary's
+                // catalogue and in the numeric bridge — and nothing ever invoked
+                // them. A form could register WHEN-NEW-RECORD-INSTANCE, see it
+                // stored, read it back from GetBlockTriggers, and never once have
+                // it run. It is the trigger most Oracle Forms code uses to react
+                // to the cursor moving between records.
+                if (previousIndex >= 0)
+                {
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PostRecord, blockName,
+                        TriggerContext.ForBlock(TriggerType.PostRecord, blockName, null, _dmeEditor));
+                }
+
                 // Perform the navigation
                 SuppressSync(blockName);
                 bool success;
@@ -531,7 +548,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     success = PerformNavigation(blockInfo, navigationType);
                 }
                 finally { ResumeSync(blockName); }
-                
+
                 if (success)
                 {
                     var currentIndex = blockInfo.UnitOfWork.Units != null
@@ -541,9 +558,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
                         _navHistoryManager.Push(blockName, previousIndex);
 
+                    // PRE-RECORD on entering the new record, then
+                    // WHEN-NEW-RECORD-INSTANCE once it is the current one.
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PreRecord, blockName,
+                        TriggerContext.ForBlock(TriggerType.PreRecord, blockName, null, _dmeEditor));
+
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName);
-                    
+
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.WhenNewRecordInstance, blockName,
+                        TriggerContext.ForBlock(
+                            TriggerType.WhenNewRecordInstance, blockName, null, _dmeEditor));
+
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
                     OnCurrentChanged?.Invoke(this, currentChangedArgs);
