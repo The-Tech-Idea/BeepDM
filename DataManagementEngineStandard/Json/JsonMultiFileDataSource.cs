@@ -637,29 +637,71 @@ namespace TheTechIdea.Beep.Json
                 if (!TryGetEntityData(EntityName, out var data))
                     return ErrorResult($"Entity '{EntityName}' not found.");
 
-                JObject? target = null;
-                if (criteria is JObject criteriaObj)
+                // Deleting by ordinal position stays as it was.
+                if (criteria is int index)
                 {
-                    var idProp = criteriaObj.Properties().FirstOrDefault();
-                    if (idProp != null)
-                    {
-                        var idValue = idProp.Value.ToString();
-                        target = data.OfType<JObject>().FirstOrDefault(item =>
-                            string.Equals(item[idProp.Name]?.ToString(), idValue, StringComparison.OrdinalIgnoreCase));
-                    }
-                }
-                else if (criteria is Dictionary<string, object> criteriaDict && criteriaDict.Any())
-                {
-                    var kv = criteriaDict.First();
-                    var idValue = kv.Value?.ToString();
-                    target = data.OfType<JObject>().FirstOrDefault(item =>
-                        string.Equals(item[kv.Key]?.ToString(), idValue, StringComparison.OrdinalIgnoreCase));
-                }
-                else if (criteria is int index && index >= 0 && index < data.Count)
-                {
+                    if (index < 0 || index >= data.Count)
+                        return ErrorResult($"Index {index} is outside '{EntityName}'.");
+
                     data.RemoveAt(index);
                     MarkDirty(EntityName);
                     return OkResult("Record deleted by index.");
+                }
+
+                // Everything else is matched as a row.
+                //
+                // This handled JObject and Dictionary<string, object> and nothing
+                // else until 2026-08-02 — so a plain entity, which is exactly what
+                // UnitofWork.DeleteAsync passes, fell through every branch and the
+                // method reported "No matching record found to delete". Deleting a
+                // record through a form simply did not work on this source, and
+                // the failure named the data rather than the cause.
+                //
+                // It also took the *first* property as the identifier rather than
+                // looking for one, and compared with the case-sensitive JObject
+                // indexer. Same two faults the update path had.
+                if (criteria is null)
+                    return ErrorResult("No criteria supplied to delete.");
+
+                var match = criteria switch
+                {
+                    JObject jo => jo,
+                    Dictionary<string, object> dict => JObject.FromObject(dict),
+                    _ => JObject.FromObject(criteria)
+                };
+
+                var idProp = match.Properties().FirstOrDefault(p =>
+                    p.Name.Equals("_id", StringComparison.OrdinalIgnoreCase) ||
+                    p.Name.Equals("id", StringComparison.OrdinalIgnoreCase));
+
+                JObject? target;
+                if (idProp != null)
+                {
+                    var idValue = idProp.Value.ToString();
+                    target = data.OfType<JObject>().FirstOrDefault(item =>
+                    {
+                        var itemId = PropertyValue(item, "_id")?["$oid"]?.ToString() ??
+                                     PropertyValue(item, "_id")?.ToString() ??
+                                     PropertyValue(item, "id")?.ToString();
+                        return string.Equals(itemId, idValue, StringComparison.OrdinalIgnoreCase);
+                    });
+
+                    // An identified delete addresses one row. If it is absent,
+                    // say so rather than deleting something else.
+                    if (target == null)
+                        return ErrorResult(
+                            $"No record with id '{idValue}' found in '{EntityName}' to delete.");
+                }
+                else
+                {
+                    var first = match.Properties().FirstOrDefault();
+                    if (first == null)
+                        return ErrorResult("No identifiable fields to match for delete.");
+
+                    var value = first.Value.ToString();
+                    target = data.OfType<JObject>().FirstOrDefault(item =>
+                        string.Equals(PropertyValue(item, first.Name)?.ToString(), value,
+                            StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (target != null)

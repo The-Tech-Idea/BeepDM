@@ -235,11 +235,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Trigger block leave for current block
                 if (!string.IsNullOrEmpty(_currentBlockName) && _currentBlockName != blockName)
                 {
+                    // POST-BLOCK fires on the block being left.
+                    //
+                    // PreBlock and PostBlock had no fire point anywhere in the
+                    // engine until 2026-08-02 — the same gap the record-level
+                    // triggers had. WHEN-NEW-BLOCK-INSTANCE was fired here and
+                    // its two companions were not, so a form could register
+                    // PRE-BLOCK or POST-BLOCK and never have it run.
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PostBlock, _currentBlockName,
+                        TriggerContext.ForBlock(
+                            TriggerType.PostBlock, _currentBlockName, null, _dmeEditor));
+
                     _eventManager.TriggerBlockLeave(_currentBlockName);
                 }
 
                 // Set new current block
                 var previousBlock = _currentBlockName;
+
+                // PRE-BLOCK on entering the target, before it becomes current.
+                await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.PreBlock, blockName,
+                    TriggerContext.ForBlock(TriggerType.PreBlock, blockName, null, _dmeEditor));
 
                 // Fire WHEN-NEW-BLOCK-INSTANCE trigger (Oracle Forms equivalent)
                 await _triggerManager.FireBlockTriggerAsync(
