@@ -235,10 +235,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                                                                .Concat(allDirtyBlocks.Except(fm.BuildCommitOrder())));
                 orderedAll = orderedAll.Distinct().ToList();
 
-                // Fire PRE-COMMIT trigger on the form that initiated the commit
+                // Fire PRE-COMMIT trigger on the form that initiated the commit.
+                //
+                // The lookup key is _currentFormName as-is, NOT `?? "FORM"`.
+                // TriggerManager registers a form trigger under
+                // `trigger.FormName ?? "DEFAULT"` and looks one up under
+                // `formName ?? "DEFAULT"`, so substituting "FORM" here searched a
+                // bucket nothing is ever registered in: PRE-COMMIT and POST-COMMIT
+                // could not fire at all on a form with no explicit name, which is
+                // every form the engine has not been told the name of. The two
+                // defaults simply disagreed. (2026-08-02)
                 var preCommitResult = await _triggerManager.FireFormTriggerAsync(
                     TriggerType.PreCommit,
-                    _currentFormName ?? "FORM",
+                    _currentFormName,
                     TriggerContext.ForForm(TriggerType.PreCommit, _currentFormName ?? "FORM", _dmeEditor));
                 if (preCommitResult == TriggerResult.Cancelled)
                 {
@@ -288,10 +297,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     foreach (var fm in formsToCommit)
                         fm._auditManager?.FlushPendingToStore(fm._currentFormName ?? "FORM", AuditOperation.Commit);
 
-                    // Fire POST-COMMIT trigger on the initiating form
+                    // Fire POST-COMMIT trigger on the initiating form. Same
+                    // registration-key reasoning as PRE-COMMIT above.
                     await _triggerManager.FireFormTriggerAsync(
                         TriggerType.PostCommit,
-                        _currentFormName ?? "FORM",
+                        _currentFormName,
                         TriggerContext.ForForm(TriggerType.PostCommit, _currentFormName ?? "FORM", _dmeEditor));
 
                     // Raise .NET event for UI subscribers

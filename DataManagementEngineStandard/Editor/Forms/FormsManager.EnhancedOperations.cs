@@ -502,9 +502,36 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
                 }
 
+                // Fire WHEN-VALIDATE-RECORD before the rule pass.
+                //
+                // This trigger had no fire point anywhere in the engine until
+                // 2026-08-02 — it existed in the enum and in TriggerLibrary's
+                // catalogue and was never invoked, so a form could register it
+                // and never have it run. This is where Oracle Forms validates a
+                // record: on the way into INSERT, UPDATE and DELETE. Cancelling
+                // fails the record, matching the PRE-QUERY / PRE-INSERT
+                // convention used at the other fire sites.
+                //
+                // Fired synchronously because this method is synchronous. A sync
+                // Handler is safe on any thread; a trigger supplying only an
+                // AsyncHandler gets a clear exception from
+                // TriggerDefinition.Execute rather than a deadlock.
+                var recordTriggerResult = _triggerManager.FireBlockTrigger(
+                    TriggerType.WhenValidateRecord, blockName,
+                    TriggerContext.ForBlock(
+                        TriggerType.WhenValidateRecord, blockName, record, _dmeEditor));
+
+                if (recordTriggerResult == TriggerResult.Cancelled)
+                {
+                    LogError(
+                        $"{operation} cancelled by WHEN-VALIDATE-RECORD trigger",
+                        null, blockName);
+                    return false;
+                }
+
                 // Use existing validation logic
                 var isValid = ValidateBlock(blockName);
-                
+
                 if (!isValid)
                 {
                     LogError($"Record validation failed for {operation} operation", null, blockName);
