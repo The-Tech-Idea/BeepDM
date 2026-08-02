@@ -48,11 +48,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 rg.ColumnNames = es.Fields.Select(f => f.FieldName).ToList();
 
-                // Record group population requires IUnitofWork creation through
-                // the engine's data source infrastructure. This is a deferred feature
-                // pending a dedicated IDataSource.CreateUnitOfWork API on the engine.
-                rg.IsPopulated = false;
-                return false;
+                // Populate straight from the datasource.
+                //
+                // This was deferred "pending a dedicated IDataSource.CreateUnitOfWork
+                // API" and returned false — honestly declared rather than silently
+                // wrong, but the premise no longer holds, twice over. A record group
+                // is a queried row set, not an editable block: it needs rows, and
+                // GetEntity returns them. And even if a unit of work were wanted,
+                // UnitOfWorkFactory over ds.GetEntityType now provides one — that is
+                // how DefinitionBlockRegistrar builds every block. (2026-08-02)
+                var rows = ds.GetEntity(rg.EntityName, rg.Filters);
+
+                ct.ThrowIfCancellationRequested();
+
+                rg.Records = rows is System.Collections.IEnumerable enumerable
+                    ? enumerable.Cast<object>().ToList()
+                    : new List<object>();
+
+                rg.IsPopulated = true;
+                return true;
             }
             catch (Exception ex)
             {
