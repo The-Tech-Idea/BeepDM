@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Editor.UOW
     /// Enhanced wrapper around dynamic UnitOfWork providing strongly-typed interface
     /// with improved error handling, validation, and Oracle Forms compatibility
     /// </summary>
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
@@ -926,6 +926,28 @@ namespace TheTechIdea.Beep.Editor.UOW
         public void UndoLastChange() => ExecuteSafely(() => _unitOfWork.UndoLastChange());
         public bool Redo() => ExecuteSafely(() => _unitOfWork.Redo(), false);
         public void ClearUndoHistory() => ExecuteSafely(() => _unitOfWork.ClearUndoHistory());
+
+        // IUndoable, implemented explicitly.
+        //
+        // The wrapper carried CanUndo/CanRedo/Undo/Redo all along but never
+        // declared IUndoable, and FormsManager reaches undo through
+        // `GetUnitOfWork(blockName) as IUndoable`. Blocks are registered with a
+        // UnitOfWorkWrapper, so that cast was always null and every undo entry
+        // point — SetBlockUndoEnabled, UndoBlock, RedoBlock, CanUndoBlock —
+        // silently did nothing and reported false. Same defect as the
+        // IAggregatable gap fixed earlier on this class: the capability was
+        // present, the interface declaration was not. (2026-08-02)
+        //
+        // Explicit implementation so the existing Undo()/Redo() names stay.
+        bool IUndoable.UndoLastAction() => Undo();
+
+        bool IUndoable.RedoLastAction() => Redo();
+
+        void IUndoable.EnableUndo(bool enable, int maxDepth)
+        {
+            IsUndoEnabled = enable;
+            if (maxDepth > 0) MaxUndoDepth = maxDepth;
+        }
 
         // Virtual/Lazy Loading (Phase 5)
         public bool IsVirtualMode => GetPropertySafely(() => _unitOfWork.IsVirtualMode, false);

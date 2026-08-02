@@ -148,6 +148,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                         if (!string.IsNullOrWhiteSpace(e.PropertyName))
                         {
+                            // Mark the item dirty.
+                            //
+                            // IItemPropertyManager.MarkItemDirty existed and had
+                            // no caller anywhere in the engine, so item-level
+                            // dirty state was never set: GetDirtyItems always
+                            // returned empty and anything showing "which fields
+                            // changed" — WinFormDirtyStatePanel among them — was
+                            // permanently blank. Record-level dirty tracking (the
+                            // unit of work) was unaffected, which is why this went
+                            // unnoticed. ItemChangedEventArgs carries no previous
+                            // value, so the old value is recorded as unknown
+                            // rather than invented. (2026-08-02)
+                            _itemPropertyManager?.MarkItemDirty(blockName, e.PropertyName, null);
+
                             PrepareValidationContext(blockName);
                             _validationManager.ValidateItem(blockName, e.PropertyName, newVal, ValidationTiming.OnChange);
 
