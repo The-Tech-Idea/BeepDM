@@ -151,12 +151,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Validate record before insert
-                if (!ValidateRecordForOperation(blockName, record, "INSERT"))
-                {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"Record validation failed for insert in block '{blockName}'";
-                    return result;
-                }
+                // NO record validation here.
+                //
+                // This is CREATE_RECORD, not INSERT. Oracle Forms creates an
+                // empty record in the block for the user to fill and validates it
+                // at COMMIT; validating at creation time makes a blank record
+                // impossible, which is to say it makes creating a record
+                // impossible on any table with a required column. Validation
+                // still runs on the way to the datasource. (2026-08-02)
 
                 // Fire PRE-INSERT trigger — abort if cancelled
                 var preInsertResult = await _triggerManager.FireBlockTriggerAsync(
@@ -169,26 +171,35 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // IUnitofWork (non-generic) declares InsertAsync(dynamic doc) directly.
-                // The previous FindBestInsertMethod(...) reflection was a silent-no-op
-                // trap: if the typed overload didn't exist, the engine silently no-op'd
-                // the insert. Direct dispatch either compiles or fails loud.
+                // Add the record to the BLOCK. Do not write it to the datasource.
+                //
+                // This called UnitOfWork.InsertAsync until 2026-08-02, which
+                // writes immediately — so creating a record wrote a blank row to
+                // the database on the spot, and on any table with a NOT NULL
+                // column it simply failed ("constraint failed"). You could not
+                // create a record at all against a real schema.
+                //
+                // Oracle Forms' CREATE_RECORD adds an empty record to the block;
+                // the INSERT happens at COMMIT once the user has filled it in.
+                // UnitOfWork.Add is exactly that: it applies insert defaults,
+                // generates the primary-key sequence, and adds to Units marked
+                // Added, which the commit path already picks up through
+                // CommitAllAsync's insert branch.
+                //
+                // Add returns void and can decline silently (its own Validateall
+                // guard), so the effect is checked rather than assumed.
+                var countBefore = GetBlockCount(blockName);
+
                 SuppressSync(blockName);
-                IErrorsInfo insertResult;
                 try
                 {
-                    insertResult = await blockInfo.UnitOfWork.InsertAsync(record);
+                    blockInfo.UnitOfWork.Add(record);
                 }
                 finally { ResumeSync(blockName); }
 
-                if (insertResult == null)
-                {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"InsertAsync returned null on unit of work for block '{blockName}'";
-                    return result;
-                }
+                var added = GetBlockCount(blockName) > countBefore;
 
-                if (insertResult.Flag == Errors.Ok)
+                if (added)
                 {
                     // Fire POST-INSERT trigger after successful insert
                     await _triggerManager.FireBlockTriggerAsync(
@@ -196,16 +207,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
 
                     await SynchronizeDetailBlocksAsync(blockName);
-                    result.Message = "Record inserted successfully";
-                    Status = $"Record inserted successfully in block '{blockName}'";
-                    LogOperation($"Record inserted successfully in block '{blockName}'", blockName);
+                    result.Message = "Record created in block; it is written on commit";
+                    Status = $"Record created in block '{blockName}'";
+                    LogOperation($"Record created in block '{blockName}'", blockName);
                 }
                 else
                 {
-                    result.Flag = insertResult.Flag;
-                    result.Message = insertResult.Message;
-                    result.Ex = insertResult.Ex;
-                    Status = $"Error inserting record: {insertResult.Message}";
+                    result.Flag = Errors.Failed;
+                    result.Message =
+                        $"The record was not added to block '{blockName}'. UnitOfWork.Add " +
+                        "declined it — its Validateall guard returns without reporting.";
+                    Status = result.Message;
                 }
 
                 return result;
