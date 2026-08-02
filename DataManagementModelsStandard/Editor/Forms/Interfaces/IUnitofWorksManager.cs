@@ -62,7 +62,39 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         ITriggerManager Triggers { get; }
 
         /// <summary>Gets the savepoint manager</summary>
+        /// <remarks>
+        /// This is the savepoint <em>store</em>. It records and forgets
+        /// savepoints; it does not snapshot or restore block data — see the
+        /// remarks on <see cref="CreateBlockSavepoint"/>.
+        /// </remarks>
         ISavepointManager Savepoints { get; }
+
+        /// <summary>
+        /// Creates a savepoint for a block, capturing the current record so it
+        /// can be restored.
+        /// </summary>
+        /// <remarks>
+        /// Use this, not <c>Savepoints.CreateSavepoint</c>. The savepoint
+        /// manager is a store: its two-argument <c>CreateSavepoint</c> overload
+        /// records no field values at all, and its
+        /// <c>RollbackToSavepointAsync</c> only prunes later savepoints — its
+        /// own documentation says restoring the data is the caller's
+        /// responsibility.
+        ///
+        /// Both data-aware wrappers existed on <c>FormsManager</c> and neither
+        /// was on this interface until 2026-08-02, so a host could reach only
+        /// the store. <c>WinFormFormHost</c> did exactly that: it created
+        /// savepoints that captured nothing and rolled back to them without
+        /// restoring anything, reporting success both times.
+        /// </remarks>
+        string CreateBlockSavepoint(string blockName, string savepointName = null);
+
+        /// <summary>
+        /// Rolls a block back to a savepoint, restoring the record and then
+        /// pruning the savepoints created after it.
+        /// </summary>
+        Task<bool> RollbackToSavepointAsync(
+            string blockName, string savepointName, CancellationToken ct = default);
 
         /// <summary>Gets the record locking manager</summary>
         ILockManager Locking { get; }

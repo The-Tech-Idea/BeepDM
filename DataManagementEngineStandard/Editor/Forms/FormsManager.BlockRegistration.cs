@@ -96,6 +96,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 _performanceManager.CacheBlockInfo(blockName, blockInfo);
                 _blocks[blockName] = blockInfo;
 
+                // Seed the item-property store from the block's fields.
+                //
+                // IItemPropertyManager.RegisterItemsFromEntityStructure existed
+                // and was never called from anywhere, so the store held no items
+                // for any block. Everything keyed on an item was therefore inert:
+                // GetDirtyItems returned empty however much changed (leaving
+                // WinFormDirtyStatePanel permanently blank), MarkItemDirty found
+                // nothing to mark, and per-item property reads had no item to
+                // read. Block registration is where the field list first becomes
+                // known, so it is where the store is seeded. (2026-08-02)
+                if (resolvedEntityStructure != null)
+                {
+                    _itemPropertyManager?.RegisterItemsFromEntityStructure(
+                        blockName, resolvedEntityStructure);
+                }
+
                 // Subscribe to unit of work events
                 if (unitOfWork != null)
                 {

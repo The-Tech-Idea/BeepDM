@@ -403,7 +403,20 @@ namespace TheTechIdea.Beep.Editor.UOW
             
             try
             {
-                if (!IsInListMode && DataSource != null)
+                // Only end a transaction on a source that has them.
+                //
+                // This called EndTransaction unconditionally and failed the whole
+                // rollback if the result was not Ok — the same defect fixed in
+                // Commit(), in its sibling method, and missed at the time. Every
+                // non-transactional source (JSON, CSV, file, cache) answers
+                // "Transactions not supported", so the method returned Failed
+                // *before* reaching RejectChanges: rolling back was impossible on
+                // any of them, and so was anything built on it —
+                // FormsManager.RollbackToSavepointAsync bails when this fails, so
+                // savepoint restore was dead too. (2026-08-02)
+                if (!IsInListMode && DataSource != null &&
+                    DataSourceCapabilityMatrix.Supports(
+                        DataSource.DatasourceType, CapabilityType.SupportsTransactions))
                 {
                     var rollbackResult = DataSource.EndTransaction(new PassedArgs());
                     if (rollbackResult.Flag != Errors.Ok)
