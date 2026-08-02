@@ -246,17 +246,19 @@ namespace TheTechIdea.Beep.Roslyn
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
             string assemblyName = Path.GetRandomFileName();
-            MetadataReference[] references = new MetadataReference[]
-            {
-          MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-          MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).GetTypeInfo().Assembly.Location), // for System.ComponentModel
-          MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location),
-          MetadataReference.CreateFromFile(typeof(Entity).GetTypeInfo().Assembly.Location),
-          //MetadataReference.CreateFromFile(Path.Combine( Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Private.CoreLib.dll")),
-          MetadataReference.CreateFromFile(Path.Combine( Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Runtime.dll"))
-                // Add any other references you need...
-               
-            };
+
+            // Use the shared reference set.
+            //
+            // This method built its own five-entry array and ignored
+            // GetCommonReferences, so it had no DataAnnotations reference — and
+            // it is the path DMTypeBuilder uses, which is how the RDBMS drivers
+            // build a row type. An entity generated from a real database schema
+            // carries [Key]/[Required]/[MaxLength], so the compile failed, this
+            // returned null, and DMTypeBuilder threw "Failed to compile type 'x'
+            // in namespace 'y'" — with the actual C# errors going to
+            // Console.Error, where no log ever sees them. A form over a SQL
+            // table could not build its row type at all. (2026-08-02)
+            var references = GetCommonReferences(includeAdditionalReferences: true);
             CSharpCompilation compilation = CSharpCompilation.Create(
                 assemblyName,
                 syntaxTrees: new[] { syntaxTree },
@@ -273,11 +275,24 @@ namespace TheTechIdea.Beep.Roslyn
                         diagnostic.IsWarningAsError ||
                         diagnostic.Severity == DiagnosticSeverity.Error);
 
+                    // Throw with the diagnostics rather than returning null.
+                    //
+                    // Every caller treats null as fatal and reports a message
+                    // that names neither the error nor the line, while the real
+                    // C# errors went to Console.Error — invisible to any log.
+                    // Failing loudly with the reason attached is the difference
+                    // between "type generation is broken" and a specific missing
+                    // reference. (2026-08-02)
+                    var detail = string.Join("; ",
+                        failures.Select(d => $"{d.Id}: {d.GetMessage()}").Take(5));
+
                     foreach (Diagnostic diagnostic in failures)
                     {
                         Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
                     }
-                    return null;
+
+                    throw new InvalidOperationException(
+                        $"Could not compile generated type '{classname}': {detail}");
                 }
                 else
                 {

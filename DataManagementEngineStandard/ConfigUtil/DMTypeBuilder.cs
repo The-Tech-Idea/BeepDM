@@ -185,7 +185,30 @@ namespace TheTechIdea.Beep.Utilities
         /// <summary>Converts a POCO class definition into an entity class.</summary>
         public static string ConvertPOCOClassToEntity(IDMEEditor editor, EntityStructure entityStructure, string namespaceName)
         {
-            string usingText = "using System;\nusing System.ComponentModel;\nusing System.Runtime.CompilerServices;using TheTechIdea.Beep.Editor;";
+            // The using header must cover what CreateEntityClass emits.
+            //
+            // CreateEntityClass decorates properties with [Key], [Required],
+            // [Column], [MaxLength] and friends whenever the EntityStructure
+            // supplies that metadata — which it does for every real database
+            // table. This header carried no DataAnnotations import, so the
+            // generated code failed to compile with "The type or namespace name
+            // 'Key' could not be found" (both 'Key' and 'KeyAttribute', the
+            // signature of a missing using rather than a missing reference).
+            //
+            // CreateEntityClass only appends TheTechIdea.Beep.Editor to a
+            // supplied header, so passing an incomplete one is not corrected
+            // downstream — its own default header, used when the caller passes
+            // null, has always included these. This is the path DMTypeBuilder
+            // uses, which is how the RDBMS drivers build a row type: a form over
+            // a SQL table could not build one at all. (2026-08-02)
+            string usingText =
+                "using System;\n" +
+                "using System.ComponentModel;\n" +
+                "using System.ComponentModel.DataAnnotations;\n" +
+                "using System.ComponentModel.DataAnnotations.Schema;\n" +
+                "using System.Runtime.CompilerServices;\n" +
+                "using TheTechIdea.Beep.Editor;\n" +
+                "using TheTechIdea.Beep.DataBase;";
             return editor.classCreator.CreateEntityClass(entityStructure, usingText, null, null, namespaceName, false);
         }
 
