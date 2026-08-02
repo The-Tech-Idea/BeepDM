@@ -325,7 +325,19 @@ namespace TheTechIdea.Beep.Editor.UOW
                             // Some items failed — rollback transaction
                             if (useTransaction) DataSource.EndTransaction(new PassedArgs());
                             result.Flag = Errors.Failed;
-                            result.Message = $"Commit partially failed: {oblCommitResult.FailedCount} of {oblCommitResult.TotalCount} items failed";
+
+                            // Name the first failure. "1 of 1 items failed" says
+                            // nothing a caller can act on, and the per-item
+                            // IErrorsInfo was already sitting in the result —
+                            // discarding it turned a specific database error into
+                            // a bare count. (2026-08-02)
+                            var firstFailure = oblCommitResult.FailedResults.FirstOrDefault();
+                            var reason = firstFailure?.Errors?.Message;
+
+                            result.Message =
+                                $"Commit partially failed: {oblCommitResult.FailedCount} of " +
+                                $"{oblCommitResult.TotalCount} items failed" +
+                                (string.IsNullOrWhiteSpace(reason) ? string.Empty : $" — first: {reason}");
                             return result;
                         }
 

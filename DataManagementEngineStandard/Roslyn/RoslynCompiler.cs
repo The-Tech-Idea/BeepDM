@@ -31,6 +31,21 @@ namespace TheTechIdea.Beep.Roslyn
         MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).GetTypeInfo().Assembly.Location),
         MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location),
         MetadataReference.CreateFromFile(typeof(Entity).GetTypeInfo().Assembly.Location),
+
+        // DataAnnotations belongs in the BASE set, not the optional one.
+        //
+        // Generated entity classes carry [Key], [Required] and [MaxLength]
+        // whenever the source's EntityStructure supplies that metadata — which
+        // is every real database. Without this reference the compile fails with
+        // "The type or namespace name 'KeyAttribute' could not be found",
+        // EntityTypeFactory yields no type, and DefinitionBlockRegistrar then
+        // skips the block: a form over a SQL table registered nothing at all.
+        // File datasources hid this for months because their inferred structures
+        // carry no such metadata, so nothing emitted the attributes.
+        // (2026-08-02, found on the first SQLite run)
+        MetadataReference.CreateFromFile(
+            typeof(System.ComponentModel.DataAnnotations.KeyAttribute).Assembly.Location),
+
         MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location), "System.Runtime.dll"))
     };
 

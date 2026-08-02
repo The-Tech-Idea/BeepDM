@@ -386,18 +386,59 @@ public :Fieldtype? :FieldName
                 else
                     sb.AppendLine($"[Column(TypeName = \"{field.ColumnTypeName}\")]");
             }
-            if (field.ValueMin > 0 && field.MaxLength > 0)
-                sb.AppendLine($"[StringLength({field.MaxLength}, MinimumLength = {field.ValueMin})]");
-            else if (field.MaxLength > 0)
-                sb.AppendLine($"[MaxLength({field.MaxLength})]");
-            else if (field.Size1 > 0)
-                sb.AppendLine($"[StringLength({field.Size1})]");
+            // Length attributes apply only to strings, arrays and collections.
+            //
+            // MaxLengthAttribute and StringLengthAttribute throw at validation
+            // time — "The field of type System.Int64 must be a string, array or
+            // ICollection type" — when applied to a numeric property. Databases
+            // report a length for numeric columns too (a SQLite INTEGER comes
+            // back with one), so emitting these unconditionally produced entities
+            // that compiled and then failed on the first commit, with an error
+            // naming the CLR type rather than the column or the attribute.
+            // (2026-08-02, found on the first SQLite run)
+            if (IsLengthConstrainable(field))
+            {
+                if (field.ValueMin > 0 && field.MaxLength > 0)
+                    sb.AppendLine($"[StringLength({field.MaxLength}, MinimumLength = {field.ValueMin})]");
+                else if (field.MaxLength > 0)
+                    sb.AppendLine($"[MaxLength({field.MaxLength})]");
+                else if (field.Size1 > 0)
+                    sb.AppendLine($"[StringLength({field.Size1})]");
+            }
             if (!string.IsNullOrWhiteSpace(field.DatabaseGeneratedOptionName))
                 sb.AppendLine($"[DatabaseGenerated(DatabaseGeneratedOption.{field.DatabaseGeneratedOptionName})]");
             else if (field.IsAutoIncrement)
                 sb.AppendLine("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
             if (field.IsNotMapped) sb.AppendLine("[NotMapped]");
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// True when a length attribute is legal on this field's CLR type —
+        /// strings, arrays and collections only.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="System.ComponentModel.DataAnnotations.MaxLengthAttribute"/>
+        /// and <c>StringLengthAttribute</c> throw at validation time on any
+        /// other type. A field's declared type is the deciding factor, not
+        /// whether the database happened to report a length.
+        /// </remarks>
+        private static bool IsLengthConstrainable(EntityField field)
+        {
+            var type = field?.Fieldtype;
+            if (string.IsNullOrWhiteSpace(type)) return false;
+
+            // Strip nullable / namespace decoration before matching.
+            var name = type.Trim().TrimEnd('?');
+            var lastDot = name.LastIndexOf('.');
+            if (lastDot >= 0 && lastDot < name.Length - 1)
+                name = name[(lastDot + 1)..];
+
+            return name.Equals("String", StringComparison.OrdinalIgnoreCase)
+                || name.EndsWith("[]", StringComparison.Ordinal)
+                || name.StartsWith("List", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith("ICollection", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith("IEnumerable", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

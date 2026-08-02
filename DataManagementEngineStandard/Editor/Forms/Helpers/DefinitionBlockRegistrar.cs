@@ -132,7 +132,53 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
 
             var structure = source.GetEntityStructure(entityName, true);
-            var entityType = source.GetEntityType(entityName);
+
+            // A driver that cannot build a row type may return null or throw —
+            // the RDBMS plugins throw ("Failed to compile type ..."). Either way
+            // it is a reason to fall back, not to fail the block.
+            Type entityType = null;
+            try
+            {
+                entityType = source.GetEntityType(entityName);
+            }
+            catch (Exception ex)
+            {
+                editor.AddLogMessage(
+                    "Beep",
+                    $"DefinitionBlockRegistrar: '{connectionName}.{entityName}' could not build its own " +
+                    $"row type ({ex.Message.Trim()}); falling back to the engine's generator.",
+                    DateTime.Now, 0, null, Errors.Ok);
+            }
+
+            // Fall back to the engine's own generator when the driver cannot
+            // supply a row type.
+            //
+            // A driver's GetEntityType compiles inside whatever build of the
+            // engine that driver was built against. The shipped RDBMS plugins
+            // bind DataManagementEngine 3.1.1 as a NuGet package, and that build
+            // cannot compile an entity carrying [Key]/[Required]/[MaxLength] —
+            // which is every entity generated from a real database schema. The
+            // driver returns null, and the block silently did not register: a
+            // form over a SQL table came up completely empty while a form over a
+            // JSON file worked, because file structures carry no such metadata.
+            //
+            // The block needs a row type; the driver is one way to get one, and
+            // the engine can always build one from the EntityStructure it just
+            // read. Preferring the driver keeps any type it has specialised.
+            // (2026-08-02, found on the first SQLite run)
+            if (entityType == null && structure != null)
+            {
+                entityType = Tools.EntityTypeFactory.GetOrCreate(editor, structure);
+
+                if (entityType != null)
+                {
+                    editor.AddLogMessage(
+                        "Beep",
+                        $"DefinitionBlockRegistrar: '{connectionName}.{entityName}' supplied no row type; " +
+                        "generated one from its entity structure.",
+                        DateTime.Now, 0, null, Errors.Ok);
+                }
+            }
 
             if (structure == null || entityType == null)
             {
