@@ -286,8 +286,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Switches the current active block.</summary>
         Task<bool> SwitchToBlockAsync(string blockName);
 
-        /// <summary>Inserts a record into a block.</summary>
+        /// <summary>
+        /// Creates a record in a block. Oracle Forms CREATE_RECORD: the record is
+        /// added to the block and written to the datasource on commit.
+        /// </summary>
         Task<bool> InsertRecordAsync(string blockName, object record = null);
+
+        /// <summary>Writes the block's current record back to the datasource.</summary>
+        /// <remarks>
+        /// This lived on <c>FormsManager</c> and on no interface until
+        /// 2026-08-03, so a host could not reach the explicit update path at all —
+        /// only <c>SetFieldValue</c> followed by a commit. The integration harness
+        /// had to cast to the concrete type to exercise it.
+        /// </remarks>
+        Task<IErrorsInfo> UpdateCurrentRecordAsync(string blockName);
 
         /// <summary>Deletes the current record from a block.</summary>
         Task<bool> DeleteCurrentRecordAsync(string blockName);
