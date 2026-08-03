@@ -513,10 +513,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         private void RegisterEntityType()
         {
-            if (!DMTypeBuilder.DataSourceNameSpace.ContainsValue(typeof(T).FullName))
-            {
-                DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
-            }
+            // Keyed by the full type name, and TryAdd rather than Add. This was
+            // keyed by EntityName but GUARDED with ContainsValue — a values scan
+            // answering a question about keys — so two data sources exposing an
+            // entity of the same name reached Add with a duplicate key and threw.
+            DMTypeBuilder.DataSourceNameSpace.TryAdd(typeof(T).FullName, typeof(T).FullName);
+
             
             // TryAdd, keyed by full type name. typeCache is a ConcurrentDictionary
             // now, and the old ContainsValue scan was both O(n) and pointless: the

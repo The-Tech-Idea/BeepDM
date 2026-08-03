@@ -39,8 +39,19 @@ namespace TheTechIdea.Beep.Utilities
         public static readonly ConcurrentDictionary<string, Type> typeCache =
             new ConcurrentDictionary<string, Type>();
 
-        /// <summary>Maintains namespace mappings for types.</summary>
-        public static Dictionary<string, string> DataSourceNameSpace { get; set; } = new Dictionary<string, string>();
+        /// <summary>Maintains namespace mappings for types, keyed by full type name.</summary>
+        /// <remarks>
+        /// Concurrent, and keyed by the FULL type name rather than the bare entity
+        /// name. Keyed by entity name it collided the moment two data sources
+        /// exposed an entity of the same name — and because the only writer
+        /// guarded with ContainsValue (which inspects VALUES) before calling
+        /// Add (which is keyed), the second one threw
+        /// "An item with the same key has already been added" at runtime rather
+        /// than merely overwriting. Nothing outside this class reads it.
+        /// (2026-08-03)
+        /// </remarks>
+        public static ConcurrentDictionary<string, string> DataSourceNameSpace { get; set; } =
+            new ConcurrentDictionary<string, string>();
 
         private static readonly object logLock = new object(); // Thread-safe logging
 
@@ -134,15 +145,22 @@ namespace TheTechIdea.Beep.Utilities
         }
 
         /// <summary>Generates or retrieves a namespace for a type.</summary>
+        /// <remarks>
+        /// Currently unused. Kept, but keyed by data source AND type rather than
+        /// type alone, so reviving it does not reintroduce the collision fixed
+        /// above. (2026-08-03)
+        /// </remarks>
         private static string GetOrCreateNamespace(string typeName, string dataSourceName)
         {
-            if (!DataSourceNameSpace.ContainsKey(typeName))
-                DataSourceNameSpace[typeName] = $"{dataSourceName}.{typeName}";
+            var key = $"{dataSourceName}.{typeName}";
+
+            if (!DataSourceNameSpace.ContainsKey(key))
+                DataSourceNameSpace[key] = $"{dataSourceName}.{typeName}";
 
             // Fix: Store the split result in a variable before using LINQ methods
-            var parts = DataSourceNameSpace[typeName].Split('.');
+            var parts = DataSourceNameSpace[key].Split('.');
             if (parts.Length <= 1)
-                return DataSourceNameSpace[typeName]; // No namespace to extract
+                return DataSourceNameSpace[key]; // No namespace to extract
 
             // Remove the last part (typeName) to get the namespace
             return string.Join(".", parts.Take(parts.Length - 1));
