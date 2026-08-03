@@ -140,6 +140,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     _currentFormName = null;
                     _currentBlockName = null;
 
+                    // A modal caller may be suspended on this form's call-stack
+                    // entry. Closing without ReturnToCaller has to release it.
+                    ReleaseSuspendedCallerFor(formName);
+
                     Status = $"Form '{formName}' closed successfully";
                     LogOperation($"Form '{formName}' closed successfully");
                     return true;

@@ -99,20 +99,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Phase 6: security check. This runs BEFORE the CRUD flag
+                // guard below, and the order matters: SetBlockSecurity calls
+                // ApplyAllSecurityFlags, which writes the policy INTO those same
+                // CRUD flags. With the guard first, a security denial always
+                // exited here and EnforceBlockSecurity never ran, so the denial
+                // was honoured but never recorded — GetSecurityViolations stayed
+                // empty for every real denial and the security panel showed an
+                // empty audit trail. (2026-08-03)
+                if (!EnforceBlockSecurity(blockName, SecurityPermission.Insert))
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Security: insert not permitted on block '{blockName}'";
+                    return result;
+                }
+
                 // CRUD flag guard (Phase 2)
                 if (!blockInfo.InsertAllowed)
                 {
                     result.Flag = Errors.Failed;
                     result.Message = $"Insert not allowed for block '{blockName}'";
                     _messageManager?.ShowErrorMessage(blockName, result.Message);
-                    return result;
-                }
-
-                // Phase 6: security check
-                if (!EnforceBlockSecurity(blockName, SecurityPermission.Insert))
-                {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"Security: insert not permitted on block '{blockName}'";
                     return result;
                 }
 
@@ -250,20 +257,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Phase 6: security check. This runs BEFORE the CRUD flag
+                // guard below, and the order matters: SetBlockSecurity calls
+                // ApplyAllSecurityFlags, which writes the policy INTO those same
+                // CRUD flags. With the guard first, a security denial always
+                // exited here and EnforceBlockSecurity never ran, so the denial
+                // was honoured but never recorded — GetSecurityViolations stayed
+                // empty for every real denial and the security panel showed an
+                // empty audit trail. (2026-08-03)
+                if (!EnforceBlockSecurity(blockName, SecurityPermission.Update))
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Security: update not permitted on block '{blockName}'";
+                    return result;
+                }
+
                 // CRUD flag guard (Phase 2)
                 if (!blockInfo.UpdateAllowed)
                 {
                     result.Flag = Errors.Failed;
                     result.Message = $"Update not allowed for block '{blockName}'";
                     _messageManager?.ShowErrorMessage(blockName, result.Message);
-                    return result;
-                }
-
-                // Phase 6: security check
-                if (!EnforceBlockSecurity(blockName, SecurityPermission.Update))
-                {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"Security: update not permitted on block '{blockName}'";
                     return result;
                 }
 

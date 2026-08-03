@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -64,8 +64,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         private readonly TaskCompletionSource<bool> _completion
             = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        /// <summary>Task that completes when the callee returns (or closes).</summary>
-        public Task Completion => _completion.Task;
+        /// <summary>
+        /// Task that completes when the callee returns (or closes). The result is
+        /// true for a normal ReturnToCaller and false when the callee was closed
+        /// without returning, so CALL_FORM's caller can tell OK from Cancel. This
+        /// was a bare <see cref="Task"/>, which threw the bool away and made every
+        /// outcome look like a normal return. (2026-08-03)
+        /// </summary>
+        public Task<bool> Completion => _completion.Task;
 
         /// <summary>Complete the entry's task. Called by the form manager when
         /// the callee returns to the caller. Idempotent — subsequent calls are

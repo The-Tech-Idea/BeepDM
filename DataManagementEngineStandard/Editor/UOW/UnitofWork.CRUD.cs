@@ -92,6 +92,8 @@ namespace TheTechIdea.Beep.Editor.UOW
             
             if (!IsInListMode)
             {
+                var queryTimer = System.Diagnostics.Stopwatch.StartNew();
+                var querySucceeded = true;
                 var retval = DataSource.GetEntity(EntityName, null);
                 try
                 {
@@ -99,8 +101,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                 }
                 catch (Exception ex)
                 {
+                    querySucceeded = false;
                     DMEEditor.AddLogMessage("Beep", $" Unit of Work Could not get Data in units {ex.Message} ", DateTime.Now, -1, null, Errors.Failed);
                 }
+                queryTimer.Stop();
+                RecordQueryHistory(null, queryTimer.Elapsed, querySucceeded);
             }
             
             _suppressNotification = false;
@@ -153,8 +158,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                 // are the whole set, so nothing is being masked.
                 IsFilterOn = false;
 
+                var queryTimer = System.Diagnostics.Stopwatch.StartNew();
                 var retval = DataSource.GetEntity(EntityName, filters);
                 GetDataInUnits(retval);
+                queryTimer.Stop();
+                RecordQueryHistory(filters, queryTimer.Elapsed, succeeded: true);
             }
             else
             {
@@ -205,8 +213,11 @@ namespace TheTechIdea.Beep.Editor.UOW
 
             if (!IsInListMode)
             {
+                var queryTimer = System.Diagnostics.Stopwatch.StartNew();
                 var retval = DataSource.GetEntity(query, null);
                 GetDataInUnits(retval);
+                queryTimer.Stop();
+                RecordQueryHistory(null, queryTimer.Elapsed, succeeded: true);
             }
             else
             {

@@ -22,7 +22,15 @@ namespace TheTechIdea.Beep.Editor.UOW
     /// Enhanced wrapper around dynamic UnitOfWork providing strongly-typed interface
     /// with improved error handling, validation, and Oracle Forms compatibility
     /// </summary>
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable
+    // IUnitofWorkHistory is the THIRD optional-capability interface this class
+    // implemented in full and forgot to declare, after IAggregatable and
+    // IUndoable. FormsManager reaches query history through
+    // `GetUnitOfWork(blockName) as IUnitofWorkHistory`, and blocks are registered
+    // with this wrapper, so the cast was null and GetBlockQueryHistory returned
+    // Array.Empty for every block while ClearBlockQueryHistory did nothing.
+    // GetChangeSummary, GetQueryHistory, ClearQueryHistory and CloneItem were all
+    // already here — only the declaration was missing. (2026-08-03)
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
@@ -1067,9 +1075,18 @@ namespace TheTechIdea.Beep.Editor.UOW
         public ChangeSummary GetChangeSummary() =>
             ExecuteSafely(() => _unitOfWork.GetChangeSummary(), new ChangeSummary());
 
+        // Reads the PUBLIC QueryHistory property, not GetQueryHistory().
+        //
+        // UnitofWork implements IUnitofWorkHistory explicitly, and _unitOfWork is
+        // dynamic: C# dynamic dispatch resolves against the concrete type's public
+        // surface, where an explicitly-implemented member does not appear. So
+        // `_unitOfWork.GetQueryHistory()` threw RuntimeBinderException on every
+        // call, ExecuteSafely swallowed it, and this returned an empty list
+        // forever. The same shape as the dynamic-binder throw fixed in
+        // FormsManager.BlockRegistration. (2026-08-03)
         public IReadOnlyList<QueryHistoryEntry> GetQueryHistory() =>
             ExecuteSafely(
-                () => (IReadOnlyList<QueryHistoryEntry>)_unitOfWork.GetQueryHistory(),
+                () => (IReadOnlyList<QueryHistoryEntry>)_unitOfWork.QueryHistory,
                 System.Array.Empty<QueryHistoryEntry>()
             );
 

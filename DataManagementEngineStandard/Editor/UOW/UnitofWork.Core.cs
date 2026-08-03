@@ -844,6 +844,25 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>Removes all recorded query-history entries.</summary>
         public void ClearQueryHistory() => _queryHistory.Clear();
 
+        /// <summary>
+        /// Records one query execution. <see cref="UnitofWorkQueryHistory.Push"/>
+        /// had no caller anywhere in the engine, so the history this exposes was
+        /// permanently empty and the forms layer's query-history view could only
+        /// ever render a blank list. (2026-08-03)
+        /// </summary>
+        internal void RecordQueryHistory(List<AppFilter> filters, TimeSpan duration, bool succeeded)
+        {
+            _queryHistory.Push(new QueryHistoryEntry
+            {
+                ExecutedAt = DateTime.Now,
+                Filters    = filters == null ? new List<AppFilter>() : new List<AppFilter>(filters),
+                RowCount   = Units?.Count ?? 0,
+                Duration   = duration,
+                Succeeded  = succeeded,
+                EntityName = EntityName,
+            });
+        }
+
         /// <summary>Maximum number of query history entries retained. Default is 20.</summary>
         public int MaxQueryHistorySize
         {

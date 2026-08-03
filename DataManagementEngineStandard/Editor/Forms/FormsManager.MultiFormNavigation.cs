@@ -207,6 +207,65 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return Task.FromResult(true);
         }
 
+        /// <summary>
+        /// Completes this manager's top call-stack entry when it belongs to
+        /// <paramref name="calleeFormName"/>, releasing a caller suspended in
+        /// <see cref="CallFormAsync"/>. Returns false when the top entry is for a
+        /// different form, so a caller is never unwound by someone else's close.
+        /// </summary>
+        internal bool TryReleaseCallEntryFor(string calleeFormName, bool returnedNormally)
+        {
+            if (_callStack.Count == 0) return false;
+
+            var entry = _callStack.Peek();
+            if (!string.Equals(entry.FormName, calleeFormName, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            _callStack.Pop();
+            entry.Complete(returnedNormally);
+            _formRegistry?.SetActiveForm(entry.CallerFormName);
+            Status = "Ready";
+            LogOperation(
+                $"Call entry for '{calleeFormName}' released (returnedNormally={returnedNormally}); " +
+                $"active form is '{entry.CallerFormName}'", null);
+            return true;
+        }
+
+        /// <summary>
+        /// Releases whoever is suspended on a modal CALL_FORM to
+        /// <paramref name="closingFormName"/>.
+        /// </summary>
+        /// <remarks>
+        /// The call-stack entry lives on the CALLER's manager, not the callee's,
+        /// so a callee closing itself cannot find it locally. The form registry is
+        /// shared across every manager built on the same <c>DMEEditor</c>, which is
+        /// what makes the lookup possible.
+        ///
+        /// Without this, closing a called form instead of returning from it left the
+        /// caller awaiting a TaskCompletionSource nobody would ever set — the
+        /// application hung for good. Oracle Forms returns control to the caller
+        /// when a called form closes. (2026-08-03)
+        /// </remarks>
+        internal void ReleaseSuspendedCallerFor(string closingFormName)
+        {
+            if (string.IsNullOrWhiteSpace(closingFormName)) return;
+
+            // The common case: a single manager hosts the whole call chain.
+            if (TryReleaseCallEntryFor(closingFormName, returnedNormally: false)) return;
+
+            if (_formRegistry == null) return;
+
+            foreach (var formName in _formRegistry.GetActiveFormNames())
+            {
+                if (_formRegistry.GetForm(formName) is FormsManager other &&
+                    !ReferenceEquals(other, this) &&
+                    other.TryReleaseCallEntryFor(closingFormName, returnedNormally: false))
+                {
+                    return;
+                }
+            }
+        }
+
         /// <summary>Get the current form call stack (read-only snapshot).</summary>
         public IReadOnlyList<FormCallStackEntry> GetCallStack()
             => new List<FormCallStackEntry>(_callStack);
@@ -237,12 +296,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// </summary>
     internal static class MultiFormTaskExtensions
     {
-        public static async Task<bool> WaitWithCancellation(this Task task, CancellationToken cancellationToken)
+        public static async Task<bool> WaitWithCancellation(this Task<bool> task, CancellationToken cancellationToken)
         {
             if (!cancellationToken.CanBeCanceled)
             {
-                await task.ConfigureAwait(false);
-                return true;
+                return await task.ConfigureAwait(false);
             }
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -257,8 +315,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
             }
             // The original task ran to completion (or already completed).
-            await task.ConfigureAwait(false);
-            return true;
+            return await task.ConfigureAwait(false);
         }
     }
 }

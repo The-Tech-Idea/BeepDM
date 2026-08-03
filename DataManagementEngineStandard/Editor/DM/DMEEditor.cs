@@ -99,6 +99,25 @@ namespace TheTechIdea.Beep
         }
         private IFormRegistry _formRegistry;
 
+        /// <summary>
+        /// Shared inter-form message bus — all FormsManager instances built on this
+        /// editor post and receive here. Lazy-initialized; set explicitly to inject
+        /// your own.
+        /// </summary>
+        /// <remarks>
+        /// This mirrors <see cref="FormRegistry"/> deliberately. FormsManager used to
+        /// construct a PRIVATE FormMessageBus per instance, one line below where it
+        /// picks up the shared registry, so two forms on the same editor each held
+        /// their own bus: PostMessage to another form reported success and was
+        /// delivered to nobody. (2026-08-03)
+        /// </remarks>
+        public IFormMessageBus FormMessageBus
+        {
+            get => _formMessageBus ??= new TheTechIdea.Beep.Editor.Forms.Helpers.FormMessageBus();
+            set => _formMessageBus = value;
+        }
+        private IFormMessageBus _formMessageBus;
+
         public IReadOnlyList<string> GetActiveFormNames() => FormRegistry.GetActiveFormNames();
 
         public IUnitofWorksManager? GetFormManager(string formName) => FormRegistry.GetForm(formName);

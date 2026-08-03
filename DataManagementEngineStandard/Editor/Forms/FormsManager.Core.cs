@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Editor.UOWManager.Configuration;
@@ -155,7 +155,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _formRegistry = formRegistry
                 ?? (dmeEditor as TheTechIdea.Beep.DMEEditor)?.FormRegistry
                 ?? new Forms.Helpers.FormRegistry();
-            _messageBus = messageBus ?? new Forms.Helpers.FormMessageBus();
+            _messageBus = messageBus
+                ?? (dmeEditor as TheTechIdea.Beep.DMEEditor)?.FormMessageBus
+                ?? new Forms.Helpers.FormMessageBus();
             _messageBus.OnFormMessage += OnMessageBusFormMessage;
             _sharedBlockManager = sharedBlockManager ?? new Forms.Helpers.SharedBlockManager();
             _securityManager = securityManager ?? new Forms.Helpers.SecurityManager();

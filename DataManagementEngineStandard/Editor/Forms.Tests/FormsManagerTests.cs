@@ -273,7 +273,13 @@ public class FormsManagerTests : IDisposable
 
         var block = _manager.GetBlock("EMP");
         Assert.NotNull(block);
-        Assert.Equal(DataBlockMode.Query, block.Mode);
+
+        // EnterQuery, not Query. ENTER_QUERY (F7) puts the block into the mode
+        // where its fields accept CRITERIA; EXECUTE_QUERY (F8) is what runs the
+        // query. This asserted Query and went red when EnterQueryAsync was fixed
+        // to stop delegating to a second, silent implementation — the engine
+        // change was right and this assertion was left behind. (2026-08-03)
+        Assert.Equal(DataBlockMode.EnterQuery, block.Mode);
     }
 
     [Fact]
