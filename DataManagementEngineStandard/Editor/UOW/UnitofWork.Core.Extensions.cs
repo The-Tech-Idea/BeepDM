@@ -426,6 +426,18 @@ namespace TheTechIdea.Beep.Editor.UOW
                 // any of them, and so was anything built on it —
                 // FormsManager.RollbackToSavepointAsync bails when this fails, so
                 // savepoint restore was dead too. (2026-08-02)
+                // A failure here must NOT abandon the in-memory rollback.
+                //
+                // Rollback does two things: abort any open database transaction,
+                // and discard the pending changes in the collection. Returning
+                // early on the first left the second undone — and there is
+                // usually no transaction open at all, because Commit opens and
+                // closes its own, so EndTransaction fails with nothing to end.
+                // The result was the worst of both: the pending write was
+                // discarded, the row underneath reverted, and the edited value
+                // stayed in the block, so the user saw their edit still on screen
+                // after rolling it back. The in-memory rollback below is
+                // unconditional now. (2026-08-03)
                 if (!IsInListMode && DataSource != null &&
                     DataSourceCapabilityMatrix.Supports(
                         DataSource.DatasourceType, CapabilityType.SupportsTransactions))
@@ -433,9 +445,10 @@ namespace TheTechIdea.Beep.Editor.UOW
                     var rollbackResult = DataSource.EndTransaction(new PassedArgs());
                     if (rollbackResult.Flag != Errors.Ok)
                     {
-                        result.Flag = Errors.Failed;
-                        result.Message = $"Rollback failed: {rollbackResult.Message}";
-                        return result;
+                        DMEEditor?.AddLogMessage("UnitofWork",
+                            $"Rollback: EndTransaction reported '{rollbackResult.Message}' " +
+                            "(usually means no transaction was open); discarding in-memory changes anyway.",
+                            DateTime.Now, -1, null, Errors.Ok);
                     }
                 }
 
