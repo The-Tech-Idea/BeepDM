@@ -140,7 +140,15 @@ namespace TheTechIdea.Beep.WebAPI
             _configHelper = new WebAPIConfigurationHelper(Dataconnection.ConnectionProp, Logger, DatasourceName);
             
             _httpClient = new HttpClient();
-            _httpClient.Timeout = TimeSpan.FromMilliseconds(_configHelper.TimeoutMs);
+
+            // Guard the assignment as well as the source of the value: HttpClient
+            // rejects a zero or negative Timeout with an exception, and a config
+            // value can reach zero by more routes than the one fixed in
+            // WEBAPIDataConnection.NormalizeConnectionProperties (a "TimeoutMs=0"
+            // in Parameters, for one). Constructing a data source must not throw
+            // over a misconfigured timeout. (2026-08-03)
+            if (_configHelper.TimeoutMs > 0)
+                _httpClient.Timeout = TimeSpan.FromMilliseconds(_configHelper.TimeoutMs);
             
             _authHelper = new WebAPIAuthenticationHelper(Dataconnection.ConnectionProp, Logger, _httpClient);
             _errorHelper = new WebAPIErrorHelper(Logger, DatasourceName);

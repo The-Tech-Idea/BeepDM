@@ -255,7 +255,16 @@ namespace TheTechIdea.Beep.WebAPI
             try
             {
                 var structure = GetEntityStructure(EntityName, false);
-                return structure?.GetType();
+
+                // Build the entity type FROM the structure. This returned
+                // structure?.GetType() — the type of the METADATA OBJECT — so
+                // every entity on every WebAPI source reported `EntityStructure`,
+                // which is not an Entity and cannot close UnitofWork<T>. An entity
+                // type is derived from its structure, and EntityTypeFactory is
+                // where the engine already does that. (2026-08-03)
+                return structure == null
+                    ? null
+                    : TheTechIdea.Beep.Tools.EntityTypeFactory.GetOrCreate(DMEEditor, structure);
             }
             catch (Exception ex)
             {

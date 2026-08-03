@@ -152,7 +152,20 @@ namespace TheTechIdea.Beep.WebAPI
                 normalized.DriverName = standardProperties.DriverName;
                 normalized.DriverVersion = standardProperties.DriverVersion;
                 normalized.Parameters = standardProperties.Parameters;
-                normalized.TimeoutMs = standardProperties.TimeoutMs > 0 ? standardProperties.TimeoutMs : standardProperties.Timeout;
+                // Only override the class default (30s) when a positive value was
+                // actually supplied. This assigned the result unconditionally, so
+                // a ConnectionProperties with neither TimeoutMs nor Timeout set —
+                // the normal case — wrote 0 over the default. The constructor then
+                // did HttpClient.Timeout = TimeSpan.Zero and threw
+                // ArgumentOutOfRangeException, so a WebAPI data source could not be
+                // constructed at all unless the caller happened to set a timeout.
+                // (2026-08-03)
+                var suppliedTimeoutMs = standardProperties.TimeoutMs > 0
+                    ? standardProperties.TimeoutMs
+                    : standardProperties.Timeout;
+
+                if (suppliedTimeoutMs > 0)
+                    normalized.TimeoutMs = suppliedTimeoutMs;
 
                 if (!string.IsNullOrWhiteSpace(standardProperties.ApiKeyHeader))
                 {
