@@ -153,10 +153,31 @@ namespace TheTechIdea.Beep.Editor
                 T item = originalList[i];
                 if (isInsert)
                 {
-                    Tracking tr = new Tracking(Guid.NewGuid(), i,i);
-                    tr.EntityState = EntityState.Unchanged;
-                    AddTracking(tr);
+                    // Snapshot the row's values, and do not replace a tracking
+                    // that already exists for this index.
+                    //
+                    // This minted a fresh Tracking for every row with
+                    // OriginalValues left null, and it runs at the end of every
+                    // loading constructor — so a block built from a query ended up
+                    // with trackings that had no record of what the rows
+                    // originally held. The first edit then filled OriginalValues
+                    // from Item_PropertyChanged, which runs AFTER the value has
+                    // changed, so the "original" was the new value and
+                    // RejectChanges restored an edit over itself: the database row
+                    // reverted on rollback and the user's edit stayed on screen.
+                    //
+                    // Called with isInsert: true from the constructors and after
+                    // inserts, so it also used to stack a duplicate tracking on
+                    // any index that already had one. (2026-08-03)
+                    if (FindTrackingByOriginalIndex(i) != null)
+                        continue;
 
+                    Tracking tr = new Tracking(Guid.NewGuid(), i, i)
+                    {
+                        EntityState = EntityState.Unchanged,
+                        OriginalValues = SnapshotValues(item)
+                    };
+                    AddTracking(tr);
                 }
             }
         }

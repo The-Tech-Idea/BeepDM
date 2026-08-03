@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -42,8 +42,20 @@ namespace TheTechIdea.Beep.Editor
             var tracking = GetTrackingItem(item);
             if (tracking != null && tracking.EntityState == EntityState.Unchanged)
             {
-                // First modification — snapshot original values BEFORE changing state
-                tracking.OriginalValues = SnapshotValues(item);
+                // Do NOT overwrite a snapshot taken when the row was loaded.
+                //
+                // The old comment claimed to snapshot "BEFORE changing state",
+                // and the STATE part was true — but this is a PropertyChanged
+                // handler, so the VALUE has already changed by the time it runs.
+                // Overwriting here recorded the new value as the original, and
+                // RejectChanges then restored an edit over itself: the database
+                // row reverted and the user's edit stayed on screen.
+                //
+                // Loaded rows snapshot in the constructor, while they still hold
+                // their original values. This assignment remains for trackings
+                // created without one, where a post-change snapshot is better
+                // than nothing — but it must not clobber a good one. (2026-08-03)
+                tracking.OriginalValues ??= SnapshotValues(item);
                 tracking.EntityState = EntityState.Modified;
                 tracking.ModifiedAt = DateTime.UtcNow;
                 tracking.ModifiedBy = CurrentUser;

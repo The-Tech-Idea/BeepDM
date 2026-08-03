@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -99,35 +99,14 @@ namespace TheTechIdea.Beep.Editor
             SuppressNotification = true;
             RaiseListChangedEvents = false;
             ClearAll();
-            // Every loaded item gets an Unchanged tracking.
-            //
-            // This constructor subscribed PropertyChanged and filled originalList
-            // but created no Tracking at all — and it is the one used to build a
-            // block from a query. Item_PropertyChanged opens with
-            // `var tracking = GetTrackingItem(item); if (tracking != null && ...)`,
-            // so for every queried row that was null: editing one neither
-            // snapshotted its original values nor marked it Modified.
-            //
-            // The visible consequence was rollback. RejectChanges restores a
-            // Modified tracking from tracking.OriginalValues, so with no tracking
-            // there was nothing to restore: the pending write was discarded but
-            // the edited value stayed in the block. A user hit Rollback, the row
-            // underneath reverted, and their edit remained on screen.
-            //
-            // Matches the tracking the bulk-load path already creates
-            // (Unchanged / not new / saved). (2026-08-03)
-            for (int i = 0; i < this.Items.Count; i++)
+            // Trackings are created by UpdateItemIndexMapping below, which is
+            // also where each row's original values are snapshotted. Doing it
+            // here as well would shadow that snapshot with a tracking that has
+            // none. (2026-08-03)
+            foreach (T item in this.Items)
             {
-                T item = this.Items[i];
                 item.PropertyChanged += Item_PropertyChanged;
                 originalList.Add(item); // Add to originalList, don't add again to Items (already in base constructor)
-
-                AddTracking(new Tracking(Guid.NewGuid(), originalList.Count - 1, i)
-                {
-                    EntityState = EntityState.Unchanged,
-                    IsNew = false,
-                    IsSaved = true
-                });
             }
             _insertionOrderList = new List<T>(originalList);
             AddingNew += ObservableBindingList_AddingNew;
@@ -140,6 +119,7 @@ namespace TheTechIdea.Beep.Editor
             SuppressNotification = true;
             RaiseListChangedEvents = false;
             ClearAll();
+
             foreach (T item in list)
             {
                 item.PropertyChanged += Item_PropertyChanged;
