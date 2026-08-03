@@ -518,10 +518,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                 DMTypeBuilder.DataSourceNameSpace.Add(EntityName, typeof(T).FullName);
             }
             
-            if (!DMTypeBuilder.typeCache.ContainsValue(typeof(T)))
-            {
-                DMTypeBuilder.typeCache.Add(typeof(T).FullName, typeof(T));
-            }
+            // TryAdd, keyed by full type name. typeCache is a ConcurrentDictionary
+            // now, and the old ContainsValue scan was both O(n) and pointless: the
+            // key IS typeof(T).FullName, so a lookup by key answers the same
+            // question and TryAdd makes the check-then-add atomic.
+            DMTypeBuilder.typeCache.TryAdd(typeof(T).FullName, typeof(T));
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,7 +28,16 @@ namespace TheTechIdea.Beep.Utilities
         private static ModuleBuilder moduleBuilder;
 
         /// <summary>Caches generated types to improve performance.</summary>
-        public static readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
+        /// <remarks>
+        /// Concurrent because this is public, static and shared by every data
+        /// source driver. It was a plain Dictionary, so two threads resolving
+        /// entity types at the same time could corrupt it or throw from
+        /// ContainsKey — and the engine now awaits with ConfigureAwait(false)
+        /// throughout, so type resolution is genuinely reachable from more than
+        /// one thread. (2026-08-03)
+        /// </remarks>
+        public static readonly ConcurrentDictionary<string, Type> typeCache =
+            new ConcurrentDictionary<string, Type>();
 
         /// <summary>Maintains namespace mappings for types.</summary>
         public static Dictionary<string, string> DataSourceNameSpace { get; set; } = new Dictionary<string, string>();
@@ -43,7 +53,26 @@ namespace TheTechIdea.Beep.Utilities
         /// <param name="typeName">The name of the type.</param>
         /// <param name="fields">List of fields defining the type structure.</param>
         /// <returns>A new dynamic object of the generated type.</returns>
-        public static object CreateNewObject(IDMEEditor editor, string classNamespace, string dataSourceName, string typeName, List<EntityField> fields)
+        /// <summary>
+        /// The generated <see cref="Type"/> for <paramref name="typeName"/>,
+        /// compiling and caching it on first use. Returns the TYPE, not an
+        /// instance.
+        /// </summary>
+        /// <remarks>
+        /// This exists because every driver's <c>GetEntityType</c> had to do
+        ///
+        ///   <code>CreateNewObject(...); return DMTypeBuilder.MyType;</code>
+        ///
+        /// — call a method that returns an *instance*, then read the type off a
+        /// mutable static. MyType is a "last result" field, so any thread that
+        /// resolved a different entity between those two statements made the
+        /// caller return the wrong type. Fifteen drivers were written that way,
+        /// because there was no API that simply returned a Type. Now there is.
+        /// (2026-08-03)
+        /// </remarks>
+        public static Type GetOrCreateType(
+            IDMEEditor editor, string classNamespace, string dataSourceName,
+            string typeName, List<EntityField> fields)
         {
             if (editor == null)
                 throw new ArgumentNullException(nameof(editor));
@@ -57,28 +86,30 @@ namespace TheTechIdea.Beep.Utilities
 
             string fullTypeName = $"{fullNamespace}.{typeName}";
 
-            // Type caching
-            if (!typeCache.ContainsKey(fullTypeName))
-            {
-                EntityStructure entity = new EntityStructure { Fields = fields, EntityName = typeName };
-                string code = ConvertPOCOClassToEntity(editor, entity, fullNamespace);
+            if (typeCache.TryGetValue(fullTypeName, out var cached))
+                return cached;
 
-                var compiled = RoslynCompiler.CompileClassTypeandAssembly(typeName, code);
-                if (compiled != null)
-                {
-                    MyType = compiled.Item1;
-                    MyObject = Activator.CreateInstance(MyType);
-                    typeCache[fullTypeName] = MyType;
-                }
-                else
-                    throw new InvalidOperationException($"Failed to compile type '{typeName}' in namespace '{fullNamespace}'.");
-            }
-            else
-            {
-                MyType = typeCache[fullTypeName];
-                MyObject = Activator.CreateInstance(MyType);
-            }
+            EntityStructure entity = new EntityStructure { Fields = fields, EntityName = typeName };
+            string code = ConvertPOCOClassToEntity(editor, entity, fullNamespace);
 
+            var compiled = RoslynCompiler.CompileClassTypeandAssembly(typeName, code);
+            if (compiled == null)
+                throw new InvalidOperationException($"Failed to compile type '{typeName}' in namespace '{fullNamespace}'.");
+
+            // GetOrAdd rather than an indexer assignment: two threads racing on
+            // the same entity both compile, and the loser must return the type
+            // the winner published so callers never see two Types for one entity.
+            return typeCache.GetOrAdd(fullTypeName, compiled.Item1);
+        }
+
+        public static object CreateNewObject(IDMEEditor editor, string classNamespace, string dataSourceName, string typeName, List<EntityField> fields)
+        {
+            var type = GetOrCreateType(editor, classNamespace, dataSourceName, typeName, fields);
+
+            // MyType/MyObject are kept for callers that still read them. They are
+            // a convenience, not the mechanism — GetOrCreateType is.
+            MyType = type;
+            MyObject = Activator.CreateInstance(type);
             return MyObject;
         }
         /// <summary>
@@ -96,31 +127,9 @@ namespace TheTechIdea.Beep.Utilities
             if (string.IsNullOrEmpty(typeName))
                 throw new ArgumentException("Type name cannot be null or empty.", nameof(typeName));
 
-            string fullNamespace = string.IsNullOrEmpty(classNamespace) ? "TheTechIdea.Classes" : classNamespace;
-            string fullTypeName = $"{fullNamespace}.{typeName}";
-
-            // Type caching
-            if (!typeCache.ContainsKey(fullTypeName))
-            {
-                EntityStructure entity = new EntityStructure { Fields = fields, EntityName = typeName };
-                string code = ConvertPOCOClassToEntity(editor, entity, fullNamespace);
-
-                var compiled = RoslynCompiler.CompileClassTypeandAssembly(typeName, code);
-                if (compiled != null)
-                {
-                    MyType = compiled.Item1;
-                    MyObject = Activator.CreateInstance(MyType);
-                    typeCache[fullTypeName] = MyType;
-                }
-                else
-                    throw new InvalidOperationException($"Failed to compile type '{typeName}' in namespace '{fullNamespace}'.");
-            }
-            else
-            {
-                MyType = typeCache[fullTypeName];
-                MyObject = Activator.CreateInstance(MyType);
-            }
-
+            var type = GetOrCreateType(editor, classNamespace, null, typeName, fields);
+            MyType = type;
+            MyObject = Activator.CreateInstance(type);
             return MyObject;
         }
 
