@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -7,6 +7,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Tools;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
@@ -79,6 +80,8 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (entityStructure == null)
                 throw new ArgumentNullException(nameof(entityStructure));
 
+            entityType = EnsureEntityBackedType(entityType, dmeEditor, entityStructure);
+
             try
             {
                 var uowInstance = primaryKey != null 
@@ -92,6 +95,49 @@ namespace TheTechIdea.Beep.Editor.UOW
                 LogError($"Failed to create UnitOfWork with EntityStructure for entity type {entityType?.Name}", ex, dmeEditor);
                 throw new InvalidOperationException($"Could not create UnitOfWork for entity type {entityType?.Name}", ex);
             }
+        }
+
+        /// <summary>
+        /// Returns a type that can actually close <c>UnitofWork&lt;T&gt;</c>,
+        /// generating one from <paramref name="structure"/> when the datasource's
+        /// own type cannot.
+        /// </summary>
+        /// <remarks>
+        /// <c>UnitofWork&lt;T&gt;</c> is constrained <c>where T : Entity, new()</c>.
+        /// Schemaless sources legitimately have no compile-time POCO to report:
+        /// LiteDB's <c>GetEntityType</c> returns
+        /// <c>Dictionary&lt;string, object&gt;</c>, and every document store is in
+        /// the same position. <c>MakeGenericType</c> then failed with
+        /// "violates the constraint of type 'T'", which reads as a caller bug
+        /// rather than a datasource that simply has no declared type — and the
+        /// block silently never registered.
+        ///
+        /// An entity type IS its structure, so the engine generates one here.
+        /// Doing it in one place means no NoSQL driver has to carry a copy of
+        /// this logic, and none of them has to know about ClassCreator at all.
+        /// (2026-08-03)
+        /// </remarks>
+        private static Type EnsureEntityBackedType(
+            Type entityType, IDMEEditor dmeEditor, EntityStructure structure)
+        {
+            if (entityType != null && typeof(Entity).IsAssignableFrom(entityType))
+                return entityType;
+
+            var generated = EntityTypeFactory.GetOrCreate(dmeEditor, structure);
+
+            // Fall through with the original type when nothing could be built —
+            // the constraint failure below is a truer error than a null here.
+            if (generated == null)
+                return entityType;
+
+            dmeEditor?.AddLogMessage(
+                "Beep",
+                $"UnitOfWorkFactory: '{structure.EntityName}' reported " +
+                $"'{entityType?.Name ?? "<null>"}', which is not an Entity; using a type " +
+                "generated from its structure instead.",
+                DateTime.Now, 0, null, Errors.Ok);
+
+            return generated;
         }
 
         /// <summary>
