@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -923,7 +923,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                             if (sc.ScriptType == DDLScriptType.CopyData)
                             {
                                 SendMessege(progress, token, null, sc, $"Started Coping Data for Entity  {sc.DestinationEntityName}  in {sc.DestinationDataSourceName}");
-                                DMEEditor.ErrorObject = await ExecuteCopyStepAsync(sc, srcds, destds, progress, token);
+                                DMEEditor.ErrorObject = await ExecuteCopyStepAsync(sc, srcds, destds, progress, token).ConfigureAwait(false);
                                 if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                                 {
                                     SendMessege(progress, token, null, sc, $"Error in Coping Data for Entity  {sc.DestinationEntityName}");
@@ -1084,7 +1084,7 @@ namespace TheTechIdea.Beep.Editor.ETL
 
                 if (copySteps.Count > 0)
                 {
-                    var importingPreflight = await TryRunImportingPreflightAsync(copySteps.First(), progress, token);
+                    var importingPreflight = await TryRunImportingPreflightAsync(copySteps.First(), progress, token).ConfigureAwait(false);
                     if (importingPreflight.Flag == Errors.Failed)
                     {
                         return importingPreflight;
@@ -1159,7 +1159,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                     return FailPreflight($"Import entity consistency validation failed: {BuildValidationErrorsMessage(consistency)}", progress);
                 }
 
-                var importingPreflight = await TryRunImportingPreflightAsync(step, progress, token);
+                var importingPreflight = await TryRunImportingPreflightAsync(step, progress, token).ConfigureAwait(false);
                 if (importingPreflight.Flag == Errors.Failed)
                 {
                     return importingPreflight;
@@ -1378,7 +1378,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                     -1,
                     "ETL",
                     Errors.Ok);
-                var result = await importManager.RunImportAsync(config, importProgress, token);
+                var result = await importManager.RunImportAsync(config, importProgress, token).ConfigureAwait(false);
                 var status = importManager.GetImportStatus();
                 _runRecordsProcessed += Math.Max(0, status.RecordsProcessed);
                 if (LoadDataLogs == null)
@@ -1509,7 +1509,7 @@ namespace TheTechIdea.Beep.Editor.ETL
         public async Task<IErrorsInfo> RunCreateScript(IProgress<PassedArgs> progress, CancellationToken token, bool copydata = true, bool useEntityStructure = true)
         {
             #region "Update Data code "
-            var preflight = await PreflightCreateScriptAsync(progress, token);
+            var preflight = await PreflightCreateScriptAsync(progress, token).ConfigureAwait(false);
             if (preflight.Flag == Errors.Failed)
             {
                 return preflight;
@@ -1615,7 +1615,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                                             if (sc.CopyDataScripts.Count > 0 && sc.CopyData && sc.IsCreated)
                                             {
                                                 SendMessege(progress, token, entitystr, sc, $"Started  Coping Data From {entitystr.EntityName} ");
-                                                var t=await RunChildScriptAsync(sc, srcds, destds, progress, token);
+                                                var t=await RunChildScriptAsync(sc, srcds, destds, progress, token).ConfigureAwait(false);
                                                
                                                 CreateSuccess = true;
                                             }
@@ -1661,7 +1661,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                                             entitystr.OriginalEntityName = sc.DestinationEntityName;
                                         }
 
-                                        DMEEditor.ErrorObject = await ApplySchemaDeltaIfNeededAsync(destds, entitystr, sc);
+                                        DMEEditor.ErrorObject = await ApplySchemaDeltaIfNeededAsync(destds, entitystr, sc).ConfigureAwait(false);
                                         if (DMEEditor.ErrorObject.Flag == Errors.Ok)
                                         {
                                             sc.IsModified = true;
@@ -1696,7 +1696,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                                             break;
                                         }
                                         SendMessege(progress, token, null, sc, $"Started Coping Data for Entity  {sc.DestinationEntityName}  in {sc.DestinationDataSourceName}");
-                                        DMEEditor.ErrorObject = await ExecuteCopyStepAsync(sc, srcds, destds, progress, token);
+                                        DMEEditor.ErrorObject = await ExecuteCopyStepAsync(sc, srcds, destds, progress, token).ConfigureAwait(false);
                                         if (DMEEditor.ErrorObject.Flag == Errors.Failed)
                                         {
                                             sc.Failed = true;
@@ -1949,7 +1949,7 @@ namespace TheTechIdea.Beep.Editor.ETL
         /// <returns>An object containing information about any errors that occurred during the import script.</returns>
         public async Task<IErrorsInfo> RunImportScript(IProgress<PassedArgs> progress, CancellationToken token,bool useEntityStructure = true)
         {
-            var preflight = await PreflightImportScriptAsync(progress, token);
+            var preflight = await PreflightImportScriptAsync(progress, token).ConfigureAwait(false);
             if (preflight.Flag == Errors.Failed)
             {
                 return preflight;
@@ -1986,7 +1986,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                             {
                                 if (_useImportingRunForImports)
                                 {
-                                    DMEEditor.ErrorObject = await ExecuteImportViaImportingAsync(sc, srcds, destds, progress, token);
+                                    DMEEditor.ErrorObject = await ExecuteImportViaImportingAsync(sc, srcds, destds, progress, token).ConfigureAwait(false);
                                     if (DMEEditor.ErrorObject.Flag == Errors.Ok || !_enableLegacyImportFallback)
                                     {
                                         if (DMEEditor.ErrorObject.Flag == Errors.Ok)

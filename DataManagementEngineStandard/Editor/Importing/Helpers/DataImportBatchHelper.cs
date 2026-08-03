@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -258,7 +258,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
             {
                 try
                 {
-                    return await ProcessBatchAsync(batch, config, progress, token);
+                    return await ProcessBatchAsync(batch, config, progress, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -274,7 +274,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
                         var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount)); // Exponential backoff
                         _progressHelper.LogImport($"Batch processing failed, retrying in {delay.TotalSeconds} seconds (attempt {retryCount + 1}/{maxRetries + 1})", 0);
                         
-                        await Task.Delay(delay, token);
+                        await Task.Delay(delay, token).ConfigureAwait(false);
                     }
                 }
             }

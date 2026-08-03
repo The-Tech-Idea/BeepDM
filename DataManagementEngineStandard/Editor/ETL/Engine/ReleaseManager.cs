@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -65,7 +65,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 PreviousDefinitionJson = JsonSerializer.Serialize(def, _json)
             };
 
-            await SaveManifestAsync(manifest);
+            await SaveManifestAsync(manifest).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -92,7 +92,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 ?? throw new KeyNotFoundException($"Release '{releaseId}' not found.");
 
             manifest.TestEvidence.Add(suiteResult);
-            await SaveManifestAsync(manifest);
+            await SaveManifestAsync(manifest).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             manifest.AllGatesPassed = allPassed;
             manifest.Status        = allPassed ? ReleaseStatus.Ready : ReleaseStatus.Failed;
 
-            await SaveManifestAsync(manifest);
+            await SaveManifestAsync(manifest).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -142,7 +142,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             manifest.RollbackTestRunId = rollbackTestRunId;
             manifest.RollbackVerified  = true;
-            await SaveManifestAsync(manifest);
+            await SaveManifestAsync(manifest).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             manifest.RiskNotes    = riskNotes;
             manifest.Status       = ReleaseStatus.Promoted;
 
-            await SaveManifestAsync(manifest);
+            await SaveManifestAsync(manifest).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -205,10 +205,10 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             var previousDef = JsonSerializer.Deserialize<PipelineDefinition>(
                 manifest.PreviousDefinitionJson, _json);
             if (previousDef != null)
-                await _pipelineManager.SaveAsync(previousDef);
+                await _pipelineManager.SaveAsync(previousDef).ConfigureAwait(false);
 
             manifest.Status = ReleaseStatus.RolledBack;
-            await SaveManifestAsync(manifest);
+            await SaveManifestAsync(manifest).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -251,7 +251,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
         public async Task<IReadOnlyList<ReleaseManifest>> GetByPipelineAsync(string pipelineId)
         {
-            var all = await LoadAllAsync();
+            var all = await LoadAllAsync().ConfigureAwait(false);
             return all.Where(m => m.PipelineId == pipelineId)
                       .OrderByDescending(m => m.CreatedAtUtc)
                       .ToList();

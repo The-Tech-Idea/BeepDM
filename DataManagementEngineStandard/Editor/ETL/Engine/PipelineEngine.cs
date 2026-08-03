@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -68,7 +68,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             IProgress<PassedArgs>? progress = null,
             CancellationToken token = default)
         {
-            var cp = await _checkpoints.LoadAsync(checkpointId);
+            var cp = await _checkpoints.LoadAsync(checkpointId).ConfigureAwait(false);
             if (cp == null)
                 throw new InvalidOperationException($"Checkpoint '{checkpointId}' not found.");
 
@@ -120,7 +120,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 // ── Pre-run security validation ──────────────────────────
                 if (SecurityPolicy != null)
                 {
-                    var violations = await SecurityPolicy.ValidatePreRunAsync(def, securityContext);
+                    var violations = await SecurityPolicy.ValidatePreRunAsync(def, securityContext).ConfigureAwait(false);
                     if (SecurityPolicyEngine.HasBlockingViolations(violations))
                     {
                         result.Status       = RunStatus.Failed;
@@ -153,14 +153,14 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 sink.Configure(MergeParams(def.Parameters, overrideParams));
 
                 // ── Get schema ───────────────────────────────────────────
-                var schema = await source.GetSchemaAsync(ctx, token);
+                var schema = await source.GetSchemaAsync(ctx, token).ConfigureAwait(false);
 
                 // ── Begin sink batch ─────────────────────────────────────
-                await sink.BeginBatchAsync(ctx, schema, token);
+                await sink.BeginBatchAsync(ctx, schema, token).ConfigureAwait(false);
                 sinkBegan = true;
                 if (errorSink != null)
                 {
-                    await errorSink.BeginBatchAsync(ctx, schema, token);
+                    await errorSink.BeginBatchAsync(ctx, schema, token).ConfigureAwait(false);
                     errorSinkBegan = true;
                 }
 
@@ -183,7 +183,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                         var batchToWrite = new List<PipelineRecord>(batch);
                         batch.Clear();
 
-                        await retry.ExecuteAsync(() => sink.WriteBatchAsync(batchToWrite, ctx, token));
+                        await retry.ExecuteAsync(() => sink.WriteBatchAsync(batchToWrite, ctx, token)).ConfigureAwait(false);
                         batchOffset += batchToWrite.Count;
 
                         // ── Stop-on-error threshold ──────────────────────
@@ -196,7 +196,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                         }
 
                         if (def.EnableCheckpointing)
-                            await _checkpoints.SaveAsync(ctx, "sink", batchOffset);
+                            await _checkpoints.SaveAsync(ctx, "sink", batchOffset).ConfigureAwait(false);
 
                         ctx.ReportProgress($"Written {ctx.TotalRecordsWritten} records", -1);
                     }
@@ -205,7 +205,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 // Flush remaining records
                 if (batch.Count > 0)
                 {
-                    await retry.ExecuteAsync(() => sink.WriteBatchAsync(batch, ctx, token));
+                    await retry.ExecuteAsync(() => sink.WriteBatchAsync(batch, ctx, token)).ConfigureAwait(false);
                     batchOffset += batch.Count;
 
                     // ── Stop-on-error threshold (final batch) ────────────
@@ -219,16 +219,16 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 }
 
                 // ── Commit ───────────────────────────────────────────────
-                await sink.CommitAsync(ctx, token);
+                await sink.CommitAsync(ctx, token).ConfigureAwait(false);
                 if (errorSink != null)
-                    await errorSink.CommitAsync(ctx, token);
+                    await errorSink.CommitAsync(ctx, token).ConfigureAwait(false);
 
                 if (def.EnableCheckpointing)
-                    await _checkpoints.CompleteAsync(ctx.RunId);
+                    await _checkpoints.CompleteAsync(ctx.RunId).ConfigureAwait(false);
 
                 // ── Lineage ──────────────────────────────────────────────
                 if (def.EnableLineageTracking)
-                    await _lineage.FlushAsync(ctx);
+                    await _lineage.FlushAsync(ctx).ConfigureAwait(false);
 
                 result.Status = RunStatus.Success;
             }

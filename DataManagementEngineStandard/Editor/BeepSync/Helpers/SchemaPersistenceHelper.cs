@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -73,10 +73,10 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Serialize to JSON with indented formatting
-                var json = await Task.Run(() => JsonConvert.SerializeObject(schemaList, Formatting.Indented));
+                var json = await Task.Run(() => JsonConvert.SerializeObject(schemaList, Formatting.Indented)).ConfigureAwait(false);
                 
                 // Write to file
-                await File.WriteAllTextAsync(_filePath, json);
+                await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
 
                 _editor.AddLogMessage("BeepSync", $"Successfully saved {schemaList.Count} sync schema(s) to {_filePath}", DateTime.Now, -1, "", Errors.Ok);
             }
@@ -103,7 +103,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Read file content
-                var json = await File.ReadAllTextAsync(_filePath);
+                var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(json))
                 {
@@ -148,7 +148,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Load existing schemas
-                var schemas = await LoadSchemasAsync();
+                var schemas = await LoadSchemasAsync().ConfigureAwait(false);
 
                 // Find and replace existing schema or add new one
                 var existingSchema = schemas.FirstOrDefault(s => s.Id == schema.Id);
@@ -165,7 +165,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Save all schemas
-                await SaveSchemasAsync(schemas);
+                await SaveSchemasAsync(schemas).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -189,14 +189,14 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
 
                 // Load existing schemas
-                var schemas = await LoadSchemasAsync();
+                var schemas = await LoadSchemasAsync().ConfigureAwait(false);
 
                 // Find and remove schema
                 var schemaToRemove = schemas.FirstOrDefault(s => s.Id == schemaId);
                 if (schemaToRemove != null)
                 {
                     schemas.Remove(schemaToRemove);
-                    await SaveSchemasAsync(schemas);
+                    await SaveSchemasAsync(schemas).ConfigureAwait(false);
                     _editor.AddLogMessage("BeepSync", $"Successfully deleted schema '{schemaId}'", DateTime.Now, -1, "", Errors.Ok);
                 }
                 else
@@ -228,7 +228,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 var backupFileName = $"SyncSchemas_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
                 var backupFilePath = Path.Combine(_directoryPath, backupFileName);
 
-                await Task.Run(() => File.Copy(_filePath, backupFilePath));
+                await Task.Run(() => File.Copy(_filePath, backupFilePath)).ConfigureAwait(false);
 
                 _editor.AddLogMessage("BeepSync", $"Successfully created backup: {backupFilePath}", DateTime.Now, -1, "", Errors.Ok);
                 return true;
@@ -271,8 +271,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 var fileName = $"v{version.Version:D4}.json";
                 var filePath = Path.Combine(versionsDir, fileName);
 
-                var json = await Task.Run(() => JsonConvert.SerializeObject(version, Formatting.Indented));
-                await File.WriteAllTextAsync(filePath, json);
+                var json = await Task.Run(() => JsonConvert.SerializeObject(version, Formatting.Indented)).ConfigureAwait(false);
+                await File.WriteAllTextAsync(filePath, json).ConfigureAwait(false);
 
                 _editor.AddLogMessage("BeepSync", $"Schema '{schema.Id}' version {version.Version} saved to {filePath}.", DateTime.Now, -1, "", Errors.Ok);
             }
@@ -297,7 +297,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 {
                     try
                     {
-                        var json = await File.ReadAllTextAsync(file);
+                        var json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                         var v = JsonConvert.DeserializeObject<SyncSchemaVersion>(json);
                         if (v != null) versions.Add(v);
                     }
@@ -320,7 +320,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             {
                 if (schema == null) return "Schema is null.";
 
-                var versions = await LoadSchemaVersionsAsync(schema.Id);
+                var versions = await LoadSchemaVersionsAsync(schema.Id).ConfigureAwait(false);
                 if (versions.Count == 0)
                     return "No persisted version found — this is a new schema.";
 
@@ -376,8 +376,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
                 var path = Path.Combine(dir, $"{checkpoint.SchemaId}.json");
                 checkpoint.SavedAt = DateTime.UtcNow;
-                var json = await Task.Run(() => JsonConvert.SerializeObject(checkpoint, Formatting.Indented));
-                await File.WriteAllTextAsync(path, json);
+                var json = await Task.Run(() => JsonConvert.SerializeObject(checkpoint, Formatting.Indented)).ConfigureAwait(false);
+                await File.WriteAllTextAsync(path, json).ConfigureAwait(false);
 
                 _editor.AddLogMessage("BeepSync",
                     $"Checkpoint saved for schema '{checkpoint.SchemaId}' at offset {checkpoint.ProcessedOffset}.",
@@ -400,8 +400,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 var path = Path.Combine(_directoryPath, "checkpoints", $"{schemaId}.json");
                 if (!File.Exists(path)) return null;
 
-                var json = await File.ReadAllTextAsync(path);
-                return await Task.Run(() => JsonConvert.DeserializeObject<SyncCheckpoint>(json));
+                var json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
+                return await Task.Run(() => JsonConvert.DeserializeObject<SyncCheckpoint>(json)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -421,7 +421,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 var path = Path.Combine(_directoryPath, "checkpoints", $"{schemaId}.json");
                 if (File.Exists(path))
                 {
-                    await Task.Run(() => File.Delete(path));
+                    await Task.Run(() => File.Delete(path)).ConfigureAwait(false);
                     _editor.AddLogMessage("BeepSync",
                         $"Checkpoint cleared for schema '{schemaId}'.",
                         DateTime.Now, -1, "", Errors.Ok);

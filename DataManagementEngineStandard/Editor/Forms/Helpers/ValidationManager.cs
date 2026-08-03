@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -491,7 +491,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </remarks>
         public async Task<ItemValidationResult> ValidateItemAsync(string blockName, string itemName, object value, ValidationTiming timing = ValidationTiming.Manual, CancellationToken cancellationToken = default)
         {
-            return await Task.Run(() => ValidateItem(blockName, itemName, value, timing), cancellationToken);
+            return await Task.Run(() => ValidateItem(blockName, itemName, value, timing), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -502,7 +502,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </summary>
         public async Task<RecordValidationResult> ValidateRecordAsync(string blockName, IDictionary<string, object> record, ValidationTiming timing = ValidationTiming.Manual, CancellationToken cancellationToken = default)
         {
-            return await Task.Run(() => ValidateRecord(blockName, record, timing), cancellationToken);
+            return await Task.Run(() => ValidateRecord(blockName, record, timing), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -538,7 +538,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             var tasks = recordList.Select(record =>
                 ValidateRecordAsync(blockName, record, timing, cancellationToken));
 
-            var recordResults = await Task.WhenAll(tasks);
+            var recordResults = await Task.WhenAll(tasks).ConfigureAwait(false);
             result.RecordResults.AddRange(recordResults);
 
             return result;
@@ -559,11 +559,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
             var tasks = formData.Select(async block =>
             {
-                var blockResult = await ValidateBlockAsync(block.Key, block.Value, timing, cancellationToken);
+                var blockResult = await ValidateBlockAsync(block.Key, block.Value, timing, cancellationToken).ConfigureAwait(false);
                 return (block.Key, blockResult);
             });
 
-            var blockResults = await Task.WhenAll(tasks);
+            var blockResults = await Task.WhenAll(tasks).ConfigureAwait(false);
 
             foreach (var (blockName, blockResult) in blockResults)
             {

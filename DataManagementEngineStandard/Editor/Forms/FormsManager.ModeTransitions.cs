@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,7 +33,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var blockInfo = GetBlock(blockName);
                 if (blockInfo != null && (blockInfo.Mode == DataBlockMode.Query || blockInfo.Mode == DataBlockMode.EnterQuery))
                 {
-                    await ExecuteQueryAsync(blockName);
+                    await ExecuteQueryAsync(blockName).ConfigureAwait(false);
                 }
             }
             catch (Exception ex) { LogError($"Error exiting Query mode for block '{blockName}'", ex, blockName); }
@@ -76,7 +76,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 LogOperation($"Attempting to enter Query mode for block '{blockName}'", blockName);
 
                 // CRITICAL: Check for unsaved changes in current block AND all related blocks
-                var unsavedChangesResult = await ValidateUnsavedChangesForModeTransition(blockName);
+                var unsavedChangesResult = await ValidateUnsavedChangesForModeTransition(blockName).ConfigureAwait(false);
                 if (!unsavedChangesResult.IsValid)
                 {
                     result.Flag = Errors.Failed;
@@ -86,7 +86,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Check for unsaved changes in related blocks (detail blocks)
-                var relatedBlocksResult = await ValidateRelatedBlocksForModeTransition(blockName, DataBlockMode.Query);
+                var relatedBlocksResult = await ValidateRelatedBlocksForModeTransition(blockName, DataBlockMode.Query).ConfigureAwait(false);
                 if (!relatedBlocksResult.IsValid)
                 {
                     result.Flag = Errors.Failed;
@@ -96,7 +96,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Clear the block before entering query mode (Oracle Forms behavior)
-                await ClearBlockForModeTransition(blockName);
+                await ClearBlockForModeTransition(blockName).ConfigureAwait(false);
 
                 // Set the block to Enter-Query mode — the user is now typing
                 // criteria, not looking at results. Nothing in the engine set
@@ -167,7 +167,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 LogOperation($"Executing query and entering CRUD mode for block '{blockName}' (source mode={blockInfo.Mode})", blockName);
 
                 // Execute the query using enhanced query execution
-                var queryResult = await ExecuteQueryEnhancedAsync(blockName, filters);
+                var queryResult = await ExecuteQueryEnhancedAsync(blockName, filters).ConfigureAwait(false);
                 if (queryResult.Flag != Errors.Ok)
                 {
                     result.Flag = queryResult.Flag;
@@ -178,7 +178,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Validate query results
-                var validationResult = await ValidateQueryResultsForModeTransition(blockName);
+                var validationResult = await ValidateQueryResultsForModeTransition(blockName).ConfigureAwait(false);
                 if (!validationResult.IsValid)
                 {
                     result.Flag = Errors.Warning;
@@ -203,7 +203,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var recordCount = GetRecordCount(blockName);
                 if (recordCount > 0)
                 {
-                    await FirstRecordAsync(blockName);
+                    await FirstRecordAsync(blockName).ConfigureAwait(false);
                     result.Message = $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode.";
                 }
                 else
@@ -250,7 +250,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 LogOperation($"Entering CRUD mode for new record creation in block '{blockName}'", blockName);
 
                 // CRITICAL: Enhanced validation for master-detail scenarios
-                var masterDetailValidation = await ValidateMasterDetailForNewRecord(blockName);
+                var masterDetailValidation = await ValidateMasterDetailForNewRecord(blockName).ConfigureAwait(false);
                 if (!masterDetailValidation.IsValid)
                 {
                     result.Flag = Errors.Failed;
@@ -260,7 +260,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Validate unsaved changes in current and related blocks
-                var unsavedChangesResult = await ValidateUnsavedChangesForModeTransition(blockName);
+                var unsavedChangesResult = await ValidateUnsavedChangesForModeTransition(blockName).ConfigureAwait(false);
                 if (!unsavedChangesResult.IsValid)
                 {
                     result.Flag = Errors.Failed;
@@ -270,7 +270,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Clear the block if it has existing data
-                await ClearBlockForModeTransition(blockName);
+                await ClearBlockForModeTransition(blockName).ConfigureAwait(false);
 
                 // Set to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
@@ -287,7 +287,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // CRITICAL: Handle master-detail coordination for new record
-                await HandleMasterDetailCoordinationForNewRecord(blockName);
+                await HandleMasterDetailCoordinationForNewRecord(blockName).ConfigureAwait(false);
 
                 result.Message = $"Block '{blockName}' entered CRUD mode with new record ready for data entry";
                 Status = result.Message;
@@ -324,16 +324,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var isMasterBlock = detailBlocks.Any();
 
                 // STEP 2: Validate ALL blocks (master + all details) for unsaved changes
-                var allBlocksValidation = await ValidateAllBlocksIncludingDetailsForNewRecord(masterBlockName);
+                var allBlocksValidation = await ValidateAllBlocksIncludingDetailsForNewRecord(masterBlockName).ConfigureAwait(false);
                 if (!allBlocksValidation.IsValid)
                 {
                     // This will prompt user to save, discard, or cancel
-                    var userChoice = await HandleUnsavedChangesPrompt(allBlocksValidation.ValidationIssues);
+                    var userChoice = await HandleUnsavedChangesPrompt(allBlocksValidation.ValidationIssues).ConfigureAwait(false);
                     
                     switch (userChoice)
                     {
                         case Models.UnsavedChangesAction.Save:
-                            var saveResult = await CommitFormAsync();
+                            var saveResult = await CommitFormAsync().ConfigureAwait(false);
                             if (saveResult.Flag != Errors.Ok)
                             {
                                 result.Flag = Errors.Failed;
@@ -343,7 +343,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                             break;
                             
                         case Models.UnsavedChangesAction.Discard:
-                            var rollbackResult = await RollbackFormAsync();
+                            var rollbackResult = await RollbackFormAsync().ConfigureAwait(false);
                             if (rollbackResult.Flag != Errors.Ok)
                             {
                                 LogOperation($"Warning: Rollback had issues during new record creation: {rollbackResult.Message}", masterBlockName);
@@ -358,7 +358,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // STEP 3: Enter CRUD mode for new record in master block
-                var crudModeResult = await EnterCrudModeForNewRecordAsync(masterBlockName);
+                var crudModeResult = await EnterCrudModeForNewRecordAsync(masterBlockName).ConfigureAwait(false);
                 if (crudModeResult.Flag != Errors.Ok)
                 {
                     result.Flag = crudModeResult.Flag;
@@ -369,7 +369,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // STEP 4: Handle child blocks coordination
                 if (isMasterBlock)
                 {
-                    await CoordinateChildBlocksForNewMasterRecord(masterBlockName, detailBlocks);
+                    await CoordinateChildBlocksForNewMasterRecord(masterBlockName, detailBlocks).ConfigureAwait(false);
                 }
 
                 result.Message = $"New record created in master block '{masterBlockName}'" + 
@@ -505,7 +505,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 // Check master block
-                var masterValidation = await ValidateUnsavedChangesForModeTransition(masterBlockName);
+                var masterValidation = await ValidateUnsavedChangesForModeTransition(masterBlockName).ConfigureAwait(false);
                 if (!masterValidation.IsValid)
                 {
                     validationIssues.Add($"Master block '{masterBlockName}': {masterValidation.Message}");
@@ -515,7 +515,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var detailBlocks = GetDetailBlocks(masterBlockName);
                 foreach (var detailBlockName in detailBlocks)
                 {
-                    var detailValidation = await ValidateUnsavedChangesForModeTransition(detailBlockName);
+                    var detailValidation = await ValidateUnsavedChangesForModeTransition(detailBlockName).ConfigureAwait(false);
                     if (!detailValidation.IsValid)
                     {
                         validationIssues.Add($"Detail block '{detailBlockName}': {detailValidation.Message}");
@@ -555,14 +555,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var detailBlocks = GetDetailBlocks(blockName);
                 if (detailBlocks.Any())
                 {
-                    await CoordinateChildBlocksForNewMasterRecord(blockName, detailBlocks);
+                    await CoordinateChildBlocksForNewMasterRecord(blockName, detailBlocks).ConfigureAwait(false);
                 }
 
                 // If this is a detail block, coordinate with master
                 var masterBlockName = GetMasterBlock(blockName);
                 if (!string.IsNullOrEmpty(masterBlockName))
                 {
-                    await CoordinateWithMasterForNewDetailRecord(blockName, masterBlockName);
+                    await CoordinateWithMasterForNewDetailRecord(blockName, masterBlockName).ConfigureAwait(false);
                 }
 
                 LogOperation($"Master-detail coordination completed for new record in block '{blockName}'", blockName);
@@ -589,7 +589,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     if (detailBlockInfo != null)
                     {
                         // Clear detail block and set to appropriate mode
-                        await ClearBlockAsync(detailBlockName);
+                        await ClearBlockAsync(detailBlockName).ConfigureAwait(false);
                         
                         // Detail blocks should be in CRUD mode to allow new records
                         detailBlockInfo.Mode = DataBlockMode.CRUD;
@@ -622,7 +622,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     var detailBlockInfo = GetBlock(detailBlockName);
                     if (detailBlockInfo?.UnitOfWork?.CurrentItem != null)
                     {
-                        await SetForeignKeyValuesFromMasterAsync(detailBlockName, masterBlockName);
+                        await SetForeignKeyValuesFromMasterAsync(detailBlockName, masterBlockName).ConfigureAwait(false);
                     }
                 }
 
@@ -733,7 +733,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     LogOperation($"Block '{blockName}' has unsaved changes during mode transition", blockName);
 
                     // Use the existing dirty state manager to handle unsaved changes
-                    var canProceed = await CheckAndHandleUnsavedChangesAsync(blockName);
+                    var canProceed = await CheckAndHandleUnsavedChangesAsync(blockName).ConfigureAwait(false);
                     if (!canProceed)
                     {
                         result.IsValid = false;
@@ -784,7 +784,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     foreach (var detailBlockName in detailBlocks)
                     {
-                        var detailValidation = await ValidateUnsavedChangesForModeTransition(detailBlockName);
+                        var detailValidation = await ValidateUnsavedChangesForModeTransition(detailBlockName).ConfigureAwait(false);
                         if (!detailValidation.IsValid)
                         {
                             result.IsValid = false;
@@ -886,7 +886,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 // Use the existing clear block logic
-                await ClearBlockAsync(blockName);
+                await ClearBlockAsync(blockName).ConfigureAwait(false);
                 LogOperation($"Block '{blockName}' cleared for mode transition", blockName);
             }
             catch (Exception ex)
@@ -1003,7 +1003,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             try
             {
-                var validationResult = await ValidateAllBlocksForModeTransitionAsync();
+                var validationResult = await ValidateAllBlocksForModeTransitionAsync().ConfigureAwait(false);
                 return validationResult.Flag != Errors.Failed;
             }
             catch (Exception ex)

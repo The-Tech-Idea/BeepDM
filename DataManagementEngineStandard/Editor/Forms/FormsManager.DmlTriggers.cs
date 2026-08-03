@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,7 +37,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 return false;
 
             var ctx = TriggerContext.ForBlock(TriggerType.OnInsert, blockName, record, _dmeEditor);
-            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.OnInsert, blockName, ctx);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.OnInsert, blockName, ctx).ConfigureAwait(false);
 
             if (result == TriggerResult.Cancelled || result == TriggerResult.Failure)
                 return null;
@@ -57,7 +57,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 return false;
 
             var ctx = TriggerContext.ForBlock(TriggerType.OnUpdate, blockName, record, _dmeEditor);
-            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.OnUpdate, blockName, ctx);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.OnUpdate, blockName, ctx).ConfigureAwait(false);
 
             if (result == TriggerResult.Cancelled || result == TriggerResult.Failure)
                 return null;
@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 return false;
 
             var ctx = TriggerContext.ForBlock(TriggerType.OnDelete, blockName, record, _dmeEditor);
-            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.OnDelete, blockName, ctx);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.OnDelete, blockName, ctx).ConfigureAwait(false);
 
             if (result == TriggerResult.Cancelled || result == TriggerResult.Failure)
                 return null;
@@ -126,7 +126,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             else
             {
                 var ctx = TriggerContext.ForBlock(type, block, null, _dmeEditor);
-                return await _triggerManager.FireBlockTriggerAsync(type, block, ctx);
+                return await _triggerManager.FireBlockTriggerAsync(type, block, ctx).ConfigureAwait(false);
             }
         }
 

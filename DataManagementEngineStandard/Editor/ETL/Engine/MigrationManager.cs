@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -117,7 +117,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             wave.Status      = WaveStatus.InProgress;
             wave.StartedAtUtc = DateTime.UtcNow;
             wave.PromotedBy  = promotedBy;
-            await SaveWaveAsync(wave, token);
+            await SaveWaveAsync(wave, token).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -145,7 +145,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             wave.Status        = WaveStatus.Completed;
             wave.FinishedAtUtc = DateTime.UtcNow;
-            await SaveWaveAsync(wave, token);
+            await SaveWaveAsync(wave, token).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -175,7 +175,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             wave.Status        = WaveStatus.RolledBack;
             wave.FinishedAtUtc = DateTime.UtcNow;
             wave.RolledBackBy  = rolledBackBy;
-            await SaveWaveAsync(wave, token);
+            await SaveWaveAsync(wave, token).ConfigureAwait(false);
 
             if (ObservabilityStore != null)
                 await ObservabilityStore.AppendAuditAsync(new AuditEntry
@@ -203,8 +203,8 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             IProgress<PassedArgs>? progress = null,
             CancellationToken token = default)
         {
-            var baseline  = await _pipelineManager.RunAsync(baselinePipelineId,  progress, token);
-            var candidate = await _pipelineManager.RunAsync(candidatePipelineId, progress, token);
+            var baseline  = await _pipelineManager.RunAsync(baselinePipelineId,  progress, token).ConfigureAwait(false);
+            var candidate = await _pipelineManager.RunAsync(candidatePipelineId, progress, token).ConfigureAwait(false);
 
             return await RecordComparisonAsync(
                 baselinePipelineId, baseline, candidate, CanaryRunType.Canary);
@@ -360,10 +360,10 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             var to   = DateTime.UtcNow;
             var from = to.AddDays(-1);
 
-            var snapshot = await ComputeKpiSnapshotAsync(waveId, from, to, token);
+            var snapshot = await ComputeKpiSnapshotAsync(waveId, from, to, token).ConfigureAwait(false);
 
             if (snapshot.TriggersRollback)
-                await RollbackWaveAsync(waveId, $"auto:{triggeredBy}", token);
+                await RollbackWaveAsync(waveId, $"auto:{triggeredBy}", token).ConfigureAwait(false);
 
             return (snapshot.TriggersRollback, snapshot);
         }

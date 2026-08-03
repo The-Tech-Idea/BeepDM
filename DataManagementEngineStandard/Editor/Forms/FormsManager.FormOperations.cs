@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -66,7 +66,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Perform any pre-initialization
-                await PreInitializeFormAsync(formName);
+                await PreInitializeFormAsync(formName).ConfigureAwait(false);
 
                 _currentFormName = formName;
 
@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 LogOperation($"Form '{formName}' opened successfully");
 
                 // Post-initialization
-                await PostInitializeFormAsync(formName);
+                await PostInitializeFormAsync(formName).ConfigureAwait(false);
 
                 return true;
             }
@@ -120,7 +120,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
 
                     // Handle unsaved changes based on configuration
-                    var handleResult = await HandleUnsavedChangesOnCloseAsync();
+                    var handleResult = await HandleUnsavedChangesOnCloseAsync().ConfigureAwait(false);
                     if (!handleResult)
                         return false;
                 }
@@ -134,7 +134,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (!closeArgs.Cancel)
                 {
                     // Perform cleanup operations
-                    await PerformFormCleanupAsync();
+                    await PerformFormCleanupAsync().ConfigureAwait(false);
 
                     var formName = _currentFormName;
                     _currentFormName = null;
@@ -284,7 +284,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Commit each form's dirty blocks in ordered sequence.
                 // Source-level transaction wrapping: if the data source supports it,
                 // wrap the entire cross-form commit in a single transaction.
-                bool crossFormSuccess = await TryCrossFormTransactionCommitAsync(formsToCommit, orderedAll);
+                bool crossFormSuccess = await TryCrossFormTransactionCommitAsync(formsToCommit, orderedAll).ConfigureAwait(false);
 
                 if (crossFormSuccess)
                 {
@@ -376,7 +376,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Use dirty state manager for the actual rollback
-                var rollbackSuccess = await _dirtyStateManager.RollbackDirtyBlocksAsync(dirtyBlocks);
+                var rollbackSuccess = await _dirtyStateManager.RollbackDirtyBlocksAsync(dirtyBlocks).ConfigureAwait(false);
 
                 if (rollbackSuccess)
                 {
@@ -426,7 +426,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 LogOperation("Starting to clear all blocks");
                 var clearTasks = _blocks.Keys.Select(ClearBlockAsync);
-                await Task.WhenAll(clearTasks);
+                await Task.WhenAll(clearTasks).ConfigureAwait(false);
 
                 Status = "All blocks cleared successfully";
                 LogOperation("All blocks cleared successfully");
@@ -455,7 +455,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Check for unsaved changes first
                     if (blockInfo.UnitOfWork.IsDirty && Configuration?.ConfirmBeforeClear == true)
                     {
-                        var canClear = await CheckAndHandleUnsavedChangesAsync(blockName);
+                        var canClear = await CheckAndHandleUnsavedChangesAsync(blockName).ConfigureAwait(false);
                         if (!canClear)
                         {
                             LogOperation($"Block clear cancelled for '{blockName}' due to unsaved changes");
@@ -464,7 +464,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
 
                     blockInfo.UnitOfWork.Clear();
-                    await SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     Status = $"Block '{blockName}' cleared successfully";
                     LogOperation($"Block '{blockName}' cleared successfully");
                 }
@@ -592,7 +592,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 // Clear all blocks
-                await ClearAllBlocksAsync();
+                await ClearAllBlocksAsync().ConfigureAwait(false);
                 
                 // Clean up performance cache if configured
                 if (Configuration?.ClearCacheOnFormClose == true)

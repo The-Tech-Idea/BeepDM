@@ -324,7 +324,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (currentItem == null)
             {
                 foreach (var relationship in relationships)
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
+                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
                 return;
             }
 
@@ -353,7 +353,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         $"{relationship.DetailBlockName}.{relationship.DetailForeignKeyField}). " +
                         $"Falling back to clearing the detail block.",
                         null, relationship.DetailBlockName);
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
+                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
                     continue;
                 }
 
@@ -394,7 +394,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 if (hasMissingMasterValue)
                 {
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
+                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
                     continue;
                 }
 
@@ -406,7 +406,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 SuppressSync(relationship.DetailBlockName);
                 try
                 {
-                    await detailBlock.UnitOfWork.Get(filters);
+                    await detailBlock.UnitOfWork.Get(filters).ConfigureAwait(false);
                 }
                 // B4 (audit pass 3, 2026-06): the previous
                 // version had no catch — an exception from
@@ -429,7 +429,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     ResumeSync(relationship.DetailBlockName);
                 }
 
-                await SynchronizeDetailHierarchyAsync(relationship.DetailBlockName, visited, ct);
+                await SynchronizeDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
             }
         }
 
@@ -470,7 +470,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             foreach (var detailBlockName in GetDetailBlocks(blockName))
             {
-                await ClearDetailHierarchyAsync(detailBlockName, visited, ct);
+                await ClearDetailHierarchyAsync(detailBlockName, visited, ct).ConfigureAwait(false);
             }
         }
 

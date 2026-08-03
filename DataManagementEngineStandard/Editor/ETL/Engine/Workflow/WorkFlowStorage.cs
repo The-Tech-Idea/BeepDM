@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,7 +48,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                 string path = DefinitionPath(def.Id);
                 string json = JsonSerializer.Serialize(def, _json);
                 string tmp  = path + ".tmp";
-                await File.WriteAllTextAsync(tmp, json);
+                await File.WriteAllTextAsync(tmp, json).ConfigureAwait(false);
                 File.Move(tmp, path, overwrite: true);
             }
             catch (Exception ex)
@@ -66,7 +66,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
         {
             string path = DefinitionPath(id);
             if (!File.Exists(path)) return null;
-            string json = await File.ReadAllTextAsync(path);
+            string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
             return JsonSerializer.Deserialize<WorkFlowDefinition>(json, _json);
         }
 
@@ -77,7 +77,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             {
                 try
                 {
-                    string json = await File.ReadAllTextAsync(file);
+                    string json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                     var def     = JsonSerializer.Deserialize<WorkFlowDefinition>(json, _json);
                     if (def != null) list.Add(def);
                 }
@@ -111,7 +111,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             string path = Path.Combine(dir, $"{result.RunId}.run.json");
             string json = JsonSerializer.Serialize(result, _json);
             string tmp  = path + ".tmp";
-            await File.WriteAllTextAsync(tmp, json);
+            await File.WriteAllTextAsync(tmp, json).ConfigureAwait(false);
             File.Move(tmp, path, overwrite: true);
         }
 
@@ -122,7 +122,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             {
                 string path = Path.Combine(dir, $"{runId}.run.json");
                 if (!File.Exists(path)) continue;
-                string json = await File.ReadAllTextAsync(path);
+                string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
                 return JsonSerializer.Deserialize<WorkFlowRunResult>(json, _json);
             }
             return null;
@@ -141,7 +141,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             {
                 try
                 {
-                    string json = await File.ReadAllTextAsync(file);
+                    string json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                     var run     = JsonSerializer.Deserialize<WorkFlowRunResult>(json, _json);
                     if (run != null) runs.Add(run);
                 }
@@ -159,7 +159,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, $"{runId}.approval.{stepId}.json");
             string json = JsonSerializer.Serialize(state, _json);
-            await File.WriteAllTextAsync(path, json);
+            await File.WriteAllTextAsync(path, json).ConfigureAwait(false);
         }
 
         public async Task<ApprovalState?> LoadApprovalStateAsync(string runId, string stepId)
@@ -168,7 +168,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             if (dir == null) return null;
             string path = Path.Combine(dir, $"{runId}.approval.{stepId}.json");
             if (!File.Exists(path)) return null;
-            string json = await File.ReadAllTextAsync(path);
+            string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
             return JsonSerializer.Deserialize<ApprovalState>(json, _json);
         }
 

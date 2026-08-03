@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
@@ -89,7 +89,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Validators
                 var keyVal = record[rule.Field]?.ToString();
                 if (keyVal == null) continue;   // null values: use NotNullValidator
 
-                bool exists = await rule.ExistsAsync(keyVal, ctx, token);
+                bool exists = await rule.ExistsAsync(keyVal, ctx, token).ConfigureAwait(false);
                 if (!exists)
                 {
                     string msg = $"Referential integrity violation: field '{rule.Field}' value '{keyVal}' " +

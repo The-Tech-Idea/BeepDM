@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
@@ -81,7 +81,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             where T : class, new()
         {
             var instance = record ?? new T();
-            return await InsertRecordAsync(blockName, instance);
+            return await InsertRecordAsync(blockName, instance).ConfigureAwait(false);
         }
 
         #endregion
@@ -114,12 +114,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             // Fire WHEN-LOV-VALIDATE trigger before showing
             var ctx = TriggerContext.ForItem(TriggerType.WhenLOVValidate, blockName, fieldName, null, null, _dmeEditor);
-            var triggerResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenLOVValidate, blockName, ctx, ct);
+            var triggerResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenLOVValidate, blockName, ctx, ct).ConfigureAwait(false);
             if (triggerResult == TriggerResult.Cancelled)
                 return LOVResult.Fail("LOV cancelled by WHEN-LOV-VALIDATE trigger");
 
             // Load data
-            var result = await _lovManager.LoadLOVDataAsync(blockName, fieldName, searchText);
+            var result = await _lovManager.LoadLOVDataAsync(blockName, fieldName, searchText).ConfigureAwait(false);
 
             // If the caller already has a selection, auto-populate related fields
             if (selectedRecord != null && result.Success)

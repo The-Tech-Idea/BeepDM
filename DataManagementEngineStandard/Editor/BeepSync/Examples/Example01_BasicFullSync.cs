@@ -1,4 +1,4 @@
-// Example 01 — Basic Full Sync
+﻿// Example 01 — Basic Full Sync
 // Demonstrates creating a DataSyncSchema for a one-way full sync, auto-mapping fields,
 // running the sync, and inspecting results.
 //
@@ -71,7 +71,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             var progress = new Progress<PassedArgs>(p =>
                 Console.WriteLine($"  Progress: {p.Messege}"));
 
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress).ConfigureAwait(false);
 
             // ── 6. Inspect results ─────────────────────────────────────────────────
             Console.WriteLine($"Status : {schema.SyncStatus}");
@@ -79,7 +79,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             Console.WriteLine($"LastSync: {schema.LastSyncDate:u}");
 
             // ── 7. Persist schemas ─────────────────────────────────────────────────
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         // Synchronous helper for console / WinForms callers

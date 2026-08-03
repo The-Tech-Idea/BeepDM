@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -79,7 +79,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Sources
             if (ds.ConnectionStatus != System.Data.ConnectionState.Open)
                 ds.Openconnection();
 
-            var schema = await GetSchemaAsync(ctx, token);
+            var schema = await GetSchemaAsync(ctx, token).ConfigureAwait(false);
             var rows   = ds.GetEntity(_entityName, _filters);
 
             foreach (var row in rows)

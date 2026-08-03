@@ -336,14 +336,14 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (string.IsNullOrWhiteSpace(query))
                 throw new ArgumentException("Query cannot be null or empty", nameof(query));
 
-            return await ExecuteSafelyAsync(async () => await _unitOfWork.GetQuery(query), null);
+            return await ExecuteSafelyAsync(async () => await _unitOfWork.GetQuery(query), null).ConfigureAwait(false);
         }
 
         public async Task<dynamic> Get() => 
-            await ExecuteSafelyAsync(async () => await _unitOfWork.Get(), null);
+            await ExecuteSafelyAsync(async () => await _unitOfWork.Get(), null).ConfigureAwait(false);
 
         public async Task<dynamic> Get(List<AppFilter> filters) => 
-            await ExecuteSafelyAsync(async () => await _unitOfWork.Get(filters), null);
+            await ExecuteSafelyAsync(async () => await _unitOfWork.Get(filters), null).ConfigureAwait(false);
 
         public IEnumerable<dynamic> GetDeletedEntities() => 
             ExecuteSafely(() => _unitOfWork.GetDeletedEntities(), new List<dynamic>());
@@ -393,7 +393,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             return await ExecuteSafelyAsync(
                 async () =>
                 {
-                    var units = await Get();
+                    var units = await Get().ConfigureAwait(false);
                     return units == null
                         ? null
                         : ((System.Collections.IEnumerable)units).Cast<object>().Where(item => predicate(item)).ToList();
@@ -851,7 +851,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             try
             {
                 ValidateNotDisposed();
-                return await operation();
+                return await operation().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -1048,7 +1048,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             ExecuteSafely(() => _unitOfWork.RevertItem(item), false);
 
         public async Task<bool> RevertItemAsync(dynamic item, CancellationToken ct = default) =>
-            await ExecuteSafelyAsync(async () => await _unitOfWork.RevertItemAsync(item, ct), false);
+            await ExecuteSafelyAsync(async () => await _unitOfWork.RevertItemAsync(item, ct), false).ConfigureAwait(false);
 
         // Refresh / Merge (Phase 3)
         public async Task<IErrorsInfo> RefreshAsync(

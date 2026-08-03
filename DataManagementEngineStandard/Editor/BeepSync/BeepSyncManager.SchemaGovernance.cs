@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -100,8 +100,8 @@ namespace TheTechIdea.Beep.Editor
             new FieldMappingHelper(_editor).PromoteMappingState(schema, targetState);
 
             // Persist
-            await _persistenceHelper.SaveVersionedSchemaAsync(schema, newVersion);
-            await _persistenceHelper.SaveSchemaAsync(schema);
+            await _persistenceHelper.SaveVersionedSchemaAsync(schema, newVersion).ConfigureAwait(false);
+            await _persistenceHelper.SaveSchemaAsync(schema).ConfigureAwait(false);
 
             report.AddInfo("PROMOTION-SUCCESS", "Schema",
                 $"Schema '{schema.Id}' promoted to '{targetState}' as version {newVersion.Version} by {savedBy}.");

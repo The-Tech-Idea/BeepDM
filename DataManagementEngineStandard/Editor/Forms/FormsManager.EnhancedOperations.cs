@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -121,7 +121,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     LogOperation($"Block '{blockName}' not in CRUD mode, attempting transition", blockName);
                     
-                    var modeTransitionResult = await EnterCrudModeForNewRecordAsync(blockName);
+                    var modeTransitionResult = await EnterCrudModeForNewRecordAsync(blockName).ConfigureAwait(false);
                     if (modeTransitionResult.Flag != Errors.Ok)
                     {
                         result.Flag = modeTransitionResult.Flag;
@@ -206,7 +206,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         TriggerType.PostInsert, blockName,
                         TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
 
-                    await SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     result.Message = "Record created in block; it is written on commit";
                     Status = $"Record created in block '{blockName}'";
                     LogOperation($"Record created in block '{blockName}'", blockName);
@@ -284,7 +284,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Auto-lock if needed (Phase 7)
-                await _lockManager.AutoLockIfNeededAsync(blockName);
+                await _lockManager.AutoLockIfNeededAsync(blockName).ConfigureAwait(false);
 
                 // Validate record before update
                 if (!ValidateRecordForOperation(blockName, currentRecord, "UPDATE"))
@@ -311,7 +311,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // IUnitofWork (non-generic) declares UpdateAsync(dynamic doc) directly.
                 // Direct dispatch — same rationale as the InsertAsync change above.
-                var updateResult = await blockInfo.UnitOfWork.UpdateAsync(currentRecord);
+                var updateResult = await blockInfo.UnitOfWork.UpdateAsync(currentRecord).ConfigureAwait(false);
 
                 if (updateResult == null)
                 {
@@ -327,7 +327,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         TriggerType.PostUpdate, blockName,
                         TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor));
 
-                    await SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     result.Message = "Record updated successfully";
                     Status = $"Record updated successfully in block '{blockName}'";
                     LogOperation($"Record updated successfully in block '{blockName}'", blockName);
@@ -377,7 +377,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     LogOperation($"Block '{blockName}' not in Query mode, entering Query mode first", blockName);
                     
-                    var queryModeResult = await EnterQueryModeAsync(blockName);
+                    var queryModeResult = await EnterQueryModeAsync(blockName).ConfigureAwait(false);
                     if (queryModeResult.Flag != Errors.Ok)
                     {
                         result.Flag = queryModeResult.Flag;
@@ -402,11 +402,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // a silent-no-op trap if the method didn't exist.
                 if (filters != null && filters.Any())
                 {
-                    await blockInfo.UnitOfWork.Get(filters);
+                    await blockInfo.UnitOfWork.Get(filters).ConfigureAwait(false);
                 }
                 else
                 {
-                    await blockInfo.UnitOfWork.Get();
+                    await blockInfo.UnitOfWork.Get().ConfigureAwait(false);
                 }
 
                 // CRITICAL: After successful query execution, transition to CRUD mode

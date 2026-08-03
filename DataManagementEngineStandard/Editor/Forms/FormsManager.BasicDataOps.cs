@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             try
             {
-                var result = await InsertRecordEnhancedAsync(blockName, record);
+                var result = await InsertRecordEnhancedAsync(blockName, record).ConfigureAwait(false);
                 if (result.Flag == Errors.Ok)
                 {
                     Status = $"Record inserted successfully in block '{blockName}'";
@@ -100,11 +100,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Auto-lock if needed (Phase 7)
-                await _lockManager.AutoLockIfNeededAsync(blockName);
+                await _lockManager.AutoLockIfNeededAsync(blockName).ConfigureAwait(false);
 
                 // Fire WHEN-REMOVE-RECORD trigger (before the record is removed)
                 var whenRemoveCtx = TriggerContext.ForBlock(TriggerType.WhenRemoveRecord, blockName, currentRecord, _dmeEditor);
-                var whenRemoveResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenRemoveRecord, blockName, whenRemoveCtx);
+                var whenRemoveResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenRemoveRecord, blockName, whenRemoveCtx).ConfigureAwait(false);
                 if (whenRemoveResult == TriggerResult.Cancelled)
                 {
                     Status = $"Delete cancelled by WHEN-REMOVE-RECORD trigger in block '{blockName}'";
@@ -114,7 +114,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Fire PRE-DELETE trigger
                 var preDeleteCtx = TriggerContext.ForBlock(TriggerType.PreDelete, blockName, currentRecord, _dmeEditor);
-                var preDeleteResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.PreDelete, blockName, preDeleteCtx);
+                var preDeleteResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.PreDelete, blockName, preDeleteCtx).ConfigureAwait(false);
                 if (preDeleteResult == TriggerResult.Cancelled)
                 {
                     Status = $"Delete cancelled by PRE-DELETE trigger in block '{blockName}'";
@@ -131,7 +131,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 SuppressSync(blockName);
                 try
                 {
-                    result = await blockInfo.UnitOfWork.DeleteAsync(currentRecord);
+                    result = await blockInfo.UnitOfWork.DeleteAsync(currentRecord).ConfigureAwait(false);
                 }
                 finally { ResumeSync(blockName); }
 
@@ -152,7 +152,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         TriggerType.PostDelete, blockName,
                         TriggerContext.ForBlock(TriggerType.PostDelete, blockName, currentRecord, _dmeEditor));
 
-                    await SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     return true;
                 }
                 else
@@ -188,7 +188,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             try
             {
-                var result = await EnterQueryModeAsync(blockName);
+                var result = await EnterQueryModeAsync(blockName).ConfigureAwait(false);
                 return result?.Flag == Errors.Ok;
             }
             catch (Exception ex)
@@ -231,7 +231,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         finalFilters ?? new List<AppFilter>(), defaultFilters);
                 }
 
-                var result = await ExecuteQueryEnhancedAsync(blockName, finalFilters);
+                var result = await ExecuteQueryEnhancedAsync(blockName, finalFilters).ConfigureAwait(false);
                 if (result.Flag == Errors.Ok)
                 {
                     Status = $"Query executed successfully for block '{blockName}'";

@@ -32,14 +32,14 @@ namespace TheTechIdea.Beep.Editor
             var wrapper = new UnitOfWorkWrapper(unitOfWork);
             _unitsOfWork[entityName] = wrapper;
 
-            await wrapper.Get();
+            await wrapper.Get().ConfigureAwait(false);
             SubscribeToChanges<T>(entityName);
 
             // Initialize navigation for parent entities
             if (_relationships.ContainsKey(entityName) && _currentParentEntityName == null)
             {
                 _currentParentEntityName = entityName;
-                await NavigateToFirstAsync<T>(entityName);
+                await NavigateToFirstAsync<T>(entityName).ConfigureAwait(false);
             }
         }
 
@@ -93,7 +93,7 @@ namespace TheTechIdea.Beep.Editor
                     new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
                 };
 
-                dynamic filteredChildren = await childUnit.Get(filters);
+                dynamic filteredChildren = await childUnit.Get(filters).ConfigureAwait(false);
                 result[mapping.ChildEntityName] = filteredChildren as ObservableBindingList<TChild>
                     ?? throw new InvalidCastException($"Cannot cast filtered children to ObservableBindingList<{typeof(TChild).Name}>");
             }
@@ -104,11 +104,11 @@ namespace TheTechIdea.Beep.Editor
         public async Task<IErrorsInfo> InsertAsync<T>(string entityName, T entity) where T : Entity, new()
         {
             var unitOfWork = GetUnitOfWork(entityName);
-            var result = await unitOfWork.InsertAsync(entity);
+            var result = await unitOfWork.InsertAsync(entity).ConfigureAwait(false);
 
             if (result.Flag == Errors.Ok)
             {
-                await HandleRelationshipInsert(entityName, entity);
+                await HandleRelationshipInsert(entityName, entity).ConfigureAwait(false);
                 if (entityName == _currentParentEntityName)
                 {
                     _currentParentEntity = entity;
@@ -122,7 +122,7 @@ namespace TheTechIdea.Beep.Editor
         public async Task<IErrorsInfo> UpdateAsync<T>(string entityName, T entity) where T : Entity, new()
         {
             var unitOfWork = GetUnitOfWork(entityName);
-            var result = await unitOfWork.UpdateAsync(entity);
+            var result = await unitOfWork.UpdateAsync(entity).ConfigureAwait(false);
 
             if (result.Flag == Errors.Ok && entityName == _currentParentEntityName)
             {
@@ -134,11 +134,11 @@ namespace TheTechIdea.Beep.Editor
         public async Task<IErrorsInfo> DeleteAsync<T>(string entityName, T entity) where T : Entity, new()
         {
             var unitOfWork = GetUnitOfWork(entityName);
-            var result = await unitOfWork.DeleteAsync(entity);
+            var result = await unitOfWork.DeleteAsync(entity).ConfigureAwait(false);
 
             if (result.Flag == Errors.Ok)
             {
-                await HandleRelationshipDelete(entityName, entity);
+                await HandleRelationshipDelete(entityName, entity).ConfigureAwait(false);
                 if (entityName == _currentParentEntityName && Equals(_currentParentEntity, entity))
                 {
                     await NavigateToNextAsync<T>(entityName); // Move to next if current is deleted
@@ -163,7 +163,7 @@ namespace TheTechIdea.Beep.Editor
                         return finalResult;
                     }
 
-                    var result = await unit.Commit();
+                    var result = await unit.Commit().ConfigureAwait(false);
                     if (result.Flag != Errors.Ok)
                     {
                         finalResult.Flag = Errors.Failed;
@@ -180,7 +180,7 @@ namespace TheTechIdea.Beep.Editor
 
                 foreach (var unit in committedUnits)
                 {
-                    await unit.Rollback();
+                    await unit.Rollback().ConfigureAwait(false);
                 }
                 _dmeEditor.AddLogMessage("Beep", $"Commit failed: {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
             }
@@ -199,7 +199,7 @@ namespace TheTechIdea.Beep.Editor
 
             if (_currentParentEntityName != parentEntityName || !Equals(_currentParentEntity, parentEntity))
             {
-                await SaveAndValidateChildrenAsync(parentEntityName);
+                await SaveAndValidateChildrenAsync(parentEntityName).ConfigureAwait(false);
                 _currentParentEntityName = parentEntityName;
                 _currentParentEntity = parentEntity;
                 _currentParentIndex = index;
@@ -213,7 +213,7 @@ namespace TheTechIdea.Beep.Editor
             var unitOfWork = GetUnitOfWork(parentEntityName);
             if (_currentParentIndex < unitOfWork.Units.Count - 1)
             {
-                await SaveAndValidateChildrenAsync(parentEntityName);
+                await SaveAndValidateChildrenAsync(parentEntityName).ConfigureAwait(false);
                 _currentParentIndex++;
                 _currentParentEntity = unitOfWork.Units[_currentParentIndex];
                 unitOfWork.MoveTo(_currentParentIndex);
@@ -226,7 +226,7 @@ namespace TheTechIdea.Beep.Editor
             var unitOfWork = GetUnitOfWork(parentEntityName);
             if (_currentParentIndex > 0)
             {
-                await SaveAndValidateChildrenAsync(parentEntityName);
+                await SaveAndValidateChildrenAsync(parentEntityName).ConfigureAwait(false);
                 _currentParentIndex--;
                 _currentParentEntity = unitOfWork.Units[_currentParentIndex];
                 unitOfWork.MoveTo(_currentParentIndex);
@@ -239,7 +239,7 @@ namespace TheTechIdea.Beep.Editor
             var unitOfWork = GetUnitOfWork(parentEntityName);
             if (unitOfWork.Units.Count > 0)
             {
-                await SaveAndValidateChildrenAsync(parentEntityName);
+                await SaveAndValidateChildrenAsync(parentEntityName).ConfigureAwait(false);
                 _currentParentIndex = 0;
                 _currentParentEntity = unitOfWork.Units[_currentParentIndex];
                 unitOfWork.MoveTo(_currentParentIndex);
@@ -252,7 +252,7 @@ namespace TheTechIdea.Beep.Editor
             var unitOfWork = GetUnitOfWork(parentEntityName);
             if (unitOfWork.Units.Count > 0)
             {
-                await SaveAndValidateChildrenAsync(parentEntityName);
+                await SaveAndValidateChildrenAsync(parentEntityName).ConfigureAwait(false);
                 _currentParentIndex = unitOfWork.Units.Count - 1;
                 _currentParentEntity = unitOfWork.Units[_currentParentIndex];
                 unitOfWork.MoveTo(_currentParentIndex);
@@ -272,7 +272,7 @@ namespace TheTechIdea.Beep.Editor
                         if (!ValidateEntityChanges(mapping.ChildEntityName, out string errorMessage))
                             throw new InvalidOperationException($"Cannot navigate: {errorMessage}");
 
-                        await childUnit.Commit();
+                        await childUnit.Commit().ConfigureAwait(false);
                     }
                 }
             }
@@ -309,14 +309,14 @@ namespace TheTechIdea.Beep.Editor
                         new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "IS NULL", FilterValue = null }
                     };
 
-                    dynamic children = await childUnit.Get(filters);
+                    dynamic children = await childUnit.Get(filters).ConfigureAwait(false);
                     foreach (var child in children)
                     {
                         var fkProperty = child.GetType().GetProperty(mapping.ChildForeignKeyField);
                         if (fkProperty != null && fkProperty.GetValue(child) == null)
                         {
                             fkProperty.SetValue(child, parentKeyValue);
-                            await childUnit.UpdateAsync(child);
+                            await childUnit.UpdateAsync(child).ConfigureAwait(false);
                         }
                     }
                 }
@@ -342,14 +342,14 @@ namespace TheTechIdea.Beep.Editor
                         new AppFilter {FieldName = mapping.ChildForeignKeyField, Operator = "=", FilterValue = parentKeyValue }
                     };
 
-                    dynamic children = await childUnit.Get(filters);
+                    dynamic children = await childUnit.Get(filters).ConfigureAwait(false);
                     var childList = children.ToList();
 
                     switch (mapping.DeleteBehavior)
                     {
                         case RelationshipBehavior.CascadeDelete:
                             foreach (var child in childList)
-                                await childUnit.DeleteAsync(child);
+                                await childUnit.DeleteAsync(child).ConfigureAwait(false);
                             break;
                         case RelationshipBehavior.SetNull:
                             foreach (var child in childList)
@@ -358,7 +358,7 @@ namespace TheTechIdea.Beep.Editor
                                 if (fkProperty != null && fkProperty.PropertyType.IsClass)
                                 {
                                     fkProperty.SetValue(child, null);
-                                    await childUnit.UpdateAsync(child);
+                                    await childUnit.UpdateAsync(child).ConfigureAwait(false);
                                 }
                             }
                             break;

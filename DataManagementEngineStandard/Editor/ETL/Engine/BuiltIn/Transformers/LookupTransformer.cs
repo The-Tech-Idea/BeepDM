@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -121,7 +121,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             // Pre-load entire lookup table if requested
             if (_preLoad && !_preLoaded)
             {
-                await PreLoadCacheAsync(ctx, token);
+                await PreLoadCacheAsync(ctx, token).ConfigureAwait(false);
                 _preLoaded = true;
             }
 
@@ -130,7 +130,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Transformers
             await foreach (var record in input.WithCancellation(token))
             {
                 outSchema ??= GetOutputSchema(record.Schema);
-                var lookupRow = await FetchLookupRowAsync(record, ctx, token);
+                var lookupRow = await FetchLookupRowAsync(record, ctx, token).ConfigureAwait(false);
 
                 if (lookupRow == null && _onMiss.Equals("Reject", StringComparison.OrdinalIgnoreCase))
                 {

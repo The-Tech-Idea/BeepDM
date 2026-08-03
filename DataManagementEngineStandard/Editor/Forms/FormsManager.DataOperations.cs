@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -89,7 +89,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             var uow = GetUnitOfWork(blockName);
             if (uow is IMergeable mergeable)
-                return await mergeable.RefreshAsync(filters, conflictMode, ct);
+                return await mergeable.RefreshAsync(filters, conflictMode, ct).ConfigureAwait(false);
             return false;
         }
 
@@ -179,7 +179,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var combined = new CommitBatchResult { Success = true };
             foreach (var blockName in _blocks.Keys)
             {
-                var partial = await CommitBlockBatchAsync(blockName, batchSize, progress, ct);
+                var partial = await CommitBlockBatchAsync(blockName, batchSize, progress, ct).ConfigureAwait(false);
                 combined.TotalCommitted += partial.TotalCommitted;
                 if (!partial.Success) combined.Success = false;
                 combined.Errors.AddRange(partial.Errors);
@@ -199,7 +199,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             var uow = GetUnitOfWork(blockName);
             if (uow is IBatchCommittable bc)
-                return await bc.CommitBatchAsync(batchSize, progress, ct);
+                return await bc.CommitBatchAsync(batchSize, progress, ct).ConfigureAwait(false);
             return new CommitBatchResult { Success = false,
                 Errors = { $"Block '{blockName}' does not support batch commit." } };
         }
@@ -215,7 +215,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             CancellationToken ct = default)
         {
             if (GetUnitOfWork(blockName) is IExportable exp)
-                await exp.ToJsonAsync(stream, ct);
+                await exp.ToJsonAsync(stream, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             char delimiter = ',', CancellationToken ct = default)
         {
             if (GetUnitOfWork(blockName) is IExportable exp)
-                await exp.ToCsvAsync(stream, delimiter, ct);
+                await exp.ToCsvAsync(stream, delimiter, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             bool clearFirst = true, CancellationToken ct = default)
         {
             if (GetUnitOfWork(blockName) is IImportable imp)
-                return await imp.LoadFromJsonAsync(stream, clearFirst, ct);
+                return await imp.LoadFromJsonAsync(stream, clearFirst, ct).ConfigureAwait(false);
             return 0;
         }
 
@@ -253,7 +253,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             CancellationToken ct = default)
         {
             if (GetUnitOfWork(blockName) is IImportable imp)
-                return await imp.LoadFromCsvAsync(stream, delimiter, clearFirst, hasHeaderRow, ct);
+                return await imp.LoadFromCsvAsync(stream, delimiter, clearFirst, hasHeaderRow, ct).ConfigureAwait(false);
             return 0;
         }
 
@@ -335,14 +335,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 if (!string.IsNullOrEmpty(snapshot.CurrentBlock))
-                    await SwitchToBlockAsync(snapshot.CurrentBlock);
+                    await SwitchToBlockAsync(snapshot.CurrentBlock).ConfigureAwait(false);
 
                 foreach (var kv in snapshot.BlockStates)
                 {
                     if (ct.IsCancellationRequested) break;
                     if (!_blocks.ContainsKey(kv.Key)) continue;
                     var idx = kv.Value.CursorPosition;
-                    await NavigateToRecordAsync(kv.Key, idx);
+                    await NavigateToRecordAsync(kv.Key, idx).ConfigureAwait(false);
                 }
                 return true;
             }
@@ -388,7 +388,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var current = uow.Units?.CurrentIndex ?? 0;
             var target  = _navHistoryManager.Back(blockName, current);
             if (target < 0) return false;
-            return await NavigateToRecordInternalAsync(blockName, target, recordHistory: false);
+            return await NavigateToRecordInternalAsync(blockName, target, recordHistory: false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -401,7 +401,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var current = uow.Units?.CurrentIndex ?? 0;
             var target  = _navHistoryManager.Forward(blockName, current);
             if (target < 0) return false;
-            return await NavigateToRecordInternalAsync(blockName, target, recordHistory: false);
+            return await NavigateToRecordInternalAsync(blockName, target, recordHistory: false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -470,7 +470,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var history = uow as IUnitofWorkHistory;
                 var clone = history?.CloneItem(uow.Units.Current);
                 if (clone == null) return false;
-                await InsertRecordAsync(blockName, clone);
+                await InsertRecordAsync(blockName, clone).ConfigureAwait(false);
                 return true;
             }
             catch (Exception ex) { LogError($"DuplicateCurrentRecordAsync failed for '{blockName}'", ex, blockName); return false; }

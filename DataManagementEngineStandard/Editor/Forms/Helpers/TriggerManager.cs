@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -477,7 +477,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             context ??= TriggerContext.ForBlock(type, blockName, null, _editor);
             context.BlockName = blockName;
             
-            return await ExecuteTriggerChainAsync(triggers, type, context, cancellationToken);
+            return await ExecuteTriggerChainAsync(triggers, type, context, cancellationToken).ConfigureAwait(false);
         }
         
         /// <inheritdoc />
@@ -505,7 +505,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             context.BlockName = blockName;
             context.ItemName = itemName;
             
-            return await ExecuteTriggerChainAsync(triggers, type, context, cancellationToken);
+            return await ExecuteTriggerChainAsync(triggers, type, context, cancellationToken).ConfigureAwait(false);
         }
         
         /// <inheritdoc />
@@ -529,7 +529,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             var triggers = GetGlobalTriggersForExecution(type);
             context ??= new TriggerContext { TriggerType = type, Scope = TriggerScope.Global, Editor = _editor };
             
-            return await ExecuteTriggerChainAsync(triggers, type, context, cancellationToken);
+            return await ExecuteTriggerChainAsync(triggers, type, context, cancellationToken).ConfigureAwait(false);
         }
         
         #endregion
@@ -1172,7 +1172,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 
                 try
                 {
-                    result = await trigger.ExecuteAsync(context, cancellationToken);
+                    result = await trigger.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {

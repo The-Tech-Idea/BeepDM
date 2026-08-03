@@ -1,4 +1,4 @@
-// Example 03 — Incremental Sync & CDC
+﻿// Example 03 — Incremental Sync & CDC
 // Demonstrates WatermarkPolicy for Timestamp-based incremental and CDC change tracking.
 //
 // Phases covered: Phase 3 (incremental sync & CDC)
@@ -67,18 +67,18 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
 
             // First run — syncs all records from epoch
             Console.WriteLine("=== Run 1 (first delta) ===");
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
             Console.WriteLine($"LastSync: {schema.LastSyncDate:u}");
 
             // Simulate work happening in the source system...
-            await Task.Delay(200);
+            await Task.Delay(200).ConfigureAwait(false);
 
             // Second run — picks up only records changed since Run 1
             Console.WriteLine("=== Run 2 (delta since Run 1) ===");
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
             Console.WriteLine($"LastSync: {schema.LastSyncDate:u}");
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         // ── Scenario B: CDC (change-data-capture) mode ────────────────────────────
@@ -115,8 +115,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 schema.MappedFields.Add(m);
 
             syncManager.AddSyncSchema(schema);
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         public static void RunUpsert(IDMEEditor editor) =>

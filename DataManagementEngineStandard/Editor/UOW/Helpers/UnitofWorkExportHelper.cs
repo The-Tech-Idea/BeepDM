@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -85,7 +85,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
             {
                 ct.ThrowIfCancellationRequested();
                 var values = Array.ConvertAll(props, p => EscapeCsv(p.GetValue(item)?.ToString() ?? string.Empty, delimiter));
-                await writer.WriteLineAsync(string.Join(delimiter.ToString(), values));
+                await writer.WriteLineAsync(string.Join(delimiter.ToString(), values)).ConfigureAwait(false);
             }
         }
 
@@ -104,7 +104,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                         ?? new List<T>();
 
             if (clearFirst) _units.Clear();
-            await _units.LoadBatchAsync(items, 500, null, ct);
+            await _units.LoadBatchAsync(items, 500, null, ct).ConfigureAwait(false);
             return items.Count;
         }
 
@@ -166,7 +166,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
             }
 
             if (clearFirst) _units.Clear();
-            await _units.LoadBatchAsync(items, 500, null, ct);
+            await _units.LoadBatchAsync(items, 500, null, ct).ConfigureAwait(false);
             return items.Count;
         }
 

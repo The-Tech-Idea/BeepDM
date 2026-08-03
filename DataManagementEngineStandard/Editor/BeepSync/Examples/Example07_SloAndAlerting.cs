@@ -1,4 +1,4 @@
-// Example 07 — Observability, SLO & Alerting
+﻿// Example 07 — Observability, SLO & Alerting
 // Demonstrates SloProfile configuration, SyncMetrics inspection, SLO compliance tier,
 // and consuming the alert records generated at the end of a run.
 //
@@ -91,7 +91,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             syncManager.AddSyncSchema(schema);
 
             // ── 3. Run ─────────────────────────────────────────────────────────────
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
 
             // ── 4. Inspect SyncMetrics (Phase 7 fields) ────────────────────────────
             // SyncMetrics are stored on schema.LastSyncRunData.Metadata or via reconciliation.
@@ -124,7 +124,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 }
             }
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         public static void Run(IDMEEditor editor, IRuleEngine ruleEngine = null) =>

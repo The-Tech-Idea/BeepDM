@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -318,7 +318,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
                     try
                     {
-                        var oblCommitResult = await CommitChangesToDataSource(progress, token);
+                        var oblCommitResult = await CommitChangesToDataSource(progress, token).ConfigureAwait(false);
 
                         if (!oblCommitResult.AllSucceeded)
                         {
@@ -402,7 +402,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>Result of the commit operation</returns>
         public async Task<IErrorsInfo> Commit()
         {
-            return await Commit(null, CancellationToken.None);
+            return await Commit(null, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>

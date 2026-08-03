@@ -1,4 +1,4 @@
-// Example 06 — Data Quality Gates & Reconciliation
+﻿// Example 06 — Data Quality Gates & Reconciliation
 // Demonstrates DqPolicy configuration, reject/quarantine routing, batch-threshold abort,
 // and reading the SyncReconciliationReport after the run.
 //
@@ -78,7 +78,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 schema.MappedFields.Add(m);
 
             // ── Run preflight to catch issues before moving data ───────────────────
-            var preflightReport = await syncManager.RunPreflightAsync(schema);
+            var preflightReport = await syncManager.RunPreflightAsync(schema).ConfigureAwait(false);
             if (!preflightReport.IsApproved)
             {
                 Console.WriteLine("[PREFLIGHT FAILED]");
@@ -88,7 +88,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             }
 
             syncManager.AddSyncSchema(schema);
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
 
             // ── Inspect reconciliation report ──────────────────────────────────────
             var report = syncManager.LastRunReconciliationReport;
@@ -114,7 +114,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 }
             }
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         public static void Run(IDMEEditor editor) =>

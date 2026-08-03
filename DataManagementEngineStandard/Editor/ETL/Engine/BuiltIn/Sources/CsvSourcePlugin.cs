@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -84,7 +84,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Sources
                 ds.Openconnection();
 
             var entityName = Path.GetFileNameWithoutExtension(_filePath);
-            var schema     = await GetSchemaAsync(ctx, token);
+            var schema     = await GetSchemaAsync(ctx, token).ConfigureAwait(false);
             var rows       = ds.GetEntity(entityName, new List<AppFilter>());
 
             foreach (var row in rows)

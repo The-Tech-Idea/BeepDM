@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -195,7 +195,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                         break;
 
                     // Execute script detail
-                    await ExecuteScriptDetailAsync(detail, progress, token, customTransformation);
+                    await ExecuteScriptDetailAsync(detail, progress, token, customTransformation).ConfigureAwait(false);
                 }
 
                 _dmeEditor.AddLogMessage("ETLScriptManager", $"Executed script {script.Id} successfully.", DateTime.Now, -1, null, Errors.Ok);
@@ -249,7 +249,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 return;
             }
 
-            var sourceData = await FetchSourceDataAsync(sourceDs, detail.SourceEntityName, token);
+            var sourceData = await FetchSourceDataAsync(sourceDs, detail.SourceEntityName, token).ConfigureAwait(false);
             if (sourceData == null)
             {
                 _dmeEditor.AddLogMessage("ETLScriptManager", $"Source data for entity {detail.SourceEntityName} is null.", DateTime.Now, -1, null, Errors.Failed);
@@ -262,7 +262,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 : sourceData;
 
             // Insert transformed data into destination
-            await InsertDataAsync(destDs, detail.DestinationEntityName, transformedData, progress, token);
+            await InsertDataAsync(destDs, detail.DestinationEntityName, transformedData, progress, token).ConfigureAwait(false);
         }
 
         private IEnumerable<object> NormalizeSourceEnumerable(object sourceData)

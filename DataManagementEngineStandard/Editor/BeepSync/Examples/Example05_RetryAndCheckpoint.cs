@@ -1,4 +1,4 @@
-// Example 05 — Retry, Checkpoint & Idempotency
+﻿// Example 05 — Retry, Checkpoint & Idempotency
 // Demonstrates RetryPolicy with exponential back-off, mid-run checkpoint persistence,
 // and how to force a full re-run by clearing the active checkpoint.
 //
@@ -74,7 +74,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 Console.WriteLine($"  {p.Messege}"));
 
             Console.WriteLine("=== First run ===");
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress).ConfigureAwait(false);
             Console.WriteLine($"Status:     {schema.SyncStatus}");
             Console.WriteLine($"Checkpoint: offset={schema.ActiveCheckpoint?.LastProcessedKeyValue}");
 
@@ -82,15 +82,15 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             // On retry the orchestrator reads schema.ActiveCheckpoint and resumes from
             // LastProcessedKeyValue, skipping already-committed records.
             Console.WriteLine("\n=== Retry run (resumes from checkpoint) ===");
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress).ConfigureAwait(false);
 
             // ── Force a complete re-run ────────────────────────────────────────────
             // Clear the checkpoint so the next run processes from the beginning.
             schema.ActiveCheckpoint = null;
             Console.WriteLine("\n=== Full re-run (checkpoint cleared) ===");
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, progress).ConfigureAwait(false);
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         public static void Run(IDMEEditor editor) =>

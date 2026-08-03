@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -56,16 +56,16 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 Status                = "Running"
             };
 
-            await WriteCheckpointAsync(cp);
+            await WriteCheckpointAsync(cp).ConfigureAwait(false);
         }
 
         /// <summary>Mark the checkpoint file as completed so it is excluded from pending list.</summary>
         public async Task CompleteAsync(string runId)
         {
-            var cp = await LoadAsync(runId);
+            var cp = await LoadAsync(runId).ConfigureAwait(false);
             if (cp == null) return;
             cp.Status = "Complete";
-            await WriteCheckpointAsync(cp);
+            await WriteCheckpointAsync(cp).ConfigureAwait(false);
         }
 
         // ── Read ─────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             try
             {
-                string json = await File.ReadAllTextAsync(path);
+                string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
                 return JsonSerializer.Deserialize<PipelineCheckpoint>(json, _json);
             }
             catch (Exception ex)
@@ -98,7 +98,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             {
                 try
                 {
-                    string json = await File.ReadAllTextAsync(file);
+                    string json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                     var   cp   = JsonSerializer.Deserialize<PipelineCheckpoint>(json, _json);
                     if (cp != null && cp.Status != "Complete")
                         result.Add(cp);
@@ -124,7 +124,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             string json = JsonSerializer.Serialize(cp, _json);
             // Write atomically via temp file
             string tmp = path + ".tmp";
-            await File.WriteAllTextAsync(tmp, json);
+            await File.WriteAllTextAsync(tmp, json).ConfigureAwait(false);
             File.Move(tmp, path, overwrite: true);
         }
     }

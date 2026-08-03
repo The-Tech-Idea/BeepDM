@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine.BuiltIn.Sinks
         {
             if (_writer != null)
             {
-                await _writer.FlushAsync();
+                await _writer.FlushAsync().ConfigureAwait(false);
                 _writer.Dispose();
                 _writer = null;
             }

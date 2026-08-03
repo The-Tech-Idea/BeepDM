@@ -1,4 +1,4 @@
-// Example 08 — Performance, Scale & Parallel Execution
+﻿// Example 08 — Performance, Scale & Parallel Execution
 // Demonstrates SyncPerformanceProfile, SyncRuleExecutionPolicies, and running multiple
 // schemas concurrently via SyncAllDataParallelAsync.
 //
@@ -71,13 +71,13 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             Console.WriteLine($"Rule policy: MaxDepth={policy.MaxDepth}  MaxMs={policy.MaxExecutionMs}");
 
             var sw = Stopwatch.StartNew();
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
             sw.Stop();
 
             Console.WriteLine($"Status   : {schema.SyncStatus}");
             Console.WriteLine($"Duration : {sw.ElapsedMilliseconds} ms");
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         // ── Scenario B: Parallel fan-out — multiple schemas concurrently ───────────
@@ -127,7 +127,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 Console.WriteLine($"  [{DateTime.Now:HH:mm:ss}] {p.Messege}"));
 
             var sw = Stopwatch.StartNew();
-            await syncManager.SyncAllDataParallelAsync(cts.Token, progress);
+            await syncManager.SyncAllDataParallelAsync(cts.Token, progress).ConfigureAwait(false);
             sw.Stop();
 
             Console.WriteLine($"All schemas completed in {sw.ElapsedMilliseconds} ms");
@@ -136,7 +136,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             foreach (var s in syncManager.SyncSchemas)
                 Console.WriteLine($"  {s.DestinationEntityName,-15} → {s.SyncStatus}");
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         // ── Scenario C: Sequential fallback ───────────────────────────────────────
@@ -145,7 +145,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
         {
             var syncManager = new BeepSyncManager(editor);
             // ... build and add schemas as needed ...
-            await syncManager.SyncAllDataAsync(CancellationToken.None, null);
+            await syncManager.SyncAllDataAsync(CancellationToken.None, null).ConfigureAwait(false);
         }
 
         public static void RunHighThroughput(IDMEEditor editor) =>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
@@ -154,7 +154,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 return LOVResult.Fail($"No LOV registered for {blockName}.{fieldName}");
             }
             
-            var result = await LoadLOVDataAsync(lov, searchText);
+            var result = await LoadLOVDataAsync(lov, searchText).ConfigureAwait(false);
             
             // Raise event
             LOVDataLoaded?.Invoke(this, new LOVDataLoadedEventArgs
@@ -326,7 +326,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 return LOVValidationResult.Valid(); // Null check handled by required validation
                 
             // Load LOV data
-            var lovResult = await LoadLOVDataAsync(lov, null);
+            var lovResult = await LoadLOVDataAsync(lov, null).ConfigureAwait(false);
             if (!lovResult.Success)
             {
                 return LOVValidationResult.Invalid($"Cannot validate: {lovResult.ErrorMessage}");
@@ -430,7 +430,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             if (lov == null)
                 return null;
                 
-            var lovResult = await LoadLOVDataAsync(lov, null);
+            var lovResult = await LoadLOVDataAsync(lov, null).ConfigureAwait(false);
             if (!lovResult.Success)
                 return null;
                 
@@ -493,13 +493,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 return;
                 
             lov.ClearCache();
-            await LoadLOVDataAsync(lov, null);
+            await LoadLOVDataAsync(lov, null).ConfigureAwait(false);
         }
         
         /// <inheritdoc />
         public async Task PreloadLOVAsync(string blockName, string fieldName)
         {
-            await LoadLOVDataAsync(blockName, fieldName, null);
+            await LoadLOVDataAsync(blockName, fieldName, null).ConfigureAwait(false);
         }
         
         /// <inheritdoc />
@@ -507,7 +507,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             var lovs = GetBlockLOVs(blockName);
             var tasks = lovs.Select(kvp => LoadLOVDataAsync(blockName, kvp.Key, null));
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
         
         #endregion

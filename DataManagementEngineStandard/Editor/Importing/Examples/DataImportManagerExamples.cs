@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -63,7 +63,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
 
                 // Execute import
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
-                var result = await importManager.RunImportAsync(progress, cts.Token, null, 100);
+                var result = await importManager.RunImportAsync(progress, cts.Token, null, 100).ConfigureAwait(false);
 
                 Console.WriteLine($"Import Result: {result.Message}");
                 Console.WriteLine($"Total log entries: {importManager.ImportLogData.Count}");
@@ -162,7 +162,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
 
                 // Execute enhanced import
                 using var cts = new CancellationTokenSource(TimeSpan.FromHours(1));
-                var result = await importManager.RunImportAsync(config, progress, cts.Token);
+                var result = await importManager.RunImportAsync(config, progress, cts.Token).ConfigureAwait(false);
 
                 // Display results
                 Console.WriteLine($"\nImport Result: {result.Message}");
@@ -216,7 +216,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
 
                 // Test configuration before running import
                 Console.WriteLine("Testing import configuration...");
-                var testResult = await importManager.TestImportConfigurationAsync(config);
+                var testResult = await importManager.TestImportConfigurationAsync(config).ConfigureAwait(false);
                 
                 if (testResult.Flag != Errors.Ok)
                 {
@@ -250,7 +250,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
 
                 // Execute import with validation
                 using var cts = new CancellationTokenSource(TimeSpan.FromHours(2));
-                var result = await importManager.RunImportAsync(config, progress, cts.Token);
+                var result = await importManager.RunImportAsync(config, progress, cts.Token).ConfigureAwait(false);
 
                 // Display comprehensive results
                 Console.WriteLine($"\nValidated Import Result: {result.Message}");
@@ -351,7 +351,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
 
                 // Execute advanced import
                 using var cts = new CancellationTokenSource();
-                var result = await importManager.RunImportAsync(config, progress, cts.Token);
+                var result = await importManager.RunImportAsync(config, progress, cts.Token).ConfigureAwait(false);
 
                 // Advanced result analysis
                 Console.WriteLine($"\nAdvanced Import Result: {result.Message}");
@@ -413,7 +413,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
                 // Start the import task
                 var importTask = Task.Run(async () =>
                 {
-                    return await importManager.RunImportAsync(config, progress, cts.Token);
+                    return await importManager.RunImportAsync(config, progress, cts.Token).ConfigureAwait(false);
                 });
 
                 // Simulate user control
@@ -538,7 +538,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Examples
                 });
 
                 using var cts = new CancellationTokenSource();
-                var result = await importManager.RunImportAsync(config, progress, cts.Token);
+                var result = await importManager.RunImportAsync(config, progress, cts.Token).ConfigureAwait(false);
 
                 Console.WriteLine($"DefaultsManager Integration Result: {result.Message}");
                 Console.WriteLine($"Defaults applied automatically during transformation");

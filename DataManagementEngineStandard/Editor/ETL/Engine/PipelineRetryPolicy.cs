@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace TheTechIdea.Beep.Pipelines.Engine
@@ -35,7 +35,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             {
                 try
                 {
-                    await operation();
+                    await operation().ConfigureAwait(false);
                     return;
                 }
                 catch (Exception) when (attempt < _maxRetries)
@@ -44,7 +44,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                     // ±20 % jitter
                     delay += Random.Shared.Next(-(delay / 5), delay / 5 + 1);
                     delay  = Math.Max(delay, 0);
-                    await Task.Delay(delay);
+                    await Task.Delay(delay).ConfigureAwait(false);
                     attempt++;
                 }
             }
@@ -61,14 +61,14 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             {
                 try
                 {
-                    return await operation();
+                    return await operation().ConfigureAwait(false);
                 }
                 catch (Exception) when (attempt < _maxRetries)
                 {
                     int delay = (int)(_baseDelayMs * Math.Pow(_backoffFactor, attempt));
                     delay += Random.Shared.Next(-(delay / 5), delay / 5 + 1);
                     delay  = Math.Max(delay, 0);
-                    await Task.Delay(delay);
+                    await Task.Delay(delay).ConfigureAwait(false);
                     attempt++;
                 }
             }

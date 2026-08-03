@@ -1,4 +1,4 @@
-using Moq;
+﻿using Moq;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -123,7 +123,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(10, new { EMPNO = 1, ENAME = "Alice" });
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.FirstRecordAsync("EMP");
+        bool result = await _manager.FirstRecordAsync("EMP").ConfigureAwait(false);
         Assert.True(result);
     }
 
@@ -134,7 +134,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(10);
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.LastRecordAsync("EMP");
+        bool result = await _manager.LastRecordAsync("EMP").ConfigureAwait(false);
         Assert.True(result);
     }
 
@@ -145,7 +145,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(10);
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.NextRecordAsync("EMP");
+        bool result = await _manager.NextRecordAsync("EMP").ConfigureAwait(false);
         Assert.True(result);
     }
 
@@ -156,7 +156,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(10);
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.PreviousRecordAsync("EMP");
+        bool result = await _manager.PreviousRecordAsync("EMP").ConfigureAwait(false);
         Assert.True(result);
     }
 
@@ -168,7 +168,7 @@ public class FormsManagerTests : IDisposable
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
         _manager.CurrentBlockName = "EMP";
 
-        await _manager.NavigateToRecordAsync("EMP", 3);
+        await _manager.NavigateToRecordAsync("EMP", 3).ConfigureAwait(false);
         Assert.True(true);
     }
 
@@ -181,7 +181,7 @@ public class FormsManagerTests : IDisposable
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
         _manager.CurrentBlockName = "EMP";
 
-        await _manager.InsertRecordAsync("EMP");
+        await _manager.InsertRecordAsync("EMP").ConfigureAwait(false);
         Assert.True(true);
     }
 
@@ -192,7 +192,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(10);
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.NavigateToRecordAsync("EMP", -1);
+        bool result = await _manager.NavigateToRecordAsync("EMP", -1).ConfigureAwait(false);
         Assert.False(result);
     }
 
@@ -222,7 +222,7 @@ public class FormsManagerTests : IDisposable
             itemPropertyManager: items.Object,
             triggerManager: triggers.Object);
 
-        var moved = await manager.GoItemAsync("EMP", "ENAME");
+        var moved = await manager.GoItemAsync("EMP", "ENAME").ConfigureAwait(false);
 
         Assert.True(moved);
         variables.VerifyAll();
@@ -243,7 +243,7 @@ public class FormsManagerTests : IDisposable
             itemPropertyManager: items.Object,
             triggerManager: triggers.Object);
 
-        var moved = await manager.GoItemAsync("EMP", "MISSING");
+        var moved = await manager.GoItemAsync("EMP", "MISSING").ConfigureAwait(false);
 
         Assert.False(moved);
         triggers.Verify(instance => instance.FireBlockTriggerAsync(
@@ -268,7 +268,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(0);
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.EnterQueryAsync("EMP");
+        bool result = await _manager.EnterQueryAsync("EMP").ConfigureAwait(false);
         Assert.True(result);
 
         var block = _manager.GetBlock("EMP");
@@ -283,7 +283,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = CreateUowMock(5, new { EMPNO = 1 });
         _manager.RegisterBlock("EMP", uowMock.Object, entity);
 
-        bool result = await _manager.ExecuteQueryAsync("EMP");
+        bool result = await _manager.ExecuteQueryAsync("EMP").ConfigureAwait(false);
         Assert.True(result);
     }
 
@@ -294,14 +294,14 @@ public class FormsManagerTests : IDisposable
     [Fact]
     public async Task CommitForm_SetsStatus()
     {
-        var result = await _manager.CommitFormAsync();
+        var result = await _manager.CommitFormAsync().ConfigureAwait(false);
         Assert.NotNull(result);
     }
 
     [Fact]
     public async Task RollbackForm_SetsStatus()
     {
-        var result = await _manager.RollbackFormAsync();
+        var result = await _manager.RollbackFormAsync().ConfigureAwait(false);
         Assert.NotNull(result);
     }
 

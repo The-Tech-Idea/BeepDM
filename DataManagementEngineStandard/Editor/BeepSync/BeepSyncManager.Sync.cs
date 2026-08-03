@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -87,7 +87,7 @@ namespace TheTechIdea.Beep.Editor
             var ictx = IntegrationContext;
             if (ictx?.RuleEngine != null && schema.RulePolicy?.Enabled == true && schema.RunPreflight)
             {
-                var preflight = await RunPreflightAsync(schema, token);
+                var preflight = await RunPreflightAsync(schema, token).ConfigureAwait(false);
                 if (!preflight.IsApproved)
                 {
                     schema.SyncStatus = "Failed";
@@ -143,7 +143,7 @@ namespace TheTechIdea.Beep.Editor
             int maxAttempts = rp?.MaxAttempts > 0 ? rp.MaxAttempts : 1;
             int baseDelay   = rp?.BaseDelayMs  > 0 ? rp.BaseDelayMs  : 1000;
 
-            var checkpoint = await TryLoadCheckpointAsync(schema, rp);
+            var checkpoint = await TryLoadCheckpointAsync(schema, rp).ConfigureAwait(false);
 
             IErrorsInfo lastResult = new ErrorsInfo { Flag = Errors.Failed, Message = "No attempts made." };
 
@@ -204,7 +204,7 @@ namespace TheTechIdea.Beep.Editor
 
                     var importProgress = CreateProgressAdapter(progress);
                     using var importMgr = new DataImportManager(_editor);
-                    var result = await importMgr.RunImportAsync(config, importProgress, tok);
+                    var result = await importMgr.RunImportAsync(config, importProgress, tok).ConfigureAwait(false);
 
                     if (result.Flag == Errors.Failed)
                     {
@@ -226,7 +226,7 @@ namespace TheTechIdea.Beep.Editor
                         }
 
                         var reverseConfig = SyncSchemaTranslator.ToReverseImportConfiguration(schema, errorStore, historyStore);
-                        var reverseResult = await importMgr.RunImportAsync(reverseConfig, importProgress, tok);
+                        var reverseResult = await importMgr.RunImportAsync(reverseConfig, importProgress, tok).ConfigureAwait(false);
                         if (reverseResult.Flag == Errors.Failed)
                         {
                             schema.SyncStatus = "Failed";
@@ -252,7 +252,7 @@ namespace TheTechIdea.Beep.Editor
                             $"Watermark advanced to '{cdcCtx.NewWatermarkValue}'.", DateTime.Now, -1, "", Errors.Ok);
                     }
 
-                    await FinalizeCheckpointAsync(schema, rp, checkpoint, ctx.Attempt);
+                    await FinalizeCheckpointAsync(schema, rp, checkpoint, ctx.Attempt).ConfigureAwait(false);
 
                     var reconReport = BuildReconReport(schema, checkpoint, dqRejectCount,
                         dqDefaultsFillCount, dqAllFailures, dqRunAborted, runMappingScore, runMappingBand);
@@ -346,7 +346,7 @@ namespace TheTechIdea.Beep.Editor
         {
             if (rp?.CheckpointEnabled != true) return null;
 
-            var checkpoint = await _persistenceHelper.LoadCheckpointAsync(schema.Id);
+            var checkpoint = await _persistenceHelper.LoadCheckpointAsync(schema.Id).ConfigureAwait(false);
             if (checkpoint == null) return null;
 
             if (IsCheckpointResumeSafe(schema, checkpoint))
@@ -358,7 +358,7 @@ namespace TheTechIdea.Beep.Editor
                 return checkpoint;
             }
 
-            await _persistenceHelper.ClearCheckpointAsync(schema.Id);
+            await _persistenceHelper.ClearCheckpointAsync(schema.Id).ConfigureAwait(false);
             _editor.AddLogMessage("BeepSync", $"Stale checkpoint discarded for '{schema.Id}'.", DateTime.Now, -1, "", Errors.Ok);
             return null;
         }
@@ -439,7 +439,7 @@ namespace TheTechIdea.Beep.Editor
             };
             LastRunCheckpoint       = finalCp;
             schema.ActiveCheckpoint = finalCp;
-            await _persistenceHelper.ClearCheckpointAsync(schema.Id);
+            await _persistenceHelper.ClearCheckpointAsync(schema.Id).ConfigureAwait(false);
         }
 
         private async Task SaveInProgressCheckpointAsync(DataSyncSchema schema, RetryPolicy rp, SyncCheckpoint checkpoint, int attempt, string errorCategory)
@@ -457,7 +457,7 @@ namespace TheTechIdea.Beep.Editor
             };
             LastRunCheckpoint       = errCp;
             schema.ActiveCheckpoint = errCp;
-            await _persistenceHelper.SaveCheckpointAsync(errCp);
+            await _persistenceHelper.SaveCheckpointAsync(errCp).ConfigureAwait(false);
         }
 
         private SyncReconciliationReport BuildReconReport(

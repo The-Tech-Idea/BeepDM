@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                 Parameters   = MergeParameters(definition, overrideParams)
             };
 
-            return await ExecuteAsync(definition, ctx);
+            return await ExecuteAsync(definition, ctx).ConfigureAwait(false);
         }
 
         /// <summary>Resume a paused or failed workflow run from the last committed step.</summary>
@@ -88,7 +88,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             foreach (var rec in saved.StepRecords.Where(r => r.Success))
                 ctx.StepResults[rec.StepId] = rec;
 
-            return await ExecuteAsync(def, ctx, resumeFromRunId: workflowRunId);
+            return await ExecuteAsync(def, ctx, resumeFromRunId: workflowRunId).ConfigureAwait(false);
         }
 
         /// <summary>Approve a paused Approval step, resuming the workflow.</summary>
@@ -102,7 +102,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                 ApproverNote = approverNote,
                 DecidedAtUtc = DateTime.UtcNow
             };
-            await _storage.SaveApprovalStateAsync(workflowRunId, stepId, state);
+            await _storage.SaveApprovalStateAsync(workflowRunId, stepId, state).ConfigureAwait(false);
         }
 
         /// <summary>Reject a paused Approval step.</summary>
@@ -116,7 +116,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                 ApproverNote = rejectionNote,
                 DecidedAtUtc = DateTime.UtcNow
             };
-            await _storage.SaveApprovalStateAsync(workflowRunId, stepId, state);
+            await _storage.SaveApprovalStateAsync(workflowRunId, stepId, state).ConfigureAwait(false);
         }
 
         // ── Internal execution ────────────────────────────────────────────────
@@ -167,7 +167,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                     ctx.CurrentStepId = step.ID;
                     ctx.ReportProgress($"Running step '{step.Name}' ({step.Kind})");
 
-                    var rec = await ExecuteStepWithPolicyAsync(step, ctx, def.RetryPolicy);
+                    var rec = await ExecuteStepWithPolicyAsync(step, ctx, def.RetryPolicy).ConfigureAwait(false);
                     result.StepRecords.Add(rec);
                     ctx.StepResults[step.ID] = rec;
                     result.TotalRecordsProcessed += rec.RecordsWritten;
@@ -211,7 +211,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             finally
             {
                 result.FinishedAtUtc = DateTime.UtcNow;
-                await _storage.SaveRunResultAsync(result);
+                await _storage.SaveRunResultAsync(result).ConfigureAwait(false);
             }
 
             ctx.ReportProgress(result.Success ? "Workflow completed." : $"Workflow failed: {result.ErrorMessage}", 100);
@@ -230,7 +230,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
 
             while (true)
             {
-                var rec = await ExecuteStepAsync(step, ctx);
+                var rec = await ExecuteStepAsync(step, ctx).ConfigureAwait(false);
                 if (rec.Success || attempts >= policy.MaxRetries)
                 {
                     rec.RetryCount = attempts;
@@ -242,7 +242,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                     $"Step '{step.Name}' attempt {attempts} failed — retrying in {policy.GetDelay(attempts).TotalSeconds:0}s",
                     DateTime.Now, -1, null, Errors.Ok);
 
-                await Task.Delay(policy.GetDelay(attempts), ctx.Token);
+                await Task.Delay(policy.GetDelay(attempts), ctx.Token).ConfigureAwait(false);
             }
         }
 
@@ -345,7 +345,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
             while (DateTime.UtcNow < deadline)
             {
                 ctx.Token.ThrowIfCancellationRequested();
-                var state = await _storage.LoadApprovalStateAsync(ctx.RunId, step.ID);
+                var state = await _storage.LoadApprovalStateAsync(ctx.RunId, step.ID).ConfigureAwait(false);
                 if (state?.Decision == ApprovalDecision.Approved)
                 {
                     rec.Success = true;
@@ -359,7 +359,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                     rec.ErrorMessage = $"Rejected: {state.ApproverNote}";
                     return FinishRecord(rec);
                 }
-                await Task.Delay(TimeSpan.FromSeconds(10), ctx.Token);
+                await Task.Delay(TimeSpan.FromSeconds(10), ctx.Token).ConfigureAwait(false);
             }
 
             rec.Success      = false;
@@ -372,7 +372,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
         {
             var rec     = StartRecord(step);
             int seconds = step.WaitSeconds > 0 ? step.WaitSeconds : 1;
-            await Task.Delay(TimeSpan.FromSeconds(seconds), ctx.Token);
+            await Task.Delay(TimeSpan.FromSeconds(seconds), ctx.Token).ConfigureAwait(false);
             rec.Success = true;
             return FinishRecord(rec);
         }
@@ -389,7 +389,7 @@ namespace TheTechIdea.Beep.Workflows.Engine
                 var subDef = await _storage.LoadDefinitionAsync(step.SubWorkflowId)
                     ?? throw new InvalidOperationException($"Sub-workflow '{step.SubWorkflowId}' not found.");
 
-                var subResult = await RunAsync(subDef, ctx.Progress, ctx.Token, ctx.Parameters);
+                var subResult = await RunAsync(subDef, ctx.Progress, ctx.Token, ctx.Parameters).ConfigureAwait(false);
                 rec.RecordsWritten = subResult.TotalRecordsProcessed;
                 rec.Success        = subResult.Success;
                 if (!subResult.Success) rec.ErrorMessage = subResult.ErrorMessage;

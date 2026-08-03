@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
@@ -39,7 +39,7 @@ namespace TheTechIdea.Beep.Editor
             _validationHelper.ValidateSchema(schema);
 
         public async Task SaveSchemasAsync() =>
-            await _persistenceHelper.SaveSchemasAsync(SyncSchemas);
+            await _persistenceHelper.SaveSchemasAsync(SyncSchemas).ConfigureAwait(false);
 
         // Task.Run is what makes the sync bridge safe: it starts the async method on a
         // thread-pool thread where SynchronizationContext.Current is null, so the awaits inside
@@ -49,7 +49,7 @@ namespace TheTechIdea.Beep.Editor
         public void SaveSchemas() => Task.Run(() => SaveSchemasAsync()).GetAwaiter().GetResult();
 
         public async Task<ObservableBindingList<DataSyncSchema>> LoadSchemasAsync() =>
-            SyncSchemas = await _persistenceHelper.LoadSchemasAsync();
+            SyncSchemas = await _persistenceHelper.LoadSchemasAsync().ConfigureAwait(false);
 
         public void LoadSchemas() => Task.Run(() => LoadSchemasAsync()).GetAwaiter().GetResult();
     }

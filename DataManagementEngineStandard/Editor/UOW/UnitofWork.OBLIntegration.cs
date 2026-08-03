@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -350,7 +350,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
                 try
                 {
-                    var result = await Get(filters);
+                    var result = await Get(filters).ConfigureAwait(false);
                     return result?.ToList() ?? new List<T>();
                 }
                 catch
@@ -375,7 +375,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public async Task GoToPageAsync(int pageNumber)
         {
             if (Units != null)
-                await Units.GoToPageAsync(pageNumber);
+                await Units.GoToPageAsync(pageNumber).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public async Task PrefetchAdjacentPagesAsync()
         {
             if (Units != null)
-                await Units.PrefetchAdjacentPagesAsync();
+                await Units.PrefetchAdjacentPagesAsync().ConfigureAwait(false);
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-// Example 04 — Bidirectional Conflict Resolution
+﻿// Example 04 — Bidirectional Conflict Resolution
 // Demonstrates SyncDirection = "Bidirectional" with ConflictPolicy, conflict evidence
 // capture, and quarantine routing for unresolvable records.
 //
@@ -73,7 +73,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             syncManager.AddSyncSchema(schema);
 
             // ── 2. Run ─────────────────────────────────────────────────────────────
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
 
             // ── 3. Inspect conflict evidence ───────────────────────────────────────
             var conflicts = syncManager.LastRunConflicts;
@@ -95,7 +95,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 Console.WriteLine($"Reconciliation — Source: {report.SourceRowsScanned}  " +
                                   $"Dest: {report.DestRowsWritten}  Conflicts: {report.ConflictCount}");
 
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         public static void Run(IDMEEditor editor) =>

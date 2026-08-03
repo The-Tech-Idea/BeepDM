@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
@@ -890,7 +890,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             ConflictMode conflictMode,
             CancellationToken ct)
         {
-            var result = await RefreshAsync(filters, conflictMode, ct);
+            var result = await RefreshAsync(filters, conflictMode, ct).ConfigureAwait(false);
             return result?.Flag == Errors.Ok;
         }
 

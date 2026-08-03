@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -200,7 +200,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             if (IsCurrentRecordLocked(blockName))
                 return true;
 
-            return await LockCurrentRecordAsync(blockName, ct);
+            return await LockCurrentRecordAsync(blockName, ct).ConfigureAwait(false);
         }
 
         #endregion

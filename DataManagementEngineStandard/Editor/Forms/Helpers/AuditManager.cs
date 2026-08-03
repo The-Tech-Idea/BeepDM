@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -182,7 +182,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 }
             }
 
-            await File.WriteAllTextAsync(filePath, sb.ToString(), Encoding.UTF8);
+            await File.WriteAllTextAsync(filePath, sb.ToString(), Encoding.UTF8).ConfigureAwait(false);
         }
 
         /// <summary>Exports audit entries to JSON.</summary>
@@ -191,7 +191,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             var entries = Store.Query(blockName);
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(entries, options);
-            await File.WriteAllTextAsync(filePath, json, Encoding.UTF8);
+            await File.WriteAllTextAsync(filePath, json, Encoding.UTF8).ConfigureAwait(false);
         }
 
         // ── Maintenance ────────────────────────────────────────────────────

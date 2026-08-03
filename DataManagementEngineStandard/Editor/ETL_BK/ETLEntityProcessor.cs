@@ -76,13 +76,13 @@ namespace TheTechIdea.Beep.Editor.ETL
             if (parallel)
             {
                 var tasks = records.Select(record => processAction(record));
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             else
             {
                 foreach (var record in records)
                 {
-                    await processAction(record);
+                    await processAction(record).ConfigureAwait(false);
                 }
             }
         }

@@ -84,7 +84,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (ps.Cancel)
             {
                 DMEEditor.ErrorObject.Message = "Query Cancelled";
-                return await Task.FromResult(Units);
+                return await Task.FromResult(Units).ConfigureAwait(false);
             }
             
             _suppressNotification = true;
@@ -108,9 +108,9 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (ps.Cancel)
             {
                 DMEEditor.ErrorObject.Message = "Post Query";
-                return await Task.FromResult(Units);
+                return await Task.FromResult(Units).ConfigureAwait(false);
             }
-            return await Task.FromResult(Units);
+            return await Task.FromResult(Units).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (ps.Cancel)
             {
                 DMEEditor.ErrorObject.Message = "Query Cancelled";
-                return await Task.FromResult(Units);
+                return await Task.FromResult(Units).ConfigureAwait(false);
             }
             
             if (filters == null)
@@ -166,7 +166,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                         _suppressNotification = true;
                         FilteredUnits = FilterCollection(_units, filters);
                         _suppressNotification = false;
-                        return await Task.FromResult(FilteredUnits);
+                        return await Task.FromResult(FilteredUnits).ConfigureAwait(false);
                     }
                 }
             }
@@ -175,9 +175,9 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (ps.Cancel)
             {
                 DMEEditor.ErrorObject.Message = "Post Query";
-                return await Task.FromResult(Units);
+                return await Task.FromResult(Units).ConfigureAwait(false);
             }
-            return await Task.FromResult(Units);
+            return await Task.FromResult(Units).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (ps.Cancel)
             {
                 DMEEditor.ErrorObject.Message = "Query Cancelled";
-                return await Task.FromResult(Units);
+                return await Task.FromResult(Units).ConfigureAwait(false);
             }
             
             if (query == null)
@@ -217,7 +217,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                         _suppressNotification = true;
                         FilteredUnits = FilterCollection(_units, null);
                         _suppressNotification = false;
-                        return await Task.FromResult(FilteredUnits);
+                        return await Task.FromResult(FilteredUnits).ConfigureAwait(false);
                     }
                 }
             }
@@ -227,9 +227,9 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (ps.Cancel)
             {
                 DMEEditor.ErrorObject.Message = "Post Query";
-                return await Task.FromResult(Units);
+                return await Task.FromResult(Units).ConfigureAwait(false);
             }
-            return await Task.FromResult(Units);
+            return await Task.FromResult(Units).ConfigureAwait(false);
         }
 
         /// <summary>

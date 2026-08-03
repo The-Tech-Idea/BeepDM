@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -103,7 +103,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                 // Ensure source entity structure is loaded
                 if (config.SourceEntityStructure == null)
                 {
-                    config.SourceEntityStructure = await LoadSourceEntityStructure(config);
+                    config.SourceEntityStructure = await LoadSourceEntityStructure(config).ConfigureAwait(false);
                     if (config.SourceEntityStructure == null)
                     {
                         throw new InvalidOperationException($"Source entity structure could not be loaded for '{config.SourceEntityName}'");
@@ -206,7 +206,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                 }, token);
 
                 // Convert different result types to enumerable
-                var convertedResult = await ConvertToEnumerable(result, config, token);
+                var convertedResult = await ConvertToEnumerable(result, config, token).ConfigureAwait(false);
 
                 var resultCount = convertedResult?.Count() ?? 0;
                 _progressHelper.LogImport($"Fetched {resultCount} records from source", resultCount);
@@ -434,7 +434,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                     return configValidation;
 
                 // Test data source connections
-                await InitializeDataSources(config);
+                await InitializeDataSources(config).ConfigureAwait(false);
 
                 var sourceValidation = _validationHelper.ValidateDataSources(config.SourceData, config.DestData);
                 if (sourceValidation.Flag == Errors.Failed)
@@ -458,7 +458,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                     // Note: This would need to be adapted based on the data source type's limit syntax
                     
                     config.SourceFilters = testFilters;
-                    var testData = await FetchSourceDataAsync(config, CancellationToken.None);
+                    var testData = await FetchSourceDataAsync(config, CancellationToken.None).ConfigureAwait(false);
                     
                     if (testData != null && testData.Any())
                     {

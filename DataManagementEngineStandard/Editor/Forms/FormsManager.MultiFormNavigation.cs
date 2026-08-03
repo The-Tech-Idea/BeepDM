@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 try
                 {
-                    return await entry.Completion.WaitWithCancellation(cancellationToken);
+                    return await entry.Completion.WaitWithCancellation(cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -148,7 +148,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (!string.IsNullOrWhiteSpace(_currentFormName))
                 _formRegistry.UnregisterForm(_currentFormName);
 
-            return await CallFormAsync(formName, parameters, FormCallMode.Replace);
+            return await CallFormAsync(formName, parameters, FormCallMode.Replace).ConfigureAwait(false);
         }
 
         /// <summary>

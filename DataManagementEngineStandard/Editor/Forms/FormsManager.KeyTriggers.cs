@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -83,12 +83,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (string.IsNullOrEmpty(block))
                 result = await _triggerManager.FireFormTriggerAsync(type, _currentFormName ?? string.Empty, ctx);
             else
-                result = await _triggerManager.FireBlockTriggerAsync(type, block, ctx);
+                result = await _triggerManager.FireBlockTriggerAsync(type, block, ctx).ConfigureAwait(false);
 
             if (result == TriggerResult.Cancelled)
                 return TriggerResult.Cancelled;
 
-            var actionOk = await ExecuteKeyDefaultActionAsync(key, block);
+            var actionOk = await ExecuteKeyDefaultActionAsync(key, block).ConfigureAwait(false);
             return actionOk ? TriggerResult.Success : TriggerResult.Failure;
         }
 
@@ -102,32 +102,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 case KeyTriggerType.Enter:
                 case KeyTriggerType.Commit:
-                    var commitResult = await CommitFormAsync();
+                    var commitResult = await CommitFormAsync().ConfigureAwait(false);
                     return commitResult?.Flag == Errors.Ok;
 
                 case KeyTriggerType.Exit:
-                    return await CloseFormAsync();
+                    return await CloseFormAsync().ConfigureAwait(false);
 
                 case KeyTriggerType.ExecuteQuery:
                     if (!string.IsNullOrEmpty(blockName))
-                        return await ExecuteQueryAsync(blockName);
+                        return await ExecuteQueryAsync(blockName).ConfigureAwait(false);
                     return false;
 
                 case KeyTriggerType.NextRecord:
                     if (!string.IsNullOrEmpty(blockName))
-                        return await NextRecordAsync(blockName);
+                        return await NextRecordAsync(blockName).ConfigureAwait(false);
                     return false;
 
                 case KeyTriggerType.PreviousRecord:
                     if (!string.IsNullOrEmpty(blockName))
-                        return await PreviousRecordAsync(blockName);
+                        return await PreviousRecordAsync(blockName).ConfigureAwait(false);
                     return false;
 
                 case KeyTriggerType.NextBlock:
-                    return await NextBlockAsync();
+                    return await NextBlockAsync().ConfigureAwait(false);
 
                 case KeyTriggerType.PreviousBlock:
-                    return await PreviousBlockAsync();
+                    return await PreviousBlockAsync().ConfigureAwait(false);
 
                 // Keys with no default action — consumed silently
                 default:

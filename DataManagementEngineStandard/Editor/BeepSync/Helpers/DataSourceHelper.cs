@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -81,7 +81,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     if (ds == null)
                         return new ErrorsInfo { Flag = Errors.Failed, Message = $"Data source '{dataSourceName}' not found" };
 
-                    return await Task.Run(() => ds.InsertEntity(entityName, entity));
+                    return await Task.Run(() => ds.InsertEntity(entityName, entity)).ConfigureAwait(false);
                 },
                 $"InsertEntityAsync:{dataSourceName}.{entityName}",
                 _editor,
@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     if (ds == null)
                         return new ErrorsInfo { Flag = Errors.Failed, Message = $"Data source '{dataSourceName}' not found" };
 
-                    return await Task.Run(() => ds.UpdateEntity(entityName, entity));
+                    return await Task.Run(() => ds.UpdateEntity(entityName, entity)).ConfigureAwait(false);
                 },
                 $"UpdateEntityAsync:{dataSourceName}.{entityName}",
                 _editor,
@@ -113,7 +113,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                     if (ds == null)
                         return false;
 
-                    var result = await Task.Run(() => ds.GetEntity(entityName, filters));
+                    var result = await Task.Run(() => ds.GetEntity(entityName, filters)).ConfigureAwait(false);
                     return result != null && result.Any();
                 },
                 $"EntityExistsAsync:{dataSourceName}.{entityName}",

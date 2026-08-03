@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -16,7 +16,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> CheckAndHandleUnsavedChangesAsync(string blockName)
         {
-            return await _dirtyStateManager.CheckAndHandleUnsavedChangesAsync(blockName);
+            return await _dirtyStateManager.CheckAndHandleUnsavedChangesAsync(blockName).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (dirtyBlocks.Count == 0)
                 return true;
 
-            var saved = await _dirtyStateManager.SaveDirtyBlocksAsync(dirtyBlocks);
+            var saved = await _dirtyStateManager.SaveDirtyBlocksAsync(dirtyBlocks).ConfigureAwait(false);
 
             // Flush pending audit entries on a block-level save too.
             //
@@ -72,7 +72,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var dirtyBlocks = GetDirtyBlocks();
             if (dirtyBlocks.Count == 0)
                 return true;
-            return await _dirtyStateManager.RollbackDirtyBlocksAsync(dirtyBlocks);
+            return await _dirtyStateManager.RollbackDirtyBlocksAsync(dirtyBlocks).ConfigureAwait(false);
         }
 
         #endregion

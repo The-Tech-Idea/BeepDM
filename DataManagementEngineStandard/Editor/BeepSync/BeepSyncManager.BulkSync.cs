@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -15,7 +15,7 @@ namespace TheTechIdea.Beep.Editor
         {
             foreach (var schema in SyncSchemas.ToList())
             {
-                await SyncDataAsync(schema, token, progress);
+                await SyncDataAsync(schema, token, progress).ConfigureAwait(false);
                 if (token.IsCancellationRequested) break;
             }
         }

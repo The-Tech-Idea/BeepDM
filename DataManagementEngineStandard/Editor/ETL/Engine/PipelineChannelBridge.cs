@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -40,7 +40,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             try
             {
                 await foreach (var record in source.WithCancellation(token))
-                    await _channel.Writer.WriteAsync(record, token);
+                    await _channel.Writer.WriteAsync(record, token).ConfigureAwait(false);
 
                 _channel.Writer.Complete();
             }

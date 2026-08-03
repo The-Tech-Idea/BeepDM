@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +32,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> FirstRecordAsync(string blockName)
         {
-            return await NavigateWithValidationAsync(blockName, NavigationType.First);
+            return await NavigateWithValidationAsync(blockName, NavigationType.First).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> NextRecordAsync(string blockName)
         {
-            return await NavigateWithValidationAsync(blockName, NavigationType.Next);
+            return await NavigateWithValidationAsync(blockName, NavigationType.Next).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> PreviousRecordAsync(string blockName)
         {
-            return await NavigateWithValidationAsync(blockName, NavigationType.Previous);
+            return await NavigateWithValidationAsync(blockName, NavigationType.Previous).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> LastRecordAsync(string blockName)
         {
-            return await NavigateWithValidationAsync(blockName, NavigationType.Last);
+            return await NavigateWithValidationAsync(blockName, NavigationType.Last).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> NavigateToRecordAsync(string blockName, int recordIndex)
         {
-            return await NavigateToRecordInternalAsync(blockName, recordIndex, recordHistory: true);
+            return await NavigateToRecordInternalAsync(blockName, recordIndex, recordHistory: true).ConfigureAwait(false);
         }
 
         private async Task<bool> NavigateToRecordInternalAsync(string blockName, int recordIndex, bool recordHistory)
@@ -151,7 +151,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         _navHistoryManager.Push(blockName, previousIndex);
 
                     // Synchronize detail blocks
-                    await SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
@@ -422,7 +422,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             var ctx = TriggerContext.ForItem(
                 TriggerType.KeyNextItem, blockName, currentItemName ?? string.Empty, null, null, _dmeEditor);
-            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyNextItem, blockName, ctx);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyNextItem, blockName, ctx).ConfigureAwait(false);
             return result != TriggerResult.Cancelled;
         }
 
@@ -436,7 +436,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             var ctx = TriggerContext.ForItem(
                 TriggerType.KeyPreviousItem, blockName, currentItemName ?? string.Empty, null, null, _dmeEditor);
-            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyPreviousItem, blockName, ctx);
+            var result = await _triggerManager.FireBlockTriggerAsync(TriggerType.KeyPreviousItem, blockName, ctx).ConfigureAwait(false);
             return result != TriggerResult.Cancelled;
         }
 
@@ -502,7 +502,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
                 
-                return await NavigateAsync(blockName, navigationType, recordHistory: true);
+                return await NavigateAsync(blockName, navigationType, recordHistory: true).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -582,7 +582,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         TriggerContext.ForBlock(TriggerType.PreRecord, blockName, null, _dmeEditor));
 
                     // Synchronize detail blocks
-                    await SynchronizeDetailBlocksAsync(blockName);
+                    await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
 
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.WhenNewRecordInstance, blockName,

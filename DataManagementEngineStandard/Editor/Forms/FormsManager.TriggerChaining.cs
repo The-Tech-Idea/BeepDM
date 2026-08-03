@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -119,7 +119,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (t.AsyncHandler != null || t.Handler != null)
                 {
                     var ctx    = TriggerContext.ForBlock(t.TriggerType, blockName ?? string.Empty, null, _dmeEditor);
-                    var result = await t.ExecuteAsync(ctx, cancellationToken);
+                    var result = await t.ExecuteAsync(ctx, cancellationToken).ConfigureAwait(false);
                     results.Add(result);
 
                     if (result == TriggerResult.Failure || result == TriggerResult.Cancelled)

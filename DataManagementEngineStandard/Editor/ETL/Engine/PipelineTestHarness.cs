@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -57,7 +57,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                     def = definitionOverride;
                 else
                 {
-                    var loaded = await _manager.LoadAsync(config.PipelineId);
+                    var loaded = await _manager.LoadAsync(config.PipelineId).ConfigureAwait(false);
                     if (loaded == null)
                     {
                         testResult.Outcome = TestOutcome.Failed;
@@ -79,11 +79,11 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                         ["__testHarness_inlineData"]   = config.InlineSourceData,
                         ["__testHarness_schemaFields"] = config.InlineSchemaFields
                     };
-                    runResult = await _manager.RunDefinitionAsync(def, null, effectiveToken);
+                    runResult = await _manager.RunDefinitionAsync(def, null, effectiveToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    runResult = await _manager.RunDefinitionAsync(def, null, effectiveToken);
+                    runResult = await _manager.RunDefinitionAsync(def, null, effectiveToken).ConfigureAwait(false);
                 }
 
                 // Evaluate assertions
@@ -162,7 +162,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                     continue;
                 }
 
-                var result = await RunTestAsync(config, token: token);
+                var result = await RunTestAsync(config, token: token).ConfigureAwait(false);
                 suite.TestCases.Add(result);
 
                 switch (result.Outcome)

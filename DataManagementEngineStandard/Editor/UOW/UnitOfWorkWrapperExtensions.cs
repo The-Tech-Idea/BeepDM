@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -38,7 +38,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (wrapper == null) throw new ArgumentNullException(nameof(wrapper));
             if (processor == null) throw new ArgumentNullException(nameof(processor));
 
-            return await ForEachRecordInternalAsync(wrapper, processor);
+            return await ForEachRecordInternalAsync(wrapper, processor).ConfigureAwait(false);
         }
 
         private static async Task<int> ForEachRecordInternalAsync(IUnitOfWorkWrapper wrapper, Func<dynamic, Task<bool>> processor)
@@ -59,7 +59,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                     
                     if (currentRecord != null)
                     {
-                        bool continueProcessing = await processor(currentRecord);
+                        bool continueProcessing = await processor(currentRecord).ConfigureAwait(false);
                         processedCount++;
                         
                         if (!continueProcessing)
@@ -264,7 +264,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
                 try
                 {
-                    var insertResult = await wrapper.InsertAsync(recordList[i]);
+                    var insertResult = await wrapper.InsertAsync(recordList[i]).ConfigureAwait(false);
                     if (insertResult.Flag == Errors.Ok)
                     {
                         result.SuccessfulRecords++;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -314,7 +314,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                 return CreateErrorsInfo(Errors.Failed, "ImportContext.Selection is incomplete.");
 
             var config = BuildConfigurationFromContext(context);
-            return await RunImportAsync(config, progress, token);
+            return await RunImportAsync(config, progress, token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -475,7 +475,7 @@ namespace TheTechIdea.Beep.Editor.Importing
             _config.CustomTransformation = transformation;
             _config.BatchSize = batchSize;
 
-            return await RunImportAsync(_config, progress, token);
+            return await RunImportAsync(_config, progress, token).ConfigureAwait(false);
         }
 
         #endregion
@@ -529,7 +529,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                 }
 
                 // Initialize data sources if not already set
-                await InitializeDataSources(config);
+                await InitializeDataSources(config).ConfigureAwait(false);
 
                 // Validate entity mapping if configured
                 if (config.Mapping != null)
@@ -543,10 +543,10 @@ namespace TheTechIdea.Beep.Editor.Importing
                 }
 
                 // Ensure destination entity exists
-                await EnsureDestinationEntityExists(config);
+                await EnsureDestinationEntityExists(config).ConfigureAwait(false);
 
                 // Fetch source data
-                var sourceData = await FetchSourceDataAsync(config, token);
+                var sourceData = await FetchSourceDataAsync(config, token).ConfigureAwait(false);
                 if (sourceData == null || !sourceData.Any())
                 {
                     var message = "No source data found to import";
@@ -585,11 +585,11 @@ namespace TheTechIdea.Beep.Editor.Importing
                     while (attempts < maxAttempts)
                     {
                         attempts++;
-                        batchResult = await _batchHelper.ProcessBatchAsync(batch, config, progress, token);
+                        batchResult = await _batchHelper.ProcessBatchAsync(batch, config, progress, token).ConfigureAwait(false);
                         if (batchResult.Flag == Errors.Ok || config.OnBatchError != BatchErrorStrategy.Retry)
                             break;
                         var delay = TimeSpan.FromMilliseconds(200 * attempts); // exponential back-off
-                        await Task.Delay(delay, token);
+                        await Task.Delay(delay, token).ConfigureAwait(false);
                     }
 
                     totalProcessed += batch.Count();

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,7 +108,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<bool> ConfirmAsync(string title, string message, CancellationToken ct = default)
         {
-            var result = await ShowAlertAsync(title, message, AlertStyle.Question, "Yes", "No", null, ct);
+            var result = await ShowAlertAsync(title, message, AlertStyle.Question, "Yes", "No", null, ct).ConfigureAwait(false);
             return result == AlertResult.Button1;
         }
 

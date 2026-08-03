@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -41,7 +41,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             await foreach (var record in input.WithCancellation(token))
             {
-                var result = await validator.ValidateAsync(record, ctx, token);
+                var result = await validator.ValidateAsync(record, ctx, token).ConfigureAwait(false);
 
                 if (result.Outcome == ValidationOutcome.Reject)
                 {
@@ -62,7 +62,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             // Flush rejected records to the error sink
             if (rejectBatch != null && rejectBatch.Count > 0 && errorSink != null)
-                await errorSink.WriteBatchAsync(rejectBatch, ctx, token);
+                await errorSink.WriteBatchAsync(rejectBatch, ctx, token).ConfigureAwait(false);
         }
 
         /// <summary>Creates a fresh <see cref="PipelineStepResult"/> for the given step definition.</summary>

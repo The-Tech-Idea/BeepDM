@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -61,7 +61,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 SourceEntityStructure = sourceDs.GetEntityStructure(srcEntity,false);
                 DestEntityStructure = destDs.GetEntityStructure(destEntity, false);
                 // Step 1: Fetch source data
-                var sourceData = await FetchSourceDataAsync(sourceDs, srcEntity, token);
+                var sourceData = await FetchSourceDataAsync(sourceDs, srcEntity, token).ConfigureAwait(false);
                 if (sourceData == null)
                 {
                     DMEEditor.AddLogMessage("ETL", $"Source data for entity {srcEntity} is null.", DateTime.Now, -1, null, Errors.Failed);
@@ -74,11 +74,11 @@ namespace TheTechIdea.Beep.Editor.ETL
                 // Step 3: Insert data with batch processing
                 if (effectiveParallel)
                 {
-                    await ParallelInsertDataAsync(destDs, destEntity, transformedData, effectiveBatchSize, progress, token, effectiveMaxRetries);
+                    await ParallelInsertDataAsync(destDs, destEntity, transformedData, effectiveBatchSize, progress, token, effectiveMaxRetries).ConfigureAwait(false);
                 }
                 else
                 {
-                    await BatchInsertDataAsync(destDs, destEntity, transformedData, effectiveBatchSize, progress, token, effectiveMaxRetries);
+                    await BatchInsertDataAsync(destDs, destEntity, transformedData, effectiveBatchSize, progress, token, effectiveMaxRetries).ConfigureAwait(false);
                 }
 
                 stopwatch.Stop();
@@ -218,12 +218,12 @@ namespace TheTechIdea.Beep.Editor.ETL
 
             foreach (var batch in batches)
             {
-                await gate.WaitAsync(token);
+                await gate.WaitAsync(token).ConfigureAwait(false);
                 tasks.Add(Task.Run(async () =>
                 {
                     try
                     {
-                        await InsertBatchAsync(destDs, destEntity, batch, progress, token, maxRetries);
+                        await InsertBatchAsync(destDs, destEntity, batch, progress, token, maxRetries).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -232,7 +232,7 @@ namespace TheTechIdea.Beep.Editor.ETL
                 }, token));
             }
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace TheTechIdea.Beep.Editor.ETL
 
             foreach (var batch in batches)
             {
-                await InsertBatchAsync(destDs, destEntity, batch, progress, token, maxRetries);
+                await InsertBatchAsync(destDs, destEntity, batch, progress, token, maxRetries).ConfigureAwait(false);
             }
         }
 
@@ -312,7 +312,7 @@ namespace TheTechIdea.Beep.Editor.ETL
 
                 DMEEditor.AddLogMessage("ETL", $"Retrying {failedRecords.Count} failed records (attempt {attempt}/{maxRetries}).", DateTime.Now, -1, null, Errors.Ok);
                 recordsToProcess = failedRecords;
-                await Task.Delay(Math.Min(1000, 150 * attempt), token);
+                await Task.Delay(Math.Min(1000, 150 * attempt), token).ConfigureAwait(false);
             }
         }
     }

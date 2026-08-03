@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -45,7 +45,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
             if (!File.Exists(path)) throw new FileNotFoundException("Text file not found", path);
-            return await Task.Run(() => File.ReadAllText(path), ct);
+            return await Task.Run(() => File.ReadAllText(path), ct).ConfigureAwait(false);
         }
 
         public async Task WriteTextFileAsync(string path, string content, CancellationToken ct = default)
@@ -64,7 +64,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
             if (!File.Exists(path)) throw new FileNotFoundException("Text file not found", path);
-            return await Task.Run(() => File.ReadAllLines(path), ct);
+            return await Task.Run(() => File.ReadAllLines(path), ct).ConfigureAwait(false);
         }
 
         // Editor built-in — the host renders the editor; the engine just surfaces the text content.

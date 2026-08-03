@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -78,7 +78,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 string path = PipelinePath(pipeline.Id);
                 string json = JsonSerializer.Serialize(pipeline, _json);
                 string tmp  = path + ".tmp";
-                await File.WriteAllTextAsync(tmp, json);
+                await File.WriteAllTextAsync(tmp, json).ConfigureAwait(false);
                 File.Move(tmp, path, overwrite: true);
 
                 if (ObservabilityStore != null)
@@ -133,7 +133,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
         {
             string path = PipelinePath(pipelineId);
             if (!File.Exists(path)) return null;
-            string json = await File.ReadAllTextAsync(path);
+            string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
             return JsonSerializer.Deserialize<PipelineDefinition>(json, _json);
         }
 
@@ -144,7 +144,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             {
                 try
                 {
-                    string json = await File.ReadAllTextAsync(file);
+                    string json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                     var def     = JsonSerializer.Deserialize<PipelineDefinition>(json, _json);
                     if (def != null) result.Add(def);
                 }
@@ -155,7 +155,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
         public async Task<IReadOnlyList<PipelineDefinition>> FindByTagAsync(string tag)
         {
-            var all = await LoadAllAsync();
+            var all = await LoadAllAsync().ConfigureAwait(false);
             return all.Where(d =>
                 d.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
                        .Any(t => t.Trim().Equals(tag, StringComparison.OrdinalIgnoreCase)))
@@ -171,7 +171,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
         {
             var def = await LoadAsync(pipelineId)
                 ?? throw new KeyNotFoundException($"Pipeline '{pipelineId}' not found.");
-            return await RunDefinitionAsync(def, progress, token);
+            return await RunDefinitionAsync(def, progress, token).ConfigureAwait(false);
         }
 
         public async Task<PipelineRunResult> RunDefinitionAsync(
@@ -179,16 +179,16 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             IProgress<PassedArgs>? progress = null,
             CancellationToken token = default)
         {
-            var result = await _engine.RunAsync(def, progress, token, securityContext: SecurityContext);
+            var result = await _engine.RunAsync(def, progress, token, securityContext: SecurityContext).ConfigureAwait(false);
 
             // Update denormalised run summary on the definition
             def.LastRunAt     = result.FinishedAtUtc ?? DateTime.UtcNow;
             def.LastRunStatus = result.Status.ToString();
             def.LastRunId     = result.RunId;
-            await SaveAsync(def);
+            await SaveAsync(def).ConfigureAwait(false);
 
             // Persist run result to history
-            await PersistRunResultAsync(def.Id, result);
+            await PersistRunResultAsync(def.Id, result).ConfigureAwait(false);
 
             // If canary or shadow mode is configured, execute the candidate in parallel
             if (!string.IsNullOrWhiteSpace(def.CandidatePipelineId)
@@ -258,13 +258,13 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             var def = await LoadAsync(cp.PipelineId)
                 ?? throw new InvalidOperationException($"Pipeline '{cp.PipelineId}' not found.");
 
-            var result = await _engine.ResumeInternalAsync(def, cp, progress, token);
+            var result = await _engine.ResumeInternalAsync(def, cp, progress, token).ConfigureAwait(false);
 
             def.LastRunAt     = result.FinishedAtUtc ?? DateTime.UtcNow;
             def.LastRunStatus = result.Status.ToString();
             def.LastRunId     = result.RunId;
-            await SaveAsync(def);
-            await PersistRunResultAsync(def.Id, result);
+            await SaveAsync(def).ConfigureAwait(false);
+            await PersistRunResultAsync(def.Id, result).ConfigureAwait(false);
 
             return result;
         }
@@ -285,7 +285,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             {
                 try
                 {
-                    string json = await File.ReadAllTextAsync(file);
+                    string json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                     var r       = JsonSerializer.Deserialize<PipelineRunResult>(json, _json);
                     if (r != null) results.Add(r);
                 }
@@ -305,7 +305,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
             Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, $"{result.RunId}.run.json");
             string json = JsonSerializer.Serialize(result, _json);
-            await File.WriteAllTextAsync(path, json);
+            await File.WriteAllTextAsync(path, json).ConfigureAwait(false);
         }
     }
 }

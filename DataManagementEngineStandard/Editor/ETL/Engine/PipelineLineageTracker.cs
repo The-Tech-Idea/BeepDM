@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -69,7 +69,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             string path = Path.Combine(_folder, $"{ctx.RunId}.lineage.json");
             string json = JsonSerializer.Serialize(ctx.LineageEntries, _json);
-            await File.WriteAllTextAsync(path, json);
+            await File.WriteAllTextAsync(path, json).ConfigureAwait(false);
         }
 
         /// <summary>Load lineage entries for a past run.</summary>
@@ -80,7 +80,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
 
             try
             {
-                string json = await File.ReadAllTextAsync(path);
+                string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
                 return (IReadOnlyList<DataLineageRecord>?)
                            JsonSerializer.Deserialize<List<DataLineageRecord>>(json, _json)
                        ?? Array.Empty<DataLineageRecord>();

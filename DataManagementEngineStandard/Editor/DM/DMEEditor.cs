@@ -1,4 +1,4 @@
-
+﻿
 
 using System.Collections.Generic;
 using System.Data;
@@ -328,7 +328,7 @@ namespace TheTechIdea.Beep
         /// <returns></returns>
         private async Task<dynamic> GetOutputAsync(IDataSource ds, string CurrentEntity, List<AppFilter> filter)
         {
-            return await ds.GetEntityAsync(CurrentEntity, filter);
+            return await ds.GetEntityAsync(CurrentEntity, filter).ConfigureAwait(false);
         }
         /// <summary>
         /// Get Entity Data from an Opened DataSource
@@ -692,7 +692,7 @@ namespace TheTechIdea.Beep
             var ds = DataSources.FirstOrDefault(f => f.DatasourceName.Equals(dataSourceName, StringComparison.InvariantCultureIgnoreCase));
             if (ds == null)
             {
-                ds = await CreateNewDataSourceConnectionAsync(dataSourceName);
+                ds = await CreateNewDataSourceConnectionAsync(dataSourceName).ConfigureAwait(false);
             }
 
             return ds != null ?  ds.Openconnection() : ConnectionState.Broken;

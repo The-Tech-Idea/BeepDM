@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -56,7 +56,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 );
 
                 // Load data
-                var customers = await unitOfWork.Get();
+                var customers = await unitOfWork.Get().ConfigureAwait(false);
                 Console.WriteLine($"Loaded {customers.Count} customers");
 
                 // Create a new customer - default values will be automatically applied
@@ -76,7 +76,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 }
 
                 // Commit all changes
-                var result = await unitOfWork.Commit();
+                var result = await unitOfWork.Commit().ConfigureAwait(false);
                 return result.Flag == Errors.Ok;
             }
             catch (Exception ex)
@@ -103,7 +103,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 DefaultsManager.Initialize(editor);
 
                 // Configure default values for Customer entity
-                await ConfigureCustomerDefaults(editor, "MyDatabase");
+                await ConfigureCustomerDefaults(editor, "MyDatabase").ConfigureAwait(false);
 
                 // Initialize UnitofWork - it will automatically use the configured defaults
                 using var unitOfWork = new UnitofWork<Customer>(
@@ -143,7 +143,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 Console.WriteLine($"Modified By: {newCustomer.ModifiedBy}");
 
                 // Commit changes
-                var result = await unitOfWork.Commit();
+                var result = await unitOfWork.Commit().ConfigureAwait(false);
                 Console.WriteLine($"Commit result: {result.Flag} - {result.Message}");
 
                 return result.Flag == Errors.Ok;
@@ -273,7 +273,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 );
 
                 // Load all data first
-                var allCustomers = await unitOfWork.Get();
+                var allCustomers = await unitOfWork.Get().ConfigureAwait(false);
                 Console.WriteLine($"Total customers: {allCustomers.Count}");
 
                 // Apply filters - pass values as strings for consistency
@@ -293,7 +293,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                     }
                 };
 
-                var filteredCustomers = await unitOfWork.Get(filters);
+                var filteredCustomers = await unitOfWork.Get(filters).ConfigureAwait(false);
                 Console.WriteLine($"Filtered customers: {filteredCustomers.Count}");
 
                 // Apply paging
@@ -306,7 +306,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                     new AppFilter {FieldName = "PageSize", FilterValue = unitOfWork.PageSize.ToString() }
                 }).ToList();
 
-                var pagedCustomers = await unitOfWork.Get(pagedFilters);
+                var pagedCustomers = await unitOfWork.Get(pagedFilters).ConfigureAwait(false);
                 Console.WriteLine($"Paged customers: {pagedCustomers.Count}");
 
                 return true;
@@ -358,7 +358,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 var newCustomer = unitOfWork.CurrentItem;
                 // Leave required fields empty to trigger validation errors
 
-                var commitResult = await unitOfWork.Commit();
+                var commitResult = await unitOfWork.Commit().ConfigureAwait(false);
                 Console.WriteLine($"Commit result: {commitResult.Flag} - {commitResult.Message}");
 
                 return true;
@@ -428,7 +428,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                 newCustomer.Name = "Event Test Customer";
                 newCustomer.Email = "eventtest@example.com";
 
-                var customers = await unitOfWork.Get();
+                var customers = await unitOfWork.Get().ConfigureAwait(false);
                 if (customers.Count > 0)
                 {
                     var firstCustomer = customers[0];
@@ -436,7 +436,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
                     unitOfWork.Update(firstCustomer);
                 }
 
-                var commitResult = await unitOfWork.Commit();
+                var commitResult = await unitOfWork.Commit().ConfigureAwait(false);
                 Console.WriteLine($"Commit with events result: {commitResult.Flag}");
 
                 return commitResult.Flag == Errors.Ok;
@@ -485,7 +485,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
 
                 // Commit all at once for better performance
                 startTime = DateTime.Now;
-                var result = await unitOfWork.Commit();
+                var result = await unitOfWork.Commit().ConfigureAwait(false);
                 Console.WriteLine($"Committed 100 customers in {(DateTime.Now - startTime).TotalMilliseconds}ms");
 
                 // Check if dirty tracking is working
@@ -514,31 +514,31 @@ namespace TheTechIdea.Beep.Editor.UOW.Examples
             Console.WriteLine("=== UnitofWork Refactored Examples ===\n");
 
             Console.WriteLine("1. Running Basic Usage Example...");
-            await BasicUsageExample(editor);
+            await BasicUsageExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("2. Running DefaultsManager Integration Example...");
-            await DefaultsManagerIntegrationExample(editor);
+            await DefaultsManagerIntegrationExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("3. Running List Mode Example...");
-            await ListModeExample(editor);
+            await ListModeExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("4. Running Filtering and Paging Example...");
-            await FilteringAndPagingExample(editor);
+            await FilteringAndPagingExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("5. Running Error Handling Example...");
-            await ErrorHandlingExample(editor);
+            await ErrorHandlingExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("6. Running Event Handling Example...");
-            await EventHandlingExample(editor);
+            await EventHandlingExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("7. Running Performance Example...");
-            await PerformanceExample(editor);
+            await PerformanceExample(editor).ConfigureAwait(false);
             Console.WriteLine();
 
             Console.WriteLine("=== All Examples Completed ===");

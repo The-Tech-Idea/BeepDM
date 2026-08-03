@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,7 +71,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                var dirtyBlocksInfo = await AnalyzeDirtyStateAsync(blockName);
+                var dirtyBlocksInfo = await AnalyzeDirtyStateAsync(blockName).ConfigureAwait(false);
                 
                 // If no dirty blocks, continue
                 if (!dirtyBlocksInfo.Any())
@@ -91,10 +91,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 switch (args.UserChoice)
                 {
                     case UnsavedChangesAction.Save:
-                        return await SaveDirtyBlocksAsync(args.DirtyBlocks);
+                        return await SaveDirtyBlocksAsync(args.DirtyBlocks).ConfigureAwait(false);
                         
                     case UnsavedChangesAction.Discard:
-                        return await RollbackDirtyBlocksAsync(args.DirtyBlocks);
+                        return await RollbackDirtyBlocksAsync(args.DirtyBlocks).ConfigureAwait(false);
                         
                     case UnsavedChangesAction.Cancel:
                     default:
@@ -180,7 +180,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                 // Validate blocks before saving if required
                 if (saveOptions.ValidateBeforeSave)
                 {
-                    var validationResults = await ValidateBlocksAsync(dirtyBlocks);
+                    var validationResults = await ValidateBlocksAsync(dirtyBlocks).ConfigureAwait(false);
                     if (validationResults.Any(vr => !vr.IsValid))
                     {
                         LogError("Validation failed for one or more blocks", null);
@@ -201,7 +201,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                         var blockInfo = _getBlockFunc(blockName);
                         if (blockInfo?.UnitOfWork != null)
                         {
-                            var result = await SaveBlockWithRetryAsync(blockInfo, saveOptions);
+                            var result = await SaveBlockWithRetryAsync(blockInfo, saveOptions).ConfigureAwait(false);
                             results.Add(result);
                             
                             if (result.Success)
@@ -266,7 +266,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                         var blockInfo = _getBlockFunc(blockName);
                         if (blockInfo?.UnitOfWork != null)
                         {
-                            var result = await blockInfo.UnitOfWork.Rollback();
+                            var result = await blockInfo.UnitOfWork.Rollback().ConfigureAwait(false);
                             
                             if (result.Flag == Errors.Ok)
                             {
@@ -350,7 +350,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             {
                 try
                 {
-                    var result = await blockInfo.UnitOfWork.Commit();
+                    var result = await blockInfo.UnitOfWork.Commit().ConfigureAwait(false);
                     
                     if (result.Flag == Errors.Ok)
                     {
@@ -385,7 +385,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     if (retryCount < maxRetries && IsRetryableException(ex))
                     {
                         retryCount++;
-                        await Task.Delay(options.RetryDelayMs * retryCount);
+                        await Task.Delay(options.RetryDelayMs * retryCount).ConfigureAwait(false);
                         continue;
                     }
                     

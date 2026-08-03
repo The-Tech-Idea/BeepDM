@@ -1,4 +1,4 @@
-// Example 02 — Schema Governance & Versioning
+﻿// Example 02 — Schema Governance & Versioning
 // Demonstrates attaching a SyncSchemaVersion, promoting approval state,
 // persisting versioned snapshots, and diffing against the stored baseline.
 //
@@ -65,7 +65,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             };
 
             // ── 4. Persist the versioned snapshot ─────────────────────────────────
-            await persistHelper.SaveVersionedSchemaAsync(schema, schema.CurrentSchemaVersion);
+            await persistHelper.SaveVersionedSchemaAsync(schema, schema.CurrentSchemaVersion).ConfigureAwait(false);
 
             // ── 5. Promote the schema to Approved ─────────────────────────────────
             // PromoteMappingState stamps ApprovalState and logs the transition.
@@ -79,7 +79,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 DestinationField = "DiscountAmount",
             });
 
-            var diff = await persistHelper.DiffSchemaToPersistedAsync(schema);
+            var diff = await persistHelper.DiffSchemaToPersistedAsync(schema).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(diff))
                 Console.WriteLine($"Drift detected:\n{diff}");
             else
@@ -96,17 +96,17 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                 MappingVersion = "v1.1",
                 ChangeNotes    = "Added Discount → DiscountAmount field mapping.",
             };
-            await persistHelper.SaveVersionedSchemaAsync(schema, schema.CurrentSchemaVersion);
+            await persistHelper.SaveVersionedSchemaAsync(schema, schema.CurrentSchemaVersion).ConfigureAwait(false);
 
             // ── 8. Load full version history ──────────────────────────────────────
-            var history = await persistHelper.LoadSchemaVersionsAsync(schema.Id);
+            var history = await persistHelper.LoadSchemaVersionsAsync(schema.Id).ConfigureAwait(false);
             foreach (var v in history)
                 Console.WriteLine($"  v{v.Version} ({v.ApprovalState}) by {v.SavedBy} at {v.SavedAt:u}");
 
             // ── 9. Register, run, and save ─────────────────────────────────────────
             syncManager.AddSyncSchema(schema);
-            await syncManager.SyncDataAsync(schema, CancellationToken.None, null);
-            await syncManager.SaveSchemasAsync();
+            await syncManager.SyncDataAsync(schema, CancellationToken.None, null).ConfigureAwait(false);
+            await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
         public static void Run(IDMEEditor editor) =>
