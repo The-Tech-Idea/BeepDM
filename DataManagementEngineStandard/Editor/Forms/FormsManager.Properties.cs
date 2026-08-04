@@ -68,6 +68,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Gets the LOV manager</summary>
         public ILOVManager LOV => _lovManager;
 
+        /// <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
+        public IVisualAttributeManager VisualAttributes => _visualAttributeManager;
+
         /// <summary>Gets the item property manager</summary>
         public IItemPropertyManager ItemProperties => _itemPropertyManager;
 
