@@ -58,6 +58,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
         IVisualAttributeManager VisualAttributes { get; }
 
+        /// <summary>The form's menu (Oracle Forms menu module).</summary>
+        IFormMenuManager Menu { get; }
+
+        /// <summary>
+        /// Invokes a form menu item by id: a built-in runs the matching form
+        /// operation, a MenuItemTrigger fires the WhenMenuItem trigger with the id
+        /// in context, a CallForm calls the named form. A separator or submenu is
+        /// a no-op.
+        /// </summary>
+        System.Threading.Tasks.Task<IErrorsInfo> InvokeMenuItemAsync(string itemId);
+
         /// <summary>Gets the item property manager</summary>
         IItemPropertyManager ItemProperties { get; }
         

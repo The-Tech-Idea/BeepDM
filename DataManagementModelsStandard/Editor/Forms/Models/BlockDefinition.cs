@@ -347,4 +347,11 @@ public class FormDefinition
     /// on load, rather than expecting them to be added in code.
     /// </summary>
     public bool AutoCreateBlocksFromDefinition { get; set; } = true;
+
+    /// <summary>
+    /// The form's menu (Oracle Forms menu module), or null when the form has
+    /// none. A host renders it and invokes items through
+    /// <c>IUnitofWorksManager.InvokeMenuItemAsync</c>.
+    /// </summary>
+    public TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuDefinition Menu { get; set; }
 }

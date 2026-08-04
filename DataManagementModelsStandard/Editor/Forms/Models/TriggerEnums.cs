@@ -403,7 +403,15 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         Custom4 = 203,
         /// <summary>Custom application-defined trigger 5</summary>
         Custom5 = 204,
-        
+
+        /// <summary>
+        /// Fires when a form menu item of kind <c>MenuItemTrigger</c> is invoked.
+        /// The invoked item's id is in the trigger context so a single form-scope
+        /// handler can dispatch on it. Oracle Forms runs a menu item's PL/SQL;
+        /// this is the engine-neutral equivalent.
+        /// </summary>
+        WhenMenuItem = 205,
+
         /// <summary>User named trigger</summary>
         UserNamed = 250
         

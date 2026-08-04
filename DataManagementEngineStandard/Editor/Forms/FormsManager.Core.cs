@@ -39,6 +39,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly IValidationManager _validationManager;
         private readonly ILOVManager _lovManager;
         private readonly IVisualAttributeManager _visualAttributeManager = new VisualAttributeManager();
+        private readonly IFormMenuManager _formMenuManager = new FormMenuManager();
         private readonly IItemPropertyManager _itemPropertyManager;
         private readonly ITriggerManager _triggerManager;
         private readonly ISavepointManager _savepointManager;
