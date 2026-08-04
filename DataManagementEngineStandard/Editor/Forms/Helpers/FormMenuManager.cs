@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
@@ -12,7 +13,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
     {
         private FormMenuDefinition _menu;
 
-        public void RegisterMenu(FormMenuDefinition menu) => _menu = menu;
+        /// <inheritdoc/>
+        public event EventHandler MenuChanged;
+
+        public void RegisterMenu(FormMenuDefinition menu)
+        {
+            _menu = menu;
+            MenuChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         public FormMenuDefinition GetMenu() => _menu;
 

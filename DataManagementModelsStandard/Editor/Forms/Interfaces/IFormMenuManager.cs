@@ -1,3 +1,4 @@
+using System;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 
 namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
@@ -10,6 +11,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
     /// </summary>
     public interface IFormMenuManager
     {
+        /// <summary>
+        /// Raised when the menu is registered or replaced, so a host that renders
+        /// it can rebuild its menu bar. The engine notifies; the UI reacts — the
+        /// host never polls.
+        /// </summary>
+        event EventHandler MenuChanged;
+
         /// <summary>Registers (or replaces) the form's menu.</summary>
         void RegisterMenu(FormMenuDefinition menu);
 
