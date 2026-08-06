@@ -260,46 +260,68 @@ var transformRule = new StringReplaceRule
                 <section id="services" class="section">
                     <h2>Service Registration Examples</h2>
                     
+                    <div class="warning">
+                        <strong>Corrected (2026).</strong> These samples previously used
+                        <code>AddBeepForDesktop</code> / <code>AddBeepForWeb</code> /
+                        <code>AddBeepForBlazorServer</code> and <code>app.UseBeepForWeb()</code>. None of those
+                        methods exist — nor do the <code>MaxConnectionPoolSize</code> and
+                        <code>EnableSignalRSupport</code> options they set. The real entry point is
+                        <code>AddBeepServices()</code>; pick the lifetime with <code>AsSingleton()</code> or
+                        <code>AsScoped()</code>.
+                    </div>
+
                     <h3>Desktop Application</h3>
                     <pre><code class="language-csharp">var builder = Host.CreateApplicationBuilder();
-builder.Services.AddBeepForDesktop(opts =>
-{
-    opts.AppRepoName = "MyDesktopApp";
-    opts.DirectoryPath = AppContext.BaseDirectory;
-    opts.EnableAssemblyLoading = true;
-    opts.EnableAutoMapping = true;
-});
+
+IBeepService beepService = builder.Services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyDesktopApp")
+    .WithConfigType(BeepConfigType.Application)
+    .WithAssemblyLoading()
+    .WithMapping()
+    .AsSingleton()          // singleton for desktop
+    .Build();
 
 var host = builder.Build();
-var beepService = host.Services.GetRequiredService&lt;IBeepService&gt;();
 
-// Load plugins
+// Load plugins with progress reporting
 var progress = new Progress&lt;PassedArgs&gt;(args =>
     Console.WriteLine($"Loading: {args.Messege}"));
 beepService.LoadAssemblies(progress);</code></pre>
+                    <p><code>Build()</code> returns the <code>IBeepService</code> directly, so you do not need to
+                       resolve it from the provider afterwards. Note <code>PassedArgs.Messege</code> is spelled that
+                       way in the contract.</p>
 
                     <h3>Web API</h3>
                     <pre><code class="language-csharp">var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddBeepForWeb(opts =>
-{
-    opts.AppRepoName = "MyWebApi";
-    opts.DirectoryPath = Path.Combine(AppContext.BaseDirectory, "Beep");
-    opts.MaxConnectionPoolSize = 100;
-});
+
+builder.Services.AddBeepServices()
+    .WithDirectory(Path.Combine(AppContext.BaseDirectory, "Beep"))
+    .WithAppRepo("MyWebApi")
+    .WithConfigType(BeepConfigType.Application)
+    .AsScoped()             // scoped for web
+    .Build();
 
 var app = builder.Build();
-app.UseBeepForWeb();</code></pre>
+// No UseBeepForWeb() middleware exists - nothing further to wire up.</code></pre>
 
                     <h3>Blazor Server</h3>
                     <pre><code class="language-csharp">var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddBeepForBlazorServer(opts =>
-{
-    opts.AppRepoName = "MyBlazorApp";
-    opts.EnableSignalRSupport = true;
-});
+
+builder.Services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyBlazorApp")
+    .WithConfigType(BeepConfigType.Application)
+    .AsScoped()             // scoped for Blazor Server
+    .Build();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();</code></pre>
+                    <p>With a scoped registration the components are resolved by key — e.g.
+                       <code>[Inject] IDMEEditor Editor</code> requires
+                       <code>GetRequiredKeyedService&lt;IDMEEditor&gt;("Editor")</code> semantics. See
+                       <a href="beepservice.html#service-registration">BeepService → DI Service Registration</a>
+                       for why the singleton and scoped paths differ.</p>
                 </section>
 
                 <section id="migration" class="section">

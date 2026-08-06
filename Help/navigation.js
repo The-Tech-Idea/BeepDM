@@ -249,6 +249,14 @@ class NavigationManager {
                 activeId: 'nav-json-datasource',
                 openSection: 'nav-advanced-topics'
             },
+            'json-multifile-datasource': {
+                activeId: 'nav-json-multifile-datasource',
+                openSection: 'nav-advanced-topics'
+            },
+            'cache-datasources': {
+                activeId: 'nav-cache-datasources',
+                openSection: 'nav-data-management'
+            },
             'rules-engine-parser': {
                 activeId: 'nav-rules-engine-parser',
                 openSection: 'nav-advanced-topics'
@@ -354,6 +362,7 @@ class NavigationManager {
                         <li><a href="inmemory-datasource.html" id="nav-inmemory-datasource">InMemory DataSource</a></li>
                         <li><a href="localdb.html" id="nav-localdb">LocalDB DataSource</a></li>
                         <li><a href="caching-api.html" id="nav-caching-api">ICacheProvider + CacheManager</a></li>
+                        <li><a href="cache-datasources.html" id="nav-cache-datasources">Cache DataSources</a></li>
                         <li><a href="proxy-datasource.html" id="nav-proxy-datasource">IProxyDataSource</a></li>
                         <li><a href="proxycluster.html" id="nav-proxycluster">ProxyCluster</a></li>
                         <li><a href="remoteproxy-datasource.html" id="nav-remoteproxy">RemoteProxy</a></li>
@@ -394,6 +403,7 @@ class NavigationManager {
                         <li><a href="filemanager-reader-host.html" id="nav-filemanager-reader-host">FileManager DataSource</a></li>
                         <li><a href="csv-datasource.html" id="nav-csv-datasource">CSV DataSource</a></li>
                         <li><a href="json-datasource.html" id="nav-json-datasource">JSON DataSource</a></li>
+                        <li><a href="json-multifile-datasource.html" id="nav-json-multifile-datasource">JsonMultiFile DataSource</a></li>
                         <li><a href="rules-engine-parser.html" id="nav-rules-engine-parser">Rules Engine &amp; Parsers</a></li>
                         <li><a href="workflow.html" id="nav-workflow">Workflow Engine</a></li>
                         <li><a href="beepsyncmanager.html" id="nav-beepsyncmanager">BeepSync Manager</a></li>

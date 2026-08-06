@@ -138,6 +138,39 @@ Recently fixed — if you see these patterns in older branches or docs, they're 
 
 `README.md` is the most accurate architecture reference — it documents the five core services in depth. `Docs/*.md` covers subsystems (`CoreArchitecture`, `HowToCreateNewDataSource`, `UnitOfWork`, `ETL`, `SetupFramework`, `RulesEngine`, `Proxy`); `Help/*.html` is the rendered equivalent. Per-folder `README.md` files are common and generally current.
 
+### Help/*.html is mirrored to the website — always update both
+
+`Help/` is published as the BeepDM product documentation on the TheTechIdea website. The website copy lives **outside this repo**, in a different repository:
+
+```
+C:\Users\f_ald\source\repos\fahadTheTechIdea\MyWebSite\TheTechIdeaWeb\TheTechIdeaWeb.Web\wwwroot\Products Documentation\beepdm\
+```
+
+**Whenever you add, edit, or delete a file under `Help/`, make the identical change in that folder in the same session.** A Help edit that isn't mirrored ships stale docs to the live site. This covers `.html`, `sphinx-style.css`, and `navigation.js` — everything except `README.md` and `NAVIGATION_README.md`, which are internal to the repo and deliberately not published.
+
+**The theme is shared, so pages render identically.** `sphinx-style.css` and `navigation.js` are byte-identical in both locations, every page links them relatively (`href="sphinx-style.css"`), and the pages are complete standalone HTML documents served straight from `wwwroot` — they are *not* injected into a Razor layout. So a copied page picks up the same theme; there is no destination-specific CSS to reconcile.
+
+**But the mirror is not a blind copy — diff before overwriting.** One file is intentionally different:
+
+- `formsmanager.html` — the public copy has references to the internal `DataManagementEngineStandard/Editor/Forms/.plans` folder **stripped**. Internal repo paths, `.plans/` links, and anything that only makes sense to someone with a checkout must not be published. If you edit this file, re-apply that removal on the website side rather than copying it verbatim.
+
+Always `diff --strip-trailing-cr` the file *before* overwriting it. If the website copy already differs, find out why before clobbering it — the difference may be deliberate sanitization (as above) or the website copy may be the *better* one.
+
+Apart from that file, the folders are a file-for-file content-identical mirror; the only other difference is line endings — `Help/` uses **LF**, the website copy uses **CRLF**. Preserve that when copying:
+
+```powershell
+$src = "C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\Help"
+$dst = "C:\Users\f_ald\source\repos\fahadTheTechIdea\MyWebSite\TheTechIdeaWeb\TheTechIdeaWeb.Web\wwwroot\Products Documentation\beepdm"
+foreach ($f in @('changed-file.html')) {
+  $t = [IO.File]::ReadAllText((Join-Path $src $f)) -replace "`r`n","`n" -replace "`n","`r`n"
+  [IO.File]::WriteAllText((Join-Path $dst $f), $t, (New-Object Text.UTF8Encoding $false))
+}
+```
+
+Verify with `diff --strip-trailing-cr Help/<file> "<website>/<file>"` — it must report no differences. Note the website path contains a space (`Products Documentation`), so quote it.
+
+Because the mirror is a **separate git repository**, it needs its own commit. Don't assume committing in BeepDM publishes anything; mention the website repo has uncommitted changes so the user can commit and deploy it.
+
 Deep-dive skills for subsystems (setup, migration, etl, forms, unitofwork, configeditor, assemblyhandler, rdbms helpers, proxy, …) are duplicated across `.cursor/<name>/SKILL.md` and `.harness/skills/beepdm-<name>/SKILL.md`. **If you change how one layer hands off to another, update both locations** plus the integration map in `.github/`, or the agents drift apart.
 
 `.plans/` holds a phased-plan + master-tracker workflow (`MASTER-TODO-TRACKER.md` with `PHASE-NN-*.md` documents). Multi-step work in this repo is expected to follow that structure.

@@ -71,6 +71,7 @@
                         <li><a href="#circuit-breaker">Circuit Breaker</a></li>
                         <li><a href="#connection-cap">Connection Multiplexing</a></li>
                         <li><a href="#persistence">Config Persistence</a></li>
+                        <li><a href="#as-datasource">Using ProxyCluster as an IDataSource</a></li>
                         <li><a href="#full-api">Full API Reference</a></li>
                         <li><a href="#examples">Usage Examples</a></li>
                     </ul>
@@ -454,33 +455,219 @@ cluster.AddNode(new ProxyNode("replica", replicaProxy, weight: 1, role: Replica)
 // Save all nodes to ConfigEditor.DataConnections
 cluster.SaveNodesToConfig();
 
-// Reload from config
-cluster.LoadLocalNodesFromConfig();</code></pre>
+// Reload from config - REQUIRES a factory that turns a stored
+// ConnectionProperties record back into a live node proxy.
+cluster.LoadLocalNodesFromConfig(conn =&gt;
+{
+    // return null to skip a record you don't recognise
+    return BuildProxyForConnection(conn);
+});</code></pre>
+                    <div class="warning">
+                        <strong><code>LoadLocalNodesFromConfig</code> is not parameterless.</strong> Both it and
+                        <code>LoadNodesFromConfig</code> take a
+                        <code>Func&lt;ConnectionProperties, IProxyDataSource?&gt;</code> factory — the cluster
+                        persists connection records, not live proxies, so it cannot rebuild nodes without one.
+                        Both also return immediately when <code>DMEEditor?.ConfigEditor</code> is null, and only
+                        consider connections whose <code>DriverName</code> is <code>"BeepProxyNode"</code> and
+                        whose <code>ClusterName</code> parameter matches this cluster.
+                    </div>
+                </section>
+
+                <section id="as-datasource" class="section">
+                    <h2>Using ProxyCluster as an IDataSource</h2>
+                    <p>Because <code>IProxyCluster</code> extends <code>IProxyDataSource</code>, which extends
+                       <code>IDataSource</code>, <strong>a <code>ProxyCluster</code> is itself a datasource</strong>.
+                       Everything that consumes <code>IDataSource</code> — <code>UnitofWork&lt;T&gt;</code>, ETL,
+                       the sync and import managers — can point at a cluster and get routing, failover and
+                       load-balancing for free, without knowing a cluster is involved.</p>
+
+                    <pre><code class="language-csharp">public partial class ProxyCluster : IProxyCluster
+// IProxyCluster : IProxyDataSource  ->  IProxyDataSource : IDataSource, IDisposable</code></pre>
+
+                    <div class="note">
+                        <strong>Why this is easy to miss.</strong> <code>ProxyCluster</code> never names
+                        <code>IDataSource</code> in its own base list — the relationship is two levels up the
+                        interface chain. Searching the codebase for <code>: IDataSource</code> will not find it.
+                    </div>
+
+                    <h3>Connection lifecycle</h3>
+                    <pre><code class="language-csharp">public ConnectionState Openconnection();
+public ConnectionState Closeconnection();
+public void Dispose();</code></pre>
+
+                    <h3>Metadata</h3>
+                    <pre><code class="language-csharp">public IEnumerable&lt;string&gt; GetEntitesList();
+public bool                CheckEntityExist(string entityName);
+public int                 GetEntityIdx(string entityName);
+public Type                GetEntityType(string entityName);
+public EntityStructure     GetEntityStructure(string entityName, bool refresh);
+public EntityStructure     GetEntityStructure(EntityStructure fnd, bool refresh = false);
+public IEnumerable&lt;ChildRelation&gt;    GetChildTablesList(...);
+public IEnumerable&lt;RelationShipKeys&gt; GetEntityforeignkeys(...);</code></pre>
+
+                    <h3>Reads — routed to a selected node</h3>
+                    <pre><code class="language-csharp">public IEnumerable&lt;object&gt; GetEntity(string entityName, List&lt;AppFilter&gt; filter);
+public PagedResult         GetEntity(string entityName, List&lt;AppFilter&gt; filter,
+                                     int pageNumber, int pageSize);
+public Task&lt;IEnumerable&lt;object&gt;&gt; GetEntityAsync(string entityName, List&lt;AppFilter&gt; filter);
+public IEnumerable&lt;object&gt; RunQuery(string qrystr);
+public double              GetScalar(string query);
+public Task&lt;double&gt;        GetScalarAsync(string query);</code></pre>
+
+                    <h3>Writes — steered to a primary</h3>
+                    <pre><code class="language-csharp">public IErrorsInfo InsertEntity(string entityName, object insertedData);
+public IErrorsInfo UpdateEntity(string entityName, object uploadDataRow);
+public IErrorsInfo UpdateEntities(string entityName, object uploadData,
+                                  IProgress&lt;PassedArgs&gt; progress);
+public IErrorsInfo DeleteEntity(string entityName, object uploadDataRow);
+public IErrorsInfo ExecuteSql(string sql);</code></pre>
+
+                    <h3>Schema &amp; scripting</h3>
+                    <pre><code class="language-csharp">public bool        CreateEntityAs(EntityStructure entity);
+public IErrorsInfo CreateEntities(List&lt;EntityStructure&gt; entities);
+public IErrorsInfo RunScript(ETLScriptDet dDLScripts);
+public IEnumerable&lt;ETLScriptDet&gt; GetCreateEntityScript(List&lt;EntityStructure&gt; entities = null);</code></pre>
+
+                    <h3>Transactions</h3>
+                    <pre><code class="language-csharp">public IErrorsInfo BeginTransaction(PassedArgs args);
+public IErrorsInfo EndTransaction(PassedArgs args);
+public IErrorsInfo Commit(PassedArgs args);</code></pre>
+                    <div class="warning">
+                        <strong>Transactions do not span the cluster.</strong> A cluster has no distributed
+                        transaction coordinator — these delegate to whichever node the call lands on. Do not assume
+                        a <code>BeginTransaction</code> / <code>Commit</code> pair wraps writes that were routed to
+                        different nodes. For work that must be atomic, pin it to one node via
+                        <code>ExecuteWithLoadBalancing</code> or target the underlying datasource directly.
+                    </div>
+
+                    <h3>Identity defaults</h3>
+                    <p>Note what a cluster reports about itself — these are the class defaults, not derived from
+                       the nodes:</p>
+                    <table>
+                        <thead><tr><th>Property</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>DatasourceName</code></td><td><code>"ProxyCluster"</code></td></tr>
+                            <tr><td><code>DatasourceType</code></td><td><code>DataSourceType.Other</code></td></tr>
+                            <tr><td><code>Category</code></td><td><code>DatasourceCategory.RDBMS</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><code>DatasourceType.Other</code> means you cannot identify a cluster by type at runtime, and
+                       <code>Category</code> is hard-coded to <code>RDBMS</code> even when the backing nodes are
+                       not relational. Test the concrete type instead:</p>
+                    <pre><code class="language-csharp">if (ds is ProxyCluster cluster) { /* cluster-specific work */ }</code></pre>
+                    <div class="note">
+                        <strong>No <code>[AddinAttribute]</code>.</strong> <code>ProxyCluster</code> is discovered
+                        purely by the interface-driven path in <code>ScanAssembly</code>; there is no attribute to
+                        supply <code>DatasourceType</code>/<code>Category</code> metadata. Clusters are normally
+                        constructed and wired explicitly rather than resolved by name from a connection.
+                    </div>
+
+                    <h3>Example — UnitofWork over a cluster</h3>
+                    <pre><code class="language-csharp">// The cluster is just an IDataSource as far as UnitofWork is concerned
+var uow = new UnitofWork&lt;Order&gt;(dmEditor, cluster, "Orders");
+
+uow.Get(new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Status", Operator = "=", FilterValue = "Open" }
+});   // read -> routed to a replica
+
+var order = uow.New();
+order.CustomerId = 42;
+uow.Add(order);
+uow.Commit();   // write -> steered to a primary</code></pre>
+
+                    <h3>Example — arbitrary work with load balancing</h3>
+                    <pre><code class="language-csharp">var count = await cluster.ExecuteWithLoadBalancing(async ds =&gt;
+{
+    // 'ds' is the node the cluster selected for this call
+    return await ds.GetScalarAsync("SELECT COUNT(*) FROM Orders");
+}, isWrite: false);</code></pre>
                 </section>
 
                 <section id="full-api" class="section">
                     <h2>Full API Reference</h2>
 
-                    <h3>ProxyCluster Methods</h3>
+                    <div class="warning">
+                        <strong>Corrected (2026).</strong> An earlier revision of this table listed
+                        <code>GetNode(string)</code>, <code>GetNodeHealth()</code>,
+                        <code>SetNodeUnhealthy(string, string)</code> and <code>SetNodeHealthy(string)</code>.
+                        <strong>None of those four methods exist</strong> on <code>ProxyCluster</code>. Use
+                        <code>GetNodes()</code> and filter by <code>NodeId</code> for lookup, and the watchdog /
+                        outlier-detection surface for health state. The table below is the verified set.
+                    </div>
+
+                    <h3>Node Management</h3>
                     <table>
                         <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
                         <tbody>
-                            <tr><td><code>AddNode(ProxyNode)</code></td><td><code>void</code></td><td>Add node to routing pool, initialize circuit breaker</td></tr>
-                            <tr><td><code>RemoveNode(string)</code></td><td><code>bool</code></td><td>Immediate removal</td></tr>
-                            <tr><td><code>GetNodes()</code></td><td><code>IReadOnlyCollection&lt;ProxyNode&gt;</code></td><td>Snapshot of all nodes</td></tr>
-                            <tr><td><code>GetNode(string)</code></td><td><code>ProxyNode</code></td><td>Lookup by ID</td></tr>
-                            <tr><td><code>DrainNode(string, int)</code></td><td><code>void</code></td><td>Graceful drain (blocks until InFlightCount=0 or timeout)</td></tr>
-                            <tr><td><code>DrainNodeAsync(string, int, CancellationToken)</code></td><td><code>Task</code></td><td>Async drain</td></tr>
-                            <tr><td><code>GetNodeHealth()</code></td><td><code>IReadOnlyDictionary&lt;string, NodeHealth&gt;</code></td><td>Health status per node</td></tr>
-                            <tr><td><code>SetNodeUnhealthy(string, string)</code></td><td><code>void</code></td><td>Force node unhealthy with reason</td></tr>
-                            <tr><td><code>SetNodeHealthy(string)</code></td><td><code>void</code></td><td>Force node healthy</td></tr>
-                            <tr><td><code>SaveNodesToConfig()</code></td><td><code>void</code></td><td>Persist all nodes to ConfigEditor.DataConnections</td></tr>
-                            <tr><td><code>LoadLocalNodesFromConfig()</code></td><td><code>void</code></td><td>Reload local nodes from config (requires DMEEditor)</td></tr>
-                            <tr><td><code>ApplyClusterPolicy(ProxyPolicy)</code></td><td><code>void</code></td><td>Apply policy + fan out to all node proxies</td></tr>
-                            <tr><td><code>GetClusterMetrics()</code></td><td><code>IDictionary&lt;string, DataSourceMetrics&gt;</code></td><td>Aggregated metrics keyed by node ID</td></tr>
-                            <tr><td><code>GetClusterSloSnapshots()</code></td><td><code>IReadOnlyList&lt;ProxySloSnapshot&gt;</code></td><td>Per-node SLO snapshots</td></tr>
+                            <tr><td><code>AddNode(IProxyNode)</code></td><td><code>void</code></td><td>Add node to routing pool, initialize circuit breaker</td></tr>
+                            <tr><td><code>RemoveNode(string nodeId)</code></td><td><code>void</code></td><td>Immediate removal</td></tr>
+                            <tr><td><code>GetNodes()</code></td><td><code>IReadOnlyList&lt;IProxyNode&gt;</code></td><td>Snapshot of all nodes — filter this for single-node lookup</td></tr>
+                            <tr><td><code>DrainNode(string nodeId, int timeoutMs = 30_000)</code></td><td><code>void</code></td><td>Graceful drain (blocks until in-flight drops to 0 or timeout)</td></tr>
+                            <tr><td><code>DrainNodeAsync(string nodeId, int timeoutMs = 30_000, …)</code></td><td><code>Task</code></td><td>Async drain</td></tr>
+                            <tr><td><code>AddDataSource(string dsName, int weight = 1)</code></td><td><code>void</code></td><td>Add a backing datasource by name with a routing weight</td></tr>
+                            <tr><td><code>RemoveDataSource(string dsName)</code></td><td><code>void</code></td><td>Remove a backing datasource</td></tr>
+                            <tr><td><code>SetRole(string dsName, ProxyDataSourceRole role)</code></td><td><code>void</code></td><td>Assign primary/replica role</td></tr>
                         </tbody>
                     </table>
+
+                    <h3>Connections &amp; Cache</h3>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GetConnection(string dsName)</code></td><td><code>IDataSource</code></td><td>Resolve a node's underlying datasource</td></tr>
+                            <tr><td><code>GetPooledConnection(string dsName)</code></td><td><code>IDataSource</code></td><td>Take a pooled connection</td></tr>
+                            <tr><td><code>ReturnConnection(string dsName, IDataSource connection)</code></td><td><code>void</code></td><td>Return a pooled connection</td></tr>
+                            <tr><td><code>GetEntityWithCache(string entityName, List&lt;AppFilter&gt; filter, TimeSpan? expiration = null)</code></td><td><code>object</code></td><td>Cached read routed to a selected node</td></tr>
+                            <tr><td><code>InvalidateCache(string entityName = null)</code></td><td><code>void</code></td><td>Invalidate on <strong>every</strong> node; null clears all entities</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Policy, Metrics &amp; Config</h3>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ApplyClusterPolicy(ProxyPolicy)</code></td><td><code>void</code></td><td>Apply policy + fan out to all node proxies</td></tr>
+                            <tr><td><code>ApplyPolicy(ProxyPolicy)</code></td><td><code>void</code></td><td>Alias that forwards to <code>ApplyClusterPolicy</code></td></tr>
+                            <tr><td><code>GetMetrics()</code></td><td><code>IDictionary&lt;string, DataSourceMetrics&gt;</code></td><td>Metrics keyed by node</td></tr>
+                            <tr><td><code>GetClusterMetrics()</code></td><td><code>IDictionary&lt;string, DataSourceMetrics&gt;</code></td><td>Aggregated metrics keyed by node ID</td></tr>
+                            <tr><td><code>GetSloSnapshot(string dsName)</code></td><td><code>ProxySloSnapshot</code></td><td>SLO snapshot for one node</td></tr>
+                            <tr><td><code>GetAllSloSnapshots()</code></td><td><code>IReadOnlyList&lt;ProxySloSnapshot&gt;</code></td><td>Alias for <code>GetClusterSloSnapshots()</code></td></tr>
+                            <tr><td><code>GetClusterSloSnapshots()</code></td><td><code>IReadOnlyList&lt;ProxySloSnapshot&gt;</code></td><td>Per-node SLO snapshots</td></tr>
+                            <tr><td><code>SaveNodesToConfig()</code></td><td><code>void</code></td><td>Persist all nodes to <code>ConfigEditor.DataConnections</code></td></tr>
+                            <tr><td><code>LoadLocalNodesFromConfig(Func&lt;ConnectionProperties, IProxyDataSource?&gt;)</code></td><td><code>void</code></td><td>Reload local nodes — <strong>takes a factory delegate</strong>, not parameterless</td></tr>
+                            <tr><td><code>LoadNodesFromConfig(Func&lt;ConnectionProperties, IProxyDataSource?&gt;)</code></td><td><code>void</code></td><td>Reload nodes from config with a factory</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Watchdog / Node Probing</h3>
+                    <table>
+                        <thead><tr><th>Member</th><th>Type</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>WatchdogIntervalMs</code></td><td><code>int</code></td><td><code>5000</code></td></tr>
+                            <tr><td><code>WatchdogProbeTimeoutMs</code></td><td><code>int</code></td><td><code>2000</code></td></tr>
+                            <tr><td><code>WatchdogFailureThreshold</code></td><td><code>int</code></td><td><code>2</code></td></tr>
+                            <tr><td><code>WatchdogRecoveryThreshold</code></td><td><code>int</code></td><td><code>1</code></td></tr>
+                            <tr><td><code>StartWatchdog()</code> / <code>StopWatchdog()</code></td><td><code>void</code></td><td>Start/stop the node probe timer</td></tr>
+                            <tr><td><code>GetWatchdogStatus()</code></td><td><code>IReadOnlyList&lt;WatchdogNodeStatus&gt;</code></td><td>Current per-node probe state</td></tr>
+                            <tr><td><code>ReplicaLagProbe</code></td><td><code>Func&lt;IProxyNode, Task&lt;long&gt;&gt;?</code></td><td>Optional lag probe hook</td></tr>
+                        </tbody>
+                    </table>
+                    <p>The watchdog is where node health lives. There is no
+                       <code>SetNodeHealthy</code>/<code>SetNodeUnhealthy</code> override — health is derived from
+                       probe results against the failure/recovery thresholds above.</p>
+
+                    <h3>Execution &amp; Lifetime</h3>
+                    <table>
+                        <thead><tr><th>Method</th><th>Return</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>ExecuteWithLoadBalancing&lt;T&gt;(Func&lt;IDataSource, Task&lt;T&gt;&gt; operation, bool isWrite = false, CancellationToken ct = default)</code></td><td><code>Task&lt;T&gt;</code></td><td>Run an arbitrary operation against a cluster-selected node. <code>isWrite</code> steers to a primary.</td></tr>
+                            <tr><td><code>Dispose()</code></td><td><code>void</code></td><td>Stop timers, release nodes and the cluster connection semaphore</td></tr>
+                        </tbody>
+                    </table>
+                    <p><code>ExecuteWithLoadBalancing&lt;T&gt;</code> is the escape hatch: it gives you the selected
+                       <code>IDataSource</code> so you can run provider-specific work while still getting routing,
+                       the cluster-wide connection cap, retries and circuit-breaking.</p>
 
                     <h3>All Enum Values</h3>
                     <table>

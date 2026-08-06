@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cache DataSources - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>Cache DataSources</span>
+                </nav>
+                <div class="page-header">
+                    <h1>Cache DataSources</h1>
+                    <p class="page-subtitle">Using a cache tier through the <code>IDataSource</code> contract — <code>CachedMemoryDataSource</code> and <code>InMemoryCacheDataSource</code></p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Caching/DataSources/CachedMemoryDataSource.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Caching/DataSources/InMemoryCacheDataSource.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Caching/DataSources/MemoryCacheConnection.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Caching/Providers/</code> — <code>MemoryCacheProvider</code>, <code>SimpleCacheProvider</code>, <code>HybridCacheProvider</code></li>
+                    </ul>
+                </div>
+
+                <div class="note">
+                    <strong>Not the same thing as the caching API.</strong> This page covers the two
+                    <code>IDataSource</code> implementations backed by a cache. For <code>CacheManager</code>,
+                    <code>ICacheProvider</code>, cache scopes, tagging and the extension-method surface, see
+                    <a href="caching-api.html">ICacheProvider + CacheManager</a>.
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#choosing">Choosing between them</a></li>
+                        <li><a href="#registration">Registration</a></li>
+                        <li><a href="#lifecycle">Connection Lifecycle</a></li>
+                        <li><a href="#api">Shared API Surface</a></li>
+                        <li><a href="#connection">MemoryCacheConnection</a></li>
+                        <li><a href="#unsupported">Unsupported Operations</a></li>
+                        <li><a href="#gotchas">Gotchas</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>Caching/DataSources/</code> provides <code>IDataSource</code> implementations that
+                       operate against an <strong>in-process cache</strong> instead of an external database. This
+                       lets BeepDM address a cache tier through the same contract used by SQL, file and API
+                       providers — so <code>UnitofWork&lt;T&gt;</code>, ETL and the sync engine can read and write
+                       it without knowing it is a cache.</p>
+                    <p>Both classes live in the <code>TheTechIdea.Beep.Caching</code> namespace and share an almost
+                       identical surface. Internally each holds:</p>
+                    <pre><code class="language-csharp">ConcurrentDictionary&lt;string, ConcurrentDictionary&lt;string, object&gt;&gt; _entityData;
+ConcurrentDictionary&lt;string, DateTime&gt;                            _entityTimestamps;
+ICacheProvider                                                     _cacheProvider;</code></pre>
+                    <p>— a per-entity keyed store plus timestamps, layered over an <code>ICacheProvider</code>.</p>
+                </section>
+
+                <section id="choosing" class="section">
+                    <h2>Choosing between them</h2>
+                    <table class="ref-table">
+                        <thead>
+                            <tr><th></th><th><code>CachedMemoryDataSource</code></th><th><code>InMemoryCacheDataSource</code></th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>DataSourceType</strong></td>
+                                <td><code>DataSourceType.CachedMemory</code></td>
+                                <td><code>DataSourceType.InMemoryCache</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Category</strong></td>
+                                <td><code>DatasourceCategory.INMEMORY</code></td>
+                                <td><code>DatasourceCategory.INMEMORY</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Provider (configured)</strong></td>
+                                <td><code>MemoryCacheProvider(config)</code> — Microsoft <code>MemoryCache</code></td>
+                                <td><code>SimpleCacheProvider(config)</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Provider (no config)</strong></td>
+                                <td><code>SimpleCacheProvider()</code></td>
+                                <td><code>SimpleCacheProvider()</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Expiration / size limits</strong></td>
+                                <td>Yes — via <code>MemoryCache</code> policies</td>
+                                <td>No — lightweight, no eviction policy</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Persistence</strong></td>
+                                <td>None</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Intended for</strong></td>
+                                <td>Production caching with policies and bounded memory</td>
+                                <td>Tests and local workloads</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>In short: use <strong><code>CachedMemoryDataSource</code></strong> when you want real
+                       eviction and size limits, and <strong><code>InMemoryCacheDataSource</code></strong> when you
+                       want a fast, dependency-free store for tests. If neither is given a
+                       <code>CacheConfiguration</code>, both fall back to the same
+                       <code>SimpleCacheProvider</code> and behave identically.</p>
+                </section>
+
+                <section id="registration" class="section">
+                    <h2>Registration</h2>
+                    <p>Both carry an <code>[AddinAttribute]</code> and are discovered by
+                       <code>AssemblyHandler</code> during <code>LoadAssemblies()</code>:</p>
+                    <pre><code class="language-csharp">[AddinAttribute(Category = DatasourceCategory.INMEMORY,
+                DatasourceType = DataSourceType.CachedMemory)]
+public class CachedMemoryDataSource : IDataSource
+
+[AddinAttribute(Category = DatasourceCategory.INMEMORY,
+                DatasourceType = DataSourceType.InMemoryCache)]
+public class InMemoryCacheDataSource : IDataSource</code></pre>
+
+                    <h3>Constructors</h3>
+                    <p>Each exposes a parameterless constructor and the standard five-argument datasource
+                       constructor:</p>
+                    <pre><code class="language-csharp">public CachedMemoryDataSource();
+public CachedMemoryDataSource(string datasourcename, IDMLogger logger,
+                              IDMEEditor pDMEEditor, DataSourceType pDatasourceType,
+                              IErrorsInfo per);</code></pre>
+                    <p>The parameterless overload exists for designer/DI activation; prefer the five-argument form,
+                       or resolve through <code>dmEditor.GetDataSource(name)</code> so the editor wires the logger
+                       and error object for you.</p>
+                </section>
+
+                <section id="lifecycle" class="section">
+                    <h2>Connection Lifecycle</h2>
+                    <pre><code class="language-csharp">public ConnectionState Openconnection();
+public ConnectionState Closeconnection();
+public ConnectionState ConnectionStatus { get; set; }   // starts Closed
+public void Dispose();</code></pre>
+                    <p><code>Openconnection()</code> initialises the <code>ICacheProvider</code> — selecting
+                       <code>MemoryCacheProvider</code> or <code>SimpleCacheProvider</code> per the table above —
+                       and flips <code>ConnectionStatus</code> to <code>Open</code>. <code>Dispose()</code> releases
+                       the provider and nulls it.</p>
+                </section>
+
+                <section id="api" class="section">
+                    <h2>Shared API Surface</h2>
+                    <p>Both classes implement the same members with the same signatures.</p>
+
+                    <h3>Metadata</h3>
+                    <pre><code class="language-csharp">public IEnumerable&lt;string&gt; GetEntitesList();
+public bool                CheckEntityExist(string EntityName);
+public int                 GetEntityIdx(string entityName);
+public EntityStructure     GetEntityStructure(string EntityName, bool refresh);
+public EntityStructure     GetEntityStructure(EntityStructure fnd, bool refresh = false);
+public Type                GetEntityType(string EntityName);
+public IErrorsInfo         CreateEntities(List&lt;EntityStructure&gt; entities);
+public bool                CreateEntityAs(EntityStructure entity);</code></pre>
+
+                    <h3>Reads</h3>
+                    <pre><code class="language-csharp">public IEnumerable&lt;object&gt; GetEntity(string EntityName, List&lt;AppFilter&gt; filter);
+public PagedResult         GetEntity(string EntityName, List&lt;AppFilter&gt; filter,
+                                     int pageNumber, int pageSize);
+public Task&lt;IEnumerable&lt;object&gt;&gt; GetEntityAsync(string EntityName, List&lt;AppFilter&gt; Filter);
+public IEnumerable&lt;object&gt; RunQuery(string qrystr);
+public double              GetScalar(string query);
+public Task&lt;double&gt;        GetScalarAsync(string query);</code></pre>
+
+                    <h3>Writes</h3>
+                    <pre><code class="language-csharp">public IErrorsInfo InsertEntity(string EntityName, object InsertedData);
+public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
+public IErrorsInfo DeleteEntity(string EntityName, object UploadDataRow);
+public IErrorsInfo UpdateEntities(string EntityName, object UploadData,
+                                  IProgress&lt;PassedArgs&gt; progress);</code></pre>
+                    <p>Writes follow the BeepDM error convention — they return <code>IErrorsInfo</code> rather than
+                       throwing. Check <code>Flag</code> against <code>Errors.Ok</code>.</p>
+                    <p>Filtering and paging behaviour is deliberately kept consistent with the other providers so
+                       callers can switch datasources without changing query code.</p>
+                </section>
+
+                <section id="connection" class="section">
+                    <h2>MemoryCacheConnection</h2>
+                    <p>Both datasources use <code>MemoryCacheConnection</code> as their
+                       <code>IDataConnection</code> adapter:</p>
+                    <pre><code class="language-csharp">public class MemoryCacheConnection : IDataConnection
+{
+    public MemoryCacheConnection(IDMEEditor dMEEditor);
+
+    public ConnectionDriversConfig DataSourceDriver   { get; set; }
+    public IConnectionProperties   ConnectionProp     { get; set; }
+    public ConnectionState         ConnectionStatus   { get; set; }   // Closed
+    public IErrorsInfo             ErrorObject        { get; set; }
+    public IDMLogger               Logger             { get; set; }
+    public string                  GuidID             { get; set; }
+    public bool                    InMemory           { get; set; }   // true
+
+    public ConnectionState OpenConnection();
+}</code></pre>
+                    <div class="warning">
+                        <strong>Two members throw <code>NotImplementedException</code>.</strong>
+                        <code>MemoryCacheConnection.DMEEditor</code> and <code>MemoryCacheConnection.ID</code> throw
+                        on <em>both</em> get and set:
+                        <pre><code class="language-csharp">public IDMEEditor DMEEditor { get =&gt; throw new NotImplementedException();
+                             set =&gt; throw new NotImplementedException(); }
+public int ID              { get =&gt; throw new NotImplementedException();
+                             set =&gt; throw new NotImplementedException(); }</code></pre>
+                        Generic code that walks <code>IDataConnection</code> and touches either property will throw
+                        when it reaches a cache datasource. Guard with a type check, or read
+                        <code>DMEEditor</code> from the datasource itself
+                        (<code>ds.DMEEditor</code>) rather than from its connection.
+                    </div>
+                </section>
+
+                <section id="unsupported" class="section">
+                    <h2>Unsupported Operations</h2>
+                    <p>These members exist to satisfy <code>IDataSource</code> but a cache has no transaction log,
+                       SQL engine, or relational metadata:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Member</th><th>Behaviour</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>BeginTransaction(PassedArgs)</code></td><td>Not a real transaction</td></tr>
+                            <tr><td><code>EndTransaction(PassedArgs)</code></td><td>Not a real transaction</td></tr>
+                            <tr><td><code>Commit(PassedArgs)</code></td><td>Not a real transaction</td></tr>
+                            <tr><td><code>ExecuteSql(string)</code></td><td>No SQL engine</td></tr>
+                            <tr><td><code>RunScript(ETLScriptDet)</code></td><td>No script engine</td></tr>
+                            <tr><td><code>GetCreateEntityScript(...)</code></td><td>No DDL to emit</td></tr>
+                            <tr><td><code>GetChildTablesList(...)</code></td><td>No relational metadata</td></tr>
+                            <tr><td><code>GetEntityforeignkeys(...)</code></td><td>No relational metadata</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="gotchas" class="section">
+                    <h2>Gotchas</h2>
+                    <div class="warning">
+                        <strong>Nothing is persisted.</strong> Both datasources are process-local and in-memory.
+                        Restarting the host loses everything; there is no write-through to a backing store. Treat
+                        them as a cache tier, never as a system of record. If you need durability, sync to a real
+                        datasource (see <a href="beepsyncmanager.html">BeepSyncManager</a>).
+                    </div>
+                    <ul>
+                        <li><strong>No cross-process sharing.</strong> Two processes each get their own cache. For a
+                            shared tier use a Redis-backed provider through
+                            <a href="caching-api.html">CacheManager</a>, not these datasources.</li>
+                        <li><strong>Eviction is invisible to callers.</strong> With
+                            <code>CachedMemoryDataSource</code> and a configured
+                            <code>MemoryCacheProvider</code>, entries can disappear between two
+                            <code>GetEntity</code> calls. Don't assume a row you just inserted is still
+                            there.</li>
+                        <li><strong>Async methods are not truly async.</strong> <code>GetEntityAsync</code> and
+                            <code>GetScalarAsync</code> wrap synchronous work — they exist for contract parity.
+                            The folder README flags making them genuinely async as a future task, once I/O is
+                            introduced.</li>
+                        <li>Distinguish these from <a href="inmemory-datasource.html">InMemoryDataSource</a>, which
+                            is a general-purpose in-memory provider rather than a cache-backed one.</li>
+                    </ul>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Registering a cache datasource</h3>
+                    <pre><code class="language-csharp">var conn = new ConnectionProperties
+{
+    ConnectionName = "hot-cache",
+    DatabaseType   = DataSourceType.CachedMemory,
+    Category       = DatasourceCategory.INMEMORY
+};
+dmEditor.ConfigEditor.AddDataConnection(conn);
+
+var cache = dmEditor.GetDataSource("hot-cache");
+cache.Openconnection();</code></pre>
+
+                    <h3>Creating an entity and writing to it</h3>
+                    <pre><code class="language-csharp">var structure = new EntityStructure
+{
+    EntityName = "Products",
+    Fields = new List&lt;EntityField&gt;
+    {
+        new EntityField { fieldname = "Id",   fieldtype = "System.Int32"  },
+        new EntityField { fieldname = "Name", fieldtype = "System.String" }
+    }
+};
+
+cache.CreateEntityAs(structure);
+
+var result = cache.InsertEntity("Products", new { Id = 1, Name = "Widget" });
+if (result.Flag != Errors.Ok)
+    dmEditor.AddLogMessage("App", $"Cache insert failed: {result.Message}",
+                           DateTime.Now, 0, null, Errors.Failed);</code></pre>
+
+                    <h3>Reading with a filter</h3>
+                    <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "Name", Operator = "=", FilterValue = "Widget" }
+};
+
+var rows = cache.GetEntity("Products", filters);
+
+// Paged
+PagedResult page = cache.GetEntity("Products", filters, pageNumber: 1, pageSize: 50);</code></pre>
+
+                    <h3>Warming the cache from a real datasource</h3>
+                    <pre><code class="language-csharp">var source = dmEditor.GetDataSource("northwind");
+source.Openconnection();
+
+var products = source.GetEntity("Products", null);
+
+foreach (var p in products)
+    cache.InsertEntity("Products", p);
+
+// Reads now hit memory instead of the database
+var cached = cache.GetEntity("Products", null);</code></pre>
+
+                    <h3>Test double via InMemoryCacheDataSource</h3>
+                    <pre><code class="language-csharp">// No configuration -> SimpleCacheProvider, no eviction, fully deterministic
+var testConn = new ConnectionProperties
+{
+    ConnectionName = "test-store",
+    DatabaseType   = DataSourceType.InMemoryCache,
+    Category       = DatasourceCategory.INMEMORY
+};
+dmEditor.ConfigEditor.AddDataConnection(testConn);
+
+var uow = new UnitofWork&lt;Product&gt;(dmEditor, "test-store", "Products");</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="json-multifile-datasource.html"><i class="bi bi-arrow-left"></i> Previous: JsonMultiFileDataSource</a>
+                    <a href="caching-api.html">Next: ICacheProvider + CacheManager <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

@@ -62,5 +62,32 @@ uow.Update(p);     // not Modify
 uow.Commit();
 ```
 
+## Documentation — `Help/*.html` is mirrored to the website
+
+`Help/` is published as the BeepDM product docs on the TheTechIdea website. The published copy lives in a
+**separate repository**:
+
+```
+C:\Users\f_ald\source\repos\fahadTheTechIdea\MyWebSite\TheTechIdeaWeb\TheTechIdeaWeb.Web\wwwroot\Products Documentation\beepdm\
+```
+
+**Any add/edit/delete under `Help/` must be mirrored there in the same session** — otherwise the live site
+ships stale docs. Applies to `.html`, `sphinx-style.css` and `navigation.js`; `README.md` and
+`NAVIGATION_README.md` stay repo-only.
+
+**Theme is shared** — `sphinx-style.css` and `navigation.js` are byte-identical in both places, pages link
+them relatively, and pages are standalone HTML served from `wwwroot` (not wrapped in a Razor layout). A
+copied page renders the same; there's no destination CSS to reconcile.
+
+**Not a blind copy — diff before overwriting.** `formsmanager.html` is intentionally different: the public
+copy has internal `DataManagementEngineStandard/Editor/Forms/.plans` references **stripped**. Never publish
+internal repo paths or `.plans/` links. Run
+`diff --strip-trailing-cr Help/<file> "<website>/<file>"` *before* overwriting — if it already differs,
+find out why first; the difference may be deliberate, or the website copy may be the better one.
+
+Otherwise the folders are a file-for-file content-identical mirror; only line endings differ (`Help/` = **LF**,
+website = **CRLF**) — preserve that. Quote the website path; it contains a space. The mirror is its own git
+repo, so it needs a separate commit — tell the user it has uncommitted changes.
+
 See `/CLAUDE.md` for the full architecture, the `classHandler` driver-resolution bridge, and the
 current list of known-broken things.

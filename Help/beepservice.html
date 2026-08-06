@@ -36,10 +36,17 @@
                     <strong>Source of truth (2026)</strong>
                     <ul>
                         <li><code>DataManagementEngineStandard/Services/BeepService.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Services/IBeepService.cs</code></li>
                         <li><code>DataManagementEngineStandard/Services/RegisterBeepinServiceCollection.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.Desktop.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.Web.cs</code></li>
-                        <li><code>DataManagementEngineStandard/Services/BeepServiceExtensions.Blazor.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Services/BeepConnectionRepository.cs</code>,
+                            <code>IConnectionStorageProvider.cs</code>,
+                            <code>JsonConnectionStorageProvider.cs</code>,
+                            <code>ConnectionHealthMonitor.cs</code></li>
+                        <li><code>DataManagementEngineStandard/Services/EnvironmentService.cs</code></li>
+                        <li><code>BeepServiceExtensions.*.cs</code> — <code>Desktop</code>, <code>Web</code>,
+                            <code>Blazor</code>, <code>Maui</code>, <code>Logging</code>, <code>Audit</code>,
+                            <code>AddinDiscovery</code>, <code>DataSources</code>, <code>Diagnostics</code>,
+                            <code>Retention</code>, <code>Schema</code>, <code>EntityDiscovery</code></li>
                     </ul>
                 </div>
 
@@ -54,6 +61,8 @@
                         <li><a href="#assembly-handlers">Assembly Handler Types</a></li>
                         <li><a href="#lifecycle">Lifecycle</a></li>
                         <li><a href="#environments">Environments</a></li>
+                        <li><a href="#connection-catalog">Connection Catalog Repository</a></li>
+                        <li><a href="#extensions">Service Extensions</a></li>
                         <li><a href="#examples">Usage Examples</a></li>
                     </ul>
                 </div>
@@ -74,7 +83,8 @@
 
                 <section id="beepservice" class="section">
                     <h2>BeepService Class</h2>
-                    <pre><code class="language-csharp">public class BeepService : IBeepService, IDisposable
+                    <pre><code class="language-csharp">// namespace TheTechIdea.Beep.Container.Services
+public class BeepService : IBeepService, IDisposable
 {
     public BeepService();
     public BeepService(IServiceCollection services);
@@ -95,10 +105,41 @@
     public string BeepDirectory { get; }
     public AssemblyHandlerType AssemblyHandlerType { get; set; }
 
+    // Bootstrap
+    public void Configure(string directorypath, string containername,
+                          BeepConfigType configType, bool AddasSingleton = false);
+    public void ConfigureForDesignTime();
+    public void LoadConfigurations(string AppReponame);
+
+    // Assemblies
+    public void LoadAssemblies();
+    public void LoadAssemblies(Progress&lt;PassedArgs&gt; progress);
+    public Task LoadAssembliesAsync(Progress&lt;PassedArgs&gt; progress);
+
+    // DI registration
+    public void LoadServicesSingleton();
+    public void LoadServicesScoped();
+
+    // Environments
+    public Dictionary&lt;EnvironmentType, IBeepEnvironment&gt; Environments { get; set; }
+    public void LoadEnvironments();
+    public void SaveEnvironments();
+
+    public virtual void Dispose(bool disposing);
+    public void Dispose();
+
     // Legacy (deprecated)
     [Obsolete("Use AppRepoName instead")]
     public string Containername { get; }
 }</code></pre>
+                    <div class="note">
+                        <strong>Namespace note.</strong> The concrete class lives in
+                        <code>TheTechIdea.Beep.Container.Services</code>, while the
+                        <code>IBeepService</code> interface lives in <code>TheTechIdea.Beep.Services</code>.
+                        <code>Services</code> and <code>AssemblyHandlerType</code> are on the concrete class only —
+                        they are not part of the <code>IBeepService</code> interface, so set
+                        <code>AssemblyHandlerType</code> against a concrete <code>BeepService</code> reference.
+                    </div>
                 </section>
 
                 <section id="configuration" class="section">
@@ -115,31 +156,62 @@
                     <table class="ref-table">
                         <thead><tr><th>Type</th><th>Description</th></tr></thead>
                         <tbody>
-                            <tr><td><code>DataConnector</code></td><td>Data connector configuration</td></tr>
                             <tr><td><code>Application</code></td><td>Full application configuration</td></tr>
-                            <tr><td><code>Plugin</code></td><td>Plugin/extension configuration</td></tr>
-                            <tr><td><code>DesignTime</code></td><td>Visual Studio design-time mode</td></tr>
+                            <tr><td><code>DataConnector</code></td><td>Data connector configuration — also what <code>ConfigureForDesignTime()</code> uses</td></tr>
+                            <tr><td><code>Container</code></td><td>Container/host configuration</td></tr>
                         </tbody>
                     </table>
+                    <div class="warning">
+                        <strong>These are the only three values.</strong> Declared in
+                        <code>DataManagementModelsStandard/Enums/Enums.cs</code> as
+                        <code>Application, DataConnector, Container</code>. Earlier revisions of this page listed
+                        <code>Plugin</code> and <code>DesignTime</code> members — neither exists. Design-time mode
+                        is not a <code>BeepConfigType</code>; it is detected via
+                        <code>LicenseManager.UsageMode</code> and simply bootstraps with
+                        <code>DataConnector</code>.
+                    </div>
 
                     <h3>ConfigureForDesignTime</h3>
                     <pre><code class="language-csharp">public void ConfigureForDesignTime()
 
-// Automatically called in parameterless constructor when LicenseManager.UsageMode == DesignTime
-// Uses: AppContext.BaseDirectory, "DesignTimeContainer", BeepConfigType.DataConnector</code></pre>
+// Automatically called in the parameterless constructor when
+// LicenseManager.UsageMode == LicenseUsageMode.Designtime
+// Calls: Configure(AppContext.BaseDirectory, "DesignTimeContainer",
+//                  BeepConfigType.DataConnector, AddasSingleton: true)</code></pre>
 
                     <h3>Internal Initialization Flow</h3>
                     <ol>
-                        <li>Store AppRepoName and configuration type</li>
-                        <li>Create main folder via <code>EnvironmentService.CreateMainFolder()</code></li>
+                        <li>Store <code>AppRepoName</code> (defaults to <code>"Beep"</code> when null) and configuration type</li>
+                        <li>Resolve <code>BeepDirectory</code> — use <code>directorypath</code>, or fall back to
+                            <code>EnvironmentService.CreateMainFolder()</code> when it is null/empty</li>
                         <li>Initialize <code>ErrorsInfo</code>, <code>DMLogger</code>, <code>JsonLoader</code></li>
-                        <li>Create <code>ConfigEditor</code> with root path</li>
+                        <li>Create <code>ConfigEditor</code> with root path <code>Path.Combine(BeepDirectory, "Beep")</code></li>
                         <li>Create <code>Util</code> with logger, errors, config</li>
-                        <li>Create <code>AssemblyHandler</code> (Default or SharedContext)</li>
+                        <li>Create the assembly handler (Default or SharedContext) via <code>CreateAssemblyHandler</code></li>
                         <li>Create <code>DMEEditor</code> wired to all above</li>
-                        <li>Register DI services (singleton or scoped)</li>
-                        <li>Load configurations (drivers, mappings, queries, folders)</li>
+                        <li>Wire <code>BeepConnectionRepository</code> into <code>Config_editor.ConnectionCatalogRepository</code></li>
+                        <li>Register DI services (singleton or scoped) — only when a <code>Services</code> collection was supplied</li>
+                        <li>Initialize <code>DMEEditor.Passedarguments</code> and set <code>ErrorObject.Flag = Errors.Ok</code></li>
+                        <li>Load configurations (drivers, mappings, queries, folders) if not already loaded</li>
                     </ol>
+
+                    <div class="note">
+                        <strong>Connection catalog wiring.</strong> Since the repository refactor,
+                        <code>Configure()</code> attaches a <code>BeepConnectionRepository</code> to the
+                        <code>ConfigEditor</code> so every connection create/update/delete flows through a single,
+                        scope- and profile-aware source of truth:
+                        <pre><code class="language-csharp">var catalogRepo = new BeepConnectionRepository(this);
+Config_editor.ConnectionCatalogRepository = catalogRepo;</code></pre>
+                        See <a href="#connection-catalog">Connection Catalog Repository</a> below.
+                    </div>
+
+                    <div class="warning">
+                        <strong>Configure() does not throw.</strong> The whole body is wrapped in a
+                        <code>try/catch</code> that logs to <code>lg</code> and <code>Console</code> and then
+                        returns. A failed <code>Configure()</code> therefore leaves <code>DMEEditor</code> and
+                        other components null rather than surfacing an exception — check
+                        <code>service.DMEEditor != null</code> before use if the path or permissions are uncertain.
+                    </div>
                 </section>
 
                 <section id="assembly-loading" class="section">
@@ -166,25 +238,63 @@ public async Task LoadAssembliesAsync(Progress&lt;PassedArgs&gt; progress);</cod
                     <p>After assembly loading, automatically restores driver configurations and loads driver DLLs from local packages:</p>
                     <pre><code class="language-csharp">private void RestoreDriverConfigAndAutoLoad()
 {
+    if (Config_editor == null || LLoader == null)
+        return;
+
     // 1. Load connection driver configs
     Config_editor.LoadConnectionDriversConfigValues();
 
-    // 2. For each driver with auto-load flag:
-    foreach (var driver in Config_editor.DataDriversClasses
-        .Where(ShouldAutoLoadDriver))
-    {
-        // Try loading from local package first
-        if (LLoader.LoadDriverFromLocalPackage(driver, out _))
-            continue;
+    if (Config_editor.DataDriversClasses == null || Config_editor.DataDriversClasses.Count == 0)
+        return;
 
-        // Check if NuGet package is missing
-        driver.NuggetMissing = !LLoader.HasLocalPackage(driver);
+    // 2. For each driver with the auto-load flag:
+    bool changed = false;
+    foreach (var driver in Config_editor.DataDriversClasses.Where(ShouldAutoLoadDriver))
+    {
+        try
+        {
+            // Try loading from the local package first
+            if (LLoader.LoadDriverFromLocalPackage(driver, out _))
+            {
+                changed = true;
+                continue;
+            }
+
+            // Otherwise record whether the NuGet package is missing
+            var hasLocalPackage = LLoader.HasLocalPackage(driver);
+            if (driver.NuggetMissing == hasLocalPackage)
+            {
+                driver.NuggetMissing = !hasLocalPackage;
+                changed = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            lg?.WriteLog($"AutoLoad driver '{driver?.PackageName}' failed: {ex.Message}");
+        }
     }
 
-    // 3. Update loaded assemblies list
-    Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-    Config_editor.SaveConnectionDriversConfigValues();
+    // 3. Refresh the loaded-assembly list; persist only if something actually changed
+    if (LLoader?.Assemblies != null)
+        Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
+
+    if (changed)
+        Config_editor.SaveConnectionDriversConfigValues();
+}
+
+// A driver is auto-loaded when it is flagged AutoLoad, names a package,
+// and is either marked missing or has a package already present.
+private static bool ShouldAutoLoadDriver(ConnectionDriversConfig driver)
+{
+    return driver != null
+        && driver.AutoLoad
+        && !string.IsNullOrWhiteSpace(driver.PackageName)
+        && (driver.IsMissing || !driver.NuggetMissing);
 }</code></pre>
+                    <p>Per-driver failures are logged and skipped — one bad driver does not abort the loop.
+                       <code>SaveConnectionDriversConfigValues()</code> is called only when a driver was loaded
+                       or its <code>NuggetMissing</code> state actually changed, so a steady-state startup
+                       performs no config write.</p>
                 </section>
 
                 <section id="service-registration" class="section">
@@ -210,9 +320,27 @@ public async Task LoadAssembliesAsync(Progress&lt;PassedArgs&gt; progress);</cod
     Services.AddKeyedScoped&lt;IDMEEditor, DMEEditor&gt;("Editor");
     Services.AddKeyedScoped&lt;IUtil, Util&gt;("Util");
     Services.AddKeyedScoped&lt;IJsonLoader, JsonLoader&gt;("JsonLoader");
-    Services.AddKeyedScoped&lt;IAssemblyHandler, AssemblyHandler&gt;("AssemblyHandler");
+
+    // The assembly handler honours AssemblyHandlerType
+    if (AssemblyHandlerType == AssemblyHandlerType.SharedContext)
+        Services.AddKeyedScoped&lt;IAssemblyHandler, SharedContextAssemblyHandler&gt;("AssemblyHandler");
+    else
+        Services.AddKeyedScoped&lt;IAssemblyHandler, AssemblyHandler&gt;("AssemblyHandler");
 }</code></pre>
                     <p>Note: Scoped registration uses <strong>keyed services</strong> for resolution by name.</p>
+
+                    <div class="warning">
+                        <strong>The two paths are not symmetric.</strong> <code>LoadServicesSingleton()</code>
+                        registers the <em>already-constructed instances</em> that <code>Configure()</code> built, so
+                        the container hands back exactly the objects <code>BeepService</code> is using.
+                        <code>LoadServicesScoped()</code> registers <em>types</em> — the container constructs new
+                        instances per scope, and they are <strong>not</strong> the ones held by
+                        <code>BeepService</code>. Resolve scoped components by key:
+                        <pre><code class="language-csharp">var editor = provider.GetRequiredKeyedService&lt;IDMEEditor&gt;("Editor");</code></pre>
+                        Which path runs is decided by the <code>AddasSingleton</code> argument to
+                        <code>Configure()</code>, and registration is skipped entirely when the service was built
+                        with the parameterless constructor (no <code>Services</code> collection).
+                    </div>
                 </section>
 
                 <section id="assembly-handlers" class="section">
@@ -250,18 +378,232 @@ service.Configure(path, "MyApp", BeepConfigType.Application);</code></pre>
                     <h3>Disposal</h3>
                     <pre><code class="language-csharp">public void Dispose()
 {
-    // Cancels assembly loading
-    tokenSource?.Cancel();
-    tokenSource?.Dispose();
-    // Disposes DMEEditor and Logger
+    Dispose(disposing: true);
+    GC.SuppressFinalize(this);
+}
+
+public virtual void Dispose(bool disposing)
+{
+    if (disposedValue) return;
+
+    if (disposing)
+    {
+        DMEEditor?.Dispose();
+        Config_editor?.Dispose();
+        LLoader?.Dispose();
+    }
+
+    // Null out the component fields
+    DMEEditor = null; Config_editor = null; lg = null;
+    util = null; Erinfo = null; jsonLoader = null; LLoader = null;
+
+    disposedValue = true;
 }</code></pre>
+                    <div class="warning">
+                        <strong>Disposal does not cancel in-flight assembly loading.</strong>
+                        <code>Dispose()</code> does <em>not</em> call <code>tokenSource.Cancel()</code>, and the
+                        <code>CancellationTokenSource</code> is not disposed. A
+                        <code>LoadAssembliesAsync()</code> still running will keep going against components that
+                        have just been set to null. Await any outstanding load before disposing the service.
+                        <code>lg</code>, <code>util</code>, <code>Erinfo</code> and <code>jsonLoader</code> are
+                        dropped without being disposed.
+                    </div>
                 </section>
 
                 <section id="environments" class="section">
                     <h2>Environments</h2>
-                    <p>BeepService maintains an optional environment dictionary:</p>
-                    <pre><code class="language-csharp">public Dictionary&lt;EnvironmentType, IBeepEnvironment&gt; Environments { get; set; }</code></pre>
+                    <p>BeepService maintains an environment dictionary, initialized in both constructors so it is
+                       never null:</p>
+                    <pre><code class="language-csharp">public Dictionary&lt;EnvironmentType, IBeepEnvironment&gt; Environments { get; set; }
+
+public void LoadEnvironments();   // read  &lt;BeepDirectory&gt;/Environments/*.json
+public void SaveEnvironments();   // write &lt;BeepDirectory&gt;/Environments/&lt;EnvironmentName&gt;.json</code></pre>
                     <p>Use <code>IBeepEnvironment</code> implementations to configure environment-specific behavior (Development, Staging, Production).</p>
+
+                    <h3>LoadEnvironments</h3>
+                    <p>Ensures the app-repo folder exists, then deserializes every <code>*.json</code> file under
+                       <code>&lt;BeepDirectory&gt;/Environments</code> and adds it to the dictionary keyed by
+                       <code>env.EnvironmentType</code>:</p>
+                    <pre><code class="language-csharp">var service = new BeepService();
+service.Configure(AppContext.BaseDirectory, "MyApp", BeepConfigType.Application);
+
+service.LoadEnvironments();
+
+if (service.Environments.TryGetValue(EnvironmentType.Production, out var prod))
+    Console.WriteLine($"Loaded environment: {prod.EnvironmentName}");</code></pre>
+
+                    <h3>SaveEnvironments</h3>
+                    <pre><code class="language-csharp">service.Environments[EnvironmentType.Development] = myDevEnvironment;
+service.SaveEnvironments();   // one file per environment, named after EnvironmentName</code></pre>
+
+                    <div class="warning">
+                        <strong>The <code>Environments</code> folder is not created for you.</strong> Both methods
+                        check <code>Directory.Exists(envpath)</code> and silently do nothing when the folder is
+                        absent — so a first <code>SaveEnvironments()</code> on a fresh install writes nothing.
+                        Create it once before saving:
+                        <pre><code class="language-csharp">Directory.CreateDirectory(Path.Combine(service.BeepDirectory, "Environments"));</code></pre>
+                        Note also that <code>LoadEnvironments()</code> uses <code>Environments.Add(...)</code>, which
+                        throws on a duplicate <code>EnvironmentType</code> — calling it twice, or shipping two files
+                        that declare the same type, raises <code>ArgumentException</code>.
+                    </div>
+                </section>
+
+                <section id="connection-catalog" class="section">
+                    <h2>Connection Catalog Repository</h2>
+                    <p><code>Configure()</code> constructs a <code>BeepConnectionRepository</code> and assigns it to
+                       <code>Config_editor.ConnectionCatalogRepository</code>. It implements
+                       <code>IConnectionCatalogRepository</code> and is the single source of truth for connection
+                       CRUD, adding scope and profile awareness on top of <code>DataConnections.json</code>.</p>
+
+                    <pre><code class="language-csharp">public sealed class BeepConnectionRepository : IConnectionCatalogRepository
+{
+    public BeepConnectionRepository(IBeepService beepService,
+                                    IConnectionStorageProvider? storageProvider = null);
+
+    public event EventHandler? ConnectionsChanged;
+
+    public ConnectionStorageScope ActiveScope { get; set; }      // default: Project
+    public string ActiveProfileName { get; set; }                // default: "Default"
+    public bool UseScopePrecedence { get; set; }                 // default: true
+
+    public IReadOnlyList&lt;ConnectionProperties&gt; LoadConnections();
+    public bool AddOrUpdate(ConnectionProperties connection, bool persist = true);
+    public bool Remove(string connectionName, bool persist = true);
+    public bool Save(List&lt;ConnectionProperties&gt; connections);
+
+    public bool Promote(ConnectionStorageScope targetScope,
+                        ConnectionConflictPolicy conflictPolicy, out string message);
+    public bool ExportPackage(string packagePath, bool includeEncryptedSecretsOnly, out string message);
+    public bool ImportPackage(...);
+}</code></pre>
+
+                    <p>Storage is pluggable through <code>IConnectionStorageProvider</code>; the default is
+                       <code>JsonConnectionStorageProvider</code>. Subscribe to <code>ConnectionsChanged</code> to
+                       refresh UI when the catalog is mutated from elsewhere.</p>
+
+                    <h3>ConnectionHealthMonitor</h3>
+                    <p>A separate opt-in helper in the same folder that polls connections and raises transitions.
+                       It is <strong>not</strong> started by <code>BeepService</code> — construct and start it yourself:</p>
+                    <pre><code class="language-csharp">var monitor = new ConnectionHealthMonitor(service.DMEEditor, TimeSpan.FromMinutes(1));
+monitor.HealthChanged += (s, e) =&gt;
+    Console.WriteLine($"{e.ConnectionName}: {e.PreviousStatus} -&gt; {e.CurrentStatus}");
+
+monitor.Start();
+
+var status = await monitor.CheckAsync("northwind");
+await monitor.CheckAllAsync();
+IReadOnlyDictionary&lt;string, ConnectionHealthStatus&gt; all = monitor.GetAllStatuses();
+await monitor.ReconnectAsync("northwind");
+
+monitor.Stop();
+monitor.Dispose();</code></pre>
+                </section>
+
+                <section id="extensions" class="section">
+                    <h2>Service Extensions</h2>
+                    <p>The <code>BeepServiceExtensions.*.cs</code> partial files add opt-in capabilities on top of
+                       the core bootstrap. They are independent of <code>BeepService.Configure()</code> — none of
+                       them run unless you call them.</p>
+
+                    <h3>Platform presets (logging &amp; audit)</h3>
+                    <p>Each platform file exposes a matched logging/audit pair that picks sensible storage paths
+                       for that host. All return <code>IServiceCollection</code> for chaining, and all take an
+                       optional <code>tweak</code> delegate to override the preset.</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Platform</th><th>Signature</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td>Desktop</td>
+                                <td><code>AddBeepLoggingForDesktop(string appName = PlatformPaths.DefaultAppName, Action&lt;BeepLoggingOptions&gt; tweak = null)</code><br>
+                                    <code>AddBeepAuditForDesktop(string appName = …, Action&lt;BeepAuditOptions&gt; tweak = null)</code></td>
+                            </tr>
+                            <tr>
+                                <td>Web</td>
+                                <td><code>AddBeepLoggingForWeb(string contentRootPath = null, string appName = …, Action&lt;BeepLoggingOptions&gt; tweak = null)</code><br>
+                                    <code>AddBeepAuditForWeb(string contentRootPath = null, string appName = …, Action&lt;BeepAuditOptions&gt; tweak = null)</code></td>
+                            </tr>
+                            <tr>
+                                <td>Blazor</td>
+                                <td><code>AddBeepLoggingForBlazor(IIndexedDbBridge bridge, Action&lt;BeepLoggingOptions&gt; tweak = null)</code><br>
+                                    <code>AddBeepAuditForBlazor(IIndexedDbBridge bridge, Action&lt;BeepAuditOptions&gt; tweak = null)</code></td>
+                            </tr>
+                            <tr>
+                                <td>MAUI</td>
+                                <td><code>AddBeepLoggingForMaui(Func&lt;string&gt; appDataDirectoryProvider, string appName = …, Action&lt;BeepLoggingOptions&gt; tweak = null)</code><br>
+                                    <code>AddBeepAuditForMaui(Func&lt;string&gt; appDataDirectoryProvider, string appName = …, Action&lt;BeepAuditOptions&gt; tweak = null)</code></td>
+                            </tr>
+                            <tr>
+                                <td>Generic</td>
+                                <td><code>AddBeepLogging(Action&lt;BeepLoggingOptions&gt; configure = null)</code><br>
+                                    <code>AddBeepAudit(Action&lt;BeepAuditOptions&gt; configure = null)</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>The Blazor and MAUI overloads are the only ones with a <strong>required</strong> first
+                       argument — Blazor needs an <code>IIndexedDbBridge</code> for browser storage, and MAUI needs
+                       a <code>Func&lt;string&gt;</code> returning the platform app-data directory
+                       (<code>FileSystem.AppDataDirectory</code>), because that value is not resolvable from this
+                       assembly. The pipelines are published as keyed services under
+                       <code>BeepServiceLoggingExtensions.LoggingPipelineKey</code>
+                       (<code>"Beep.Logging.Pipeline"</code>) and
+                       <code>BeepServiceAuditExtensions.AuditPipelineKey</code>
+                       (<code>"Beep.Audit.Pipeline"</code>).</p>
+                    <p>See <a href="services-audit-logging-telemetry.html">Audit, Logging &amp; Telemetry</a> for the
+                       pipeline internals behind these registrations.</p>
+
+                    <h3>Retention</h3>
+                    <pre><code class="language-csharp">// Registers IBudgetEnforcer -> DefaultBudgetEnforcer (TryAddSingleton)
+services.AddBeepBudgetEnforcer();
+
+// Adds the enforcer plus a hosted background sweeper
+services.AddBeepRetentionSweeper(TimeSpan.FromHours(6));</code></pre>
+                    <p><code>AddBeepRetentionSweeper</code> calls <code>AddBeepBudgetEnforcer()</code> for you and
+                       registers an <code>IHostedService</code>, so it only sweeps in a host that runs hosted
+                       services (Generic Host, ASP.NET Core).</p>
+
+                    <h3>Schema, entity discovery and addins</h3>
+                    <pre><code class="language-csharp">services.AddBeepSchemaManager();
+services.AddBeepEntityDiscovery();
+
+// Reflection-based discovery of IDM_Addin views and IBeepViewModel view models,
+// registered as keyed services keyed on type name
+services.AddBeepViews();
+services.AddBeepViewModels();
+
+// Or register one explicitly
+services.AddBeepView(typeof(MyAddinView));
+services.AddBeepViewModel(typeof(MyViewModel));</code></pre>
+                    <p><code>BeepServiceAddinDiscoveryExtensions</code> also exposes two static hook events —
+                       <code>OnRegisterViewModels</code> and <code>OnRegisterAddins</code> — which fire during
+                       discovery so a host can contribute extra registrations. The fluent builder enables view
+                       discovery by default; use <code>WithViewDiscovery(false)</code> to opt out, or
+                       <code>WithAssembliesToScan(...)</code> to narrow the scan.</p>
+
+                    <h3>Registering a driver</h3>
+                    <pre><code class="language-csharp">beepService.AddDataSourceDriver(new ConnectionDriversConfig
+{
+    PackageName   = "Npgsql",
+    DriverClass   = "Npgsql",
+    classHandler  = "PostgreDataSource",
+    version       = "8.0.3",
+    DatasourceType = DataSourceType.Postgre
+});
+
+// Lazy overload — the factory is only invoked if needed
+beepService.AddDataSourceDriver(() =&gt; BuildDriverConfig());</code></pre>
+                    <p>Both overloads default to <code>skipIfPresent: true</code> and return the
+                       <code>IBeepService</code> for chaining. They are null-tolerant: a null
+                       <code>beep</code>, <code>Config_editor</code>, or config is returned unchanged rather than
+                       throwing. Remember that <code>classHandler</code> must match the
+                       <code>AssemblyClassDefinition.className</code> of the implementing type, or the driver will
+                       silently fail to resolve at <code>GetDataSource()</code> time.</p>
+
+                    <div class="note">
+                        <strong>Internal.</strong> <code>BeepServiceExtensions.Diagnostics.cs</code>
+                        (<code>AttachDiagnostics</code>, <code>RegisterMetricsSnapshot</code>) is
+                        <code>internal</code> — it is wired automatically by the logging/audit registrations and is
+                        not part of the public API.
+                    </div>
                 </section>
 
                 <section id="examples" class="section">

@@ -3764,6 +3764,53 @@
             Generates gRPC service definitions
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.EntityTypeFactory">
+            <summary>
+            Builds — and caches — a concrete <see cref="T:TheTechIdea.Beep.Editor.Entity"/>-derived runtime type
+            for an <see cref="T:TheTechIdea.Beep.DataBase.EntityStructure"/>.
+            </summary>
+            <remarks>
+            <para>
+            <b>Every datasource's <c>GetEntityType</c> should call this.</b> They were
+            each solving it differently and none of them correctly:
+            <c>JsonMultiFileDataSource</c> used <c>DMTypeBuilder</c>, which emits
+            types deriving from <c>object</c>; <c>InMemoryCacheDataSource</c> returned
+            <c>Dictionary&lt;string, object&gt;</c> with a "could implement dynamic
+            type creation later" note.
+            </para>
+            <para>
+            That matters because <c>UnitofWork&lt;T&gt;</c> is constrained to
+            <c>T : Entity, new()</c> and <c>UnitOfWorkFactory</c> reaches it through
+            <c>MakeGenericType</c>. A type that does not derive from <c>Entity</c>
+            cannot back a unit of work, so a block over such a datasource registers
+            and then holds no records — no query, no navigation, no master-detail.
+            </para>
+            <para>
+            The generated class comes from <see cref="M:TheTechIdea.Beep.Tools.ClassCreator.CreateEntityClass(TheTechIdea.Beep.DataBase.EntityStructure,System.String,System.String,System.String,System.String,System.Boolean)"/>,
+            the engine's existing POCO generator, so there is one definition of what a
+            generated entity looks like.
+            </para>
+            </remarks>
+        </member>
+        <member name="F:TheTechIdea.Beep.Tools.EntityTypeFactory.GeneratedNamespace">
+            <summary>Namespace the generated entity classes are emitted into.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.EntityTypeFactory.GetOrCreate(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            The runtime type for <paramref name="structure"/>, generating and
+            caching it on first use.
+            </summary>
+            <returns>
+            An <see cref="T:TheTechIdea.Beep.Editor.Entity"/>-derived type, or <c>null</c> when the
+            structure carries no fields to build one from — callers should treat
+            null as "this entity cannot back a unit of work" and report it.
+            </returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.EntityTypeFactory.Invalidate(System.String)">
+            <summary>
+            Drops cached types for a datasource, for when its schema is re-read.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Tools.Helpers.ClassGenerationHelper">
             <summary>
             Helper class for common class generation utilities
@@ -4052,6 +4099,18 @@
             <summary>
             Generates the template for INotifyPropertyChanged properties
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Tools.Helpers.PocoClassGeneratorHelper.IsLengthConstrainable(TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            True when a length attribute is legal on this field's CLR type —
+            strings, arrays and collections only.
+            </summary>
+            <remarks>
+            <see cref="T:System.ComponentModel.DataAnnotations.MaxLengthAttribute"/>
+            and <c>StringLengthAttribute</c> throw at validation time on any
+            other type. A field's declared type is the deciding factor, not
+            whether the database happened to report a length.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Tools.Helpers.PocoToEntityGeneratorHelper">
             <summary>
@@ -4937,12 +4996,46 @@
             Uses MemoryCache Provider (MemoryCacheProvider) for structured caching with policies.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Caching.CachedMemoryDataSource.GetEntityType(System.String)">
+            <summary>
+            The runtime row type for an entity, generated from its
+            <c>EntityStructure</c>.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+            the same for every datasource — it is derived from the entity's
+            fields — so it is defined once. Each datasource used to answer it
+            differently and none correctly: <c>DMTypeBuilder</c> emits types
+            deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+            is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+            constrained to <c>T : Entity</c>. A block over such a datasource
+            registered and then held no records.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Caching.InMemoryCacheDataSource">
             <summary>
             In-Memory Cache Data Source - uses simple in-memory cache as a data storage backend.
             Provides fast CRUD operations on cached data with no persistence.
             Uses InMemory Provider (SimpleCacheProvider) for lightweight caching.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Caching.InMemoryCacheDataSource.GetEntityType(System.String)">
+            <summary>
+            The runtime row type for an entity, generated from its
+            <c>EntityStructure</c>.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+            the same for every datasource — it is derived from the entity's
+            fields — so it is defined once. Each datasource used to answer it
+            differently and none correctly: <c>DMTypeBuilder</c> emits types
+            deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+            is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+            constrained to <c>T : Entity</c>. A block over such a datasource
+            registered and then held no records.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Caching.DataSources.MemoryCacheConnection">
             <summary>
@@ -6726,20 +6819,55 @@
         </member>
         <member name="F:TheTechIdea.Beep.Utilities.DMTypeBuilder.typeCache">
             <summary>Caches generated types to improve performance.</summary>
+            <remarks>
+            Concurrent because this is public, static and shared by every data
+            source driver. It was a plain Dictionary, so two threads resolving
+            entity types at the same time could corrupt it or throw from
+            ContainsKey — and the engine now awaits with ConfigureAwait(false)
+            throughout, so type resolution is genuinely reachable from more than
+            one thread. (2026-08-03)
+            </remarks>
         </member>
         <member name="P:TheTechIdea.Beep.Utilities.DMTypeBuilder.DataSourceNameSpace">
-            <summary>Maintains namespace mappings for types.</summary>
+            <summary>Maintains namespace mappings for types, keyed by full type name.</summary>
+            <remarks>
+            Concurrent, and keyed by the FULL type name rather than the bare entity
+            name. Keyed by entity name it collided the moment two data sources
+            exposed an entity of the same name — and because the only writer
+            guarded with ContainsValue (which inspects VALUES) before calling
+            Add (which is keyed), the second one threw
+            "An item with the same key has already been added" at runtime rather
+            than merely overwriting. Nothing outside this class reads it.
+            (2026-08-03)
+            </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CreateNewObject(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
-            <summary>
-            Creates a new dynamic object based on the specified parameters.
-            </summary>
-            <param name="editor">The IDMEEditor instance.</param>
-            <param name="classNamespace">The namespace for the class.</param>
-            <param name="dataSourceName">The data source name to build namespace.</param>
-            <param name="typeName">The name of the type.</param>
-            <param name="fields">List of fields defining the type structure.</param>
-            <returns>A new dynamic object of the generated type.</returns>
+        <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.GetOrCreateType(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
+             <summary>
+             Creates a new dynamic object based on the specified parameters.
+             </summary>
+             <param name="editor">The IDMEEditor instance.</param>
+             <param name="classNamespace">The namespace for the class.</param>
+             <param name="dataSourceName">The data source name to build namespace.</param>
+             <param name="typeName">The name of the type.</param>
+             <param name="fields">List of fields defining the type structure.</param>
+             <returns>A new dynamic object of the generated type.</returns>
+             <summary>
+             The generated <see cref="T:System.Type"/> for <paramref name="typeName"/>,
+             compiling and caching it on first use. Returns the TYPE, not an
+             instance.
+             </summary>
+             <remarks>
+             This exists because every driver's <c>GetEntityType</c> had to do
+            
+               <code>CreateNewObject(...); return DMTypeBuilder.MyType;</code>
+            
+             — call a method that returns an *instance*, then read the type off a
+             mutable static. MyType is a "last result" field, so any thread that
+             resolved a different entity between those two statements made the
+             caller return the wrong type. Fifteen drivers were written that way,
+             because there was no API that simply returned a Type. Now there is.
+             (2026-08-03)
+             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CreateNewObject(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
             <summary>
@@ -6753,6 +6881,11 @@
         </member>
         <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.GetOrCreateNamespace(System.String,System.String)">
             <summary>Generates or retrieves a namespace for a type.</summary>
+            <remarks>
+            Currently unused. Kept, but keyed by data source AND type rather than
+            type alone, so reviving it does not reintroduce the collision fixed
+            above. (2026-08-03)
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Utilities.DMTypeBuilder.CompileResultType(System.String,System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.DataBase.EntityField})">
             <summary>Compiles a dynamic type with the specified fields.</summary>
@@ -6943,6 +7076,23 @@
             <param name="EntityName">Name of the entity (CSV file) to query</param>
             <param name="filter">List of filters to apply to the data</param>
             <returns>An ObservableBindingList containing the filtered data</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.GetEntityType(System.String)">
+            <summary>
+            The runtime row type for an entity, generated from its
+            <c>EntityStructure</c>.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+            the same for every datasource — it is derived from the entity's
+            fields — so it is defined once. Each datasource used to answer it
+            differently and none correctly: <c>DMTypeBuilder</c> emits types
+            deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+            is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+            constrained to <c>T : Entity</c>. A block over such a datasource
+            registered and then held no records.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.FileManager.CSVDataSource.DetectEncoding(System.String)">
             <summary>
@@ -7299,6 +7449,23 @@
             Resolves the physical file path for an entity, using the reader's
             default extension when no explicit extension is present.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.FileManager.FileDataSource.GetEntityType(System.String)">
+            <summary>
+            The runtime row type for an entity, generated from its
+            <c>EntityStructure</c>.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+            the same for every datasource — it is derived from the entity's
+            fields — so it is defined once. Each datasource used to answer it
+            differently and none correctly: <c>DMTypeBuilder</c> emits types
+            deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+            is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+            constrained to <c>T : Entity</c>. A block over such a datasource
+            registered and then held no records.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.FileManager.FileDataSource.NormalizeFieldName(System.String)">
             <summary>Normalises a raw header/field name to a valid C#-compatible identifier.</summary>
@@ -20255,6 +20422,11 @@
             Also wires default keyboard actions: KEY-ENTER → commit, KEY-EXIT → close, etc.
             </summary>
             <summary>
+            Form menu invocation. The menu itself lives on <c>Menu</c>
+            (<see cref="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormMenuManager"/>); dispatch lives here because a
+            built-in item runs the very form operations this class already exposes.
+            </summary>
+            <summary>
             Mode Transition Management partial class for UnitofWorksManager
             Handles transitions between Query and CRUD modes with proper validation
             Equivalent to Oracle Forms ENTER_QUERY / EXECUTE_QUERY mode transitions
@@ -20300,6 +20472,13 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ClearMessage">
             <summary>
             Clear the current status message.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.MessageScope">
+            <summary>
+            The queue key for a form-level message. The queue is keyed per block;
+            the MESSAGE built-in is form-level, so it rides on whichever block is
+            current, and on an empty key before any block has been entered.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
@@ -20367,8 +20546,18 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnterQueryAsync(System.String)">
             <summary>
-            Enters query mode for a block - equivalent to Oracle Forms ENTER_QUERY
+            Enters query mode for a block - equivalent to Oracle Forms ENTER_QUERY.
             </summary>
+            <remarks>
+            This is the bool-returning face of <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnterQueryModeAsync(System.String)"/>, kept for
+            callers that only need success/failure. Until 2026-08-01 it carried its own
+            second implementation that just assigned <c>Mode = DataBlockMode.Query</c> —
+            so whichever entry point a host happened to call decided whether unsaved-change
+            validation, related-block validation, block clearing and the block-enter event
+            ran at all. Hosts call this one, so in practice ENTER_QUERY did none of them.
+            Keep the single implementation in ModeTransitions; do not reintroduce a
+            mode assignment here.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>
@@ -21177,6 +21366,14 @@
             <param name="sender">Dirty-state manager instance.</param>
             <param name="e">Unsaved-change event payload.</param>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.InvokeMenuItemAsync(System.String)">
+            <summary>
+            Invokes a form menu item by id. A built-in runs the matching form
+            operation; a MenuItemTrigger fires <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenMenuItem"/>
+            with the item id in context so one handler can dispatch on it; a
+            CallForm calls the named form. A separator or submenu is a no-op.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnterQueryModeAsync(System.String)">
             <summary>
             Transitions a block from CRUD to Query mode - equivalent to Oracle Forms ENTER_QUERY
@@ -21335,6 +21532,31 @@
             this check, a cross-form ReturnToCallerAsync would silently corrupt
             the stack and switch the active form to the wrong caller.
             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryReleaseCallEntryFor(System.String,System.Boolean)">
+            <summary>
+            Completes this manager's top call-stack entry when it belongs to
+            <paramref name="calleeFormName"/>, releasing a caller suspended in
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CallFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},TheTechIdea.Beep.Editor.Forms.Models.FormCallMode,System.Threading.CancellationToken)"/>. Returns false when the top entry is for a
+            different form, so a caller is never unwound by someone else's close.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReleaseSuspendedCallerFor(System.String)">
+             <summary>
+             Releases whoever is suspended on a modal CALL_FORM to
+             <paramref name="closingFormName"/>.
+             </summary>
+             <remarks>
+             The call-stack entry lives on the CALLER's manager, not the callee's,
+             so a callee closing itself cannot find it locally. The form registry is
+             shared across every manager built on the same <c>DMEEditor</c>, which is
+             what makes the lookup possible.
+            
+             Without this, closing a called form instead of returning from it left the
+             caller awaiting a TaskCompletionSource nobody would ever set — the
+             application hung for good. Oracle Forms returns control to the caller
+             when a called form closes. (2026-08-03)
+             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetCallStack">
             <summary>Get the current form call stack (read-only snapshot).</summary>
@@ -21553,6 +21775,12 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.LOV">
             <summary>Gets the LOV manager</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.VisualAttributes">
+            <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Menu">
+            <summary>The form's menu (Oracle Forms menu module).</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ItemProperties">
             <summary>Gets the item property manager</summary>
@@ -22103,6 +22331,15 @@
             IUnitofWork interface. Stores the cleanup action for unsubscribe.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormMenuManager">
+            <summary>
+            Engine-side store for a form's menu. Holds the definition and finds items
+            by id; invocation lives on FormsManager where the form operations are.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormMenuManager.MenuChanged">
+            <inheritdoc/>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormsSimulationHelper">
             <summary>
             Helper class for Oracle Forms simulation functionality
@@ -22371,6 +22608,12 @@
             Sets the current message for a block or queues it if another message is already being shown.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.ReplaceMessage(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.MessageLevel)">
+            <summary>
+            Makes a message current immediately, replacing whatever was showing
+            and leaving the queue untouched.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.ClearMessage(System.String)">
             <summary>
             Clears the current message for a block and optionally advances to the next queued message.
@@ -22383,22 +22626,22 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.ShowInfoMessage(System.String,System.String)">
             <summary>
-            Queues an informational message for a block.
+            Shows an informational message for a block, replacing the current one.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.ShowSuccessMessage(System.String,System.String)">
             <summary>
-            Queues a success message for a block.
+            Shows a success message for a block, replacing the current one.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.ShowWarningMessage(System.String,System.String)">
             <summary>
-            Queues a warning message for a block.
+            Shows a warning message for a block, replacing the current one.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.ShowErrorMessage(System.String,System.String)">
             <summary>
-            Queues an error message for a block.
+            Shows an error message for a block, replacing the current one.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.MessageQueueManager.GetCurrentMessage(System.String)">
@@ -22723,7 +22966,7 @@
             navigation events per second; we don't want to flood the log.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetValue(System.Object,System.String,TheTechIdea.Beep.Editor.IDMEEditor)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.TryGetFromMap(System.Object,System.String,System.Object@)">
             <summary>
             Read a property value from <paramref name="record"/>. Returns
             <c>null</c> if the record is null, the field name is blank, or
@@ -23485,6 +23728,13 @@
             Creates a generic regex-pattern validation rule for a field.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.VisualAttributeManager">
+            <summary>
+            Engine-side Visual Attribute store. Holds named attributes and the
+            item/block they are applied to, and resolves the attribute a host should
+            render for an item given its record state. Mirrors <c>LOVManager</c>.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.AuditManager">
             <summary>
             Manages field-level and commit-level audit recording.
@@ -23572,6 +23822,78 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefaultAlertProvider.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>Shows a fallback alert when no UI-specific provider is available.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar">
+            <summary>
+            Turns the design-time blocks declared on a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition"/>
+            into live blocks registered with a <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager"/>.
+            </summary>
+            <remarks>
+            <para>
+            Generated designer code declares a block with
+            <c>this._formsHost.Definition.Blocks.Add(Ord);</c>. Until 2026-08-01
+            nothing read that collection — <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.Blocks"/> and
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.AutoCreateBlocksFromDefinition"/> had no
+            consumer anywhere — so a block the designer authored never reached the
+            manager, and every registration that needs one failed:
+            <c>CreateMasterDetailRelation</c> threw "Master block 'X' is not
+            registered", triggers and LOVs went nowhere.
+            </para>
+            <para>
+            This lives in the engine, not in a UI host. The WinForms and WPF hosts
+            are thin presentation layers: they make one call each, they do not
+            reimplement this.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.RegisterAll(TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager,TheTechIdea.Beep.Editor.Forms.Models.FormDefinition)">
+            <summary>
+            Registers every block declared on <paramref name="definition"/> that
+            the manager does not already know.
+            </summary>
+            <returns>The number of blocks newly registered.</returns>
+            <remarks>
+            Idempotent — a block the manager already holds is skipped, so
+            re-assigning a manager does not re-register.
+            <para>
+            Masters are registered before details: both halves of a master-detail
+            pair must exist before the generated <c>CreateMasterDetailRelation</c>
+            runs, and the manager rejects a relation naming a block it does not
+            know.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.TryRegister(TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager,TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition)">
+            <summary>
+            Resolves one declared block's source and registers it.
+            </summary>
+            <remarks>
+            The datasource supplies the row type through <c>GetEntityType</c> —
+            the same route <see cref="!:BlockFactory"/> takes. Nothing here
+            generates or compiles a type: a driver already knows how to shape its
+            own rows, and duplicating that would be a second thing to keep in
+            step.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.ApplyAuthoredKeys(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition,TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>
+            Overlays the key metadata the designer authored onto the entity
+            structure the datasource returned.
+            </summary>
+            <remarks>
+            A schemaless source cannot declare its own key: there is nothing in a
+            <c>.json</c> or <c>.csv</c> file that says which column identifies a
+            row, and <c>JsonMultiFileDataSource</c> accordingly returns an empty
+            <c>PrimaryKeys</c> list. The block definition <em>does</em> say so —
+            <c>BlockFieldDefinition.IsPrimaryKey</c> — but until 2026-08-01
+            nothing carried it across, so <c>UnitofWork</c> logged "Entity dont
+            have a primary key" and refused every update. Reads were unaffected,
+            which is why this stayed invisible: a form over a file datasource
+            queried and navigated normally and silently discarded edits.
+            <para>
+            Fills a gap only — a source that already declares keys keeps them.
+            </para>
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.FieldFormulaEvaluator">
             <summary>
             Infix formula evaluator for Oracle Forms <c>Calculation = Formula</c>.
@@ -23591,6 +23913,29 @@
             mapping. Overload added rather than duplicating the switch.
             </para>
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FieldTypeMapper.Normalize(System.String)">
+            <summary>
+            Reduces a declared field type to the bare, lower-cased name the switches
+            below match on.
+            </summary>
+            <remarks>
+            <para>
+            Datasources report .NET type names — <c>System.Int32</c>,
+            <c>System.Single</c>, <c>System.DateTime</c> (see
+            <c>JsonExtensions.DetermineFieldtype</c>) — while RDBMS drivers report
+            SQL names like <c>int</c> or <c>nvarchar</c>. Matching only the bare
+            forms meant every qualified name fell through to <c>Text</c>, so a
+            numeric or date column from any such datasource rendered as a plain text
+            box in both single-record and grid mode, and the IDE assigned it a text
+            editor key. Nothing detected it because the fallback is a legitimate
+            value.
+            </para>
+            <para>
+            Also strips a nullable marker, so <c>System.Int32?</c> and
+            <c>Nullable&lt;Int32&gt;</c> resolve like the underlying type.
+            </para>
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.FileAuditStore">
             <summary>
@@ -29626,6 +29971,14 @@
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ClearQueryHistory">
             <summary>Removes all recorded query-history entries.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.RecordQueryHistory(System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.TimeSpan,System.Boolean)">
+            <summary>
+            Records one query execution. <see cref="M:TheTechIdea.Beep.Editor.UOW.Helpers.UnitofWorkQueryHistory.Push(TheTechIdea.Beep.Editor.UOW.Models.QueryHistoryEntry)"/>
+            had no caller anywhere in the engine, so the history this exposes was
+            permanently empty and the forms layer's query-history view could only
+            ever render a blank list. (2026-08-03)
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.MaxQueryHistorySize">
             <summary>Maximum number of query history entries retained. Default is 20.</summary>
         </member>
@@ -30465,6 +30818,28 @@
             Creates a UnitOfWork instance with EntityStructure when the type is determined at runtime
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.EnsureEntityBackedType(System.Type,TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.DataBase.EntityStructure)">
+             <summary>
+             Returns a type that can actually close <c>UnitofWork&lt;T&gt;</c>,
+             generating one from <paramref name="structure"/> when the datasource's
+             own type cannot.
+             </summary>
+             <remarks>
+             <c>UnitofWork&lt;T&gt;</c> is constrained <c>where T : Entity, new()</c>.
+             Schemaless sources legitimately have no compile-time POCO to report:
+             LiteDB's <c>GetEntityType</c> returns
+             <c>Dictionary&lt;string, object&gt;</c>, and every document store is in
+             the same position. <c>MakeGenericType</c> then failed with
+             "violates the constraint of type 'T'", which reads as a caller bug
+             rather than a datasource that simply has no declared type — and the
+             block silently never registered.
+            
+             An entity type IS its structure, so the engine generates one here.
+             Doing it in one place means no NoSQL driver has to carry a copy of
+             this logic, and none of them has to know about ClassCreator at all.
+             (2026-08-03)
+             </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory.CreateWrapper(System.Object)">
             <summary>
             Wraps an existing UnitOfWork instance with a strongly-typed wrapper.
@@ -30767,6 +31142,20 @@
             Lazy-initialized; set explicitly before first use to inject a pre-populated
             registry. Available at both design time (IDE) and runtime (WinForms/WPF).
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DMEEditor.FormMessageBus">
+            <summary>
+            Shared inter-form message bus — all FormsManager instances built on this
+            editor post and receive here. Lazy-initialized; set explicitly to inject
+            your own.
+            </summary>
+            <remarks>
+            This mirrors <see cref="P:TheTechIdea.Beep.DMEEditor.FormRegistry"/> deliberately. FormsManager used to
+            construct a PRIVATE FormMessageBus per instance, one line below where it
+            picks up the shared registry, so two forms on the same editor each held
+            their own bus: PostMessage to another form reported success and was
+            delivered to nobody. (2026-08-03)
+            </remarks>
         </member>
         <member name="P:TheTechIdea.Beep.DMEEditor.ConnectionCatalogRepository">
             <summary>
@@ -42454,6 +42843,21 @@
             Dynamically constructs a .NET Type for the given entity based on its fields.
             Uses DMTypeBuilder utility.
             </summary>
+            <summary>
+            The runtime row type for an entity, generated from its
+            <c>EntityStructure</c>.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+            the same for every datasource — it is derived from the entity's
+            fields — so it is defined once. Each datasource used to answer it
+            differently and none correctly: <c>DMTypeBuilder</c> emits types
+            deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+            is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+            constrained to <c>T : Entity</c>. A block over such a datasource
+            registered and then held no records.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Json.JsonDataSource.GetScalar(System.String)">
             <summary>
@@ -42575,6 +42979,23 @@
             Returns a list of child relations for a given table. Not implemented for JSON.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonDataSourceAdvanced.GetEntityType(System.String)">
+            <summary>
+            The runtime row type for an entity, generated from its
+            <c>EntityStructure</c>.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/>. The answer is
+            the same for every datasource — it is derived from the entity's
+            fields — so it is defined once. Each datasource used to answer it
+            differently and none correctly: <c>DMTypeBuilder</c> emits types
+            deriving from <c>object</c> and <c>Dictionary&lt;string, object&gt;</c>
+            is not an entity at all, while <c>UnitofWork&lt;T&gt;</c> is
+            constrained to <c>T : Entity</c>. A block over such a datasource
+            registered and then held no records.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Json.JsonDataSourceAdvanced.GetEntityGraph(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Int32,System.Boolean,System.Boolean)">
             <summary>
             Optional graph hydration: returns dictionaries that include nested child entity collections.
@@ -42639,6 +43060,29 @@
             Ensures any new fields discovered in JSON records are added to the entity schema.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.GetEntityType(System.String)">
+            <summary>
+            The runtime row type for an entity — an <c>Entity</c>-derived class
+            generated from that entity's fields, one class per entity.
+            </summary>
+            <remarks>
+            Delegates to the shared
+            <see cref="T:TheTechIdea.Beep.Tools.EntityTypeFactory"/> rather than
+            building a type here. This previously used <c>DMTypeBuilder</c>,
+            which emits types deriving from <c>object</c>, while
+            <c>UnitofWork&lt;T&gt;</c> is constrained to <c>T : Entity</c> — so a
+            block over this datasource registered and then held no records:
+            nothing to query, navigate or synchronise.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.PropertyValue(Newtonsoft.Json.Linq.JObject,System.String)">
+            <summary>
+            Reads a property off a row by name, ignoring case. JSON keys are
+            case-sensitive and <c>JObject</c>'s indexer follows suit, but the
+            casing in a file is whatever wrote it — so a lookup that hard-codes
+            one spelling silently finds nothing.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.SaveEntityToFile(System.String)">
             <summary>
             Saves a single entity's data to its backing .json file.
@@ -42648,6 +43092,49 @@
             <summary>
             Saves all entities that have been modified.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.MarkDirty(System.String)">
+            <summary>
+            Records that an entity's in-memory data has changed and writes it
+            straight through to its backing file.
+            </summary>
+            <remarks>
+            This only set the dirty flag until 2026-08-01, and the sole flush was
+            in <c>Dispose</c> — <see cref="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.SaveAllDirtyEntities"/> had no caller
+            anywhere in the solution. Insert/Update/Delete therefore reported
+            success while leaving the file untouched, so a unit-of-work commit
+            returned Ok and the edit existed only in memory until the process
+            happened to dispose the datasource cleanly; a crash, or any host that
+            simply never disposed it, dropped the write with nothing logged.
+            <para>
+            Write-through is what "no transactions" means for a file source:
+            there is no later moment at which a batch would be committed, so
+            there is nothing to defer to. <c>Dispose</c> keeps its flush as a
+            backstop for anything that marks dirty without going through here.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.MatchesFilters(Newtonsoft.Json.Linq.JObject,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>
+            Applies a filter set to one row.
+            </summary>
+            <remarks>
+            Every filter was compared with string equality until 2026-08-01 —
+            <c>AppFilter.Operator</c> was never read — so a query-by-example for
+            <c>Qty &gt; 100</c> silently behaved as <c>Qty = 100</c> and returned
+            the wrong rows with no error anywhere. Comparisons are numeric when
+            both sides parse as numbers, then by date, then ordinal-insensitive
+            string, so "9" &lt; "100" orders as a number rather than as text.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.Compare(System.String,System.String)">
+            <summary>
+            Numeric where both sides are numbers, then date, then ordinal
+            case-insensitive string.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.LikeMatches(System.String,System.String)">
+            <summary>SQL LIKE with % and _ wildcards.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Winform.Controls.BeepConnectionRepository">
             <summary>

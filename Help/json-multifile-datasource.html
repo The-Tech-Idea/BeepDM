@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JsonMultiFileDataSource - Beep Data Management Engine Documentation</title>
+    <link rel="stylesheet" href="sphinx-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </button>
+    <div class="container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <main class="content">
+            <div class="content-wrapper">
+                <nav class="breadcrumb-nav">
+                    <a href="index.html">Home</a>
+                    <span>&gt;</span>
+                    <span>JsonMultiFileDataSource</span>
+                </nav>
+                <div class="page-header">
+                    <h1>JsonMultiFileDataSource</h1>
+                    <p class="page-subtitle">Directory-of-JSON-files datasource — each <code>.json</code> file is an independent entity</p>
+                </div>
+
+                <div class="note">
+                    <strong>Source of truth (2026)</strong>
+                    <ul>
+                        <li><code>DataManagementEngineStandard/Json/JsonMultiFileDataSource.cs</code></li>
+                        <li><code>DataManagementModelsStandard/Enums/Enums.cs</code> — <code>DataSourceType.JsonMultiFile</code></li>
+                    </ul>
+                </div>
+
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#layout">Directory Layout</a></li>
+                        <li><a href="#registration">Registration &amp; Connection</a></li>
+                        <li><a href="#lifecycle">Connection Lifecycle</a></li>
+                        <li><a href="#entities">Entity Management</a></li>
+                        <li><a href="#crud">CRUD Operations</a></li>
+                        <li><a href="#persistence">Persistence &amp; Dirty Tracking</a></li>
+                        <li><a href="#unsupported">Unsupported Operations</a></li>
+                        <li><a href="#gotchas">Gotchas</a></li>
+                        <li><a href="#examples">Usage Examples</a></li>
+                    </ul>
+                </div>
+
+                <section id="overview" class="section">
+                    <h2>Overview</h2>
+                    <p><code>JsonMultiFileDataSource</code> treats a <strong>directory of JSON files</strong> as a
+                       datasource, where each <code>.json</code> file becomes an independent entity — the rough
+                       equivalent of a table in an RDBMS. Each file carries its own inferred schema, its own data,
+                       and its own CRUD lifecycle.</p>
+                    <p>It implements <code>IDataSource</code> and <code>IDisposable</code>, and is declared in the
+                       <code>TheTechIdea.Beep.Json</code> namespace.</p>
+
+                    <h3>How it differs from the other JSON datasources</h3>
+                    <table class="ref-table">
+                        <thead><tr><th>Class</th><th>Shape</th><th>Doc</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><code>JsonDataSource</code></td>
+                                <td>One file = one datasource (single entity)</td>
+                                <td><a href="json-datasource.html">json-datasource.html</a></td>
+                            </tr>
+                            <tr>
+                                <td><code>JsonDataSourceAdvanced</code></td>
+                                <td>Single file with richer querying/structure handling</td>
+                                <td><a href="json-datasource.html">json-datasource.html</a></td>
+                            </tr>
+                            <tr>
+                                <td><code>JsonMultiFileDataSource</code></td>
+                                <td><strong>Directory = datasource, file = entity</strong></td>
+                                <td>This page</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>Reach for this one when you have a folder of related JSON documents you want to query and
+                       join as if they were tables, rather than a single document you want to treat as one entity.</p>
+                </section>
+
+                <section id="layout" class="section">
+                    <h2>Directory Layout</h2>
+                    <p>The entity name is the file name without its extension:</p>
+                    <pre><code class="language-text">/datasource/
+    customers.json    -&gt; entity "customers"
+    orders.json       -&gt; entity "orders"
+    products.json     -&gt; entity "products"</code></pre>
+                    <p>Each file may contain <strong>either</strong> a JSON array of records <strong>or</strong> a
+                       single JSON object. Schema is inferred from the file contents when the entity is loaded.</p>
+                    <pre><code class="language-json">// customers.json - array form (multiple records)
+[
+  { "id": 1, "name": "Acme Corp",  "active": true  },
+  { "id": 2, "name": "Globex Inc", "active": false }
+]</code></pre>
+                    <pre><code class="language-json">// settings.json - single object form (one record)
+{ "theme": "dark", "pageSize": 50 }</code></pre>
+                </section>
+
+                <section id="registration" class="section">
+                    <h2>Registration &amp; Connection</h2>
+                    <p>The class carries an <code>[AddinAttribute]</code>, so <code>AssemblyHandler</code> discovers
+                       it during <code>LoadAssemblies()</code>:</p>
+                    <pre><code class="language-csharp">[AddinAttribute(Category = DatasourceCategory.FILES,
+                DatasourceType = DataSourceType.JsonMultiFile)]
+public class JsonMultiFileDataSource : IDataSource, IDisposable</code></pre>
+
+                    <h3>Constructor</h3>
+                    <pre><code class="language-csharp">public JsonMultiFileDataSource(
+    string datasourcename,
+    IDMLogger logger,
+    IDMEEditor pDMEEditor,
+    DataSourceType databasetype,
+    IErrorsInfo per)</code></pre>
+                    <p>The constructor looks up a matching <code>ConnectionProperties</code> by
+                       <code>ConnectionName</code> (case-insensitive) from
+                       <code>DMEEditor.ConfigEditor.DataConnections</code> and builds a
+                       <code>FileConnection</code> from it. Both <strong>directory-only</strong> and
+                       <strong>file + directory</strong> connection path patterns are supported, so a connection
+                       that names a specific file still resolves to its containing folder.</p>
+
+                    <pre><code class="language-csharp">var conn = new ConnectionProperties
+{
+    ConnectionName = "catalog-json",
+    FilePath       = @"C:\data\catalog",       // the directory of .json files
+    DatabaseType   = DataSourceType.JsonMultiFile,
+    Category       = DatasourceCategory.FILE
+};
+dmEditor.ConfigEditor.AddDataConnection(conn);
+
+var ds = dmEditor.GetDataSource("catalog-json");</code></pre>
+                </section>
+
+                <section id="lifecycle" class="section">
+                    <h2>Connection Lifecycle</h2>
+                    <pre><code class="language-csharp">public ConnectionState Openconnection();
+public ConnectionState Closeconnection();
+public string DataDirectory { get; private set; }
+public bool ObjectsCreated { get; }
+public ConnectionState ConnectionStatus { get; set; }   // starts Closed</code></pre>
+                    <p><code>Openconnection()</code> resolves <code>DataDirectory</code> and scans it for
+                       <code>*.json</code> files, populating <code>EntitiesNames</code> and
+                       <code>Entities</code>. <code>DataDirectory</code> is read-only from outside the class.</p>
+                    <div class="warning">
+                        <strong>Close flushes.</strong> <code>Closeconnection()</code> is the point at which
+                        pending in-memory changes are written back to disk. See
+                        <a href="#persistence">Persistence &amp; Dirty Tracking</a> — if the process exits without
+                        closing or explicitly saving, edits are lost.
+                    </div>
+                </section>
+
+                <section id="entities" class="section">
+                    <h2>Entity Management</h2>
+                    <pre><code class="language-csharp">public IEnumerable&lt;string&gt;  GetEntitesList();
+public bool                 CheckEntityExist(string EntityName);
+public int                  GetEntityIdx(string entityName);
+public EntityStructure      GetEntityStructure(string EntityName, bool refresh);
+public EntityStructure      GetEntityStructure(EntityStructure fnd, bool refresh = false);
+public Type                 GetEntityType(string EntityName);
+
+public IErrorsInfo          CreateEntities(List&lt;EntityStructure&gt; entities);
+public bool                 CreateEntityAs(EntityStructure entity);
+
+public void                 RefreshEntity(string entityName);
+public EntityStructure?     AddEntityFile(string entityName, string filePath);</code></pre>
+
+                    <p>Two methods are specific to this datasource and have no equivalent on the single-file JSON
+                       providers:</p>
+                    <ul>
+                        <li><code>RefreshEntity(entityName)</code> — re-reads that one file from disk, discarding the
+                            cached copy. Use it when a file is modified by an external process.</li>
+                        <li><code>AddEntityFile(entityName, filePath)</code> — registers a JSON file that lives
+                            <em>outside</em> the datasource directory as an entity, returning the inferred
+                            <code>EntityStructure</code> (or <code>null</code> on failure).</li>
+                    </ul>
+
+                    <p><code>GetEntityType()</code> builds a runtime POCO type from the inferred structure, which is
+                       what lets <code>UnitofWork&lt;T&gt;</code> bind to these entities.</p>
+
+                    <h3>Relationships</h3>
+                    <pre><code class="language-csharp">public IEnumerable&lt;ChildRelation&gt;    GetChildTablesList(string tablename, string SchemaName, string Filterparamters);
+public IEnumerable&lt;RelationShipKeys&gt; GetEntityforeignkeys(string entityname, string SchemaName);</code></pre>
+                    <p>JSON files carry no foreign-key metadata, so these return empty sequences. Model
+                       relationships in <code>EntityStructure</code> or a <code>DataViewDataSource</code> if you
+                       need joins across files.</p>
+                </section>
+
+                <section id="crud" class="section">
+                    <h2>CRUD Operations</h2>
+                    <pre><code class="language-csharp">public IEnumerable&lt;object&gt; GetEntity(string entityName, List&lt;AppFilter&gt;? filter);
+public PagedResult         GetEntity(string entityName, List&lt;AppFilter&gt;? filter,
+                                     int pageNumber, int pageSize);
+public Task&lt;IEnumerable&lt;object&gt;&gt; GetEntityAsync(string EntityName, List&lt;AppFilter&gt; Filter);
+
+public IErrorsInfo InsertEntity(string EntityName, object InsertedData);
+public IErrorsInfo UpdateEntity(string EntityName, object UploadDataRow);
+public IErrorsInfo DeleteEntity(string EntityName, object criteria);
+public IErrorsInfo UpdateEntities(string EntityName, object UploadData,
+                                  IProgress&lt;PassedArgs&gt;? progress);
+
+public IEnumerable&lt;object&gt; RunQuery(string qrystr);
+public double              GetScalar(string query);
+public Task&lt;double&gt;        GetScalarAsync(string query);</code></pre>
+                    <p>Paging is supported through the <code>PagedResult</code> overload of
+                       <code>GetEntity</code>. <code>UpdateEntities</code> accepts an
+                       <code>IProgress&lt;PassedArgs&gt;</code> for bulk writes.</p>
+                    <p>Per the BeepDM error convention, the write methods return <code>IErrorsInfo</code> rather
+                       than throwing — check <code>Flag</code> against <code>Errors.Ok</code>.</p>
+                </section>
+
+                <section id="persistence" class="section">
+                    <h2>Persistence &amp; Dirty Tracking</h2>
+                    <p>Edits are applied to an in-memory copy of the entity and flushed to disk explicitly:</p>
+                    <pre><code class="language-csharp">public void SaveEntityToFile(string entityName);   // flush one entity
+public void SaveAllDirtyEntities();                // flush everything modified</code></pre>
+                    <div class="warning">
+                        <strong>Writes are not automatically persisted per operation.</strong>
+                        <code>InsertEntity</code> / <code>UpdateEntity</code> / <code>DeleteEntity</code> mutate the
+                        cached entity and mark it dirty; the JSON file on disk is only rewritten when
+                        <code>SaveEntityToFile</code>, <code>SaveAllDirtyEntities</code>, or
+                        <code>Closeconnection()</code> runs. If the host process terminates without one of those,
+                        the changes are lost. Call <code>SaveAllDirtyEntities()</code> at a natural checkpoint, or
+                        dispose the datasource properly.
+                    </div>
+                </section>
+
+                <section id="unsupported" class="section">
+                    <h2>Unsupported Operations</h2>
+                    <p>Several <code>IDataSource</code> members exist only to satisfy the contract and are
+                       expression-bodied no-ops or failures — JSON files have no transaction log or SQL engine:</p>
+                    <table class="ref-table">
+                        <thead><tr><th>Member</th><th>Behaviour</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>BeginTransaction(PassedArgs)</code></td><td>Not a real transaction</td></tr>
+                            <tr><td><code>Commit(PassedArgs)</code></td><td>Not a real transaction</td></tr>
+                            <tr><td><code>EndTransaction(PassedArgs)</code></td><td>Not a real transaction</td></tr>
+                            <tr><td><code>ExecuteSql(string)</code></td><td>No SQL engine</td></tr>
+                            <tr><td><code>RunScript(ETLScriptDet)</code></td><td>No script engine</td></tr>
+                        </tbody>
+                    </table>
+                    <p><code>GetCreateEntityScript(List&lt;EntityStructure&gt;? entities = null)</code> <em>is</em>
+                       implemented and returns <code>ETLScriptDet</code> entries, so this datasource can act as an
+                       ETL/migration <strong>target</strong> — new entities become new files.</p>
+                    <div class="warning">
+                        <strong>No atomicity across entities.</strong> Because transactions are no-ops, a
+                        multi-entity write that fails halfway leaves some files updated and others not. If you need
+                        all-or-nothing semantics, stage into a transactional datasource and copy across, or snapshot
+                        the directory first.
+                    </div>
+                </section>
+
+                <section id="gotchas" class="section">
+                    <h2>Gotchas</h2>
+                    <div class="warning">
+                        <strong>The runtime <code>DatasourceType</code> does not match the attribute.</strong>
+                        The <code>[AddinAttribute]</code> declares
+                        <code>DatasourceType = DataSourceType.JsonMultiFile</code> and
+                        <code>Category = DatasourceCategory.FILES</code>, but the constructor overwrites the instance
+                        properties with:
+                        <pre><code class="language-csharp">DatasourceType = DataSourceType.Json;        // not JsonMultiFile
+Category       = DatasourceCategory.FILE;    // not FILES</code></pre>
+                        So discovery/registration sees <code>JsonMultiFile</code>/<code>FILES</code>, while code
+                        inspecting a live instance sees <code>Json</code>/<code>FILE</code>. Don't branch on
+                        <code>ds.DatasourceType == DataSourceType.JsonMultiFile</code> at runtime — it will not
+                        match. Test the concrete type instead:
+                        <pre><code class="language-csharp">if (ds is JsonMultiFileDataSource multi) { /* ... */ }</code></pre>
+                    </div>
+                    <ul>
+                        <li>The default property initialiser is also <code>DataSourceType.Json</code>, so the
+                            <code>databasetype</code> constructor argument is effectively ignored.</li>
+                        <li>Files added to the directory after <code>Openconnection()</code> are not picked up
+                            automatically — call <code>RefreshEntity</code>, or reopen the connection.</li>
+                        <li>Entity names are derived from file names, so they inherit whatever casing and characters
+                            the filesystem allows. Keep them simple if you intend to query them by name.</li>
+                    </ul>
+                </section>
+
+                <section id="examples" class="section">
+                    <h2>Usage Examples</h2>
+
+                    <h3>Reading entities from a directory</h3>
+                    <pre><code class="language-csharp">var ds = dmEditor.GetDataSource("catalog-json");
+ds.Openconnection();
+
+foreach (var name in ds.GetEntitesList())
+    Console.WriteLine($"entity: {name}");
+
+var customers = ds.GetEntity("customers", null);
+foreach (var row in customers)
+    Console.WriteLine(row);</code></pre>
+
+                    <h3>Filtering and paging</h3>
+                    <pre><code class="language-csharp">var filters = new List&lt;AppFilter&gt;
+{
+    new AppFilter { FieldName = "active", Operator = "=", FilterValue = "true" }
+};
+
+PagedResult page = ds.GetEntity("customers", filters, pageNumber: 1, pageSize: 25);</code></pre>
+
+                    <h3>Insert, then persist</h3>
+                    <pre><code class="language-csharp">var result = ds.InsertEntity("customers", newCustomer);
+if (result.Flag != Errors.Ok)
+    dmEditor.AddLogMessage("App", $"Insert failed: {result.Message}",
+                           DateTime.Now, 0, null, Errors.Failed);
+
+// Nothing is on disk until this runs
+((JsonMultiFileDataSource)ds).SaveAllDirtyEntities();</code></pre>
+
+                    <h3>Attaching an out-of-directory file as an entity</h3>
+                    <pre><code class="language-csharp">var multi = (JsonMultiFileDataSource)ds;
+
+var structure = multi.AddEntityFile("archive", @"D:\backups\archive-2025.json");
+if (structure == null)
+    Console.WriteLine("Could not load that file as an entity");</code></pre>
+
+                    <h3>With UnitofWork</h3>
+                    <pre><code class="language-csharp">var uow = new UnitofWork&lt;Customer&gt;(dmEditor, "catalog-json", "customers");
+uow.Get();
+
+var c = uow.New();
+c.Name = "New Client";
+uow.Add(c);
+uow.Commit();
+
+// Still required - UnitofWork.Commit() does not flush the JSON files
+((JsonMultiFileDataSource)dmEditor.GetDataSource("catalog-json")).SaveAllDirtyEntities();</code></pre>
+                </section>
+
+                <div class="nav-links">
+                    <a href="json-datasource.html"><i class="bi bi-arrow-left"></i> Previous: JSON DataSource</a>
+                    <a href="cache-datasources.html">Next: Cache DataSources <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <footer class="documentation-footer">
+                    <div class="footer-content">
+                        <div class="footer-copyright">
+                            <p>&copy; 2024 The Tech Idea - Beep Data Management Engine Documentation</p>
+                            <p>Supporting .NET 8, 9, and 10 | Multi-Platform Data Management</p>
+                        </div>
+                        <div class="footer-links">
+                            <a href="index.html">Home</a>
+                            <a href="api-reference.html">API Reference</a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+    <script src="navigation.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

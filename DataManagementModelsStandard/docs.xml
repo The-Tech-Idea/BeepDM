@@ -4080,6 +4080,19 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.SetMessage(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.MessageLevel)">
             <summary>Sets the current message for a block or enqueues it.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ReplaceMessage(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.MessageLevel)">
+            <summary>
+            Makes a message current immediately, discarding whatever was showing
+            and leaving the queue alone.
+            </summary>
+            <remarks>
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.SetMessage(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.MessageLevel)"/> enqueues behind an undismissed message, which
+            suits a message the user must acknowledge but not a status line: the
+            Oracle Forms MESSAGE built-in overwrites the line, and nothing in a
+            running form dismisses status messages, so every one after the first
+            queued up and was replayed later in the wrong order.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager.ClearMessage(System.String)">
             <summary>Clears the current message for a block.</summary>
         </member>
@@ -4171,6 +4184,30 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.ResetPaging(System.String)">
             <summary>Resets all paging state for a block to defaults.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager">
+            <summary>
+            Holds a form's menu (the Oracle Forms menu module, engine-side). The menu
+            is stored and read here; INVOCATION lives on
+            <c>IUnitofWorksManager.InvokeMenuItemAsync</c>, where the form operations
+            a built-in item dispatches to already are.
+            </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager.MenuChanged">
+            <summary>
+            Raised when the menu is registered or replaced, so a host that renders
+            it can rebuild its menu bar. The engine notifies; the UI reacts — the
+            host never polls.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager.RegisterMenu(TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuDefinition)">
+            <summary>Registers (or replaces) the form's menu.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager.GetMenu">
+            <summary>The registered menu, or null when the form has none.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager.FindItem(System.String)">
+            <summary>The menu item with this id anywhere in the tree, or null.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry">
             <summary>
@@ -4882,6 +4919,20 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.LOV">
             <summary>Gets the LOV manager</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.VisualAttributes">
+            <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Menu">
+            <summary>The form's menu (Oracle Forms menu module).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.InvokeMenuItemAsync(System.String)">
+            <summary>
+            Invokes a form menu item by id: a built-in runs the matching form
+            operation, a MenuItemTrigger fires the WhenMenuItem trigger with the id
+            in context, a CallForm calls the named form. A separator or submenu is
+            a no-op.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ItemProperties">
             <summary>Gets the item property manager</summary>
         </member>
@@ -4890,6 +4941,37 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Savepoints">
             <summary>Gets the savepoint manager</summary>
+            <remarks>
+            This is the savepoint <em>store</em>. It records and forgets
+            savepoints; it does not snapshot or restore block data — see the
+            remarks on <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateBlockSavepoint(System.String,System.String)"/>.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateBlockSavepoint(System.String,System.String)">
+             <summary>
+             Creates a savepoint for a block, capturing the current record so it
+             can be restored.
+             </summary>
+             <remarks>
+             Use this, not <c>Savepoints.CreateSavepoint</c>. The savepoint
+             manager is a store: its two-argument <c>CreateSavepoint</c> overload
+             records no field values at all, and its
+             <c>RollbackToSavepointAsync</c> only prunes later savepoints — its
+             own documentation says restoring the data is the caller's
+             responsibility.
+            
+             Both data-aware wrappers existed on <c>FormsManager</c> and neither
+             was on this interface until 2026-08-02, so a host could reach only
+             the store. <c>WinFormFormHost</c> did exactly that: it created
+             savepoints that captured nothing and rolled back to them without
+             restoring anything, reporting success both times.
+             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RollbackToSavepointAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Rolls a block back to a savepoint, restoring the record and then
+            pruning the savepoints created after it.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Locking">
             <summary>Gets the record locking manager</summary>
@@ -5059,7 +5141,19 @@
             <summary>Switches the current active block.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.InsertRecordAsync(System.String,System.Object)">
-            <summary>Inserts a record into a block.</summary>
+            <summary>
+            Creates a record in a block. Oracle Forms CREATE_RECORD: the record is
+            added to the block and written to the datasource on commit.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.UpdateCurrentRecordAsync(System.String)">
+            <summary>Writes the block's current record back to the datasource.</summary>
+            <remarks>
+            This lived on <c>FormsManager</c> and on no interface until
+            2026-08-03, so a host could not reach the explicit update path at all —
+            only <c>SetFieldValue</c> followed by a commit. The integration harness
+            had to cast to the concrete type to exercise it.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.DeleteCurrentRecordAsync(System.String)">
             <summary>Deletes the current record from a block.</summary>
@@ -5869,6 +5963,47 @@
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.ItemErrorChanged">
             <summary>Event raised when item error state changes</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager">
+            <summary>
+            Registers named <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute"/>s and applies them to items
+            and blocks — the engine side of the Oracle Forms Visual Attribute. Mirrors
+            <c>ILOVManager</c>: the IDE authors registrations, the host asks
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.ResolveForItem(System.String,System.String,System.Boolean,System.Boolean,System.Boolean)"/> what to render.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.RegisterVisualAttribute(TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute)">
+            <summary>Registers or replaces a named visual attribute (keyed by <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.Name"/>).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.GetVisualAttribute(System.String)">
+            <summary>The named attribute, or null when none is registered under that name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.GetVisualAttributes">
+            <summary>Every registered attribute.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.ApplyToItem(System.String,System.String,System.String)">
+            <summary>Applies a registered attribute to an item.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.ApplyToBlock(System.String,System.String)">
+            <summary>Applies a registered attribute to a whole block (its default for every item).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.GetItemVisualAttribute(System.String,System.String)">
+            <summary>The name of the attribute applied to an item, or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.GetBlockVisualAttribute(System.String)">
+            <summary>The name of the attribute applied to a block, or null.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.ClearItem(System.String,System.String)">
+            <summary>Removes the attribute applied to an item.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IVisualAttributeManager.ResolveForItem(System.String,System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            The attribute a host should render for an item given its record state.
+            The manager owns the precedence: the item's own attribute wins over the
+            block default, and a state-override attribute applies only when that
+            state is active. Returns null when nothing applies — the host then
+            leaves the control at its theme default.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BlockConfiguration">
             <summary>
             Configuration settings for individual data blocks
@@ -6448,6 +6583,67 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FieldConstraints.CaseSensitive">
             <summary>Gets or sets whether case-sensitive validation should be used</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind">
+            <summary>What a form menu item does when invoked.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.BuiltIn">
+            <summary>Runs a built-in form operation named by <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.CommandName"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.MenuItemTrigger">
+            <summary>Fires the <c>WhenMenuItem</c> form trigger with this item's id in context.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.CallForm">
+            <summary>Calls another form named by <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.CommandName"/>.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.Separator">
+            <summary>A separator line; not invocable.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.Submenu">
+            <summary>A submenu holding <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.Children"/>; not invocable itself.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem">
+            <summary>
+            One item in a form's menu. A tree of these hangs off
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuDefinition"/>. UI-agnostic — no control types here.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.Id">
+            <summary>Stable id used to invoke the item and to identify it in the trigger context.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.Label">
+            <summary>Display text.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.Shortcut">
+            <summary>Optional accelerator, e.g. "Ctrl+S". Host-interpreted.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.CommandName">
+            <summary>
+            For <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.BuiltIn"/>, the operation name (e.g.
+            "ExecuteQuery", "Commit", "NextRecord", "PreviousRecord",
+            "FirstRecord", "LastRecord", "CreateRecord", "DeleteRecord",
+            "EnterQuery", "ExitForm"). For <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.CallForm"/>,
+            the target form name. Ignored otherwise.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.BlockName">
+            <summary>The block a record-scoped built-in targets; null = the form's current block.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.Children">
+            <summary>Submenu children, when <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItem.Kind"/> is <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuItemKind.Submenu"/>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuDefinition">
+            <summary>
+            A form's menu — the Oracle Forms menu module, engine-side. Hangs off
+            <c>FormDefinition.Menu</c>; a host renders it and invokes items through
+            <c>IUnitofWorksManager.InvokeMenuItemAsync</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuDefinition.FormName">
+            <summary>The form this menu belongs to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.FormMenuDefinition.Items">
+            <summary>Top-level menu items (each typically a submenu).</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.FormStateSnapshot">
             <summary>Snapshot of the complete form state for save/restore.</summary>
@@ -8288,6 +8484,47 @@
             <param name="key">The context key</param>
             <param name="value">The context value</param>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute">
+             <summary>
+             A named bundle of display properties applied to an item or block —
+             the Oracle Forms Visual Attribute.
+             </summary>
+             <remarks>
+             UI-agnostic on purpose. Colours are hex strings ("#RRGGBB"), not
+             <c>System.Drawing.Color</c>, so the engine and the WPF host take no
+             <c>System.Drawing</c> dependency (AGENTS.md §8). Each host parses the hex
+             into its own colour type when it applies the attribute.
+            
+             The three *Override flags mark which record states this attribute varies
+             for. A host asks <see cref="!:IVisualAttributeManager.ResolveForItem"/> for
+             the attribute that applies given the current record state rather than
+             re-implementing the precedence itself.
+             </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.Name">
+            <summary>The attribute's identity; registration and application key by this.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.FontStyleMask">
+            <summary>Bold/italic/underline bitmask; host-interpreted, null = inherit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.ForeColorHex">
+            <summary>Foreground colour as "#RRGGBB", or null to inherit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.BackColorHex">
+            <summary>Background colour as "#RRGGBB", or null to inherit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.BorderColorHex">
+            <summary>Border colour as "#RRGGBB", or null to inherit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.CurrentRecordOverride">
+            <summary>This attribute overrides the display of the CURRENT record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.ChangedRecordOverride">
+            <summary>This attribute overrides the display of a CHANGED (dirty) record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute.QueryModeOverride">
+            <summary>This attribute overrides the display while the block is in query mode.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.ValidationRuleBuilder">
             <summary>
             Fluent builder for ValidationRule.
@@ -8383,6 +8620,16 @@
             are accessed through <c>FormsManager</c> directly.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Hosts.IBeepFormsHost.Definition">
+            <summary>
+            Blocks declared on this form at design time.
+            <para>
+            Generated designer code registers a block with
+            <c>this._formsHost.Definition.Blocks.Add(Ord);</c>. Never null, so that
+            line needs no guard in generated source.
+            </para>
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar">
             <summary>
             Block navigation bar contract shared by WPF and WinForms.
@@ -8391,6 +8638,17 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.View">
             <summary>Platform-specific visual element (UIElement in WPF, Control in WinForms).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockView.Definition">
+            <summary>
+            Design-time definition of this block.
+            <para>
+            Was <c>object?</c>, which is why the <c>.Designer.cs</c> the IDE emits
+            (<c>this._formsHost.Definition.Blocks.Add(Ord);</c>) could not compile in
+            the project it was written into. The type exists in BeepDM; the property
+            now names it.
+            </para>
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFieldPresenter">
             <summary>
@@ -8435,7 +8693,23 @@
             <summary>Parses a single form file.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFormScanner.ParseDesignerFileAsync(System.String,System.Threading.CancellationToken)">
-            <summary>Parses a designer file (.Designer.cs or .xaml).</summary>
+            <summary>
+            Parses a designer file (.Designer.cs or .xaml) and returns its PRIMARY
+            block. A designer file can declare several blocks; this returns the first.
+            Use <see cref="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFormScanner.ParseDesignerBlocksAsync(System.String,System.Threading.CancellationToken)"/> when every block matters.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFormScanner.ParseDesignerBlocksAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Parses a designer file (.Designer.cs or .xaml) and returns EVERY block it
+            declares, in declaration order. Empty when the file declares none.
+            </summary>
+            <remarks>
+            <see cref="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFormScanner.ParseDesignerFileAsync(System.String,System.Threading.CancellationToken)"/> returns only the first block, which
+            silently loses the rest of a multi-block designer file when a caller reaches
+            for a designer directly rather than through <see cref="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFormScanner.ParseFormFileAsync(System.String,System.Threading.CancellationToken)"/>
+            (plan §3.3). This is the lossless entry point.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFormsNotificationService">
             <summary>
@@ -8597,6 +8871,313 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AuditConfiguration.MaxEntries">
             <summary>Maximum entries kept in the in-memory store (0 = unlimited).</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition">
+            <summary>
+            A data block: its identity, its data binding, its fields and its navigation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.BlockName">
+            <summary>Block name as the engine knows it.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Name">
+            <summary>Alias of <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.BlockName"/>, for designer-style assignment.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.EntityName">
+            <summary>Entity (table/view) this block is bound to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.ConnectionName">
+            <summary>Named connection the entity is read through.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.ParentBlock">
+            <summary>Master block name when this block is a detail.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.MasterKeyPropertyName">
+            <summary>Field on the master that the detail joins to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.ForeignKeyPropertyName">
+            <summary>Field on this block that carries the master's key.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.HostName">
+            <summary>Name of the host surface that owns this block.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Caption">
+            <summary>Human-readable caption.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.PresentationMode">
+            <summary>Platform-specific presentation hint (grid, label pairs, …).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.ManagerBlockName">
+            <summary>
+            Name the runtime <c>FormsManager</c> registers this block under.
+            Usually the same as <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.BlockName"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.DefinitionVariableName">
+            <summary>Variable name this definition was declared as in generated source.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.QueryString">
+            <summary>Optional WHERE clause applied when the block queries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.RuntimeKind">
+            <summary>How the block is realised at runtime.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Items">
+            <summary>Items (fields) discovered or declared for this block.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Metadata">
+            <summary>Anything carried through that has no first-class member.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.EntityDefinition">
+            <summary>Entity binding and field definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Entity">
+            <summary>
+            Alias of <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.EntityDefinition"/>. Generated designer code assigns
+            <c>Ord.Entity.EntityName = "Orders";</c>, so the short name has to exist.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Navigation">
+            <summary>Navigation bar definition.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.IsIntegrated">
+            <summary>True for anything the integrated runtime drives.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition">
+            <summary>Entity binding for a block, plus its field definitions.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.EntityName">
+            <summary>Entity name as the block refers to it.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.ConnectionName">
+            <summary>Named connection the entity is read through.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.DatasourceEntityName">
+            <summary>Entity name as it exists in the datasource, when it differs.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.Caption">
+            <summary>Human-readable caption.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.Description">
+            <summary>Free-text description.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.ControlType">
+            <summary>Platform control type hint for the block surface.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.BindingProperty">
+            <summary>Property the block surface binds through.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.DataSourceId">
+            <summary>Datasource identifier, when the block pins one.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.EditorKey">
+            <summary>Editor key hint for the block surface.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.PresentationMode">
+            <summary>Platform-specific presentation hint.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.MasterBlockName">
+            <summary>Master block name when this block is a detail.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.MasterKeyField">
+            <summary>Field on the master that the detail joins to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.ForeignKeyField">
+            <summary>Field on this block that carries the master's key.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.IsMasterBlock">
+            <summary>True when other blocks join to this one.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.Fields">
+            <summary>Field definitions belonging to this entity.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition.Clone">
+            <summary>
+            Copies this definition, including its fields.
+            <para>
+            The field list is copied, not shared. A shallow copy would let two
+            blocks cloned from the same template edit each other's fields, which is
+            exactly what happens when a form declares several blocks from one
+            definition.
+            </para>
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition">
+            <summary>One field within a block's entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.FieldName">
+            <summary>Column name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Caption">
+            <summary>Human-readable caption.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Description">
+            <summary>Free-text description.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.DataType">
+            <summary>Database type name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.ControlType">
+            <summary>Platform control type hint.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.BindingProperty">
+            <summary>Property the control binds through.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.EditorKey">
+            <summary>
+            Key the platform's field-presenter registry resolves to a control.
+            Assigned from the engine's <c>FieldTypeMapper</c> so design time and run
+            time cannot drift.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Label">
+            <summary>Label shown beside the control.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Order">
+            <summary>Display order, ascending.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Size">
+            <summary>Maximum length for text types.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.NumericPrecision">
+            <summary>Precision for numeric types.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.NumericScale">
+            <summary>Scale for numeric types.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsRequired">
+            <summary>Field must have a value.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsEnabled">
+            <summary>Field can be edited.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.AllowDBNull">
+            <summary>Column accepts NULL.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsPrimaryKey">
+            <summary>Part of the primary key.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsUnique">
+            <summary>Carries a unique constraint.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsIndexed">
+            <summary>Backed by an index.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsAutoIncrement">
+            <summary>Database-generated on insert.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsReadOnly">
+            <summary>Not editable at runtime.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsCheck">
+            <summary>Carries a check constraint.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Category">
+            <summary>
+            Field category, as the name of a
+            <c>TheTechIdea.Beep.Utilities.DbFieldCategory</c> member.
+            <para>
+            Held as a string rather than the enum so this contract does not drag the
+            Utilities enum into every consumer, and so an unrecognised value from an
+            older generated file round-trips instead of silently becoming the
+            default. Parse with <c>Enum.TryParse</c> against that enum — never
+            against a locally declared copy, which is how Integer, Long, Short,
+            Date, Json and Complex were previously lost.
+            </para>
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Width">
+            <summary>Display width of the generated control, in pixels. 0 = auto.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsVisible">
+            <summary>Whether the generated control is shown.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Clone">
+            <summary>Copies this field definition. All members are value types or strings.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition">
+            <summary>Navigation bar definition for a block.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Enabled">
+            <summary>Whether the navigation bar is shown at all.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.First">
+            <summary>Move to the first record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Previous">
+            <summary>Move to the previous record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Next">
+            <summary>Move to the next record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Last">
+            <summary>Move to the last record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.NewRecord">
+            <summary>Begin a new record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Delete">
+            <summary>Delete the current record.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Query">
+            <summary>Enter query mode.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Execute">
+            <summary>Execute the query.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Save">
+            <summary>Commit pending changes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Rollback">
+            <summary>Discard pending changes.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition.Clone">
+            <summary>
+            Copies this navigation definition, including each declared command.
+            A command left null stays null — null means "not declared", which is
+            not the same as declared-and-hidden.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationCommand">
+            <summary>Visibility and enabled state of one navigation command.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationCommand.Visible">
+            <summary>Whether the command is shown.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationCommand.Enabled">
+            <summary>Whether the command can be invoked.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationCommand.Clone">
+            <summary>Copies this command's state.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition">
+            <summary>
+            The set of blocks a form host owns.
+            <para>
+            Generated designer code registers a block with
+            <c>this._formsHost.Definition.Blocks.Add(Ord);</c>, so the host's
+            <c>Definition</c> has to be this type rather than <c>object</c>.
+            </para>
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.FormName">
+            <summary>Logical form name the engine registers.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.Blocks">
+            <summary>Blocks declared on this form.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.AutoCreateBlocksFromDefinition">
+            <summary>
+            Whether the host should create block surfaces from <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.Blocks"/>
+            on load, rather than expecting them to be added in code.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition.Menu">
+            <summary>
+            The form's menu (Oracle Forms menu module), or null when the form has
+            none. A host renders it and invokes items through
+            <c>IUnitofWorksManager.InvokeMenuItemAsync</c>.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ErrorSeverity">
             <summary>
@@ -8824,7 +9405,13 @@
             <summary>Gets or sets when the call was made.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry.Completion">
-            <summary>Task that completes when the callee returns (or closes).</summary>
+            <summary>
+            Task that completes when the callee returns (or closes). The result is
+            true for a normal ReturnToCaller and false when the callee was closed
+            without returning, so CALL_FORM's caller can tell OK from Cancel. This
+            was a bare <see cref="T:System.Threading.Tasks.Task"/>, which threw the bool away and made every
+            outcome look like a normal return. (2026-08-03)
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry.Complete(System.Boolean)">
             <summary>Complete the entry's task. Called by the form manager when
@@ -9207,44 +9794,185 @@
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo">
             <summary>Form surface hosting blocks (WinForms BeepForms or WPF BeepWpfForms).</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.FormName">
+            <summary>Class name of the form.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.FormFilePath">
+            <summary>Path of the form's own source file (.cs or .xaml.cs).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.DesignerFilePath">
+            <summary>Path of the generated half (.Designer.cs or .xaml).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.ProjectPath">
+            <summary>Directory of the owning project.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.IsWpf">
+            <summary>Discovered on the WPF path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.IsForm">
+            <summary>Derives from Form or Window.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.IsUserControl">
+            <summary>Derives from UserControl, or from Page on the WPF path.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Blocks">
+            <summary>Blocks declared on this form.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Hosts">
+            <summary>Form hosts declared on this form.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.UsesIntegratedForms">
+            <summary>True when the integrated Forms runtime is in play.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.EligibleContainerTargets">
+            <summary>Containers a generated block surface could be placed into.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedContainerTargetInfo">
-            <summary>A container control (Panel, GroupBox, TabPage) eligible as a block drop target.</summary>
+            <summary>A container control (Panel, GroupBox, TabPage, Grid) eligible as a block drop target.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedContainerTargetInfo.TargetName">
+            <summary>Control name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedContainerTargetInfo.ControlType">
+            <summary>Control type name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedContainerTargetInfo.DisplayName">
+            <summary>Label shown in pickers.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedContainerTargetInfo.ParentControlName">
+            <summary>Nearest named ancestor.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockInfo">
-            <summary>A block surface (BeepBlock) discovered in a designer file.</summary>
+            <summary>
+            A block discovered by a scanner.
+            <para>
+            Adds nothing to <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition"/> — it exists so
+            <see cref="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFormScanner"/> and its callers keep a name that says where
+            the instance came from. A scanned block and an authored block are the same
+            shape, because they are the same thing.
+            </para>
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityDefinition">
-            <summary>Platform-agnostic entity definition metadata for a block.</summary>
+            <summary>Entity definition of a scanned block. See <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BlockEntityDefinition"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition">
-            <summary>Platform-agnostic field definition within an entity.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition.Width">
-            <summary>Display width of the generated control, in pixels. 0 = auto.</summary>
-        </member>
-        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEntityFieldDefinition.IsVisible">
-            <summary>Whether the generated control is shown. Defaults to true.</summary>
+            <summary>Field definition of a scanned block. See <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedNavigationDefinition">
-            <summary>Platform-agnostic navigation bar definition for a block.</summary>
+            <summary>Navigation definition of a scanned block. See <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedNavigationCommand">
-            <summary>Platform-agnostic navigation command visibility/enabled state.</summary>
+            <summary>Navigation command state. See <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationCommand"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo">
             <summary>Platform-specific host (BeepForms or BeepWpfForms).</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo.HostName">
+            <summary>Field name of the host in generated source.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo.LogicalFormName">
+            <summary>Logical form name the host registers with the engine.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo.Title">
+            <summary>Window or form title.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo.AutoCreateBlocksFromDefinition">
+            <summary>Whether the host builds block surfaces from its definition.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedHostInfo.DefinitionReferenceName">
+            <summary>
+            Variable the host's definition was assigned to in generated source, when
+            the generator used a local rather than <c>host.Definition</c> directly.
+            Blocks are matched to their host through it.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo">
             <summary>A control (Item) within a block.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.ItemName">
+            <summary>Field name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.ControlType">
+            <summary>Control type name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.Properties">
+            <summary>Anything carried through that has no first-class member.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.Triggers">
+            <summary>Triggers registered against this item.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.LOVs">
+            <summary>Lists of values attached to this item.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.Validations">
+            <summary>Validation rules attached to this item.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo">
             <summary>Event handler (Trigger) information.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo.EventName">
+            <summary>Trigger event name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo.HandlerName">
+            <summary>Handler method name in the form source.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo.IsIntegrated">
+            <summary>Registered through the integrated marker regions.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo">
             <summary>List of Values (LOV) information.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo.LOVName">
+            <summary>LOV name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo.ConnectionName">
+            <summary>Connection the LOV queries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo.EntityName">
+            <summary>Entity the LOV queries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo.DisplayFields">
+            <summary>Columns shown to the user.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo.ReturnFields">
+            <summary>Columns written back on selection.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo">
             <summary>Validation rule information.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo.ValidationName">
+            <summary>Rule name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo.ValidationRule">
+            <summary>Rendered rule summary.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo.RuleType">
+            <summary>Rule type (Range, Pattern, Required, …).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo.Expression">
+            <summary>Rule expression.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo.Message">
+            <summary>Message shown when the rule fails.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedValidationInfo.IsEnabled">
+            <summary>Whether the rule is active.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockRuntimeKind">
+            <summary>How a block is realised at runtime.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockRuntimeKind.Legacy">
+            <summary>Pre-integration BeepDataBlock control.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockRuntimeKind.Integrated">
+            <summary>Integrated BeepBlock control.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockRuntimeKind.FormsDefinition">
+            <summary>Driven by a BlockDefinition on the host.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.ScannedBlockRuntimeKind.WpfIntegrated">
+            <summary>WPF BeepWpfBlock.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission">
             <summary>Permissions flags controlling what a principal can do.</summary>
@@ -10256,6 +10984,14 @@
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.Custom5">
             <summary>Custom application-defined trigger 5</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenMenuItem">
+            <summary>
+            Fires when a form menu item of kind <c>MenuItemTrigger</c> is invoked.
+            The invoked item's id is in the trigger context so a single form-scope
+            handler can dispatch on it. Oracle Forms runs a menu item's PL/SQL;
+            this is the engine-neutral equivalent.
+            </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.UserNamed">
             <summary>User named trigger</summary>

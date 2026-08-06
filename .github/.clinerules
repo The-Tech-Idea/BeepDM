@@ -326,3 +326,32 @@ The same integration map is documented in:
 - `.cursor/{setup,migration,configeditor,etl,forms,unitofwork}/SKILL.md` — Cursor (existing deep-dive skills)
 
 If you change how one layer hands off to another, update **all** three locations to keep the agents consistent.
+
+## Documentation — `Help/*.html` is mirrored to the website
+
+`Help/` is published as the BeepDM product documentation on the TheTechIdea website. The published copy lives **outside this repo**, in a separate repository:
+
+```
+C:\Users\f_ald\source\repos\fahadTheTechIdea\MyWebSite\TheTechIdeaWeb\TheTechIdeaWeb.Web\wwwroot\Products Documentation\beepdm\
+```
+
+**Whenever you add, edit, or delete a file under `Help/`, make the identical change in that folder in the same session.** A `Help/` edit that isn't mirrored ships stale documentation to the live site.
+
+- Applies to `.html`, `sphinx-style.css`, and `navigation.js`.
+- `Help/README.md` and `Help/NAVIGATION_README.md` are internal and deliberately **not** published — don't copy them.
+- **The theme is shared, so pages render identically.** `sphinx-style.css` and `navigation.js` are byte-identical in both locations, every page links them relatively (`href="sphinx-style.css"`), and the pages are complete standalone HTML documents served straight from `wwwroot` — *not* injected into a Razor layout. There is no destination-specific CSS to reconcile.
+- **The mirror is NOT a blind copy — `diff` before overwriting.** `formsmanager.html` is intentionally different: the public copy has references to the internal `DataManagementEngineStandard/Editor/Forms/.plans` folder **stripped**. Internal repo paths, `.plans/` links, and anything meaningful only to someone with a checkout must not be published. If the website copy already differs, find out why before clobbering it — the difference may be deliberate sanitization, or the website copy may be the *better* one.
+- Apart from that file, the folders are a file-for-file content-identical mirror. The only other difference is line endings: `Help/` uses **LF**, the website copy uses **CRLF**. Preserve that when copying.
+- Verify with `diff --strip-trailing-cr Help/<file> "<website>/<file>"` — run it *before* overwriting to spot intentional differences, and again after to confirm the sync. Quote the website path; it contains a space (`Products Documentation`).
+- The mirror is a **separate git repository** and needs its own commit. Committing in BeepDM publishes nothing — tell the user the website repo has uncommitted changes so they can commit and deploy.
+
+PowerShell to sync changed files:
+
+```powershell
+$src = "C:\Users\f_ald\source\repos\The-Tech-Idea\BeepDM\Help"
+$dst = "C:\Users\f_ald\source\repos\fahadTheTechIdea\MyWebSite\TheTechIdeaWeb\TheTechIdeaWeb.Web\wwwroot\Products Documentation\beepdm"
+foreach ($f in @('changed-file.html')) {
+  $t = [IO.File]::ReadAllText((Join-Path $src $f)) -replace "`r`n","`n" -replace "`n","`r`n"
+  [IO.File]::WriteAllText((Join-Path $dst $f), $t, (New-Object Text.UTF8Encoding $false))
+}
+```

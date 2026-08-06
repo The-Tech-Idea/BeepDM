@@ -76,7 +76,7 @@
                     <div class="feature-grid">
                         <div class="feature-card">
                             <h3>1ï¸âƒ£ Bootstrap</h3>
-                            <p>Register services with Autofac and get <code>IDMEEditor</code></p>
+                            <p>Register services with <code>AddBeepServices()</code> and get <code>IDMEEditor</code></p>
                         </div>
                         
                         <div class="feature-card">
@@ -104,7 +104,7 @@
                         <strong>âš ï¸ CRITICAL SEQUENCE</strong>
                         <p>The initialization must follow this exact order:</p>
                         <ol>
-                            <li><strong>Initialize DMEEditor</strong> with Autofac dependency injection</li>
+                            <li><strong>Initialize DMEEditor</strong> via <code>AddBeepServices()</code> / <code>BeepService.Configure()</code></li>
                             <li><strong>Load ConnectionHelper drivers</strong> using <code>GetAllConnectionConfigs()</code> - THIS IS MANDATORY</li>
                             <li><strong>Configure ConfigEditor</strong> with specialized managers</li>
                             <li><strong>Create specific connections</strong> for your application</li>
@@ -112,43 +112,63 @@
                     </div>
 
                     <div class="code-example">
-                        <h3>Step 1: Basic Autofac Setup</h3>
-                        <pre><code class="language-csharp">using Autofac;
+                        <h3>Step 1: Basic Service Setup</h3>
+                        <div class="warning">
+                            <strong>Corrected (2026).</strong> Earlier revisions of this page showed an Autofac
+                            <code>ContainerBuilder</code> registering <code>DMEEditor</code>, <code>ConfigEditor</code>
+                            and friends by type. That was never correct: BeepDM does not reference Autofac, and
+                            <code>DMEEditor</code> cannot be constructed by convention — it needs a logger, util,
+                            error object, config editor and assembly handler wired in a specific order.
+                            <code>BeepService</code> exists to do exactly that. Use
+                            <code>AddBeepServices()</code> (or <code>new BeepService()</code>) as shown below.
+                        </div>
+                        <pre><code class="language-csharp">using Microsoft.Extensions.DependencyInjection;
 using TheTechIdea.Beep;
 using TheTechIdea.Beep.ConfigUtil;
-using TheTechIdea.Beep.Logger;
-using TheTechIdea.Util;
-using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.Services;
+using TheTechIdea.Beep.Utilities;
 
 static void Main()
 {
-    // Create Autofac container builder
-    var builder = new ContainerBuilder();
-    
-    // Register BeepDM core services
-    builder.RegisterType&lt;DMEEditor&gt;().As&lt;IDMEEditor&gt;().SingleInstance();
-    builder.RegisterType&lt;ConfigEditor&gt;().As&lt;IConfigEditor&gt;().SingleInstance();
-    builder.RegisterType&lt;DMLogger&gt;().As&lt;IDMLogger&gt;().SingleInstance();
-    builder.RegisterType&lt;Util&gt;().As&lt;IUtil&gt;().SingleInstance();
-    builder.RegisterType&lt;ErrorsInfo&gt;().As&lt;IErrorsInfo&gt;().SingleInstance();
-    builder.RegisterType&lt;JsonLoader&gt;().As&lt;IJsonLoader&gt;().SingleInstance();
-    builder.RegisterType&lt;AssemblyHandler&gt;().As&lt;IAssemblyHandler&gt;().SingleInstance();
-    
-    // Build container and resolve DMEEditor
-    var container = builder.Build();
-    var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
-    
+    var services = new ServiceCollection();
+
+    // Register and bootstrap BeepDM in one call.
+    // BeepService constructs ConfigEditor, Util, the assembly handler and DMEEditor,
+    // then registers them all in the service collection.
+    IBeepService beep = services.AddBeepServices()
+        .WithDirectory(AppContext.BaseDirectory)
+        .WithAppRepo("MyApp")
+        .WithConfigType(BeepConfigType.Application)
+        .WithMapping()
+        .WithAssemblyLoading()
+        .AsSingleton()
+        .Build();
+
+    var dmeEditor = beep.DMEEditor;
+
     Console.WriteLine("✅ BeepDM core services initialized successfully");
-    
-    // STEP 2: CRITICAL - Initialize connection drivers FIRST
-    InitializeConnectionDrivers(dmeEditor);
-    
-    // STEP 3: Configure ConfigEditor (now that drivers are loaded)
-    ConfigureConfigEditor(dmeEditor);
-    
-    // STEP 4: Create your application connections
+
+    // STEP 2: Load drivers and plugins (skip if WithAssemblyLoading() was used)
+    beep.LoadAssemblies();
+
+    // STEP 3: Create your application connections
     CreateApplicationConnections(dmeEditor);
 }</code></pre>
+                        <p>Three equivalent entry points exist, all in
+                           <code>RegisterBeepinServiceCollection.cs</code>:</p>
+                        <pre><code class="language-csharp">// 1. Fluent builder (shown above)
+services.AddBeepServices().WithAppRepo("MyApp").AsSingleton().Build();
+
+// 2. Options delegate
+services.AddBeepServices(o =&gt;
+{
+    o.DirectoryPath = AppContext.BaseDirectory;
+    o.AppRepoName   = "MyApp";
+    o.ConfigType    = BeepConfigType.Application;
+});
+
+// 3. Positional shorthand (addAsSingleton defaults to true)
+services.Register(AppContext.BaseDirectory, "MyApp", BeepConfigType.Application);</code></pre>
                     </div>
 
                     <div class="code-example">
@@ -313,88 +333,86 @@ public static void LoadSpecificDrivers(IDMEEditor dmeEditor)
                     <div class="code-example">
                         <h3>Windows Forms Application Pattern</h3>
                         <pre><code class="language-csharp">// Program.cs for Windows Forms
-using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Windows.Forms;
 using TheTechIdea.Beep;
-using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Services;
 
 [STAThread]
 static void Main()
 {
     Application.EnableVisualStyles();
     Application.SetCompatibleTextRenderingDefault(false);
-    
+
     try
     {
-        // Setup Autofac container
-        var builder = new ContainerBuilder();
-        RegisterBeepServices(builder);
-        var container = builder.Build();
-        
-        // Get DMEEditor
-        var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
-        
-        // CRITICAL: Initialize drivers FIRST
-        InitializeConnectionDrivers(dmeEditor);
-        
-        // Configure ConfigEditor
-        ConfigureConfigEditor(dmeEditor);
-        
+        var services = new ServiceCollection();
+
+        // Singleton is the right lifetime for desktop
+        IBeepService beep = services.AddBeepServices()
+            .WithDirectory(AppContext.BaseDirectory)
+            .WithAppRepo("MyWinFormsApp")
+            .WithConfigType(BeepConfigType.Application)
+            .WithMapping()
+            .AsSingleton()
+            .Build();
+
+        // Load drivers and plugins
+        beep.LoadAssemblies();
+
+        var provider = services.BuildServiceProvider();
+
         // Start main form
-        Application.Run(new MainForm(dmeEditor));
+        Application.Run(new MainForm(beep.DMEEditor));
     }
     catch (Exception ex)
     {
-        MessageBox.Show($"Application initialization failed: {ex.Message}", 
+        MessageBox.Show($"Application initialization failed: {ex.Message}",
                        "Startup Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
-}
-
-private static void RegisterBeepServices(ContainerBuilder builder)
-{
-    builder.RegisterType&lt;DMEEditor&gt;().As&lt;IDMEEditor&gt;().SingleInstance();
-    builder.RegisterType&lt;ConfigEditor&gt;().As&lt;IConfigEditor&gt;().SingleInstance();
-    builder.RegisterType&lt;DMLogger&gt;().As&lt;IDMLogger&gt;().SingleInstance();
-    builder.RegisterType&lt;Util&gt;().As&lt;IUtil&gt;().SingleInstance();
-    builder.RegisterType&lt;ErrorsInfo&gt;().As&lt;IErrorsInfo&gt;().SingleInstance();
-    builder.RegisterType&lt;JsonLoader&gt;().As&lt;IJsonLoader&gt;().SingleInstance();
-    builder.RegisterType&lt;AssemblyHandler&gt;().As&lt;IAssemblyHandler&gt;().SingleInstance();
 }</code></pre>
+                        <p>Singleton is the correct lifetime for a desktop process. See
+                           <a href="services-registration-lifetimes.html">Service Registration &amp; Lifetimes</a>
+                           for the full builder surface.</p>
                     </div>
 
                     <div class="code-example">
                         <h3>WPF Application Pattern</h3>
                         <pre><code class="language-csharp">// App.xaml.cs for WPF
-using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using TheTechIdea.Beep;
-using TheTechIdea.Beep.Helpers;
+using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Services;
 
 public partial class App : Application
 {
+    private IBeepService beep;
     private IDMEEditor dmeEditor;
-    
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        
+
         try
         {
-            // Setup Autofac container
-            var builder = new ContainerBuilder();
-            RegisterBeepServices(builder);
-            var container = builder.Build();
-            
-            // Get DMEEditor
-            dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
-            
-            // CRITICAL: Initialize drivers FIRST
-            InitializeConnectionDrivers(dmeEditor);
-            
-            // Configure ConfigEditor
-            ConfigureConfigEditor(dmeEditor);
-            
+            var services = new ServiceCollection();
+
+            beep = services.AddBeepServices()
+                .WithDirectory(AppContext.BaseDirectory)
+                .WithAppRepo("MyWpfApp")
+                .WithConfigType(BeepConfigType.Application)
+                .WithMapping()
+                .AsSingleton()
+                .Build();
+
+            // Load drivers and plugins
+            beep.LoadAssemblies();
+
+            dmeEditor = beep.DMEEditor;
+
             // Create main window
             var mainWindow = new MainWindow(dmeEditor);
             mainWindow.Show();
@@ -409,7 +427,9 @@ public partial class App : Application
     
     protected override void OnExit(ExitEventArgs e)
     {
-        dmeEditor?.Dispose();
+        // Dispose the service, not the editor directly - BeepService.Dispose()
+        // disposes DMEEditor, ConfigEditor and the assembly handler for you.
+        beep?.Dispose();
         base.OnExit(e);
     }
 }</code></pre>
@@ -419,7 +439,12 @@ public partial class App : Application
                         <strong>❌ Common Mistake - Wrong Order</strong>
                         <p>This is the WRONG way - trying to create connections before loading drivers:</p>
                         <pre><code class="language-csharp">// BAD - This will fail with "Driver not found" errors
-var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
+var beep = services.AddBeepServices()
+    .WithAppRepo("MyApp")
+    .WithAssemblyLoading(false)   // ❌ drivers never loaded
+    .AsSingleton()
+    .Build();
+var dmeEditor = beep.DMEEditor;
 
 // Trying to create connection BEFORE loading drivers
 var connection = new ConnectionProperties { /* ... */ };
@@ -432,9 +457,20 @@ var configs = ConnectionHelper.GetAllConnectionConfigs(); // ❌ TOO LATE!</code
                     <div class="success">
                         <strong>✅ Correct Order</strong>
                         <pre><code class="language-csharp">// GOOD - Proper sequence
-var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
+var beep = services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyApp")
+    .WithConfigType(BeepConfigType.Application)
+    .AsSingleton()
+    .Build();
+
+var dmeEditor = beep.DMEEditor;
 
 // Load drivers FIRST
+beep.LoadAssemblies();   // scans plugins and restores driver config
+
+// EnvironmentService.AddAllConnectionConfigurations() already seeds these during
+// Configure(), but you can top up explicitly if you skipped it:
 var configs = ConnectionHelper.GetAllConnectionConfigs();
 foreach (var config in configs)
 {
@@ -460,7 +496,7 @@ dmeEditor.ConfigEditor.AddDataConnection(connection); // ✅ WORKS!</code></pre>
                         <strong>📝 Prerequisites</strong>
                         <p>Before configuring ConfigEditor, ensure you have:</p>
                         <ul>
-                            <li>✅ Initialized DMEEditor with Autofac (Step 1)</li>
+                            <li>✅ Initialized DMEEditor via <code>AddBeepServices()</code> (Step 1)</li>
                             <li>✅ Loaded connection drivers from ConnectionHelper (Step 2)</li>
                             <li>🎯 Ready to configure ConfigEditor specialized managers (Step 3)</li>
                         </ul>
@@ -493,10 +529,13 @@ dmeEditor.ConfigEditor.AddDataConnection(connection); // ✅ WORKS!</code></pre>
                         </div>
                         
                         <div class="feature-card">
-                            <h3>🏭 ContainerManager</h3>
-                            <p>Dependency injection container management and service registration</p>
+                            <h3>🕘 MigrationHistoryManager</h3>
+                            <p>Tracks per-datasource schema migration history files</p>
                         </div>
                     </div>
+                    <p>These six managers live in <code>DataManagementEngineStandard/ConfigUtil/Managers/</code>.
+                       <code>ConfigEditor</code> is a façade that delegates to them — always write configuration
+                       through the façade rather than hand-rolling JSON.</p>
 
                     <div class="code-example">
                         <h3>Step 3: ConfigEditor Configuration (After Driver Loading)</h3>
@@ -1584,7 +1623,8 @@ public class DataApplicationManager
 {
     private readonly IDMEEditor _dmeEditor;
     private readonly List&lt;IDataSource&gt; openDataSources;
-    
+    private IBeepService _beep;
+
     public DataApplicationManager()
     {
         openDataSources = new List&lt;IDataSource&gt;();
@@ -1600,19 +1640,20 @@ public class DataApplicationManager
     {
         try
         {
-            // Setup Autofac container with all required services
-            var builder = new ContainerBuilder();
-            builder.RegisterType&lt;DMEEditor&gt;().As&lt;IDMEEditor&gt;().SingleInstance();
-            builder.RegisterType&lt;ConfigEditor&gt;().As&lt;IConfigEditor&gt;().SingleInstance();
-            builder.RegisterType&lt;DMLogger&gt;().As&lt;IDMLogger&gt;().SingleInstance();
-            builder.RegisterType&lt;Util&gt;().As&lt;IUtil&gt;().SingleInstance();
-            builder.RegisterType&lt;ErrorsInfo&gt;().As&lt;IErrorsInfo&gt;().SingleInstance();
-            builder.RegisterType&lt;JsonLoader&gt;().As&lt;IJsonLoader&gt;().SingleInstance();
-            builder.RegisterType&lt;AssemblyHandler&gt;().As&lt;IAssemblyHandler&gt;().SingleInstance();
+            // BeepService builds and wires every core component for you
+            var services = new ServiceCollection();
+            _beep = services.AddBeepServices()
+                .WithDirectory(AppContext.BaseDirectory)
+                .WithAppRepo("DataApplicationManager")
+                .WithConfigType(BeepConfigType.Application)
+                .WithMapping()
+                .AsSingleton()
+                .Build();
 
-            var container = builder.Build();
-            var dmeEditor = container.Resolve&lt;IDMEEditor&gt;();
-            
+            _beep.LoadAssemblies();
+            var dmeEditor = _beep.DMEEditor;
+
+            // Configure() swallows exceptions, so verify the result
             if (dmeEditor == null)
             {
                 throw new InvalidOperationException("Failed to initialize DMEEditor");

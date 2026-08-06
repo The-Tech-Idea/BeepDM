@@ -240,28 +240,46 @@ public class BeepLoggingOptions
                     <h3>Setup Audit and Logging</h3>
                     <pre><code class="language-csharp">var builder = Host.CreateApplicationBuilder();
 
-builder.Services.AddBeepForDesktop(opts =>
-{
-    opts.AppRepoName = "MyApp";
-    opts.DirectoryPath = AppContext.BaseDirectory;
-});
+// Bootstrap BeepDM itself
+IBeepService beep = builder.Services.AddBeepServices()
+    .WithDirectory(AppContext.BaseDirectory)
+    .WithAppRepo("MyApp")
+    .WithConfigType(BeepConfigType.Application)
+    .AsSingleton()
+    .Build();
 
-// Add audit with tamper-evidence
+// Add audit with tamper-evidence.
+// NOTE: Enabled defaults to false - both pipelines are opt-in.
 builder.Services.AddBeepAudit(auditOpts =>
 {
-    auditOpts.Enabled = true;
-    auditOpts.HashChain = true;
-    auditOpts.Retention = new RetentionOptions { Days = 365 };
+    auditOpts.Enabled       = true;
+    auditOpts.HashChain     = true;   // default true
+    auditOpts.RetentionDays = 365;
 });
 
 // Add structured logging
 builder.Services.AddBeepLogging(logOpts =>
 {
-    logOpts.Enabled = true;
+    logOpts.Enabled  = true;
     logOpts.MinLevel = BeepLogLevel.Information;
 });
 
 var host = builder.Build();</code></pre>
+                    <div class="note">
+                        <strong>Platform presets.</strong> Instead of the two generic calls above, a desktop app can
+                        use <code>AddBeepLoggingForDesktop("MyApp")</code> and
+                        <code>AddBeepAuditForDesktop("MyApp")</code>, which pick platform-appropriate storage paths
+                        and still accept a <code>tweak</code> delegate over the same options objects. Equivalents
+                        exist for Web, Blazor and MAUI — see
+                        <a href="beepservice.html#extensions">BeepService → Service Extensions</a>.
+                    </div>
+                    <div class="warning">
+                        <strong>There is no <code>AddBeepForDesktop</code>.</strong> An earlier revision of this
+                        sample called it; that method does not exist in the codebase. Bootstrap with
+                        <code>AddBeepServices()</code> as shown. Likewise <code>RetentionOptions</code> is not a
+                        real type — audit retention is set via the <code>RetentionDays</code> int or the
+                        <code>Retention</code> <code>RetentionPolicy</code> object.
+                    </div>
 
                     <h3>Recording Audit Events</h3>
                     <pre><code class="language-csharp">var audit = serviceProvider.GetRequiredService&lt;IBeepAudit&gt;();
