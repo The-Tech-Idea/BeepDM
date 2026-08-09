@@ -73,6 +73,20 @@ public class BlockDefinition
     /// <summary>Items (fields) discovered or declared for this block.</summary>
     public List<ScannedItemInfo> Items { get; set; } = new();
 
+    /// <summary>
+    /// Block-scope triggers on this block — the ones that fire for the block as
+    /// a whole rather than for one item (PRE-QUERY, POST-QUERY,
+    /// WHEN-NEW-RECORD-INSTANCE, ON-INSERT, …).
+    /// </summary>
+    /// <remarks>
+    /// Distinct from <c>Items[].Triggers</c>, which are item-scope. Until this
+    /// existed every registration was read back onto an item, so a block-scope
+    /// registration either landed on an item with an empty name or was dropped —
+    /// see <see cref="ScannedFormInfo.Triggers"/> for the form-scope half and the
+    /// scope-defaulting rule.
+    /// </remarks>
+    public List<ScannedTriggerInfo> Triggers { get; set; } = new();
+
     /// <summary>Anything carried through that has no first-class member.</summary>
     public Dictionary<string, string> Metadata { get; set; } = new();
 

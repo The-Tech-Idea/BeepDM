@@ -8925,6 +8925,20 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Items">
             <summary>Items (fields) discovered or declared for this block.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Triggers">
+            <summary>
+            Block-scope triggers on this block — the ones that fire for the block as
+            a whole rather than for one item (PRE-QUERY, POST-QUERY,
+            WHEN-NEW-RECORD-INSTANCE, ON-INSERT, …).
+            </summary>
+            <remarks>
+            Distinct from <c>Items[].Triggers</c>, which are item-scope. Until this
+            existed every registration was read back onto an item, so a block-scope
+            registration either landed on an item with an empty name or was dropped —
+            see <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Triggers"/> for the form-scope half and the
+            scope-defaulting rule.
+            </remarks>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.Metadata">
             <summary>Anything carried through that has no first-class member.</summary>
         </member>
@@ -9818,6 +9832,21 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Blocks">
             <summary>Blocks declared on this form.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Triggers">
+            <summary>
+            Form-scope triggers registered on this form — the ones belonging to the
+            form itself rather than to any block or item (WHEN-NEW-FORM-INSTANCE,
+            PRE-COMMIT, POST-COMMIT, WHEN-LOGON, …).
+            </summary>
+            <remarks>
+            Triggers used to hang off <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo"/> only, so a
+            registration whose <c>TriggerScope</c> was Form had nowhere to be read
+            back into and no navigator row could show it. Scope comes from the
+            <c>TriggerDefinition</c> constructor's second argument; a registration
+            that omits it is read as Item, which is what every file written before
+            this existed meant.
+            </remarks>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Hosts">
             <summary>Form hosts declared on this form.</summary>
         </member>
@@ -9907,6 +9936,19 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.Validations">
             <summary>Validation rules attached to this item.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.VisualAttributeName">
+            <summary>
+            Name of the visual attribute applied to this item, or empty when none is.
+            </summary>
+            <remarks>
+            Only the name: the attribute's colours and font live in the engine's
+            <c>VisualAttribute</c> and are edited through the visual-attribute editor,
+            which parses them off the same generated line. The scanned model carries
+            the binding so the Object Navigator can show *which* item wears one —
+            authoring it and then having no row say so is the same defect the
+            master-detail relation had.
+            </remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo">
             <summary>Event handler (Trigger) information.</summary>

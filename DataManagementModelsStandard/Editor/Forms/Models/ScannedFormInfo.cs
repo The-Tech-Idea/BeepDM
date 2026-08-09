@@ -36,6 +36,21 @@ public class ScannedFormInfo
     /// <summary>Blocks declared on this form.</summary>
     public List<ScannedBlockInfo> Blocks { get; set; } = new();
 
+    /// <summary>
+    /// Form-scope triggers registered on this form — the ones belonging to the
+    /// form itself rather than to any block or item (WHEN-NEW-FORM-INSTANCE,
+    /// PRE-COMMIT, POST-COMMIT, WHEN-LOGON, …).
+    /// </summary>
+    /// <remarks>
+    /// Triggers used to hang off <see cref="ScannedItemInfo"/> only, so a
+    /// registration whose <c>TriggerScope</c> was Form had nowhere to be read
+    /// back into and no navigator row could show it. Scope comes from the
+    /// <c>TriggerDefinition</c> constructor's second argument; a registration
+    /// that omits it is read as Item, which is what every file written before
+    /// this existed meant.
+    /// </remarks>
+    public List<ScannedTriggerInfo> Triggers { get; set; } = new();
+
     /// <summary>Form hosts declared on this form.</summary>
     public List<ScannedHostInfo> Hosts { get; set; } = new();
 
@@ -138,6 +153,19 @@ public class ScannedItemInfo
 
     /// <summary>Validation rules attached to this item.</summary>
     public List<ScannedValidationInfo> Validations { get; set; } = new();
+
+    /// <summary>
+    /// Name of the visual attribute applied to this item, or empty when none is.
+    /// </summary>
+    /// <remarks>
+    /// Only the name: the attribute's colours and font live in the engine's
+    /// <c>VisualAttribute</c> and are edited through the visual-attribute editor,
+    /// which parses them off the same generated line. The scanned model carries
+    /// the binding so the Object Navigator can show *which* item wears one —
+    /// authoring it and then having no row say so is the same defect the
+    /// master-detail relation had.
+    /// </remarks>
+    public string VisualAttributeName { get; set; } = string.Empty;
 }
 
 /// <summary>Event handler (Trigger) information.</summary>
