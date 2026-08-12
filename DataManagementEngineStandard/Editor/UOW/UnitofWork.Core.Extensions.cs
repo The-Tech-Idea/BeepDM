@@ -209,8 +209,10 @@ namespace TheTechIdea.Beep.Editor.UOW
             {
                 if (!IsInListMode)
                 {
-                    string cname = typeof(T).Name;
-                    
+                    // Address the data source by the entity name this unit of work was constructed
+                    // with, not the CLR type name — see ResolvedEntityName in UnitofWork.CRUD.cs.
+                    string cname = string.IsNullOrWhiteSpace(EntityName) ? typeof(T).Name : EntityName;
+
                     retval = DataSource.DeleteEntity(cname, doc);
                 }
                 else
@@ -504,7 +506,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                 deleteAsync: async (item) =>
                 {
                     token.ThrowIfCancellationRequested();
-                    string cname = typeof(T).Name;
+                    // See ResolvedEntityName in UnitofWork.CRUD.cs — the constructed entity name wins.
+                    string cname = string.IsNullOrWhiteSpace(EntityName) ? typeof(T).Name : EntityName;
                     if (!IsInListMode && DataSource != null)
                     {
                         return DataSource.DeleteEntity(cname, item);

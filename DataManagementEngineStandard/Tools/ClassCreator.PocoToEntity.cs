@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using TheTechIdea.Beep.DataBase;
@@ -280,6 +280,9 @@ namespace TheTechIdea.Beep.Tools
                 if (prop.GetCustomAttribute<KeyAttribute>() != null)
                 {
                     field.IsKey = true;
+                    // A primary key can never be nullable — a structure that says otherwise fails
+                    // validation ("Primary key field 'X' cannot allow null values") and blocks migration.
+                    field.AllowDBNull = false;
                     entity.HasDataAnnotations = true;
                 }
 
@@ -413,6 +416,7 @@ namespace TheTechIdea.Beep.Tools
             if (idField != null)
             {
                 idField.IsKey = true;
+                idField.AllowDBNull = false;   // a primary key is never nullable
                 entity.PrimaryKeys.Add(idField);
 
                 if (impliesIdentity &&
@@ -1149,6 +1153,7 @@ namespace TheTechIdea.Beep.Tools
                         if (attrName.EndsWith("Key") || attrName.EndsWith("KeyAttribute"))
                         {
                             field.IsKey = true;
+                            field.AllowDBNull = false;   // a primary key is never nullable
                             entity.HasDataAnnotations = true;
                         }
                         else if (attrName.EndsWith("Required") || attrName.EndsWith("RequiredAttribute"))
@@ -1254,6 +1259,7 @@ namespace TheTechIdea.Beep.Tools
                 if (conventionalKey != null)
                 {
                     conventionalKey.IsKey = true;
+                    conventionalKey.AllowDBNull = false;   // a primary key is never nullable
                     entity.PrimaryKeys.Add(conventionalKey);
                 }
             }

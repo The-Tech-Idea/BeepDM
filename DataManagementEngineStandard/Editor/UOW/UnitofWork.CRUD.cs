@@ -688,13 +688,28 @@ namespace TheTechIdea.Beep.Editor.UOW
         }
 
         /// <summary>
+        /// The name this unit of work addresses the data source by.
+        /// <para>Prefers the <see cref="EntityName"/> the unit of work was constructed with, because
+        /// that is the caller's explicit statement of which table/collection the POCO maps to — the
+        /// two differ whenever a class name and its storage name diverge (a <c>[Table]</c> attribute,
+        /// a naming convention like <c>AppRole</c> → <c>DA_APP_ROLE</c>, a view, or a prefixed
+        /// legacy table). Falling straight through to <c>typeof(T).Name</c> ignores the constructor
+        /// argument entirely, so reads resolve against the mapped name while writes go to the class
+        /// name — the schema lookup then finds no such object, the statement is built with no
+        /// columns, and the provider rejects it with a bare syntax error that names neither cause.
+        /// </para>
+        /// Falls back to the type name only when no entity name was supplied.
+        /// </summary>
+        private string ResolvedEntityName => string.IsNullOrWhiteSpace(EntityName) ? typeof(T).Name : EntityName;
+
+        /// <summary>
         /// Inserts a document into the data source with default values applied
         /// </summary>
         /// <param name="doc">The document to insert</param>
         /// <returns>An object containing information about any errors that occurred during the insertion</returns>
         public IErrorsInfo InsertDoc(T doc)
         {
-            string cname = typeof(T).Name;
+            string cname = ResolvedEntityName;
 
             // Apply GUID key if specified
             if (!string.IsNullOrEmpty(GuidKey))
@@ -762,7 +777,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public IErrorsInfo UpdateDoc(T doc)
         {
             IErrorsInfo retval;
-            string cname = typeof(T).Name;
+            string cname = ResolvedEntityName;
             
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreUpdate };
             PreUpdate?.Invoke(doc, ps);

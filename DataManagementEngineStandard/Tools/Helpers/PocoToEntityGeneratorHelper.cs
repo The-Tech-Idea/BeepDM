@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -223,6 +223,7 @@ namespace TheTechIdea.Beep.Tools.Helpers
                 if (IsPrimaryKeyProperty(prop))
                 {
                     field.IsKey = true;
+                    field.AllowDBNull = false;   // a primary key is never nullable
                     entity.PrimaryKeys.Add(field);
                 }
 

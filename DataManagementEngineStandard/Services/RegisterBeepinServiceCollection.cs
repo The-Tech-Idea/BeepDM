@@ -629,11 +629,21 @@ namespace TheTechIdea.Beep.Container
             {
                 if (_isInitialized)
                 {
-                    if (_cachedBeepService != null)
-                        return _cachedBeepService;
-                    
-                    throw new InvalidOperationException("Beep services registration is in progress or failed. " +
-                        "Multiple concurrent registrations are not supported.");
+                    if (_cachedBeepService == null)
+                        throw new InvalidOperationException("Beep services registration is in progress or failed. " +
+                            "Multiple concurrent registrations are not supported.");
+
+                    // Already booted once in this process, so skip the one-time global setup (folder
+                    // creation, mappings) — but STILL register into the collection we were handed.
+                    // _isInitialized is process-wide while the collection is per-container, so
+                    // returning early without registering leaves the caller's container with no
+                    // IBeepService at all. That happens to any second container in a process: a test
+                    // assembly with more than one host, a host that re-registers, or an app that
+                    // boots a child container. The failure is silent here and surfaces far away as
+                    // "No service for type 'IBeepService' has been registered".
+                    RegisterServiceWithLifetime(services, _cachedBeepService, options.ServiceLifetime);
+                    _currentServices = services;
+                    return _cachedBeepService;
                 }
 
                 try
