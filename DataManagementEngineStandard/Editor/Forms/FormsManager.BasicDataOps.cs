@@ -106,8 +106,82 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
-                // Auto-lock if needed (Phase 7)
-                await _lockManager.AutoLockIfNeededAsync(blockName).ConfigureAwait(false);
+                // Master-detail delete-behavior check (Oracle: ON-CHECK-DELETE-MASTER,
+                // isolated/non-isolated/cascading — DataBlockRelationship.DeleteBehavior).
+                // Added 2026-08-22: neither the trigger nor the isolated/non-isolated/
+                // cascading distinction existed anywhere in the engine before this —
+                // deleting a master record never checked, blocked on, or cascaded to
+                // its detail records at all.
+                foreach (var relationship in GetActiveRelationships(blockName))
+                {
+                    // Deferred coordination means the detail block might not
+                    // reflect the master's current record yet — force it
+                    // current before counting. No-op for an Immediate
+                    // relationship, which is already synced.
+                    await SynchronizeDeferredDetailAsync(blockName, relationship.DetailBlockName).ConfigureAwait(false);
+
+                    var checkOutcome = await FireOnCheckDeleteMasterAsync(
+                        blockName, relationship.DetailBlockName, currentRecord).ConfigureAwait(false);
+                    if (checkOutcome == null)
+                    {
+                        Status = $"Delete cancelled by ON-CHECK-DELETE-MASTER trigger in block '{blockName}' (detail '{relationship.DetailBlockName}')";
+                        _messageManager?.ShowWarningMessage(blockName, Status);
+                        return false;
+                    }
+                    if (checkOutcome == true)
+                    {
+                        // A registered handler decided — skip the default
+                        // DeleteBehavior check for this relationship entirely.
+                        continue;
+                    }
+
+                    var detailBlock = GetBlock(relationship.DetailBlockName);
+                    var detailCount = detailBlock?.UnitOfWork?.TotalItemCount ?? 0;
+                    if (detailCount == 0)
+                        continue;
+
+                    switch (relationship.DeleteBehavior)
+                    {
+                        case MasterDeleteBehavior.Isolated:
+                            // Orphans allowed — nothing to check.
+                            break;
+
+                        case MasterDeleteBehavior.Cascading:
+                            if (!await CascadeDeleteDetailRecordsAsync(relationship.DetailBlockName).ConfigureAwait(false))
+                            {
+                                Status = $"Cascading delete failed for detail block '{relationship.DetailBlockName}' — master delete in '{blockName}' aborted";
+                                _messageManager?.ShowErrorMessage(blockName, Status);
+                                return false;
+                            }
+                            await _triggerManager.FireBlockTriggerAsync(
+                                TriggerType.OnClearDetails, relationship.DetailBlockName,
+                                TriggerContext.ForBlock(TriggerType.OnClearDetails, relationship.DetailBlockName, null, _dmeEditor))
+                                .ConfigureAwait(false);
+                            break;
+
+                        case MasterDeleteBehavior.NonIsolated:
+                        default:
+                            Status = $"Cannot delete: block '{blockName}' has {detailCount} detail record(s) in '{relationship.DetailBlockName}'";
+                            _messageManager?.ShowErrorMessage(blockName, Status);
+                            return false;
+                    }
+                }
+
+                // Fire ON-LOCK. A registered handler replaces the default
+                // client-side lock below. Added 2026-08-22 — closes the same
+                // "enum member with no firing code" gap as ON-INSERT/UPDATE/DELETE.
+                var onLockOutcome = await FireOnLockAsync(blockName, currentRecord).ConfigureAwait(false);
+                if (onLockOutcome == null)
+                {
+                    Status = $"Delete cancelled by ON-LOCK trigger in block '{blockName}'";
+                    _messageManager?.ShowWarningMessage(blockName, Status);
+                    return false;
+                }
+                if (onLockOutcome == false)
+                {
+                    // No ON-LOCK registered — default path (Phase 7).
+                    await _lockManager.AutoLockIfNeededAsync(blockName).ConfigureAwait(false);
+                }
 
                 // Fire WHEN-REMOVE-RECORD trigger (before the record is removed)
                 var whenRemoveCtx = TriggerContext.ForBlock(TriggerType.WhenRemoveRecord, blockName, currentRecord, _dmeEditor);
@@ -129,18 +203,41 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
+                // Fire ON-DELETE. A registered handler replaces the default
+                // UnitOfWork.DeleteAsync call below — Oracle Forms' ON-DELETE is
+                // exactly this: substitute logic for the physical DELETE. Added
+                // 2026-08-22 — FireOnDeleteAsync existed (Phase 4.2) with zero
+                // callers anywhere, so a registered ON-DELETE trigger could never
+                // fire; this closes that gap.
+                var onDeleteOutcome = await FireOnDeleteAsync(blockName, currentRecord).ConfigureAwait(false);
+                if (onDeleteOutcome == null)
+                {
+                    Status = $"Delete cancelled by ON-DELETE trigger in block '{blockName}'";
+                    _messageManager?.ShowWarningMessage(blockName, Status);
+                    return false;
+                }
+
                 // Delete the current record. IUnitofWork (non-generic) declares
                 // Task<IErrorsInfo> DeleteAsync(dynamic doc) directly — no reflection needed.
                 // (The previous GetMethod("DeleteAsync").Invoke(...) was a silent-no-op trap
                 //  if the method didn't exist: the whole delete path was skipped without a
                 //  loud error. The direct call now either compiles or fails fast.)
                 IErrorsInfo result;
-                SuppressSync(blockName);
-                try
+                if (onDeleteOutcome == true)
                 {
-                    result = await blockInfo.UnitOfWork.DeleteAsync(currentRecord).ConfigureAwait(false);
+                    // Handled by the registered ON-DELETE trigger — the default
+                    // delete must not also run, or the record would be deleted twice.
+                    result = new ErrorsInfo { Flag = Errors.Ok, Message = "Handled by ON-DELETE trigger" };
                 }
-                finally { ResumeSync(blockName); }
+                else
+                {
+                    SuppressSync(blockName);
+                    try
+                    {
+                        result = await blockInfo.UnitOfWork.DeleteAsync(currentRecord).ConfigureAwait(false);
+                    }
+                    finally { ResumeSync(blockName); }
+                }
 
                 if (result == null)
                 {
@@ -179,6 +276,68 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
+        /// Deletes every record currently in a detail block, one at a time
+        /// through its own full delete pipeline (<see cref="DeleteCurrentRecordAsync"/>)
+        /// — so the detail's own triggers (WHEN-REMOVE-RECORD, PRE-DELETE,
+        /// ON-LOCK, ON-DELETE, POST-DELETE), and any further Cascading
+        /// relationship IT is a master of, all fire exactly as if a user had
+        /// deleted each record by hand. Added 2026-08-22, for
+        /// <see cref="MasterDeleteBehavior.Cascading"/>.
+        /// </summary>
+        /// <remarks>
+        /// Bounded by the starting record count rather than looping on
+        /// <c>TotalItemCount &gt; 0</c> unconditionally, and re-checks that the
+        /// count actually decreased after each delete — a UoW whose current
+        /// record does not advance after a delete, or that reports success
+        /// without actually removing the record, fails this loudly instead of
+        /// spinning forever.
+        /// </remarks>
+        private async Task<bool> CascadeDeleteDetailRecordsAsync(string detailBlockName)
+        {
+            var detailBlock = GetBlock(detailBlockName);
+            if (detailBlock?.UnitOfWork == null) return true;
+
+            var guard = detailBlock.UnitOfWork.TotalItemCount + 1;
+
+            while (detailBlock.UnitOfWork.TotalItemCount > 0)
+            {
+                if (guard-- <= 0)
+                {
+                    LogError(
+                        $"CascadeDeleteDetailRecordsAsync: '{detailBlockName}' still has " +
+                        $"{detailBlock.UnitOfWork.TotalItemCount} record(s) after exhausting the " +
+                        "expected delete count — the current-record pointer may not be advancing " +
+                        "after delete. Aborting to avoid an infinite loop.",
+                        null, detailBlockName);
+                    return false;
+                }
+
+                var beforeCount = detailBlock.UnitOfWork.TotalItemCount;
+                var deleted = await DeleteCurrentRecordAsync(detailBlockName).ConfigureAwait(false);
+                if (!deleted)
+                {
+                    LogError(
+                        $"CascadeDeleteDetailRecordsAsync: deleting a record in '{detailBlockName}' " +
+                        $"failed or was cancelled; {beforeCount} record(s) remained",
+                        null, detailBlockName);
+                    return false;
+                }
+
+                if (detailBlock.UnitOfWork.TotalItemCount >= beforeCount)
+                {
+                    LogError(
+                        $"CascadeDeleteDetailRecordsAsync: '{detailBlockName}' record count did not " +
+                        $"decrease after a reported-successful delete ({beforeCount} -> " +
+                        $"{detailBlock.UnitOfWork.TotalItemCount})",
+                        null, detailBlockName);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Enters query mode for a block - equivalent to Oracle Forms ENTER_QUERY.
         /// </summary>
         /// <remarks>
@@ -205,6 +364,52 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 _eventManager.TriggerError(blockName, ex);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Builds the row-level security filter for a block
+        /// (<see cref="BlockSecurity.RowFilterClause"/>/<c>.RowFilterValues</c>),
+        /// parsed and ready to AND into a query's filter list the same way
+        /// <c>DefaultWhereClause</c> already is.
+        /// </summary>
+        /// <remarks>
+        /// <c>ISecurityManager.GetBlockRowFilter</c>/<c>GetBlockSecurity</c> existed
+        /// with no caller anywhere in the engine — a block configured with a row
+        /// filter (e.g. "TenantId = :TenantId", to restrict a user to their own
+        /// tenant's rows) had that restriction stored and never enforced:
+        /// <see cref="ExecuteQueryAsync"/> only ever checked the coarse
+        /// query/insert/update/delete allow-flags via
+        /// <see cref="EnforceBlockSecurity"/>, never the row filter, so a
+        /// permitted user saw every row rather than only their own. (2026-08-22)
+        /// </remarks>
+        private List<AppFilter> BuildSecurityRowFilters(string blockName)
+        {
+            var security = _securityManager?.GetBlockSecurity(blockName);
+            if (security == null || string.IsNullOrWhiteSpace(security.RowFilterClause))
+                return null;
+
+            var filters = _queryBuilderManager.ParseWhereClause(security.RowFilterClause);
+            if (filters == null || filters.Count == 0) return null;
+
+            if (security.RowFilterValues != null)
+            {
+                foreach (var filter in filters)
+                {
+                    // ParseWhereClause has no concept of a ":Name" bind
+                    // placeholder — it parses "TenantId = :TenantId" as a
+                    // literal FilterValue of ":TenantId". Resolve it against
+                    // RowFilterValues here, the one place that dictionary is
+                    // actually meant to be consumed per its own doc comment.
+                    if (filter.FilterValue != null &&
+                        filter.FilterValue.StartsWith(":", StringComparison.Ordinal) &&
+                        security.RowFilterValues.TryGetValue(filter.FilterValue.Substring(1), out var value))
+                    {
+                        filter.FilterValue = value?.ToString() ?? string.Empty;
+                    }
+                }
+            }
+
+            return filters;
         }
 
         /// <summary>
@@ -246,6 +451,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         finalFilters ?? new List<AppFilter>(), defaultFilters);
                 }
 
+                // Merge row-level security filter — see BuildSecurityRowFilters.
+                var securityFilters = BuildSecurityRowFilters(blockName);
+                if (securityFilters != null)
+                {
+                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
+                        finalFilters ?? new List<AppFilter>(), securityFilters);
+                }
+
                 var result = await ExecuteQueryEnhancedAsync(blockName, finalFilters).ConfigureAwait(false);
                 if (result.Flag == Errors.Ok)
                 {
@@ -278,6 +491,91 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 LogError($"Error executing query for '{blockName}'", ex, blockName);
                 _eventManager.TriggerError(blockName, ex);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Counts records matching the block's current query criteria —
+        /// equivalent to Oracle Forms COUNT_QUERY. Merges the block's default
+        /// WHERE clause with the supplied filters, the same way
+        /// <see cref="ExecuteQueryAsync"/> does, and asks the datasource for a
+        /// COUNT directly via <see cref="IDataSource.GetScalarAsync"/> — it
+        /// does not fetch or otherwise disturb the block's currently loaded
+        /// records, matching Oracle's own COUNT_QUERY contract.
+        /// </summary>
+        /// <returns>
+        /// The matching record count, or -1 when the block/datasource/entity
+        /// cannot be resolved or the datasource's GetScalarAsync throws (see
+        /// <see cref="Status"/> and the log for why) — never a silent 0, which
+        /// would read as "no matching records" instead of "could not count."
+        /// </returns>
+        public async Task<int> CountQueryAsync(string blockName, List<AppFilter> filters = null, CancellationToken ct = default)
+        {
+            try
+            {
+                var block = GetBlock(blockName);
+                if (block == null)
+                {
+                    Status = $"Block '{blockName}' not found";
+                    return -1;
+                }
+
+                var entityName = block.EntityStructure?.EntityName;
+                if (string.IsNullOrWhiteSpace(entityName))
+                {
+                    Status = $"Block '{blockName}' has no entity name to count against";
+                    return -1;
+                }
+
+                var ds = _dmeEditor.GetDataSource(block.DataSourceName);
+                if (ds == null)
+                {
+                    Status = $"Block '{blockName}' has no open datasource '{block.DataSourceName}'";
+                    return -1;
+                }
+
+                // Merge default WHERE clause with caller-supplied filters —
+                // identical to ExecuteQueryAsync, so COUNT_QUERY and
+                // EXECUTE_QUERY always agree on what "matches."
+                var finalFilters = filters;
+                if (!string.IsNullOrWhiteSpace(block.DefaultWhereClause))
+                {
+                    var defaultFilters = _queryBuilderManager.ParseWhereClause(block.DefaultWhereClause);
+                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
+                        finalFilters ?? new List<AppFilter>(), defaultFilters);
+                }
+
+                // Merge row-level security filter — see BuildSecurityRowFilters.
+                // Without this, COUNT_QUERY would report how many rows match
+                // *ignoring* the same row-level restriction EXECUTE_QUERY
+                // enforces, leaking the true row count to a user who isn't
+                // permitted to see all of them.
+                var securityFilters = BuildSecurityRowFilters(blockName);
+                if (securityFilters != null)
+                {
+                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
+                        finalFilters ?? new List<AppFilter>(), securityFilters);
+                }
+
+                var whereClause = finalFilters != null && finalFilters.Count > 0
+                    ? string.Join(" AND ", finalFilters.Select(TheTechIdea.Beep.Utils.Util.GenerateFilterExpression))
+                    : null;
+
+                var sql = string.IsNullOrWhiteSpace(whereClause)
+                    ? $"SELECT COUNT(*) FROM {entityName}"
+                    : $"SELECT COUNT(*) FROM {entityName} WHERE {whereClause}";
+
+                var scalar = await ds.GetScalarAsync(sql).ConfigureAwait(false);
+                var count = (int)scalar;
+                Status = $"Query would return {count} record(s) for block '{blockName}'";
+                return count;
+            }
+            catch (Exception ex)
+            {
+                Status = $"Error counting query for '{blockName}': {ex.Message}";
+                LogError($"Error counting query for block '{blockName}'", ex, blockName);
+                _eventManager.TriggerError(blockName, ex);
+                return -1;
             }
         }
 

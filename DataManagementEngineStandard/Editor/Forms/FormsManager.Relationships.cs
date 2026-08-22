@@ -211,6 +211,53 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
+        /// Forces a <see cref="DetailCoordination.Deferred"/> detail block to
+        /// catch up to its master's current record right now — call this when
+        /// a host is about to show/enter a deferred detail block. Added
+        /// 2026-08-22. No-op when the relationship isn't found or isn't
+        /// actually deferred (an Immediate relationship is already current;
+        /// there is nothing to force).
+        /// </summary>
+        public async Task SynchronizeDeferredDetailAsync(string masterBlockName, string detailBlockName, CancellationToken ct = default)
+        {
+            var relationship = GetActiveRelationships(masterBlockName)
+                .FirstOrDefault(r => string.Equals(r.DetailBlockName, detailBlockName, StringComparison.OrdinalIgnoreCase));
+            if (relationship == null || relationship.Coordination != DetailCoordination.Deferred)
+                return;
+
+            _pendingDeferredSync.TryRemove(detailBlockName, out _);
+
+            // Reuse the already-hardened per-relationship sync logic in
+            // SynchronizeDetailHierarchyAsync (culture-invariant filter
+            // values, missing-master-value clearing, per-relationship error
+            // isolation — see its own B3/B4/B8 comments) rather than a second
+            // copy of it. Flipping the mode to Immediate for one pass means
+            // any OTHER Immediate sibling relationship under the same master
+            // is harmlessly re-queried too; that's a redundant refresh, not
+            // an incorrect one, and simpler than extracting the inner loop
+            // body just to avoid it.
+            var originalMode = relationship.Coordination;
+            relationship.Coordination = DetailCoordination.Immediate;
+            try
+            {
+                await SynchronizeDetailHierarchyAsync(
+                    masterBlockName, new HashSet<string>(StringComparer.OrdinalIgnoreCase), ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                relationship.Coordination = originalMode;
+            }
+        }
+
+        /// <summary>
+        /// True when a Deferred detail block has a pending sync it hasn't
+        /// received since the master's current record last changed. Added
+        /// 2026-08-22.
+        /// </summary>
+        public bool HasPendingDeferredSync(string detailBlockName) =>
+            _pendingDeferredSync.ContainsKey(detailBlockName);
+
+        /// <summary>
         /// Gets all blocks that are detail blocks of the specified master block
         /// </summary>
         public List<string> GetDetailBlocks(string masterBlockName)

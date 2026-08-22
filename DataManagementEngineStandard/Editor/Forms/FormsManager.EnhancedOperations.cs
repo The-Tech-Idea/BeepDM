@@ -66,6 +66,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var newRecord = Activator.CreateInstance(entityType);
                 _formsSimulationHelper.SetAuditDefaults(newRecord, Environment.UserName);
 
+                // Populate item-authored values before the trigger fires, so
+                // WHEN-CREATE-RECORD logic sees (and can still override) them —
+                // matching Oracle Forms' own order. Three sources, applied
+                // least- to most-specific so a later one can override an
+                // earlier one for the same field:
+                //   1. DEFAULT_VALUE (ItemInfo.DefaultValue) — static, authored
+                //      per field (directly or via a Property Class).
+                //   2. "Copy Value from Item" — seeds from another item's
+                //      current value (e.g. a detail record picking up its
+                //      master's key).
+                //   3. Registered item-default factories (SetItemDefault) —
+                //      programmatic/computed defaults (e.g. sequences).
+                // All three existed with no caller before this: ItemInfo had
+                // DefaultValue and ItemPropertyManager had ApplyDefaultValues,
+                // but nothing invoked it on record creation; ApplyItemDefaults
+                // was documented as "called internally from CreateNewRecord"
+                // yet had zero callers anywhere. (2026-08-22)
+                _itemPropertyManager.ApplyDefaultValues(blockName, newRecord);
+                ApplyCopyValueFromItem(blockName, newRecord);
+                ApplyItemDefaults(blockName, newRecord);
+
                 // Fire WHEN-CREATE-RECORD trigger after the instance is created
                 _triggerManager.FireBlockTrigger(
                     TriggerType.WhenCreateRecord, blockName,
@@ -79,6 +100,57 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 Status = $"Error creating new record for block '{blockName}': {ex.Message}";
                 LogError($"Error creating new record for block '{blockName}'", ex, blockName);
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Applies each item's authored "Copy Value from Item" — Oracle Forms'
+        /// declarative counterpart to the COPY built-in. Reads the source
+        /// item's CURRENT value from the item-property store (not the record
+        /// it came from — the item store is where a host keeps it in sync as
+        /// the user navigates), so a freshly-created record can pick up
+        /// e.g. its master block's key without the caller wiring a trigger
+        /// for it.
+        /// </summary>
+        private void ApplyCopyValueFromItem(string blockName, object record)
+        {
+            if (record == null) return;
+
+            var items = _itemPropertyManager.GetAllItems(blockName);
+            if (items.Count == 0) return;
+
+            var recordType = record.GetType();
+
+            foreach (var item in items)
+            {
+                if (string.IsNullOrWhiteSpace(item.CopyValueFromItem) || string.IsNullOrWhiteSpace(item.BoundProperty))
+                    continue;
+
+                var parts = item.CopyValueFromItem.Split('.');
+                if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]))
+                {
+                    LogOperation(
+                        $"Item '{item.ItemName}' has an invalid CopyValueFromItem '{item.CopyValueFromItem}' (expected \"Block.Item\"); skipped.",
+                        blockName);
+                    continue;
+                }
+
+                var sourceValue = _itemPropertyManager.GetItemValue(parts[0], parts[1]);
+                if (sourceValue == null) continue;
+
+                var property = recordType.GetProperty(item.BoundProperty,
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (property == null || !property.CanWrite) continue;
+
+                try
+                {
+                    var targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                    property.SetValue(record, Convert.ChangeType(sourceValue, targetType));
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Error applying CopyValueFromItem for item '{item.ItemName}'", ex, blockName);
+                }
             }
         }
 
@@ -297,8 +369,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Auto-lock if needed (Phase 7)
-                await _lockManager.AutoLockIfNeededAsync(blockName).ConfigureAwait(false);
+                // Fire ON-LOCK. A registered handler replaces the default
+                // client-side lock below. Added 2026-08-22 — closes the same
+                // "enum member with no firing code" gap as ON-INSERT/UPDATE/DELETE.
+                var onLockOutcome = await FireOnLockAsync(blockName, currentRecord).ConfigureAwait(false);
+                if (onLockOutcome == null)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Update cancelled by ON-LOCK trigger in block '{blockName}'";
+                    return result;
+                }
+                if (onLockOutcome == false)
+                {
+                    // No ON-LOCK registered — default path (Phase 7).
+                    await _lockManager.AutoLockIfNeededAsync(blockName).ConfigureAwait(false);
+                }
 
                 // Validate record before update
                 if (!ValidateRecordForOperation(blockName, currentRecord, "UPDATE"))
@@ -323,9 +408,34 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // IUnitofWork (non-generic) declares UpdateAsync(dynamic doc) directly.
-                // Direct dispatch — same rationale as the InsertAsync change above.
-                var updateResult = await blockInfo.UnitOfWork.UpdateAsync(currentRecord).ConfigureAwait(false);
+                // Fire ON-UPDATE. A registered handler replaces the default
+                // UnitOfWork.UpdateAsync call below — Oracle Forms' ON-UPDATE is
+                // exactly this: substitute logic for the physical UPDATE. Added
+                // 2026-08-22 — FireOnUpdateAsync existed (Phase 4.2) with zero
+                // callers anywhere, so a registered ON-UPDATE trigger could never
+                // fire; this closes that gap.
+                var onUpdateOutcome = await FireOnUpdateAsync(blockName, currentRecord).ConfigureAwait(false);
+                if (onUpdateOutcome == null)
+                {
+                    result.Flag = Errors.Failed;
+                    result.Message = $"Update cancelled by ON-UPDATE trigger in block '{blockName}'";
+                    return result;
+                }
+
+                IErrorsInfo updateResult;
+                if (onUpdateOutcome == true)
+                {
+                    // Handled by the registered ON-UPDATE trigger — the default
+                    // update must not also run, or the record would be written twice.
+                    updateResult = new ErrorsInfo { Flag = Errors.Ok, Message = "Handled by ON-UPDATE trigger" };
+                }
+                else
+                {
+                    // No ON-UPDATE registered — default path. IUnitofWork
+                    // (non-generic) declares UpdateAsync(dynamic doc) directly.
+                    // Direct dispatch — same rationale as the InsertAsync change above.
+                    updateResult = await blockInfo.UnitOfWork.UpdateAsync(currentRecord).ConfigureAwait(false);
+                }
 
                 if (updateResult == null)
                 {

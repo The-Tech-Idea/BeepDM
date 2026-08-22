@@ -79,7 +79,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// Oracle Forms: LOV_NAME - Attached List of Values
         /// </summary>
         public string LOVName { get; set; }
-        
+
+        /// <summary>
+        /// Oracle Forms: "Copy Value from Item" — "BlockName.ItemName" of the
+        /// item this one copies its value from when a new record is created.
+        /// Null = not authored. Applied by
+        /// <c>FormsManager.CreateNewRecord</c>, after DEFAULT_VALUE and before
+        /// any registered item-default factory, so a factory can still
+        /// override a copied value.
+        /// </summary>
+        public string CopyValueFromItem { get; set; }
+
         /// <summary>
         /// Oracle Forms: MAX_LENGTH - Maximum text length
         /// </summary>
@@ -269,6 +279,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
                 PromptText = PromptText,
                 HintText = HintText,
                 LOVName = LOVName,
+                CopyValueFromItem = CopyValueFromItem,
                 MaxLength = MaxLength,
                 FormatMask = FormatMask,
                 ValidationFormula = ValidationFormula,

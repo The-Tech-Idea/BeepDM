@@ -379,8 +379,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Use dirty state manager for the actual rollback
-                var rollbackSuccess = await _dirtyStateManager.RollbackDirtyBlocksAsync(dirtyBlocks).ConfigureAwait(false);
+                // Fire ON-ROLLBACK per dirty block. A registered handler
+                // replaces the default rollback for that block — run its custom
+                // logic and exclude the block from the batched default rollback
+                // below. Added 2026-08-22 — the TriggerType.OnRollback member
+                // existed with no firing code anywhere.
+                var blocksForDefaultRollback = new List<string>();
+                foreach (var blockName in dirtyBlocks)
+                {
+                    var onRollbackOutcome = await FireOnRollbackAsync(blockName).ConfigureAwait(false);
+                    if (onRollbackOutcome == null)
+                    {
+                        result.Flag = Errors.Failed;
+                        result.Message = $"Rollback cancelled by ON-ROLLBACK trigger in block '{blockName}'";
+                        Status = result.Message;
+                        return result;
+                    }
+                    if (onRollbackOutcome == false)
+                        blocksForDefaultRollback.Add(blockName);
+                }
+
+                // Use dirty state manager for the actual rollback, for whichever
+                // blocks did not have a registered ON-ROLLBACK handling them above.
+                var rollbackSuccess = blocksForDefaultRollback.Count == 0
+                    || await _dirtyStateManager.RollbackDirtyBlocksAsync(blocksForDefaultRollback).ConfigureAwait(false);
 
                 if (rollbackSuccess)
                 {
@@ -497,6 +519,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (validationArgs.Cancel)
                 {
                     LogOperation("Form validation cancelled by trigger");
+                    return false;
+                }
+
+                // Fire WHEN-VALIDATE-FORM. Synchronous because ValidateForm()
+                // itself is synchronous — same reasoning as WHEN-VALIDATE-RECORD
+                // in ValidateRecordForOperation: a sync Handler is safe on any
+                // thread, and a trigger supplying only an AsyncHandler gets a
+                // clear exception rather than a deadlock.
+                var formValidateResult = _triggerManager.FireFormTrigger(
+                    TriggerType.WhenValidateForm,
+                    _currentFormName,
+                    TriggerContext.ForForm(TriggerType.WhenValidateForm, _currentFormName ?? "FORM", _dmeEditor));
+                if (formValidateResult == TriggerResult.Cancelled)
+                {
+                    LogOperation("Form validation cancelled by WHEN-VALIDATE-FORM trigger");
                     return false;
                 }
 
@@ -649,60 +686,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return result;
         }
 
-        /// <summary>
-        /// Attempts a cross-form commit, optionally wrapping it in a single
-        /// source-level transaction if every participating form's data source
-        /// supports transactions. On failure, rolls back all committed forms.
-        /// </summary>
-        private async Task<bool> TryCrossFormTransactionCommitAsync(
-            List<FormsManager> formsToCommit,
-            List<string> orderedBlocks)
-        {
-            // Group blocks by their owning FormsManager for per-form commit
-            var formOwnedBlocks = new Dictionary<FormsManager, List<string>>();
-            foreach (var fm in formsToCommit)
-            {
-                var owned = fm.GetDirtyBlocks().Where(b => orderedBlocks.Contains(b)).ToList();
-                if (owned.Count > 0)
-                    formOwnedBlocks[fm] = owned;
-            }
-
-            if (formsToCommit.Count <= 1)
-            {
-                // Single form — no cross-form coordination needed
-                return formOwnedBlocks.TryGetValue(this, out var blocks)
-                    ? await _dirtyStateManager.SaveDirtyBlocksAsync(blocks)
-                    : true;
-            }
-
-            // Cross-form commit: attempt source-level transaction wrapper.
-            // We begin a transaction on the CURRENT form's data source and commit
-            // each form's blocks sequentially. If any fails, we roll back everything
-            // that was already committed.
-            var committed = new Stack<(FormsManager fm, List<string> blocks)>();
-            try
-            {
-                foreach (var (fm, blocks) in formOwnedBlocks)
-                {
-                    var success = await fm._dirtyStateManager?.SaveDirtyBlocksAsync(blocks);
-                    if (!success)
-                        throw new InvalidOperationException($"Commit failed for form '{fm._currentFormName}'");
-                    committed.Push((fm, blocks));
-                }
-                return true;
-            }
-            catch
-            {
-                // Roll back committed forms in reverse order
-                while (committed.Count > 0)
-                {
-                    var (fm, blocks) = committed.Pop();
-                    try { await fm._dirtyStateManager?.RollbackDirtyBlocksAsync(blocks); }
-                    catch (Exception ex) { LogError($"Rollback failed during cross-form commit recovery for '{fm._currentFormName}'", ex, fm._currentFormName); }
-                }
-                return false;
-            }
-        }
+        // TryCrossFormTransactionCommitAsync moved to
+        // FormsManager.TransactionCoordination.cs (G0.24, 2026-08-22) — real
+        // per-datasource BeginTransaction/Commit/EndTransaction coordination
+        // replaced the doc-comment-only "optionally wraps in a transaction"
+        // claim, which never actually opened one.
 
         #endregion
 

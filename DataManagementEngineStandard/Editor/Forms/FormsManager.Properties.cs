@@ -71,6 +71,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
         public IVisualAttributeManager VisualAttributes => _visualAttributeManager;
 
+        /// <summary>Named Property Classes and the fields that inherit from them.</summary>
+        public IPropertyClassManager PropertyClasses => _propertyClassManager;
+
         /// <summary>The form's menu (Oracle Forms menu module).</summary>
         public IFormMenuManager Menu => _formMenuManager;
 

@@ -64,5 +64,64 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
 
         /// <summary>Gets or sets a description of the relationship</summary>
         public string Description { get; set; }
+
+        /// <summary>
+        /// Oracle Forms master-detail delete behavior, added 2026-08-22. Default
+        /// matches Oracle's own default (<see cref="MasterDeleteBehavior.NonIsolated"/>).
+        /// A previous attempt at this (a bare <c>CascadeDelete</c> bool) was
+        /// removed 2026-06 as an unwired placeholder — see the class remarks.
+        /// This one is read by <c>FormsManager.DeleteCurrentRecordAsync</c>.
+        /// </summary>
+        public MasterDeleteBehavior DeleteBehavior { get; set; } = MasterDeleteBehavior.NonIsolated;
+
+        /// <summary>
+        /// Whether the detail block re-queries the instant the master's current
+        /// record changes (<see cref="DetailCoordination.Immediate"/>, Oracle's
+        /// default and this engine's only behavior until 2026-08-22) or only
+        /// when something explicitly asks for it
+        /// (<see cref="DetailCoordination.Deferred"/>). Read by
+        /// <c>FormsManager</c>'s master-current-changed handler.
+        /// </summary>
+        public DetailCoordination Coordination { get; set; } = DetailCoordination.Immediate;
+    }
+
+    /// <summary>
+    /// Oracle Forms master-detail delete behavior — what happens when a master
+    /// record with existing detail records is deleted.
+    /// </summary>
+    public enum MasterDeleteBehavior
+    {
+        /// <summary>
+        /// Oracle's default. The delete is blocked while detail records exist
+        /// for the current master record.
+        /// </summary>
+        NonIsolated = 0,
+
+        /// <summary>
+        /// The master can be deleted regardless of existing detail records —
+        /// orphaned detail rows are left as-is (their foreign key now points
+        /// at a master record that no longer exists).
+        /// </summary>
+        Isolated = 1,
+
+        /// <summary>
+        /// Deleting the master first deletes every detail record, through the
+        /// detail block's own delete pipeline (so the detail's own triggers —
+        /// including a further Cascading relationship on IT — still fire),
+        /// then deletes the master.
+        /// </summary>
+        Cascading = 2,
+    }
+
+    /// <summary>
+    /// Oracle Forms master-detail re-query timing.
+    /// </summary>
+    public enum DetailCoordination
+    {
+        /// <summary>Oracle's default — the detail re-queries the instant the master's current record changes.</summary>
+        Immediate = 0,
+
+        /// <summary>The detail does not re-query until something explicitly asks for it.</summary>
+        Deferred = 1,
     }
 }

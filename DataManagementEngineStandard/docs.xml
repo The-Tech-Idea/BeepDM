@@ -20396,9 +20396,10 @@
             <summary>
             Phase 4.2 — DML Trigger wrappers.
             Provides <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnInsertAsync(System.String,System.Object)"/>, <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnUpdateAsync(System.String,System.Object)"/>,
-            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnDeleteAsync(System.String,System.Object)"/> helpers that fire the new
-            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnInsert"/> / <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnUpdate"/> /
-            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnDelete"/> triggers added in Phase 4.
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnDeleteAsync(System.String,System.Object)"/>, <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnLockAsync(System.String,System.Object)"/> helpers
+            that fire the <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnInsert"/> /
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnUpdate"/> / <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnDelete"/> /
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnLock"/> triggers added in Phase 4.
             Also provides the Oracle Forms RAISE_FORM_TRIGGER built-in via
             <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RaiseFormTriggerAsync(System.String,System.String)"/>.
             </summary>
@@ -20452,6 +20453,16 @@
             Exposes Oracle Forms CREATE_TIMER / DELETE_TIMER / GET_TIMER equivalents.
             Timer expiry fires the TriggerType.WhenTimerExpired trigger on the current form
             (see OnTimerManagerFired in FormsManager.cs core).
+            </summary>
+            <summary>
+            Real transaction coordination for <c>CommitFormAsync</c>. Groups every
+            dirty block in commit scope by its owning <see cref="T:TheTechIdea.Beep.IDataSource"/> —
+            not by form, since one form's blocks can span several datasources and
+            several forms can share one — and, for whichever datasources actually
+            implement the <see cref="T:TheTechIdea.Beep.IDataSource"/> transaction triple
+            (<c>BeginTransaction</c>/<c>Commit</c>/<c>EndTransaction</c>), wraps
+            every block commit on that datasource in one real transaction so they
+            all become durable together or not at all.
             </summary>
             <summary>
             Phase 4.3 — Trigger chaining, dependency ordering, and execution logging.
@@ -20544,6 +20555,25 @@
             Deletes the current record in the specified block
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CascadeDeleteDetailRecordsAsync(System.String)">
+            <summary>
+            Deletes every record currently in a detail block, one at a time
+            through its own full delete pipeline (<see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.DeleteCurrentRecordAsync(System.String)"/>)
+            — so the detail's own triggers (WHEN-REMOVE-RECORD, PRE-DELETE,
+            ON-LOCK, ON-DELETE, POST-DELETE), and any further Cascading
+            relationship IT is a master of, all fire exactly as if a user had
+            deleted each record by hand. Added 2026-08-22, for
+            <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.MasterDeleteBehavior.Cascading"/>.
+            </summary>
+            <remarks>
+            Bounded by the starting record count rather than looping on
+            <c>TotalItemCount &gt; 0</c> unconditionally, and re-checks that the
+            count actually decreased after each delete — a UoW whose current
+            record does not advance after a delete, or that reports success
+            without actually removing the record, fails this loudly instead of
+            spinning forever.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnterQueryAsync(System.String)">
             <summary>
             Enters query mode for a block - equivalent to Oracle Forms ENTER_QUERY.
@@ -20559,11 +20589,46 @@
             mode assignment here.
             </remarks>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.BuildSecurityRowFilters(System.String)">
+            <summary>
+            Builds the row-level security filter for a block
+            (<see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockSecurity.RowFilterClause"/>/<c>.RowFilterValues</c>),
+            parsed and ready to AND into a query's filter list the same way
+            <c>DefaultWhereClause</c> already is.
+            </summary>
+            <remarks>
+            <c>ISecurityManager.GetBlockRowFilter</c>/<c>GetBlockSecurity</c> existed
+            with no caller anywhere in the engine — a block configured with a row
+            filter (e.g. "TenantId = :TenantId", to restrict a user to their own
+            tenant's rows) had that restriction stored and never enforced:
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})"/> only ever checked the coarse
+            query/insert/update/delete allow-flags via
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnforceBlockSecurity(System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission)"/>, never the row filter, so a
+            permitted user saw every row rather than only their own. (2026-08-22)
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>
             Executes query for a block - equivalent to Oracle Forms EXECUTE_QUERY.
             Merges block-level default WHERE clause with caller-supplied filters via QueryBuilder.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CountQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Threading.CancellationToken)">
+            <summary>
+            Counts records matching the block's current query criteria —
+            equivalent to Oracle Forms COUNT_QUERY. Merges the block's default
+            WHERE clause with the supplied filters, the same way
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})"/> does, and asks the datasource for a
+            COUNT directly via <see cref="M:TheTechIdea.Beep.IDataSource.GetScalarAsync(System.String)"/> — it
+            does not fetch or otherwise disturb the block's currently loaded
+            records, matching Oracle's own COUNT_QUERY contract.
+            </summary>
+            <returns>
+            The matching record count, or -1 when the block/datasource/entity
+            cannot be resolved or the datasource's GetScalarAsync throws (see
+            <see cref="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Status"/> and the log for why) — never a silent 0, which
+            would read as "no matching records" instead of "could not count."
+            </returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.PostBlockAsync(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -20693,6 +20758,15 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.BlockExists(System.String)">
             <summary>
             Checks if a block exists
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.FormsManager._pendingDeferredSync">
+            <summary>
+            Detail blocks (keyed by detail block name) whose master-linked data
+            is stale because their relationship's <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination"/>
+            is <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Deferred"/> and nothing has called
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDeferredDetailAsync(System.String,System.String,System.Threading.CancellationToken)"/> since the master's
+            current record last changed. Added 2026-08-22.
             </summary>
         </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnBlockFieldChanged">
@@ -20934,6 +21008,70 @@
             Returns true when handled, false when no trigger registered, null on error/cancel.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnLockAsync(System.String,System.Object)">
+            <summary>
+            Fire the ON-LOCK trigger for a block.
+            When a handler is registered it replaces the default client-side
+            record lock (<c>LockManager.LockCurrentRecordAsync</c>) — e.g. a
+            custom SELECT FOR UPDATE against a different locking scheme.
+            Returns true when handled, false when no trigger registered
+            (fall through to the default lock), null on cancellation or error.
+            Added 2026-08-22 — the <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnLock"/> member
+            existed with no firing code anywhere.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnRollbackAsync(System.String)">
+            <summary>
+            Fire the ON-ROLLBACK trigger for a block.
+            When a handler is registered it replaces the default block rollback
+            (<c>DirtyStateManager.RollbackDirtyBlocksAsync</c> for this block) —
+            e.g. custom statement-level rollback processing. Returns true when
+            handled, false when no trigger registered (fall through to the
+            default rollback), null on cancellation or error. Added
+            2026-08-22 — the <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnRollback"/> member existed
+            with no firing code anywhere.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnInsertForDirtyBlocksAsync(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Fires ON-INSERT for every record about to be written during a
+            commit of the given blocks, giving a registered handler a chance to
+            run custom logic and to cancel the commit. Returns false when a
+            handler cancels or errors; true otherwise (including "no handler
+            registered").
+            </summary>
+            <remarks>
+            Known, deliberate limitation added 2026-08-22: this does NOT
+            exclude a "handled" record from the default insert that runs
+            afterwards in <c>DirtyStateManager.SaveDirtyBlocksAsync</c> — full
+            Oracle ON-INSERT semantics ("the trigger's own write replaces the
+            default write, so there is exactly one write") would require
+            intercepting individual records inside OBL's
+            <c>CommitAllAsync</c> batch, which is out of scope for this change.
+            A registered ON-INSERT handler today runs (and can cancel the
+            commit) alongside the default insert, not instead of it. Before
+            this change it did not run at all — see
+            <c>DataManagementEngineStandard/Editor/Forms/gaps.md</c>. Do not
+            build an ON-INSERT handler that assumes the default write is
+            skipped until that follow-up lands.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.FireOnCheckDeleteMasterAsync(System.String,System.String,System.Object)">
+            <summary>
+            Fire the ON-CHECK-DELETE-MASTER trigger for a (master, detail) pair.
+            When a handler is registered it replaces the default
+            isolated/non-isolated/cascading check
+            (<see cref="!:DataBlockRelationship.DeleteBehavior"/>) for that
+            relationship — the handler decides whether the master delete may
+            proceed. Returns true when handled (skip the default check
+            entirely), false when no trigger registered (apply
+            <see cref="!:DataBlockRelationship.DeleteBehavior"/>), null on
+            cancellation or error (block the delete). Added 2026-08-22 — the
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnCheckDeleteMaster"/> member existed with
+            no firing code, and no isolated/non-isolated/cascading distinction
+            existed anywhere in the engine to fall back to.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RaiseFormTriggerAsync(System.String,System.String)">
             <summary>
             Programmatically fire a trigger by name on the current form.
@@ -20955,6 +21093,17 @@
             <summary>
             Creates a new record for a block using proper type resolution
             Automatically handles mode transition if needed
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ApplyCopyValueFromItem(System.String,System.Object)">
+            <summary>
+            Applies each item's authored "Copy Value from Item" — Oracle Forms'
+            declarative counterpart to the COPY built-in. Reads the source
+            item's CURRENT value from the item-property store (not the record
+            it came from — the item store is where a host keeps it in sync as
+            the user navigates), so a freshly-created record can pick up
+            e.g. its master block's key without the caller wiring a trigger
+            for it.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.InsertRecordEnhancedAsync(System.String,System.Object)">
@@ -21070,13 +21219,6 @@
             caller's dirty blocks as well — matching Oracle Forms' shared database
             session. Returns the list in caller→callee order so the callee's blocks
             are committed after the caller's (detail → master FK constraints).
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryCrossFormTransactionCommitAsync(System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.FormsManager},System.Collections.Generic.List{System.String})">
-            <summary>
-            Attempts a cross-form commit, optionally wrapping it in a single
-            source-level transaction if every participating form's data source
-            supports transactions. On failure, rolls back all committed forms.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.BuildCommitOrder">
@@ -21247,6 +21389,19 @@
             <param name="message">High-level error message.</param>
             <param name="ex">Optional exception that caused the failure.</param>
             <param name="blockName">Optional block context for the error.</param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetActiveRelationships(System.String)">
+            <summary>
+            Returns the active master-detail relationships where
+            <paramref name="masterBlockName"/> is the master — the full
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship"/> objects, not just the detail
+            block names <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetDetailBlocks(System.String)"/> returns. Made public
+            2026-08-22 (was internal, used only inside this class) so a host —
+            or a test — can inspect/adjust a relationship's
+            <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.DeleteBehavior"/> or
+            <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.Coordination"/> after
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CreateMasterDetailRelation(System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)"/>.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetGlobalVariable(System.String,System.Object)">
             <summary>
@@ -21525,12 +21680,31 @@
             Equivalent to Oracle Forms EXIT_FORM with return value or RETURN built-in.
             </summary>
             <remarks>
-            Validates that the top of the call stack was actually pushed by THIS
-            form (the active callee). If a foreign entry is on top — e.g. a
-            modeless sibling tries to return on behalf of a different call —
-            the entry is pushed back and a debug warning is logged. Without
-            this check, a cross-form ReturnToCallerAsync would silently corrupt
-            the stack and switch the active form to the wrong caller.
+            <para>
+            The call-stack entry lives on the CALLER's manager, not the
+            callee's — <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReleaseSuspendedCallerFor(System.String)"/>'s own remarks
+            already document this. Before this fix, this method only ever
+            checked <c>this._callStack</c>, which is empty for a genuine
+            callee running as its own <c>FormsManager</c> instance (the normal
+            architecture: one instance per open form, registered by name in
+            <c>IFormRegistry</c>) — so a callee could never successfully call
+            this, and the caller stayed suspended in <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CallFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},TheTechIdea.Beep.Editor.Forms.Models.FormCallMode,System.Threading.CancellationToken)"/>
+            forever. It worked only in the single-instance self-call shape a
+            test might use by accident, never in the real multi-form case this
+            engine otherwise supports correctly (<see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReleaseSuspendedCallerFor(System.String)"/>,
+            which exists specifically because closing a called form hit the
+            same "entry lives elsewhere" problem). (2026-08-22)
+            </para>
+            <para>
+            Tries the local fast path first (this manager's own top-of-stack
+            entry names it as the callee — the single-manager-hosts-the-chain
+            case), then falls back to searching every other manager the
+            shared registry knows about for the one whose top entry names this
+            form as callee. Either way, a foreign entry (the top of whatever
+            stack is checked names a *different* callee) is left untouched
+            rather than popped — the same corruption protection the previous,
+            single-stack-only version had.
+            </para>
             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryReleaseCallEntryFor(System.String,System.Boolean)">
@@ -21539,6 +21713,13 @@
             <paramref name="calleeFormName"/>, releasing a caller suspended in
             <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CallFormAsync(System.String,System.Collections.Generic.Dictionary{System.String,System.Object},TheTechIdea.Beep.Editor.Forms.Models.FormCallMode,System.Threading.CancellationToken)"/>. Returns false when the top entry is for a
             different form, so a caller is never unwound by someone else's close.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryReleaseCallEntryFor(System.String,System.Boolean,TheTechIdea.Beep.Editor.Forms.Models.FormCallStackEntry@)">
+            <summary>
+            Same as <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryReleaseCallEntryFor(System.String,System.Boolean)"/>, additionally
+            handing back the released entry so a caller (e.g. <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReturnToCallerAsync(System.Object)"/>)
+            can attach return data to it.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReleaseSuspendedCallerFor(System.String)">
@@ -21779,6 +21960,9 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.VisualAttributes">
             <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.PropertyClasses">
+            <summary>Named Property Classes and the fields that inherit from them.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Menu">
             <summary>The form's menu (Oracle Forms menu module).</summary>
         </member>
@@ -21886,6 +22070,23 @@
             hierarchy walk; observed at the start of each
             relationship iteration.
             </param>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDeferredDetailAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Forces a <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Deferred"/> detail block to
+            catch up to its master's current record right now — call this when
+            a host is about to show/enter a deferred detail block. Added
+            2026-08-22. No-op when the relationship isn't found or isn't
+            actually deferred (an Immediate relationship is already current;
+            there is nothing to force).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.HasPendingDeferredSync(System.String)">
+            <summary>
+            True when a Deferred detail block has a pending sync it hasn't
+            received since the master's current record last changed. Added
+            2026-08-22.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetDetailBlocks(System.String)">
             <summary>
@@ -22057,6 +22258,70 @@
             <summary>
             Whether a timer with the given name currently exists and is running (or paused).
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryCrossFormTransactionCommitAsync(System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.FormsManager},System.Collections.Generic.List{System.String})">
+            <summary>
+            Attempts a commit across every form/block in scope, opening a real
+            transaction on each transaction-capable datasource first.
+            </summary>
+            <remarks>
+            <para>
+            Before this pass, this method's own doc comment claimed it
+            "optionally wraps [the commit] in a single source-level
+            transaction if every participating form's data source supports
+            transactions" and "rolls back all committed forms" on failure —
+            neither was true. No transaction was ever opened on any
+            datasource; <c>UnitOfWork.Commit()</c> persisted each block's
+            writes immediately and independently, so a failure partway
+            through a multi-block commit left the already-saved blocks
+            permanently committed. The "rollback" call on those already-saved
+            blocks discarded in-memory dirty state that no longer existed —
+            it never touched the database rows that had already been written.
+            The single-form case (the more common one) had no coordination at
+            all: several dirty blocks in one form, on one or more
+            datasources, committed one at a time with nothing tying them
+            together, so this fix removes that special case entirely and runs
+            every commit — single- or cross-form — through the same real
+            coordination. (2026-08-22)
+            </para>
+            <para>
+            <b>Prepare / commit, not full ACID 2PC.</b> Phase 1 (prepare) opens
+            a transaction per datasource and runs every form's normal
+            ON-INSERT + <c>SaveDirtyBlocksAsync</c> path inside it — nothing is
+            durable yet on a transactional datasource, so a prepare failure is
+            a true, clean abort (<c>EndTransaction</c> on every opened
+            transaction). Phase 2 (commit) calls <c>Commit</c> on every opened
+            transaction. A failure <em>during</em> phase 2 — after at least one
+            datasource has already durably committed — is the one outcome no
+            software-only coordinator across independent database engines can
+            fully prevent without a real distributed transaction coordinator
+            (MS DTC or equivalent); this method does not pretend otherwise. It
+            logs exactly which datasources committed and which did not rather
+            than reporting success or attempting to "roll back" a write that
+            is already durable.
+            </para>
+            <para>
+            A datasource whose provider does not implement the transaction
+            triple (<c>JsonDataSource</c>, <c>CSVDataSource</c>, and other
+            file-backed sources throw <see cref="T:System.NotImplementedException"/>)
+            has no ACID mechanism to open — its blocks keep today's
+            best-effort, immediately-durable commit behaviour, same as before
+            this fix. True atomicity across a transactional and a
+            non-transactional datasource together is not achievable without
+            one of them changing engines.
+            </para>
+            <para>
+            This is deliberately narrower than
+            <c>IDistributedTransactionCoordinator</c> (see
+            <c>DistributedDatasource/Distributed</c>), which already
+            implements full 2PC/saga coordination for datasources that are
+            shards under one <see cref="T:TheTechIdea.Beep.Distributed.DistributedDataSource"/>.
+            This method does not duplicate that — it closes the much more
+            common gap of several independent, ordinary transaction-capable
+            datasources (e.g. two SQL Server connections) being committed
+            together from one form or call-stack of forms.
+            </para>
+            </remarks>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TriggerLog">
             <summary>Execution log for all triggers fired by this form manager.</summary>
@@ -22798,6 +23063,13 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.PerformanceManager.Dispose">
             <summary>
             Releases cache cleanup resources and clears cached state.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.PropertyClassManager">
+            <summary>
+            Engine-side Property Class store. Holds named property bundles and
+            applies one to an item's <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo"/>, honoring whatever the
+            field itself already authored. Mirrors <c>VisualAttributeManager</c>.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.QueryBuilderManager">
@@ -23872,6 +24144,26 @@
             generates or compiles a type: a driver already knows how to shape its
             own rows, and duplicating that would be a second thing to keep in
             step.
+            </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.ApplyAuthoredFieldProperties(TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager,TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition)">
+            <summary>
+            Overlays each field's authored Format Mask / Default Value / Copy
+            Value From Item / per-operation allowed flags — and its Property
+            Class, if any — onto the <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo"/> that
+            <c>RegisterBlock</c> just seeded from the datasource's entity
+            structure.
+            </summary>
+            <remarks>
+            <c>BlockFieldDefinition</c> carried these from the moment the IDE
+            could author them, but nothing read them back out:
+            <c>RegisterItemsFromEntityStructure</c> only ever saw the
+            datasource's own column metadata (nullability, auto-increment,
+            key), never the designer's overrides. A field marked read-only for
+            insert in the designer stayed insertable at runtime, an authored
+            FORMAT_MASK never reached the item store, and DEFAULT_VALUE /
+            "Copy Value from Item" had no path onto a new record at all.
+            (2026-08-22)
             </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.ApplyAuthoredKeys(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition,TheTechIdea.Beep.Editor.IDMEEditor)">
@@ -28139,6 +28431,20 @@
             reusable helper without forcing every BeepDM consumer to take a hard EF Core dep.
             </para>
             </summary>
+             <summary>
+             Widening a primary-key column. This is deliberately NOT part of <see cref="!:ISchemaMigrationProvider"/>
+             — that interface has 23+ non-RDBMS implementers (vector/messaging/NoSQL datasources) that would
+             gain an unusable member for a capability only SQL-speaking RDBMS providers can ever perform.
+             Implemented directly against <see cref="T:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper"/> instead, resolved the same way
+             <c>RdbmsSqlMigrationProvider.Helper</c> resolves it.
+            
+             Always drops and recreates the constraint rather than trying a plain <c>AlterColumn</c> first
+             — live-verified both ways: SQL Server accepts an in-place widen of a PRIMARY KEY column when
+             the underlying type kind is unchanged (e.g. NVARCHAR(1) → NVARCHAR(4000)), but REJECTS it when
+             the type kind also changes (e.g. CHAR(1) → NVARCHAR(4000), exactly what a table created under
+             the pre-fix BeepDM type-mapping defect has). Drop/recreate handles both cases uniformly; a
+             plain alter does not, and this pass cannot know in advance which case a given live column is.
+             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.RegisterAssembly(System.Reflection.Assembly)">
             <summary>
@@ -28502,6 +28808,16 @@
             <summary>
             Cross-entity FK policy checks that require visibility across
             multiple operations.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.WidenPrimaryKeyColumn(System.String,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>
+            Widens an existing PRIMARY KEY column. SQL Server (and most RDBMS engines) refuse a plain
+            <c>ALTER COLUMN</c> on a column a PRIMARY KEY constraint depends on when the change
+            includes a type-kind change (not just a size increase), so this drops the constraint,
+            alters the column, then always re-adds the constraint — even when the alter step failed —
+            so the table is never left without its primary key. The constraint name is resolved live
+            (SQL Server auto-names it; there is no fixed naming convention to assume).
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.ClearEntityStructureCache">
@@ -41128,6 +41444,13 @@
             Normalizes a referential-action string (e.g. "Cascade", "SetNull") into
             the SQL keyword form ("CASCADE", "SET NULL"). Returns the supplied default
             when the input is null/whitespace or unrecognized.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropPrimaryKeySql(System.String,System.String)">
+            <summary>
+            Generates SQL to drop a primary key constraint. <paramref name="constraintName"/> must be
+            the live, provider-assigned name (SQL Server auto-names it, e.g. <c>PK__DA_PLAN__...</c> —
+            there is no fixed naming convention to assume; resolve it first via <see cref="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GetPrimaryKeyQuery(System.String)"/>).
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.GenerateDropForeignKeySql(System.String,System.String)">
@@ -54893,6 +55216,16 @@
         </member>
         <member name="M:TheTechIdea.Beep.Utils.Util.ResolveFieldCategory(System.Type)">
             <summary>Resolves a CLR type to its DbFieldCategory. Shared by all SetField overloads.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Utils.Util.IsSqlLikeMatch(System.String,System.String)">
+            <summary>
+            True when <paramref name="value"/> matches a SQL LIKE pattern —
+            '%' matches any run of characters, '_' matches exactly one.
+            Case-insensitive, matching the comparison StartsWith/EndsWith above
+            already use. Backs the "like"/"not like" <see cref="T:TheTechIdea.Beep.Report.AppFilter"/>
+            operators, which <see cref="!:QueryBuilderManager"/> emits for Oracle
+            Forms' generic LIKE query-by-example operator.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.WebAPI.Helpers.WebAPIAuthenticationHelper">
             <summary>

@@ -48,7 +48,16 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>Before user logs off (ON-LOGOFF). M5-RUN-002 — connection lifecycle.</summary>
         OnLogoff = 11,
 
-        // Reserved 12-19 for future form-level triggers
+        /// <summary>
+        /// Whole-form validation, requested explicitly or run before commit
+        /// (WHEN-VALIDATE-FORM). Added 2026-08-22 — <see cref="FormsManager.ValidateForm"/>
+        /// existed and looped every block's validation but never raised this as a
+        /// trigger, so a form could not register whole-form validation logic the
+        /// way Oracle Forms' WHEN-VALIDATE-FORM does.
+        /// </summary>
+        WhenValidateForm = 12,
+
+        // Reserved 13-19 for future form-level triggers
         
         #endregion
         
@@ -165,8 +174,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>When item value changes (WHEN-VALIDATE-ITEM)</summary>
         WhenValidateItem = 73,
         
-        /// <summary>List of values validation (WHEN-LOV-VALIDATE)</summary>
-        WhenLOVValidate = 74,
+        /// <summary>
+        /// List of values validation (WHEN-LOV-VALIDATION). Named
+        /// <c>WhenLOVValidate</c> until 2026-08-22 — missing the Oracle "-ion"
+        /// suffix, so <c>TriggerTypeNames.TryToMember</c> in the IDE could never
+        /// resolve the canonical Oracle name "When-LOV-Validation" to this member.
+        /// </summary>
+        WhenLOVValidation = 74,
         
         /// <summary>Post change trigger (POST-CHANGE)</summary>
         PostChange = 75,

@@ -156,44 +156,70 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Equivalent to Oracle Forms EXIT_FORM with return value or RETURN built-in.
         /// </summary>
         /// <remarks>
-        /// Validates that the top of the call stack was actually pushed by THIS
-        /// form (the active callee). If a foreign entry is on top — e.g. a
-        /// modeless sibling tries to return on behalf of a different call —
-        /// the entry is pushed back and a debug warning is logged. Without
-        /// this check, a cross-form ReturnToCallerAsync would silently corrupt
-        /// the stack and switch the active form to the wrong caller.
+        /// <para>
+        /// The call-stack entry lives on the CALLER's manager, not the
+        /// callee's — <see cref="ReleaseSuspendedCallerFor"/>'s own remarks
+        /// already document this. Before this fix, this method only ever
+        /// checked <c>this._callStack</c>, which is empty for a genuine
+        /// callee running as its own <c>FormsManager</c> instance (the normal
+        /// architecture: one instance per open form, registered by name in
+        /// <c>IFormRegistry</c>) — so a callee could never successfully call
+        /// this, and the caller stayed suspended in <see cref="CallFormAsync"/>
+        /// forever. It worked only in the single-instance self-call shape a
+        /// test might use by accident, never in the real multi-form case this
+        /// engine otherwise supports correctly (<see cref="ReleaseSuspendedCallerFor"/>,
+        /// which exists specifically because closing a called form hit the
+        /// same "entry lives elsewhere" problem). (2026-08-22)
+        /// </para>
+        /// <para>
+        /// Tries the local fast path first (this manager's own top-of-stack
+        /// entry names it as the callee — the single-manager-hosts-the-chain
+        /// case), then falls back to searching every other manager the
+        /// shared registry knows about for the one whose top entry names this
+        /// form as callee. Either way, a foreign entry (the top of whatever
+        /// stack is checked names a *different* callee) is left untouched
+        /// rather than popped — the same corruption protection the previous,
+        /// single-stack-only version had.
+        /// </para>
         /// </remarks>
         public Task<bool> ReturnToCallerAsync(object returnData = null)
         {
-            if (_callStack.Count == 0) return Task.FromResult(false);
-
-            // B5: peek first, then validate. We need to inspect the entry
-            // before popping so we can push it back if it's not ours.
-            var entry = _callStack.Peek();
-
             // The callee is whoever is currently the active form. Use the
-            // registry's view (which is updated by SetActiveForm) rather than
-            // _currentFormName, because the active form may have been switched
-            // by an inner multi-form sequence.
-            var activeForm = _formRegistry?.ActiveFormName;
-            if (!string.Equals(entry.FormName, activeForm, StringComparison.OrdinalIgnoreCase))
+            // registry's view rather than _currentFormName, because the
+            // active form may have been switched by an inner multi-form
+            // sequence.
+            var calleeFormName = _formRegistry?.ActiveFormName ?? _currentFormName;
+            if (string.IsNullOrWhiteSpace(calleeFormName))
+                return Task.FromResult(false);
+
+            var released = TryReleaseCallEntryFor(calleeFormName, returnedNormally: true, out var entry);
+
+            if (!released && _formRegistry != null)
             {
-                // Foreign entry — the top of the stack is not the form the
-                // caller is currently running as. Push it back and bail.
-                // (We did not pop yet, so the stack is unchanged.)
+                foreach (var formName in _formRegistry.GetActiveFormNames())
+                {
+                    if (_formRegistry.GetForm(formName) is FormsManager other &&
+                        !ReferenceEquals(other, this) &&
+                        other.TryReleaseCallEntryFor(calleeFormName, returnedNormally: true, out entry))
+                    {
+                        released = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!released || entry == null)
+            {
                 System.Diagnostics.Debug.WriteLine(
-                    $"[FormsManager.ReturnToCallerAsync] Stack corruption: top entry is for form " +
-                    $"'{entry.FormName}' but active form is '{activeForm ?? "<null>"}'. " +
-                    "Refusing to pop; the caller is not the form that pushed the entry.");
+                    $"[FormsManager.ReturnToCallerAsync] No call-stack entry found naming " +
+                    $"'{calleeFormName}' as callee on this manager or any manager the registry knows " +
+                    "about. Refusing to complete; there is no suspended caller to release.");
                 return Task.FromResult(false);
             }
 
-            // The entry is ours — pop and complete it (which unblocks the
-            // suspended caller in CallFormAsync).
-            _callStack.Pop();
-            entry.Complete(success: true);
-
-            // Hand return data to caller
+            // Hand return data to caller. TryReleaseCallEntryFor already
+            // popped the entry, completed it (unblocking the suspended
+            // caller in CallFormAsync), and switched the active form back.
             if (returnData != null && _formRegistry != null)
             {
                 var callerForm = _formRegistry.GetForm(entry.CallerFormName);
@@ -201,8 +227,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     callerFm._formParameters["RETURN_VALUE"] = returnData;
             }
 
-            _formRegistry?.SetActiveForm(entry.CallerFormName);
-            Status = "Ready";
             LogOperation($"ReturnToCaller: back to '{entry.CallerFormName}'", null);
             return Task.FromResult(true);
         }
@@ -214,7 +238,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// different form, so a caller is never unwound by someone else's close.
         /// </summary>
         internal bool TryReleaseCallEntryFor(string calleeFormName, bool returnedNormally)
+            => TryReleaseCallEntryFor(calleeFormName, returnedNormally, out _);
+
+        /// <summary>
+        /// Same as <see cref="TryReleaseCallEntryFor(string, bool)"/>, additionally
+        /// handing back the released entry so a caller (e.g. <see cref="ReturnToCallerAsync"/>)
+        /// can attach return data to it.
+        /// </summary>
+        internal bool TryReleaseCallEntryFor(string calleeFormName, bool returnedNormally, out FormCallStackEntry releasedEntry)
         {
+            releasedEntry = null;
             if (_callStack.Count == 0) return false;
 
             var entry = _callStack.Peek();
@@ -228,6 +261,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             LogOperation(
                 $"Call entry for '{calleeFormName}' released (returnedNormally={returnedNormally}); " +
                 $"active form is '{entry.CallerFormName}'", null);
+            releasedEntry = entry;
             return true;
         }
 

@@ -1698,6 +1698,11 @@ namespace TheTechIdea.Beep.Utils
                     return $"{filter.FieldName} LIKE '{filter.FilterValue}%'";
                 case "endswith":
                     return $"{filter.FieldName} LIKE '%{filter.FilterValue}'";
+                case "like":
+                    return $"{filter.FieldName} LIKE '{filter.FilterValue}'";
+                case "not like":
+                case "notlike":
+                    return $"{filter.FieldName} NOT LIKE '{filter.FilterValue}'";
                 case "in":
                     return BuildCollectionExpression(filter, negate: false);
                 case "not in":
@@ -1752,6 +1757,11 @@ namespace TheTechIdea.Beep.Utils
                     return fieldValue.ToString().StartsWith(filter.FilterValue?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
                 case "endswith":
                     return fieldValue.ToString().EndsWith(filter.FilterValue?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                case "like":
+                    return IsSqlLikeMatch(fieldValue.ToString(), filter.FilterValue?.ToString());
+                case "not like":
+                case "notlike":
+                    return !IsSqlLikeMatch(fieldValue.ToString(), filter.FilterValue?.ToString());
                 case "in":
                     return MatchesCollection(fieldValue, filter.FilterValue, negate: false);
                 case "not in":
@@ -1814,6 +1824,25 @@ namespace TheTechIdea.Beep.Utils
                 .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(value => value.Trim())
                 .Where(value => !string.IsNullOrWhiteSpace(value));
+        }
+
+        /// <summary>
+        /// True when <paramref name="value"/> matches a SQL LIKE pattern —
+        /// '%' matches any run of characters, '_' matches exactly one.
+        /// Case-insensitive, matching the comparison StartsWith/EndsWith above
+        /// already use. Backs the "like"/"not like" <see cref="AppFilter"/>
+        /// operators, which <see cref="QueryBuilderManager"/> emits for Oracle
+        /// Forms' generic LIKE query-by-example operator.
+        /// </summary>
+        public static bool IsSqlLikeMatch(string value, string pattern)
+        {
+            if (string.IsNullOrEmpty(pattern)) return string.IsNullOrEmpty(value);
+            value ??= string.Empty;
+            var regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
+                .Replace("%", ".*")
+                .Replace("_", ".") + "$";
+            return System.Text.RegularExpressions.Regex.IsMatch(
+                value, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
 
         private static bool MatchesCollection(object fieldValue, object rawFilterValue, bool negate)

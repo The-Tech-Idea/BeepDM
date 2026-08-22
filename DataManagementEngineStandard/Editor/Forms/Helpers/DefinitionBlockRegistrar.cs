@@ -5,6 +5,7 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOW;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
+using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Utilities;
 
 namespace TheTechIdea.Beep.Editor.Forms.Helpers
@@ -214,7 +215,47 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 connectionName,
                 block.EntityDefinition != null && block.EntityDefinition.IsMasterBlock);
 
+            ApplyAuthoredFieldProperties(manager, block);
+
             return true;
+        }
+
+        /// <summary>
+        /// Overlays each field's authored Format Mask / Default Value / Copy
+        /// Value From Item / per-operation allowed flags — and its Property
+        /// Class, if any — onto the <see cref="ItemInfo"/> that
+        /// <c>RegisterBlock</c> just seeded from the datasource's entity
+        /// structure.
+        /// </summary>
+        /// <remarks>
+        /// <c>BlockFieldDefinition</c> carried these from the moment the IDE
+        /// could author them, but nothing read them back out:
+        /// <c>RegisterItemsFromEntityStructure</c> only ever saw the
+        /// datasource's own column metadata (nullability, auto-increment,
+        /// key), never the designer's overrides. A field marked read-only for
+        /// insert in the designer stayed insertable at runtime, an authored
+        /// FORMAT_MASK never reached the item store, and DEFAULT_VALUE /
+        /// "Copy Value from Item" had no path onto a new record at all.
+        /// (2026-08-22)
+        /// </remarks>
+        private static void ApplyAuthoredFieldProperties(IUnitofWorksManager manager, BlockDefinition block)
+        {
+            var fields = block.EntityDefinition?.Fields;
+            if (fields == null || fields.Count == 0) return;
+
+            foreach (var field in fields)
+            {
+                if (field == null || string.IsNullOrWhiteSpace(field.FieldName)) continue;
+
+                // A field the designer authored that the resolved entity
+                // structure doesn't actually have (renamed/dropped column) has
+                // nothing to overlay onto — RegisterItemsFromEntityStructure
+                // never created an ItemInfo for it.
+                var item = manager.ItemProperties?.GetItem(block.BlockName, field.FieldName);
+                if (item == null) continue;
+
+                manager.PropertyClasses?.ApplyToItem(item, field);
+            }
         }
 
         /// <summary>

@@ -4306,6 +4306,42 @@
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockChanged">
             <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager">
+            <summary>
+            Registers named <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass"/> bundles and applies them to
+            items — the engine side of the Oracle Forms Property Class. Mirrors
+            <c>IVisualAttributeManager</c>: the IDE authors the class and points a
+            field at it (<see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/>);
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.ApplyToItem(TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo,TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition)"/> is where inheritance actually happens,
+            called once per field when its block registers
+            (<c>DefinitionBlockRegistrar</c>).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.RegisterPropertyClass(TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass)">
+            <summary>Registers or replaces a named property class (keyed by <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.Name"/>).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.GetPropertyClass(System.String)">
+            <summary>The named class, or null when none is registered under that name.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.GetPropertyClasses">
+            <summary>Every registered class.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.RemovePropertyClass(System.String)">
+            <summary>Removes a registered class. Items already resolved from it keep their resolved values — this only stops future resolutions.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.ApplyToItem(TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo,TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition)">
+            <summary>
+            Applies <paramref name="fieldDefinition"/>'s authored overrides onto
+            <paramref name="item"/>, falling back to
+            <paramref name="fieldDefinition"/>'s named
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/> (when set) for
+            whichever of those the field itself left unauthored. A property
+            neither the field nor the class supplies is left exactly as
+            <paramref name="item"/> already had it. An unregistered or
+            unauthored class name is a no-op, not an error — a field is never
+            blocked on a class that hasn't been authored yet.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider">
             <summary>
             Pluggable UI provider for modal alert dialogs.
@@ -4922,6 +4958,9 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.VisualAttributes">
             <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.PropertyClasses">
+            <summary>Named Property Classes and the fields that inherit from them.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Menu">
             <summary>The form's menu (Oracle Forms menu module).</summary>
         </member>
@@ -5081,8 +5120,31 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetDetailBlocks(System.String)">
             <summary>Returns the detail block names attached to a master block.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SynchronizeDeferredDetailAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Forces a <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Deferred"/>
+            detail block to catch up to its master's current record right now.
+            Call before showing/entering a deferred detail block. No-op for a
+            relationship that isn't found or isn't actually deferred. Added 2026-08-22.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.HasPendingDeferredSync(System.String)">
+            <summary>
+            True when a Deferred detail block has a pending sync it hasn't
+            received since the master's current record last changed. Added 2026-08-22.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetMasterBlock(System.String)">
             <summary>Returns the master block name for a detail block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetActiveRelationships(System.String)">
+            <summary>
+            Returns the active master-detail relationships where
+            <paramref name="masterBlockName"/> is the master — the full
+            relationship objects (including <c>DeleteBehavior</c> and
+            <c>Coordination</c>), not just the detail block names
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetDetailBlocks(System.String)"/> returns. Added 2026-08-22.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateMasterDetailRelation(System.String,System.String,System.String,System.String,TheTechIdea.Beep.Editor.UOWManager.Models.RelationshipType)">
             <summary>Creates a master-detail relationship between two blocks using a single key field pair.</summary>
@@ -5163,6 +5225,14 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>Executes a query for a block using the supplied filters.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CountQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Threading.CancellationToken)">
+            <summary>
+            Counts records matching the block's current query criteria without
+            fetching them — Oracle Forms COUNT_QUERY. Returns -1 when the count
+            could not be determined (check the <c>Status</c> property for why),
+            never a silent 0.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.EnteringQueryModeAsync(System.String)">
             <summary>Notifies the engine that a host is entering query mode for a block.</summary>
@@ -6424,6 +6494,63 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.Description">
             <summary>Gets or sets a description of the relationship</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.DeleteBehavior">
+            <summary>
+            Oracle Forms master-detail delete behavior, added 2026-08-22. Default
+            matches Oracle's own default (<see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.MasterDeleteBehavior.NonIsolated"/>).
+            A previous attempt at this (a bare <c>CascadeDelete</c> bool) was
+            removed 2026-06 as an unwired placeholder — see the class remarks.
+            This one is read by <c>FormsManager.DeleteCurrentRecordAsync</c>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship.Coordination">
+            <summary>
+            Whether the detail block re-queries the instant the master's current
+            record changes (<see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Immediate"/>, Oracle's
+            default and this engine's only behavior until 2026-08-22) or only
+            when something explicitly asks for it
+            (<see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Deferred"/>). Read by
+            <c>FormsManager</c>'s master-current-changed handler.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.MasterDeleteBehavior">
+            <summary>
+            Oracle Forms master-detail delete behavior — what happens when a master
+            record with existing detail records is deleted.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.MasterDeleteBehavior.NonIsolated">
+            <summary>
+            Oracle's default. The delete is blocked while detail records exist
+            for the current master record.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.MasterDeleteBehavior.Isolated">
+            <summary>
+            The master can be deleted regardless of existing detail records —
+            orphaned detail rows are left as-is (their foreign key now points
+            at a master record that no longer exists).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.MasterDeleteBehavior.Cascading">
+            <summary>
+            Deleting the master first deletes every detail record, through the
+            detail block's own delete pipeline (so the detail's own triggers —
+            including a further Cascading relationship on IT — still fire),
+            then deletes the master.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination">
+            <summary>
+            Oracle Forms master-detail re-query timing.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Immediate">
+            <summary>Oracle's default — the detail re-queries the instant the master's current record changes.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Deferred">
+            <summary>The detail does not re-query until something explicitly asks for it.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.DirtyBlockInfo">
             <summary>
             Detailed information about a dirty block
@@ -6817,6 +6944,16 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.LOVName">
             <summary>
             Oracle Forms: LOV_NAME - Attached List of Values
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.CopyValueFromItem">
+            <summary>
+            Oracle Forms: "Copy Value from Item" — "BlockName.ItemName" of the
+            item this one copies its value from when a new record is created.
+            Null = not authored. Applied by
+            <c>FormsManager.CreateNewRecord</c>, after DEFAULT_VALUE and before
+            any registered item-default factory, so a factory can still
+            override a copied value.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.MaxLength">
@@ -7630,6 +7767,54 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PerformanceStatistics.TopPerformanceMetrics">
             <summary>Gets or sets the top performance metrics</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass">
+            <summary>
+            A named, reusable bundle of item property overrides — the Oracle Forms
+            Property Class. Mirrors <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.VisualAttribute"/>, which is the same
+            mechanism scoped to display-only properties; a Property Class covers the
+            declarative item properties Visual Attribute does not.
+            </summary>
+            <remarks>
+            Every field is nullable and defaults to "not part of this class" —
+            applying a class never clobbers a value the inheriting field authored
+            for itself. See <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager.ApplyToItem(TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo,TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition)"/>
+            for the precedence: the field's own authored value wins, the class
+            fills a gap the field left open, and anything neither says keeps the
+            item's existing (entity-structure-derived) value.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.Name">
+            <summary>The class's identity; registration and inheritance key by this.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.QueryAllowed">
+            <summary>Oracle Forms QUERY_ALLOWED. Null = not part of this class.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.InsertAllowed">
+            <summary>Oracle Forms INSERT_ALLOWED. Null = not part of this class.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.UpdateAllowed">
+            <summary>Oracle Forms UPDATE_ALLOWED. Null = not part of this class.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.FormatMask">
+            <summary>Oracle Forms FORMAT_MASK. Null = not part of this class.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.HasDefaultValue">
+            <summary>
+            Whether <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.DefaultValue"/> is part of this class. A default
+            value of literal null is itself a meaningful override, so presence
+            can't be inferred from <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.DefaultValue"/> being non-null.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.DefaultValue">
+            <summary>Oracle Forms DEFAULT_VALUE. See <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.HasDefaultValue"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass.CopyValueFromItem">
+            <summary>
+            Oracle Forms "Copy Value from Item" — "BlockName.ItemName" of the
+            item an inheriting field copies its value from on record creation.
+            Null = not part of this class.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.BeepRecordStatus">
             <summary>
@@ -9106,8 +9291,65 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsVisible">
             <summary>Whether the generated control is shown.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName">
+            <summary>
+            Named <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass"/>
+            this field inherits unauthored properties from — the Oracle Forms
+            Property Class. Null = none; the properties below (and the engine's own
+            entity-structure-derived defaults) are all there is.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.FormatMask">
+            <summary>
+            Oracle Forms FORMAT_MASK. Null = not authored on this field (falls back
+            to <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/>'s class, then to no formatting).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.HasDefaultValue">
+            <summary>
+            Whether <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.DefaultValue"/> was authored on this field at all. A
+            literal null default is itself a meaningful, authored choice, so
+            presence can't be inferred from <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.DefaultValue"/> being
+            non-null.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.DefaultValue">
+            <summary>Oracle Forms DEFAULT_VALUE. See <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.HasDefaultValue"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.CopyValueFromItem">
+            <summary>
+            Oracle Forms "Copy Value from Item" — "BlockName.ItemName" of the item
+            this field copies its value from when a new record is created. Null =
+            not authored on this field (falls back to <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/>'s
+            class, then to none).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.QueryAllowed">
+            <summary>
+            Oracle Forms QUERY_ALLOWED — finer-grained than <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsReadOnly"/>.
+            Null = not authored on this field (falls back to
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/>'s class, then to the engine's own
+            default of true).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.InsertAllowed">
+            <summary>
+            Oracle Forms INSERT_ALLOWED — finer-grained than <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsReadOnly"/>.
+            Null = not authored on this field (falls back to
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/>'s class, then to the entity structure's
+            own derived default).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.UpdateAllowed">
+            <summary>
+            Oracle Forms UPDATE_ALLOWED — finer-grained than <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.IsReadOnly"/>.
+            Null = not authored on this field (falls back to
+            <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.PropertyClassName"/>'s class, then to the entity structure's
+            own derived default).
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Clone">
-            <summary>Copies this field definition. All members are value types or strings.</summary>
+            <summary>Copies this field definition. All members are value types, strings, or a shared object reference for <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.DefaultValue"/>.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.BlockNavigationDefinition">
             <summary>Navigation bar definition for a block.</summary>
@@ -10706,6 +10948,15 @@
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnLogoff">
             <summary>Before user logs off (ON-LOGOFF). M5-RUN-002 — connection lifecycle.</summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenValidateForm">
+            <summary>
+            Whole-form validation, requested explicitly or run before commit
+            (WHEN-VALIDATE-FORM). Added 2026-08-22 — <see cref="!:FormsManager.ValidateForm"/>
+            existed and looped every block's validation but never raised this as a
+            trigger, so a form could not register whole-form validation logic the
+            way Oracle Forms' WHEN-VALIDATE-FORM does.
+            </summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.PreBlock">
             <summary>Before entering block (PRE-BLOCK)</summary>
         </member>
@@ -10805,8 +11056,13 @@
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenValidateItem">
             <summary>When item value changes (WHEN-VALIDATE-ITEM)</summary>
         </member>
-        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenLOVValidate">
-            <summary>List of values validation (WHEN-LOV-VALIDATE)</summary>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenLOVValidation">
+            <summary>
+            List of values validation (WHEN-LOV-VALIDATION). Named
+            <c>WhenLOVValidate</c> until 2026-08-22 — missing the Oracle "-ion"
+            suffix, so <c>TriggerTypeNames.TryToMember</c> in the IDE could never
+            resolve the canonical Oracle name "When-LOV-Validation" to this member.
+            </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.PostChange">
             <summary>Post change trigger (POST-CHANGE)</summary>

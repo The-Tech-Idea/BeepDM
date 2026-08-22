@@ -117,8 +117,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     _eventManager.SubscribeToUnitOfWorkEvents(unitOfWork, blockName);
 
-                    EventHandler<ItemChangedEventArgs<Entity>> handler = (s, e) =>
+                    EventHandler<ItemChangedEventArgs<Entity>> handler = async (s, e) =>
                     {
+                        // Async so the LOV validation below can be properly
+                        // awaited instead of fire-and-forgotten (see that
+                        // block's comment). Wrapped in try/catch for the same
+                        // reason mdHandler below is: an unhandled exception
+                        // from an async-void event handler is unobservable —
+                        // it never reaches the property setter that raised
+                        // ItemChanged, so nothing here can be allowed to
+                        // throw uncaught. (2026-08-22)
+                        try
+                        {
                         // Find the record's position without a dynamic call.
                         //
                         // This read `unitOfWork.Units.IndexOf(e.Item)` until
@@ -179,12 +189,98 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                             _itemPropertyManager?.MarkItemDirty(blockName, e.PropertyName, null);
 
                             PrepareValidationContext(blockName);
-                            _validationManager.ValidateItem(blockName, e.PropertyName, newVal, ValidationTiming.OnChange);
+                            var itemValidation = _validationManager.ValidateItem(
+                                blockName, e.PropertyName, newVal, ValidationTiming.OnChange);
+
+                            // SetItemError/ClearItemError existed with no caller
+                            // anywhere in the engine for the field/record
+                            // rule-based path (G0.25 wired it for LOV only) —
+                            // HasItemError/GetItemErrorMessage/GetItemsWithErrors
+                            // could never report true no matter what a
+                            // registered ValidationRule found wrong.
+                            // ValidationFailed/ValidationCompleted still fired
+                            // correctly as .NET events the whole time (a host
+                            // subscribed directly was unaffected); this closes
+                            // the gap for the per-item error *store* those
+                            // events were never wired into. Not yet cleared here
+                            // if invalid — the LOV check below composes with
+                            // this result rather than overwriting it blindly.
+                            // (2026-08-22)
+                            if (!itemValidation.IsValid)
+                            {
+                                _itemPropertyManager?.SetItemError(
+                                    blockName, e.PropertyName, itemValidation.FirstError ?? "Validation failed");
+                            }
 
                             if (_lovManager.HasLOV(blockName, e.PropertyName))
                             {
-                                _ = _lovManager.ValidateLOVValueAsync(blockName, e.PropertyName, newVal);
+                                // WHEN-LOV-VALIDATION never fired here before
+                                // this fix — only ShowLOVAsync (explicit LOV
+                                // invocation) fired it, so a form author
+                                // relying on the trigger for its far more
+                                // common use (validating a *typed* value
+                                // against the LOV) was silently unserved.
+                                // Fire it first so a registered handler can
+                                // reject the value outright; otherwise fall
+                                // through to the default list-membership
+                                // check. Both outcomes now also update the
+                                // item's error state — SetItemError/
+                                // ClearItemError existed with no caller
+                                // anywhere in the engine, so HasItemError/
+                                // GetItemErrorMessage/GetItemsWithErrors could
+                                // never report true no matter what failed.
+                                // The result was previously discarded
+                                // (`_ = ValidateLOVValueAsync(...)`) — the
+                                // LOVValidationFailed .NET event still fired
+                                // as a side effect, but nothing awaited the
+                                // call, so an exception inside it (e.g. the
+                                // LOV's datasource erroring) was an unobserved
+                                // task exception, silently dropped. (2026-08-22)
+                                var lovCtx = TriggerContext.ForItem(
+                                    TriggerType.WhenLOVValidation, blockName, e.PropertyName, null, newVal, _dmeEditor);
+                                var lovTriggerResult = await _triggerManager
+                                    .FireBlockTriggerAsync(TriggerType.WhenLOVValidation, blockName, lovCtx)
+                                    .ConfigureAwait(false);
+
+                                if (lovTriggerResult == TriggerResult.Cancelled)
+                                {
+                                    _itemPropertyManager?.SetItemError(
+                                        blockName, e.PropertyName, "Value rejected by WHEN-LOV-VALIDATION trigger");
+                                }
+                                else
+                                {
+                                    var lovValidation = await _lovManager
+                                        .ValidateLOVValueAsync(blockName, e.PropertyName, newVal)
+                                        .ConfigureAwait(false);
+
+                                    if (lovValidation.IsValid)
+                                    {
+                                        // LOV passing must not mask a genuine
+                                        // rule failure this same change already
+                                        // recorded above — only clear when
+                                        // BOTH checks agree the value is good.
+                                        if (itemValidation.IsValid)
+                                            _itemPropertyManager?.ClearItemError(blockName, e.PropertyName);
+                                    }
+                                    else
+                                    {
+                                        _itemPropertyManager?.SetItemError(
+                                            blockName, e.PropertyName,
+                                            lovValidation.ErrorMessage ?? "Value not found in List of Values");
+                                    }
+                                }
                             }
+                            else if (itemValidation.IsValid)
+                            {
+                                // No LOV attached — the rule-based result above
+                                // is the whole story for this item.
+                                _itemPropertyManager?.ClearItemError(blockName, e.PropertyName);
+                            }
+                        }
+                        }
+                        catch (Exception ex)
+                        {
+                            _eventManager.TriggerError(blockName, ex);
                         }
                     };
                     // B3 (audit pass 3, 2026-06): the B4

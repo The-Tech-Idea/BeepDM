@@ -10,6 +10,523 @@ Items marked ⚠️ partial or ❌ missing in [`ORACLE-FORMS-MAPPING.md`](ORACLE
 **Audit date:** 2026-06-17 — All 37 P0-P3 gaps resolved (32 fixed/enhanced, 5 deferred). 
 Second pass closed 8 additional code-quality issues (duplication, DI bypass, stubs, naming).
 
+**2026-08-22 pass** — sourced from an independent Oracle-Forms-parity catalog built from
+the sibling `Beep.Forms` repo's IDE/host code, cross-checked against this file and
+`ORACLE-FORMS-MAPPING.md` before anything was changed (several items the catalog first
+flagged as gaps turned out to already be implemented here — inter-form globals, the full
+QBE operator enum, query-only blocks, validate-from-list — see the catalog document for
+the corrected picture). What follows is genuinely new. All items have a regression test in
+`FormsManager.Tests` under `#region DML Trigger Wiring (2026-08-22)`; each was confirmed to
+fail against the pre-fix code before the fix was applied (not merely written after).
+
+### G0.15: `ON-INSERT`/`ON-UPDATE`/`ON-DELETE` triggers never fired (FIXED 2026-08-22)
+
+**What:** `FireOnInsertAsync`/`FireOnUpdateAsync`/`FireOnDeleteAsync`
+(`FormsManager.DmlTriggers.cs`, "Phase 4.2") were fully implemented — correct
+handled/not-registered/cancelled semantics — with **zero call sites anywhere in the
+engine**. A form that registered an ON-INSERT/ON-UPDATE/ON-DELETE trigger, expecting
+Oracle's "this replaces the default DML," got nothing: no error, no log, the trigger
+simply never ran.
+
+**Fix:** Wired `FireOnUpdateAsync`/`FireOnDeleteAsync` into
+`UpdateCurrentRecordAsync`/`DeleteCurrentRecordAsync` directly — both write to the
+datasource immediately, so "handled → skip the default `UpdateAsync`/`DeleteAsync` call"
+is exact, no double-write is possible. `FireOnInsertAsync` is wired into the commit path
+(`TryCrossFormTransactionCommitAsync`, both the single-form and cross-form branches), since
+Oracle Forms' `CREATE_RECORD` only stages a record — the actual `INSERT` happens at
+`COMMIT_FORM`, deep inside `DirtyStateManager.SaveDirtyBlocksAsync` → `UnitofWork.Commit()`
+→ OBL's `CommitAllAsync`, which commits an entire batch of records in one call with no
+per-record interception point this pass investigated safely.
+
+**Known, deliberate limitation on ON-INSERT specifically:** unlike UPDATE/DELETE, a
+registered ON-INSERT handler today **fires and can cancel the commit**, but does **not**
+yet exclude its record from the batched default insert that follows — full Oracle
+semantics ("the trigger's write is the only write") needs per-record exclusion inside
+`CommitAllAsync`, which is a separate, larger change into OBL. Documented in code
+(`FormsManager.DmlTriggers.cs`, `FireOnInsertForDirtyBlocksAsync`'s remarks) so nobody
+builds an ON-INSERT handler assuming the default write is skipped until that lands.
+
+**Where:** `FormsManager.DmlTriggers.cs` (`FireOnInsertForDirtyBlocksAsync`, new),
+`FormsManager.EnhancedOperations.cs` (`UpdateCurrentRecordAsync`),
+`FormsManager.BasicDataOps.cs` (`DeleteCurrentRecordAsync`),
+`FormsManager.FormOperations.cs` (`TryCrossFormTransactionCommitAsync`).
+
+**Risk of fix:** Low for UPDATE/DELETE (additive, gated on a trigger actually being
+registered — zero behaviour change for every form that doesn't use ON-UPDATE/ON-DELETE).
+Low for the partial ON-INSERT fix too, for the same reason, but read the limitation above
+before relying on "replaces" semantics for INSERT specifically.
+
+### G0.16: `ON-LOCK`/`ON-ROLLBACK` triggers never fired (FIXED 2026-08-22)
+
+**Fix:** Added `FireOnLockAsync`/`FireOnRollbackAsync` (same shape as G0.15's helpers).
+ON-LOCK is wired ahead of the two `_lockManager.AutoLockIfNeededAsync` call sites
+(`DeleteCurrentRecordAsync`, `UpdateCurrentRecordAsync`) — a registered handler skips the
+default client-side lock, full replace semantics (locking is synchronous/immediate, no
+OBL batching involved). ON-ROLLBACK is wired into `RollbackFormAsync`, fired per dirty
+block before the batched `DirtyStateManager.RollbackDirtyBlocksAsync` call; a block whose
+ON-ROLLBACK handler ran is excluded from that batch, so it is not also rolled back by the
+default path.
+
+**Where:** `FormsManager.DmlTriggers.cs`, `FormsManager.BasicDataOps.cs`,
+`FormsManager.EnhancedOperations.cs`, `FormsManager.FormOperations.cs`.
+
+**Risk of fix:** Low — same additive/gated shape as G0.15.
+
+### G0.17: `WHEN-LOV-VALIDATE` — spelling mismatch against Oracle's canonical name (FIXED 2026-08-22)
+
+**What:** The engine member was `WhenLOVValidate` (missing Oracle's "-ion" suffix). It DID
+fire correctly (`FormsManager.GenericOperations.cs`, `ShowLOVAsync`) — this was never a
+"doesn't fire" bug like G0.15/G0.16 — but `TriggerTypeNames.TryToMember` in the Beep.Forms
+IDE resolves an Oracle-style name via `Enum.TryParse`, and "When-LOV-Validation" (Oracle's
+actual name) never matched "WhenLOVValidate", so the IDE could never author a registration
+for it even though the engine fully supported one.
+
+**Fix:** Renamed the enum member to `WhenLOVValidation`. Two production call sites (the
+declaration and the one firing site) — see the doc comment left in place on the member for
+anyone who finds `WhenLOVValidate` in an old note or commit message.
+
+**Where:** `Models/TriggerEnums.cs`, `FormsManager.GenericOperations.cs`.
+
+**Risk of fix:** Low. Enum member renames are a breaking change for anyone who already
+compiled against the old name — but grep across both this repo and the sibling Beep.Forms
+repo found no other reference, and this engine has not shipped a NuGet release since the
+member was added, so no external consumer can exist yet.
+
+### G0.18: `WHEN-VALIDATE-FORM` — no engine trigger existed at all (FIXED 2026-08-22)
+
+**What:** `ValidateForm()` looped every block's `ValidateBlock()` and raised a plain .NET
+`OnFormValidate` event, but never fired a `TriggerType` — because none existed. A form
+could not register whole-form validation logic the way Oracle Forms' `WHEN-VALIDATE-FORM`
+does; the closest existing triggers (`WhenValidateItem`, `WhenValidateRecord`) are scoped
+below the form level.
+
+**Fix:** Added `TriggerType.WhenValidateForm = 12` (the reserved 12-19 form-level range).
+Fired synchronously in `ValidateForm()`, in the same place `OnFormValidate` already fires,
+mirroring `PreCommit`'s cancellation convention — `TriggerResult.Cancelled` stops
+validation before any block is checked.
+
+**Where:** `Models/TriggerEnums.cs`, `FormsManager.FormOperations.cs`.
+
+**Risk of fix:** Low — purely additive (new enum member, new fire point that only matters
+to a form that registers a `WhenValidateForm` handler).
+
+### G0.19: `AppFilter` `LIKE`/`NOT LIKE` operator threw `ArgumentException` (FIXED 2026-08-22)
+
+**What:** `QueryBuilderManager.OperatorToString` correctly maps `QueryOperator.Like`/
+`NotLike` (Oracle's generic QBE pattern-match operator) to the strings `"like"`/`"not
+like"` — but the two general-purpose filter appliers that actually evaluate an `AppFilter`
+against data, `Utils/Util.cs` (`GenerateFilterExpression`, both the SQL-string and the
+in-memory boolean overloads) and `Json/JsonExtensions.cs` (an exact, independently
+maintained duplicate of the same two methods), had no `case` for either string and fell
+through to `default: throw new ArgumentException(...)`. Any query-by-example using a raw
+LIKE pattern (as opposed to the `contains`/`startswith`/`endswith` convenience operators,
+which were unaffected) threw instead of filtering.
+
+**Fix:** Added `"like"`/`"not like"` cases to all four switches (two per file). The
+in-memory boolean overloads needed an actual SQL-LIKE-pattern matcher (`%`/`_` wildcards)
+since .NET has no built-in one; added `Util.IsSqlLikeMatch` (public static) and had
+`JsonExtensions` call it rather than duplicating the regex a third time.
+
+**Where:** `Utils/Util.cs`, `Json/JsonExtensions.cs`.
+
+**Risk of fix:** Low — additive `case` labels; every previously-working operator is
+untouched. Worth noting for whoever next touches either file: `Util.cs` and
+`JsonExtensions.cs` carry two independently-maintained, near-identical copies of this
+filter-evaluation logic (predates this pass) — a real duplication (this repo's own rule
+against exactly this shape), not fixed here since it's a larger refactor than this pass's
+scope, but flagged so the next bug found in one of them gets checked in both.
+
+### G0.20: `COUNT_QUERY` — no count-without-fetch existed (FIXED 2026-08-22)
+
+**What:** `IBeepBuiltins`/`FormsManager.GetBlockRecordCount` counts already-loaded rows;
+nothing asked the datasource for a count of records matching the current query criteria
+*without* fetching them, which is what Oracle Forms' `COUNT_QUERY` does (so the user can
+see "this query will return N records" before committing to a page-through).
+
+**Fix:** Added `FormsManager.CountQueryAsync(blockName, filters, ct)`. Merges the block's
+default WHERE clause with the caller's filters exactly like `ExecuteQueryAsync` (so the two
+always agree on what "matches"), then asks the datasource directly via the formally-declared
+`IDataSource.GetScalarAsync(string)` — no reflection needed, unlike the older
+`GetBlockAggregateScalarAsync` (G3.10), which reflects on `GetScalarAsync` defensively; this
+one is on the actual interface. Returns -1 (not 0) when the block, entity, or datasource
+can't be resolved, or the datasource throws — 0 would misread as "no matching records."
+Deliberately does **not** fall back to fetch-then-count for datasources that can't answer a
+COUNT query: a fallback that fetches would disturb the block's currently loaded records,
+which breaks Oracle's own COUNT_QUERY contract ("counts without changing what's in the
+block") — returning -1 and logging why is more honest than a fallback that quietly violates
+that contract.
+
+**Where:** `FormsManager.BasicDataOps.cs` (new method, next to `ExecuteQueryAsync`),
+`Interfaces/IUnitofWorksManager.cs` (new interface member).
+
+**Risk of fix:** Low — new, additive method; nothing existing changed.
+
+### G0.21: Master-detail delete behavior (isolated/non-isolated/cascading) — no distinction existed (FIXED 2026-08-22)
+
+**What:** Deleting a master record never checked whether it had detail records at all —
+`DeleteCurrentRecordAsync`'s only detail-block interaction was an unsaved-changes check, not
+an existence check. No isolated/non-isolated/cascading distinction, and no
+`ON-CHECK-DELETE-MASTER` firing, existed anywhere. (A previous attempt at this — a bare
+`CascadeDelete` bool on `DataBlockRelationship` — was removed 2026-06 as an unwired
+placeholder; see that class's remarks. This fix re-adds the capability and finishes wiring
+it, rather than repeating the same mistake.)
+
+**Fix:** `DataBlockRelationship.DeleteBehavior` (`MasterDeleteBehavior`: `NonIsolated`
+[Oracle's default — block the delete while detail records exist], `Isolated` [allow it,
+orphans permitted], `Cascading` [delete every detail record first, through its own full
+`DeleteCurrentRecordAsync` pipeline — so the detail's own triggers, and any further
+Cascading relationship *it* is a master of, fire normally]). `ON-CHECK-DELETE-MASTER` fires
+per relationship before the default check; a registered handler replaces the default
+check entirely (same "replaces the default" shape as G0.15/G0.16). `ON-CLEAR-DETAILS` fires
+after a successful cascade. The cascade loop (`CascadeDeleteDetailRecordsAsync`) is bounded
+by the starting record count and re-checks the count actually decreased after each delete,
+so a UoW whose current-record pointer doesn't advance after delete fails loudly instead of
+looping forever.
+
+**Where:** `Models/DataBlockRelationship.cs` (new enums + properties),
+`FormsManager.DmlTriggers.cs` (`FireOnCheckDeleteMasterAsync`),
+`FormsManager.BasicDataOps.cs` (`DeleteCurrentRecordAsync`, `CascadeDeleteDetailRecordsAsync`).
+
+**Risk of fix:** Medium for existing users with master-detail relationships and detail
+records present at delete time: `NonIsolated` is the new default and Oracle's own default,
+but the engine's *previous* behavior was "no check at all" (equivalent to `Isolated`) — a
+form that already relies on deleting a master with existing, un-isolated detail rows will
+now be blocked unless it explicitly sets `DeleteBehavior = Isolated` on the relationship.
+This is a deliberate correctness fix (matching Oracle, not a silent behavior change for its
+own sake), but worth flagging for anyone auditing behavior changes around this date.
+
+### G0.22: Master-detail deferred coordination — only Immediate existed (FIXED 2026-08-22)
+
+**What:** `SynchronizeDetailBlocksAsync`/`SynchronizeDetailHierarchyAsync` always re-queried
+a detail block the instant its master's current record changed. Oracle Forms' `Deferred`
+coordination property (don't re-query until something explicitly asks) had no equivalent.
+
+**Fix:** `DataBlockRelationship.Coordination` (`DetailCoordination`: `Immediate` [Oracle's
+default, this engine's only previous behavior] / `Deferred`). A Deferred relationship is
+skipped entirely inside `SynchronizeDetailHierarchyAsync`'s loop (neither re-queried nor
+cleared) and marked pending via a new `_pendingDeferredSync` set. New
+`FormsManager.SynchronizeDeferredDetailAsync(masterBlockName, detailBlockName, ct)` forces
+one specific deferred relationship current on demand (e.g. right before a host shows/enters
+that detail block) by reusing `SynchronizeDetailHierarchyAsync`'s already-hardened
+per-relationship logic rather than a second copy of it. New
+`HasPendingDeferredSync(detailBlockName)` lets a host check before deciding whether to force
+the sync.
+
+**Where:** `Models/DataBlockRelationship.cs`, `FormsManager.Core.cs` (`_pendingDeferredSync`),
+`FormsManager.Helpers.cs` (`SynchronizeDetailHierarchyAsync`'s loop),
+`FormsManager.Relationships.cs` (`SynchronizeDeferredDetailAsync`, `HasPendingDeferredSync`,
+and `GetActiveRelationships` made `public` — was `internal`, used only inside this class;
+needed so a host or a relationship-configuring caller can read/adjust
+`DeleteBehavior`/`Coordination` after `CreateMasterDetailRelation`).
+
+**Risk of fix:** Low — `Coordination` defaults to `Immediate`, so every existing relationship
+keeps today's only behavior unless a caller explicitly opts a relationship into `Deferred`.
+
+### G0.23: Property Class, DEFAULT_VALUE, and "Copy Value from Item" — authored but never reached the runtime item store (FIXED 2026-08-22)
+
+**What:** Three separate but related gaps, found together while implementing Property Class:
+1. `BlockFieldDefinition` — the IDE's own per-field authoring model — carried `IsRequired`,
+   `IsEnabled`, etc., but had no way to author FORMAT_MASK, DEFAULT_VALUE, "Copy Value from
+   Item", or the finer per-operation QUERY/INSERT/UPDATE_ALLOWED flags at all. Worse: even the
+   fields it *did* carry never reached the runtime `ItemInfo` store —
+   `RegisterItemsFromEntityStructure` (called from `RegisterBlock`) only ever read the
+   datasource's own column metadata (nullability, auto-increment, key); the designer's
+   overrides on `BlockDefinition.EntityDefinition.Fields` were captured and then silently
+   discarded. A field marked read-only for insert in the designer stayed insertable at
+   runtime.
+2. `ItemInfo.DefaultValue` and `ItemPropertyManager.ApplyDefaultValues(blockName, record)`
+   already existed (SET_ITEM_PROPERTY / GET_ITEM_PROPERTY plumbing was complete) — but nothing
+   called `ApplyDefaultValues` when a new record was actually created. DEFAULT_VALUE could be
+   set and read back, but a new record never received it.
+3. `FormsManager.Sequences.cs`'s `SetItemDefault`/`ApplyItemDefaults` (a registered-factory
+   default mechanism, more general than a static DEFAULT_VALUE) was documented in its own
+   XML comment as *"Called internally from CreateNewRecord after the record is constructed"* —
+   but had zero callers anywhere in the engine. The comment described an intention that was
+   never implemented.
+4. Property Class (the Oracle Forms named-bundle inheritance mechanism) and "Copy Value from
+   Item" did not exist in any form.
+
+**Fix:**
+- New `PropertyClass` model + `IPropertyClassManager`/`PropertyClassManager` (mirrors
+  `VisualAttribute`/`IVisualAttributeManager` exactly), exposed as `FormsManager.PropertyClasses`
+  / `IUnitofWorksManager.PropertyClasses`. Every field on `PropertyClass` is nullable —
+  "not part of this class" — and `ApplyToItem(item, fieldDefinition)` resolves with a fixed
+  precedence: **the field's own authored value wins → the property class fills whatever the
+  field left unauthored → anything neither says keeps the item's existing (entity-structure-derived)
+  value.** This is unambiguous by construction because it operates on `BlockFieldDefinition`'s
+  new *nullable* authoring fields, not on `ItemInfo`'s own non-nullable runtime fields — there
+  is never a question of whether `false` means "explicitly authored false" or "still at the
+  engine default," because only the field/class layer is consulted for "was this authored."
+- `BlockFieldDefinition` gained `PropertyClassName`, `FormatMask`, `HasDefaultValue` +
+  `DefaultValue`, `CopyValueFromItem`, and nullable `QueryAllowed`/`InsertAllowed`/`UpdateAllowed`.
+- `DefinitionBlockRegistrar.TryRegister` now calls a new `ApplyAuthoredFieldProperties` step
+  right after `RegisterBlock` (which seeds `ItemInfo` from the entity structure): for every
+  authored field with a matching `ItemInfo`, it calls `PropertyClasses.ApplyToItem`. This is
+  the one place design-time authoring becomes runtime behavior for these properties — the same
+  role `ApplyAuthoredKeys` already played for `IsPrimaryKey`.
+- `ItemInfo` gained `CopyValueFromItem` ("BlockName.ItemName").
+- `FormsManager.CreateNewRecord` now calls, in order, after the CLR instance is constructed and
+  before WHEN-CREATE-RECORD fires: `ItemPropertyManager.ApplyDefaultValues` (static DEFAULT_VALUE),
+  the new private `ApplyCopyValueFromItem` (reads the source item's current value from the item
+  store and reflects it onto the new record's bound property), then `ApplyItemDefaults`
+  (registered factories — most specific, so it can override either of the above for the same
+  field). WHEN-CREATE-RECORD still fires last, so trigger logic can see and further override
+  everything.
+
+**Where:** `Models/PropertyClass.cs`, `Interfaces/IPropertyClassManager.cs` (new),
+`Helpers/PropertyClassManager.cs` (new), `Models/BlockDefinition.cs` (`BlockFieldDefinition`),
+`Models/ItemInfo.cs` (`CopyValueFromItem`), `Interfaces/IUnitofWorksManager.cs`
+(`PropertyClasses`), `FormsManager.Core.cs` / `FormsManager.Properties.cs` (wiring),
+`Helpers/DefinitionBlockRegistrar.cs` (`ApplyAuthoredFieldProperties`),
+`FormsManager.EnhancedOperations.cs` (`CreateNewRecord`, `ApplyCopyValueFromItem`).
+
+**Risk of fix:** Medium for `InsertAllowed`/`UpdateAllowed`/`QueryAllowed` specifically, for the
+same reason as G0.21: a field the designer already marked read-only in one operation, that
+previously had no runtime effect, now actually enforces it. Low everywhere else — `DefaultValue`,
+`CopyValueFromItem`, and `FormatMask` are purely additive (nothing populated them before, so
+nothing regresses), and `ApplyItemDefaults` had no prior callers to conflict with.
+
+### G0.24: Two-phase/distributed commit — no transaction was ever opened, on any commit (FIXED 2026-08-22)
+
+**What:** `CommitFormAsync`'s cross-form path (`TryCrossFormTransactionCommitAsync`) had a doc
+comment claiming it "optionally wraps [the commit] in a single source-level transaction if every
+participating form's data source supports transactions" and, on failure, "rolls back all
+committed forms." Neither was implemented: no `IDataSource.BeginTransaction` call existed
+anywhere in the method. Each form's dirty blocks were saved sequentially via
+`UnitOfWork.Commit()`, which persists immediately and independently per block/record. The
+"rollback" on failure called `RollbackDirtyBlocksAsync` on forms already reported as
+successfully committed — by that point their blocks were typically no longer dirty, so the call
+discarded in-memory state that no longer represented anything; it never issued a compensating
+undo against the datasource, and could not have, since a plain sequential commit gives it nothing
+to undo through. The single-form case — the far more common one, and the one most forms actually
+hit — had **no coordination at all**: several dirty blocks on one or more datasources in one
+form committed one at a time with nothing tying them together, and this path wasn't even inside
+the (non-functional) cross-form wrapper.
+
+**Fix:** Rewrote `TryCrossFormTransactionCommitAsync` (moved to the new
+`FormsManager.TransactionCoordination.cs`) to group every dirty block in commit scope — across
+however many forms are participating, including the single-form case, which no longer gets a
+separate no-coordination fast path — by its **owning `IDataSource` instance**, not by form (one
+form's blocks can span several datasources; several forms can share one). For each distinct
+datasource: **prepare** by calling the already-declared `IDataSource.BeginTransaction` before any
+block on it saves, then run every form's normal ON-INSERT + `SaveDirtyBlocksAsync` path exactly
+as before (unchanged, so master-key propagation and commit ordering are untouched) — nothing is
+durable yet on a transaction-capable datasource, so a prepare failure is now a true, clean
+`EndTransaction` abort on every datasource that opened one, not a doomed attempt to undo an
+already-persisted write. **Commit** by calling `IDataSource.Commit` on every opened transaction
+only after every block's save succeeded. A datasource whose provider doesn't implement the
+triple (`JsonDataSource`, `CSVDataSource`, and other file-backed sources throw
+`NotImplementedException`) has no ACID mechanism to open — its blocks keep the previous
+immediately-durable behavior, and a block that lands there before a later prepare-phase failure
+on a *different* datasource is logged as a named, un-rollback-able partial commit rather than
+silently folded into "commit failed." A failure between prepare and commit succeeding on some but
+not all datasources — the one outcome no software-only coordinator across independent database
+engines can prevent without a real distributed transaction coordinator (MS DTC or equivalent) —
+is also logged by name rather than misreported as full success or a completed rollback.
+
+Deliberately does not duplicate `IDistributedTransactionCoordinator`
+(`DistributedDatasource/Distributed/DistributedDataSource.Transactions.cs`), which already
+implements full 2PC/saga coordination — for datasources that are shards under one
+`DistributedDataSource`. That is a different, narrower population (an application that has
+explicitly adopted sharding) than the case this fix closes: several ordinary,
+independently-configured transaction-capable datasources (e.g. two separate SQL Server
+connections) committed together from one form or one call-stack of forms, which is the situation
+`CommitFormAsync` actually faces and the one its own doc comment already claimed to handle.
+
+**Where:** `FormsManager.TransactionCoordination.cs` (new — `TryCrossFormTransactionCommitAsync`
+moved here from `FormsManager.FormOperations.cs`, `AbortOpenedTransactions` helper).
+
+**Risk of fix:** Medium. A commit that previously "succeeded" by writing each block immediately,
+uncoordinated, now genuinely opens a transaction per transactional datasource first — a datasource
+whose `BeginTransaction` is implemented but flaky, slow, or contends under load surfaces that
+failure as a whole-commit failure where before it was never exercised at all. This is a
+correctness fix (the behavior now matches what was always documented and what Oracle Forms
+commit semantics require), but any environment relying on the previous no-coordination behavior
+for performance reasons should be re-tested.
+
+### G0.25: WHEN-LOV-VALIDATION never fired on a typed value; its result was discarded; item error state was never set by any validation path (FIXED 2026-08-22)
+
+**What:** Three compounding gaps found together while re-checking the WHEN-LOV-VALIDATION rename
+from G0.17:
+1. The `WhenLOVValidation` trigger (renamed from the misspelled `WhenLOVValidate` earlier in this
+   pass) only fired from `ShowLOVAsync` — explicit LOV invocation (Oracle's SHOW_LOV). It never
+   fired from the far more common case: a user types a value directly into a field that has an
+   attached LOV, and the engine validates it against that LOV. A form author registering a
+   WHEN-LOV-VALIDATION handler to enforce custom LOV logic (Oracle's primary documented use for
+   this trigger) found it silently never ran for typed input.
+2. That typed-value path (`ItemPropertyManager`'s `ItemChanged` handler, in `RegisterBlock`)
+   called `LOVManager.ValidateLOVValueAsync` as `_ = _lovManager.ValidateLOVValueAsync(...)` —
+   fire-and-forget on an `async Task`-returning method, inside a plain synchronous event handler.
+   The `LOVValidationFailed` .NET event still fired as a side effect (so a host directly
+   subscribed to it was unaffected), but nothing awaited the call, so an exception thrown inside
+   it — e.g. the LOV's own datasource erroring — became an unobserved task exception: silently
+   dropped, never reaching `_eventManager.TriggerError` the way every other exception in this
+   class is required to.
+3. `ItemPropertyManager.SetItemError`/`ClearItemError` — and the `HasItemError`/
+   `GetItemErrorMessage`/`GetItemsWithErrors`/`ItemErrorChanged` surface they back — had **zero
+   callers anywhere in the engine**, from any validation path, not just LOV. A host checking
+   whether an item is currently invalid could never get `true` back no matter what actually
+   failed.
+
+**Fix:** The `ItemChanged` handler is now `async` (matching the established pattern immediately
+below it in the same method, `mdHandler` for `CurrentChanged`/`SynchronizeDetailBlocksAsync`,
+including its same reason: an unhandled exception from an async-void event handler is
+unobservable, so the whole handler body is wrapped in try/catch routing to
+`_eventManager.TriggerError`). For a field with an attached LOV, it now: fires
+`WhenLOVValidation` first and awaits it — a handler that returns `Cancelled` rejects the value
+outright (`SetItemError`, default LOV check skipped entirely, matching the "replaces default"
+shape used elsewhere in this engine); otherwise awaits `ValidateLOVValueAsync` as before, but now
+actually reads the result — `SetItemError` on failure, `ClearItemError` on success. This is
+deliberately scoped to the LOV path only: `SetItemError`/`ClearItemError` having no callers is a
+real, separate, and larger gap that also affects the plain field/record rule-based validation
+path (`ValidationManager`'s `ValidationFailed`/`ValidationCompleted` .NET events fire correctly
+but likewise never reach the per-item error store) — flagged here, not fixed, since wiring every
+validation path through it is a materially bigger change than this pass's scope.
+
+**Where:** `FormsManager.BlockRegistration.cs` (`RegisterBlock`'s `ItemChanged` handler).
+
+**Risk of fix:** Low-Medium. A field with an attached LOV and a registered WHEN-LOV-VALIDATION
+handler now actually has that handler run on every keystroke-driven change, not only on explicit
+LOV invocation — a handler written expecting the old (silent) behavior now executes where it
+didn't before. `SetItemError`/`ClearItemError` for LOV validation are purely additive (nothing
+read `HasItemError` meaningfully before, since it could never become true).
+
+### G0.26: `ReturnToCallerAsync` could never succeed for a real multi-form call (FIXED 2026-08-22)
+
+**What:** Found while adding regression tests for the (otherwise correctly implemented)
+CALL_FORM/OPEN_FORM/NEW_FORM surface. `CallFormAsync` pushes its `FormCallStackEntry` onto the
+**caller's** own `_callStack` (`this` inside `CallFormAsync` is the caller). Every other consumer
+of `_callStack` — `TryReleaseCallEntryFor`, and through it `ReleaseSuspendedCallerFor` — already
+knew and handled this correctly: `ReleaseSuspendedCallerFor`'s own remarks say so explicitly
+("The call-stack entry lives on the CALLER's manager, not the callee's... The form registry is
+shared... which is what makes the lookup possible") and it searches every manager the registry
+knows about when its own local stack doesn't have the entry. `ReturnToCallerAsync` — the public
+method a callee calls to voluntarily hand control back, the normal (non-crash) return path — did
+not: it only ever checked `this._callStack`, which is empty for a genuine callee running as its
+own `FormsManager` instance (one instance per open form, registered by name — the architecture
+this engine's own multi-form design otherwise assumes throughout, including in
+`ReleaseSuspendedCallerFor` itself). The result: a callee could open (`CallFormAsync`, e.g. a
+lookup dialog) and the caller would genuinely suspend as designed, but the callee's own
+`ReturnToCallerAsync("selected value")` always failed — `_callStack.Count == 0` — so the caller
+was left suspended forever unless the callee instead closed itself outright (hitting
+`ReleaseSuspendedCallerFor`'s already-correct path — this is why the *crash/close* recovery case
+worked, in a 2026-08-03 fix, while the *normal return* case, arguably the more common one, stayed
+broken). A single-instance self-call (one `FormsManager` acting as both caller and callee) masked
+this, since `this._callStack` happened to be the right stack in that shape — not the shape this
+engine's own registry-based design otherwise targets.
+
+**Fix:** `ReturnToCallerAsync` now uses the same fast-path-then-registry-search pattern
+`ReleaseSuspendedCallerFor` already established: try releasing the entry from this manager's own
+stack first, then search every other manager `IFormRegistry.GetActiveFormNames()` knows about.
+`TryReleaseCallEntryFor` gained an `out FormCallStackEntry releasedEntry` overload (the original
+2-arg signature kept, delegating to it) so `ReturnToCallerAsync` can still attach `returnData` to
+`RETURN_VALUE` on the caller once the entry — and therefore `entry.CallerFormName` — is found,
+regardless of which manager's stack it came from. The same foreign-entry protection is preserved:
+`TryReleaseCallEntryFor` only pops when the stack's top entry actually names the expected callee.
+
+**Where:** `FormsManager.MultiFormNavigation.cs` (`ReturnToCallerAsync`, `TryReleaseCallEntryFor`).
+
+**Risk of fix:** Low. The previous behavior was a hang (suspended caller, no way to unblock it via
+the intended return path) for the exact multi-instance shape this engine's registry is built
+around — there is no working prior behavior for that shape to regress. A caller relying on the
+single-instance self-call shape (where the bug was masked) keeps working: the fast local path is
+tried first and still succeeds there.
+
+### G0.27: Row-level security filter never enforced on any query — access-control bypass, not just a missing feature (FIXED 2026-08-22)
+
+**What:** `BlockSecurity.RowFilterClause`/`.RowFilterValues` (e.g. `"TenantId = :TenantId"`, to
+restrict a user to their own tenant's rows) and `ISecurityManager.GetBlockRowFilter`/
+`GetBlockSecurity` existed with **zero callers anywhere in the engine**. `ExecuteQueryAsync` only
+ever checked the coarse per-operation allow/deny flags via `EnforceBlockSecurity` ("can this user
+query this block at all") and merged `block.DefaultWhereClause` (an unrelated, non-security
+concept) into the query — the row filter itself was never merged in. Concretely: a form
+configured with row-level security showed **every row to every permitted user**, not just the
+rows that user's filter allows — a silent access-control bypass, not a missing convenience. The
+newly-added `CountQueryAsync` (G0.20, same 2026-08-22 pass) had the identical gap on the same
+code shape — it would have reported the true, unfiltered row count to a user who is not permitted
+to see all of them, a second leak of the same restricted information via a different built-in.
+`QueryBuilderManager.ParseCondition` already anticipated exactly this consumer — its own comment
+reads *"Handle parameterized placeholders: Field = :1 or Field = :name — These are preserved
+as-is so the caller can resolve them"* — the parser was built for this and nothing had ever been
+the caller.
+
+**Fix:** New `FormsManager.BuildSecurityRowFilters(blockName)`: reads `GetBlockSecurity(blockName)`,
+parses `RowFilterClause` via the existing `QueryBuilderManager.ParseWhereClause` (same mechanism
+`DefaultWhereClause` already used), then resolves any `:Name` placeholder `AppFilter` value
+against `RowFilterValues`. Called from both `ExecuteQueryAsync` and `CountQueryAsync`, ANDed into
+`finalFilters` alongside `DefaultWhereClause`, so a query and its count always agree on both what
+"default" and what "permitted" mean. Scoped to these two entry points specifically — other places
+a datasource is read directly (LOV loading, master-detail sync) are not covered by this fix and
+are not claimed to be; `ExecuteQueryAsync`/`CountQueryAsync` are the two Oracle Forms built-ins
+(EXECUTE_QUERY/COUNT_QUERY) this restriction is documented against.
+
+**Where:** `FormsManager.BasicDataOps.cs` (`BuildSecurityRowFilters`, `ExecuteQueryAsync`,
+`CountQueryAsync`).
+
+**Risk of fix:** This closes a real information-disclosure gap; the "risk" is entirely on the side
+of any deployment that configured `BlockSecurity.RowFilterClause` believing it was already
+enforced (per the property's own doc comment, which describes exactly this behavior) — for that
+deployment, rows that should always have been hidden start being hidden now, which is the correct
+behavior, not a regression. No deployment could have been relying on the filter being ignored as
+a feature.
+
+### G0.28: WHEN-TIMER-EXPIRED — same fire-and-forget exception hazard as G0.25, fixed the same way (FIXED 2026-08-22)
+
+**What:** `OnTimerManagerFired` (`FormsManager.Lifecycle.cs`, the handler for
+`ITimerManager.TimerFired`) called `_ = _triggerManager.FireFormTriggerAsync(...)` —
+fire-and-forget on an async `Task`, inside a synchronous event handler wrapped in a `try/catch`.
+The catch only ever observed a *synchronous* throw (e.g. from building the `TriggerContext`); an
+exception from the trigger's own execution — a registered WHEN-TIMER-EXPIRED handler throwing —
+became an unobserved task exception, silently dropped instead of reaching `LogError`. Same defect
+shape as G0.25's `ItemChanged` handler, found on a second pass specifically looking for this
+pattern elsewhere in the class.
+
+**Fix:** `OnTimerManagerFired` is now `async void` (matching the class's own established pattern
+for this exact hazard — `mdHandler` for `CurrentChanged`, and the `ItemChanged` handler after
+G0.25) and awaits `FireFormTriggerAsync` inside the same try/catch, so an exception during trigger
+execution is now actually caught and logged.
+
+**Where:** `FormsManager.Lifecycle.cs` (`OnTimerManagerFired`).
+
+**Risk of fix:** Low. Purely a visibility fix — the trigger already ran either way; only whether a
+failure inside it was reported changes. Not independently revert-tested (unlike this pass's other
+fixes): the specific property under test — whether an exception is *observed* rather than silently
+dropped — isn't reliably distinguishable from outside without hooking
+`TaskScheduler.UnobservedTaskException`, so the regression test proves the trigger fires correctly
+through the now-awaited path instead, which a fire-and-forget version would have passed too.
+
+### G0.29: `SetItemError`/`ClearItemError` had no caller for field/record rule-based validation — completing the gap G0.25 deliberately left open (FIXED 2026-08-22)
+
+**What:** G0.25 wired `SetItemError`/`ClearItemError` for the LOV validation path but explicitly
+flagged, not fixed, the same gap for `ValidationManager`'s ordinary rule-based path
+(`ValidateItem`/`ValidateRecord`, backing `ValidateField`/`ValidateBlock`/the `ItemChanged`
+handler's own rule check). `ValidationManager.ValidationFailed`/`ValidationCompleted` fired
+correctly as .NET events the entire time — a host subscribed directly to those was never
+affected — but no code anywhere read an `ItemValidationResult`/`RecordValidationResult` and
+pushed it into the per-item error store. A form with a registered `ValidationRule` (Required,
+Range, Pattern, …) had `ItemPropertyManager.HasItemError`/`GetItemErrorMessage`/
+`GetItemsWithErrors` never report the failure, no matter how many rules failed.
+
+**Fix:** `ValidateField`, `ValidateBlock` (per-field, from `RecordValidationResult.ItemResults`),
+and the `ItemChanged` handler's own rule check (`FormsManager.BlockRegistration.cs`) now read
+their `ItemValidationResult`/`RecordValidationResult` and call `SetItemError`/`ClearItemError`.
+The one real design question this raised: `ItemValidationResult.IsValid` is vacuously `true` when
+zero rules are registered for a field (`!RuleResults.Any(...)` over an empty list) — naively
+clearing on every "valid" result would let a record-level revalidation with no rules for a field
+silently wipe out a real error a *different* check (LOV, or the same field's own per-keystroke
+check) had already set on it. Fixed by only touching item error state when
+`RuleResults.Count > 0` — something was actually evaluated — everywhere except the `ItemChanged`
+handler, which composes the rule-check and the LOV-check within one atomic pass instead (only
+clears when *both* agree the value is good), so the same false-clear can't occur there by
+construction.
+
+**Where:** `FormsManager.Validation.cs` (`ValidateField`, `ValidateBlock`),
+`FormsManager.BlockRegistration.cs` (`ItemChanged` handler's rule-check/LOV composition).
+
+**Risk of fix:** Low — purely additive item-error-state writes; nothing previously read
+`HasItemError`/`GetItemErrorMessage` meaningfully, since they could never report a rule failure
+before this fix.
+
 ---
 ## P0 — Correctness / Existing-User Impact
 
@@ -23,6 +540,12 @@ failure by rolling back already-committed forms in reverse order.
 
 This matches Oracle Forms' behavior where `CALL_FORM` shares the same database
 session and `COMMIT` from the child commits everything.
+
+> **Amended by G0.24 (2026-08-22):** the "rolling back already-committed forms"
+> description above was the intent, not the implementation — no transaction was
+> ever opened, so the "rollback" discarded in-memory dirty state on blocks whose
+> writes were already durably persisted. See G0.24 for the fix and why a true
+> rollback requires a transaction to have been open in the first place.
 
 **Where:** `FormsManager.FormOperations.cs` — `ResolveCrossFormCommitTargets()`,
 `TryCrossFormTransactionCommitAsync()`. Lines 488-580.

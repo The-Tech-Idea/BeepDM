@@ -161,6 +161,11 @@ namespace TheTechIdea.Beep.Json
                     return $"{filter.FieldName} LIKE '{filter.FilterValue}%'";
                 case "endswith":
                     return $"{filter.FieldName} LIKE '%{filter.FilterValue}'";
+                case "like":
+                    return $"{filter.FieldName} LIKE '{filter.FilterValue}'";
+                case "not like":
+                case "notlike":
+                    return $"{filter.FieldName} NOT LIKE '{filter.FilterValue}'";
                 case "in":
                     return BuildCollectionExpression(filter, negate: false);
                 case "not in":
@@ -215,6 +220,11 @@ namespace TheTechIdea.Beep.Json
                     return fieldValue.ToString().StartsWith(filter.FilterValue?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
                 case "endswith":
                     return fieldValue.ToString().EndsWith(filter.FilterValue?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                case "like":
+                    return TheTechIdea.Beep.Utils.Util.IsSqlLikeMatch(fieldValue.ToString(), filter.FilterValue?.ToString());
+                case "not like":
+                case "notlike":
+                    return !TheTechIdea.Beep.Utils.Util.IsSqlLikeMatch(fieldValue.ToString(), filter.FilterValue?.ToString());
                 case "in":
                     return MatchesCollection(fieldValue, filter.FilterValue, negate: false);
                 case "not in":

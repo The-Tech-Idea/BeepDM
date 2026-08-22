@@ -58,6 +58,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Named Visual Attributes and the items/blocks they are applied to.</summary>
         IVisualAttributeManager VisualAttributes { get; }
 
+        /// <summary>Named Property Classes and the fields that inherit from them.</summary>
+        IPropertyClassManager PropertyClasses { get; }
+
         /// <summary>The form's menu (Oracle Forms menu module).</summary>
         IFormMenuManager Menu { get; }
 
@@ -232,8 +235,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Returns the detail block names attached to a master block.</summary>
         List<string> GetDetailBlocks(string masterBlockName);
 
+        /// <summary>
+        /// Forces a <see cref="TheTechIdea.Beep.Editor.UOWManager.Models.DetailCoordination.Deferred"/>
+        /// detail block to catch up to its master's current record right now.
+        /// Call before showing/entering a deferred detail block. No-op for a
+        /// relationship that isn't found or isn't actually deferred. Added 2026-08-22.
+        /// </summary>
+        Task SynchronizeDeferredDetailAsync(string masterBlockName, string detailBlockName, CancellationToken ct = default);
+
+        /// <summary>
+        /// True when a Deferred detail block has a pending sync it hasn't
+        /// received since the master's current record last changed. Added 2026-08-22.
+        /// </summary>
+        bool HasPendingDeferredSync(string detailBlockName);
+
         /// <summary>Returns the master block name for a detail block.</summary>
         string GetMasterBlock(string detailBlockName);
+
+        /// <summary>
+        /// Returns the active master-detail relationships where
+        /// <paramref name="masterBlockName"/> is the master — the full
+        /// relationship objects (including <c>DeleteBehavior</c> and
+        /// <c>Coordination</c>), not just the detail block names
+        /// <see cref="GetDetailBlocks"/> returns. Added 2026-08-22.
+        /// </summary>
+        List<DataBlockRelationship> GetActiveRelationships(string masterBlockName);
 
         /// <summary>Creates a master-detail relationship between two blocks using a single key field pair.</summary>
         void CreateMasterDetailRelation(string masterBlockName, string detailBlockName,
@@ -323,6 +349,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Executes a query for a block using the supplied filters.</summary>
         Task<bool> ExecuteQueryAsync(string blockName, List<AppFilter> filters = null);
+
+        /// <summary>
+        /// Counts records matching the block's current query criteria without
+        /// fetching them — Oracle Forms COUNT_QUERY. Returns -1 when the count
+        /// could not be determined (check the <c>Status</c> property for why),
+        /// never a silent 0.
+        /// </summary>
+        Task<int> CountQueryAsync(string blockName, List<AppFilter> filters = null, CancellationToken ct = default);
 
         /// <summary>Notifies the engine that a host is entering query mode for a block.</summary>
         void EnteringQueryModeAsync(string blockName);

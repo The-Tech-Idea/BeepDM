@@ -96,16 +96,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Handles timer fire events from TimerManager by firing the
         /// WHEN-TIMER-EXPIRED trigger on the current form.
         /// </summary>
-        private void OnTimerManagerFired(object sender, TimerFiredEventArgs e)
+        private async void OnTimerManagerFired(object sender, TimerFiredEventArgs e)
         {
+            // Was `_ = _triggerManager.FireFormTriggerAsync(...)` — fire-and-forget
+            // on an async Task, inside a synchronous event handler. The try/catch
+            // only ever observed a *synchronous* throw from building the call; an
+            // exception from the trigger's own execution (e.g. a registered
+            // WHEN-TIMER-EXPIRED handler throwing) became an unobserved task
+            // exception, never reaching LogError. Same defect shape as the
+            // ItemChanged handler's LOV validation fix (2026-08-22) — awaiting it
+            // here, in an async-void handler with the same try/catch, is the
+            // established fix for exactly this pattern in this class.
             try
             {
                 var ctx = Forms.Models.TriggerContext.ForForm(
                     Forms.Models.TriggerType.WhenTimerExpired, _currentFormName ?? string.Empty, _dmeEditor);
                 ctx.Parameters["TimerName"] = e.TimerName;
                 ctx.Parameters["FireCount"] = e.FireCount;
-                _ = _triggerManager.FireFormTriggerAsync(
-                    Forms.Models.TriggerType.WhenTimerExpired, _currentFormName ?? string.Empty, ctx);
+                await _triggerManager.FireFormTriggerAsync(
+                    Forms.Models.TriggerType.WhenTimerExpired, _currentFormName ?? string.Empty, ctx)
+                    .ConfigureAwait(false);
             }
             catch (Exception ex)
             {

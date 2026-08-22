@@ -266,7 +266,64 @@ public class BlockFieldDefinition
     /// <summary>Whether the generated control is shown.</summary>
     public bool IsVisible { get; set; } = true;
 
-    /// <summary>Copies this field definition. All members are value types or strings.</summary>
+    /// <summary>
+    /// Named <see cref="TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass"/>
+    /// this field inherits unauthored properties from — the Oracle Forms
+    /// Property Class. Null = none; the properties below (and the engine's own
+    /// entity-structure-derived defaults) are all there is.
+    /// </summary>
+    public string PropertyClassName { get; set; }
+
+    /// <summary>
+    /// Oracle Forms FORMAT_MASK. Null = not authored on this field (falls back
+    /// to <see cref="PropertyClassName"/>'s class, then to no formatting).
+    /// </summary>
+    public string FormatMask { get; set; }
+
+    /// <summary>
+    /// Whether <see cref="DefaultValue"/> was authored on this field at all. A
+    /// literal null default is itself a meaningful, authored choice, so
+    /// presence can't be inferred from <see cref="DefaultValue"/> being
+    /// non-null.
+    /// </summary>
+    public bool HasDefaultValue { get; set; }
+
+    /// <summary>Oracle Forms DEFAULT_VALUE. See <see cref="HasDefaultValue"/>.</summary>
+    public object DefaultValue { get; set; }
+
+    /// <summary>
+    /// Oracle Forms "Copy Value from Item" — "BlockName.ItemName" of the item
+    /// this field copies its value from when a new record is created. Null =
+    /// not authored on this field (falls back to <see cref="PropertyClassName"/>'s
+    /// class, then to none).
+    /// </summary>
+    public string CopyValueFromItem { get; set; }
+
+    /// <summary>
+    /// Oracle Forms QUERY_ALLOWED — finer-grained than <see cref="IsReadOnly"/>.
+    /// Null = not authored on this field (falls back to
+    /// <see cref="PropertyClassName"/>'s class, then to the engine's own
+    /// default of true).
+    /// </summary>
+    public bool? QueryAllowed { get; set; }
+
+    /// <summary>
+    /// Oracle Forms INSERT_ALLOWED — finer-grained than <see cref="IsReadOnly"/>.
+    /// Null = not authored on this field (falls back to
+    /// <see cref="PropertyClassName"/>'s class, then to the entity structure's
+    /// own derived default).
+    /// </summary>
+    public bool? InsertAllowed { get; set; }
+
+    /// <summary>
+    /// Oracle Forms UPDATE_ALLOWED — finer-grained than <see cref="IsReadOnly"/>.
+    /// Null = not authored on this field (falls back to
+    /// <see cref="PropertyClassName"/>'s class, then to the entity structure's
+    /// own derived default).
+    /// </summary>
+    public bool? UpdateAllowed { get; set; }
+
+    /// <summary>Copies this field definition. All members are value types, strings, or a shared object reference for <see cref="DefaultValue"/>.</summary>
     public BlockFieldDefinition Clone() => (BlockFieldDefinition)MemberwiseClone();
 }
 

@@ -30,6 +30,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var ruleResult = _validationManager.ValidateItem(blockName, FieldName, value, ValidationTiming.OnChange);
                 bool rulesValid = ruleResult?.IsValid != false;
 
+                // SetItemError/ClearItemError had no caller for this path
+                // before 2026-08-22 (see ItemChanged's own remark on the same
+                // date). Only clear when a rule actually ran and passed — a
+                // field with zero registered rules is vacuously "valid" here
+                // and must not silently wipe an error some other check (e.g.
+                // LOV) set on it.
+                if (ruleResult != null && ruleResult.RuleResults.Count > 0)
+                {
+                    if (rulesValid)
+                        _itemPropertyManager?.ClearItemError(blockName, FieldName);
+                    else
+                        _itemPropertyManager?.SetItemError(blockName, FieldName, ruleResult.FirstError ?? "Validation failed");
+                }
+
                 return eventValid && rulesValid;
             }
             catch (Exception ex)
@@ -74,6 +88,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                     var ruleResult = _validationManager.ValidateRecord(blockName, recordDict, ValidationTiming.Manual);
                     rulesValid = ruleResult?.IsValid != false;
+
+                    // Same 2026-08-22 fix as ValidateField, per item in the
+                    // record: only touch a field's error state when this pass
+                    // actually evaluated a rule against it (RuleResults.Count
+                    // > 0) — a field with no registered rules is vacuously
+                    // "valid" per ItemValidationResult.IsValid and must not
+                    // silently clear an error a different check (e.g. LOV) set.
+                    if (ruleResult != null)
+                    {
+                        foreach (var kvp in ruleResult.ItemResults)
+                        {
+                            if (kvp.Value.RuleResults.Count == 0) continue;
+
+                            if (kvp.Value.IsValid)
+                                _itemPropertyManager?.ClearItemError(blockName, kvp.Key);
+                            else
+                                _itemPropertyManager?.SetItemError(
+                                    blockName, kvp.Key, kvp.Value.FirstError ?? "Validation failed");
+                        }
+                    }
                 }
 
                 return eventValid && rulesValid;

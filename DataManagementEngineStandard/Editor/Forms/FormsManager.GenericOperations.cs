@@ -112,11 +112,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (!_lovManager.HasLOV(blockName, fieldName))
                 return LOVResult.Fail($"No LOV registered for {blockName}.{fieldName}");
 
-            // Fire WHEN-LOV-VALIDATE trigger before showing
-            var ctx = TriggerContext.ForItem(TriggerType.WhenLOVValidate, blockName, fieldName, null, null, _dmeEditor);
-            var triggerResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenLOVValidate, blockName, ctx, ct).ConfigureAwait(false);
+            // Fire WHEN-LOV-VALIDATION trigger before showing
+            var ctx = TriggerContext.ForItem(TriggerType.WhenLOVValidation, blockName, fieldName, null, null, _dmeEditor);
+            var triggerResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenLOVValidation, blockName, ctx, ct).ConfigureAwait(false);
             if (triggerResult == TriggerResult.Cancelled)
-                return LOVResult.Fail("LOV cancelled by WHEN-LOV-VALIDATE trigger");
+                return LOVResult.Fail("LOV cancelled by WHEN-LOV-VALIDATION trigger");
 
             // Load data
             var result = await _lovManager.LoadLOVDataAsync(blockName, fieldName, searchText).ConfigureAwait(false);

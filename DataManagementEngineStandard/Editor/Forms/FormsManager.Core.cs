@@ -29,6 +29,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly ConcurrentDictionary<string, List<DataBlockRelationship>> _relationships = new(StringComparer.OrdinalIgnoreCase);
         private readonly MasterDetailKeyResolver _masterDetailKeyResolver = new();
 
+        /// <summary>
+        /// Detail blocks (keyed by detail block name) whose master-linked data
+        /// is stale because their relationship's <see cref="DetailCoordination"/>
+        /// is <see cref="DetailCoordination.Deferred"/> and nothing has called
+        /// <see cref="SynchronizeDeferredDetailAsync"/> since the master's
+        /// current record last changed. Added 2026-08-22.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, bool> _pendingDeferredSync = new(StringComparer.OrdinalIgnoreCase);
+
         // Helper managers
         private readonly IDirtyStateManager _dirtyStateManager;
         private readonly IEventManager _eventManager;
@@ -39,6 +48,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly IValidationManager _validationManager;
         private readonly ILOVManager _lovManager;
         private readonly IVisualAttributeManager _visualAttributeManager = new VisualAttributeManager();
+        private readonly IPropertyClassManager _propertyClassManager = new PropertyClassManager();
         private readonly IFormMenuManager _formMenuManager = new FormMenuManager();
         private readonly IItemPropertyManager _itemPropertyManager;
         private readonly ITriggerManager _triggerManager;

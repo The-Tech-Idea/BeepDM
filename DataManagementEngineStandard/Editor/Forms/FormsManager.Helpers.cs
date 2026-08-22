@@ -297,7 +297,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 throw new ArgumentException("Detail block name cannot be null or empty", nameof(detailBlockName));
         }
 
-        internal List<DataBlockRelationship> GetActiveRelationships(string masterBlockName)
+        /// <summary>
+        /// Returns the active master-detail relationships where
+        /// <paramref name="masterBlockName"/> is the master — the full
+        /// <see cref="DataBlockRelationship"/> objects, not just the detail
+        /// block names <see cref="GetDetailBlocks"/> returns. Made public
+        /// 2026-08-22 (was internal, used only inside this class) so a host —
+        /// or a test — can inspect/adjust a relationship's
+        /// <see cref="DataBlockRelationship.DeleteBehavior"/> or
+        /// <see cref="DataBlockRelationship.Coordination"/> after
+        /// <see cref="CreateMasterDetailRelation(string,string,string,string,RelationshipType)"/>.
+        /// </summary>
+        public List<DataBlockRelationship> GetActiveRelationships(string masterBlockName)
         {
             lock (_lockObject)
             {
@@ -331,6 +342,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             foreach (var relationship in relationships)
             {
                 ct.ThrowIfCancellationRequested();
+
+                // Coordination = Deferred (added 2026-08-22): leave this
+                // detail block exactly as it is — neither re-queried nor
+                // cleared — and record that it owes a sync. A host calls
+                // SynchronizeDeferredDetailAsync when it actually needs the
+                // detail current (e.g. the user is about to view it). Do not
+                // recurse into this relationship's own sub-details either:
+                // if this level hasn't caught up, nothing below it should.
+                if (relationship.Coordination == DetailCoordination.Deferred)
+                {
+                    _pendingDeferredSync[relationship.DetailBlockName] = true;
+                    continue;
+                }
 
                 var fieldMappings = GetRelationshipFieldMappings(relationship);
                 if (fieldMappings.Count == 0)
