@@ -239,6 +239,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // impossible on any table with a required column. Validation
                 // still runs on the way to the datasource. (2026-08-02)
 
+                // Fire WHEN-DATABASE-RECORD — unrestricted in Oracle Forms, so
+                // a notification, not a cancellation gate. Oracle fires this
+                // the moment a record transitions into being a database
+                // record: on fetch for a queried row, or — for a new record —
+                // right after it validates and BEFORE Forms performs the
+                // physical INSERT, which puts it ahead of PRE-INSERT in the
+                // firing order (WHEN-DATABASE-RECORD announces the
+                // transition; PRE-INSERT is the "about to insert" gate that
+                // follows it). This engine's own PRE-INSERT already fires
+                // here, at add-to-block time, not at the true
+                // physical-commit moment (the class-level comment above
+                // explains why: CREATE_RECORD stages the record in the
+                // block, the physical INSERT happens later via
+                // SaveDirtyBlocksAsync/UnitOfWork.Commit()) — firing
+                // WHEN-DATABASE-RECORD immediately before it is the closest
+                // honest match this engine's pipeline supports without a
+                // second, separate firing pass over the commit path.
+                // TriggerType.WhenDatabaseRecord existed nowhere before this
+                // (2026-08-24).
+                await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.WhenDatabaseRecord, blockName,
+                    TriggerContext.ForBlock(TriggerType.WhenDatabaseRecord, blockName, record, _dmeEditor))
+                    .ConfigureAwait(false);
+
                 // Fire PRE-INSERT trigger — abort if cancelled
                 var preInsertResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreInsert, blockName,

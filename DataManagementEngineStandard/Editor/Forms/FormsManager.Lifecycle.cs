@@ -128,18 +128,42 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         /// <param name="sender">Shared message bus instance.</param>
         /// <param name="e">Delivered message payload.</param>
-        private void OnMessageBusFormMessage(object sender, FormMessageEventArgs e)
+        private async void OnMessageBusFormMessage(object sender, FormMessageEventArgs e)
         {
-            var message = e?.Message;
-            var currentFormName = _currentFormName;
-
-            if (message == null || string.IsNullOrWhiteSpace(currentFormName))
-                return;
-
-            if (string.Equals(message.TargetForm, currentFormName, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(message.TargetForm, "*", StringComparison.OrdinalIgnoreCase))
+            // async void + try/catch: the WHEN-FORM-NOTIFICATION fire below is
+            // genuinely async, and this is a plain event handler subscribed via
+            // += — same hazard, same established fix as OnTimerManagerFired
+            // (G0.28) and the ItemChanged handler (G0.25). An unhandled
+            // exception from an async-void handler is unobservable otherwise.
+            try
             {
-                OnFormMessage?.Invoke(this, e);
+                var message = e?.Message;
+                var currentFormName = _currentFormName;
+
+                if (message == null || string.IsNullOrWhiteSpace(currentFormName))
+                    return;
+
+                if (string.Equals(message.TargetForm, currentFormName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(message.TargetForm, "*", StringComparison.OrdinalIgnoreCase))
+                {
+                    OnFormMessage?.Invoke(this, e);
+
+                    // Fire WHEN-FORM-NOTIFICATION — the trigger counterpart to
+                    // the plain .NET event just above, for a form author using
+                    // the Oracle-named trigger the IDE's own Add Trigger picker
+                    // already offered with no matching engine member until now
+                    // (2026-08-24).
+                    var ctx = TriggerContext.ForForm(TriggerType.WhenFormNotification, currentFormName, _dmeEditor);
+                    ctx.Parameters["SenderForm"] = message.SenderForm;
+                    ctx.Parameters["MessageType"] = message.MessageType;
+                    ctx.Parameters["Payload"] = message.Payload;
+                    await _triggerManager.FireFormTriggerAsync(
+                        TriggerType.WhenFormNotification, currentFormName, ctx).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError("Error handling form-bus notification", ex, _currentFormName);
             }
         }
 

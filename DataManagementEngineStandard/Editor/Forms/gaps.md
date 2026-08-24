@@ -527,6 +527,81 @@ construction.
 `HasItemError`/`GetItemErrorMessage` meaningfully, since they could never report a rule failure
 before this fix.
 
+### G0.30: Four Oracle Forms triggers (WHEN-CLOSE-FORM, WHEN-CLEAR-BLOCK, WHEN-FORM-NOTIFICATION,
+WHEN-DATABASE-RECORD) and eight KEY-* names had no matching `TriggerType`/`KeyTriggerType`
+member — closing out most of the remaining rows in the Beep.Forms
+`ORACLE-FORMS-FEATURE-CATALOG.md` §13 "still open" list (FIXED 2026-08-24)
+
+**What:** The Beep.Forms IDE's Add Trigger picker (`TriggerTypeNames.IsAuthorable`) offers the full
+69-event Oracle Forms 12c catalog by parsing each display name and live-`Enum.TryParse`-ing it
+against `TriggerType` — so an event with no matching member was listed but silently unauthorable.
+Cross-referencing the catalog against `TriggerEnums.cs` found four genuine engine gaps and one
+simple name mismatch:
+- `WhenCloseForm`, `WhenFormNotification` (form-level), `WhenDatabaseRecord`, `WhenClearBlock`
+  (block-level) — no engine member existed at all.
+- `KeyListValues` existed but under a name that doesn't match the stripped Oracle display string
+  `"Key-ListVal"` (same defect shape as G0.17's `WhenLOVValidate`→`WhenLOVValidation` rename) —
+  renamed to `KeyListVal`; zero callers anywhere in either repo referenced the old name.
+- Seven more `KeyTriggerType`/`TriggerType` members (`KeyPageUp`, `KeyPageDown`, `KeyTab`,
+  `KeyDelete`, `KeyInsert`, `KeyClear`, `KeyForm`) had no member either — added into the
+  already-documented "Reserved" numeric slots.
+
+**Fix:**
+- `TriggerEnums.cs`: added `WhenCloseForm = 13`, `WhenFormNotification = 14`,
+  `WhenDatabaseRecord = 43`, `WhenClearBlock = 44`; renamed `KeyListValues` → `KeyListVal`; added
+  `KeyPageUp/KeyPageDown/KeyTab/KeyDelete/KeyInsert/KeyClear/KeyForm = 162..168` to both
+  `TriggerType` and the companion `KeyTriggerType` (same numeric values, since
+  `FormsManager.KeyTriggers.cs` casts `(TriggerType)(int)key`).
+- `CloseFormAsync` (`FormsManager.FormOperations.cs`) fires `WhenCloseForm` right before its
+  existing cleanup step; a registered handler can still veto the close (`TriggerResult.Cancelled`
+  → `CloseFormAsync` returns `false`, form stays open) — Oracle documents WHEN-CLOSE-FORM as
+  restricted/cancellable.
+- `ClearBlockAsync` (same file) fires `WhenClearBlock` as a notification, after `UnitOfWork.Clear()`
+  — Oracle documents it unrestricted, so no cancellation gate.
+- `OnMessageBusFormMessage` (`FormsManager.Lifecycle.cs`) fires `WhenFormNotification` alongside the
+  existing plain `.NET` `OnFormMessage` event, carrying `SenderForm`/`MessageType`/`Payload` via
+  `ctx.Parameters`; rewritten `async void` + `try/catch` (same fix shape as G0.28) since the fire is
+  now genuinely async inside a `+=`-subscribed handler.
+- `InsertRecordEnhancedAsync` (`FormsManager.EnhancedOperations.cs`) fires `WhenDatabaseRecord` as a
+  notification, immediately *before* the existing `PreInsert` fire — Oracle's real firing order has
+  WHEN-DATABASE-RECORD (announcing the record's transition into a database record) precede
+  PRE-INSERT (the "about to insert" gate). This engine's own `PreInsert` already fires at
+  add-to-block time rather than the true physical-commit moment (CREATE_RECORD stages the record;
+  the actual INSERT happens later via `SaveDirtyBlocksAsync`/`UnitOfWork.Commit()`) — firing
+  WHEN-DATABASE-RECORD immediately ahead of it is the closest honest match this engine's pipeline
+  supports without a second firing pass over the commit path.
+- `ExecuteKeyDefaultActionAsync` (`FormsManager.KeyTriggers.cs`) needed no change: its `default:
+  return true` ("consumed silently") already covers the large majority of `KeyTriggerType` members
+  (only `Enter/Commit`, `Exit`, `ExecuteQuery`, `NextRecord/PreviousRecord`, `NextBlock/PreviousBlock`
+  get explicit handling), and the seven new keys are item-focus/UI-level concerns (grid paging,
+  caret editing, focus movement) this engine layer doesn't own — inventing a default action for them
+  would be fabricated behavior, not a fix.
+
+**Where:** `TriggerEnums.cs`; `FormsManager.FormOperations.cs` (`CloseFormAsync`,
+`ClearBlockAsync`); `FormsManager.Lifecycle.cs` (`OnMessageBusFormMessage`);
+`FormsManager.EnhancedOperations.cs` (`InsertRecordEnhancedAsync`).
+
+**Risk of fix:** Low for the three notification-style fires (`WhenClearBlock`,
+`WhenFormNotification`, `WhenDatabaseRecord`) — additive, no existing caller could have depended on
+a trigger type that didn't exist. Slightly higher for `WhenCloseForm`: it's cancellable, so a form
+that registers a handler for it can now veto a close that previously always succeeded — this is the
+intended, documented Oracle behavior, not a regression, but it is new observable behavior for any
+form author who adds one. The `KeyListValues`→`KeyListVal` rename is a breaking source change for
+any external caller of that literal enum member name; confirmed zero such callers exist in either
+repo before renaming.
+
+**Not fixed, out of scope for this pass:** Object Groups, the Editor (large-text popup) object, and
+the three IDE authoring dialogs (Record Groups, Parameter Lists, Alerts) remain open — these are
+substantially larger surfaces (new capabilities, not missing trigger members) and were not
+investigated this pass. Also identified but **not fixed** — Beep.Forms-repo catalog data-quality
+issues, not BeepDM engine gaps: `OracleFormsTriggerEvents.cs`'s `OracleFormsTriggerEvent.Commit`/
+`.Rollback` bare entries (display strings `"Commit"`/`"Rollback"`) duplicate the catalog's own
+already-correct `KeyCommit`/`KeyRollback` (`"Key-Commit"`/`"Key-Rollback"`); `.WhenTimer`'s display
+string `"When-Timer"` likely should read `"When-Timer-Expired"` to match Oracle's real canonical
+name and this engine's already-firing `TriggerType.WhenTimerExpired` (G0.28). Both are Beep.Forms
+IDE catalog edits, not engine changes — flagged for a decision there rather than silently applied
+here.
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

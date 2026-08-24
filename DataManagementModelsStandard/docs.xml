@@ -10957,6 +10957,20 @@
             way Oracle Forms' WHEN-VALIDATE-FORM does.
             </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenCloseForm">
+            <summary>
+            Form is closing (WHEN-CLOSE-FORM). Added 2026-08-24 — one of the
+            events the IDE's Add Trigger picker offered with no matching
+            engine member (<c>TriggerTypeNames.cs</c>'s own remark).
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenFormNotification">
+            <summary>
+            A message arrives for this form from another form or the
+            application (WHEN-FORM-NOTIFICATION). Added 2026-08-24 — same
+            reason as <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenCloseForm"/>.
+            </summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.PreBlock">
             <summary>Before entering block (PRE-BLOCK)</summary>
         </member>
@@ -11025,6 +11039,24 @@
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.OnDelete">
             <summary>On delete — replaces default DB delete (ON-DELETE)</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenDatabaseRecord">
+            <summary>
+            A record is first associated with an actual database row
+            (WHEN-DATABASE-RECORD) — for a fetched row, immediately on
+            query; for a new record, after it validates successfully and
+            immediately before the physical INSERT. Distinct from
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenCreateRecord"/>, which fires when Forms creates the
+            purely in-memory record, before any database association.
+            Added 2026-08-24.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenClearBlock">
+            <summary>
+            A block's records are discarded (WHEN-CLEAR-BLOCK) — CLEAR_BLOCK,
+            or any navigation that clears the block's working set. Added
+            2026-08-24.
+            </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.PreRecord">
             <summary>Before entering record (PRE-RECORD)</summary>
@@ -11181,8 +11213,14 @@
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyClearItem">
             <summary>Key clear item (KEY-CLRITM)</summary>
         </member>
-        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyListValues">
-            <summary>Key list values (KEY-LISTVAL)</summary>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyListVal">
+            <summary>
+            Key list values (KEY-LISTVAL). Renamed from <c>KeyListValues</c>
+            2026-08-24 — the extra "s" meant <c>TriggerTypeNames.TryToMember</c>
+            in the IDE could never resolve Oracle's canonical name "Key-ListVal"
+            to this member (same defect shape as <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenLOVValidation"/>'s
+            rename). No callers anywhere referenced the old name.
+            </summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyHelp">
             <summary>Key help (KEY-HELP)</summary>
@@ -11237,6 +11275,40 @@
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyF12">
             <summary>Key F12</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyPageUp">
+            <summary>Key page up (KEY-PGUP). Added 2026-08-24.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyPageDown">
+            <summary>Key page down (KEY-PGDOWN). Added 2026-08-24.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyTab">
+            <summary>Key tab (KEY-TAB). Added 2026-08-24.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyDelete">
+            <summary>
+            Key delete (KEY-DELETE) — the raw keystroke, distinct from
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyDeleteRecord"/> (KEY-DELREC, the delete-current-record
+            built-in). Added 2026-08-24.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyInsert">
+            <summary>
+            Key insert (KEY-INSERT) — the raw keystroke, distinct from
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyCreateRecord"/> (KEY-CREREC, the new-record built-in).
+            Added 2026-08-24.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyClear">
+            <summary>
+            Key clear (KEY-CLEAR) — a generic clear keystroke not already
+            covered by <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyClearBlock"/>/<see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyClearForm"/>/
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyClearRecord"/>/<see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyClearItem"/>. Added
+            2026-08-24.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.KeyForm">
+            <summary>Key form (KEY-FORM). Added 2026-08-24.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenMouseDown">
             <summary>When mouse down (WHEN-MOUSE-DOWN)</summary>
@@ -11436,6 +11508,27 @@
         </member>
         <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.F12">
             <summary>Function key F12.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.PageUp">
+            <summary>Page up.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.PageDown">
+            <summary>Page down.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.Tab">
+            <summary>Tab to the next context.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.Delete">
+            <summary>Delete keystroke.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.Insert">
+            <summary>Insert keystroke.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.Clear">
+            <summary>Generic clear keystroke.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType.Form">
+            <summary>Form keystroke.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.TriggerScope">
             <summary>

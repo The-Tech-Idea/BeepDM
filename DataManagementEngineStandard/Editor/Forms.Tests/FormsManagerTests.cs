@@ -4,6 +4,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.Forms.Helpers;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.UOW;
 using TheTechIdea.Beep.Editor.UOWManager;
 using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -1657,6 +1658,126 @@ public class FormsManagerTests : IDisposable
 
         Assert.False(result);
         Assert.True(_manager.ItemProperties.HasItemError("ORD", "TenantId"));
+    }
+
+    #endregion
+
+    #region New Trigger Wiring — WHEN-CLOSE-FORM / WHEN-CLEAR-BLOCK / WHEN-FORM-NOTIFICATION / WHEN-DATABASE-RECORD (2026-08-24)
+    //
+    // TriggerType.WhenCloseForm/WhenClearBlock/WhenFormNotification/WhenDatabaseRecord
+    // existed nowhere before this — the Oracle Forms catalog listed all four as
+    // events the IDE's Add Trigger picker offered with no matching engine member.
+    // These tests prove each one actually fires from its real call site, not just
+    // that the enum member compiles.
+
+    [Fact]
+    public async Task CloseFormAsync_FiresWhenCloseFormTrigger()
+    {
+        await _manager.OpenFormAsync("TestForm").ConfigureAwait(false);
+
+        string capturedForm = null;
+        _manager.Triggers.RegisterFormTrigger(TriggerType.WhenCloseForm, "TestForm", ctx =>
+        {
+            capturedForm = ctx.FormName;
+            return TriggerResult.Success;
+        });
+
+        var closed = await _manager.CloseFormAsync().ConfigureAwait(false);
+
+        Assert.True(closed);
+        Assert.Equal("TestForm", capturedForm);
+    }
+
+    [Fact]
+    public async Task CloseFormAsync_WhenCloseFormTriggerCancels_FormStaysOpen()
+    {
+        await _manager.OpenFormAsync("TestForm").ConfigureAwait(false);
+        _manager.Triggers.RegisterFormTrigger(TriggerType.WhenCloseForm, "TestForm",
+            ctx => TriggerResult.Cancelled);
+
+        var closed = await _manager.CloseFormAsync().ConfigureAwait(false);
+
+        Assert.False(closed);
+        Assert.Equal("TestForm", _manager.CurrentFormName);
+    }
+
+    [Fact]
+    public async Task ClearBlockAsync_FiresWhenClearBlockTrigger()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        var uow = CreateUowMock(0);
+        _manager.RegisterBlock("ORD", uow.Object, entity);
+
+        string capturedBlock = null;
+        _manager.Triggers.RegisterBlockTrigger(TriggerType.WhenClearBlock, "ORD", ctx =>
+        {
+            capturedBlock = ctx.BlockName;
+            return TriggerResult.Success;
+        });
+
+        await _manager.ClearBlockAsync("ORD").ConfigureAwait(false);
+
+        Assert.Equal("ORD", capturedBlock);
+        uow.Verify(u => u.Clear(), Times.Once);
+    }
+
+    [Fact]
+    public async Task MessageBus_MessageAddressedToCurrentForm_FiresWhenFormNotificationTrigger()
+    {
+        using var manager = new FormsManager(_mockEditor.Object);
+        await manager.OpenFormAsync("TestForm").ConfigureAwait(false);
+
+        string capturedSender = null;
+        object capturedPayload = null;
+        manager.Triggers.RegisterFormTrigger(TriggerType.WhenFormNotification, "TestForm", ctx =>
+        {
+            capturedSender = ctx.Parameters.TryGetValue("SenderForm", out var v) ? v as string : null;
+            capturedPayload = ctx.Parameters.TryGetValue("Payload", out var p) ? p : null;
+            return TriggerResult.Success;
+        });
+
+        manager.MessageBus.PostMessage("TestForm", "REFRESH", "payload-data", senderForm: "OtherForm");
+
+        await WaitUntilAsync(() => capturedSender != null).ConfigureAwait(false);
+
+        Assert.Equal("OtherForm", capturedSender);
+        Assert.Equal("payload-data", capturedPayload);
+    }
+
+    [Fact]
+    public async Task InsertRecordEnhancedAsync_FiresWhenDatabaseRecordTriggerBeforePreInsert()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        var uow = CreateUowMock(0);
+        uow.Setup(u => u.IsDirty).Returns(false);
+        // GetBlockCount (used to detect whether UnitOfWork.Add actually added
+        // a record) reads IAggregatable.Count, not TotalItemCount — a plain
+        // IUnitofWork mock doesn't implement it, so Add()'s effect must be
+        // simulated explicitly via a call sequence: 0 before Add, 1 after.
+        uow.As<IAggregatable>().SetupSequence(a => a.Count(It.IsAny<Func<object, bool>>()))
+            .Returns(0)
+            .Returns(1);
+        _manager.RegisterBlock("ORD", uow.Object, entity);
+        var blockInfo = _manager.GetBlock("ORD");
+        blockInfo.Mode = DataBlockMode.CRUD;
+
+        var firedOrder = new List<TriggerType>();
+        _manager.Triggers.RegisterBlockTrigger(TriggerType.WhenDatabaseRecord, "ORD", ctx =>
+        {
+            firedOrder.Add(TriggerType.WhenDatabaseRecord);
+            return TriggerResult.Success;
+        });
+        _manager.Triggers.RegisterBlockTrigger(TriggerType.PreInsert, "ORD", ctx =>
+        {
+            firedOrder.Add(TriggerType.PreInsert);
+            return TriggerResult.Success;
+        });
+
+        var record = new Dictionary<string, object> { ["Name"] = "Alice" };
+        var result = await _manager.InsertRecordEnhancedAsync("ORD", record).ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        Assert.Equal(new[] { TriggerType.WhenDatabaseRecord, TriggerType.PreInsert }, firedOrder);
     }
 
     #endregion

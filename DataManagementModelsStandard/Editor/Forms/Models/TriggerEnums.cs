@@ -57,8 +57,22 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// </summary>
         WhenValidateForm = 12,
 
-        // Reserved 13-19 for future form-level triggers
-        
+        /// <summary>
+        /// Form is closing (WHEN-CLOSE-FORM). Added 2026-08-24 — one of the
+        /// events the IDE's Add Trigger picker offered with no matching
+        /// engine member (<c>TriggerTypeNames.cs</c>'s own remark).
+        /// </summary>
+        WhenCloseForm = 13,
+
+        /// <summary>
+        /// A message arrives for this form from another form or the
+        /// application (WHEN-FORM-NOTIFICATION). Added 2026-08-24 — same
+        /// reason as <see cref="WhenCloseForm"/>.
+        /// </summary>
+        WhenFormNotification = 14,
+
+        // Reserved 15-19 for future form-level triggers
+
         #endregion
         
         #region Block Level Triggers (20-49)
@@ -131,9 +145,27 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         
         /// <summary>On delete — replaces default DB delete (ON-DELETE)</summary>
         OnDelete = 42,
-        
-        // Reserved 43-49 for future block-level triggers
-        
+
+        /// <summary>
+        /// A record is first associated with an actual database row
+        /// (WHEN-DATABASE-RECORD) — for a fetched row, immediately on
+        /// query; for a new record, after it validates successfully and
+        /// immediately before the physical INSERT. Distinct from
+        /// <see cref="WhenCreateRecord"/>, which fires when Forms creates the
+        /// purely in-memory record, before any database association.
+        /// Added 2026-08-24.
+        /// </summary>
+        WhenDatabaseRecord = 43,
+
+        /// <summary>
+        /// A block's records are discarded (WHEN-CLEAR-BLOCK) — CLEAR_BLOCK,
+        /// or any navigation that clears the block's working set. Added
+        /// 2026-08-24.
+        /// </summary>
+        WhenClearBlock = 44,
+
+        // Reserved 45-49 for future block-level triggers
+
         #endregion
         
         #region Record Level Triggers (50-69)
@@ -309,8 +341,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>Key clear item (KEY-CLRITM)</summary>
         KeyClearItem = 131,
         
-        /// <summary>Key list values (KEY-LISTVAL)</summary>
-        KeyListValues = 132,
+        /// <summary>
+        /// Key list values (KEY-LISTVAL). Renamed from <c>KeyListValues</c>
+        /// 2026-08-24 — the extra "s" meant <c>TriggerTypeNames.TryToMember</c>
+        /// in the IDE could never resolve Oracle's canonical name "Key-ListVal"
+        /// to this member (same defect shape as <see cref="WhenLOVValidation"/>'s
+        /// rename). No callers anywhere referenced the old name.
+        /// </summary>
+        KeyListVal = 132,
         
         /// <summary>Key help (KEY-HELP)</summary>
         KeyHelp = 133,
@@ -358,9 +396,43 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         KeyF11 = 160,
         /// <summary>Key F12</summary>
         KeyF12 = 161,
-        
-        // Reserved 162-169 for additional key triggers
-        
+
+        /// <summary>Key page up (KEY-PGUP). Added 2026-08-24.</summary>
+        KeyPageUp = 162,
+
+        /// <summary>Key page down (KEY-PGDOWN). Added 2026-08-24.</summary>
+        KeyPageDown = 163,
+
+        /// <summary>Key tab (KEY-TAB). Added 2026-08-24.</summary>
+        KeyTab = 164,
+
+        /// <summary>
+        /// Key delete (KEY-DELETE) — the raw keystroke, distinct from
+        /// <see cref="KeyDeleteRecord"/> (KEY-DELREC, the delete-current-record
+        /// built-in). Added 2026-08-24.
+        /// </summary>
+        KeyDelete = 165,
+
+        /// <summary>
+        /// Key insert (KEY-INSERT) — the raw keystroke, distinct from
+        /// <see cref="KeyCreateRecord"/> (KEY-CREREC, the new-record built-in).
+        /// Added 2026-08-24.
+        /// </summary>
+        KeyInsert = 166,
+
+        /// <summary>
+        /// Key clear (KEY-CLEAR) — a generic clear keystroke not already
+        /// covered by <see cref="KeyClearBlock"/>/<see cref="KeyClearForm"/>/
+        /// <see cref="KeyClearRecord"/>/<see cref="KeyClearItem"/>. Added
+        /// 2026-08-24.
+        /// </summary>
+        KeyClear = 167,
+
+        /// <summary>Key form (KEY-FORM). Added 2026-08-24.</summary>
+        KeyForm = 168,
+
+        // Reserved 169 for additional key triggers
+
         #endregion
         
         #region Mouse Triggers (170-189)
@@ -580,7 +652,28 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         F11 = 160,
 
         /// <summary>Function key F12.</summary>
-        F12 = 161
+        F12 = 161,
+
+        /// <summary>Page up.</summary>
+        PageUp = 162,  // KEY-PGUP
+
+        /// <summary>Page down.</summary>
+        PageDown = 163,  // KEY-PGDOWN
+
+        /// <summary>Tab to the next context.</summary>
+        Tab = 164,  // KEY-TAB
+
+        /// <summary>Delete keystroke.</summary>
+        Delete = 165,  // KEY-DELETE
+
+        /// <summary>Insert keystroke.</summary>
+        Insert = 166,  // KEY-INSERT
+
+        /// <summary>Generic clear keystroke.</summary>
+        Clear = 167,  // KEY-CLEAR
+
+        /// <summary>Form keystroke.</summary>
+        Form = 168  // KEY-FORM
     }
 
     #endregion

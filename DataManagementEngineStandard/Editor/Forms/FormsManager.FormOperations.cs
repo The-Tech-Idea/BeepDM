@@ -133,6 +133,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 if (!closeArgs.Cancel)
                 {
+                    // Fire WHEN-CLOSE-FORM — a registered handler can still veto
+                    // the close here. TriggerType.WhenCloseForm existed nowhere
+                    // before this (2026-08-24); OnFormClose (a plain .NET event,
+                    // above) was the only extension point, so a form author had
+                    // no way to use the Oracle-named trigger the IDE's own Add
+                    // Trigger picker already offered (TriggerTypeNames.cs's own
+                    // remark listed it as one of 18 unauthorable events).
+                    var closeTriggerResult = await _triggerManager.FireFormTriggerAsync(
+                        TriggerType.WhenCloseForm, _currentFormName,
+                        TriggerContext.ForForm(TriggerType.WhenCloseForm, _currentFormName, _dmeEditor))
+                        .ConfigureAwait(false);
+                    if (closeTriggerResult == TriggerResult.Cancelled)
+                    {
+                        Status = "Form close cancelled by WHEN-CLOSE-FORM trigger";
+                        LogOperation(Status);
+                        return false;
+                    }
+
                     // Perform cleanup operations
                     await PerformFormCleanupAsync().ConfigureAwait(false);
 
@@ -491,6 +509,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                     blockInfo.UnitOfWork.Clear();
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
+
+                    // Fire WHEN-CLEAR-BLOCK. Unrestricted in Oracle Forms — a
+                    // notification after the clear, not a gate on it, matching
+                    // how this engine already fires its other When-* events
+                    // (e.g. WhenCreateRecord). TriggerType.WhenClearBlock
+                    // existed nowhere before this (2026-08-24).
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.WhenClearBlock, blockName,
+                        TriggerContext.ForBlock(TriggerType.WhenClearBlock, blockName, null, _dmeEditor))
+                        .ConfigureAwait(false);
+
                     Status = $"Block '{blockName}' cleared successfully";
                     LogOperation($"Block '{blockName}' cleared successfully");
                 }
