@@ -290,6 +290,16 @@ namespace TheTechIdea.Beep.Editor
                     if (tr != null)
                     {
                         originalList[tr.OriginalIndex] = item;
+                        // An existing tracking record found here means the row was loaded (Unchanged)
+                        // or already touched this unit-of-work. Only Unchanged should transition to
+                        // Modified — Added must stay Added (it still needs an INSERT, not an UPDATE,
+                        // and CommitAllAsync routes strictly by EntityState) and Deleted/Detached must
+                        // not be silently resurrected by a plain replace. Before this guard, replacing
+                        // an item that already had a tracking record (e.g. via UnitofWork.Update after
+                        // a fresh Get()) left EntityState at Unchanged, so CommitAllAsync skipped it —
+                        // Commit() reported success without writing anything.
+                        if (tr.EntityState == EntityState.Unchanged)
+                            tr.EntityState = EntityState.Modified;
                         if (IsLogging)
                         {
                             CreateLogEntry(item, LogAction.Update, tr, changedFields);
@@ -329,7 +339,8 @@ namespace TheTechIdea.Beep.Editor
                 if (tracking != null)
                 {
                     originalList[tracking.OriginalIndex] = item;
-                    tracking.EntityState = EntityState.Modified;
+                    if (tracking.EntityState == EntityState.Unchanged)
+                        tracking.EntityState = EntityState.Modified;
                     if (IsLogging)
                     {
                         CreateLogEntry(item, LogAction.Update, tracking, changedFields);
