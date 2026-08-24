@@ -148,6 +148,34 @@ ON UPDATE {onUpdate}";
         }
 
         /// <summary>
+        /// Generates SQL to drop a primary key constraint. <paramref name="constraintName"/> must be
+        /// the live, provider-assigned name (SQL Server auto-names it, e.g. <c>PK__DA_PLAN__...</c> —
+        /// there is no fixed naming convention to assume; resolve it first via <see cref="GetPrimaryKeyQuery"/>).
+        /// </summary>
+        public (string Sql, bool Success, string ErrorMessage) GenerateDropPrimaryKeySql(
+            string tableName,
+            string constraintName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(tableName))
+                    return ("", false, "Table name is required");
+
+                if (string.IsNullOrWhiteSpace(constraintName))
+                    return ("", false, "Constraint name is required");
+
+                var quotedTable = QuoteIdentifier(tableName);
+                var quotedConstraint = QuoteIdentifier(constraintName);
+                var sql = $"ALTER TABLE {quotedTable} DROP CONSTRAINT {quotedConstraint}";
+                return (sql, true, "");
+            }
+            catch (Exception ex)
+            {
+                return ("", false, ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Generates SQL to drop a foreign key constraint.
         /// When <paramref name="constraintName"/> is null/empty, a default name of
         /// FK_{table}_{refTable}_{columns} is assumed.

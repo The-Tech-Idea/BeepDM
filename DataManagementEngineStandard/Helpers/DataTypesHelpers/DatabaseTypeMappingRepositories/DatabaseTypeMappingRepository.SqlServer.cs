@@ -33,7 +33,15 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 new DatatypeMapping { ID = 13, GuidID = Guid.NewGuid().ToString(), DataType = "nchar", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = false },
                 new DatatypeMapping { ID = 14, GuidID = Guid.NewGuid().ToString(), DataType = "ntext", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = false },
                 new DatatypeMapping { ID = 15, GuidID = Guid.NewGuid().ToString(), DataType = "numeric", DataSourceName = "SQLServerDataSource", NetDataType = "System.Decimal", Fav = false },
-                new DatatypeMapping { ID = 16, GuidID = Guid.NewGuid().ToString(), DataType = "nvarchar", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = false },
+                // "(N)" + Fav = true: the preferred, sized System.String representation for SQL
+                // Server (Unicode, variable-length) — matches the templating convention every other
+                // provider's repository already uses (e.g. Postgres/MySQL "varchar(N)"). Without
+                // both, MapClrTypeToDatasourceType's Fav-first lookup fell through to whichever row
+                // was declared first (ID 4, bare "char") and had no placeholder to size — a
+                // fixed-width, 1-byte-default type nobody would deliberately pick for a general
+                // string column, and the direct cause of DA_ROLE_PERMISSION/DA_PLAN/DA_BACKUP_RUN
+                // insert failures on SQL Server.
+                new DatatypeMapping { ID = 16, GuidID = Guid.NewGuid().ToString(), DataType = "nvarchar(N)", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = true },
                 new DatatypeMapping { ID = 17, GuidID = Guid.NewGuid().ToString(), DataType = "real", DataSourceName = "SQLServerDataSource", NetDataType = "System.Single", Fav = false },
                 new DatatypeMapping { ID = 18, GuidID = Guid.NewGuid().ToString(), DataType = "smallint", DataSourceName = "SQLServerDataSource", NetDataType = "System.Int16", Fav = false },
                 new DatatypeMapping { ID = 19, GuidID = Guid.NewGuid().ToString(), DataType = "text", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = false },

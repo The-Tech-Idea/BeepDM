@@ -433,11 +433,25 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 }
             }
 
-            // No size specified, get default string mapping
-            var defaultMapping = mappings.FirstOrDefault(x => 
-                x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
-            
-            return defaultMapping?.DataType;
+            // No size specified — prefer the Fav row (e.g. SQL Server's templated "nvarchar(N)")
+            // over declaration order. This previously ignored Fav entirely and returned whichever
+            // mapping was declared first for the .NET type — for SQL Server that was "char"
+            // (unsized, so the server defaults it to a single character), silently truncating
+            // every unattributed string column on the very first insert.
+            var defaultMapping = mappings.FirstOrDefault(x =>
+                    x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav)
+                ?? mappings.FirstOrDefault(x =>
+                    x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
+
+            if (defaultMapping == null)
+                return null;
+
+            // A templated row picked without an explicit size still needs its placeholder
+            // resolved — a generously large fixed width valid across SQL Server/MySQL/Postgres
+            // column-length limits (none of these types support "(N)" as literal DDL).
+            return defaultMapping.DataType.Contains("(N)")
+                ? defaultMapping.DataType.Replace("(N)", "(4000)")
+                : defaultMapping.DataType;
         }
 
         private static string ProcessNumericFieldtype(List<DatatypeMapping> mappings, string className, EntityField fld)

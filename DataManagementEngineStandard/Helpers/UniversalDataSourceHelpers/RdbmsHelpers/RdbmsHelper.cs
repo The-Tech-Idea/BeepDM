@@ -412,11 +412,17 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                     if (exactMatch != null)
                     {
                         var dataType = exactMatch.DataType;
-                        
-                        // Apply size/precision/scale if provided
-                        if (clrType == typeof(string) && size.HasValue && dataType.Contains("(N)"))
+
+                        // Apply size/precision/scale if provided. The "(N)" placeholder must always
+                        // be resolved when present — an unconditional (size.HasValue-gated) skip left
+                        // the literal token "(N)" in the emitted DDL for any unsized string field
+                        // whose matched mapping happens to be templated (e.g. SQL Server's
+                        // "nvarchar(N)", MySQL's "varchar(N)"), which every provider rejects as
+                        // invalid syntax. Falls back to a size valid across SQL Server/MySQL/Postgres
+                        // varchar limits when the field carries no explicit size.
+                        if (clrType == typeof(string) && dataType.Contains("(N)"))
                         {
-                            dataType = dataType.Replace("(N)", $"({size.Value})");
+                            dataType = dataType.Replace("(N)", $"({size ?? 4000})");
                         }
                         else if ((clrType == typeof(decimal) || clrType == typeof(float) || clrType == typeof(double)) 
                                  && precision.HasValue && scale.HasValue && dataType.Contains("(P,S)"))
@@ -693,7 +699,11 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = column.Fieldtype;
+                // ResolveFieldType maps the .NET Fieldtype (e.g. "System.String") to an actual
+                // sized SQL type (e.g. "NVARCHAR(128)") via the datasource's DataTypesMap. Using
+                // column.Fieldtype directly here would emit the CLR type name as literal DDL —
+                // syntactically invalid on every provider.
+                var dataType = ResolveFieldType(column);
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(column.FieldName);
                 var sql = $"ALTER TABLE {quotedTable} ADD {quotedColumn} {dataType}";
@@ -778,16 +788,30 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
         {
             try
             {
-                var dataType = newColumn.Fieldtype;
+                // Same resolution as GenerateAddColumnSql — see the comment there. Without it,
+                // widening a column (e.g. DoitAllEntityBase.CreatedBy/ChangedBy from an
+                // unattributed default to [MaxLength(128)]) emitted "ALTER COLUMN [ChangedBy]
+                // System.String", which every provider rejects.
+                var dataType = ResolveFieldType(newColumn);
                 var quotedTable = QuoteIdentifier(tableName);
                 var quotedColumn = QuoteIdentifier(columnName);
+                // Nullability must be stated explicitly. Leaving it out does not mean "keep the
+                // current setting" — verified live against SQL Server: an ALTER COLUMN with no
+                // NULL/NOT NULL clause left a formerly NOT NULL primary-key column nullable, which
+                // then made SQL Server refuse to recreate the PRIMARY KEY constraint around it
+                // ("Cannot define PRIMARY KEY constraint on nullable column").
+                var nullability = newColumn.AllowDBNull ? "NULL" : "NOT NULL";
                 var sql = SupportedType switch
                 {
-                    DataSourceType.SqlServer => $"ALTER TABLE {quotedTable} ALTER COLUMN {quotedColumn} {dataType}",
-                    DataSourceType.Mysql => $"ALTER TABLE {quotedTable} MODIFY COLUMN {quotedColumn} {dataType}",
-                    DataSourceType.Postgre => $"ALTER TABLE {quotedTable} ALTER COLUMN {quotedColumn} TYPE {dataType}",
-                    DataSourceType.Oracle => $"ALTER TABLE {quotedTable} MODIFY {quotedColumn} {dataType}",
-                    _ => $"ALTER TABLE {quotedTable} ALTER COLUMN {quotedColumn} {dataType}"
+                    DataSourceType.SqlServer => $"ALTER TABLE {quotedTable} ALTER COLUMN {quotedColumn} {dataType} {nullability}",
+                    DataSourceType.Mysql => $"ALTER TABLE {quotedTable} MODIFY COLUMN {quotedColumn} {dataType} {nullability}",
+                    // Postgres has no single-clause form for "change type AND nullability" — TYPE
+                    // and SET/DROP NOT NULL are separate sub-actions, combined here as one ALTER
+                    // TABLE statement via Postgres's comma-separated multi-action syntax.
+                    DataSourceType.Postgre => $"ALTER TABLE {quotedTable} ALTER COLUMN {quotedColumn} TYPE {dataType}, " +
+                        $"ALTER COLUMN {quotedColumn} {(newColumn.AllowDBNull ? "DROP NOT NULL" : "SET NOT NULL")}",
+                    DataSourceType.Oracle => $"ALTER TABLE {quotedTable} MODIFY {quotedColumn} {dataType} {nullability}",
+                    _ => $"ALTER TABLE {quotedTable} ALTER COLUMN {quotedColumn} {dataType} {nullability}"
                 };
                 return (sql, true, string.Empty);
             }

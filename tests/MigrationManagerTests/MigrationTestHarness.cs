@@ -4,6 +4,7 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.SchemaMigration;
+using TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers;
 using TheTechIdea.Beep.Tools;
 using TheTechIdea.Beep.Utilities;
 
@@ -42,6 +43,21 @@ public sealed class MigrationTestHarness
     /// <summary>Number of times the fake class-creator was asked to convert a type (Phase 7 cache probe).</summary>
     public int ConversionCount { get; private set; }
 
+    /// <summary>
+    /// Every SQL string passed to <see cref="IDataSource.ExecuteSql"/> directly — the path
+    /// operations bypassing <see cref="ISchemaMigrationProvider"/> use (e.g.
+    /// <c>MigrationManager.WidenPrimaryKeyColumn</c>, implemented straight against
+    /// <see cref="RdbmsHelper"/> because that capability has no home on the provider interface
+    /// — see that method's own remarks).
+    /// </summary>
+    public List<string> ExecutedSql { get; } = new();
+
+    /// <summary>When any statement executed via ExecuteSql contains this substring, that call fails.</summary>
+    public HashSet<string> FailSqlContaining { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Row(s) <see cref="IDataSource.RunQuery"/> returns for any query — used for the live primary-key-name lookup.</summary>
+    public List<object[]> RunQueryRows { get; set; } = new();
+
     public MigrationTestHarness()
     {
         _ds.SetupGet(d => d.DatasourceType).Returns(DataSourceType.SqlServer);
@@ -58,7 +74,21 @@ public sealed class MigrationTestHarness
         _ds.Setup(d => d.CreateEntityAs(It.IsAny<EntityStructure>()))
            .Returns<EntityStructure>(e => { ProviderCalls.Add($"CreateEntityAs:{e?.EntityName}"); return true; });
         _ds.Setup(d => d.ExecuteSql(It.IsAny<string>()))
-           .Returns<string>(_ => new ErrorsInfo { Flag = Errors.Ok });
+           .Returns<string>(sql =>
+           {
+               ExecutedSql.Add(sql);
+               return FailSqlContaining.Any(needle => sql?.Contains(needle, StringComparison.OrdinalIgnoreCase) == true)
+                   ? new ErrorsInfo { Flag = Errors.Failed, Message = $"Execution failed (scripted): {sql}" }
+                   : new ErrorsInfo { Flag = Errors.Ok };
+           });
+        _ds.Setup(d => d.RunQuery(It.IsAny<string>()))
+           .Returns<string>(_ => RunQueryRows.Cast<object>());
+
+        // Real RdbmsHelper, not a fake — WidenPrimaryKeyColumn is deliberately implemented
+        // straight against it (see that method's own remarks), so a test exercising it needs
+        // the actual SQL-generation logic, not a stand-in.
+        _editor.Setup(e => e.GetDataSourceHelper(It.IsAny<DataSourceType>()))
+               .Returns<DataSourceType>(t => new RdbmsHelper(_editor.Object) { SupportedType = t });
 
         _classCreator.Setup(c => c.ConvertToEntityStructure(It.IsAny<Type>(),
                 It.IsAny<KeyDetectionStrategy>(), It.IsAny<string>()))
