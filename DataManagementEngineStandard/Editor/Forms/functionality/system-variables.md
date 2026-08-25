@@ -4,155 +4,178 @@ This document covers the Oracle Forms `:SYSTEM.*` variables and their `FormsMana
 
 ## Overview
 
-`SystemVariablesManager` is the engine's emulation of Oracle's `:SYSTEM.*` record. There are ~15 standard variables, each accessible as a property on the manager.
+`SystemVariablesManager` (`Editor/Forms/Helpers/SystemVariablesManager.cs`, contract
+`ISystemVariablesManager` in `Editor/Forms/Interfaces/ICoreHelpers.cs`) is the engine's emulation
+of Oracle's `:SYSTEM.*` record. Unlike a flat set of properties on the manager itself, it hands back
+a `SystemVariables` snapshot object — one **form-level** instance plus one **per block** — each
+carrying 23 `UPPER_SNAKE_CASE` public fields that mirror the Oracle Forms `:SYSTEM.*` names, so
+trigger authors read `sysVars.CURSOR_RECORD` the same way they would read `:SYSTEM.CURSOR_RECORD`
+in real Oracle Forms.
+
+*(This doc previously described a different, PascalCase-property shape —
+`manager.SystemVariables.CursorBlock`, `.Mode`, `.Timer`, a `SetMaskSensitiveColumns(...)` method,
+and a lambda-based `Callback = (ctx) => ...` trigger registration returning `TriggerResult.Ok()`.
+None of that exists anywhere in this codebase; it was corrected 2026-08-25 to describe the actual
+implementation below, verified directly against `SystemVariables.cs`, `SystemVariablesManager.cs`,
+`ICoreHelpers.cs` and the real trigger-handler shape `DesignerHandlerScaffolder` emits.)*
 
 ## The full list
 
-| System variable | Type | What it tracks |
+`SystemVariables` (`Editor/Forms/Models/SystemVariables.cs`) carries these fields:
+
+| Field | Type | What it tracks |
 | --- | --- | --- |
-| `:SYSTEM.CURSOR_BLOCK` | string | The name of the currently focused block. |
-| `:SYSTEM.CURSOR_RECORD` | int | The 0-based index of the current record in the current block. |
-| `:SYSTEM.CURSOR_ITEM` | string | The name of the currently focused item. |
-| `:SYSTEM.CURSOR_VALUE` | object | The value of the currently focused item. |
-| `:SYSTEM.MODE` | string | "ENTER-QUERY" or "NORMAL" (CRUD). |
-| `:SYSTEM.BLOCK_STATUS` | string | "CHANGED", "NEW", or "QUERY" — the current block's dirty state. |
-| `:SYSTEM.FORM_STATUS` | string | "CHANGED", "NEW", or "QUERY" — the current form's overall dirty state. |
-| `:SYSTEM.LAST_RECORD` | bool | Whether the current record is the last in the block. |
-| `:SYSTEM.LAST_QUERY` | string | The SQL of the most recent query. |
-| `:SYSTEM.MESSAGE_LEVEL` | int | 0-25, the message severity. |
-| `:SYSTEM.SUPPRESS_WORKING` | bool | True if "Working..." messages are suppressed. |
-| `:SYSTEM.TIMER` | string | The name of the currently-firing timer. |
-| `:SYSTEM.TRIGGER_BLOCK` | string | The block that owns the currently-firing trigger. |
-| `:SYSTEM.TRIGGER_RECORD` | int | The record index in the trigger-owning block. |
-| `:SYSTEM.TRIGGER_ITEM` | string | The item that owns the currently-firing trigger. |
+| `CURRENT_BLOCK` | string | The name of the currently focused block. |
+| `CURRENT_ITEM` | string | The name of the currently focused item. |
+| `CURRENT_FORM` | string | The current form's name. |
+| `CURSOR_ITEM` | string | `"{block}.{item}"` for the currently focused item. |
+| `CURSOR_VALUE` | object | The value of the currently focused item. |
+| `CURSOR_RECORD` | int | The 1-based index of the current record in the block. |
+| `LAST_RECORD` | int | The record count in the block (not a "is this the last record" flag). |
+| `RECORDS_DISPLAYED` | int | Records currently displayed for the block. |
+| `MODE` | string | `"NORMAL"` or a mode name the caller sets via `SetMode`. |
+| `BLOCK_STATUS` | string | `"NEW"` / `"CHANGED"` / caller-set, per block. |
+| `FORM_STATUS` | string | `"NEW"` / `"CHANGED"` / caller-set, form-wide. |
+| `RECORD_STATUS` | string | `"NEW"` / caller-set, per block. |
+| `MASTER_BLOCK` | string | This block's master block name, when it is a detail. |
+| `TRIGGER_TYPE` | string | The type of the currently-firing trigger. |
+| `TRIGGER_FORM` | string | The form the currently-firing trigger belongs to. |
+| `TRIGGER_BLOCK` | string | The block the currently-firing trigger belongs to. |
+| `TRIGGER_ITEM` | string | `"{block}.{item}"` for the currently-firing item trigger. |
+| `TRIGGER_FIELD` | string | The item name alone (mirrors `TRIGGER_ITEM` in `UpdateBlockVariables`). |
+| `TRIGGER_RECORD` | int | The 1-based record index the currently-firing trigger applies to. |
+| `LAST_QUERY` | string | The most recent query string set via `SetLastQuery`. |
+| `LAST_ERROR` | string | The most recent error message set via `SetLastError`. |
+| `LAST_ERROR_CODE` | int | The most recent error code set via `SetLastError`. |
+| `LAST_OPERATION_TIME` | DateTime | Timestamp of the last write to this snapshot. |
+
+`SystemVariables.ToSnapshot()` returns all of the above (except `TRIGGER_FIELD`) as a
+`IReadOnlyDictionary<string, object>`, keyed by field name.
+
+**Not implemented** — real Oracle Forms `:SYSTEM.*` members with no counterpart here:
+`MESSAGE_LEVEL`, `SUPPRESS_WORKING`, `TIMER`, `CURSOR_BLOCK` (this engine's nearest equivalent is
+`CURRENT_BLOCK`), and the remainder of Oracle's ~90-variable set beyond the 23 above (coordination,
+effective-date, and various display-attribute variables). Extending this is a real, scoped
+future task — see the note at the end of this document.
 
 ## Access
 
 ```csharp
-var cursorBlock = manager.SystemVariables.CursorBlock;     // :SYSTEM.CURSOR_BLOCK
-var mode = manager.SystemVariables.Mode;                  // :SYSTEM.MODE
-var timer = manager.SystemVariables.Timer;                 // :SYSTEM.TIMER
+// Form-level snapshot
+var formVars = manager.SystemVariables.GetFormSystemVariables();
+var currentBlock = formVars.CURRENT_BLOCK;      // :SYSTEM.CURRENT_BLOCK-equivalent
+
+// Per-block snapshot (created lazily on first access)
+var orderVars = manager.SystemVariables.GetSystemVariables("Orders");
+var cursorRecord = orderVars.CURSOR_RECORD;     // :SYSTEM.CURSOR_RECORD-equivalent
 ```
 
-The `FormsManager.SystemVariables` property exposes the `ISystemVariablesManager` interface. All the variables above are accessible as properties on that interface.
+`IUnitofWorksManager.SystemVariables` (implemented by `FormsManager.SystemVariables`) exposes the
+`ISystemVariablesManager` interface. There is no flat per-variable property on the manager itself —
+always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` first.
 
 ## When each is updated
 
-| Variable | When updated |
+| Field | When updated |
 | --- | --- |
-| `CURSOR_BLOCK` | `SwitchToBlockAsync` (and any block navigation). |
-| `CURSOR_RECORD` | `NavigateWithValidationAsync` (and any record navigation). |
-| `CURSOR_ITEM` | `GoItemAsync` (and any item navigation). |
-| `CURSOR_VALUE` | `GoItemAsync` (after the new item is selected). |
-| `MODE` | `EnterQueryModeAsync` / `ExecuteQueryAndEnterCrudModeAsync`. |
-| `BLOCK_STATUS` | any DML (set to "CHANGED" on insert/update/delete). |
-| `FORM_STATUS` | any DML on any block (set to "CHANGED" on the form's status). |
-| `LAST_RECORD` | `NavigateToRecordAsync` (computed from `unitOfWork.Units.Count`). |
-| `LAST_QUERY` | `ExecuteQueryAsync` (set to the executed SQL). |
-| `MESSAGE_LEVEL` | `SetMessage` (and the equivalent built-ins). |
-| `SUPPRESS_WORKING` | (currently no caller; reserved for future use). |
-| `TIMER` | `TimerFired` event (set to the firing timer's name). |
-| `TRIGGER_*` | any trigger fire (set to the trigger's context). |
+| `CURRENT_BLOCK` | `UpdateForBlockChange(blockName)` — form-level and the block's own snapshot. |
+| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | `UpdateForRecordChange(blockName, recordIndex, totalRecords)`; also opportunistically inside `UpdateForBlockChange` from the block's live `IUnitofWork`. |
+| `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | `UpdateForItemChange(blockName, itemName, itemValue)`. |
+| `MASTER_BLOCK` | `UpdateForBlockChange`, when the block has a registered master. |
+| `MODE` | `SetMode(mode)` — form-level, and the current block's snapshot. |
+| `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. |
+| `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. |
+| `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. |
+| `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | `SetTriggerContext(...)` before a trigger fires; `ClearTriggerContext()` after. |
+| `LAST_ERROR`, `LAST_ERROR_CODE` | `SetLastError(message, code)` / cleared by `ClearLastError()`. |
+| `LAST_QUERY` | `SetLastQuery(queryString)`. |
+| `CURRENT_FORM` | `SetCurrentForm(formName)`. |
+| everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
+
+**None of `Set*`/`UpdateFor*` above has any caller anywhere in `Editor/Forms` today** — confirmed by
+grepping `manager.SystemVariables.` / `SystemVariables.` for each method name across the whole
+`Editor/Forms` tree and finding zero hits outside the manager's own file and its interface. The table
+above describes what each method is *for*, not what currently calls it: nothing in `FormsManager`'s
+own block-switch, record-navigation, item-focus, mode-transition, DML, query, or trigger-firing code
+calls into `SystemVariablesManager` at all right now. A trigger handler can legitimately write
+`context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK`, and it will compile and return a
+value — but that value is permanently whatever `SystemVariables`'s constructor set (`string.Empty`
+for every string field, `0`/`DateTime.MinValue` for the rest), because nothing ever updates it as the
+form actually runs. Wiring each `Update*`/`Set*` call into the right `FormsManager` operation is real,
+valuable, scoped-per-call-site work — genuinely separate from this documentation correction, and not
+attempted here. Check current call sites with `grep` before relying on any specific field being live.
+
+## A dedicated per-block snapshot, separate from the lazy one
+
+`UpdateBlockVariables(blockName, masterBlockName, mode, cursorRecord, lastRecord, recordsDisplayed,
+isQueryMode, isDirty, triggerItem, activeTrigger)` writes into a **second**, independent per-block
+store (`_blockVars`, read back via `GetBlockVariables(blockName)`) — separate from the
+`GetSystemVariables`-backed one above, which is lazily created on any access. `BLOCK_STATUS` here is
+derived (`"Query"` / `"Changed"` / `"Normal"`) rather than caller-supplied. This exists so a runtime
+host (`BeepDataBlock` or similar) can read a rich block snapshot without going back through
+`FormsManager` directly. `GetBlockVariables` on a block with no snapshot yet returns a fresh, empty
+`SystemVariables()`, not null.
 
 ## Reading inside triggers
 
-A trigger body (registered via `TriggerManager.RegisterTrigger`) can read `:SYSTEM.*` via `manager.SystemVariables.X`. The variables reflect the **current state at trigger time**.
+A trigger handler is a real C# method the IDE scaffolds onto the form's own partial class
+(`DesignerHandlerScaffolder.AddTriggerHandler`), with the signature the engine's
+`Func<TriggerContext, TriggerResult>` requires:
 
 ```csharp
-manager.Triggers.RegisterTrigger(new TriggerDefinition
+private TriggerResult OnValidateQty(TriggerContext context)
 {
-    Name = "WHEN-NEW-RECORD-INSTANCE",
-    BlockName = "ORDERS",
-    Callback = (ctx) =>
-    {
-        var currentBlock = ctx.Manager.SystemVariables.CursorBlock;
-        var currentIndex = ctx.Manager.SystemVariables.CursorRecord;
-        // ... do something with the current state ...
-        return TriggerResult.Ok();
-    }
-});
-```
-
-## `:SYSTEM.BLOCK_STATUS` values
-
-| Value | Meaning |
-| --- | --- |
-| `CHANGED` | The block has dirty records (one or more inserts/updates/deletes not yet committed). |
-| `NEW` | The block is in "new record" mode (a record is being created, not yet committed). |
-| `QUERY` | The block has no dirty state; the records are clean (or the block is in `EnterQuery`/`Query` mode with no records yet). |
-
-The status is computed from the block's `IUnitofWork.IsDirty` plus the `Mode` and the presence of any uncommitted "new" record.
-
-## `:SYSTEM.FORM_STATUS`
-
-Aggregates the `BLOCK_STATUS` across all blocks. The form status is the **most permissive** of the block statuses:
-
-- If any block is `NEW`, the form is `NEW`.
-- Else if any block is `CHANGED`, the form is `CHANGED`.
-- Else, the form is `QUERY`.
-
-## `:SYSTEM.MODE` values
-
-| Value | Meaning |
-| --- | --- |
-| `ENTER-QUERY` | At least one block is in `EnterQuery` mode. |
-| `NORMAL` | All blocks are in `Crud`, `Query`, or `New` mode (i.e. normal operation). |
-
-`:SYSTEM.MODE = "NORMAL"` covers the three "normal" modes; it's not specific to CRUD-only. (Oracle Forms treats CRUD as "Normal" too.)
-
-## `:SYSTEM.LAST_QUERY`
-
-The exact SQL string that was last executed by `ExecuteQueryAsync`. Useful for debugging ("what query did the engine run for this?") and for audit ("which query produced these records?").
-
-The string is the **composed** query, with the actual parameter values substituted. For sensitive parameters, the engine masks the value in the query string (e.g. `WHERE Password = '***'`). This is configurable via `ISystemVariablesManager.SetMaskSensitiveColumns(true)`.
-
-## `:SYSTEM.TRIGGER_*`
-
-The three trigger-related variables are set **before** a trigger body runs. They describe the context the trigger is firing in. Useful for triggers that need to know "where am I?" before deciding what to do.
-
-```csharp
-WHEN-NEW-RECORD-INSTANCE:
-    :SYSTEM.TRIGGER_BLOCK = the block that just got a new record
-    :SYSTEM.TRIGGER_RECORD = the index of the new record
-    :SYSTEM.TRIGGER_ITEM = null (item triggers are separate)
-```
-
-## Updates that are NOT immediate
-
-Some `:SYSTEM.*` variables are updated **on a delay** (after the operation completes, not at the start). This is because the engine computes them from the post-operation state. The most common case:
-
-- `:SYSTEM.BLOCK_STATUS` and `:SYSTEM.FORM_STATUS` are set after a DML operation completes successfully. If the operation fails, the status is NOT updated.
-- `:SYSTEM.MODE` is set after a mode transition completes. If the transition is cancelled (e.g. `OnPreQuery` cancels), the mode is unchanged.
-
-If a trigger body reads `:SYSTEM.BLOCK_STATUS` during a `OnPreInsert` handler, it sees the **pre-operation** status. If it reads it during `OnPostInsert`, it sees the **post-operation** status.
-
-## Reading from the host
-
-The host UI typically reads the variables through the helper property:
-
-```csharp
-// WinForms
-private void UpdateStatusBar()
-{
-    statusLabel.Text = $"{manager.SystemVariables.CursorBlock} / " +
-                       $"record {manager.SystemVariables.CursorRecord}";
+    var currentBlock = context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK;
+    var cursorRecord = context.SystemVariables.GetSystemVariables("Ord").CURSOR_RECORD;
+    // ... do something with the current state ...
+    return TriggerResult.Success;
 }
 ```
 
-For frequent updates (e.g. a status bar that updates on every navigation), subscribe to the events that cause the variable change and re-read on each event. The variables themselves are getters; they're not observable.
+`TriggerContext.SystemVariables` (`Editor/Forms/Models/TriggerContext.cs`) is the same
+`ISystemVariablesManager` the form's own `manager.SystemVariables` is — the context just hands it
+through so a handler does not need a separate reference to the manager. `TriggerResult` is an enum
+(`Success`/`Failure`/… — check `TriggerResult.cs` for the full set), not a factory method: return the
+member directly, never `TriggerResult.Ok()`.
+
+## `BLOCK_STATUS` values (as set by `SetBlockStatus`)
+
+| Value | Meaning |
+| --- | --- |
+| `CHANGED` | Passed explicitly by the caller (also forces `FORM_STATUS = "CHANGED"`). |
+| `NEW` | The default/reset value. |
+
+`SystemVariablesManager` does not itself compute `BLOCK_STATUS` from `IUnitofWork.IsDirty` — this is
+caller-supplied state (via `SetBlockStatus`) or, in the separate `UpdateBlockVariables` snapshot, a
+three-way `isQueryMode`/`isDirty` derivation (`"Query"`/`"Changed"`/`"Normal"`).
 
 ## Concurrency
 
-`SystemVariablesManager` is thread-safe for reads (the values are stored in `volatile` or `Interlocked` fields). Writes happen on the caller's thread and are immediately visible to other threads (memory barrier on the writer side).
-
-A multi-threaded caller that needs a consistent snapshot of multiple variables should call a snapshot method (if available) or use a lock around the read.
+All read/write access in `SystemVariablesManager` goes through a single `lock (_lockObject)`, not
+`volatile`/`Interlocked` fields — a caller reading `SystemVariables` fields directly (they are plain
+auto-properties) outside that lock can observe a torn read across multiple fields set by the same
+`Update*`/`Set*` call. For a consistent multi-field snapshot, prefer `ToSnapshot()` (still not called
+under the manager's lock, so pair it with your own locking if that matters for your use case) or
+accept the fields individually as eventually-consistent.
 
 ## Notes for callers
 
-- The `FormsManager.SystemVariables` property is the public surface. Direct access to the `SystemVariablesManager` is also fine.
-- The `SYSTEM.*` variables are **not** a substitute for proper state management. If you need to know "is this block dirty?", call `FormsManager.GetDirtyBlocks()` — don't infer it from `:SYSTEM.BLOCK_STATUS`.
-- The `SYSTEM.LAST_QUERY` value is the engine's composed SQL. It may differ from what your datasource would render (e.g. case differences, parameter substitution order). Use it for debugging, not for SQL parsing.
-- The `TRIGGER_*` variables are only set during trigger execution. Outside a trigger body, they hold the last-trigger value, not the current state.
+- `manager.SystemVariables` is the one access path. There is no separate direct-construction route —
+  `SystemVariablesManager`'s constructor takes the engine's own block dictionary, so it is only ever
+  built by `FormsManager` itself.
+- `GetSystemVariables(blockName)` creates and caches a new `SystemVariables` for a block name it has
+  not seen before (seeded with just `CURRENT_BLOCK`) — it never returns null.
+- The `TRIGGER_*` fields only reflect the *last* `SetTriggerContext`/`ClearTriggerContext` call, not a
+  live "am I inside a trigger right now" flag — read them during trigger execution, not after.
+
+## Extending this to a larger subset of Oracle's `:SYSTEM.*` set
+
+Real Oracle Forms defines roughly 90 `:SYSTEM.*` variables; the 23 fields above cover the ones a
+block/record/item/trigger-context emulation most directly needs, and were not chosen against the
+full Oracle list. If picking this up as further work, treat it as a genuinely separate,
+scoped-per-variable task — each addition needs real live-state wiring from a `FormsManager`
+operation, the same way `CURSOR_RECORD` is wired from `UpdateForRecordChange`, not just a new field
+that nothing ever sets.
 
 ## See also
 

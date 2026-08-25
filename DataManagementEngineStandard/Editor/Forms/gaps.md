@@ -824,6 +824,59 @@ exactly (`if (!f.IsEnabled) Line(...)` / `FB("IsEnabled", fallback: true)`).
 above it — no `IDataSource`/`IDMEEditor` chain needed); proven via revert (removing the two
 assignments failed exactly that test).
 
+### G0.36: `SystemVariablesManager` is fully built and reachable, but every `Update*`/`Set*` method
+has zero callers — every `:SYSTEM.*`-equivalent field is permanently stuck at its constructor default
+(FOUND 2026-08-25, **NOT FIXED** — documented and scoped, not attempted)
+
+**What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
+across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
+framing itself was wrong: it was based on `SystemVariableType`/`FormsSimulationHelper.SetSystemVariables`,
+a real but unrelated, intentionally-narrow feature (stamps `SYSTEM_DATE`/`SYSTEM_DATETIME`/
+`SYSTEM_USER`/`RECORD_STATUS` onto a **data record**, e.g. for audit columns — nothing to do with
+`:SYSTEM.*` trigger-context variables). The actual `:SYSTEM.*` emulation is `SystemVariablesManager`/
+`SystemVariables` (`Helpers/SystemVariablesManager.cs`, `Models/SystemVariables.cs`), which nobody had
+looked at: 23 real fields (`CURRENT_BLOCK`, `CURSOR_RECORD`, `CURSOR_ITEM`, `CURSOR_VALUE`, `MODE`,
+`BLOCK_STATUS`, `FORM_STATUS`, `RECORD_STATUS`, `MASTER_BLOCK`, five `TRIGGER_*` fields, `LAST_QUERY`,
+`LAST_ERROR`(`_CODE`), `LAST_OPERATION_TIME`, …), exposed on `IUnitofWorksManager.SystemVariables` and
+on `TriggerContext.SystemVariables` for handlers to read.
+
+The `functionality/system-variables.md` doc describing this manager was itself almost entirely
+fictional — a different, PascalCase-property API (`manager.SystemVariables.CursorBlock`, `.Mode`,
+`.Timer`, `SetMaskSensitiveColumns(...)`) that matches no code anywhere in this repo, plus a trigger
+example using a lambda `Callback = (ctx) => ...` / `TriggerResult.Ok()` shape that doesn't match the
+real `Func<TriggerContext, TriggerResult>` handler signature `DesignerHandlerScaffolder` actually
+emits. Corrected to describe the real implementation, verified field-by-field and method-by-method
+against source.
+
+**The gap that actually matters, found while correcting the doc:** every one of
+`SystemVariablesManager`'s update methods — `UpdateForBlockChange`, `UpdateForRecordChange`,
+`UpdateForItemChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`,
+`SetTriggerContext`/`ClearTriggerContext`, `SetLastError`/`ClearLastError`, `SetLastQuery`,
+`SetCurrentForm` — has **zero callers anywhere in `Editor/Forms`**, confirmed by grepping
+`SystemVariables.<MethodName>(` for each one. `FormsManager`'s own block-switch, record-navigation,
+item-focus, mode-transition, DML, query-execution and trigger-firing code never calls into this
+manager at all. The class is real, well-designed, reachable, and completely inert: a trigger handler
+can write `context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK` today, it will compile and
+return a value, and that value will be `string.Empty` forever regardless of what the form actually
+does, because nothing keeps it current.
+
+**Why not fixed in this pass:** wiring this up correctly means finding the right call site in each of
+~8-10 different `FormsManager.*.cs` operation files (block-switch, record-navigation, item-focus,
+mode-transition, each DML verb, query execution, and wherever `TriggerManager` invokes a trigger's
+callback) and calling the matching `Update*`/`Set*` method at the right moment relative to the
+operation completing — the doc's own "Updates that are NOT immediate" section (pre-existing content,
+kept) already establishes that ordering matters (e.g. `BLOCK_STATUS` must update only on a
+*successful* DML, `MODE` only on a completed, non-cancelled transition). That is real, valuable,
+well-scoped-**per-call-site** work, but it is a different shape from every fix in this session so far
+(all of which were "add the one missing caller") — this is "add eight-to-ten callers, each needing to
+find the right moment in an existing operation," genuinely larger and riskier to do correctly in one
+sitting. Documented here and in the doc itself so the next session (or the next scoping pass) starts
+from an accurate picture instead of rediscovering this from scratch.
+
+**Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
+`Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
+`Editor/Forms/functionality/system-variables.md` (corrected).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 
