@@ -824,10 +824,12 @@ exactly (`if (!f.IsEnabled) Line(...)` / `FB("IsEnabled", fallback: true)`).
 above it — no `IDataSource`/`IDMEEditor` chain needed); proven via revert (removing the two
 assignments failed exactly that test).
 
-### G0.36: `SystemVariablesManager` is fully built and reachable, but every `Update*`/`Set*` method
-has zero callers — every `:SYSTEM.*`-equivalent field is permanently stuck at its constructor default
+### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
+caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
 (FOUND 2026-08-25; **trigger-context slice FIXED same day** — `SetTriggerContext`/`ClearTriggerContext`
-now wired; the other ~8 methods remain open, see "Still open" below)
+now wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired,
+pre-dating this finding — the first pass's grep missed calls through the private field; eight names
+remain genuinely unwired, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -849,15 +851,25 @@ real `Func<TriggerContext, TriggerResult>` handler signature `DesignerHandlerSca
 emits. Corrected to describe the real implementation, verified field-by-field and method-by-method
 against source.
 
-**The gap that actually matters, found while correcting the doc:** every one of
-`SystemVariablesManager`'s update methods — `UpdateForBlockChange`, `UpdateForRecordChange`,
-`UpdateForItemChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`,
-`SetTriggerContext`/`ClearTriggerContext`, `SetLastError`/`ClearLastError`, `SetLastQuery`,
-`SetCurrentForm` — has **zero callers anywhere in `Editor/Forms`**, confirmed by grepping
-`SystemVariables.<MethodName>(` for each one. `FormsManager`'s own block-switch, record-navigation,
-item-focus, mode-transition, DML, query-execution and trigger-firing code never calls into this
-manager at all. The class is real, well-designed, reachable, and completely inert: a trigger handler
-can write `context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK` today, it will compile and
+**The gap that actually matters, found while correcting the doc — corrected once more, below, after an
+initial grep mistake:** the first pass at this claimed *every* `SystemVariablesManager` update method
+had zero callers, based on grepping `SystemVariables.<MethodName>(` — which only matches calls through
+the public property syntax. `FormsManager`'s own code calls the manager through its **private field**,
+`_systemVariablesManager.<MethodName>(...)`, which that grep never matched. Re-grepped correctly
+(`_systemVariablesManager\.` and a bare `.<MethodName>(` sweep) and found two real, pre-existing
+exceptions: `GoItemAsync` (`FormsManager.Navigation.cs:406`) already calls `UpdateForItemChange` on
+every item-focus change, and `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`)
+already calls `UpdateForRecordChange` — but only after a savepoint rollback, not on ordinary record
+navigation (`NextRecordAsync` etc. do not call it). Both predate this session; they were simply missed,
+not fixed here. Corrected the count: **six** methods have genuinely zero callers —
+`UpdateForBlockChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`,
+`SetLastError`/`ClearLastError`, `SetLastQuery`, `SetCurrentForm` (eight names, still zero calls
+between them) — plus `UpdateForRecordChange`'s coverage is real but narrow (savepoint-restore only).
+`SetTriggerContext`/`ClearTriggerContext` are wired as of this same pass (see above). `FormsManager`'s
+block-switch, mode-transition, DML, and query-execution code still never calls into this manager for
+those eight names. The class is real, well-designed, reachable, and mostly-but-not-fully inert: a
+trigger handler can write `context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK` today, it
+will compile and
 return a value, and that value will be `string.Empty` forever regardless of what the form actually
 does, because nothing keeps it current.
 
@@ -889,14 +901,20 @@ Strict-mock tests (`GoItem_ValidItemUpdatesCursorAndFiresNewItemTrigger`,
 setter — a `MockBehavior.Strict` mock throws on any unconfigured member access, and
 `FormsManager`'s constructor now genuinely calls that setter on whatever `ITriggerManager` it's given.
 
-**Still open — the other ~8 `Update*`/`Set*` methods.** `UpdateForBlockChange`, `UpdateForRecordChange`,
-`UpdateForItemChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`/
-`ClearLastError`, `SetLastQuery`, `SetCurrentForm` still have zero callers. These have no equivalent
-single choke point the way trigger-firing did — each needs its own call site scattered across
-block-switch, record-navigation, item-focus, mode-transition, each DML verb, and query-execution code
-in ~8-10 different `FormsManager.*.cs` files, and the doc's own "Updates that are NOT immediate"
-section establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a *successful* DML). That
-remains genuinely larger, scoped-per-call-site work, deliberately not attempted in this pass.
+**Already wired, pre-existing, missed by the first pass's flawed grep:** `UpdateForItemChange` (called
+from `GoItemAsync` on every item-focus change) and `UpdateForRecordChange` (called from
+`TryUpdateSavepointSystemVariables`, but only after a savepoint rollback — ordinary record navigation
+such as `NextRecordAsync` does not call it, so this one is real but narrow).
+
+**Still open — six method names, genuinely zero callers.** `UpdateForBlockChange`, `SetMode`,
+`SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery`,
+`SetCurrentForm` (eight names) still have zero callers anywhere, and `UpdateForRecordChange`'s general
+(non-savepoint) case is still open too. These have no equivalent single choke point the way
+trigger-firing did — each needs its own call site scattered across block-switch, mode-transition, each
+DML verb, and query-execution code in several different `FormsManager.*.cs` files, and the doc's own
+"Updates that are NOT immediate" section establishes real ordering constraints (e.g. `BLOCK_STATUS`
+only on a *successful* DML). That remains genuinely larger, scoped-per-call-site work, deliberately
+not attempted in this pass.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),

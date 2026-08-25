@@ -78,34 +78,37 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 
 | Field | When updated |
 | --- | --- |
-| `CURRENT_BLOCK` | `UpdateForBlockChange(blockName)` — form-level and the block's own snapshot. |
-| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | `UpdateForRecordChange(blockName, recordIndex, totalRecords)`; also opportunistically inside `UpdateForBlockChange` from the block's live `IUnitofWork`. |
-| `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | `UpdateForItemChange(blockName, itemName, itemValue)`. |
-| `MASTER_BLOCK` | `UpdateForBlockChange`, when the block has a registered master. |
-| `MODE` | `SetMode(mode)` — form-level, and the current block's snapshot. |
-| `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. |
-| `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. |
-| `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. |
+| `CURRENT_BLOCK` | `UpdateForBlockChange(blockName)` — form-level and the block's own snapshot. **Not yet called anywhere.** |
+| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | ⚠️ **partially live** — `UpdateForRecordChange(blockName, recordIndex, totalRecords)` is called from `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`) after a savepoint rollback, but **not** from ordinary record navigation (`NextRecordAsync`/`PreviousRecordAsync`/etc. do not call it) — these fields go stale between rollbacks. |
+| `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | ✅ **live** — `UpdateForItemChange(blockName, itemName, itemValue)` is called from `GoItemAsync` (`FormsManager.Navigation.cs:406`) on every item-focus change. |
+| `MASTER_BLOCK` | `UpdateForBlockChange`, when the block has a registered master. **Not yet called anywhere** (same method as `CURRENT_BLOCK` above). |
+| `MODE` | `SetMode(mode)` — form-level, and the current block's snapshot. **Not yet called anywhere.** |
+| `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. **Not yet called anywhere.** |
+| `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. **Not yet called anywhere.** |
+| `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. **Not yet called anywhere.** |
 | `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
 | `LAST_ERROR`, `LAST_ERROR_CODE` | `SetLastError(message, code)` / cleared by `ClearLastError()`. **Not yet called anywhere.** |
 | `LAST_QUERY` | `SetLastQuery(queryString)`. **Not yet called anywhere.** |
 | `CURRENT_FORM` | `SetCurrentForm(formName)`. **Not yet called anywhere.** |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Only `SetTriggerContext`/`ClearTriggerContext` have a caller today (wired 2026-08-25) — the other
-eight `Set*`/`UpdateFor*` methods still have none anywhere in `Editor/Forms`,** confirmed by grepping
-`manager.SystemVariables.` / `SystemVariables.` for each method name. Trigger-firing had one natural
-choke point (`TriggerManager`'s two internal chain-execution methods, which every `Fire*Trigger(Async)`
-variant funnels through) — the rest do not: `UpdateForBlockChange`/`UpdateForRecordChange`/
-`UpdateForItemChange`/`SetMode`/`SetBlockStatus`/`SetFormStatus`/`SetRecordStatus` each need their own
-call site scattered across `FormsManager`'s block-switch, record-navigation, item-focus,
-mode-transition, DML and query-execution code — nothing in that code calls into
-`SystemVariablesManager` for those eight yet. `CURRENT_BLOCK`, `CURSOR_RECORD`, `MODE`,
-`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`), `CURRENT_FORM` are
-all still permanently whatever `SystemVariables`'s constructor set, regardless of what the form does —
-only the five `TRIGGER_*` fields are genuinely live now. Wiring the rest is real, valuable,
-scoped-per-call-site work — genuinely separate from this documentation correction, and not
-attempted here. Check current call sites with `grep` before relying on any specific field being live.
+**Three of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other eight (spread
+across seven method names) do not.** *(An earlier version of this section claimed all ten had zero
+callers — that was a grep mistake: it only matched calls through the public `manager.SystemVariables.`
+property, and `FormsManager` calls the manager through its private field,
+`_systemVariablesManager.<name>(...)`, instead. Corrected 2026-08-25 by re-grepping
+`_systemVariablesManager\.` directly against source.)* Live: `SetTriggerContext`/`ClearTriggerContext`
+(wired 2026-08-25, one choke point in `TriggerManager`) and `UpdateForItemChange` (pre-existing, in
+`GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from savepoint
+rollback, not ordinary navigation). Genuinely unwired, confirmed by grep, no known exceptions:
+`UpdateForBlockChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`,
+`SetLastQuery`, `SetCurrentForm`. `CURRENT_BLOCK`, `MASTER_BLOCK`, `MODE`, `BLOCK_STATUS`/
+`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`), `CURRENT_FORM` are all still
+permanently whatever `SystemVariables`'s constructor set, regardless of what the form does. Wiring the
+rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
+correction, and not attempted here. Check current call sites with `grep` (both the public property
+*and* the private field — this section's own history is the reason why) before relying on any
+specific field being live.
 
 ## A dedicated per-block snapshot, separate from the lazy one
 
