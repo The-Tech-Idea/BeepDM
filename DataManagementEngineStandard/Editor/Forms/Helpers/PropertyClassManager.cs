@@ -66,6 +66,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             var copyFrom = fieldDefinition.CopyValueFromItem ?? propertyClass?.CopyValueFromItem;
             if (copyFrom != null) item.CopyValueFromItem = copyFrom;
 
+            // ItemInfo.Create defaults PromptText to the raw field name
+            // (ItemInfo.cs:318) — both hosts already read PromptText as the
+            // visible field label (WinFormBlockHost.cs/BeepWpfBlock.cs
+            // presenter.Label / label.Text) and grid column caption
+            // (*.GridMode.cs ColumnCaption). The IDE has always emitted an
+            // authored Label onto BlockFieldDefinition
+            // (DesignerBlockGenerator.cs), but nothing carried it across to
+            // ItemInfo: every authored caption ("Order ID") was silently
+            // discarded and every field showed its raw column name
+            // ("OrderId") instead. PropertyClass has no Label member, so
+            // this is a direct field-only override, the same shape as
+            // Enabled/Visible below.
+            if (!string.IsNullOrWhiteSpace(fieldDefinition.Label))
+                item.PromptText = fieldDefinition.Label;
+
             // IsEnabled/IsVisible are plain per-field flags, not part of the
             // Property Class inheritance model (PropertyClass has no
             // Enabled/Visible member, unlike the nullable cluster above), so

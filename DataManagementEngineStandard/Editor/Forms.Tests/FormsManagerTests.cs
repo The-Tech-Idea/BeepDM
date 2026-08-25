@@ -1113,6 +1113,38 @@ public class FormsManagerTests : IDisposable
     }
 
     [Fact]
+    public void PropertyClassApplyToItem_Label_OverlaysPromptTextDirectlyFromField()
+    {
+        // ItemInfo.Create defaults PromptText to the raw field name
+        // (e.g. "OrderId") -- both WinFormBlockHost and BeepWpfBlock already
+        // read PromptText as the visible field label and grid column
+        // caption, but nothing carried the IDE's authored Label across to
+        // it, so every authored caption ("Order ID") was silently discarded.
+        // Like IsEnabled/IsVisible, PropertyClass has no Label member, so
+        // this applies directly from the field with no class-fallback step
+        // to prove.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", PromptText = "OrderId" };
+        var field = new BlockFieldDefinition { FieldName = "OrderId", Label = "Order ID" };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.Equal("Order ID", item.PromptText);
+    }
+
+    [Fact]
+    public void PropertyClassApplyToItem_NoAuthoredLabel_KeepsExistingPromptText()
+    {
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", PromptText = "OrderId" };
+        var field = new BlockFieldDefinition { FieldName = "OrderId" };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.Equal("OrderId", item.PromptText);
+    }
+
+    [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
         var entity = CreateEntity("ORD", ("Name", "string"));

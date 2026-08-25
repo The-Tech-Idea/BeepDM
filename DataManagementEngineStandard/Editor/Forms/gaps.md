@@ -1050,6 +1050,32 @@ sites), `FormsManager.EnhancedOperations.cs` (the fourth `SetMode` call site, in
 `Editor/Forms.Tests/FormsManagerTests.cs` (eight new tests total, two
 updated Strict mocks).
 
+### G0.37: `BlockFieldDefinition.Label` never reached `ItemInfo.PromptText` (FIXED 2026-08-25)
+
+**What:** Found while sweeping the remaining `BlockFieldDefinition` properties for the same
+accepted-then-ignored shape as G0.35 right after fixing it. `ItemInfo.Create()` defaults
+`PromptText` to the raw field name (`ItemInfo.cs:318`), and both runtime hosts
+(`WinFormBlockHost.cs`/`BeepWpfBlock.cs`, plus their `*.GridMode.cs` grid-column-caption paths)
+already read `item.PromptText` as the visible field label — the entire rendering pipeline was
+built and working. The IDE has always emitted an authored `Label` onto `BlockFieldDefinition`
+(`DesignerBlockGenerator.cs`), but `PropertyClassManager.ApplyToItem` — the same overlay method
+G0.35 just extended for `Enabled`/`Visible` — never touched it, so every authored caption
+("Order ID") was silently discarded and every field showed its raw column name ("OrderId")
+at runtime instead.
+
+**Fix:** `ApplyToItem` now sets `item.PromptText = fieldDefinition.Label;` when a `Label` is
+authored (non-blank), left untouched otherwise. `PropertyClass` has no `Label` member, so this
+is a direct field-only override, the same shape as `Enabled`/`Visible`.
+
+**Where:** `PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low — a field that authors no `Label` is unaffected (`PromptText` keeps its
+existing/default value). Two new direct unit tests,
+`PropertyClassApplyToItem_Label_OverlaysPromptTextDirectlyFromField` and
+`PropertyClassApplyToItem_NoAuthoredLabel_KeepsExistingPromptText`, in `FormsManagerTests.cs`;
+proven via revert (commenting out the assignment failed the first test with the predicted
+`"OrderId"` vs `"Order ID"` mismatch, full 125-test suite green before and after).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 
