@@ -3661,6 +3661,23 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Configuration.ValidationConfiguration.StrictValidation">
             <summary>Gets or sets whether to use strict validation</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertRegistry">
+            <summary>
+            Manages named, reusable Alert objects (Oracle Forms ALERT). An alert is
+            authored once, by name, and shown by name from any trigger — the
+            SHOW_ALERT('alert_name') built-in — as opposed to the ad-hoc
+            <c>ShowAlertAsync(title, message, ...)</c> overload on
+            <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager"/>, which takes its content literally on
+            every call and has no persisted definition.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertRegistry.ShowAlertByNameAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Shows a previously-created alert by name (Oracle Forms:
+            SHOW_ALERT('alert_name')). Returns <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.AlertResult.None"/>
+            when no alert with that name has been created.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager">
             <summary>
             Interface for dirty state management functionality
@@ -8954,6 +8971,39 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.StatusMessage.Timestamp">
             <summary>Gets or sets when the status message was created.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition">
+            <summary>
+            A named, reusable Alert object (Oracle Forms ALERT). Unlike the
+            ad-hoc <c>ShowAlertAsync(title, message, ...)</c> overload, which takes
+            its content literally on every call, a definition is authored once —
+            with a name — and invoked by that name from any trigger, matching
+            Oracle's own SHOW_ALERT('alert_name') built-in.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Name">
+            <summary>Gets or sets the alert's unique name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Title">
+            <summary>Gets or sets the alert's title bar text.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Message">
+            <summary>Gets or sets the alert's message body.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Style">
+            <summary>Gets or sets the alert's icon/severity style.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Button1Text">
+            <summary>Gets or sets the first (always present) button's label.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Button2Text">
+            <summary>Gets or sets the second button's label, or null to omit it.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.Button3Text">
+            <summary>Gets or sets the third button's label, or null to omit it.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.AlertDefinition.CreatedAt">
+            <summary>Gets or sets when this alert definition was created.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.AuditFieldChange">
             <summary>A single field-level change captured during an audit.</summary>

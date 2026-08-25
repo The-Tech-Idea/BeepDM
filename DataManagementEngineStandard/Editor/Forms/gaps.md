@@ -602,6 +602,47 @@ name and this engine's already-firing `TriggerType.WhenTimerExpired` (G0.28). Bo
 IDE catalog edits, not engine changes — flagged for a decision there rather than silently applied
 here.
 
+### G0.31: Alerts had no persisted, named ALERT object — `ShowAlertAsync` only ever took its
+content literally, so there was nothing an IDE authoring dialog could register (FIXED 2026-08-25)
+
+**What:** Oracle Forms' Alert is a design-time object: authored once (name, title, message, style,
+button labels) and invoked from any trigger by name via `SHOW_ALERT('alert_name')`. This engine's
+`ShowAlertAsync(title, message, style, ...)` (`FormsManager.Alerts.cs`) took all of that content as
+literal parameters on every call — there was no persisted definition at all, unlike the already-built
+Record Group (`IRecordGroupRegistry`) and Parameter List (`IParameterListManager`) registries this
+same catalog entry was originally grouped with. A Beep.Forms.IDE authoring dialog for "Alerts" would
+have had nothing to register against.
+
+**Fix:** New `AlertDefinition` model (`AlertModels.cs`) — `Name`, `Title`, `Message`, `Style`,
+`Button1Text`/`Button2Text`/`Button3Text`, `CreatedAt` — and a new `IAlertRegistry` interface
+(`CreateAlert`, `GetAlert`, `GetAllAlerts`, `RemoveAlert`, `ClearAllAlerts`, `AlertExists`,
+`ShowAlertByNameAsync`), implemented in `FormsManager.Alerts.cs` backed by a
+`ConcurrentDictionary<string, AlertDefinition>`, matching the exact shape of the Record
+Group/Parameter List registries in the same file family. `ShowAlertByNameAsync` resolves the named
+definition and renders it through the *same* `ShowAlertAsync`/`IAlertProvider` path the ad-hoc
+overload already uses, so there is exactly one rendering path, not two. Exposed flatly on
+`IUnitofWorksManager`, matching how Record Groups/Parameter Lists are exposed (no `.Alerts`
+sub-manager property, consistent with the existing convention for these two).
+
+**Deliberately not implemented:** Oracle Forms' Alert also has a "Default Alert Button" property
+(which button gets Enter-key focus). Wiring it through would have meant extending `IAlertProvider`'s
+signature and touching `DefaultAlertProvider` plus both runtime UI implementations
+(`WinFormAlertProvider`, `BeepWpfAlertProvider`/`WpfAlertDialog` — the latter already hardcodes
+Button1 as the WPF default, so the property has *some* real behavior already for the common case).
+Given the scope of this pass, `DefaultButton` was **not added** to `AlertDefinition` — storing a
+property that nothing downstream reads is exactly the "accepted-then-ignored" defect this codebase's
+own rules warn against, and adding it honestly (wired all the way through 4 files across 2 runtime UI
+projects) was judged out of proportion to a single-button-focus nicety. Flagged here rather than
+silently dropped.
+
+**Where:** `AlertModels.cs` (new `AlertDefinition`), `IAlertRegistry.cs` (new file),
+`FormsManager.Alerts.cs`, `IUnitofWorksManager.cs`.
+
+**Risk of fix:** Low — purely additive; nothing previously called a named-alert API because none
+existed. Six new regression tests in `FormsManagerTests.cs`; the "renders through the provider with
+the definition's own fields" test proven via revert (reverting `ShowAlertByNameAsync` to a hardcoded
+`AlertResult.None` failed exactly that test, and only that test, as expected).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

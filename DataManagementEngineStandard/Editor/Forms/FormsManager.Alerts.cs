@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 
 namespace TheTechIdea.Beep.Editor.UOWManager
@@ -11,7 +14,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// Message and alert built-ins partial class.
     /// Provides Oracle Forms MESSAGE / SHOW_ALERT / BELL equivalents.
     /// </summary>
-    public partial class FormsManager
+    public partial class FormsManager : IAlertRegistry
     {
         #region Status message state
 
@@ -110,6 +113,61 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             var result = await ShowAlertAsync(title, message, AlertStyle.Question, "Yes", "No", null, ct).ConfigureAwait(false);
             return result == AlertResult.Button1;
+        }
+
+        #endregion
+
+        #region Named Alert Registry (Oracle Forms ALERT object)
+
+        // ShowAlertAsync above takes its title/message/buttons literally on
+        // every call — there was no persisted, named ALERT definition at all,
+        // unlike Oracle Forms where an Alert is authored once (as an object,
+        // with its own property sheet) and invoked from any trigger by name
+        // via SHOW_ALERT('alert_name'). This registry is that missing layer;
+        // ShowAlertByNameAsync still renders through the same IAlertProvider
+        // the ad-hoc overload uses, so both share one rendering path. Added
+        // 2026-08-25.
+
+        private readonly ConcurrentDictionary<string, AlertDefinition> _alerts = new(StringComparer.OrdinalIgnoreCase);
+
+        public AlertDefinition CreateAlert(
+            string name, string title, string message,
+            AlertStyle style = AlertStyle.None,
+            string button1Text = "OK", string button2Text = null, string button3Text = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
+            var alert = new AlertDefinition(name, title, message, style, button1Text, button2Text, button3Text);
+            _alerts[name] = alert;
+            return alert;
+        }
+
+        public AlertDefinition GetAlert(string name) =>
+            !string.IsNullOrWhiteSpace(name) && _alerts.TryGetValue(name, out var alert) ? alert : null;
+
+        public IReadOnlyList<AlertDefinition> GetAllAlerts() =>
+            _alerts.Values.ToList().AsReadOnly();
+
+        public bool RemoveAlert(string name) =>
+            !string.IsNullOrWhiteSpace(name) && _alerts.TryRemove(name, out _);
+
+        public void ClearAllAlerts() =>
+            _alerts.Clear();
+
+        public bool AlertExists(string name) =>
+            !string.IsNullOrWhiteSpace(name) && _alerts.ContainsKey(name);
+
+        public Task<AlertResult> ShowAlertByNameAsync(string name, CancellationToken ct = default)
+        {
+            var alert = GetAlert(name);
+            if (alert == null)
+            {
+                LogError($"ShowAlertByNameAsync: no alert named '{name}' has been created", null, null);
+                return Task.FromResult(AlertResult.None);
+            }
+
+            return ShowAlertAsync(
+                alert.Title, alert.Message, alert.Style,
+                alert.Button1Text, alert.Button2Text, alert.Button3Text, ct);
         }
 
         #endregion

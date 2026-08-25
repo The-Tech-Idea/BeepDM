@@ -555,6 +555,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         bool ParameterListExists(string name);
         void ClearParameterList(string listName);
 
+        // ── Named Alert Registry (Oracle Forms ALERT object) ───────────
+        AlertDefinition CreateAlert(
+            string name, string title, string message,
+            AlertStyle style = AlertStyle.None,
+            string button1Text = "OK", string button2Text = null, string button3Text = null);
+        AlertDefinition GetAlert(string name);
+        IReadOnlyList<AlertDefinition> GetAllAlerts();
+        bool RemoveAlert(string name);
+        void ClearAllAlerts();
+        bool AlertExists(string name);
+        Task<AlertResult> ShowAlertByNameAsync(string name, CancellationToken ct = default);
+
         // ── Client Info (G1.6/G1.7) ────────────────────────────────────
         ClientInfo ClientInfo { get; set; }
         void SetClientInfo(string clientInfo);

@@ -1781,4 +1781,99 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region Named Alert Registry (2026-08-25)
+    //
+    // ShowAlertAsync took its title/message/buttons literally on every call —
+    // there was no persisted, named ALERT object at all, unlike Oracle Forms
+    // where an Alert is authored once and shown by name from any trigger
+    // (SHOW_ALERT('alert_name')). These tests cover the new registry and
+    // prove ShowAlertByNameAsync actually renders through the registered
+    // definition's own fields, not just returns some canned result.
+
+    [Fact]
+    public void CreateAlert_ThenGetAlert_RoundTripsAllFields()
+    {
+        var created = _manager.CreateAlert(
+            "ConfirmDelete", "Confirm", "Delete this record?",
+            AlertStyle.Question, "Yes", "No");
+
+        var fetched = _manager.GetAlert("ConfirmDelete");
+
+        Assert.Same(created, fetched);
+        Assert.Equal("ConfirmDelete", fetched.Name);
+        Assert.Equal("Confirm", fetched.Title);
+        Assert.Equal("Delete this record?", fetched.Message);
+        Assert.Equal(AlertStyle.Question, fetched.Style);
+        Assert.Equal("Yes", fetched.Button1Text);
+        Assert.Equal("No", fetched.Button2Text);
+        Assert.True(_manager.AlertExists("ConfirmDelete"));
+    }
+
+    [Fact]
+    public void GetAlert_UnknownName_ReturnsNull()
+    {
+        Assert.Null(_manager.GetAlert("DoesNotExist"));
+        Assert.False(_manager.AlertExists("DoesNotExist"));
+    }
+
+    [Fact]
+    public void RemoveAlert_ExistingAlert_RemovesItAndReturnsTrue()
+    {
+        _manager.CreateAlert("A1", "T", "M");
+
+        var removed = _manager.RemoveAlert("A1");
+
+        Assert.True(removed);
+        Assert.False(_manager.AlertExists("A1"));
+    }
+
+    [Fact]
+    public void ClearAllAlerts_RemovesEveryRegisteredAlert()
+    {
+        _manager.CreateAlert("A1", "T1", "M1");
+        _manager.CreateAlert("A2", "T2", "M2");
+
+        _manager.ClearAllAlerts();
+
+        Assert.Empty(_manager.GetAllAlerts());
+    }
+
+    [Fact]
+    public async Task ShowAlertByNameAsync_UnknownName_ReturnsNoneWithoutCallingProvider()
+    {
+        var mockProvider = new Mock<IAlertProvider>();
+        using var manager = new FormsManager(_mockEditor.Object, alertProvider: mockProvider.Object);
+
+        var result = await manager.ShowAlertByNameAsync("DoesNotExist").ConfigureAwait(false);
+
+        Assert.Equal(AlertResult.None, result);
+        mockProvider.Verify(p => p.ShowAlertAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<AlertStyle>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ShowAlertByNameAsync_KnownName_RendersThroughProviderWithDefinitionFields()
+    {
+        var mockProvider = new Mock<IAlertProvider>();
+        mockProvider
+            .Setup(p => p.ShowAlertAsync(
+                "Confirm", "Delete this record?", AlertStyle.Question,
+                "Yes", "No", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AlertResult.Button2);
+        using var manager = new FormsManager(_mockEditor.Object, alertProvider: mockProvider.Object);
+        manager.CreateAlert("ConfirmDelete", "Confirm", "Delete this record?", AlertStyle.Question, "Yes", "No");
+
+        var result = await manager.ShowAlertByNameAsync("ConfirmDelete").ConfigureAwait(false);
+
+        Assert.Equal(AlertResult.Button2, result);
+        mockProvider.Verify(p => p.ShowAlertAsync(
+            "Confirm", "Delete this record?", AlertStyle.Question,
+            "Yes", "No", null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    #endregion
 }
