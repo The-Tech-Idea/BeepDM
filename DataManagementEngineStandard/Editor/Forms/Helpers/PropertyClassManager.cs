@@ -65,6 +65,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
             var copyFrom = fieldDefinition.CopyValueFromItem ?? propertyClass?.CopyValueFromItem;
             if (copyFrom != null) item.CopyValueFromItem = copyFrom;
+
+            // IsEnabled/IsVisible are plain per-field flags, not part of the
+            // Property Class inheritance model (PropertyClass has no
+            // Enabled/Visible member, unlike the nullable cluster above), so
+            // they apply directly rather than through the field-then-class-
+            // then-existing fallback chain. Both default to true on
+            // BlockFieldDefinition, matching ItemInfo's own defaults, so a
+            // field that authors neither is a no-op.
+            item.Enabled = fieldDefinition.IsEnabled;
+            item.Visible = fieldDefinition.IsVisible;
         }
     }
 }

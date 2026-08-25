@@ -791,6 +791,39 @@ generation, `UnitOfWorkFactory.CreateUnitOfWork`), and its sibling `ApplyAuthore
 building real `DefinitionBlockRegistrar`-level test infrastructure is a separate, larger piece of
 work this fix does not attempt.
 
+### G0.35: `BlockFieldDefinition.IsEnabled`/`IsVisible` never reached `ItemInfo.Enabled`/`.Visible`
+(FIXED 2026-08-25)
+
+**What:** `ItemInfo.Enabled` genuinely gates editability — `IsEditable(mode)` checks it before the
+per-mode Query/Insert/Update flags, and `ItemPropertyManager` reads `item.Enabled`/`item.Visible`
+together when building visible/editable item lists. Both runtime hosts (`WinFormBlockHost.cs`,
+`BeepWpfBlock.cs`) read `item.Visible` at refresh time to show/hide a field's control. But
+`PropertyClassManager.ApplyToItem` — the one place a designer-authored `BlockFieldDefinition` is
+overlaid onto the live `ItemInfo` — never touched either property, and `RegisterItemsFromEntityStructure`
+(which builds `ItemInfo` from the datasource's own column metadata) has no `BlockDefinition` input at
+all to have set them from in the first place. So a field authored `IsEnabled = false` or
+`IsVisible = false` compiled, round-tripped through its own editor correctly, and did nothing at
+runtime — the exact accepted-then-ignored shape as G0.34's `QueryString`, found while auditing the
+same `ApplyToItem` method for the same class of gap right after fixing it.
+
+**Fix:** `PropertyClassManager.ApplyToItem` now sets `item.Enabled = fieldDefinition.IsEnabled;` and
+`item.Visible = fieldDefinition.IsVisible;` directly — unconditionally, not through the
+field-then-class-then-existing fallback chain the nullable cluster uses, because neither property is
+part of the Property Class model (`PropertyClass` has no `Enabled`/`Visible` member) and both default
+to `true` on `BlockFieldDefinition`, matching `ItemInfo`'s own defaults, so an unauthored field is a
+no-op. `IsVisible` already had full IDE authoring (emit/read-back/dialog UI); `IsEnabled` had none —
+added alongside it in the same Beep.Forms commit, mirroring `IsReadOnly`'s existing emit/read shape
+exactly (`if (!f.IsEnabled) Line(...)` / `FB("IsEnabled", fallback: true)`).
+
+**Where:** `PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low — a field that authors neither is unaffected (both flags already default to
+`true`, matching every existing item's current behaviour). One new direct unit test,
+`PropertyClassApplyToItem_EnabledAndVisible_OverlayDirectlyFromField` in `FormsManagerTests.cs`
+(unlike G0.34, `ApplyToItem` is a plain, easily-mockable method with existing test precedent right
+above it — no `IDataSource`/`IDMEEditor` chain needed); proven via revert (removing the two
+assignments failed exactly that test).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

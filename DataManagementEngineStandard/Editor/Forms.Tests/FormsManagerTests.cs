@@ -1092,6 +1092,22 @@ public class FormsManagerTests : IDisposable
     }
 
     [Fact]
+    public void PropertyClassApplyToItem_EnabledAndVisible_OverlayDirectlyFromField()
+    {
+        // Unlike QueryAllowed/InsertAllowed/UpdateAllowed, IsEnabled/IsVisible
+        // are not part of the Property Class model at all -- they apply
+        // directly from the field, with no class-fallback step to prove.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "X", Enabled = true, Visible = true };
+        var field = new BlockFieldDefinition { FieldName = "X", IsEnabled = false, IsVisible = false };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.False(item.Enabled);
+        Assert.False(item.Visible);
+    }
+
+    [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
         var entity = CreateEntity("ORD", ("Name", "string"));
