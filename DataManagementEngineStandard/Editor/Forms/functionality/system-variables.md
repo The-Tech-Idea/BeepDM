@@ -89,23 +89,26 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
 | `LAST_ERROR`, `LAST_ERROR_CODE` | `SetLastError(message, code)` / cleared by `ClearLastError()`. **Not yet called anywhere.** |
 | `LAST_QUERY` | `SetLastQuery(queryString)`. **Not yet called anywhere.** |
-| `CURRENT_FORM` | `SetCurrentForm(formName)`. **Not yet called anywhere.** |
+| `CURRENT_FORM` | ✅ **live** — `SetCurrentForm(formName)` is called from `CurrentFormName`'s property setter (`FormsManager.Properties.cs`) and from both `OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`, which set the backing field directly and so bypass the property) — three writers, all wired 2026-08-25. |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Four of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other seven method names
-do not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
+**Five of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other five method names do
+not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
 mistake: it only matched calls through the public `manager.SystemVariables.` property, and
 `FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
 instead. Corrected 2026-08-25 by re-grepping `_systemVariablesManager\.` directly against source.)*
 Live: `SetTriggerContext`/`ClearTriggerContext` (wired 2026-08-25, one choke point in
-`TriggerManager`), `UpdateForBlockChange` (wired 2026-08-25, one choke point in `SwitchToBlockAsync` —
-the same "actually check for a single choke point before assuming there isn't one" lesson
-`UpdateForItemChange` had already taught) and `UpdateForItemChange` (pre-existing, in `GoItemAsync`).
-Partially live: `UpdateForRecordChange` (pre-existing, but only from savepoint rollback, not ordinary
-navigation). Genuinely unwired, confirmed by grep, no known exceptions: `SetMode`, `SetBlockStatus`,
-`SetFormStatus`, `SetRecordStatus`, `SetLastError`, `SetLastQuery`, `SetCurrentForm`. `MODE`,
-`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`), `CURRENT_FORM` are
-all still permanently whatever `SystemVariables`'s constructor set, regardless of what the form does.
+`TriggerManager`), `UpdateForBlockChange` (wired 2026-08-25, one choke point in `SwitchToBlockAsync`),
+`SetCurrentForm` (wired 2026-08-25, three writers — not one, but still a small, fully-enumerated set,
+not "scattered") and `UpdateForItemChange` (pre-existing, in `GoItemAsync`). Partially live:
+`UpdateForRecordChange` (pre-existing, but only from savepoint rollback, not ordinary navigation).
+Genuinely unwired, confirmed by grep **and** by reading the relevant code directly (not just
+re-grepping) to rule out a hidden choke point: `SetMode`, `SetBlockStatus`, `SetFormStatus`,
+`SetRecordStatus`, `SetLastError`, `SetLastQuery`. `SetMode` specifically was checked —
+`FormsManager.ModeTransitions.cs` sets `blockInfo.Mode` directly at three separate locations across
+three different public entry points, with no shared setter to hook, so this one really is scattered.
+`MODE`, `BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`) are all still
+permanently whatever `SystemVariables`'s constructor set, regardless of what the form does.
 Wiring the rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
 correction, and not attempted here. Check current call sites with `grep` (both the public property
 *and* the private field — this section's own history is the reason why) before relying on any

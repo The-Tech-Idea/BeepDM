@@ -826,11 +826,11 @@ assignments failed exactly that test).
 
 ### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
-(FOUND 2026-08-25; **trigger-context and block-switch slices FIXED same day** —
-`SetTriggerContext`/`ClearTriggerContext` and `UpdateForBlockChange` now wired;
+(FOUND 2026-08-25; **trigger-context, block-switch and current-form slices FIXED same day** —
+`SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`, and `SetCurrentForm` now wired;
 `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired, pre-dating this
-finding — the first pass's grep missed calls through the private field; seven names remain genuinely
-unwired, see "Still open" below)
+finding — the first pass's grep missed calls through the private field; six names remain genuinely
+unwired, confirmed with no single choke point, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -916,17 +916,37 @@ new tests (`SwitchToBlockAsync_UpdatesSystemVariablesCurrentBlock`,
 `GoBlockAsync_DelegatesToSwitchToBlockAsync_UpdatesSystemVariables` — the second pins the delegation
 itself, not just the method it forwards to), proven via revert.
 
-**Still open — seven method names, genuinely zero callers.** `SetMode`, `SetBlockStatus`,
-`SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery`, `SetCurrentForm`
-still have zero callers anywhere, and `UpdateForRecordChange`'s general (non-savepoint) case is still
-open too. Unlike trigger-firing and block-switching, these do not have an equivalent single choke
-point — each needs its own call site scattered across mode-transition, each DML verb, and
+**Fixed, same day: `SetCurrentForm`.** `CurrentFormName` (the public property, `FormsManager.Properties.cs`)
+has exactly three writers — its own setter, and two direct `_currentFormName` field assignments in
+`OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`) that bypass the property (a
+class's own code never invokes its own property setter implicitly). All three now also call
+`_systemVariablesManager?.SetCurrentForm(...)` — the property setter for external callers, and both
+`FormOperations.cs` sites for the engine's own form open/close lifecycle (close passes `null`,
+mirroring the existing `_currentFormName = null` reset). One new test
+(`CurrentFormName_Set_UpdatesSystemVariablesCurrentForm`) covers the property-setter path directly;
+proven via revert. The other two sites use the identical one-line call and were not given their own
+tests — proportionate to how small and visually-verifiable a one-line addition next to an existing
+assignment is, versus building out `OpenFormAsync`/`CloseFormAsync` test scaffolding that doesn't
+exist yet in this file for any other purpose.
+
+**Still open — six method names, genuinely zero callers.** `SetMode`, `SetBlockStatus`,
+`SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery` still have zero
+callers anywhere, and `UpdateForRecordChange`'s general (non-savepoint) case is still open too.
+`SetMode` was specifically re-checked for a hidden single choke point (given `UpdateForItemChange` and
+`UpdateForBlockChange` both had one) and does NOT have one: `FormsManager.ModeTransitions.cs` sets
+`blockInfo.Mode` directly at three separate locations across three different public entry points
+(`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, and child-block coordination inside
+`CreateNewRecordInMasterBlockAsync`), with no shared setter method to hook. The remaining names likely
+share that shape — each needs its own call site scattered across mode-transition, each DML verb, and
 query-execution code in several different `FormsManager.*.cs` files, and the doc's own "Updates that
 are NOT immediate" section establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a
 *successful* DML). That remains genuinely larger, scoped-per-call-site work, deliberately not
-attempted in this pass. **Lesson carried forward: before assuming "no single choke point," actually
-check** — `UpdateForItemChange` and `UpdateForBlockChange` both turned out to have exactly one, and
-were only missed the first time by a grep that didn't account for the private-field call shape.
+attempted in this pass. **Lesson carried forward, and now applied three times: before assuming "no
+single choke point," actually check** — `UpdateForItemChange`, `UpdateForBlockChange`, and
+`SetCurrentForm` all turned out to have one (or a small fixed number), and were only missed the first
+time by a grep that didn't account for the private-field call shape. `SetMode` is the first one this
+pass actually confirmed does NOT have one, by reading the mode-transition code directly rather than
+assuming.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
@@ -934,7 +954,9 @@ were only missed the first time by a grep that didn't account for the private-fi
 (`SystemVariables` property, `ApplyTriggerContextToSystemVariables`, the two `ExecuteTriggerChain*`
 hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `FormsManager.Core.cs`
 (trigger-context wiring); `FormsManager.Navigation.cs` (`SwitchToBlockAsync`'s
-`UpdateForBlockChange` call); `Editor/Forms.Tests/FormsManagerTests.cs` (five new tests total, two
+`UpdateForBlockChange` call); `FormsManager.Properties.cs` (`CurrentFormName` setter),
+`FormsManager.FormOperations.cs` (`OpenFormAsync`/`CloseFormAsync`);
+`Editor/Forms.Tests/FormsManagerTests.cs` (six new tests total, two
 updated Strict mocks).
 
 ---

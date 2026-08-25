@@ -69,6 +69,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 await PreInitializeFormAsync(formName).ConfigureAwait(false);
 
                 _currentFormName = formName;
+                _systemVariablesManager?.SetCurrentForm(formName);
 
                 // Apply form-level configuration
                 ApplyFormConfiguration(formName);
@@ -157,6 +158,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     var formName = _currentFormName;
                     _currentFormName = null;
                     _currentBlockName = null;
+                    _systemVariablesManager?.SetCurrentForm(null);
 
                     // A modal caller may be suspended on this form's call-stack
                     // entry. Closing without ReturnToCaller has to release it.

@@ -2148,4 +2148,19 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region CurrentFormName -> SystemVariables.SetCurrentForm (G0.36, continued, 2026-08-25)
+
+    [Fact]
+    public void CurrentFormName_Set_UpdatesSystemVariablesCurrentForm()
+    {
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+
+        manager.CurrentFormName = "OrderForm";
+
+        variables.Verify(v => v.SetCurrentForm("OrderForm"), Times.Once);
+    }
+
+    #endregion
 }

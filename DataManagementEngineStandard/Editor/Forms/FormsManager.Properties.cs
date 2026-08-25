@@ -27,10 +27,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public IDMEEditor DMEEditor => _dmeEditor;
 
         /// <summary>Gets or sets the current form name</summary>
-        public string CurrentFormName 
-        { 
-            get => _currentFormName; 
-            set => _currentFormName = value; 
+        public string CurrentFormName
+        {
+            get => _currentFormName;
+            set
+            {
+                _currentFormName = value;
+                // :SYSTEM.CURRENT_FORM -- see G0.36 in gaps.md. This setter and the
+                // two direct _currentFormName assignments in FormOperations.cs
+                // (OpenFormAsync/CloseFormAsync) are CurrentFormName's only writers.
+                _systemVariablesManager?.SetCurrentForm(value);
+            }
         }
 
         /// <summary>Gets or sets the current active block name</summary>
