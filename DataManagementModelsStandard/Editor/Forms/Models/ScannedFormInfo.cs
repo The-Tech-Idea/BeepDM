@@ -76,6 +76,13 @@ public class ScannedFormInfo
     /// </summary>
     public List<ScannedEditorInfo> Editors { get; set; } = new();
 
+    /// <summary>
+    /// Named Object Groups authored on this form. Unlike every other list on
+    /// this class, these have no engine counterpart at all — see
+    /// <see cref="ObjectGroupDefinition"/>'s own remarks.
+    /// </summary>
+    public List<ObjectGroupDefinition> ObjectGroups { get; set; } = new();
+
     /// <summary>Form hosts declared on this form.</summary>
     public List<ScannedHostInfo> Hosts { get; set; } = new();
 
