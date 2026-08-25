@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using TheTechIdea.Beep.Editor.Forms.Helpers;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
@@ -119,6 +120,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             // non-nullable authoring field, not an oversight.
             if (fieldDefinition.IsRequired)
                 item.Required = true;
+
+            // EditorKey, like Label and Width, has no PropertyClass member --
+            // a direct field-only override. Unlike them, the "unauthored"
+            // check is deliberately not just IsNullOrWhiteSpace: the field
+            // editor's EditorKey box is free text, not a constrained
+            // dropdown, so an author can type anything, including a value
+            // outside the canonical set the runtime registries actually
+            // switch on (a typo, or a WinForms-only control class name the
+            // IDE's own designer-file scanner separately understands). Only
+            // a value that normalizes to one of those canonical categories
+            // is carried across; anything else leaves item.EditorKey null,
+            // which the registry treats identically to "not authored" --
+            // never a guess at what an unrecognised value might have meant.
+            if (FieldTypeMapper.TryNormalizeEditorKey(fieldDefinition.EditorKey, out var editorKey))
+                item.EditorKey = editorKey;
         }
     }
 }

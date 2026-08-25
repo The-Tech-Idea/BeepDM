@@ -1162,6 +1162,43 @@ stays `true`) — proven via revert (commenting out the assignment failed the au
 the predicted `True` vs `False` mismatch), full 154-test suite green before and after. No
 Beep.Forms code change needed — both hosts were already consumers of `item.Required`.
 
+### G0.41: `BlockFieldDefinition.EditorKey` never reached either runtime presenter registry
+(FIXED 2026-08-25)
+
+**What:** The "Generate/Sync Field Controls" IDE workflow (`BlockItemWorkflowCoordinator
+.FieldControls.cs`) auto-derives `EditorKey` from `FieldTypeMapper.GetCanonicalFieldType`, but a
+user can freely type a different value into the same field-editor text box, and
+`preserveExplicit` deliberately protects that choice from being silently overwritten on the next
+sync — a real, deliberate authoring override, not just an auto-synced mirror (confirmed by reading
+the workflow directly, not inferred from the doc comment alone). Neither
+`WinFormFieldPresenterRegistry.Create`/`.ResolveColumnType` nor `WpfFieldPresenterRegistry.Create`
+ever consulted it — every field always rendered whatever its raw data type inferred to, regardless
+of what an author explicitly picked.
+
+**Fix:** New `FieldTypeMapper.TryNormalizeEditorKey(string?, out string?)` — the single, shared
+place that recognises an authored `EditorKey` against the exact canonical categories
+`GetCanonicalFieldType` itself returns ("Numeric"/"Date"/"Boolean"/"Checkbox"/"ReadOnly"/"Text"),
+case-insensitively. The field-editor's `EditorKey` box is free text, not a constrained dropdown, so
+an unrecognised value (a typo, or a platform-specific control class name the IDE's own scanner
+separately understands, e.g. "BeepComboBox") is refused rather than guessed at.
+`PropertyClassManager.ApplyToItem` overlays the normalised result onto `ItemInfo.EditorKey` (new
+property) only when recognised; an unrecognised or unauthored value leaves it null, which both
+runtime registries then treat identically — falling back to the field's own inferred type, exactly
+the behaviour before `EditorKey` existed.
+
+**Where:** `Helpers/FieldTypeMapper.cs` (`TryNormalizeEditorKey`, new), `Models/ItemInfo.cs`
+(`EditorKey`, wired into `Clone()`), `Helpers/PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low — an unauthored or unrecognised `EditorKey` is a no-op (`item.EditorKey` stays
+null, registries fall back to today's inference). 11 new tests
+(`PropertyClassApplyToItem_RecognisedEditorKey_OverlaysCanonicalCategory` — a `[Theory]` over all
+six canonical values, case-insensitively — and `PropertyClassApplyToItem_UnrecognisedEditorKey
+_LeavesItemEditorKeyNull` covering null/blank/whitespace/a typo/a platform-specific control name);
+proven via revert (disabling the overlay failed all six recognised-value cases with the predicted
+mismatch, while the five unrecognised-value cases correctly kept passing — proving the revert
+target was neither too broad nor too narrow), full 165-test suite green before and after. Host-side
+consumption (both runtime presenter registries) lands in the paired Beep.Forms commit.
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

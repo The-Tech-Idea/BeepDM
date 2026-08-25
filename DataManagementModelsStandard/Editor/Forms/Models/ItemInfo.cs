@@ -110,6 +110,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         public int Width { get; set; }
 
         /// <summary>
+        /// An author's explicit override of which control renders this field,
+        /// as a canonical category ("Numeric"/"Date"/"Boolean"/"Checkbox"/
+        /// "ReadOnly"/"Text" — see <c>FieldTypeMapper.TryNormalizeEditorKey</c>).
+        /// Null/blank = not authored; the runtime presenter registry falls
+        /// back to inferring the type from the field's own data type, exactly
+        /// as before this property existed. Overlaid from
+        /// <c>BlockFieldDefinition.EditorKey</c> by
+        /// <c>PropertyClassManager.ApplyToItem</c>.
+        /// </summary>
+        public string EditorKey { get; set; }
+
+        /// <summary>
         /// Oracle Forms: FORMAT_MASK - Display format (e.g., "MM/DD/YYYY", "#,##0.00")
         /// </summary>
         public string FormatMask { get; set; }
@@ -297,6 +309,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
                 CopyValueFromItem = CopyValueFromItem,
                 MaxLength = MaxLength,
                 Width = Width,
+                EditorKey = EditorKey,
                 FormatMask = FormatMask,
                 ValidationFormula = ValidationFormula,
                 ValidationRuleNames = new List<string>(ValidationRuleNames),

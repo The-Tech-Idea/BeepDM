@@ -1209,6 +1209,49 @@ public class FormsManagerTests : IDisposable
         Assert.True(item.Required);
     }
 
+    [Theory]
+    [InlineData("Numeric", "Numeric")]
+    [InlineData("date", "Date")]
+    [InlineData("BOOLEAN", "Boolean")]
+    [InlineData("Checkbox", "Checkbox")]
+    [InlineData("readonly", "ReadOnly")]
+    [InlineData("Text", "Text")]
+    public void PropertyClassApplyToItem_RecognisedEditorKey_OverlaysCanonicalCategory(
+        string authoredEditorKey, string expectedCanonical)
+    {
+        // BlockFieldsEditorDialog's EditorKey box is free text, not a
+        // constrained dropdown, so it must be normalised (case-insensitive,
+        // against the same canonical set the runtime presenter registries
+        // switch on) before being trusted -- never carried across verbatim.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", EditorKey = null };
+        var field = new BlockFieldDefinition { FieldName = "OrderId", EditorKey = authoredEditorKey };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.Equal(expectedCanonical, item.EditorKey);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("BeepComboBox")]
+    [InlineData("nope")]
+    public void PropertyClassApplyToItem_UnrecognisedEditorKey_LeavesItemEditorKeyNull(string? authoredEditorKey)
+    {
+        // An unauthored field and a typo'd/platform-specific one must be
+        // indistinguishable to the registry -- both mean "infer the type",
+        // never a guess at what an unrecognised value might have meant.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", EditorKey = null };
+        var field = new BlockFieldDefinition { FieldName = "OrderId", EditorKey = authoredEditorKey };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.Null(item.EditorKey);
+    }
+
     [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
