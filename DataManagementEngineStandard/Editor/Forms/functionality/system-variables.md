@@ -83,8 +83,8 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | ✅ **live** — `UpdateForItemChange(blockName, itemName, itemValue)` is called from `GoItemAsync` (`FormsManager.Navigation.cs:406`) on every item-focus change. |
 | `MASTER_BLOCK` | ✅ **live** — same `UpdateForBlockChange` call as `CURRENT_BLOCK` above, when the block has a registered master. |
 | `MODE` | ✅ **live** — `SetMode(mode)` is called at all four sites that assign `blockInfo.Mode` directly (`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, `CoordinateChildBlocksForNewMasterRecord` in `FormsManager.ModeTransitions.cs`; `ExecuteQueryEnhancedAsync` in `FormsManager.EnhancedOperations.cs`, wired 2026-08-25), mapped through `ToSystemVariableMode(DataBlockMode)` onto Oracle's real two-value vocabulary (`NORMAL`/`ENTER-QUERY`). |
-| `BLOCK_STATUS` | ✅ **live for `"CHANGED"`, `"QUERY"`, and `"NEW"`** — `SetBlockStatus(blockName, "CHANGED")` is called from the block-registration `ItemChanged` handler (`FormsManager.BlockRegistration.cs`, wired 2026-08-25), confirmed never fired by query population, only real edits; a `"CHANGED"` status also cascades `FORM_STATUS`. `"QUERY"` is called from `ExecuteQueryEnhancedAsync` right after a successful `Get`/`Get(filters)` (wired 2026-08-25, unconditional — whether or not the query found rows, the same simplification `SetMode` already makes at that site). `"NEW"` is called from `EnterCrudModeForNewRecordAsync` right after `CreateNewRecord` succeeds (wired 2026-08-25). `"INSERT"` — Oracle's distinct status for a `"NEW"` record that has since been edited (as opposed to `"CHANGED"`, which Oracle reserves for an edited *queried* record) — is **not** wired: the current per-block `SystemVariables` snapshot has no per-record "was this row ever queried" state to key that distinction on, a genuinely bigger design question than the other three values. |
-| `FORM_STATUS` | ✅ **live, implicitly** — every `SetBlockStatus(_, "CHANGED")` call cascades `FORM_STATUS = "CHANGED"` (see above). `SetFormStatus(status)` itself, for any other value, still has **no direct call site**. |
+| `BLOCK_STATUS` | ✅ **live for `"CHANGED"`, `"QUERY"`, and `"NEW"`** — `SetBlockStatus(blockName, "CHANGED")` is called from the block-registration `ItemChanged` handler (`FormsManager.BlockRegistration.cs`, wired 2026-08-25), confirmed never fired by query population, only real edits; a `"CHANGED"` status also cascades `FORM_STATUS`. `"QUERY"` is called from `ExecuteQueryEnhancedAsync` right after a successful `Get`/`Get(filters)` (wired 2026-08-25, unconditional — whether or not the query found rows, the same simplification `SetMode` already makes at that site) **and** from `CommitFormAsync`/`RollbackFormAsync` on every block that just successfully committed or rolled back (wired 2026-08-25 — nothing previously downgraded a block back off `"CHANGED"` once set). `"NEW"` is called from `EnterCrudModeForNewRecordAsync` right after `CreateNewRecord` succeeds (wired 2026-08-25). `"INSERT"` — Oracle's distinct status for a `"NEW"` record that has since been edited (as opposed to `"CHANGED"`, which Oracle reserves for an edited *queried* record) — is **not** wired: the current per-block `SystemVariables` snapshot has no per-record "was this row ever queried" state to key that distinction on, a genuinely bigger design question than the other three values. |
+| `FORM_STATUS` | ✅ **live** — every `SetBlockStatus(_, "CHANGED")` call cascades `FORM_STATUS = "CHANGED"` (see above). `SetFormStatus(status)` itself now also has a direct call site: `CommitFormAsync` calls `SetFormStatus("QUERY")` for each form once every one of its just-committed blocks is reset (wired 2026-08-25); `RollbackFormAsync` does the same, but only when *every* dirty block used the default rollback path — a block with a registered `ON-ROLLBACK` handler may have left the form genuinely changed in a way this method cannot see, so `FORM_STATUS` is left alone rather than guessed at in that case. |
 | `RECORD_STATUS` | ✅ **live for `"CHANGED"`, `"QUERY"`, and `"NEW"`** — same choke points as `BLOCK_STATUS` above (`ItemChanged` for `"CHANGED"`, `ExecuteQueryEnhancedAsync` for `"QUERY"`, `EnterCrudModeForNewRecordAsync` for `"NEW"`), all wired 2026-08-25. `"INSERT"` is not wired, same reason as `BLOCK_STATUS` above. |
 | `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
 | `LAST_ERROR`, `LAST_ERROR_CODE` | ✅ **live** — `SetLastError(message, code)` is called from the shared `protected void LogError(...)` helper (`FormsManager.Helpers.cs`, wired 2026-08-25), which every one of `FormsManager`'s 114+ `catch` blocks already reports failures through; `code` is `ex.HResult` (there is no Oracle-style `ORA-`/`FRM-` number available from a .NET exception). `ClearLastError()` is deliberately not called anywhere — real Oracle Forms has no "clear" semantic for this variable either; it just persists until the next error overwrites it. |
@@ -92,8 +92,7 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `CURRENT_FORM` | ✅ **live** — `SetCurrentForm(formName)` is called from `CurrentFormName`'s property setter (`FormsManager.Properties.cs`) and from both `OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`, which set the backing field directly and so bypass the property) — three writers, all wired 2026-08-25. |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**All ten `Set*`/`UpdateFor*` methods have a real caller today, except `SetFormStatus` as a direct
-call (it is reached only implicitly, via `SetBlockStatus(_, "CHANGED")`'s cascade).**
+**All ten `Set*`/`UpdateFor*` methods have a real caller today.**
 *(An earlier version of this section claimed all ten had zero callers — that was a grep
 mistake: it only matched calls through the public `manager.SystemVariables.` property, and
 `FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
@@ -104,16 +103,18 @@ Live: `SetTriggerContext`/`ClearTriggerContext` (wired 2026-08-25, one choke poi
 not "scattered"), `SetMode` (wired 2026-08-25, four writers across two files — the original three-site
 count in `ModeTransitions.cs` missed a fourth in `EnhancedOperations.cs`), `SetLastError` (wired
 2026-08-25, one genuine choke point — the shared `LogError` helper every catch block already reports
-through), `SetBlockStatus`/`SetRecordStatus` (wired 2026-08-25 for the `"CHANGED"` value specifically —
-the block-registration `ItemChanged` handler, confirmed never fired by query population; see below for
-the earlier revert and how it was re-attempted and landed), `SetLastQuery` (wired 2026-08-25, the same
+through), `SetBlockStatus`/`SetRecordStatus` (wired 2026-08-25 for `"CHANGED"` — the block-registration
+`ItemChanged` handler, confirmed never fired by query population; see below for the earlier revert and
+how it was re-attempted and landed — and for `"QUERY"`/`"NEW"`, sharing `SetMode`'s existing choke
+points, plus the post-commit/post-rollback reset back to `"QUERY"` described below), `SetFormStatus`
+(wired 2026-08-25, its first direct call site — `CommitFormAsync`/`RollbackFormAsync`'s post-success
+reset, described below), `SetLastQuery` (wired 2026-08-25, the same
 `ExecuteQueryEnhancedAsync` choke point `SetMode` already uses, once
 `DataSourceAppFilterExtensions.BuildSelectQueryDefinition` was found to already provide the
 filter-to-string serialization this was originally blocked on — see below), and `UpdateForItemChange`
 (pre-existing, in `GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from
-savepoint rollback, not ordinary navigation).
-Genuinely unwired: `SetFormStatus` as a direct call, and the `INSERT` value for
-`BLOCK_STATUS`/`RECORD_STATUS` (`"CHANGED"`, `"QUERY"`, and `"NEW"` are all wired — see below).
+savepoint rollback, not ordinary navigation). The only remaining unwired piece anywhere in this
+section is the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS` — see below.
 
 **`SetLastQuery`: the "no existing serialization to reuse" premise was wrong — re-checked and
 landed (2026-08-25).** The original pass found `ExecuteQueryEnhancedAsync`'s one natural landing
@@ -162,11 +163,31 @@ created, not yet edited — shares `EnterCrudModeForNewRecordAsync`'s existing h
 (Oracle's status for a `"NEW"` record that has since been *edited* — distinct from `"CHANGED"`,
 which Oracle reserves for an edited *queried* record) is **not** wired: distinguishing it needs
 per-record "was this row ever queried" state, which the current per-block `SystemVariables` snapshot
-does not carry — a genuinely bigger design question, left open. `SetFormStatus` as its own direct
-call remains open too, on the strength of the original grep plus DML-verb ordering constraints —
-not yet re-checked at this depth. Two new tests
+does not carry — a genuinely bigger design question, left open. Two new tests
 (`ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesQueryStatus`,
 `EnterCrudModeForNewRecordAsync_OnSuccess_SetsSystemVariablesNewStatus`), proven via revert.
+
+**`CommitFormAsync`/`RollbackFormAsync`: nothing reset `BLOCK_STATUS`/`RECORD_STATUS`/`FORM_STATUS`
+back off `"CHANGED"` — closed, and `SetFormStatus` gets its first direct call site (2026-08-25).**
+Once a block's status could reach `"CHANGED"` (the pass above), a real completion gap became visible:
+neither `CommitFormAsync` nor `RollbackFormAsync` ever downgraded it afterward, so a successfully
+saved (or discarded) edit left the block permanently reporting `"CHANGED"` for the rest of the form's
+lifetime. `CommitFormAsync` now calls `SetBlockStatus`/`SetRecordStatus(_, "QUERY")` for every block
+it just committed (captured *before* the commit runs, into a `dirtyBlocksByForm` map, since a
+successful commit clears `IsDirty` and a fresh `GetDirtyBlocks()` call afterward would already be
+empty) and, once every committed block is reset, `SetFormStatus("QUERY")` for that form — safe because
+every block that can ever be `"CHANGED"` got there through `SetBlockStatus`, and every one of those
+dirty blocks was just committed. `RollbackFormAsync` does the same on a successful rollback, but scoped
+to `blocksForDefaultRollback` (not the full dirty-blocks list) and only calls `SetFormStatus("QUERY")`
+when *every* dirty block went through that default path — a block with a registered `ON-ROLLBACK`
+handler ran its own replacement logic (and could itself have written to `TriggerContext.SystemVariables`
+during that trigger), so forcing `"QUERY"` on it regardless would silently overwrite the form author's
+own choice. Four new tests
+(`CommitFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery`,
+`CommitFormAsync_BlockCommitFails_DoesNotResetStatusToQuery`,
+`RollbackFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery`,
+`RollbackFormAsync_OnRollbackRegistered_DoesNotOverrideThatBlocksStatus`), each proven via revert.
+
 Check current call sites with `grep` (both the public property
 *and* the private field — this section's own history is the reason why) before relying on any
 specific field being live.

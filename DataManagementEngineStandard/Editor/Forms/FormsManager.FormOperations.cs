@@ -233,12 +233,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Get dirty blocks from ALL forms in the commit scope
+                // Get dirty blocks from ALL forms in the commit scope. Captured per-form
+                // (not just flattened into allDirtyBlocks) so the post-commit
+                // :SYSTEM.BLOCK_STATUS reset below knows which fm.SystemVariables each
+                // block belongs to, and so it can run once the commit has actually cleared
+                // IsDirty -- a fresh GetDirtyBlocks() call at that point would return empty.
                 var allDirtyBlocks = new List<string>();
+                var dirtyBlocksByForm = new Dictionary<FormsManager, List<string>>();
                 foreach (var fm in formsToCommit)
                 {
                     var dirty = fm.GetDirtyBlocks();
                     allDirtyBlocks.AddRange(dirty);
+                    dirtyBlocksByForm[fm] = dirty;
                 }
 
                 if (!allDirtyBlocks.Any())
@@ -320,6 +326,27 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Phase 5: flush pending field changes as committed audit entries
                     foreach (var fm in formsToCommit)
                         fm._auditManager?.FlushPendingToStore(fm._currentFormName ?? "FORM", AuditOperation.Commit);
+
+                    // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS / :SYSTEM.FORM_STATUS --
+                    // see G0.36 in gaps.md. A block that just committed successfully is no
+                    // longer "CHANGED" -- its records now match what a fresh query would
+                    // return, Oracle Forms' "QUERY" status. Every block committed here was,
+                    // by construction, one of fm's dirty blocks (SetBlockStatus("CHANGED")'s
+                    // only source), so once all of them are back to "QUERY", fm's aggregate
+                    // FORM_STATUS is too -- SetFormStatus's first real direct call site.
+                    foreach (var fm in formsToCommit)
+                    {
+                        if (!dirtyBlocksByForm.TryGetValue(fm, out var committedBlocks) || committedBlocks.Count == 0)
+                            continue;
+
+                        foreach (var committedBlockName in committedBlocks)
+                        {
+                            fm._systemVariablesManager?.SetBlockStatus(committedBlockName, "QUERY");
+                            fm._systemVariablesManager?.SetRecordStatus(committedBlockName, "QUERY");
+                        }
+
+                        fm._systemVariablesManager?.SetFormStatus("QUERY");
+                    }
 
                     // Fire POST-COMMIT trigger on the initiating form. Same
                     // registration-key reasoning as PRE-COMMIT above.
@@ -431,6 +458,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                     // Phase 5: discard pending audit field changes (they were never committed)
                     _auditManager?.DiscardPending();
+
+                    // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS / :SYSTEM.FORM_STATUS --
+                    // see G0.36 in gaps.md. Same reasoning as the CommitFormAsync reset above:
+                    // a rolled-back block is no longer "CHANGED" -- an edited-then-discarded
+                    // record reverts to whatever a fresh query would show, "QUERY". (An
+                    // uncommitted brand-new record technically disappears entirely rather than
+                    // becoming "QUERY" in real Oracle Forms; the engine does not yet track that
+                    // distinction -- see the "INSERT" note in gaps.md -- so this is the same
+                    // per-block approximation the CommitFormAsync reset already makes.)
+                    // Scoped to blocksForDefaultRollback only, NOT the full dirtyBlocks list --
+                    // a block with a registered ON-ROLLBACK handler ran its own replacement
+                    // logic above (and, via TriggerContext.SystemVariables, could already have
+                    // set that block's status to whatever it decided); forcing "QUERY" on it
+                    // here regardless would silently overwrite the form author's own choice.
+                    foreach (var blockName in blocksForDefaultRollback)
+                    {
+                        _systemVariablesManager?.SetBlockStatus(blockName, "QUERY");
+                        _systemVariablesManager?.SetRecordStatus(blockName, "QUERY");
+                    }
+                    // FORM_STATUS only follows if EVERY dirty block used the default path --
+                    // if any block had a custom ON-ROLLBACK handler, that handler's own
+                    // decision about its block might still leave the form genuinely changed,
+                    // and this method has no way to know that without guessing.
+                    if (blocksForDefaultRollback.Count == dirtyBlocks.Count)
+                        _systemVariablesManager?.SetFormStatus("QUERY");
 
                     // Phase 7: unlock all records after rollback
                     foreach (var blockName in _blocks.Keys)

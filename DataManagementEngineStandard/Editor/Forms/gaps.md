@@ -826,14 +826,15 @@ assignments failed exactly that test).
 
 ### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
-(FOUND 2026-08-25; **trigger-context, block-switch, current-form, mode, last-error, last-query, and
-the block/record-status "CHANGED"/"QUERY"/"NEW" transitions all FIXED same day** — `SetTriggerContext`/
+(FOUND 2026-08-25; **trigger-context, block-switch, current-form, mode, last-error, last-query, the
+block/record-status "CHANGED"/"QUERY"/"NEW" transitions, the post-commit/post-rollback reset back to
+"QUERY", and SetFormStatus's first direct call site all FIXED same day** — `SetTriggerContext`/
 `ClearTriggerContext`, `UpdateForBlockChange`, `SetCurrentForm`, `SetMode`, `SetLastError`,
-`SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` (for `"CHANGED"`, `"QUERY"`, and `"NEW"`) now
-wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired,
-pre-dating this finding — the first pass's grep missed calls through the private field; one method
-name (`SetFormStatus`, as a direct call) plus one value (`BLOCK_STATUS`/`RECORD_STATUS`'s `"INSERT"`)
-remain genuinely unwired, see "Still open" below)
+`SetLastQuery`, `SetFormStatus`, and `SetBlockStatus`/`SetRecordStatus` (for `"CHANGED"`, `"QUERY"`,
+and `"NEW"`) now wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be
+already wired, pre-dating this finding — the first pass's grep missed calls through the private
+field; the sole remaining unwired piece is the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS`,
+see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -966,12 +967,10 @@ until overwritten by the next error, which `SetLastError` already provides. One 
 `ExecuteQueryEnhancedAsync` and asserting the mock's `SetLastError` was invoked with a message
 containing the block name), proven via revert.
 
-**Still open — one method name, genuinely zero direct callers, plus one value.** `SetFormStatus` (as
-a direct call — it is reached implicitly via `SetBlockStatus(_, "CHANGED")`'s cascade, see below)
-still has zero direct callers, and `UpdateForRecordChange`'s general (non-savepoint) case is still
-open too. `SetFormStatus` needs its own call site scattered across each DML verb and
-query-execution code in several different `FormsManager.*.cs` files — genuinely larger,
-scoped-per-call-site work, deliberately not attempted here.
+**Still open — `UpdateForRecordChange`'s general (non-savepoint) case, plus one value.**
+`UpdateForRecordChange` only runs from savepoint rollback, not ordinary record navigation — not
+re-checked at the depth the other partial items got. `SetFormStatus` as a direct call is **no
+longer** on this list — see the `CommitFormAsync`/`RollbackFormAsync` entry below.
 
 **`BLOCK_STATUS`/`RECORD_STATUS`'s `"INSERT"` value is also still open, but for a different reason
 than "scattered call sites."** Unlike `"NEW"`/`"QUERY"` (see below — both landed same day once
@@ -1080,6 +1079,36 @@ the other two. Two new tests
 `EnterCrudModeForNewRecordAsync_OnSuccess_SetsSystemVariablesNewStatus`), each proven via revert;
 full engine build plus `FormsManager.Tests` (170/170) green across 5 consecutive runs.
 
+**`CommitFormAsync`/`RollbackFormAsync`: found while landing "QUERY"/"NEW" — nothing reset
+`BLOCK_STATUS`/`RECORD_STATUS`/`FORM_STATUS` back off `"CHANGED"`, so a saved or discarded edit
+stayed permanently `"CHANGED"` — closed same day, and gave `SetFormStatus` its first direct call
+site.** Wiring `"CHANGED"` two entries back made this visible: once a block could reach `"CHANGED"`,
+nothing in either commit or rollback ever moved it back off that value, so a form that had ever had
+one edit would report `BLOCK_STATUS = "CHANGED"` forever afterward, saved or not — arguably a worse
+symptom than the field being permanently unset, since it actively lies about the block's state.
+`CommitFormAsync` captures each form's dirty-block list into a `dirtyBlocksByForm` map *before* the
+commit actually runs (`GetDirtyBlocks()` called again after a successful commit would already be
+empty, `IsDirty` having just been cleared), then on success calls `SetBlockStatus`/
+`SetRecordStatus(_, "QUERY")` for every block that map recorded and, once all of a form's committed
+blocks are reset, `SetFormStatus("QUERY")` for that form — safe because `SetBlockStatus`'s only
+source of `"CHANGED"` is the `ItemChanged` handler wired above, and every block that could be
+`"CHANGED"` was, by construction, one of the blocks just committed. Cross-form-safe: `formsToCommit`
+can include peer `FormsManager` instances, and their own `_systemVariablesManager` is reached the
+same way the surrounding method already reaches their `_auditManager`/`_lockManager`/`_blocks` —
+private-field access across instances of the same class, an established pattern in this method, not
+a new one. `RollbackFormAsync` mirrors this on a successful rollback, with one deliberate difference:
+it scopes the reset to `blocksForDefaultRollback`, not the full dirty-blocks list, and only calls
+`SetFormStatus("QUERY")` when every dirty block took that default path. A block with a registered
+`ON-ROLLBACK` handler replaces the default rollback entirely and may have written its own outcome
+to `TriggerContext.SystemVariables` during that trigger (the trigger-context wiring from earlier in
+this same G0.36 pass makes that field non-null); force-resetting such a block to `"QUERY"` regardless
+would silently discard whatever the form author's own handler decided. Four new tests
+(`CommitFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery`,
+`CommitFormAsync_BlockCommitFails_DoesNotResetStatusToQuery`,
+`RollbackFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery`,
+`RollbackFormAsync_OnRollbackRegistered_DoesNotOverrideThatBlocksStatus`), each proven via revert;
+full engine build plus `FormsManager.Tests` (174/174) green across 5 consecutive runs.
+
 **Lesson carried forward, and now applied eight times: before assuming "no single choke point" (or
 "no existing capability to build on"), actually check.** `UpdateForItemChange`, `UpdateForBlockChange`,
 `SetCurrentForm`, `SetMode`, `SetLastError`, `SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` all
@@ -1113,7 +1142,10 @@ sites, plus `EnterCrudModeForNewRecordAsync`'s `SetBlockStatus`/`SetRecordStatus
 the `SetBlockStatus`/`SetRecordStatus("QUERY")` calls, all in `ExecuteQueryEnhancedAsync`);
 `FormsManager.Helpers.cs` (`LogError`'s `SetLastError` call); `FormsManager.BlockRegistration.cs`
 (the `ItemChanged` handler's `SetBlockStatus`/`SetRecordStatus("CHANGED")` calls);
-`Editor/Forms.Tests/FormsManagerTests.cs` (thirteen new tests total, two updated Strict mocks).
+`FormsManager.FormOperations.cs` (`CommitFormAsync`'s `dirtyBlocksByForm` capture and post-commit
+`SetBlockStatus`/`SetRecordStatus`/`SetFormStatus("QUERY")` reset; `RollbackFormAsync`'s matching
+post-rollback reset, scoped to `blocksForDefaultRollback`);
+`Editor/Forms.Tests/FormsManagerTests.cs` (seventeen new tests total, two updated Strict mocks).
 
 ### G0.37: `BlockFieldDefinition.Label` never reached `ItemInfo.PromptText` (FIXED 2026-08-25)
 

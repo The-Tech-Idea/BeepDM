@@ -2495,4 +2495,116 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region CommitFormAsync -> SystemVariables reset to QUERY on success (G0.36, continued, 2026-08-25)
+
+    // Nothing downgraded BLOCK_STATUS/RECORD_STATUS/FORM_STATUS back off "CHANGED" once the
+    // ItemChanged-handler wiring above set it -- a successfully committed block's records now
+    // match what a fresh query would return, Oracle Forms' "QUERY" status, and since every
+    // committed block was (by construction) one of the form's dirty blocks -- SetBlockStatus's
+    // only source of "CHANGED" -- fm's aggregate FORM_STATUS can safely follow, giving
+    // SetFormStatus its first real direct call site.
+
+    [Fact]
+    public async Task CommitFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery()
+    {
+        var dataSource = new Mock<IDataSource>();
+        dataSource.Setup(d => d.BeginTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+        dataSource.Setup(d => d.Commit(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+
+        var entity = CreateEntity("EMP", ("Name", "string"));
+        var uow = CreateDirtyUowMock(dataSource.Object, new ErrorsInfo { Flag = Errors.Ok });
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uow.Object, entity);
+        manager.GetBlock("EMP")!.Mode = DataBlockMode.CRUD;
+
+        var result = await manager.CommitFormAsync().ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        variables.Verify(v => v.SetBlockStatus("EMP", "QUERY"), Times.Once);
+        variables.Verify(v => v.SetRecordStatus("EMP", "QUERY"), Times.Once);
+        variables.Verify(v => v.SetFormStatus("QUERY"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CommitFormAsync_BlockCommitFails_DoesNotResetStatusToQuery()
+    {
+        var dataSource = new Mock<IDataSource>();
+        dataSource.Setup(d => d.BeginTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+        dataSource.Setup(d => d.EndTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+
+        var entity = CreateEntity("EMP", ("Name", "string"));
+        var uow = CreateDirtyUowMock(dataSource.Object, new ErrorsInfo { Flag = Errors.Failed, Message = "constraint violation" });
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uow.Object, entity);
+        manager.GetBlock("EMP")!.Mode = DataBlockMode.CRUD;
+
+        var result = await manager.CommitFormAsync().ConfigureAwait(false);
+
+        Assert.Equal(Errors.Failed, result.Flag);
+        variables.Verify(v => v.SetBlockStatus("EMP", "QUERY"), Times.Never);
+        variables.Verify(v => v.SetRecordStatus("EMP", "QUERY"), Times.Never);
+        variables.Verify(v => v.SetFormStatus("QUERY"), Times.Never);
+    }
+
+    #endregion
+
+    #region RollbackFormAsync -> SystemVariables reset to QUERY on success (G0.36, continued, 2026-08-25)
+
+    // Same reasoning as the CommitFormAsync region above, for the opposite outcome: a
+    // rolled-back edit is discarded, so the block reverts to whatever a fresh query would
+    // show ("QUERY"), not "CHANGED". Scoped to blocksForDefaultRollback rather than the full
+    // dirty-blocks list -- a block with a registered ON-ROLLBACK handler ran its own
+    // replacement logic and may have left that block in whatever state the form author
+    // intended, which this reset must not silently overwrite.
+
+    [Fact]
+    public async Task RollbackFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+        uowMock.Setup(u => u.Rollback()).ReturnsAsync(new ErrorsInfo { Flag = Errors.Ok });
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.RollbackFormAsync().ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        variables.Verify(v => v.SetBlockStatus("EMP", "QUERY"), Times.Once);
+        variables.Verify(v => v.SetRecordStatus("EMP", "QUERY"), Times.Once);
+        variables.Verify(v => v.SetFormStatus("QUERY"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RollbackFormAsync_OnRollbackRegistered_DoesNotOverrideThatBlocksStatus()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+
+        var triggers = CreateLooseTriggerManager();
+        triggers.Setup(t => t.GetBlockTriggers(TriggerType.OnRollback, "EMP"))
+            .Returns(new List<TriggerDefinition> { new() });
+        triggers.Setup(t => t.FireBlockTriggerAsync(
+                TriggerType.OnRollback, "EMP", It.IsAny<TriggerContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TriggerResult.Success);
+
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        using var manager = new FormsManager(_mockEditor.Object,
+            triggerManager: triggers.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.RollbackFormAsync().ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        variables.Verify(v => v.SetBlockStatus("EMP", "QUERY"), Times.Never);
+        variables.Verify(v => v.SetRecordStatus("EMP", "QUERY"), Times.Never);
+        variables.Verify(v => v.SetFormStatus("QUERY"), Times.Never);
+    }
+
+    #endregion
 }
