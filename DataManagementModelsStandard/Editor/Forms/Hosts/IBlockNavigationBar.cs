@@ -25,6 +25,19 @@ public interface IBlockNavigationBar
     event EventHandler LastClicked;
     event EventHandler<int> RecordIndexChanged;
 
+    /// <summary>CREATE_RECORD (F6) — a new, blank record ready for input.</summary>
+    event EventHandler NewRecordClicked;
+    /// <summary>DELETE_RECORD — removes the current record.</summary>
+    event EventHandler DeleteClicked;
+    /// <summary>ENTER_QUERY (F7) — the block starts accepting example criteria.</summary>
+    event EventHandler QueryClicked;
+    /// <summary>EXECUTE_QUERY (F8) — runs the query (by-example if in query mode, a plain re-query otherwise).</summary>
+    event EventHandler ExecuteClicked;
+    /// <summary>COMMIT_FORM (F10) — posts pending changes.</summary>
+    event EventHandler SaveClicked;
+    /// <summary>Discards pending changes since the last commit/query.</summary>
+    event EventHandler RollbackClicked;
+
     /// <summary>Platform-specific visual element (UIElement in WPF, Control in WinForms).</summary>
     object? View { get; }
 

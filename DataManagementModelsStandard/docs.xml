@@ -8914,6 +8914,24 @@
             without this — see the WinForms/WPF hosts' auto-discovery.
             </summary>
         </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.NewRecordClicked">
+            <summary>CREATE_RECORD (F6) — a new, blank record ready for input.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.DeleteClicked">
+            <summary>DELETE_RECORD — removes the current record.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.QueryClicked">
+            <summary>ENTER_QUERY (F7) — the block starts accepting example criteria.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.ExecuteClicked">
+            <summary>EXECUTE_QUERY (F8) — runs the query (by-example if in query mode, a plain re-query otherwise).</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.SaveClicked">
+            <summary>COMMIT_FORM (F10) — posts pending changes.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.RollbackClicked">
+            <summary>Discards pending changes since the last commit/query.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Hosts.IBlockNavigationBar.View">
             <summary>Platform-specific visual element (UIElement in WPF, Control in WinForms).</summary>
         </member>
