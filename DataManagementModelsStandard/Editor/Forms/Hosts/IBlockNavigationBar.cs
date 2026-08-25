@@ -8,6 +8,13 @@ namespace TheTechIdea.Beep.Editor.Forms.Hosts;
 /// </summary>
 public interface IBlockNavigationBar
 {
+    /// <summary>
+    /// The block this navigation bar controls, e.g. "Ord". A host with more
+    /// than one block cannot correlate a discovered bar to the right block
+    /// without this — see the WinForms/WPF hosts' auto-discovery.
+    /// </summary>
+    string? BlockName { get; set; }
+
     int CurrentRecordIndex { get; set; }
     int RecordCount { get; set; }
     bool IsQueryMode { get; set; }
