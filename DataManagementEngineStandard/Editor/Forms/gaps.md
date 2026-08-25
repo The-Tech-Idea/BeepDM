@@ -966,19 +966,48 @@ containing the block name), proven via revert.
 
 **Still open — four method names, genuinely zero callers.** `SetBlockStatus`, `SetFormStatus`,
 `SetRecordStatus`, `SetLastQuery` still have zero callers anywhere, and `UpdateForRecordChange`'s
-general (non-savepoint) case is still open too. `SetBlockStatus`/`SetFormStatus`/`SetRecordStatus`
-each need their own call site scattered across each DML verb and query-execution code in several
-different `FormsManager.*.cs` files, and the doc's own "Updates that are NOT immediate" section
-establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a *successful* DML,
-`RECORD_STATUS` distinguishing `NEW`/`QUERY`/`CHANGED`/`INSERT`) — genuinely larger,
-scoped-per-call-site work, deliberately not attempted in this pass. `SetLastQuery` was checked
-directly: `ExecuteQueryEnhancedAsync` has a single natural landing spot right where it calls
-`blockInfo.UnitOfWork.Get(filters)`, the same shape that made `SetMode` and `SetLastError` tractable,
-but it's blocked on something those two weren't — there is no existing string form of "the query that
-ran" to hand it. `ExecuteQueryEnhancedAsync` receives a `List<AppFilter>`, not a WHERE-clause string,
-so wiring this in means first choosing and building a filter-to-string serialization (there is no
-existing one to reuse), not just adding a call next to an existing assignment. That is a different,
-larger kind of blocker than "scattered call sites."
+general (non-savepoint) case is still open too. `SetFormStatus` on its own, and the `NEW`/`QUERY`/
+`INSERT` values of `BLOCK_STATUS`/`RECORD_STATUS`, each need their own call site scattered across each
+DML verb and query-execution code in several different `FormsManager.*.cs` files, and the doc's own
+"Updates that are NOT immediate" section establishes real ordering constraints (e.g. `BLOCK_STATUS`
+only on a *successful* DML) — genuinely larger, scoped-per-call-site work, deliberately not attempted
+in this pass. `SetLastQuery` was checked directly: `ExecuteQueryEnhancedAsync` has a single natural
+landing spot right where it calls `blockInfo.UnitOfWork.Get(filters)`, the same shape that made
+`SetMode` and `SetLastError` tractable, but it's blocked on something those two weren't — there is no
+existing string form of "the query that ran" to hand it. `ExecuteQueryEnhancedAsync` receives a
+`List<AppFilter>`, not a WHERE-clause string, so wiring this in means first choosing and building a
+filter-to-string serialization (there is no existing one to reuse), not just adding a call next to an
+existing assignment. That is a different, larger kind of blocker than "scattered call sites."
+
+**Found a genuine single choke point for the `"CHANGED"` transition specifically — reverted rather
+than landed, because it destabilized a pre-existing test.** The block-registration `ItemChanged`
+handler (`FormsManager.BlockRegistration.cs`) is the one place every genuine user-driven field edit on
+every block passes through, and it is safe against false positives from query population: confirmed by
+reading `UnitofWork.CRUD.cs`'s `Get()`/`Get(filters)` and `UnitofWork.Core.Utilities.cs`'s
+`GetDataInUnits` directly — the latter builds each row fully in a plain `List<T>` and only wraps the
+*already-populated* list in a new `ObservableBindingList<T>` afterward, so `ItemChanged` genuinely
+never fires from a query, only from a real edit. Wiring
+`_systemVariablesManager?.SetBlockStatus(blockName, "CHANGED")` /
+`SetRecordStatus(blockName, "CHANGED")` into that handler (`SetBlockStatus`'s own `"CHANGED"` value
+already cascades `FORM_STATUS` too, so this would have closed three fields' `"CHANGED"` transition in
+one hook) compiled clean and passed its own new test in isolation, but made
+`ItemChanged_FieldHasLOV_FiresWhenLOVValidationTrigger` (a pre-existing test, unrelated block/LOV
+setup, no shared object with the new test) fail consistently (3/3) whenever both tests ran in the same
+suite — while a trivial no-op `[Fact]` added in the new test's place did not reproduce it (3/3 clean),
+ruling out "the suite just got bigger" as the cause. The failure is `ctx.NewValue` arriving `null`
+while `ctx.ItemName` arrives correct in the same synchronous trigger-callback statement pair — not
+something a `TriggerManager`/`LOVManager` review turned up a static/shared-state explanation for (both
+checked directly: no `static` collections in either). Whatever the real mechanism, it looks like a
+pre-existing fragility in that test's own `WaitUntilAsync`-based polling synchronization around an
+async-void event handler, made visible by one more concurrently-scheduled async `ItemChanged`
+handler, not a defect in the wiring itself — but "looks like" is not proof, and per house rule 8
+(verify before claiming, prove the guard can fail on the thing it guards) this is not landed until
+that mechanism is actually understood, not just plausibly explained. Reverted cleanly (verified
+`git status` clean, rebuilt, 123/123 green) rather than shipped with an unexplained red test.
+**Not attempted in this pass; flagged for a dedicated follow-up** that first makes
+`ItemChanged_FieldHasLOV_FiresWhenLOVValidationTrigger`'s synchronization robust (a
+`TaskCompletionSource`/semaphore instead of a polling loop would remove the ambiguity outright) before
+re-attempting this wiring.
 
 A related dead-end, ruled out rather than pursued: a second, entirely separate per-block snapshot
 store — `UpdateBlockVariables`/`GetBlockVariables`/`_blockVars` in `SystemVariablesManager.cs`
@@ -993,17 +1022,19 @@ two stores for one domain), for a consumer that no longer exists in this repo. L
 and not deleted (removal is a decision for Fahad, not made here) — documented so a future pass does
 not mistake it for a live, missing-caller gap of the same shape as the four above.
 
-**Lesson carried forward, and now applied five times: before assuming "no single choke point,"
-actually check.** `UpdateForItemChange`, `UpdateForBlockChange`, `SetCurrentForm`, `SetMode`, and now
+**Lesson carried forward, and now applied six times: before assuming "no single choke point,"
+actually check.** `UpdateForItemChange`, `UpdateForBlockChange`, `SetCurrentForm`, `SetMode`, and
 `SetLastError` all turned out to have a small, fixed, enumerable set of writers — or, for
 `SetLastError`, an actual single shared helper hiding behind 114 scattered `catch` blocks — rather
 than truly scattered call sites, and were only missed the first time by a grep that didn't account
-for the private-field call shape (or, for `SetMode`, by not checking a second file). `SetLastQuery`
-is the first of the remaining names checked at this same depth and confirmed genuinely blocked, on
-missing serialization rather than a missing choke point. `SetBlockStatus`/`SetFormStatus`/
-`SetRecordStatus` remain open on the strength of the original grep plus the doc's ordering
-constraints, not yet individually re-checked the way `SetMode`/`SetLastError`/`SetLastQuery` now
-have been.
+for the private-field call shape (or, for `SetMode`, by not checking a second file). Checking
+`SetBlockStatus`/`SetRecordStatus` the same way found a sixth real choke point (the `ItemChanged`
+handler, for the `"CHANGED"` transition) — but this is the first case in this series where finding the
+choke point wasn't the whole story: landing the wiring surfaced an unrelated test's fragility, so it's
+recorded as found-but-not-landed above rather than claimed as fixed. `SetLastQuery` was checked and
+confirmed genuinely blocked, on missing serialization rather than a missing choke point. `SetFormStatus`
+and the `NEW`/`QUERY`/`INSERT` values of `BLOCK_STATUS`/`RECORD_STATUS` remain open on the strength of
+the original grep plus the doc's ordering constraints, not yet individually re-checked at this depth.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
