@@ -1,4 +1,5 @@
 using System;
+using TheTechIdea.Beep.Editor.Forms.Models;
 
 namespace TheTechIdea.Beep.Editor.Forms.Hosts;
 
@@ -42,4 +43,23 @@ public interface IBlockNavigationBar
     object? View { get; }
 
     void Refresh();
+
+    /// <summary>
+    /// Applies the form author's per-command overrides from
+    /// <see cref="BlockDefinition.Navigation"/>. A null <paramref name="navigation"/>,
+    /// or an individual <see cref="BlockNavigationCommand"/> left null on it, means
+    /// "not authored" — <see cref="BlockNavigationDefinition.Clone"/>'s own contract —
+    /// and that command's state stays exactly what <see cref="Refresh"/> already
+    /// computes from live engine state.
+    /// </summary>
+    /// <remarks>
+    /// Authoring can hide a command (<c>Visible = false</c>) or narrow it off
+    /// (<c>Enabled = false</c> combines with live state by AND), but never force
+    /// one <em>on</em> that live state says is invalid — e.g. an author cannot make
+    /// First enabled while already on the first record. Implementations must persist
+    /// the passed definition and re-consult it on every subsequent <see cref="Refresh"/>,
+    /// not apply it once: this is typically called before the block's first bind, and
+    /// <see cref="Refresh"/> runs many times afterward as the engine's state changes.
+    /// </remarks>
+    void ApplyAuthoredNavigation(BlockNavigationDefinition? navigation);
 }
