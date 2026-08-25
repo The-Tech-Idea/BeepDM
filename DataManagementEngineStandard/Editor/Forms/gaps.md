@@ -715,6 +715,43 @@ state the registry does not. Ten new BeepDM regression tests in `FormsManagerTes
 commit-to-record write proven via revert (reverting it left the "committed" test failing while
 cancel/no-record/attached-editor tests kept passing, as expected).
 
+### G0.33: `BlockPropertyManager` (SET_BLOCK_PROPERTY/GET_BLOCK_PROPERTY) fully implemented and wired
+into `FormsManager`, but absent from `IUnitofWorksManager` — unreachable through the documented
+contract every consumer actually types against (FIXED 2026-08-25)
+
+**What:** `IBlockPropertyManager`/`BlockPropertyManager` (`SetBlockProperty`/`GetBlockProperty`/
+`GetBlockProperty<T>`) were fully implemented, and `FormsManager` had a `BlockProperties` property
+(`FormsManager.Properties.cs`) exposing it, since before this fix — but `IUnitofWorksManager` never
+declared that property. Every consumer that follows this project's own house rule ("reach the engine
+only through `ExtensionServices`/the documented interface, never a second path") — the Beep.Forms.IDE
+extension, and both `IBeepFormsHost` implementations — typed against `IUnitofWorksManager`, so
+`BlockProperties` was reachable only through an unsupported downcast to the concrete `FormsManager`
+class. `SET_BLOCK_PROPERTY`/`GET_BLOCK_PROPERTY` (Oracle Forms built-ins) were accepted-then-ignored
+in exactly the shape this codebase's own rules exist to hunt: a capability that works when called
+directly on the concrete type and silently isn't there for anyone going through the interface.
+
+**Fix:** Added `IBlockPropertyManager BlockProperties { get; }` to `IUnitofWorksManager`, matching
+exactly how `Triggers`/`LOV`/`Validation`/`ItemProperties` are already exposed there (a sub-manager
+property, not flat methods — `FormsManager`'s own flat `SetBlockProperty`/`GetBlockProperty`
+convenience methods are FormsManager-specific sugar, not part of the documented contract, the same
+way `RegisterItemTrigger` isn't flat-exposed on the interface either). Added
+`SetBlockProperty(blockName, BlockProperty, value)`/`GetBlockProperty(blockName, BlockProperty)` to
+`IBeepFormsHost`, typed with the engine's own `BlockProperty` enum rather than the string-based
+convention `SetItemProperty`/`GetItemProperty` use on the same interface (block properties are a
+small, well-defined enum — translating to strings would have been an unrequested indirection).
+Implemented in both `WinFormFormHost` and `BeepWpfForms`, following the exact
+`RequireManager()`/`TryReadManager()`/`NormalizeBlockName()`/`RefreshBlockAndDetails()` pattern their
+own `SetItemProperty`/`GetItemProperty` already use in the same file family.
+
+**Where:** `IUnitofWorksManager.cs`, `IBeepFormsHost.cs`; `WinFormFormHost.BlockProperties.cs` (new),
+`BeepWpfForms.BlockProperties.cs` (new).
+
+**Risk of fix:** Low — purely additive; `FormsManager` already implemented `BlockProperties`, so no
+engine behavior changed, only reachability. One new regression test in `FormsHostContractTests.cs`
+extending the existing `ManagerContract_ExposesEngineOwnedRuntimeProviders` (which already asserted
+`Timers`/`Sequences` the same way) plus a new `FormsHost_ExposesBlockPropertyBuiltins`; proven via
+revert (removing the interface property failed the extended test, as expected).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

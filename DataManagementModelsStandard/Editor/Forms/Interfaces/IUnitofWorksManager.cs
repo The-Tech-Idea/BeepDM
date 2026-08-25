@@ -128,6 +128,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the block factory</summary>
         IBlockFactory BlockFactory { get; }
 
+        /// <summary>
+        /// Gets the block property manager (Oracle Forms SET_BLOCK_PROPERTY /
+        /// GET_BLOCK_PROPERTY). Fully implemented and wired into
+        /// <c>FormsManager</c> since before this property existed here — it
+        /// was reachable only through an unsupported downcast to the
+        /// concrete class, not through this documented interface, which is
+        /// what every consumer (the IDE, both runtime hosts) actually types
+        /// against.
+        /// </summary>
+        IBlockPropertyManager BlockProperties { get; }
+
         /// <summary>Gets the alert provider for SHOW_ALERT-style dialogs.</summary>
         IAlertProvider AlertProvider { get; }
 

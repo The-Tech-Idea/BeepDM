@@ -111,6 +111,10 @@ public interface IBeepFormsHost
     Task<bool> SaveDirtyBlocksAsync(CancellationToken ct = default);
     Task<bool> RollbackDirtyBlocksAsync(CancellationToken ct = default);
 
+    // ── Block properties (SET_BLOCK_PROPERTY / GET_BLOCK_PROPERTY) ─────────────
+    void SetBlockProperty(string blockName, BlockProperty property, object? value);
+    object? GetBlockProperty(string blockName, BlockProperty property);
+
     // ── Item properties ───────────────────────────────────────────────────────
     IReadOnlyList<ItemInfo> GetItems(string blockName);
     void SetItemProperty(

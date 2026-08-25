@@ -141,6 +141,23 @@ public class FormsHostContractTests
         Assert.Equal(
             typeof(ISequenceProvider),
             typeof(IUnitofWorksManager).GetProperty("Sequences")?.PropertyType);
+        // BlockProperties was fully implemented and wired into FormsManager
+        // (FormsManager.BlockProperties.cs / .Properties.cs) but absent from
+        // this interface — reachable only through an unsupported downcast to
+        // the concrete class, not through the documented contract every
+        // consumer (IDE, both runtime hosts) actually types against. (2026-08-25)
+        Assert.Equal(
+            typeof(IBlockPropertyManager),
+            typeof(IUnitofWorksManager).GetProperty("BlockProperties")?.PropertyType);
+    }
+
+    [Fact]
+    public void FormsHost_ExposesBlockPropertyBuiltins()
+    {
+        Type host = typeof(IBeepFormsHost);
+
+        Assert.NotNull(host.GetMethod("SetBlockProperty"));
+        Assert.NotNull(host.GetMethod("GetBlockProperty"));
     }
 
     [Fact]
