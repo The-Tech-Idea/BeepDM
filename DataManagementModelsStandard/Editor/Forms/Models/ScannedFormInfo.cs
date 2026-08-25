@@ -51,6 +51,31 @@ public class ScannedFormInfo
     /// </remarks>
     public List<ScannedTriggerInfo> Triggers { get; set; } = new();
 
+    /// <summary>
+    /// Named Record Groups registered on this form (engine:
+    /// <c>IUnitofWorksManager.CreateRecordGroup</c>). Form-scoped, name-only —
+    /// there is no block/field key, unlike LOVs/triggers/validation.
+    /// </summary>
+    public List<ScannedRecordGroupInfo> RecordGroups { get; set; } = new();
+
+    /// <summary>
+    /// Named Parameter Lists registered on this form (engine:
+    /// <c>IUnitofWorksManager.CreateParameterList</c>/<c>AddParameter</c>).
+    /// </summary>
+    public List<ScannedParameterListInfo> ParameterLists { get; set; } = new();
+
+    /// <summary>
+    /// Named Alerts registered on this form (engine:
+    /// <c>IUnitofWorksManager.CreateAlert</c>, added 2026-08-25).
+    /// </summary>
+    public List<ScannedAlertInfo> Alerts { get; set; } = new();
+
+    /// <summary>
+    /// Named Editor objects registered on this form (engine:
+    /// <c>IUnitofWorksManager.CreateEditor</c>, added 2026-08-25).
+    /// </summary>
+    public List<ScannedEditorInfo> Editors { get; set; } = new();
+
     /// <summary>Form hosts declared on this form.</summary>
     public List<ScannedHostInfo> Hosts { get; set; } = new();
 
@@ -179,6 +204,76 @@ public class ScannedTriggerInfo
 
     /// <summary>Registered through the integrated marker regions.</summary>
     public bool IsIntegrated { get; set; }
+}
+
+/// <summary>Scanned Record Group registration (Oracle Forms RECORD_GROUP).</summary>
+public class ScannedRecordGroupInfo
+{
+    /// <summary>Record group name.</summary>
+    public string Name { get; set; }
+
+    /// <summary>Connection the group queries.</summary>
+    public string ConnectionName { get; set; }
+
+    /// <summary>Entity the group queries.</summary>
+    public string EntityName { get; set; }
+}
+
+/// <summary>Scanned Parameter List registration (Oracle Forms PARAMETER_LIST).</summary>
+public class ScannedParameterListInfo
+{
+    /// <summary>Parameter list name.</summary>
+    public string Name { get; set; }
+
+    /// <summary>Parameter names and their literal authored values.</summary>
+    public Dictionary<string, string> Parameters { get; set; } = new();
+}
+
+/// <summary>Scanned named Alert registration (Oracle Forms ALERT).</summary>
+public class ScannedAlertInfo
+{
+    /// <summary>Alert name.</summary>
+    public string Name { get; set; }
+
+    /// <summary>Alert title bar text.</summary>
+    public string Title { get; set; }
+
+    /// <summary>Alert message body.</summary>
+    public string Message { get; set; }
+
+    /// <summary>Alert icon/severity style, as authored (Information/Caution/Stop/Question/None).</summary>
+    public string Style { get; set; }
+
+    /// <summary>First button's label.</summary>
+    public string Button1Text { get; set; }
+
+    /// <summary>Second button's label, or null.</summary>
+    public string Button2Text { get; set; }
+
+    /// <summary>Third button's label, or null.</summary>
+    public string Button3Text { get; set; }
+}
+
+/// <summary>Scanned named Editor registration (Oracle Forms EDITOR — large-text popup).</summary>
+public class ScannedEditorInfo
+{
+    /// <summary>Editor name.</summary>
+    public string Name { get; set; }
+
+    /// <summary>Popup title bar text.</summary>
+    public string Title { get; set; }
+
+    /// <summary>Popup width in device-independent pixels.</summary>
+    public int Width { get; set; }
+
+    /// <summary>Popup height in device-independent pixels.</summary>
+    public int Height { get; set; }
+
+    /// <summary>Whether text wraps at the edit area's width.</summary>
+    public bool WrapText { get; set; }
+
+    /// <summary>Whether a scroll bar is shown.</summary>
+    public bool ShowScrollBar { get; set; }
 }
 
 /// <summary>List of Values (LOV) information.</summary>

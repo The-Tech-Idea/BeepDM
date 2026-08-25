@@ -10244,6 +10244,31 @@
             this existed meant.
             </remarks>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.RecordGroups">
+            <summary>
+            Named Record Groups registered on this form (engine:
+            <c>IUnitofWorksManager.CreateRecordGroup</c>). Form-scoped, name-only —
+            there is no block/field key, unlike LOVs/triggers/validation.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.ParameterLists">
+            <summary>
+            Named Parameter Lists registered on this form (engine:
+            <c>IUnitofWorksManager.CreateParameterList</c>/<c>AddParameter</c>).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Alerts">
+            <summary>
+            Named Alerts registered on this form (engine:
+            <c>IUnitofWorksManager.CreateAlert</c>, added 2026-08-25).
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Editors">
+            <summary>
+            Named Editor objects registered on this form (engine:
+            <c>IUnitofWorksManager.CreateEditor</c>, added 2026-08-25).
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedFormInfo.Hosts">
             <summary>Form hosts declared on this form.</summary>
         </member>
@@ -10358,6 +10383,72 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo.IsIntegrated">
             <summary>Registered through the integrated marker regions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedRecordGroupInfo">
+            <summary>Scanned Record Group registration (Oracle Forms RECORD_GROUP).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedRecordGroupInfo.Name">
+            <summary>Record group name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedRecordGroupInfo.ConnectionName">
+            <summary>Connection the group queries.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedRecordGroupInfo.EntityName">
+            <summary>Entity the group queries.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedParameterListInfo">
+            <summary>Scanned Parameter List registration (Oracle Forms PARAMETER_LIST).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedParameterListInfo.Name">
+            <summary>Parameter list name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedParameterListInfo.Parameters">
+            <summary>Parameter names and their literal authored values.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo">
+            <summary>Scanned named Alert registration (Oracle Forms ALERT).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Name">
+            <summary>Alert name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Title">
+            <summary>Alert title bar text.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Message">
+            <summary>Alert message body.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Style">
+            <summary>Alert icon/severity style, as authored (Information/Caution/Stop/Question/None).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Button1Text">
+            <summary>First button's label.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Button2Text">
+            <summary>Second button's label, or null.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedAlertInfo.Button3Text">
+            <summary>Third button's label, or null.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo">
+            <summary>Scanned named Editor registration (Oracle Forms EDITOR — large-text popup).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo.Name">
+            <summary>Editor name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo.Title">
+            <summary>Popup title bar text.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo.Width">
+            <summary>Popup width in device-independent pixels.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo.Height">
+            <summary>Popup height in device-independent pixels.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo.WrapText">
+            <summary>Whether text wraps at the edit area's width.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedEditorInfo.ShowScrollBar">
+            <summary>Whether a scroll bar is shown.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedLovInfo">
             <summary>List of Values (LOV) information.</summary>
