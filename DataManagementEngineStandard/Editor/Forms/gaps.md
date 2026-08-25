@@ -1126,6 +1126,42 @@ authored width or not.
 the assignment failed the first test with the predicted `220` vs `0` mismatch), full 152-test
 suite green before and after.
 
+### G0.40: `BlockFieldDefinition.IsRequired` never reached `ItemInfo.Required` through
+`PropertyClassManager.ApplyToItem` (FIXED 2026-08-25)
+
+**What:** Found sweeping the same properties G0.37/G0.38/G0.39 came from. Both runtime hosts
+already fully consume `item.Required` (`presenter.IsRequired = item?.Required ?? presenter
+.IsRequired;`, `WinFormBlockHost.cs`/`BeepWpfBlock.cs`) — the pipeline downstream of `ItemInfo` was
+complete. `RegisterItemsFromEntityStructure` sets `item.Required` from the live datasource's
+nullability metadata when a block registers, but `ApplyToItem` never once touched it afterward, so
+an author who explicitly checked *Required* on a field in the IDE — a business rule the database
+schema itself does not enforce — saw it compile and round-trip and had it silently discarded at
+runtime: the field stayed exactly as required (or not) as the raw column happened to be.
+
+**Fix, deliberately one-directional, not the `Enabled`/`Visible` shape:** `BlockFieldDefinition
+.IsRequired` is a plain `bool` with no "not authored" state distinct from `false` — unlike the
+`QueryAllowed`/`InsertAllowed`/`UpdateAllowed` cluster, and unlike `IsEnabled`/`IsVisible`, whose
+unconditional overlay is safe only because *both* sides default to `true`. Here the defaults do not
+coincide: an unauthored field's `IsRequired` is `false` by the type's own default, while
+`item.Required`'s meaningful default (from the live schema) can very much be `true` for a NOT NULL
+column. An unconditional overlay would have forced every schema-required field optional the moment
+its author left this one field untouched — a regression, not a fix, and the exact defect class this
+file exists to catch, this time self-inflicted. `ApplyToItem` now only ever sets
+`item.Required = true` when `fieldDefinition.IsRequired` is `true`; an unauthored field keeps
+whatever the schema already determined. Known, accepted limitation: an author cannot use this field
+to force a NOT NULL column optional at the UI level — that would need `IsRequired` to become
+`bool?`, a breaking model change out of scope here.
+
+**Where:** `Helpers/PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low in the direction that matters (adds required-ness, never removes it). Two new
+direct unit tests — `PropertyClassApplyToItem_AuthoredIsRequiredTrue_SetsItemRequired` and
+`PropertyClassApplyToItem_UnauthoredIsRequired_KeepsSchemaDerivedTrue` (the latter specifically
+proving the no-regression case: an unauthored field with a schema-derived `item.Required = true`
+stays `true`) — proven via revert (commenting out the assignment failed the authored-true test with
+the predicted `True` vs `False` mismatch), full 154-test suite green before and after. No
+Beep.Forms code change needed — both hosts were already consumers of `item.Required`.
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

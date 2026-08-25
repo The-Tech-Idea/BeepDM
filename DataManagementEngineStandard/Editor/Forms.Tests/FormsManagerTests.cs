@@ -1174,6 +1174,42 @@ public class FormsManagerTests : IDisposable
     }
 
     [Fact]
+    public void PropertyClassApplyToItem_AuthoredIsRequiredTrue_SetsItemRequired()
+    {
+        // A field the schema itself allows null on, but the designer's
+        // author has explicitly checked Required for (a business rule the
+        // database doesn't enforce) -- item.Required was never touched by
+        // ApplyToItem at all before this fix, so an authored Required
+        // checkbox compiled, round-tripped, and did nothing at runtime.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "Notes", Required = false };
+        var field = new BlockFieldDefinition { FieldName = "Notes", IsRequired = true };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.True(item.Required);
+    }
+
+    [Fact]
+    public void PropertyClassApplyToItem_UnauthoredIsRequired_KeepsSchemaDerivedTrue()
+    {
+        // BlockFieldDefinition.IsRequired is a plain bool -- there is no
+        // "not authored" state distinct from false, unlike the
+        // QueryAllowed/InsertAllowed/UpdateAllowed cluster. So this overlay
+        // is deliberately one-directional: an unauthored field (IsRequired
+        // still false, the type's own default) must never force a NOT NULL
+        // database column's already-correct item.Required back down to
+        // false -- that would be a regression, not a fix.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", Required = true };
+        var field = new BlockFieldDefinition { FieldName = "OrderId" };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.True(item.Required);
+    }
+
+    [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
         var entity = CreateEntity("ORD", ("Name", "string"));

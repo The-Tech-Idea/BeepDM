@@ -99,6 +99,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             // overlay rather than a conditional one.
             if (fieldDefinition.Width > 0)
                 item.Width = fieldDefinition.Width;
+
+            // One-directional, deliberately: BlockFieldDefinition.IsRequired
+            // is a plain bool (no null = "not authored" state, unlike the
+            // QueryAllowed/InsertAllowed/UpdateAllowed cluster above), and its
+            // default (false) does not coincide with ItemInfo.Required's own
+            // meaningful default -- RegisterItemsFromEntityStructure sets
+            // item.Required from the live datasource's NOT NULL/nullability
+            // metadata before this method ever runs. Unconditionally
+            // overlaying, the way Enabled/Visible do (safe there because both
+            // sides default to true), would silently force every
+            // schema-required field optional the moment its author leaves
+            // this field untouched -- the exact defect class this file
+            // exists to catch, self-inflicted. So an authored `true` can
+            // *add* required-ness a business rule calls for; an unauthored
+            // (default) field always keeps whatever the schema already
+            // determined. An author cannot use this to force a NOT NULL
+            // column optional -- a known, accepted limitation of a
+            // non-nullable authoring field, not an oversight.
+            if (fieldDefinition.IsRequired)
+                item.Required = true;
         }
     }
 }
