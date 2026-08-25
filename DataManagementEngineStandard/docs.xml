@@ -24642,6 +24642,59 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.MasterDetailKeyResolver.TryParseMappings(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.Forms.Models.DataBlockFieldMapping}@,System.String@)">
             <summary>Parses explicit master/detail key strings into field mappings.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator">
+            <summary>
+            Translates an Oracle Forms FORMAT_MASK (<see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.FormatMask"/>)
+            into the .NET-native shapes the runtime hosts' presenter controls actually
+            consume. Oracle format masks use their own token vocabulary (<c>YYYY</c>,
+            <c>MON</c>, <c>HH24</c>, <c>9</c>, <c>0</c>, ...), which is not
+            interchangeable with .NET custom format strings — passing an authored mask
+            straight into <see cref="M:System.DateTime.ToString(System.String)"/> either throws
+            (uppercase <c>D</c> is not a recognised custom specifier) or silently
+            renders wrong (Oracle's <c>/</c> and <c>:</c> are literals; .NET's are
+            culture-dependent separators unless escaped).
+            <para>
+            Only the commonly-authored subset of each spec is supported. An
+            unsupported token — anything outside the tables below — fails the
+            translation rather than emit a best-effort, possibly-wrong format string;
+            callers must leave the control's own default format in place when a
+            translation is refused, never guess.
+            </para>
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator.TryTranslateDate(System.String,System.String@)">
+            <summary>
+            Translates an Oracle date/time format mask (e.g. <c>"MM/DD/YYYY"</c>,
+            <c>"YYYY-MM-DD HH24:MI:SS"</c>) into a .NET custom date/time format
+            string. Returns false — leaving <paramref name="netFormat"/> null —
+            when the mask is blank or contains a token this translator does not
+            recognise (e.g. Oracle's <c>SSSSS</c>, <c>IYYY</c>, <c>RN</c>).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator.TryTranslateNumeric(System.String,TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec@)">
+            <summary>
+            Translates an Oracle numeric format mask (e.g. <c>"999,999.99"</c>,
+            <c>"$999,999.00"</c>, <c>"0000"</c>) into the pieces the runtime hosts
+            need: a .NET numeric format string for the grid's
+            <c>IFormattable.ToString(format)</c> path, plus the decomposed
+            decimal-places / grouping / prefix a single-record numeric control
+            configures itself with rather than a free-form format string. Returns
+            false when the mask contains anything beyond digit placeholders
+            (<c>9</c>/<c>0</c>), a single decimal point, group separators, and an
+            optional leading currency symbol — Oracle's <c>MI</c>, <c>PR</c>,
+            <c>FM</c>, <c>V</c>, <c>EEEE</c> and similar suffixes are not
+            supported.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec">
+            <summary>
+            The decomposed result of translating an Oracle numeric FORMAT_MASK — see
+            <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator.TryTranslateNumeric(System.String,TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec@)"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec.NetFormatString">
+            <summary>A .NET custom numeric format string, e.g. "#,##0.00".</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager">
             <summary>
             Manages per-block paging state for virtual scrolling — Phase 7.
