@@ -826,10 +826,11 @@ assignments failed exactly that test).
 
 ### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
-(FOUND 2026-08-25; **trigger-context, block-switch, current-form and mode slices FIXED same day** —
-`SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`, `SetCurrentForm`, and `SetMode` now
-wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired, pre-dating
-this finding — the first pass's grep missed calls through the private field; five names remain
+(FOUND 2026-08-25; **trigger-context, block-switch, current-form, mode, and last-error slices FIXED
+same day** — `SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`, `SetCurrentForm`,
+`SetMode`, and `SetLastError` now wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned
+out to be already wired, pre-dating this finding — the first pass's grep missed calls through the
+private field; four names remain
 genuinely unwired, confirmed with no single choke point, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
@@ -946,42 +947,63 @@ covering the simplest of the four); the other three share the identical one-line
 verified by the full 122-test run rather than each getting a dedicated test, the same proportionality
 call made for `SetCurrentForm`'s `OpenFormAsync`/`CloseFormAsync` sites. Proven via revert.
 
-**Still open — five method names, genuinely zero callers.** `SetBlockStatus`, `SetFormStatus`,
-`SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery` still have zero callers anywhere,
-and `UpdateForRecordChange`'s general (non-savepoint) case is still open too. Each of these needs its
-own call site scattered across each DML verb and query-execution code in several different
-`FormsManager.*.cs` files, and the doc's own "Updates that are NOT immediate" section establishes real
-ordering constraints (e.g. `BLOCK_STATUS` only on a *successful* DML, `RECORD_STATUS` distinguishing
-`NEW`/`QUERY`/`CHANGED`/`INSERT`). That remains genuinely larger, scoped-per-call-site work,
-deliberately not attempted in this pass. A related dead-end, ruled out rather than pursued: a second,
-entirely separate per-block snapshot store — `UpdateBlockVariables`/`GetBlockVariables`/`_blockVars` in
-`SystemVariablesManager.cs` ("Per-Block Snapshot (Phase 8)" region) — exists with zero callers on
-*both* the write and read side, and its own doc comment says it exists so a class called `BeepDataBlock`
-"can read system variables without calling FormsManager directly." `BeepDataBlock` is the **legacy**
-pre-extraction WinForms control (see `WinFormsScanner.cs`/`CodeGenConstants.cs` in Beep.Forms, both of
-which call it "legacy" by name) that Beep.Forms' extraction deliberately left behind — its replacement,
-`WinFormBlockHost`, does not use this snapshot mechanism. Building this out would mean maintaining a
-second, redundant per-block dictionary alongside the one `GetSystemVariables(blockName)` already
-serves (house rule 3: two stores for one domain), for a consumer that no longer exists in this repo.
-Left as-is, not wired and not deleted (removal is a decision for Fahad, not made here) — documented so
-a future pass does not mistake it for a live, missing-caller gap of the same shape as the five above.
+**Fixed, same day: `SetLastError`.** Unlike `SetMode`, this one turned out to have a genuine single
+choke point despite 114+ separate `catch` blocks scattered across `FormsManager.*.cs`: every one of
+them already reports through the shared `protected void LogError(string message, Exception ex = null,
+string blockName = null)` helper (`FormsManager.Helpers.cs`), which mirrors the failure into the
+per-block `IBlockErrorLog` when a block context is given. Hooking `LogError` itself — not each catch
+site — covers every failure this manager ever logs, the same shape Oracle Forms' own
+`:SYSTEM.LAST_ERROR` has: it reflects whatever runtime error the form most recently hit, from any
+operation, not just DML. Added `_systemVariablesManager?.SetLastError(message, ex?.HResult ?? 0)`
+right after `LogError`'s existing `_errorLog?.LogError(...)` mirror. There is no Oracle-style
+`ORA-`/`FRM-` error number available from a .NET exception; `ex.HResult` is the closest native analog
+to a numeric code (0 when there is no exception object). `ClearLastError()` was deliberately left
+unwired — real Oracle Forms has no "clear" semantic for `:SYSTEM.LAST_ERROR` either; it just persists
+until overwritten by the next error, which `SetLastError` already provides. One new test
+(`LogError_SetsSystemVariablesLastError`, forcing `IUnitofWork.Get()` to throw inside
+`ExecuteQueryEnhancedAsync` and asserting the mock's `SetLastError` was invoked with a message
+containing the block name), proven via revert.
 
-**Lesson carried forward, and now applied four times: before assuming "no single choke point,"
-actually check** — `UpdateForItemChange`, `UpdateForBlockChange`, `SetCurrentForm`, and now `SetMode`
-all turned out to have a small, fixed, enumerable set of writers rather than truly scattered call
-sites, and were only missed the first time by a grep that didn't account for the private-field call
-shape (or, for `SetMode`, by not checking a second file). Applying the same check to `SetLastQuery`
-specifically (the one of the five that looked most likely to share this shape, since
-`ExecuteQueryEnhancedAsync` already has a single natural landing spot right where it calls
-`blockInfo.UnitOfWork.Get(filters)`): it is blocked on something `SetMode` wasn't — there is no
-existing string form of "the query that ran" to hand it. `ExecuteQueryEnhancedAsync` receives a
-`List<AppFilter>`, not a WHERE-clause string, so wiring this in means first choosing and building a
-filter-to-string serialization (there is no existing one to reuse), not just adding a call next to an
-existing assignment. That is a different, larger kind of blocker than "scattered call sites," and the
-remaining four (`SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`)
-have not been individually re-checked at this depth — they are left open on the strength of the
-original grep (zero callers) plus the "Updates that are NOT immediate" ordering constraints already
-known from the doc, not on a confirmed absence of a small choke point the way `SetMode` now is.
+**Still open — four method names, genuinely zero callers.** `SetBlockStatus`, `SetFormStatus`,
+`SetRecordStatus`, `SetLastQuery` still have zero callers anywhere, and `UpdateForRecordChange`'s
+general (non-savepoint) case is still open too. `SetBlockStatus`/`SetFormStatus`/`SetRecordStatus`
+each need their own call site scattered across each DML verb and query-execution code in several
+different `FormsManager.*.cs` files, and the doc's own "Updates that are NOT immediate" section
+establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a *successful* DML,
+`RECORD_STATUS` distinguishing `NEW`/`QUERY`/`CHANGED`/`INSERT`) — genuinely larger,
+scoped-per-call-site work, deliberately not attempted in this pass. `SetLastQuery` was checked
+directly: `ExecuteQueryEnhancedAsync` has a single natural landing spot right where it calls
+`blockInfo.UnitOfWork.Get(filters)`, the same shape that made `SetMode` and `SetLastError` tractable,
+but it's blocked on something those two weren't — there is no existing string form of "the query that
+ran" to hand it. `ExecuteQueryEnhancedAsync` receives a `List<AppFilter>`, not a WHERE-clause string,
+so wiring this in means first choosing and building a filter-to-string serialization (there is no
+existing one to reuse), not just adding a call next to an existing assignment. That is a different,
+larger kind of blocker than "scattered call sites."
+
+A related dead-end, ruled out rather than pursued: a second, entirely separate per-block snapshot
+store — `UpdateBlockVariables`/`GetBlockVariables`/`_blockVars` in `SystemVariablesManager.cs`
+("Per-Block Snapshot (Phase 8)" region) — exists with zero callers on *both* the write and read side,
+and its own doc comment says it exists so a class called `BeepDataBlock` "can read system variables
+without calling FormsManager directly." `BeepDataBlock` is the **legacy** pre-extraction WinForms
+control (see `WinFormsScanner.cs`/`CodeGenConstants.cs` in Beep.Forms, both of which call it "legacy"
+by name) that Beep.Forms' extraction deliberately left behind — its replacement, `WinFormBlockHost`,
+does not use this snapshot mechanism. Building this out would mean maintaining a second, redundant
+per-block dictionary alongside the one `GetSystemVariables(blockName)` already serves (house rule 3:
+two stores for one domain), for a consumer that no longer exists in this repo. Left as-is, not wired
+and not deleted (removal is a decision for Fahad, not made here) — documented so a future pass does
+not mistake it for a live, missing-caller gap of the same shape as the four above.
+
+**Lesson carried forward, and now applied five times: before assuming "no single choke point,"
+actually check.** `UpdateForItemChange`, `UpdateForBlockChange`, `SetCurrentForm`, `SetMode`, and now
+`SetLastError` all turned out to have a small, fixed, enumerable set of writers — or, for
+`SetLastError`, an actual single shared helper hiding behind 114 scattered `catch` blocks — rather
+than truly scattered call sites, and were only missed the first time by a grep that didn't account
+for the private-field call shape (or, for `SetMode`, by not checking a second file). `SetLastQuery`
+is the first of the remaining names checked at this same depth and confirmed genuinely blocked, on
+missing serialization rather than a missing choke point. `SetBlockStatus`/`SetFormStatus`/
+`SetRecordStatus` remain open on the strength of the original grep plus the doc's ordering
+constraints, not yet individually re-checked the way `SetMode`/`SetLastError`/`SetLastQuery` now
+have been.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
@@ -992,8 +1014,9 @@ hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `For
 `UpdateForBlockChange` call); `FormsManager.Properties.cs` (`CurrentFormName` setter),
 `FormsManager.FormOperations.cs` (`OpenFormAsync`/`CloseFormAsync`);
 `FormsManager.ModeTransitions.cs` (`ToSystemVariableMode` helper, three of the four `SetMode` call
-sites), `FormsManager.EnhancedOperations.cs` (the fourth, in `ExecuteQueryEnhancedAsync`);
-`Editor/Forms.Tests/FormsManagerTests.cs` (seven new tests total, two
+sites), `FormsManager.EnhancedOperations.cs` (the fourth `SetMode` call site, in
+`ExecuteQueryEnhancedAsync`); `FormsManager.Helpers.cs` (`LogError`'s `SetLastError` call);
+`Editor/Forms.Tests/FormsManagerTests.cs` (eight new tests total, two
 updated Strict mocks).
 
 ---

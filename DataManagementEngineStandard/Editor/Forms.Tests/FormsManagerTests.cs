@@ -2193,4 +2193,36 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region LogError -> SystemVariables.SetLastError (G0.36, continued, 2026-08-25)
+
+    // Unlike the other SystemVariablesManager gaps, this one has a genuine
+    // single choke point despite 114+ separate catch blocks across
+    // FormsManager.*.cs: every one of them already reports through the shared
+    // protected LogError helper (FormsManager.Helpers.cs), which mirrors into
+    // the per-block IBlockErrorLog when a block context is given. Hooking
+    // LogError itself, not each catch site, covers every failure this manager
+    // ever logs -- the same shape Oracle Forms' own :SYSTEM.LAST_ERROR has
+    // (it reflects whatever runtime error the form most recently hit, from
+    // any operation).
+
+    [Fact]
+    public async Task LogError_SetsSystemVariablesLastError()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(0);
+        uowMock.Setup(u => u.Get()).ThrowsAsync(new InvalidOperationException("boom"));
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var succeeded = await manager.ExecuteQueryAsync("EMP").ConfigureAwait(false);
+
+        Assert.False(succeeded);
+        variables.Verify(v => v.SetLastError(
+            It.Is<string>(msg => msg.Contains("EMP")),
+            It.IsAny<int>()), Times.Once);
+    }
+
+    #endregion
 }

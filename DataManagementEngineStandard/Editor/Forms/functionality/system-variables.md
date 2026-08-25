@@ -87,13 +87,13 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. **Not yet called anywhere.** |
 | `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. **Not yet called anywhere.** |
 | `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
-| `LAST_ERROR`, `LAST_ERROR_CODE` | `SetLastError(message, code)` / cleared by `ClearLastError()`. **Not yet called anywhere.** |
+| `LAST_ERROR`, `LAST_ERROR_CODE` | ✅ **live** — `SetLastError(message, code)` is called from the shared `protected void LogError(...)` helper (`FormsManager.Helpers.cs`, wired 2026-08-25), which every one of `FormsManager`'s 114+ `catch` blocks already reports failures through; `code` is `ex.HResult` (there is no Oracle-style `ORA-`/`FRM-` number available from a .NET exception). `ClearLastError()` is deliberately not called anywhere — real Oracle Forms has no "clear" semantic for this variable either; it just persists until the next error overwrites it. |
 | `LAST_QUERY` | `SetLastQuery(queryString)`. **Not yet called anywhere.** |
 | `CURRENT_FORM` | ✅ **live** — `SetCurrentForm(formName)` is called from `CurrentFormName`'s property setter (`FormsManager.Properties.cs`) and from both `OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`, which set the backing field directly and so bypass the property) — three writers, all wired 2026-08-25. |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Six of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other four method names do
-not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
+**Seven of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other three method names
+do not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
 mistake: it only matched calls through the public `manager.SystemVariables.` property, and
 `FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
 instead. Corrected 2026-08-25 by re-grepping `_systemVariablesManager\.` directly against source.)*
@@ -101,17 +101,18 @@ Live: `SetTriggerContext`/`ClearTriggerContext` (wired 2026-08-25, one choke poi
 `TriggerManager`), `UpdateForBlockChange` (wired 2026-08-25, one choke point in `SwitchToBlockAsync`),
 `SetCurrentForm` (wired 2026-08-25, three writers — not one, but still a small, fully-enumerated set,
 not "scattered"), `SetMode` (wired 2026-08-25, four writers across two files — the original three-site
-count in `ModeTransitions.cs` missed a fourth in `EnhancedOperations.cs`), and `UpdateForItemChange`
-(pre-existing, in `GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from
-savepoint rollback, not ordinary navigation).
-Genuinely unwired: `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`, `SetLastQuery`.
-Of these, `SetLastQuery` was checked directly and ruled out as a `SetMode`-style small-fixed-set fix:
-`ExecuteQueryEnhancedAsync` has one natural landing spot, but receives a `List<AppFilter>`, not a
-WHERE-clause string, so wiring it means designing a filter-to-string serialization first, not just
-adding a call. The other four (`SetBlockStatus`/`SetFormStatus`/`SetRecordStatus`/`SetLastError`) have
-not been re-checked at that depth and are left open on the original grep result plus the ordering
-constraints below.
-`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`) are all still
+count in `ModeTransitions.cs` missed a fourth in `EnhancedOperations.cs`), `SetLastError` (wired
+2026-08-25, one genuine choke point — the shared `LogError` helper every catch block already reports
+through), and `UpdateForItemChange` (pre-existing, in `GoItemAsync`). Partially live:
+`UpdateForRecordChange` (pre-existing, but only from savepoint rollback, not ordinary navigation).
+Genuinely unwired: `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastQuery`.
+Of these, `SetLastQuery` was checked directly and ruled out as a `SetMode`/`SetLastError`-style
+small-choke-point fix: `ExecuteQueryEnhancedAsync` has one natural landing spot, but receives a
+`List<AppFilter>`, not a WHERE-clause string, so wiring it means designing a filter-to-string
+serialization first, not just adding a call. The other three (`SetBlockStatus`/`SetFormStatus`/
+`SetRecordStatus`) have not been re-checked at that depth and are left open on the original grep
+result plus the ordering constraints below.
+`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS` and `LAST_QUERY` are all still
 permanently whatever `SystemVariables`'s constructor set, regardless of what the form does.
 Wiring the rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
 correction, and not attempted here. Check current call sites with `grep` (both the public property
