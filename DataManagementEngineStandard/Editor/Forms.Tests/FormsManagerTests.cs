@@ -1518,6 +1518,39 @@ public class FormsManagerTests : IDisposable
 
     #endregion
 
+    #region :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS on real edit (2026-08-25)
+    //
+    // ItemChanged is the one place every genuine user-driven field edit on
+    // every block passes through (see gaps.md G0.36's "CHANGED" account) and
+    // is confirmed never to fire from query population (UnitofWork.CRUD.cs's
+    // Get()/Get(filters) builds each row in a plain List<T> first and only
+    // wraps it afterward). No LOV is attached here deliberately -- this test
+    // exercises the plain (no-LOV) branch of the handler, which the three
+    // WHEN-LOV-VALIDATION tests above do not.
+
+    [Fact]
+    public async Task ItemChanged_NoLov_SetsBlockAndRecordStatusToChanged()
+    {
+        var entity = CreateEntity("EMP", ("Name", "string"));
+        var uow = CreateUowMock(1, new TestEntityRecord());
+        _manager.RegisterBlock("EMP", uow.Object, entity);
+
+        Assert.Equal("NEW", _manager.SystemVariables.GetSystemVariables("EMP").BLOCK_STATUS);
+
+        var record = new TestEntityRecord { Name = "Bob" };
+        uow.Raise(u => u.ItemChanged += null, uow.Object, new ItemChangedEventArgs<Entity>(record, "Name"));
+
+        await WaitUntilAsync(
+            () => _manager.SystemVariables.GetSystemVariables("EMP").BLOCK_STATUS == "CHANGED")
+            .ConfigureAwait(false);
+
+        Assert.Equal("CHANGED", _manager.SystemVariables.GetSystemVariables("EMP").BLOCK_STATUS);
+        Assert.Equal("CHANGED", _manager.SystemVariables.GetSystemVariables("EMP").RECORD_STATUS);
+        Assert.Equal("CHANGED", _manager.SystemVariables.GetFormSystemVariables().FORM_STATUS);
+    }
+
+    #endregion
+
     #region Inter-Form Globals (2026-08-22)
     //
     // FormsManager.InterFormComm.cs already implements :GLOBAL.* correctly —

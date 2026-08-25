@@ -83,17 +83,17 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | ✅ **live** — `UpdateForItemChange(blockName, itemName, itemValue)` is called from `GoItemAsync` (`FormsManager.Navigation.cs:406`) on every item-focus change. |
 | `MASTER_BLOCK` | ✅ **live** — same `UpdateForBlockChange` call as `CURRENT_BLOCK` above, when the block has a registered master. |
 | `MODE` | ✅ **live** — `SetMode(mode)` is called at all four sites that assign `blockInfo.Mode` directly (`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, `CoordinateChildBlocksForNewMasterRecord` in `FormsManager.ModeTransitions.cs`; `ExecuteQueryEnhancedAsync` in `FormsManager.EnhancedOperations.cs`, wired 2026-08-25), mapped through `ToSystemVariableMode(DataBlockMode)` onto Oracle's real two-value vocabulary (`NORMAL`/`ENTER-QUERY`). |
-| `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. **Not yet called anywhere.** A safe single choke point for the `"CHANGED"` value specifically was found and prototyped 2026-08-25 (the block-registration `ItemChanged` handler — confirmed never fired by query population, only real edits), but landing it destabilized an unrelated pre-existing test in a way not yet root-caused; reverted rather than shipped. See G0.36 in `gaps.md` for the full account. `NEW`/`QUERY` still need their own call sites regardless. |
-| `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. **Not yet called anywhere.** |
-| `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. **Not yet called anywhere.** Same `"CHANGED"`-transition finding/revert as `BLOCK_STATUS` above applies here too; `NEW`/`QUERY`/`INSERT` still need their own call sites. |
+| `BLOCK_STATUS` | ✅ **live for the `"CHANGED"` transition** — `SetBlockStatus(blockName, "CHANGED")` is called from the block-registration `ItemChanged` handler (`FormsManager.BlockRegistration.cs`, wired 2026-08-25), confirmed never fired by query population, only real edits; a `"CHANGED"` status also cascades `FORM_STATUS`. `NEW`/`QUERY` still have no call site — the field starts at and reverts to `SystemVariables`'s constructor default only. |
+| `FORM_STATUS` | ✅ **live, implicitly** — every `SetBlockStatus(_, "CHANGED")` call cascades `FORM_STATUS = "CHANGED"` (see above). `SetFormStatus(status)` itself, for any other value, still has **no direct call site**. |
+| `RECORD_STATUS` | ✅ **live for the `"CHANGED"` transition** — same `ItemChanged` handler also calls `SetRecordStatus(blockName, "CHANGED")` (form-level and the block's snapshot), wired 2026-08-25. `NEW`/`QUERY`/`INSERT` still have no call site. |
 | `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
 | `LAST_ERROR`, `LAST_ERROR_CODE` | ✅ **live** — `SetLastError(message, code)` is called from the shared `protected void LogError(...)` helper (`FormsManager.Helpers.cs`, wired 2026-08-25), which every one of `FormsManager`'s 114+ `catch` blocks already reports failures through; `code` is `ex.HResult` (there is no Oracle-style `ORA-`/`FRM-` number available from a .NET exception). `ClearLastError()` is deliberately not called anywhere — real Oracle Forms has no "clear" semantic for this variable either; it just persists until the next error overwrites it. |
 | `LAST_QUERY` | `SetLastQuery(queryString)`. **Not yet called anywhere.** |
 | `CURRENT_FORM` | ✅ **live** — `SetCurrentForm(formName)` is called from `CurrentFormName`'s property setter (`FormsManager.Properties.cs`) and from both `OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`, which set the backing field directly and so bypass the property) — three writers, all wired 2026-08-25. |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Seven of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other three method names
-do not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
+**Nine of the ten `Set*`/`UpdateFor*` methods have a real caller today; one method name does not.**
+*(An earlier version of this section claimed all ten had zero callers — that was a grep
 mistake: it only matched calls through the public `manager.SystemVariables.` property, and
 `FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
 instead. Corrected 2026-08-25 by re-grepping `_systemVariablesManager\.` directly against source.)*
@@ -103,24 +103,41 @@ Live: `SetTriggerContext`/`ClearTriggerContext` (wired 2026-08-25, one choke poi
 not "scattered"), `SetMode` (wired 2026-08-25, four writers across two files — the original three-site
 count in `ModeTransitions.cs` missed a fourth in `EnhancedOperations.cs`), `SetLastError` (wired
 2026-08-25, one genuine choke point — the shared `LogError` helper every catch block already reports
-through), and `UpdateForItemChange` (pre-existing, in `GoItemAsync`). Partially live:
-`UpdateForRecordChange` (pre-existing, but only from savepoint rollback, not ordinary navigation).
-Genuinely unwired: `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastQuery`.
-Of these, `SetLastQuery` was checked directly and ruled out as a `SetMode`/`SetLastError`-style
+through), `SetBlockStatus`/`SetRecordStatus` (wired 2026-08-25 for the `"CHANGED"` value specifically —
+the block-registration `ItemChanged` handler, confirmed never fired by query population; see below for
+the earlier revert and how it was re-attempted and landed), and `UpdateForItemChange` (pre-existing, in
+`GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from savepoint
+rollback, not ordinary navigation).
+Genuinely unwired: `SetFormStatus` as a direct call (it is reached only implicitly, via
+`SetBlockStatus(_, "CHANGED")`'s cascade), `SetLastQuery`, and the `NEW`/`QUERY`/`INSERT` transitions
+for `BLOCK_STATUS`/`RECORD_STATUS` (only `"CHANGED"` is wired).
+`SetLastQuery` was checked directly and ruled out as a `SetMode`/`SetLastError`-style
 small-choke-point fix: `ExecuteQueryEnhancedAsync` has one natural landing spot, but receives a
 `List<AppFilter>`, not a WHERE-clause string, so wiring it means designing a filter-to-string
-serialization first, not just adding a call. `SetBlockStatus`/`SetRecordStatus` were also checked
-directly, for the `"CHANGED"` value specifically: the `ItemChanged` handler in
-`FormsManager.BlockRegistration.cs` *is* a genuine, verified-safe single choke point for it (query
-population never fires that event), but wiring it into that handler destabilized an unrelated
-pre-existing test in a way not yet root-caused, so it was reverted rather than shipped — see G0.36 in
-`gaps.md` for the full account. `SetFormStatus` on its own, and the `NEW`/`QUERY`/`INSERT` transitions
+serialization first, not just adding a call.
+
+**`SetBlockStatus`/`SetRecordStatus`'s `"CHANGED"` transition: found, prototyped, reverted on an
+unexplained test interaction, re-attempted and landed (2026-08-25).** The first attempt wired
+`SetBlockStatus(blockName, "CHANGED")`/`SetRecordStatus(blockName, "CHANGED")` into the `ItemChanged`
+handler and compiled and passed its own new test in isolation, but made a pre-existing, unrelated test
+(`ItemChanged_FieldHasLOV_FiresWhenLOVValidationTrigger`) fail consistently (3/3) whenever both tests
+ran in the same suite; the mechanism was not root-caused (no `static` state found in `TriggerManager`
+or `LOVManager`), so it was reverted rather than shipped — see G0.36 in `gaps.md` for that account in
+full. The re-attempt used the identical wiring and choke point, plus a new direct test
+(`ItemChanged_NoLov_SetsBlockAndRecordStatusToChanged`, deliberately exercising the no-LOV branch the
+three `WHEN-LOV-VALIDATION` tests do not) — and did **not** reproduce the earlier failure: 25
+consecutive full-suite runs (166/166) were green with the wiring in place, versus one confirmed red run
+with it commented out (the new test alone fails predictably, "CHANGED" vs "NEW"). The original 3/3
+reproduction was real but its exact cause was never identified and could not be reproduced again under
+the same wiring and a comparable new test; it is recorded here rather than erased, in case a future
+session hits the same symptom and needs the history.
+
+`SetFormStatus` as its own direct call, and the `NEW`/`QUERY`/`INSERT` transitions
 for `BLOCK_STATUS`/`RECORD_STATUS`, have not been re-checked at that depth and are left open on the
-original grep result plus the ordering constraints below.
-`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS` and `LAST_QUERY` are all still
-permanently whatever `SystemVariables`'s constructor set, regardless of what the form does.
-Wiring the rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
-correction, and not attempted here. Check current call sites with `grep` (both the public property
+original grep result plus the ordering constraints below — each needs its own call site scattered
+across DML verbs and query-execution code, genuinely larger, scoped-per-call-site work.
+`LAST_QUERY` is still permanently whatever `SystemVariables`'s constructor set, regardless of what the
+form does. Check current call sites with `grep` (both the public property
 *and* the private field — this section's own history is the reason why) before relying on any
 specific field being live.
 

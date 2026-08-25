@@ -187,6 +187,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                             // value, so the old value is recorded as unknown
                             // rather than invented. (2026-08-02)
                             _itemPropertyManager?.MarkItemDirty(blockName, e.PropertyName, null);
+                            _systemVariablesManager?.SetBlockStatus(blockName, "CHANGED");
+                            _systemVariablesManager?.SetRecordStatus(blockName, "CHANGED");
 
                             PrepareValidationContext(blockName);
                             var itemValidation = _validationManager.ValidateItem(
