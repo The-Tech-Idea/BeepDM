@@ -302,6 +302,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS -- see G0.36 in gaps.md.
+                // A blank record created directly (not from a query) is Oracle Forms'
+                // "NEW" status -- distinct from "CHANGED", which the ItemChanged handler
+                // sets once the user actually edits a field on it.
+                _systemVariablesManager?.SetBlockStatus(blockName, "NEW");
+                _systemVariablesManager?.SetRecordStatus(blockName, "NEW");
+
                 // CRITICAL: Handle master-detail coordination for new record
                 await HandleMasterDetailCoordinationForNewRecord(blockName).ConfigureAwait(false);
 

@@ -574,6 +574,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     _systemVariablesManager?.SetLastQuery(queryDefinition.QueryText);
                 }
 
+                // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS -- see G0.36 in gaps.md.
+                // A record just fetched by a query and not yet touched is Oracle Forms'
+                // "QUERY" status. Set unconditionally on a successful Get (whether or not
+                // it found rows), the same simplification SetMode already makes at this
+                // site -- ItemChanged (the "CHANGED" transition) takes over the moment a
+                // field on it is actually edited.
+                _systemVariablesManager?.SetBlockStatus(blockName, "QUERY");
+                _systemVariablesManager?.SetRecordStatus(blockName, "QUERY");
+
                 // CRITICAL: After successful query execution, transition to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
                 blockInfo.LastModeChange = DateTime.Now;

@@ -827,12 +827,13 @@ assignments failed exactly that test).
 ### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
 (FOUND 2026-08-25; **trigger-context, block-switch, current-form, mode, last-error, last-query, and
-the block/record-status "CHANGED" transition all FIXED same day** — `SetTriggerContext`/
+the block/record-status "CHANGED"/"QUERY"/"NEW" transitions all FIXED same day** — `SetTriggerContext`/
 `ClearTriggerContext`, `UpdateForBlockChange`, `SetCurrentForm`, `SetMode`, `SetLastError`,
-`SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` (for `"CHANGED"` only) now wired;
-`UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired, pre-dating
-this finding — the first pass's grep missed calls through the private field; one method name remains
-genuinely unwired, confirmed with no single choke point, see "Still open" below)
+`SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` (for `"CHANGED"`, `"QUERY"`, and `"NEW"`) now
+wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired,
+pre-dating this finding — the first pass's grep missed calls through the private field; one method
+name (`SetFormStatus`, as a direct call) plus one value (`BLOCK_STATUS`/`RECORD_STATUS`'s `"INSERT"`)
+remain genuinely unwired, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -965,15 +966,24 @@ until overwritten by the next error, which `SetLastError` already provides. One 
 `ExecuteQueryEnhancedAsync` and asserting the mock's `SetLastError` was invoked with a message
 containing the block name), proven via revert.
 
-**Still open — one method name, genuinely zero direct callers.** `SetFormStatus` (as a direct call —
-it is reached implicitly via `SetBlockStatus(_, "CHANGED")`'s cascade, see below) still has zero
-direct callers, and `UpdateForRecordChange`'s general (non-savepoint) case, and the `NEW`/`QUERY`/
-`INSERT` values of `BLOCK_STATUS`/`RECORD_STATUS` (only `"CHANGED"` is wired, see below), are still
-open too. `SetFormStatus`, and those `NEW`/`QUERY`/`INSERT` values, each need their own call
-site scattered across each DML verb and query-execution code in several different `FormsManager.*.cs`
-files, and the doc's own "Updates that are NOT immediate" section establishes real ordering constraints
-(e.g. `BLOCK_STATUS` only on a *successful* DML) — genuinely larger, scoped-per-call-site work,
-deliberately not attempted here.
+**Still open — one method name, genuinely zero direct callers, plus one value.** `SetFormStatus` (as
+a direct call — it is reached implicitly via `SetBlockStatus(_, "CHANGED")`'s cascade, see below)
+still has zero direct callers, and `UpdateForRecordChange`'s general (non-savepoint) case is still
+open too. `SetFormStatus` needs its own call site scattered across each DML verb and
+query-execution code in several different `FormsManager.*.cs` files — genuinely larger,
+scoped-per-call-site work, deliberately not attempted here.
+
+**`BLOCK_STATUS`/`RECORD_STATUS`'s `"INSERT"` value is also still open, but for a different reason
+than "scattered call sites."** Unlike `"NEW"`/`"QUERY"` (see below — both landed same day once
+re-checked), `"INSERT"` needs the engine to know, at edit time, whether the record being edited was
+ever fetched by a query or was created blank — a genuinely per-record distinction the current
+`SystemVariables` snapshot (keyed per-block, one "current" value, not per-row) does not carry.
+Real Oracle Forms uses `"INSERT"` for an edited `"NEW"` record and reserves `"CHANGED"` for an
+edited `"QUERY"` record; this session's `ItemChanged` handler wiring (see below) does not make that
+distinction — it always sets `"CHANGED"`, regardless of whether the record was new or queried. This
+is a real, deliberate scope decision, not an oversight: making it correct needs either a per-record
+status field wired into whatever tracks the "current record" (a bigger design question) or accepting
+a per-block approximation and documenting its inaccuracy — left for its own pass.
 
 **`SetLastQuery`: the "no existing serializer" blocker turned out to be a search gap, not a real
 blocker — found and fixed same day.** `SetLastQuery` was checked directly: `ExecuteQueryEnhancedAsync`
@@ -1049,6 +1059,27 @@ two stores for one domain), for a consumer that no longer exists in this repo. L
 and not deleted (removal is a decision for Fahad, not made here) — documented so a future pass does
 not mistake it for a live, missing-caller gap of the same shape as the four above.
 
+**`BLOCK_STATUS`/`RECORD_STATUS`'s `"QUERY"` and `"NEW"` transitions: re-checked against the earlier
+"genuinely larger, scoped-per-call-site work" characterization and found tractable at the existing
+`SetMode`/`SetLastQuery` choke points — found and fixed same day.** After the `"CHANGED"` transition
+landed, the remaining `"NEW"`/`"QUERY"`/`"INSERT"` values were re-examined individually rather than
+left under the blanket "scattered call sites" label. Two of the three needed no new investigation:
+`"QUERY"` — a record just fetched and not yet touched — shares `ExecuteQueryEnhancedAsync`'s existing
+hook, the exact site `SetMode` and `SetLastQuery` already call from, set unconditionally on a
+successful `Get`/`Get(filters)` regardless of row count (the same simplification `SetMode` already
+makes there). `"NEW"` — a blank record just created — shares `EnterCrudModeForNewRecordAsync`'s
+existing hook, right after `CreateNewRecord` succeeds; both the direct single-block path and
+`CreateNewRecordInMasterBlockAsync`'s master-block delegation funnel through it, so one hook covers
+both callers (`CoordinateChildBlocksForNewMasterRecord`'s own separate detail-block `Mode = CRUD`
+assignment was deliberately **not** given the same treatment — it clears a detail block and sets its
+mode without actually creating a record there, so there is no "current record" yet to legitimately
+call `"NEW"`; wiring it would have meant guessing at semantics rather than following an established
+pattern). `"INSERT"` remains open — see above for why it is a different, bigger kind of blocker than
+the other two. Two new tests
+(`ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesQueryStatus`,
+`EnterCrudModeForNewRecordAsync_OnSuccess_SetsSystemVariablesNewStatus`), each proven via revert;
+full engine build plus `FormsManager.Tests` (170/170) green across 5 consecutive runs.
+
 **Lesson carried forward, and now applied eight times: before assuming "no single choke point" (or
 "no existing capability to build on"), actually check.** `UpdateForItemChange`, `UpdateForBlockChange`,
 `SetCurrentForm`, `SetMode`, `SetLastError`, `SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` all
@@ -1077,11 +1108,12 @@ hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `For
 `UpdateForBlockChange` call); `FormsManager.Properties.cs` (`CurrentFormName` setter),
 `FormsManager.FormOperations.cs` (`OpenFormAsync`/`CloseFormAsync`);
 `FormsManager.ModeTransitions.cs` (`ToSystemVariableMode` helper, three of the four `SetMode` call
-sites), `FormsManager.EnhancedOperations.cs` (the fourth `SetMode` call site and the `SetLastQuery`
-call, both in `ExecuteQueryEnhancedAsync`); `FormsManager.Helpers.cs` (`LogError`'s `SetLastError`
-call); `FormsManager.BlockRegistration.cs` (the `ItemChanged` handler's `SetBlockStatus`/
-`SetRecordStatus` calls); `Editor/Forms.Tests/FormsManagerTests.cs` (eleven new tests total, two
-updated Strict mocks).
+sites, plus `EnterCrudModeForNewRecordAsync`'s `SetBlockStatus`/`SetRecordStatus("NEW")` calls),
+`FormsManager.EnhancedOperations.cs` (the fourth `SetMode` call site, the `SetLastQuery` call, and
+the `SetBlockStatus`/`SetRecordStatus("QUERY")` calls, all in `ExecuteQueryEnhancedAsync`);
+`FormsManager.Helpers.cs` (`LogError`'s `SetLastError` call); `FormsManager.BlockRegistration.cs`
+(the `ItemChanged` handler's `SetBlockStatus`/`SetRecordStatus("CHANGED")` calls);
+`Editor/Forms.Tests/FormsManagerTests.cs` (thirteen new tests total, two updated Strict mocks).
 
 ### G0.37: `BlockFieldDefinition.Label` never reached `ItemInfo.PromptText` (FIXED 2026-08-25)
 

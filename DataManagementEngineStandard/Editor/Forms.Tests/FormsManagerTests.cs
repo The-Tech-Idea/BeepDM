@@ -2447,4 +2447,52 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS -- QUERY and NEW transitions (G0.36, continued, 2026-08-25)
+
+    // The earlier G0.36 pass wired only the "CHANGED" value (from a real edit, via the
+    // ItemChanged handler) and left "NEW"/"QUERY"/"INSERT" open pending their own call sites.
+    // "QUERY" and "NEW" turned out to share the exact choke points SetMode/SetLastQuery already
+    // use -- ExecuteQueryEnhancedAsync (a record just fetched by a query, untouched) and
+    // EnterCrudModeForNewRecordAsync (a blank record just created, not yet edited) -- so no new
+    // investigation was needed to find them, just to widen the existing hook. "INSERT" (a NEW
+    // record that has since been edited, which Oracle Forms distinguishes from CHANGED-on-a-
+    // queried-record) is deliberately not attempted here -- it needs per-record "was this row
+    // ever queried" state the current block-level SystemVariables snapshot doesn't carry, a
+    // genuinely bigger design question left for its own pass.
+
+    [Fact]
+    public async Task ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesQueryStatus()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(0);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var succeeded = await manager.ExecuteQueryAsync("EMP").ConfigureAwait(false);
+
+        Assert.True(succeeded);
+        variables.Verify(v => v.SetBlockStatus("EMP", "QUERY"), Times.Once);
+        variables.Verify(v => v.SetRecordStatus("EMP", "QUERY"), Times.Once);
+    }
+
+    [Fact]
+    public async Task EnterCrudModeForNewRecordAsync_OnSuccess_SetsSystemVariablesNewStatus()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(0);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+        manager.GetBlock("EMP")!.EntityType = typeof(TestEntityRecord);
+
+        var result = await manager.EnterCrudModeForNewRecordAsync("EMP").ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        variables.Verify(v => v.SetBlockStatus("EMP", "NEW"), Times.Once);
+        variables.Verify(v => v.SetRecordStatus("EMP", "NEW"), Times.Once);
+    }
+
+    #endregion
 }
