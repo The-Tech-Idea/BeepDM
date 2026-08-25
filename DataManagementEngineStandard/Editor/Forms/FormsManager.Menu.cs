@@ -86,6 +86,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 case "commit":
                 case "commitform":
                     return await CommitFormAsync().ConfigureAwait(false);
+                case "rollback":
+                case "rollbackform":
+                    return await RollbackFormAsync().ConfigureAwait(false);
                 case "clearform":
                     await CloseFormAsync().ConfigureAwait(false); return result;
                 case "nextrecord":
