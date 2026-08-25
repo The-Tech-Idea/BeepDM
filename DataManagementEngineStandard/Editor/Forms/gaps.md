@@ -826,10 +826,11 @@ assignments failed exactly that test).
 
 ### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
-(FOUND 2026-08-25; **trigger-context slice FIXED same day** — `SetTriggerContext`/`ClearTriggerContext`
-now wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired,
-pre-dating this finding — the first pass's grep missed calls through the private field; eight names
-remain genuinely unwired, see "Still open" below)
+(FOUND 2026-08-25; **trigger-context and block-switch slices FIXED same day** —
+`SetTriggerContext`/`ClearTriggerContext` and `UpdateForBlockChange` now wired;
+`UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired, pre-dating this
+finding — the first pass's grep missed calls through the private field; seven names remain genuinely
+unwired, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -906,22 +907,35 @@ from `GoItemAsync` on every item-focus change) and `UpdateForRecordChange` (call
 `TryUpdateSavepointSystemVariables`, but only after a savepoint rollback — ordinary record navigation
 such as `NextRecordAsync` does not call it, so this one is real but narrow).
 
-**Still open — six method names, genuinely zero callers.** `UpdateForBlockChange`, `SetMode`,
-`SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery`,
-`SetCurrentForm` (eight names) still have zero callers anywhere, and `UpdateForRecordChange`'s general
-(non-savepoint) case is still open too. These have no equivalent single choke point the way
-trigger-firing did — each needs its own call site scattered across block-switch, mode-transition, each
-DML verb, and query-execution code in several different `FormsManager.*.cs` files, and the doc's own
-"Updates that are NOT immediate" section establishes real ordering constraints (e.g. `BLOCK_STATUS`
-only on a *successful* DML). That remains genuinely larger, scoped-per-call-site work, deliberately
-not attempted in this pass.
+**Fixed, same day: `UpdateForBlockChange`.** Same shape as `UpdateForItemChange` turned out to be —
+one natural choke point, not a scattered set of call sites. `SwitchToBlockAsync` is the single method
+every block switch goes through (`GoBlockAsync` is a pure delegation to it: `=> SwitchToBlockAsync(blockName)`),
+so `_systemVariablesManager?.UpdateForBlockChange(blockName)` now runs there, right after
+`_currentBlockName` is committed to the new block and before the block-enter event/side effects. Two
+new tests (`SwitchToBlockAsync_UpdatesSystemVariablesCurrentBlock`,
+`GoBlockAsync_DelegatesToSwitchToBlockAsync_UpdatesSystemVariables` — the second pins the delegation
+itself, not just the method it forwards to), proven via revert.
+
+**Still open — seven method names, genuinely zero callers.** `SetMode`, `SetBlockStatus`,
+`SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery`, `SetCurrentForm`
+still have zero callers anywhere, and `UpdateForRecordChange`'s general (non-savepoint) case is still
+open too. Unlike trigger-firing and block-switching, these do not have an equivalent single choke
+point — each needs its own call site scattered across mode-transition, each DML verb, and
+query-execution code in several different `FormsManager.*.cs` files, and the doc's own "Updates that
+are NOT immediate" section establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a
+*successful* DML). That remains genuinely larger, scoped-per-call-site work, deliberately not
+attempted in this pass. **Lesson carried forward: before assuming "no single choke point," actually
+check** — `UpdateForItemChange` and `UpdateForBlockChange` both turned out to have exactly one, and
+were only missed the first time by a grep that didn't account for the private-field call shape.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
 `Editor/Forms/functionality/system-variables.md` (corrected); `Editor/Forms/Helpers/TriggerManager.cs`
 (`SystemVariables` property, `ApplyTriggerContextToSystemVariables`, the two `ExecuteTriggerChain*`
 hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `FormsManager.Core.cs`
-(wiring); `Editor/Forms.Tests/FormsManagerTests.cs` (three new tests, two updated Strict mocks).
+(trigger-context wiring); `FormsManager.Navigation.cs` (`SwitchToBlockAsync`'s
+`UpdateForBlockChange` call); `Editor/Forms.Tests/FormsManagerTests.cs` (five new tests total, two
+updated Strict mocks).
 
 ---
 ## P0 — Correctness / Existing-User Impact

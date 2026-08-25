@@ -2102,4 +2102,50 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region SwitchToBlockAsync -> SystemVariables.UpdateForBlockChange (G0.36, continued, 2026-08-25)
+
+    // UpdateForItemChange (GoItemAsync) and UpdateForRecordChange (savepoint
+    // rollback) turned out to already be wired, pre-dating this session --
+    // found only after re-grepping past an earlier mistake (see gaps.md
+    // G0.36's self-correction). UpdateForBlockChange had no caller anywhere,
+    // confirmed by the same corrected grep, and SwitchToBlockAsync is the
+    // exact same shape of single choke point GoItemAsync already was: every
+    // block switch (SwitchToBlockAsync itself, and GoBlockAsync, which is a
+    // pure delegation to it) goes through this one method.
+
+    [Fact]
+    public async Task SwitchToBlockAsync_UpdatesSystemVariablesCurrentBlock()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var switched = await manager.SwitchToBlockAsync("EMP").ConfigureAwait(false);
+
+        Assert.True(switched);
+        variables.Verify(v => v.UpdateForBlockChange("EMP"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GoBlockAsync_DelegatesToSwitchToBlockAsync_UpdatesSystemVariables()
+    {
+        // GoBlockAsync is a pure delegation (`=> SwitchToBlockAsync(blockName)`)
+        // -- this pins that the delegation itself keeps working, not just the
+        // method it forwards to.
+        var entity = CreateEntity("ORD", ("OrderId", "int"));
+        var uowMock = CreateUowMock(1);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("ORD", uowMock.Object, entity);
+
+        var switched = await manager.GoBlockAsync("ORD").ConfigureAwait(false);
+
+        Assert.True(switched);
+        variables.Verify(v => v.UpdateForBlockChange("ORD"), Times.Once);
+    }
+
+    #endregion
 }

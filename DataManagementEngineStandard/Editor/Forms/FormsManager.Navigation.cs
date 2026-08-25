@@ -274,6 +274,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // for some side effects).
                 _currentBlockName = blockName;
 
+                // :SYSTEM.CURRENT_BLOCK/MASTER_BLOCK (and, from the block's live
+                // IUnitofWork, CURSOR_RECORD/LAST_RECORD too) -- see G0.36 in
+                // gaps.md. Same shape as GoItemAsync's UpdateForItemChange call:
+                // one natural choke point, after the switch is committed.
+                _systemVariablesManager?.UpdateForBlockChange(blockName);
+
                 // Trigger block enter for new block
                 _eventManager.TriggerBlockEnter(blockName);
 

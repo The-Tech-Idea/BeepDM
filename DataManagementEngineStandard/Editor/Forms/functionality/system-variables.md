@@ -78,10 +78,10 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 
 | Field | When updated |
 | --- | --- |
-| `CURRENT_BLOCK` | `UpdateForBlockChange(blockName)` — form-level and the block's own snapshot. **Not yet called anywhere.** |
-| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | ⚠️ **partially live** — `UpdateForRecordChange(blockName, recordIndex, totalRecords)` is called from `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`) after a savepoint rollback, but **not** from ordinary record navigation (`NextRecordAsync`/`PreviousRecordAsync`/etc. do not call it) — these fields go stale between rollbacks. |
+| `CURRENT_BLOCK` | ✅ **live** — `UpdateForBlockChange(blockName)` is called from `SwitchToBlockAsync` (`FormsManager.Navigation.cs`, wired 2026-08-25) on every block switch, including through `GoBlockAsync`'s delegation. |
+| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | ⚠️ **partially live** — `UpdateForRecordChange(blockName, recordIndex, totalRecords)` is called from `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`) after a savepoint rollback, but **not** from ordinary record navigation (`NextRecordAsync`/`PreviousRecordAsync`/etc. do not call it) — these fields go stale between rollbacks. Also opportunistically refreshed by `UpdateForBlockChange` from the block's live `IUnitofWork` on block entry. |
 | `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | ✅ **live** — `UpdateForItemChange(blockName, itemName, itemValue)` is called from `GoItemAsync` (`FormsManager.Navigation.cs:406`) on every item-focus change. |
-| `MASTER_BLOCK` | `UpdateForBlockChange`, when the block has a registered master. **Not yet called anywhere** (same method as `CURRENT_BLOCK` above). |
+| `MASTER_BLOCK` | ✅ **live** — same `UpdateForBlockChange` call as `CURRENT_BLOCK` above, when the block has a registered master. |
 | `MODE` | `SetMode(mode)` — form-level, and the current block's snapshot. **Not yet called anywhere.** |
 | `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. **Not yet called anywhere.** |
 | `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. **Not yet called anywhere.** |
@@ -92,20 +92,21 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `CURRENT_FORM` | `SetCurrentForm(formName)`. **Not yet called anywhere.** |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Three of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other eight (spread
-across seven method names) do not.** *(An earlier version of this section claimed all ten had zero
-callers — that was a grep mistake: it only matched calls through the public `manager.SystemVariables.`
-property, and `FormsManager` calls the manager through its private field,
-`_systemVariablesManager.<name>(...)`, instead. Corrected 2026-08-25 by re-grepping
-`_systemVariablesManager\.` directly against source.)* Live: `SetTriggerContext`/`ClearTriggerContext`
-(wired 2026-08-25, one choke point in `TriggerManager`) and `UpdateForItemChange` (pre-existing, in
-`GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from savepoint
-rollback, not ordinary navigation). Genuinely unwired, confirmed by grep, no known exceptions:
-`UpdateForBlockChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`,
-`SetLastQuery`, `SetCurrentForm`. `CURRENT_BLOCK`, `MASTER_BLOCK`, `MODE`, `BLOCK_STATUS`/
-`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`), `CURRENT_FORM` are all still
-permanently whatever `SystemVariables`'s constructor set, regardless of what the form does. Wiring the
-rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
+**Four of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other seven method names
+do not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
+mistake: it only matched calls through the public `manager.SystemVariables.` property, and
+`FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
+instead. Corrected 2026-08-25 by re-grepping `_systemVariablesManager\.` directly against source.)*
+Live: `SetTriggerContext`/`ClearTriggerContext` (wired 2026-08-25, one choke point in
+`TriggerManager`), `UpdateForBlockChange` (wired 2026-08-25, one choke point in `SwitchToBlockAsync` —
+the same "actually check for a single choke point before assuming there isn't one" lesson
+`UpdateForItemChange` had already taught) and `UpdateForItemChange` (pre-existing, in `GoItemAsync`).
+Partially live: `UpdateForRecordChange` (pre-existing, but only from savepoint rollback, not ordinary
+navigation). Genuinely unwired, confirmed by grep, no known exceptions: `SetMode`, `SetBlockStatus`,
+`SetFormStatus`, `SetRecordStatus`, `SetLastError`, `SetLastQuery`, `SetCurrentForm`. `MODE`,
+`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`), `CURRENT_FORM` are
+all still permanently whatever `SystemVariables`'s constructor set, regardless of what the form does.
+Wiring the rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
 correction, and not attempted here. Check current call sites with `grep` (both the public property
 *and* the private field — this section's own history is the reason why) before relying on any
 specific field being live.
@@ -135,10 +136,12 @@ private TriggerResult OnValidateQty(TriggerContext context)
     var triggerBlock = context.SystemVariables.GetFormSystemVariables().TRIGGER_BLOCK;
     var triggerRecord = context.SystemVariables.GetFormSystemVariables().TRIGGER_RECORD;
 
-    // Not yet live: CURRENT_BLOCK/CURSOR_RECORD/etc. are still whatever
-    // SystemVariables's constructor set — nothing updates them yet (see the
-    // "When each is updated" table). Reading them today will not throw, but
-    // will not reflect the actual current block/record either.
+    // Also live: CURRENT_BLOCK/MASTER_BLOCK follow every block switch
+    // (SwitchToBlockAsync), CURRENT_ITEM/CURSOR_ITEM/CURSOR_VALUE follow
+    // every item-focus change (GoItemAsync). CURSOR_RECORD/LAST_RECORD are
+    // only refreshed after a savepoint rollback, not ordinary navigation —
+    // check the "When each is updated" table before relying on any specific
+    // field being current.
     var currentBlock = context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK;
 
     // ... do something with the current state ...
