@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Extensions;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
@@ -555,6 +556,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 else
                 {
                     await blockInfo.UnitOfWork.Get().ConfigureAwait(false);
+                }
+
+                // :SYSTEM.LAST_QUERY -- see G0.36 in gaps.md. DataSourceAppFilterExtensions
+                // (DataManagementModelsStandard/Extensions) already builds a parameterized
+                // SELECT statement from an AppFilter list -- no new serialization needed.
+                // Best-effort: an unresolvable data source (bad DataSourceName, block not yet
+                // wired to a real IDataSource in a test) leaves LAST_QUERY at its prior value
+                // rather than failing the query that already succeeded above.
+                var queryDataSource = string.IsNullOrWhiteSpace(blockInfo.DataSourceName)
+                    ? null
+                    : _dmeEditor?.GetDataSource(blockInfo.DataSourceName);
+                if (queryDataSource != null)
+                {
+                    var entityNameForQuery = blockInfo.EntityStructure?.EntityName ?? blockName;
+                    var queryDefinition = queryDataSource.BuildSelectQueryDefinition(entityNameForQuery, filters);
+                    _systemVariablesManager?.SetLastQuery(queryDefinition.QueryText);
                 }
 
                 // CRITICAL: After successful query execution, transition to CRUD mode

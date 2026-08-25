@@ -2398,4 +2398,53 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region ExecuteQueryEnhancedAsync -> SystemVariables.SetLastQuery (G0.36, continued, 2026-08-25)
+
+    // SetLastQuery was left open in the earlier G0.36 pass -- ExecuteQueryEnhancedAsync has one
+    // natural landing spot (right after UnitOfWork.Get(filters)/Get() succeeds), the same shape
+    // that made SetMode/SetLastError tractable, but it takes a List<AppFilter>, not a WHERE-clause
+    // string, and the original pass found no existing filter-to-string serializer to reuse. That
+    // was itself an incomplete search: DataSourceAppFilterExtensions.BuildSelectQueryDefinition
+    // (DataManagementModelsStandard/Extensions/DataSourceAppFilterExtensions.cs) already builds a
+    // full "SELECT ... FROM ... WHERE ..." string plus a parameter dictionary from an AppFilter
+    // list -- it already existed, just under a different file this pass's grep didn't cover, and
+    // nothing in the engine called it before this.
+
+    [Fact]
+    public async Task ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesLastQuery()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(0);
+        var dataSource = new Mock<IDataSource>();
+        _mockEditor.Setup(e => e.GetDataSource("DEFAULT_DB")).Returns(dataSource.Object);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity, "DEFAULT_DB");
+
+        var succeeded = await manager.ExecuteQueryAsync("EMP").ConfigureAwait(false);
+
+        Assert.True(succeeded);
+        variables.Verify(v => v.SetLastQuery(
+            It.Is<string>(q => q.Contains("SELECT") && q.Contains("EMP"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteQueryEnhancedAsync_UnresolvableDataSource_DoesNotSetLastQuery()
+    {
+        // No GetDataSource setup on _mockEditor -- it returns null (Loose mock default),
+        // exercising the best-effort guard: the query itself still succeeds.
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(0);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity, "MISSING_DB");
+
+        var succeeded = await manager.ExecuteQueryAsync("EMP").ConfigureAwait(false);
+
+        Assert.True(succeeded);
+        variables.Verify(v => v.SetLastQuery(It.IsAny<string>()), Times.Never);
+    }
+
+    #endregion
 }

@@ -88,11 +88,12 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `RECORD_STATUS` | ✅ **live for the `"CHANGED"` transition** — same `ItemChanged` handler also calls `SetRecordStatus(blockName, "CHANGED")` (form-level and the block's snapshot), wired 2026-08-25. `NEW`/`QUERY`/`INSERT` still have no call site. |
 | `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
 | `LAST_ERROR`, `LAST_ERROR_CODE` | ✅ **live** — `SetLastError(message, code)` is called from the shared `protected void LogError(...)` helper (`FormsManager.Helpers.cs`, wired 2026-08-25), which every one of `FormsManager`'s 114+ `catch` blocks already reports failures through; `code` is `ex.HResult` (there is no Oracle-style `ORA-`/`FRM-` number available from a .NET exception). `ClearLastError()` is deliberately not called anywhere — real Oracle Forms has no "clear" semantic for this variable either; it just persists until the next error overwrites it. |
-| `LAST_QUERY` | `SetLastQuery(queryString)`. **Not yet called anywhere.** |
+| `LAST_QUERY` | ✅ **live** — `SetLastQuery(queryText)` is called from `ExecuteQueryEnhancedAsync` (`FormsManager.EnhancedOperations.cs`, wired 2026-08-25) right after `UnitOfWork.Get(filters)`/`Get()` succeeds, using `DataSourceAppFilterExtensions.BuildSelectQueryDefinition`'s `QueryText` (a `"SELECT * FROM entity WHERE ..."` string built from the same `AppFilter` list). Best-effort: if the block's `DataSourceName` doesn't resolve to a real `IDataSource`, `LAST_QUERY` is simply left at its prior value — the query itself has already succeeded and is not failed for this. |
 | `CURRENT_FORM` | ✅ **live** — `SetCurrentForm(formName)` is called from `CurrentFormName`'s property setter (`FormsManager.Properties.cs`) and from both `OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`, which set the backing field directly and so bypass the property) — three writers, all wired 2026-08-25. |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Nine of the ten `Set*`/`UpdateFor*` methods have a real caller today; one method name does not.**
+**All ten `Set*`/`UpdateFor*` methods have a real caller today, except `SetFormStatus` as a direct
+call (it is reached only implicitly, via `SetBlockStatus(_, "CHANGED")`'s cascade).**
 *(An earlier version of this section claimed all ten had zero callers — that was a grep
 mistake: it only matched calls through the public `manager.SystemVariables.` property, and
 `FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
@@ -105,16 +106,31 @@ count in `ModeTransitions.cs` missed a fourth in `EnhancedOperations.cs`), `SetL
 2026-08-25, one genuine choke point — the shared `LogError` helper every catch block already reports
 through), `SetBlockStatus`/`SetRecordStatus` (wired 2026-08-25 for the `"CHANGED"` value specifically —
 the block-registration `ItemChanged` handler, confirmed never fired by query population; see below for
-the earlier revert and how it was re-attempted and landed), and `UpdateForItemChange` (pre-existing, in
-`GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from savepoint
-rollback, not ordinary navigation).
-Genuinely unwired: `SetFormStatus` as a direct call (it is reached only implicitly, via
-`SetBlockStatus(_, "CHANGED")`'s cascade), `SetLastQuery`, and the `NEW`/`QUERY`/`INSERT` transitions
+the earlier revert and how it was re-attempted and landed), `SetLastQuery` (wired 2026-08-25, the same
+`ExecuteQueryEnhancedAsync` choke point `SetMode` already uses, once
+`DataSourceAppFilterExtensions.BuildSelectQueryDefinition` was found to already provide the
+filter-to-string serialization this was originally blocked on — see below), and `UpdateForItemChange`
+(pre-existing, in `GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from
+savepoint rollback, not ordinary navigation).
+Genuinely unwired: `SetFormStatus` as a direct call, and the `NEW`/`QUERY`/`INSERT` transitions
 for `BLOCK_STATUS`/`RECORD_STATUS` (only `"CHANGED"` is wired).
-`SetLastQuery` was checked directly and ruled out as a `SetMode`/`SetLastError`-style
-small-choke-point fix: `ExecuteQueryEnhancedAsync` has one natural landing spot, but receives a
-`List<AppFilter>`, not a WHERE-clause string, so wiring it means designing a filter-to-string
-serialization first, not just adding a call.
+
+**`SetLastQuery`: the "no existing serialization to reuse" premise was wrong — re-checked and
+landed (2026-08-25).** The original pass found `ExecuteQueryEnhancedAsync`'s one natural landing
+spot (right where it calls `blockInfo.UnitOfWork.Get(filters)`) but concluded the fix needed a new
+filter-to-string serializer designed from scratch, since `ExecuteQueryEnhancedAsync` receives a
+`List<AppFilter>`, not a WHERE-clause string. That conclusion was based on a grep that didn't cover
+`DataManagementModelsStandard/Extensions/DataSourceAppFilterExtensions.cs`, where
+`BuildSelectQueryDefinition(this IDataSource, entityNameOrSelect, filters, selectedColumns)` already
+builds a full parameterized `"SELECT ... FROM ... WHERE ..."` string (plus a parameter dictionary)
+from exactly this shape of input — a real, existing, general-purpose capability with zero callers
+anywhere in the engine before this pass, not a Forms-specific one. `ExecuteQueryEnhancedAsync` now
+resolves the block's `IDataSource` via `_dmeEditor.GetDataSource(blockInfo.DataSourceName)` (the same
+pattern `FormsManager.Validation.cs` already uses) and calls `SetLastQuery(queryDefinition.QueryText)`
+right after the query succeeds — best-effort: an unresolvable data source name leaves `LAST_QUERY`
+unchanged rather than failing a query that already succeeded. Two new tests
+(`ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesLastQuery`,
+`ExecuteQueryEnhancedAsync_UnresolvableDataSource_DoesNotSetLastQuery`), proven via revert.
 
 **`SetBlockStatus`/`SetRecordStatus`'s `"CHANGED"` transition: found, prototyped, reverted on an
 unexplained test interaction, re-attempted and landed (2026-08-25).** The first attempt wired
