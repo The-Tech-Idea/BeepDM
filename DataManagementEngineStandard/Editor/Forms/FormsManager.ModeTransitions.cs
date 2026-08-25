@@ -18,6 +18,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     {
         #region Mode Transition Operations
 
+        /// <summary>
+        /// Maps a <see cref="DataBlockMode"/> transition onto Oracle Forms'
+        /// :SYSTEM.MODE vocabulary. Oracle publishes exactly two values for
+        /// this variable -- NORMAL and ENTER-QUERY -- so every mode other
+        /// than EnterQuery collapses to NORMAL, same as real Oracle Forms.
+        /// </summary>
+        private static string ToSystemVariableMode(DataBlockMode mode) =>
+            mode == DataBlockMode.EnterQuery ? "ENTER-QUERY" : "NORMAL";
+
         public async void EnteringQueryModeAsync(string blockName)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return;
@@ -107,6 +116,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // silently dropped out of query mode on the next sync.
                 blockInfo.Mode = DataBlockMode.EnterQuery;
                 blockInfo.LastModeChange = DateTime.Now;
+
+                // :SYSTEM.MODE -- see G0.36 in gaps.md. blockInfo.Mode has no
+                // single choke point (four direct assignment sites across two
+                // files); wired individually, same shape as CurrentFormName's
+                // three writers.
+                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.EnterQuery));
 
                 // Update current block reference
                 _currentBlockName = blockName;
@@ -275,6 +290,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Set to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
                 blockInfo.LastModeChange = DateTime.Now;
+                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
 
                 // Create a new record
                 var newRecord = CreateNewRecord(blockName);
@@ -594,6 +610,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         // Detail blocks should be in CRUD mode to allow new records
                         detailBlockInfo.Mode = DataBlockMode.CRUD;
                         detailBlockInfo.LastModeChange = DateTime.Now;
+                        _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
 
                         LogOperation($"Child block '{detailBlockName}' cleared and set to CRUD mode", detailBlockName);
                     }

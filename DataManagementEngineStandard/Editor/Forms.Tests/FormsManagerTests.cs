@@ -2163,4 +2163,34 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region blockInfo.Mode writers -> SystemVariables.SetMode (G0.36, continued, 2026-08-25)
+
+    // Unlike CURRENT_BLOCK and CURRENT_FORM, SetMode genuinely has no single
+    // choke point: blockInfo.Mode is assigned directly at four sites across
+    // two files (EnterQueryModeAsync, EnterCrudModeForNewRecordAsync and
+    // CoordinateChildBlocksForNewMasterRecord in FormsManager.ModeTransitions.cs,
+    // plus ExecuteQueryEnhancedAsync in FormsManager.EnhancedOperations.cs) --
+    // re-checked, not assumed, after CURRENT_BLOCK/CURRENT_FORM both turned
+    // out to have one. Each site now calls SetMode individually, mapped onto
+    // Oracle's real :SYSTEM.MODE vocabulary (NORMAL / ENTER-QUERY). This test
+    // covers the simplest of the four -- EnterQueryModeAsync -- the others
+    // share the same one-line pattern and are covered by the full test run.
+
+    [Fact]
+    public async Task EnterQueryModeAsync_SetsSystemVariablesModeToEnterQuery()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(0);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var entered = await manager.EnterQueryAsync("EMP").ConfigureAwait(false);
+
+        Assert.True(entered);
+        variables.Verify(v => v.SetMode("ENTER-QUERY"), Times.Once);
+    }
+
+    #endregion
 }

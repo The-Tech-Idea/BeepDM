@@ -21551,6 +21551,14 @@
             CallForm calls the named form. A separator or submenu is a no-op.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ToSystemVariableMode(TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode)">
+            <summary>
+            Maps a <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode"/> transition onto Oracle Forms'
+            :SYSTEM.MODE vocabulary. Oracle publishes exactly two values for
+            this variable -- NORMAL and ENTER-QUERY -- so every mode other
+            than EnterQuery collapses to NORMAL, same as real Oracle Forms.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnterQueryModeAsync(System.String)">
             <summary>
             Transitions a block from CRUD to Query mode - equivalent to Oracle Forms ENTER_QUERY

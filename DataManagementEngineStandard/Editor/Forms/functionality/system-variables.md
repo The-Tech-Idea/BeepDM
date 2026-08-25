@@ -82,7 +82,7 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | ⚠️ **partially live** — `UpdateForRecordChange(blockName, recordIndex, totalRecords)` is called from `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`) after a savepoint rollback, but **not** from ordinary record navigation (`NextRecordAsync`/`PreviousRecordAsync`/etc. do not call it) — these fields go stale between rollbacks. Also opportunistically refreshed by `UpdateForBlockChange` from the block's live `IUnitofWork` on block entry. |
 | `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | ✅ **live** — `UpdateForItemChange(blockName, itemName, itemValue)` is called from `GoItemAsync` (`FormsManager.Navigation.cs:406`) on every item-focus change. |
 | `MASTER_BLOCK` | ✅ **live** — same `UpdateForBlockChange` call as `CURRENT_BLOCK` above, when the block has a registered master. |
-| `MODE` | `SetMode(mode)` — form-level, and the current block's snapshot. **Not yet called anywhere.** |
+| `MODE` | ✅ **live** — `SetMode(mode)` is called at all four sites that assign `blockInfo.Mode` directly (`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, `CoordinateChildBlocksForNewMasterRecord` in `FormsManager.ModeTransitions.cs`; `ExecuteQueryEnhancedAsync` in `FormsManager.EnhancedOperations.cs`, wired 2026-08-25), mapped through `ToSystemVariableMode(DataBlockMode)` onto Oracle's real two-value vocabulary (`NORMAL`/`ENTER-QUERY`). |
 | `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. **Not yet called anywhere.** |
 | `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. **Not yet called anywhere.** |
 | `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. **Not yet called anywhere.** |
@@ -92,7 +92,7 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `CURRENT_FORM` | ✅ **live** — `SetCurrentForm(formName)` is called from `CurrentFormName`'s property setter (`FormsManager.Properties.cs`) and from both `OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`, which set the backing field directly and so bypass the property) — three writers, all wired 2026-08-25. |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**Five of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other five method names do
+**Six of the ten `Set*`/`UpdateFor*` methods have a real caller today; the other four method names do
 not.** *(An earlier version of this section claimed all ten had zero callers — that was a grep
 mistake: it only matched calls through the public `manager.SystemVariables.` property, and
 `FormsManager` calls the manager through its private field, `_systemVariablesManager.<name>(...)`,
@@ -100,14 +100,18 @@ instead. Corrected 2026-08-25 by re-grepping `_systemVariablesManager\.` directl
 Live: `SetTriggerContext`/`ClearTriggerContext` (wired 2026-08-25, one choke point in
 `TriggerManager`), `UpdateForBlockChange` (wired 2026-08-25, one choke point in `SwitchToBlockAsync`),
 `SetCurrentForm` (wired 2026-08-25, three writers — not one, but still a small, fully-enumerated set,
-not "scattered") and `UpdateForItemChange` (pre-existing, in `GoItemAsync`). Partially live:
-`UpdateForRecordChange` (pre-existing, but only from savepoint rollback, not ordinary navigation).
-Genuinely unwired, confirmed by grep **and** by reading the relevant code directly (not just
-re-grepping) to rule out a hidden choke point: `SetMode`, `SetBlockStatus`, `SetFormStatus`,
-`SetRecordStatus`, `SetLastError`, `SetLastQuery`. `SetMode` specifically was checked —
-`FormsManager.ModeTransitions.cs` sets `blockInfo.Mode` directly at three separate locations across
-three different public entry points, with no shared setter to hook, so this one really is scattered.
-`MODE`, `BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`) are all still
+not "scattered"), `SetMode` (wired 2026-08-25, four writers across two files — the original three-site
+count in `ModeTransitions.cs` missed a fourth in `EnhancedOperations.cs`), and `UpdateForItemChange`
+(pre-existing, in `GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from
+savepoint rollback, not ordinary navigation).
+Genuinely unwired: `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`, `SetLastQuery`.
+Of these, `SetLastQuery` was checked directly and ruled out as a `SetMode`-style small-fixed-set fix:
+`ExecuteQueryEnhancedAsync` has one natural landing spot, but receives a `List<AppFilter>`, not a
+WHERE-clause string, so wiring it means designing a filter-to-string serialization first, not just
+adding a call. The other four (`SetBlockStatus`/`SetFormStatus`/`SetRecordStatus`/`SetLastError`) have
+not been re-checked at that depth and are left open on the original grep result plus the ordering
+constraints below.
+`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`) are all still
 permanently whatever `SystemVariables`'s constructor set, regardless of what the form does.
 Wiring the rest is real, valuable, scoped-per-call-site work — genuinely separate from this documentation
 correction, and not attempted here. Check current call sites with `grep` (both the public property
@@ -124,6 +128,15 @@ derived (`"Query"` / `"Changed"` / `"Normal"`) rather than caller-supplied. This
 host (`BeepDataBlock` or similar) can read a rich block snapshot without going back through
 `FormsManager` directly. `GetBlockVariables` on a block with no snapshot yet returns a fresh, empty
 `SystemVariables()`, not null.
+
+**Checked 2026-08-25: `BeepDataBlock` is the pre-extraction legacy WinForms control** (Beep.Forms'
+`WinFormsScanner.cs`/`CodeGenConstants.cs` both refer to it as "legacy" by name) that the Beep.Forms
+extraction deliberately left behind — the current replacement, `WinFormBlockHost`, does not read this
+snapshot. `UpdateBlockVariables`/`GetBlockVariables` have zero callers on both the write and read side
+in this repo. Do not wire this in as if it were another `SetMode`-shaped gap: it would mean maintaining
+a second, redundant per-block dictionary alongside `GetSystemVariables(blockName)` (house rule 3) for a
+consumer that no longer exists here. See G0.36 in `gaps.md` for the full reasoning; left unwired and
+undeleted pending a decision on whether to build a real consumer or retire it.
 
 ## Reading inside triggers
 

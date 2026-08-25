@@ -560,6 +560,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // CRITICAL: After successful query execution, transition to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
                 blockInfo.LastModeChange = DateTime.Now;
+                // :SYSTEM.MODE -- see G0.36 in gaps.md.
+                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
 
                 // Fire POST-QUERY trigger (before returning to caller)
                 await _triggerManager.FireBlockTriggerAsync(

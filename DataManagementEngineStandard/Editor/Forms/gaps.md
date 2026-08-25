@@ -826,11 +826,11 @@ assignments failed exactly that test).
 
 ### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
-(FOUND 2026-08-25; **trigger-context, block-switch and current-form slices FIXED same day** —
-`SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`, and `SetCurrentForm` now wired;
-`UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired, pre-dating this
-finding — the first pass's grep missed calls through the private field; six names remain genuinely
-unwired, confirmed with no single choke point, see "Still open" below)
+(FOUND 2026-08-25; **trigger-context, block-switch, current-form and mode slices FIXED same day** —
+`SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`, `SetCurrentForm`, and `SetMode` now
+wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be already wired, pre-dating
+this finding — the first pass's grep missed calls through the private field; five names remain
+genuinely unwired, confirmed with no single choke point, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -929,24 +929,59 @@ tests — proportionate to how small and visually-verifiable a one-line addition
 assignment is, versus building out `OpenFormAsync`/`CloseFormAsync` test scaffolding that doesn't
 exist yet in this file for any other purpose.
 
-**Still open — six method names, genuinely zero callers.** `SetMode`, `SetBlockStatus`,
-`SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery` still have zero
-callers anywhere, and `UpdateForRecordChange`'s general (non-savepoint) case is still open too.
-`SetMode` was specifically re-checked for a hidden single choke point (given `UpdateForItemChange` and
-`UpdateForBlockChange` both had one) and does NOT have one: `FormsManager.ModeTransitions.cs` sets
-`blockInfo.Mode` directly at three separate locations across three different public entry points
-(`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, and child-block coordination inside
-`CreateNewRecordInMasterBlockAsync`), with no shared setter method to hook. The remaining names likely
-share that shape — each needs its own call site scattered across mode-transition, each DML verb, and
-query-execution code in several different `FormsManager.*.cs` files, and the doc's own "Updates that
-are NOT immediate" section establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a
-*successful* DML). That remains genuinely larger, scoped-per-call-site work, deliberately not
-attempted in this pass. **Lesson carried forward, and now applied three times: before assuming "no
-single choke point," actually check** — `UpdateForItemChange`, `UpdateForBlockChange`, and
-`SetCurrentForm` all turned out to have one (or a small fixed number), and were only missed the first
-time by a grep that didn't account for the private-field call shape. `SetMode` is the first one this
-pass actually confirmed does NOT have one, by reading the mode-transition code directly rather than
-assuming.
+**Fixed, same day: `SetMode`.** Re-checked rather than left as "no single choke point" — confirmed
+`blockInfo.Mode` is assigned directly at **four** sites, not three: the three already found in
+`FormsManager.ModeTransitions.cs` (`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, and the
+child-block coordination inside `CreateNewRecordInMasterBlockAsync`), plus a fourth in
+`FormsManager.EnhancedOperations.cs`'s `ExecuteQueryEnhancedAsync` (the real implementation behind
+`ExecuteQueryAsync`/`ExecuteQueryAndEnterCrudModeAsync`, both of which delegate to it) that the
+original count missed. Four sites with no shared setter is not the same as "unwireable" — it is the
+same shape as `SetCurrentForm`'s three writers, just one site larger. Added a private
+`ToSystemVariableMode(DataBlockMode)` helper mapping the engine's five-value `DataBlockMode` enum onto
+Oracle's real two-value `:SYSTEM.MODE` vocabulary (`NORMAL`/`ENTER-QUERY` — Oracle Forms does not
+publish a third value for this variable, unlike `:SYSTEM.BLOCK_STATUS`, which does have `QUERY`), and
+called `_systemVariablesManager?.SetMode(ToSystemVariableMode(...))` at all four sites, right next to
+each direct `.Mode =` assignment. One new test (`EnterQueryModeAsync_SetsSystemVariablesModeToEnterQuery`,
+covering the simplest of the four); the other three share the identical one-line pattern and were
+verified by the full 122-test run rather than each getting a dedicated test, the same proportionality
+call made for `SetCurrentForm`'s `OpenFormAsync`/`CloseFormAsync` sites. Proven via revert.
+
+**Still open — five method names, genuinely zero callers.** `SetBlockStatus`, `SetFormStatus`,
+`SetRecordStatus`, `SetLastError`/`ClearLastError`, `SetLastQuery` still have zero callers anywhere,
+and `UpdateForRecordChange`'s general (non-savepoint) case is still open too. Each of these needs its
+own call site scattered across each DML verb and query-execution code in several different
+`FormsManager.*.cs` files, and the doc's own "Updates that are NOT immediate" section establishes real
+ordering constraints (e.g. `BLOCK_STATUS` only on a *successful* DML, `RECORD_STATUS` distinguishing
+`NEW`/`QUERY`/`CHANGED`/`INSERT`). That remains genuinely larger, scoped-per-call-site work,
+deliberately not attempted in this pass. A related dead-end, ruled out rather than pursued: a second,
+entirely separate per-block snapshot store — `UpdateBlockVariables`/`GetBlockVariables`/`_blockVars` in
+`SystemVariablesManager.cs` ("Per-Block Snapshot (Phase 8)" region) — exists with zero callers on
+*both* the write and read side, and its own doc comment says it exists so a class called `BeepDataBlock`
+"can read system variables without calling FormsManager directly." `BeepDataBlock` is the **legacy**
+pre-extraction WinForms control (see `WinFormsScanner.cs`/`CodeGenConstants.cs` in Beep.Forms, both of
+which call it "legacy" by name) that Beep.Forms' extraction deliberately left behind — its replacement,
+`WinFormBlockHost`, does not use this snapshot mechanism. Building this out would mean maintaining a
+second, redundant per-block dictionary alongside the one `GetSystemVariables(blockName)` already
+serves (house rule 3: two stores for one domain), for a consumer that no longer exists in this repo.
+Left as-is, not wired and not deleted (removal is a decision for Fahad, not made here) — documented so
+a future pass does not mistake it for a live, missing-caller gap of the same shape as the five above.
+
+**Lesson carried forward, and now applied four times: before assuming "no single choke point,"
+actually check** — `UpdateForItemChange`, `UpdateForBlockChange`, `SetCurrentForm`, and now `SetMode`
+all turned out to have a small, fixed, enumerable set of writers rather than truly scattered call
+sites, and were only missed the first time by a grep that didn't account for the private-field call
+shape (or, for `SetMode`, by not checking a second file). Applying the same check to `SetLastQuery`
+specifically (the one of the five that looked most likely to share this shape, since
+`ExecuteQueryEnhancedAsync` already has a single natural landing spot right where it calls
+`blockInfo.UnitOfWork.Get(filters)`): it is blocked on something `SetMode` wasn't — there is no
+existing string form of "the query that ran" to hand it. `ExecuteQueryEnhancedAsync` receives a
+`List<AppFilter>`, not a WHERE-clause string, so wiring this in means first choosing and building a
+filter-to-string serialization (there is no existing one to reuse), not just adding a call next to an
+existing assignment. That is a different, larger kind of blocker than "scattered call sites," and the
+remaining four (`SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`/`ClearLastError`)
+have not been individually re-checked at this depth — they are left open on the strength of the
+original grep (zero callers) plus the "Updates that are NOT immediate" ordering constraints already
+known from the doc, not on a confirmed absence of a small choke point the way `SetMode` now is.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
@@ -956,7 +991,9 @@ hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `For
 (trigger-context wiring); `FormsManager.Navigation.cs` (`SwitchToBlockAsync`'s
 `UpdateForBlockChange` call); `FormsManager.Properties.cs` (`CurrentFormName` setter),
 `FormsManager.FormOperations.cs` (`OpenFormAsync`/`CloseFormAsync`);
-`Editor/Forms.Tests/FormsManagerTests.cs` (six new tests total, two
+`FormsManager.ModeTransitions.cs` (`ToSystemVariableMode` helper, three of the four `SetMode` call
+sites), `FormsManager.EnhancedOperations.cs` (the fourth, in `ExecuteQueryEnhancedAsync`);
+`Editor/Forms.Tests/FormsManagerTests.cs` (seven new tests total, two
 updated Strict mocks).
 
 ---
