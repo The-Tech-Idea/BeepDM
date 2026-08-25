@@ -826,7 +826,8 @@ assignments failed exactly that test).
 
 ### G0.36: `SystemVariablesManager` is fully built and reachable, but every `Update*`/`Set*` method
 has zero callers — every `:SYSTEM.*`-equivalent field is permanently stuck at its constructor default
-(FOUND 2026-08-25, **NOT FIXED** — documented and scoped, not attempted)
+(FOUND 2026-08-25; **trigger-context slice FIXED same day** — `SetTriggerContext`/`ClearTriggerContext`
+now wired; the other ~8 methods remain open, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -860,22 +861,49 @@ can write `context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK` today
 return a value, and that value will be `string.Empty` forever regardless of what the form actually
 does, because nothing keeps it current.
 
-**Why not fixed in this pass:** wiring this up correctly means finding the right call site in each of
-~8-10 different `FormsManager.*.cs` operation files (block-switch, record-navigation, item-focus,
-mode-transition, each DML verb, query execution, and wherever `TriggerManager` invokes a trigger's
-callback) and calling the matching `Update*`/`Set*` method at the right moment relative to the
-operation completing — the doc's own "Updates that are NOT immediate" section (pre-existing content,
-kept) already establishes that ordering matters (e.g. `BLOCK_STATUS` must update only on a
-*successful* DML, `MODE` only on a completed, non-cancelled transition). That is real, valuable,
-well-scoped-**per-call-site** work, but it is a different shape from every fix in this session so far
-(all of which were "add the one missing caller") — this is "add eight-to-ten callers, each needing to
-find the right moment in an existing operation," genuinely larger and riskier to do correctly in one
-sitting. Documented here and in the doc itself so the next session (or the next scoping pass) starts
-from an accurate picture instead of rediscovering this from scratch.
+**Fixed, same day: the trigger-context slice.** Unlike the other nine `Update*`/`Set*` methods, `SetTriggerContext`/
+`ClearTriggerContext` had exactly ONE natural choke point rather than ~30 scattered call sites:
+`TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` are the two internal methods every one
+of the ten public `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async) funnels
+through, so hooking there — not each Fire* method, and not each of the ~30 `FormsManager.*.cs` call
+sites that build a `TriggerContext` and hand it to one of those Fire* methods — covers every trigger
+firing in one place. Added `ITriggerManager.SystemVariables { get; set; }` (settable, not a
+constructor parameter, since `FormsManager` already constructs its `SystemVariablesManager` before its
+`TriggerManager` and just assigns it across), wired in `FormsManager.Core.cs` right after
+`_triggerManager` is built, and a private `ApplyTriggerContextToSystemVariables` helper that both
+populates `context.SystemVariables` (previously always null — a handler reading it would have NRE'd)
+and calls `SetTriggerContext(context.TriggerType.ToString(), context.BlockName, context.ItemName,
+context.RecordIndex)` before the chain runs; `ClearTriggerContext()` runs once after. Both null-safe
+(`SystemVariables` unset is a documented, tested no-op, not a throw) — a hand-constructed
+`TriggerManager` in a test or elsewhere that never gets it wired keeps working exactly as before.
+
+Three new direct tests against the real `TriggerManager` class (not mocked, the first in this file to
+test `TriggerManager`'s own behavior rather than `FormsManager`'s dispatch through a mocked one):
+firing a block trigger sets-then-clears the context and hands the real store through to the handler;
+firing an item trigger (async) does the same; firing with `SystemVariables` unset doesn't throw.
+Proven via revert — commenting out all four call sites failed the first two tests with exactly the
+predicted symptoms (`context.SystemVariables` null inside the handler; the mock's `VerifyAll()`
+reporting the setups were never matched). Fixing this also required updating two **pre-existing**
+Strict-mock tests (`GoItem_ValidItemUpdatesCursorAndFiresNewItemTrigger`,
+`GoItem_UnknownItemReturnsFalseWithoutTrigger`) to stub the new `ITriggerManager.SystemVariables`
+setter — a `MockBehavior.Strict` mock throws on any unconfigured member access, and
+`FormsManager`'s constructor now genuinely calls that setter on whatever `ITriggerManager` it's given.
+
+**Still open — the other ~8 `Update*`/`Set*` methods.** `UpdateForBlockChange`, `UpdateForRecordChange`,
+`UpdateForItemChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`, `SetLastError`/
+`ClearLastError`, `SetLastQuery`, `SetCurrentForm` still have zero callers. These have no equivalent
+single choke point the way trigger-firing did — each needs its own call site scattered across
+block-switch, record-navigation, item-focus, mode-transition, each DML verb, and query-execution code
+in ~8-10 different `FormsManager.*.cs` files, and the doc's own "Updates that are NOT immediate"
+section establishes real ordering constraints (e.g. `BLOCK_STATUS` only on a *successful* DML). That
+remains genuinely larger, scoped-per-call-site work, deliberately not attempted in this pass.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
-`Editor/Forms/functionality/system-variables.md` (corrected).
+`Editor/Forms/functionality/system-variables.md` (corrected); `Editor/Forms/Helpers/TriggerManager.cs`
+(`SystemVariables` property, `ApplyTriggerContextToSystemVariables`, the two `ExecuteTriggerChain*`
+hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `FormsManager.Core.cs`
+(wiring); `Editor/Forms.Tests/FormsManagerTests.cs` (three new tests, two updated Strict mocks).
 
 ---
 ## P0 — Correctness / Existing-User Impact

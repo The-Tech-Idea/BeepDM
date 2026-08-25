@@ -195,9 +195,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// Get total trigger count
         /// </summary>
         int TriggerCount { get; }
-        
+
         #endregion
-        
+
+        #region System Variables
+
+        /// <summary>
+        /// The system-variables store to keep in sync with the currently-firing
+        /// trigger — set before each trigger fires and cleared after, mirroring
+        /// Oracle Forms' <c>:SYSTEM.TRIGGER_TYPE</c>/<c>TRIGGER_BLOCK</c>/
+        /// <c>TRIGGER_ITEM</c>/<c>TRIGGER_RECORD</c>. Settable rather than a
+        /// constructor parameter so an implementation already constructed
+        /// (e.g. by <c>FormsManager</c>, which builds its own
+        /// <c>SystemVariablesManager</c> first) can still be wired in. May be
+        /// null — implementations must treat a null store as "no system
+        /// variables to update," not throw.
+        /// </summary>
+        ISystemVariablesManager SystemVariables { get; set; }
+
+        #endregion
+
         #region Trigger Enable/Disable
         
         /// <summary>

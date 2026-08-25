@@ -214,6 +214,10 @@ public class FormsManagerTests : IDisposable
             "ENAME",
             null));
         var triggers = new Mock<ITriggerManager>(MockBehavior.Strict);
+        // FormsManager's constructor wires SystemVariables onto whatever
+        // ITriggerManager it's given (see G0.36 in gaps.md) -- a Strict mock
+        // needs this stubbed even though this test doesn't care about it.
+        triggers.SetupSet(instance => instance.SystemVariables = It.IsAny<ISystemVariablesManager>());
         triggers.Setup(instance => instance.FireBlockTriggerAsync(
                 TriggerType.WhenNewItemInstance,
                 "EMP",
@@ -243,6 +247,7 @@ public class FormsManagerTests : IDisposable
             .Returns(false);
         var variables = new Mock<ISystemVariablesManager>(MockBehavior.Strict);
         var triggers = new Mock<ITriggerManager>(MockBehavior.Strict);
+        triggers.SetupSet(instance => instance.SystemVariables = It.IsAny<ISystemVariablesManager>());
         using var manager = new FormsManager(
             _mockEditor.Object,
             systemVariablesManager: variables.Object,
@@ -2026,6 +2031,74 @@ public class FormsManagerTests : IDisposable
         Assert.NotNull(capturedEditor);
         Assert.Equal("BigNotesEditor", capturedEditor.Name);
         Assert.Equal("Big Notes", capturedEditor.Title);
+    }
+
+    #endregion
+
+    #region TriggerManager -> SystemVariables Context Wiring (G0.36, 2026-08-25)
+
+    // SystemVariablesManager was fully built, exposed on IUnitofWorksManager and
+    // TriggerContext, and completely inert -- none of its Update*/Set* methods had
+    // any caller anywhere in the engine, so :SYSTEM.TRIGGER_* stayed permanently
+    // empty no matter what a form did. TriggerManager.ExecuteTriggerChain(Async) is
+    // the one place every Fire*Trigger(Async) variant funnels through, so that's
+    // where the wiring landed rather than at each of the ~30 individual call sites.
+    // These tests exercise the real TriggerManager class directly (not mocked --
+    // every other test in this file mocks ITriggerManager to test FormsManager's
+    // own dispatch logic; this is the first to test TriggerManager's own behavior).
+
+    [Fact]
+    public void FireBlockTrigger_SetsAndClearsSystemVariablesTriggerContext()
+    {
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Strict);
+        variables.Setup(v => v.SetTriggerContext("PreInsert", "EMP", null, 0));
+        variables.Setup(v => v.ClearTriggerContext());
+
+        var manager = new TriggerManager(_mockEditor.Object) { SystemVariables = variables.Object };
+        ISystemVariablesManager? seenInsideHandler = null;
+        manager.RegisterBlockTrigger(TriggerType.PreInsert, "EMP", context =>
+        {
+            seenInsideHandler = context.SystemVariables;
+            return TriggerResult.Success;
+        });
+
+        var result = manager.FireBlockTrigger(TriggerType.PreInsert, "EMP");
+
+        Assert.Equal(TriggerResult.Success, result);
+        Assert.Same(variables.Object, seenInsideHandler);
+        variables.VerifyAll();
+    }
+
+    [Fact]
+    public async Task FireItemTriggerAsync_SetsAndClearsSystemVariablesTriggerContext()
+    {
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Strict);
+        variables.Setup(v => v.SetTriggerContext("WhenValidateItem", "ORD", "QTY", 0));
+        variables.Setup(v => v.ClearTriggerContext());
+
+        var manager = new TriggerManager(_mockEditor.Object) { SystemVariables = variables.Object };
+        manager.RegisterItemTriggerAsync(TriggerType.WhenValidateItem, "ORD", "QTY",
+            (_, _) => Task.FromResult(TriggerResult.Success));
+
+        var result = await manager.FireItemTriggerAsync(TriggerType.WhenValidateItem, "ORD", "QTY")
+            .ConfigureAwait(false);
+
+        Assert.Equal(TriggerResult.Success, result);
+        variables.VerifyAll();
+    }
+
+    [Fact]
+    public void FireBlockTrigger_NoSystemVariablesWired_DoesNotThrow()
+    {
+        // SystemVariables is nullable and unset by default (e.g. a hand-constructed
+        // TriggerManager in a test, or a future consumer that doesn't wire it) --
+        // firing a trigger must not NRE just because nobody assigned it.
+        var manager = new TriggerManager(_mockEditor.Object);
+        manager.RegisterBlockTrigger(TriggerType.PreInsert, "EMP", _ => TriggerResult.Success);
+
+        var result = manager.FireBlockTrigger(TriggerType.PreInsert, "EMP");
+
+        Assert.Equal(TriggerResult.Success, result);
     }
 
     #endregion

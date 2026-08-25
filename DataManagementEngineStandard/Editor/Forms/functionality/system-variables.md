@@ -86,23 +86,25 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | `BLOCK_STATUS` | `SetBlockStatus(blockName, status)`; a `"CHANGED"` status also sets `FORM_STATUS`. |
 | `FORM_STATUS` | `SetFormStatus(status)`, or implicitly via `SetBlockStatus("CHANGED")`. |
 | `RECORD_STATUS` | `SetRecordStatus(blockName, status)` — form-level and the block's snapshot. |
-| `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | `SetTriggerContext(...)` before a trigger fires; `ClearTriggerContext()` after. |
-| `LAST_ERROR`, `LAST_ERROR_CODE` | `SetLastError(message, code)` / cleared by `ClearLastError()`. |
-| `LAST_QUERY` | `SetLastQuery(queryString)`. |
-| `CURRENT_FORM` | `SetCurrentForm(formName)`. |
+| `TRIGGER_TYPE`, `TRIGGER_FORM`, `TRIGGER_BLOCK`, `TRIGGER_ITEM`, `TRIGGER_RECORD` | ✅ **live** — `TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` call `SetTriggerContext(...)` before every trigger chain runs and `ClearTriggerContext()` after, for all ten `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async). Also populates `context.SystemVariables` itself, previously always null. |
+| `LAST_ERROR`, `LAST_ERROR_CODE` | `SetLastError(message, code)` / cleared by `ClearLastError()`. **Not yet called anywhere.** |
+| `LAST_QUERY` | `SetLastQuery(queryString)`. **Not yet called anywhere.** |
+| `CURRENT_FORM` | `SetCurrentForm(formName)`. **Not yet called anywhere.** |
 | everything | `Reset()` returns the form-level snapshot and the per-block cache to their construction-time defaults. |
 
-**None of `Set*`/`UpdateFor*` above has any caller anywhere in `Editor/Forms` today** — confirmed by
-grepping `manager.SystemVariables.` / `SystemVariables.` for each method name across the whole
-`Editor/Forms` tree and finding zero hits outside the manager's own file and its interface. The table
-above describes what each method is *for*, not what currently calls it: nothing in `FormsManager`'s
-own block-switch, record-navigation, item-focus, mode-transition, DML, query, or trigger-firing code
-calls into `SystemVariablesManager` at all right now. A trigger handler can legitimately write
-`context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK`, and it will compile and return a
-value — but that value is permanently whatever `SystemVariables`'s constructor set (`string.Empty`
-for every string field, `0`/`DateTime.MinValue` for the rest), because nothing ever updates it as the
-form actually runs. Wiring each `Update*`/`Set*` call into the right `FormsManager` operation is real,
-valuable, scoped-per-call-site work — genuinely separate from this documentation correction, and not
+**Only `SetTriggerContext`/`ClearTriggerContext` have a caller today (wired 2026-08-25) — the other
+eight `Set*`/`UpdateFor*` methods still have none anywhere in `Editor/Forms`,** confirmed by grepping
+`manager.SystemVariables.` / `SystemVariables.` for each method name. Trigger-firing had one natural
+choke point (`TriggerManager`'s two internal chain-execution methods, which every `Fire*Trigger(Async)`
+variant funnels through) — the rest do not: `UpdateForBlockChange`/`UpdateForRecordChange`/
+`UpdateForItemChange`/`SetMode`/`SetBlockStatus`/`SetFormStatus`/`SetRecordStatus` each need their own
+call site scattered across `FormsManager`'s block-switch, record-navigation, item-focus,
+mode-transition, DML and query-execution code — nothing in that code calls into
+`SystemVariablesManager` for those eight yet. `CURRENT_BLOCK`, `CURSOR_RECORD`, `MODE`,
+`BLOCK_STATUS`/`FORM_STATUS`/`RECORD_STATUS`, `LAST_QUERY`, `LAST_ERROR`(`_CODE`), `CURRENT_FORM` are
+all still permanently whatever `SystemVariables`'s constructor set, regardless of what the form does —
+only the five `TRIGGER_*` fields are genuinely live now. Wiring the rest is real, valuable,
+scoped-per-call-site work — genuinely separate from this documentation correction, and not
 attempted here. Check current call sites with `grep` before relying on any specific field being live.
 
 ## A dedicated per-block snapshot, separate from the lazy one
@@ -125,8 +127,17 @@ A trigger handler is a real C# method the IDE scaffolds onto the form's own part
 ```csharp
 private TriggerResult OnValidateQty(TriggerContext context)
 {
+    // Live: TriggerManager sets these on every trigger fire (see "When each
+    // is updated" above) before this handler runs.
+    var triggerBlock = context.SystemVariables.GetFormSystemVariables().TRIGGER_BLOCK;
+    var triggerRecord = context.SystemVariables.GetFormSystemVariables().TRIGGER_RECORD;
+
+    // Not yet live: CURRENT_BLOCK/CURSOR_RECORD/etc. are still whatever
+    // SystemVariables's constructor set — nothing updates them yet (see the
+    // "When each is updated" table). Reading them today will not throw, but
+    // will not reflect the actual current block/record either.
     var currentBlock = context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK;
-    var cursorRecord = context.SystemVariables.GetSystemVariables("Ord").CURSOR_RECORD;
+
     // ... do something with the current state ...
     return TriggerResult.Success;
 }
@@ -134,9 +145,10 @@ private TriggerResult OnValidateQty(TriggerContext context)
 
 `TriggerContext.SystemVariables` (`Editor/Forms/Models/TriggerContext.cs`) is the same
 `ISystemVariablesManager` the form's own `manager.SystemVariables` is — the context just hands it
-through so a handler does not need a separate reference to the manager. `TriggerResult` is an enum
-(`Success`/`Failure`/… — check `TriggerResult.cs` for the full set), not a factory method: return the
-member directly, never `TriggerResult.Ok()`.
+through so a handler does not need a separate reference to the manager (`TriggerManager` populates
+this field itself now, right before the handler runs; it used to always be null). `TriggerResult` is
+an enum (`Success`/`Failure`/… — check `TriggerResult.cs` for the full set), not a factory method:
+return the member directly, never `TriggerResult.Ok()`.
 
 ## `BLOCK_STATUS` values (as set by `SetBlockStatus`)
 

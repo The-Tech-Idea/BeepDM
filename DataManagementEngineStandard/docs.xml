@@ -24928,6 +24928,9 @@
         <member name="E:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.TriggerChainCompleted">
             <inheritdoc />
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.SystemVariables">
+            <inheritdoc />
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.TriggerCount">
             <inheritdoc />
         </member>
@@ -25068,6 +25071,19 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ResumeTriggers">
             <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ApplyTriggerContextToSystemVariables(TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
+            <summary>
+            Stamps <c>:SYSTEM.TRIGGER_TYPE</c>/<c>TRIGGER_BLOCK</c>/<c>TRIGGER_ITEM</c>/
+            <c>TRIGGER_RECORD</c> into <see cref="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.SystemVariables"/> before a chain fires,
+            and hands the context a reference to the same store so a handler reading
+            <c>context.SystemVariables</c> gets the real thing rather than null. Both
+            <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ExecuteTriggerChain(System.Collections.Generic.List{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition},TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)"/> and <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ExecuteTriggerChainAsync(System.Collections.Generic.List{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition},TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)"/>
+            are the two places every <c>Fire*Trigger(Async)</c> variant funnels through,
+            so hooking here — not each of the ten Fire* methods — is the one place this
+            needs doing. No-ops when <see cref="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.SystemVariables"/> is null (not wired,
+            e.g. a hand-constructed <see cref="T:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager"/> in a test).
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.GetTriggerStatistics(System.String)">
             <inheritdoc />
