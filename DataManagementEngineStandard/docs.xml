@@ -20404,6 +20404,15 @@
             <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RaiseFormTriggerAsync(System.String,System.String)"/>.
             </summary>
             <summary>
+            Named Editor object registry and EDIT_TEXTITEM built-in.
+            The Editor object is a large-text popup an item's EDITOR_NAME property
+            attaches to (Oracle Forms). Neither the definition nor the invocation
+            existed anywhere before this — the only prior "Editor" hit in the model
+            layer was BlockFieldDefinition/BlockEntityDefinition.EditorKey, an
+            unrelated control-selection string for the platform field-presenter
+            registry. Added 2026-08-25.
+            </summary>
+            <summary>
             Enhanced operations partial class for UnitofWorksManager
             Provides enhanced operations and error recovery with mode transition awareness
             </summary>
@@ -20772,7 +20781,7 @@
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnBlockFieldChanged">
             <inheritdoc/>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILOVManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager,TheTechIdea.Beep.Editor.UOWManager.Helpers.CrossBlockValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager,Microsoft.Extensions.Logging.ILogger{TheTechIdea.Beep.Editor.UOWManager.FormsManager})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEventManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsSimulationHelper,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPerformanceManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IConfigurationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISystemVariablesManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILOVManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISavepointManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQueryBuilderManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockErrorLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IMessageQueueManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockFactory,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockPropertyManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAlertProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEditorProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITimerManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMessageBus,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISecurityManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.IAuditManager,TheTechIdea.Beep.Editor.UOWManager.Helpers.CrossBlockValidationManager,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog,TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerDependencyManager,Microsoft.Extensions.Logging.ILogger{TheTechIdea.Beep.Editor.UOWManager.FormsManager})">
             <summary>
             Constructor with full dependency injection
             </summary>
@@ -21087,6 +21096,19 @@
             <summary>
             Converts Oracle Forms trigger names like "WHEN-BUTTON-PRESSED" to
             the PascalCase equivalent "WhenButtonPressed" used in the TriggerType enum.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ShowEditorAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Shows the large-text editor popup for an item. On commit, writes
+            the edited value onto the block's current record the same way
+            ShowLOVAsync writes a selected LOV record's related fields —
+            via SetFieldValue on blockInfo.UnitOfWork.CurrentItem — so the
+            change flows through the same commit path a normal item edit
+            would use. Does not itself fire WHEN-VALIDATE-ITEM: Oracle's
+            EDIT_TEXTITEM doesn't either: validation fires on navigation away
+            from the item, same as any other edit, once the new value is
+            in place.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CreateNewRecord(System.String)">
@@ -21995,6 +22017,9 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.AlertProvider">
             <summary>Gets the alert provider for SHOW_ALERT-style dialogs</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EditorProvider">
+            <summary>Gets the editor provider for EDIT_TEXTITEM-style large-text popups.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Sequences">
             <summary>Gets the sequence provider for auto-increment sequences</summary>
@@ -24094,6 +24119,17 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefaultAlertProvider.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>Shows a fallback alert when no UI-specific provider is available.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.DefaultEditorProvider">
+            <summary>
+            Default no-op implementation of IEditorProvider used when no UI layer is present.
+            Unlike DefaultAlertProvider's auto-accept, there is no text to hand back without
+            a real UI, so this always returns a cancelled result rather than fabricate an edit.
+            Replace by injecting a real implementation from the UI project.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefaultEditorProvider.ShowEditorAsync(TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition,System.String,System.Threading.CancellationToken)">
+            <summary>Reports that no editor UI is available, without fabricating a result.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar">
             <summary>
             Turns the design-time blocks declared on a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.FormDefinition"/>
@@ -24427,6 +24463,9 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.SetItemLOV(System.String,System.String,System.String)">
             <inheritdoc />
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.SetItemEditor(System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.SetItemFormatMask(System.String,System.String,System.String)">
             <inheritdoc />
         </member>
@@ -24461,6 +24500,9 @@
             <inheritdoc />
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.GetItemLOV(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.GetItemEditor(System.String,System.String)">
             <inheritdoc />
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.GetItemFormatMask(System.String,System.String)">

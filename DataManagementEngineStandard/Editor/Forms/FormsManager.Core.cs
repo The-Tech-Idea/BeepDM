@@ -60,6 +60,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly IBlockFactory _blockFactory;
         private readonly IBlockPropertyManager _blockPropertyManager;
         private readonly IAlertProvider _alertProvider;
+        private readonly IEditorProvider _editorProvider;
         private readonly ISequenceProvider _sequenceProvider;
         private readonly ITimerManager _timerManager;
 
@@ -124,6 +125,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             IBlockFactory blockFactory = null,
             IBlockPropertyManager blockPropertyManager = null,
             IAlertProvider alertProvider = null,
+            IEditorProvider editorProvider = null,
             ISequenceProvider sequenceProvider = null,
             ITimerManager timerManager = null,
             IFormRegistry formRegistry = null,
@@ -161,6 +163,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _blockFactory = blockFactory ?? new BlockFactory(_dmeEditor);
             _blockPropertyManager = blockPropertyManager ?? new Forms.Helpers.BlockPropertyManager(_blocks);
             _alertProvider = alertProvider ?? new Forms.Helpers.DefaultAlertProvider();
+            _editorProvider = editorProvider ?? new Forms.Helpers.DefaultEditorProvider();
             _sequenceProvider = sequenceProvider ?? new Forms.Helpers.SequenceProvider();
             _timerManager = timerManager ?? new Forms.Helpers.TimerManager();
             _timerManager.TimerFired += OnTimerManagerFired;

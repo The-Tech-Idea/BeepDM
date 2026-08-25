@@ -107,6 +107,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Gets the alert provider for SHOW_ALERT-style dialogs</summary>
         public IAlertProvider AlertProvider => _alertProvider;
 
+        /// <summary>Gets the editor provider for EDIT_TEXTITEM-style large-text popups.</summary>
+        public IEditorProvider EditorProvider => _editorProvider;
+
         /// <summary>Gets the sequence provider for auto-increment sequences</summary>
         public ISequenceProvider Sequences => _sequenceProvider;
 

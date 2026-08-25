@@ -81,6 +81,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         public string LOVName { get; set; }
 
         /// <summary>
+        /// Oracle Forms: EDITOR_NAME - Attached Editor object (large-text popup, EDIT_TEXTITEM).
+        /// Null means the item uses the system default editor rather than a named one.
+        /// </summary>
+        public string EditorName { get; set; }
+
+        /// <summary>
         /// Oracle Forms: "Copy Value from Item" — "BlockName.ItemName" of the
         /// item this one copies its value from when a new record is created.
         /// Null = not authored. Applied by
@@ -279,6 +285,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
                 PromptText = PromptText,
                 HintText = HintText,
                 LOVName = LOVName,
+                EditorName = EditorName,
                 CopyValueFromItem = CopyValueFromItem,
                 MaxLength = MaxLength,
                 FormatMask = FormatMask,

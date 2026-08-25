@@ -1876,4 +1876,141 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region Named Editor Registry (Oracle Forms EDITOR object) (2026-08-25)
+    //
+    // Neither the definition nor the invocation existed anywhere before this
+    // — the only prior "Editor" hit in the model layer was
+    // BlockFieldDefinition/BlockEntityDefinition.EditorKey, an unrelated
+    // control-selection string for the platform field-presenter registry.
+    // These tests cover the new registry and prove ShowEditorAsync actually
+    // writes a committed edit onto the block's current record, and leaves
+    // an existing value alone on cancel.
+
+    [Fact]
+    public void CreateEditor_ThenGetEditor_RoundTripsAllFields()
+    {
+        var created = _manager.CreateEditor("Notes", "Edit Notes", 600, 400, wrapText: false, showScrollBar: false);
+
+        var fetched = _manager.GetEditor("Notes");
+
+        Assert.Same(created, fetched);
+        Assert.Equal("Notes", fetched.Name);
+        Assert.Equal("Edit Notes", fetched.Title);
+        Assert.Equal(600, fetched.Width);
+        Assert.Equal(400, fetched.Height);
+        Assert.False(fetched.WrapText);
+        Assert.False(fetched.ShowScrollBar);
+        Assert.True(_manager.EditorExists("Notes"));
+    }
+
+    [Fact]
+    public void GetEditor_UnknownName_ReturnsNull()
+    {
+        Assert.Null(_manager.GetEditor("DoesNotExist"));
+        Assert.False(_manager.EditorExists("DoesNotExist"));
+    }
+
+    [Fact]
+    public void RemoveEditor_ExistingEditor_RemovesItAndReturnsTrue()
+    {
+        _manager.CreateEditor("E1");
+
+        var removed = _manager.RemoveEditor("E1");
+
+        Assert.True(removed);
+        Assert.False(_manager.EditorExists("E1"));
+    }
+
+    [Fact]
+    public void ClearAllEditors_RemovesEveryRegisteredEditor()
+    {
+        _manager.CreateEditor("E1");
+        _manager.CreateEditor("E2");
+
+        _manager.ClearAllEditors();
+
+        Assert.Empty(_manager.GetAllEditors());
+    }
+
+    [Fact]
+    public async Task ShowEditorAsync_NoCurrentRecord_ReturnsCancelWithoutCallingProvider()
+    {
+        var mockProvider = new Mock<IEditorProvider>();
+        using var manager = new FormsManager(_mockEditor.Object, editorProvider: mockProvider.Object);
+        var entity = CreateEntity("DOC", ("Notes", "string"));
+        var uow = CreateUowMock(0, currentItem: null);
+        manager.RegisterBlock("DOC", uow.Object, entity);
+
+        var result = await manager.ShowEditorAsync("DOC", "Notes").ConfigureAwait(false);
+
+        Assert.False(result.Committed);
+        mockProvider.Verify(p => p.ShowEditorAsync(
+            It.IsAny<EditorDefinition>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ShowEditorAsync_Committed_WritesValueOntoCurrentRecord()
+    {
+        var mockProvider = new Mock<IEditorProvider>();
+        mockProvider
+            .Setup(p => p.ShowEditorAsync(It.IsAny<EditorDefinition>(), "old text", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(EditorResult.Ok("new, larger, edited text"));
+        using var manager = new FormsManager(_mockEditor.Object, editorProvider: mockProvider.Object);
+        var entity = CreateEntity("DOC", ("Notes", "string"));
+        var record = new Dictionary<string, object> { ["Notes"] = "old text" };
+        var uow = CreateUowMock(1, currentItem: record);
+        manager.RegisterBlock("DOC", uow.Object, entity);
+
+        var result = await manager.ShowEditorAsync("DOC", "Notes").ConfigureAwait(false);
+
+        Assert.True(result.Committed);
+        Assert.Equal("new, larger, edited text", record["Notes"]);
+    }
+
+    [Fact]
+    public async Task ShowEditorAsync_Cancelled_LeavesCurrentRecordUnchanged()
+    {
+        var mockProvider = new Mock<IEditorProvider>();
+        mockProvider
+            .Setup(p => p.ShowEditorAsync(It.IsAny<EditorDefinition>(), "old text", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(EditorResult.Cancel());
+        using var manager = new FormsManager(_mockEditor.Object, editorProvider: mockProvider.Object);
+        var entity = CreateEntity("DOC", ("Notes", "string"));
+        var record = new Dictionary<string, object> { ["Notes"] = "old text" };
+        var uow = CreateUowMock(1, currentItem: record);
+        manager.RegisterBlock("DOC", uow.Object, entity);
+
+        var result = await manager.ShowEditorAsync("DOC", "Notes").ConfigureAwait(false);
+
+        Assert.False(result.Committed);
+        Assert.Equal("old text", record["Notes"]);
+    }
+
+    [Fact]
+    public async Task ShowEditorAsync_ItemHasNamedEditorAttached_UsesAttachedDefinitionNotSystemDefault()
+    {
+        var mockProvider = new Mock<IEditorProvider>();
+        EditorDefinition capturedEditor = null;
+        mockProvider
+            .Setup(p => p.ShowEditorAsync(It.IsAny<EditorDefinition>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<EditorDefinition, string, CancellationToken>((ed, _, _) => capturedEditor = ed)
+            .ReturnsAsync(EditorResult.Cancel());
+        using var manager = new FormsManager(_mockEditor.Object, editorProvider: mockProvider.Object);
+        var entity = CreateEntity("DOC", ("Notes", "string"));
+        var record = new Dictionary<string, object> { ["Notes"] = "old text" };
+        var uow = CreateUowMock(1, currentItem: record);
+        manager.RegisterBlock("DOC", uow.Object, entity);
+        manager.CreateEditor("BigNotesEditor", "Big Notes", 800, 600);
+        manager.ItemProperties.RegisterItem("DOC", "Notes", new ItemInfo { ItemName = "Notes", BlockName = "DOC", EditorName = "BigNotesEditor" });
+
+        await manager.ShowEditorAsync("DOC", "Notes").ConfigureAwait(false);
+
+        Assert.NotNull(capturedEditor);
+        Assert.Equal("BigNotesEditor", capturedEditor.Name);
+        Assert.Equal("Big Notes", capturedEditor.Title);
+    }
+
+    #endregion
 }

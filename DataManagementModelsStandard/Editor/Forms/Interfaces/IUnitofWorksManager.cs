@@ -131,6 +131,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the alert provider for SHOW_ALERT-style dialogs.</summary>
         IAlertProvider AlertProvider { get; }
 
+        /// <summary>Gets the editor provider for EDIT_TEXTITEM-style large-text popups.</summary>
+        IEditorProvider EditorProvider { get; }
+
         /// <summary>Gets the engine-owned named sequence provider.</summary>
         ISequenceProvider Sequences { get; }
 
@@ -566,6 +569,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void ClearAllAlerts();
         bool AlertExists(string name);
         Task<AlertResult> ShowAlertByNameAsync(string name, CancellationToken ct = default);
+
+        // ── Named Editor Registry (Oracle Forms EDITOR object) ─────────
+        EditorDefinition CreateEditor(
+            string name, string title = "Edit Text",
+            int width = 480, int height = 320,
+            bool wrapText = true, bool showScrollBar = true);
+        EditorDefinition GetEditor(string name);
+        IReadOnlyList<EditorDefinition> GetAllEditors();
+        bool RemoveEditor(string name);
+        void ClearAllEditors();
+        bool EditorExists(string name);
+
+        /// <summary>
+        /// Shows the large-text editor popup for an item (Oracle Forms:
+        /// EDIT_TEXTITEM), using the item's attached Editor (ItemInfo.EditorName)
+        /// or the system default when none is attached. On commit, writes the
+        /// edited value onto the block's current record.
+        /// </summary>
+        Task<EditorResult> ShowEditorAsync(string blockName, string itemName, CancellationToken ct = default);
 
         // ── Client Info (G1.6/G1.7) ────────────────────────────────────
         ClientInfo ClientInfo { get; set; }

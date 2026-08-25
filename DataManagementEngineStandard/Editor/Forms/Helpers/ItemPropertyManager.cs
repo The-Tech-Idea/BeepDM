@@ -389,7 +389,21 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 RaiseItemPropertyChanged(blockName, itemName, nameof(ItemInfo.LOVName), oldValue, lovName);
             }
         }
-        
+
+        /// <inheritdoc />
+        public void SetItemEditor(string blockName, string itemName, string editorName)
+        {
+            var item = GetItem(blockName, itemName);
+            if (item == null) return;
+
+            var oldValue = item.EditorName;
+            if (!string.Equals(oldValue, editorName, StringComparison.OrdinalIgnoreCase))
+            {
+                item.EditorName = editorName;
+                RaiseItemPropertyChanged(blockName, itemName, nameof(ItemInfo.EditorName), oldValue, editorName);
+            }
+        }
+
         /// <inheritdoc />
         public void SetItemFormatMask(string blockName, string itemName, string formatMask)
         {
@@ -505,7 +519,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             var item = GetItem(blockName, itemName);
             return item?.LOVName;
         }
-        
+
+        /// <inheritdoc />
+        public string GetItemEditor(string blockName, string itemName)
+        {
+            var item = GetItem(blockName, itemName);
+            return item?.EditorName;
+        }
+
         /// <inheritdoc />
         public string GetItemFormatMask(string blockName, string itemName)
         {

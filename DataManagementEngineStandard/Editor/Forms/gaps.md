@@ -643,6 +643,78 @@ existed. Six new regression tests in `FormsManagerTests.cs`; the "renders throug
 the definition's own fields" test proven via revert (reverting `ShowAlertByNameAsync` to a hardcoded
 `AlertResult.None` failed exactly that test, and only that test, as expected).
 
+### G0.32: Editor object (large-text popup, EDIT_TEXTITEM) did not exist at all — no model, no
+provider abstraction, no runtime UI in either host (FIXED 2026-08-25)
+
+**What:** Oracle Forms' Editor object is a named, reusable large-text popup a text item's
+`EDITOR_NAME` property attaches to, invoked via the `EDIT_TEXTITEM` built-in. Nothing in this
+engine or either runtime UI project (`TheTechIdea.Beep.Forms.WinForms`, `.Wpf`) implemented any part
+of it — the only pre-existing "Editor" hit anywhere in the model layer was
+`BlockDefinition`'s `EditorKey` (on `BlockEntityDefinition`/`BlockFieldDefinition`), an unrelated
+control-selection string the platform field-presenter registry uses to pick which WinForms/WPF
+control to instantiate for a field. Genuinely a from-scratch capability, not a name mismatch or a
+missing wire-up of something already there.
+
+**Fix, following the same shape as the Alert Provider/Registry split (`IAlertProvider` +
+`IAlertRegistry`, G0.31) and the LOV attachment pattern (`ItemInfo.LOVName` +
+`SetItemLOV`/`GetItemLOV`):**
+- `EditorDefinition`/`EditorResult` (new file `EditorModels.cs`) — a named popup definition
+  (Title, Width, Height, WrapText, ShowScrollBar) and the outcome of showing one
+  (Committed + edited Value). `EditorDefinition.SystemDefault()` is what `EDIT_TEXTITEM` uses for
+  an item with no Editor object attached, matching Oracle's own EDIT_TEXTITEM (works with or
+  without a named Editor).
+- `IEditorProvider` (new, in `IProviders.cs` next to `IAlertProvider`) — the pluggable UI
+  abstraction; `DefaultEditorProvider` is the engine-side fallback and, unlike
+  `DefaultAlertProvider`'s auto-accept, always returns Cancel rather than fabricate an edit with no
+  real UI behind it (there is no meaningful "OK" for a text edit nothing can actually show).
+- `IEditorRegistry` (new file `IEditorRegistry.cs`) — `CreateEditor`/`GetEditor`/`GetAllEditors`/
+  `RemoveEditor`/`ClearAllEditors`/`EditorExists`, implemented in new file `FormsManager.Editor.cs`
+  the same shape as `IAlertRegistry`.
+- `ItemInfo.EditorName` (mirrors `LOVName`) plus `SetItemEditor`/`GetItemEditor` on
+  `IItemPropertyManager`/`ItemPropertyManager` — also added to `ItemInfo.Clone()`, which silently
+  drops any property not explicitly copied there.
+- `FormsManager.ShowEditorAsync(blockName, itemName, ct)` — resolves the item's attached editor (or
+  the system default), reads the current value, shows the popup, and on commit writes the edited
+  value onto `blockInfo.UnitOfWork.CurrentItem` via `SetFieldValue` — the exact same
+  reflection-based write `ShowLOVAsync` already uses to apply a selected LOV record's related field
+  values onto the current record, so the edit flows into the same commit path a normal item edit
+  uses. Does not itself fire `WHEN-VALIDATE-ITEM`: neither does Oracle's EDIT_TEXTITEM — validation
+  fires on navigation away from the item, same as any other edit, once the new value is in place.
+- Both runtime hosts: `WinFormEditorProvider` (`TheTechIdea.Beep.Forms.WinForms`) and
+  `BeepWpfEditorProvider` + `WpfEditorDialog` (`TheTechIdea.Beep.Forms.Wpf`) — real popup UI, same
+  construction/wiring pattern as the existing `WinFormAlertProvider`/`BeepWpfAlertProvider`
+  (constructor-injected owner-window provider, not auto-wired — the host application opts in the
+  same way it already does for alerts). `IBeepFormsHost` gained the full Editor Registry surface
+  plus `ShowEditorAsync`, implemented in both `WinFormFormHost` and `BeepWpfForms` — and, since this
+  pass touched that exact interface, its **Alert Registry surface from G0.31 was also backfilled**
+  there (it had been added to `IUnitofWorksManager` but not to `IBeepFormsHost`, leaving that host
+  contract incomplete relative to its own established pattern of a pass-through for every named
+  registry).
+
+**Deliberately not implemented:** a `WinFormEditorProvider`/`BeepWpfEditorProvider` "feature panel"
+(the runtime debug/inspector panels that exist for Record Groups and Parameter Lists,
+`WinFormRecordGroupPanel`/`WinFormParameterListPanel`) — the popup itself is the whole user-facing
+surface for this object; a separate inspector panel wasn't judged to add anything a form author
+needs. Also not implemented: `ItemInfo.EditorName` is not yet surfaced through any IDE authoring UI
+(no Beep.Forms.IDE dialog sets it) — that's the same "engine capability exists, IDE authoring
+doesn't yet" shape as Record Groups/Parameter Lists/Alerts themselves, still open.
+
+**Where:** `EditorModels.cs`, `IProviders.cs`, `IEditorRegistry.cs` (all new),
+`FormsManager.Editor.cs` (new), `FormsManager.Core.cs`/`.Properties.cs`, `IUnitofWorksManager.cs`,
+`ItemInfo.cs`, `ItemPropertyManager.cs`, `IValidationAndLov.cs`, `IBeepFormsHost.cs`;
+`WinFormEditorProvider.cs`, `WinFormFormHost.RuntimeObjects.cs` (WinForms);
+`WpfEditorDialog.xaml`/`.xaml.cs`, `BeepWpfEditorProvider.cs`, `BeepWpfForms.RuntimeObjects.cs`
+(WPF).
+
+**Risk of fix:** Low — purely additive across all three projects; nothing previously called any of
+this because none of it existed. Caught one real bug during testing:
+`EditorDefinition`'s constructor rejected a null `name`, which broke `SystemDefault()` (the
+system-default definition is intentionally unnamed) — fixed by moving the "name required" guard to
+the registry (`CreateEditor`), where it belongs, since the model itself has a legitimate unnamed
+state the registry does not. Ten new BeepDM regression tests in `FormsManagerTests.cs`; the
+commit-to-record write proven via revert (reverting it left the "committed" test failing while
+cancel/no-record/attached-editor tests kept passing, as expected).
+
 ---
 ## P0 — Correctness / Existing-User Impact
 

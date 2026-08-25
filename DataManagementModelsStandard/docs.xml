@@ -4202,6 +4202,14 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.ResetPaging(System.String)">
             <summary>Resets all paging state for a block to defaults.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEditorRegistry">
+            <summary>
+            Manages named, reusable Editor objects (Oracle Forms EDITOR) — the
+            large-text popup an item's EDITOR_NAME property attaches, invoked via
+            EDIT_TEXTITEM. Distinct from <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEditorProvider"/>, which
+            renders the popup; this registry only holds the named definitions.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager">
             <summary>
             Holds a form's menu (the Oracle Forms menu module, engine-side). The menu
@@ -4370,6 +4378,20 @@
             <summary>
             Display an alert dialog and return the button the user pressed.
             Corresponds to Oracle Forms SHOW_ALERT built-in.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEditorProvider">
+            <summary>
+            Pluggable UI provider for the Editor object's large-text popup.
+            Inject an implementation from the UI layer; the default no-op
+            implementation has no UI to show and always returns a cancelled result.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IEditorProvider.ShowEditorAsync(TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Display the large-text editor popup and return whether the user
+            committed (OK) or discarded (Cancel) their edit.
+            Corresponds to Oracle Forms EDIT_TEXTITEM built-in.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider">
@@ -5047,6 +5069,9 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.AlertProvider">
             <summary>Gets the alert provider for SHOW_ALERT-style dialogs.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.EditorProvider">
+            <summary>Gets the editor provider for EDIT_TEXTITEM-style large-text popups.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Sequences">
             <summary>Gets the engine-owned named sequence provider.</summary>
         </member>
@@ -5385,6 +5410,14 @@
         </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.OnFormMessage">
             <summary>Raised when the manager receives an inter-form message for this form.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ShowEditorAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Shows the large-text editor popup for an item (Oracle Forms:
+            EDIT_TEXTITEM), using the item's attached Editor (ItemInfo.EditorName)
+            or the system default when none is attached. On commit, writes the
+            edited value onto the block's current record.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ClearBlockRelationships(System.String)">
             <summary>Removes all master-detail relationships where the given block is master or detail.</summary>
@@ -5925,6 +5958,9 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.SetItemLOV(System.String,System.String,System.String)">
             <summary>Set item LOV name</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.SetItemEditor(System.String,System.String,System.String)">
+            <summary>Set item Editor name (large-text popup, EDIT_TEXTITEM)</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.SetItemFormatMask(System.String,System.String,System.String)">
             <summary>Set item format mask</summary>
         </member>
@@ -5962,6 +5998,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.GetItemLOV(System.String,System.String)">
             <summary>Get item LOV name</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.GetItemEditor(System.String,System.String)">
+            <summary>Get item Editor name (large-text popup, EDIT_TEXTITEM)</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager.GetItemFormatMask(System.String,System.String)">
             <summary>Get item format mask</summary>
@@ -6961,6 +7000,12 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.LOVName">
             <summary>
             Oracle Forms: LOV_NAME - Attached List of Values
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.EditorName">
+            <summary>
+            Oracle Forms: EDITOR_NAME - Attached Editor object (large-text popup, EDIT_TEXTITEM).
+            Null means the item uses the system default editor rather than a named one.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.CopyValueFromItem">
@@ -9651,6 +9696,66 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.LastModified">
             <summary>Timestamp of the last client-info change.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition">
+            <summary>
+            A named, reusable Editor object (Oracle Forms EDITOR) — a larger popup
+            window for editing a text item's value, invoked via EDIT_TEXTITEM.
+            Attached to an item by name (<c>ItemInfo.EditorName</c>) or used as the
+            system default when an item has none attached — Oracle Forms' own
+            EDIT_TEXTITEM works either way.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.Name">
+            <summary>Gets or sets the editor's unique name, or null for the system default.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.Title">
+            <summary>Gets or sets the popup's title bar text.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.Width">
+            <summary>Gets or sets the popup's width in device-independent pixels.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.Height">
+            <summary>Gets or sets the popup's height in device-independent pixels.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.WrapText">
+            <summary>Gets or sets whether text wraps at the edit area's width (Oracle Forms WRAP_STYLE = Word) rather than only at explicit line breaks.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.ShowScrollBar">
+            <summary>Gets or sets whether a scroll bar is shown for content taller than the edit area.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.CreatedAt">
+            <summary>Gets or sets when this editor definition was created.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.#ctor(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Boolean)">
+            <summary>
+            Null <paramref name="name"/> is valid and intentional here (unlike
+            e.g. AlertDefinition, every EditorDefinition is not necessarily a
+            named registry entry) — it's what <see cref="M:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.SystemDefault"/> uses
+            for an item with no Editor object attached. The registry
+            (FormsManager.CreateEditor) is what rejects a null/empty name for
+            an entry actually being stored.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition.SystemDefault">
+            <summary>
+            The definition EDIT_TEXTITEM uses for an item with no Editor
+            object explicitly attached — a fresh instance each call so no
+            caller can mutate the shared "system default" by editing what it
+            got back.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.EditorResult">
+            <summary>
+            The outcome of showing an Editor popup — whether the user committed
+            (OK) or discarded (Cancel) their edit, and the resulting text.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorResult.Committed">
+            <summary>Gets or sets whether the user committed the edit (OK) rather than cancelling.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorResult.Value">
+            <summary>Gets or sets the edited text. Only meaningful when <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.EditorResult.Committed"/> is true.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormHostPlatform">
             <summary>

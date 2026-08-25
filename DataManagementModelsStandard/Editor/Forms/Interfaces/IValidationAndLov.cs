@@ -613,6 +613,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         
         /// <summary>Set item LOV name</summary>
         void SetItemLOV(string blockName, string itemName, string lovName);
+
+        /// <summary>Set item Editor name (large-text popup, EDIT_TEXTITEM)</summary>
+        void SetItemEditor(string blockName, string itemName, string editorName);
         
         /// <summary>Set item format mask</summary>
         void SetItemFormatMask(string blockName, string itemName, string formatMask);
@@ -655,6 +658,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         
         /// <summary>Get item LOV name</summary>
         string GetItemLOV(string blockName, string itemName);
+
+        /// <summary>Get item Editor name (large-text popup, EDIT_TEXTITEM)</summary>
+        string GetItemEditor(string blockName, string itemName);
         
         /// <summary>Get item format mask</summary>
         string GetItemFormatMask(string blockName, string itemName);

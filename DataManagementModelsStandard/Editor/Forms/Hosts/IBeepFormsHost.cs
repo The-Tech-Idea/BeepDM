@@ -265,6 +265,26 @@ public interface IBeepFormsHost
     bool RemoveParameter(string listName, string parameterName);
     IReadOnlyList<ParameterList> GetParameterLists();
     void ClearParameterList(string listName);
+    AlertDefinition CreateAlert(
+        string name, string title, string message,
+        AlertStyle style = AlertStyle.None,
+        string button1Text = "OK", string? button2Text = null, string? button3Text = null);
+    AlertDefinition? GetAlert(string name);
+    IReadOnlyList<AlertDefinition> GetAllAlerts();
+    bool RemoveAlert(string name);
+    void ClearAllAlerts();
+    bool AlertExists(string name);
+    Task<AlertResult> ShowAlertByNameAsync(string name, CancellationToken ct = default);
+    EditorDefinition CreateEditor(
+        string name, string title = "Edit Text",
+        int width = 480, int height = 320,
+        bool wrapText = true, bool showScrollBar = true);
+    EditorDefinition? GetEditor(string name);
+    IReadOnlyList<EditorDefinition> GetAllEditors();
+    bool RemoveEditor(string name);
+    void ClearAllEditors();
+    bool EditorExists(string name);
+    Task<EditorResult> ShowEditorAsync(string blockName, string itemName, CancellationToken ct = default);
 
     // ── Multi-form ────────────────────────────────────────────────────────────
     Task<bool> CallFormAsync(

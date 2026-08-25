@@ -39,6 +39,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
     #endregion
 
+    #region Editor Provider Interface
+
+    /// <summary>
+    /// Pluggable UI provider for the Editor object's large-text popup.
+    /// Inject an implementation from the UI layer; the default no-op
+    /// implementation has no UI to show and always returns a cancelled result.
+    /// </summary>
+    public interface IEditorProvider
+    {
+        /// <summary>
+        /// Display the large-text editor popup and return whether the user
+        /// committed (OK) or discarded (Cancel) their edit.
+        /// Corresponds to Oracle Forms EDIT_TEXTITEM built-in.
+        /// </summary>
+        Task<Forms.Models.EditorResult> ShowEditorAsync(
+            Forms.Models.EditorDefinition editor,
+            string currentValue,
+            CancellationToken ct = default);
+    }
+
+    #endregion
+
     #region Sequence Provider Interface
 
     /// <summary>
