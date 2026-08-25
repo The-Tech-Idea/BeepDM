@@ -9208,7 +9208,29 @@
             <summary>Variable name this definition was declared as in generated source.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.QueryString">
-            <summary>Optional WHERE clause applied when the block queries.</summary>
+            <summary>
+            Optional WHERE clause applied when the block queries (Oracle Forms
+            DEFAULT_WHERE) — merged into every query the block runs, in addition to
+            whatever the user's own query-by-example criteria supply.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.QueryAllowed">
+            <summary>
+            Oracle Forms QUERY_ALLOWED / INSERT_ALLOWED / UPDATE_ALLOWED /
+            DELETE_ALLOWED block properties. Null means "not authored" — the
+            engine's own default (true) applies, same nullable-tri-state
+            convention as <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.QueryAllowed"/> and its
+            siblings.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.InsertAllowed">
+            <summary>See <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.QueryAllowed"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.UpdateAllowed">
+            <summary>See <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.QueryAllowed"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.DeleteAllowed">
+            <summary>See <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.QueryAllowed"/>.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition.RuntimeKind">
             <summary>How the block is realised at runtime.</summary>

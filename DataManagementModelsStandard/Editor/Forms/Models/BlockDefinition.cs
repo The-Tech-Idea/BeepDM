@@ -64,8 +64,30 @@ public class BlockDefinition
     /// <summary>Variable name this definition was declared as in generated source.</summary>
     public string DefinitionVariableName { get; set; }
 
-    /// <summary>Optional WHERE clause applied when the block queries.</summary>
+    /// <summary>
+    /// Optional WHERE clause applied when the block queries (Oracle Forms
+    /// DEFAULT_WHERE) — merged into every query the block runs, in addition to
+    /// whatever the user's own query-by-example criteria supply.
+    /// </summary>
     public string QueryString { get; set; }
+
+    /// <summary>
+    /// Oracle Forms QUERY_ALLOWED / INSERT_ALLOWED / UPDATE_ALLOWED /
+    /// DELETE_ALLOWED block properties. Null means "not authored" — the
+    /// engine's own default (true) applies, same nullable-tri-state
+    /// convention as <see cref="BlockFieldDefinition.QueryAllowed"/> and its
+    /// siblings.
+    /// </summary>
+    public bool? QueryAllowed { get; set; }
+
+    /// <summary>See <see cref="QueryAllowed"/>.</summary>
+    public bool? InsertAllowed { get; set; }
+
+    /// <summary>See <see cref="QueryAllowed"/>.</summary>
+    public bool? UpdateAllowed { get; set; }
+
+    /// <summary>See <see cref="QueryAllowed"/>.</summary>
+    public bool? DeleteAllowed { get; set; }
 
     /// <summary>How the block is realised at runtime.</summary>
     public ScannedBlockRuntimeKind RuntimeKind { get; set; }

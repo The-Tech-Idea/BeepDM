@@ -216,8 +216,41 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 block.EntityDefinition != null && block.EntityDefinition.IsMasterBlock);
 
             ApplyAuthoredFieldProperties(manager, block);
+            ApplyAuthoredBlockProperties(manager, block);
 
             return true;
+        }
+
+        /// <summary>
+        /// Overlays the block-level Insert/Update/Delete/Query-Allowed flags and
+        /// the default WHERE clause the designer authored onto the block
+        /// <c>RegisterBlock</c> just created.
+        /// </summary>
+        /// <remarks>
+        /// <c>BlockDefinition.QueryString</c>/<c>InsertAllowed</c>/<c>UpdateAllowed</c>/
+        /// <c>DeleteAllowed</c>/<c>QueryAllowed</c> had no consumer anywhere in the
+        /// engine before this — <c>QueryString</c> in particular had carried its
+        /// "applied when the block queries" doc comment with zero code behind it.
+        /// <c>manager.BlockProperties</c> (exposed on <c>IUnitofWorksManager</c> as
+        /// of G0.33, the same day) is the one existing mechanism that already
+        /// applies these onto a live block's <c>DataBlockInfo</c> — this is its
+        /// first real caller. (2026-08-25)
+        /// </remarks>
+        private static void ApplyAuthoredBlockProperties(IUnitofWorksManager manager, BlockDefinition block)
+        {
+            var properties = manager.BlockProperties;
+            if (properties == null) return;
+
+            if (block.QueryAllowed.HasValue)
+                properties.SetBlockProperty(block.BlockName, BlockProperty.QueryAllowed, block.QueryAllowed.Value);
+            if (block.InsertAllowed.HasValue)
+                properties.SetBlockProperty(block.BlockName, BlockProperty.InsertAllowed, block.InsertAllowed.Value);
+            if (block.UpdateAllowed.HasValue)
+                properties.SetBlockProperty(block.BlockName, BlockProperty.UpdateAllowed, block.UpdateAllowed.Value);
+            if (block.DeleteAllowed.HasValue)
+                properties.SetBlockProperty(block.BlockName, BlockProperty.DeleteAllowed, block.DeleteAllowed.Value);
+            if (!string.IsNullOrWhiteSpace(block.QueryString))
+                properties.SetBlockProperty(block.BlockName, BlockProperty.DefaultWhere, block.QueryString);
         }
 
         /// <summary>

@@ -752,6 +752,45 @@ extending the existing `ManagerContract_ExposesEngineOwnedRuntimeProviders` (whi
 `Timers`/`Sequences` the same way) plus a new `FormsHost_ExposesBlockPropertyBuiltins`; proven via
 revert (removing the interface property failed the extended test, as expected).
 
+### G0.34: Designer-authored block-level QUERY_ALLOWED/INSERT_ALLOWED/UPDATE_ALLOWED/DELETE_ALLOWED
+and DEFAULT_WHERE never reached the live block (FIXED 2026-08-25)
+
+**What:** `BlockPropertyManager` (G0.33, same day) and the gating checks it backs are real and
+wired — `FormsManager.BasicDataOps.cs` refuses a delete when `blockInfo.DeleteAllowed` is false,
+refuses a query when `block.QueryAllowed` is false and merges `block.DefaultWhereClause` into every
+query; `FormsManager.EnhancedOperations.cs` gates insert/update the same way. But
+`DefinitionBlockRegistrar` — the one place a design-time `BlockDefinition` becomes a live block —
+never called any of it: grepping `DefinitionBlockRegistrar.cs` for `QueryAllowed`/`InsertAllowed`/
+`UpdateAllowed`/`DeleteAllowed`/`DefaultWhereClause` returned nothing. There was also no way to author
+any of this in the first place — `BlockDefinition` had no `QueryAllowed`/`InsertAllowed`/
+`UpdateAllowed`/`DeleteAllowed` properties at all, and its existing `QueryString` property (doc
+comment: "Optional WHERE clause applied when the block queries") had **zero consumers anywhere** —
+grepping the whole engine for `.QueryString` outside `BlockDefinition` itself found only two
+unrelated local variables of the same name in the legacy `Report` module. So this was a gap at both
+ends: nothing to author, and nothing that would have read it if there had been.
+
+**Fix:** Added `bool? QueryAllowed`/`InsertAllowed`/`UpdateAllowed`/`DeleteAllowed` to
+`BlockDefinition` (null = not authored, same nullable-tri-state convention as
+`BlockFieldDefinition`'s per-field cluster) and reused the existing `QueryString` property for
+DEFAULT_WHERE rather than adding a second one. `DefinitionBlockRegistrar.TryRegister` now calls a new
+`ApplyAuthoredBlockProperties(manager, block)` right after `RegisterBlock`, which maps each authored
+value onto the live block through `manager.BlockProperties.SetBlockProperty(...)` — the first real
+caller of the `IUnitofWorksManager.BlockProperties` surface G0.33 exposed the same day. IDE-side
+authoring (emitter, read-back, `BlockMetadataEditorDialog` UI) lands in the same Beep.Forms commit.
+
+**Where:** `BlockDefinition.cs` (new properties, `QueryString` doc comment corrected),
+`DefinitionBlockRegistrar.cs` (`ApplyAuthoredBlockProperties`, new).
+
+**Risk of fix:** Low — purely additive, and every new call is conditional on the property actually
+being authored (`HasValue`/non-blank), so a block that sets none of this behaves exactly as before.
+**Known gap, not hidden:** `ApplyAuthoredBlockProperties` has no direct unit test — `TryRegister`
+needs a live `IDataSource`/`IDMEEditor` chain to reach it (entity structure resolution, row-type
+generation, `UnitOfWorkFactory.CreateUnitOfWork`), and its sibling `ApplyAuthoredFieldProperties`
+(G0.23) has the same gap, unaddressed since it was added. Verified instead through
+`DesignerCompileCheck`'s emitter/read-back/Roslyn-compile round-trip (Beep.Forms) plus code review;
+building real `DefinitionBlockRegistrar`-level test infrastructure is a separate, larger piece of
+work this fix does not attempt.
+
 ---
 ## P0 — Correctness / Existing-User Impact
 
