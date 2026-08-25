@@ -10421,6 +10421,22 @@
             master-detail relation had.
             </remarks>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.EditorName">
+            <summary>
+            Name of the Editor object (Oracle Forms EDIT_TEXTITEM popup) attached to
+            this item, or empty when none is.
+            </summary>
+            <remarks>
+            Like <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.ScannedItemInfo.VisualAttributeName"/>: only the binding. The Editor
+            object itself (title/width/height/wrap/scroll) is defined once, by name,
+            through the Editor object editor, and applied per item via
+            <c>ItemProperties.SetItemEditor(block, item, editorName)</c> — a plain
+            name attachment, not a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition"/> property,
+            because <c>ItemInfo.EditorName</c> is resolved by <c>FormsManager</c> at
+            call time (<c>ShowEditorAsync</c>), not applied at block-registration
+            time the way the FormatMask/DefaultValue cluster is.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.ScannedTriggerInfo">
             <summary>Event handler (Trigger) information.</summary>
         </member>

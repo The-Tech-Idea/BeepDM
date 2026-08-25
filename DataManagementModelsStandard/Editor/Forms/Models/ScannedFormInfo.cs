@@ -198,6 +198,22 @@ public class ScannedItemInfo
     /// master-detail relation had.
     /// </remarks>
     public string VisualAttributeName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Name of the Editor object (Oracle Forms EDIT_TEXTITEM popup) attached to
+    /// this item, or empty when none is.
+    /// </summary>
+    /// <remarks>
+    /// Like <see cref="VisualAttributeName"/>: only the binding. The Editor
+    /// object itself (title/width/height/wrap/scroll) is defined once, by name,
+    /// through the Editor object editor, and applied per item via
+    /// <c>ItemProperties.SetItemEditor(block, item, editorName)</c> — a plain
+    /// name attachment, not a <see cref="BlockFieldDefinition"/> property,
+    /// because <c>ItemInfo.EditorName</c> is resolved by <c>FormsManager</c> at
+    /// call time (<c>ShowEditorAsync</c>), not applied at block-registration
+    /// time the way the FormatMask/DefaultValue cluster is.
+    /// </remarks>
+    public string EditorName { get; set; } = string.Empty;
 }
 
 /// <summary>Event handler (Trigger) information.</summary>
