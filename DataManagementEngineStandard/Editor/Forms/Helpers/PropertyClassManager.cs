@@ -90,6 +90,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             // field that authors neither is a no-op.
             item.Enabled = fieldDefinition.IsEnabled;
             item.Visible = fieldDefinition.IsVisible;
+
+            // Width, like Label, has no PropertyClass member and no
+            // meaningful "unauthored" value to fall back to other than 0 (=
+            // the host's own default sizing) -- BlockFieldDefinition.Width
+            // already defaults to 0 for an unauthored field, matching
+            // ItemInfo.Width's own default, so this is a direct, always-safe
+            // overlay rather than a conditional one.
+            if (fieldDefinition.Width > 0)
+                item.Width = fieldDefinition.Width;
         }
     }
 }

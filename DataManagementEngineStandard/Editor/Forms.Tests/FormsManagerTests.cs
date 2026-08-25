@@ -1145,6 +1145,35 @@ public class FormsManagerTests : IDisposable
     }
 
     [Fact]
+    public void PropertyClassApplyToItem_Width_OverlaysItemWidthDirectlyFromField()
+    {
+        // BlockFieldDefinition.Width has had a full IDE authoring surface
+        // (emit/read-back) since it was added, but neither runtime host ever
+        // sized a control from it -- ItemInfo had no Width property at all
+        // to carry the value across. Like Label, PropertyClass has no Width
+        // member, so this applies directly from the field.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", Width = 0 };
+        var field = new BlockFieldDefinition { FieldName = "OrderId", Width = 220 };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.Equal(220, item.Width);
+    }
+
+    [Fact]
+    public void PropertyClassApplyToItem_NoAuthoredWidth_KeepsExistingWidth()
+    {
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "OrderId", Width = 0 };
+        var field = new BlockFieldDefinition { FieldName = "OrderId" };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.Equal(0, item.Width);
+    }
+
+    [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
         var entity = CreateEntity("ORD", ("Name", "string"));

@@ -100,7 +100,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// Oracle Forms: MAX_LENGTH - Maximum text length
         /// </summary>
         public int MaxLength { get; set; }
-        
+
+        /// <summary>
+        /// Display width of the generated control, in pixels. 0 = the host's
+        /// own default sizing (no authored width). Overlaid from
+        /// <c>BlockFieldDefinition.Width</c> by
+        /// <c>PropertyClassManager.ApplyToItem</c>.
+        /// </summary>
+        public int Width { get; set; }
+
         /// <summary>
         /// Oracle Forms: FORMAT_MASK - Display format (e.g., "MM/DD/YYYY", "#,##0.00")
         /// </summary>
@@ -288,6 +296,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
                 EditorName = EditorName,
                 CopyValueFromItem = CopyValueFromItem,
                 MaxLength = MaxLength,
+                Width = Width,
                 FormatMask = FormatMask,
                 ValidationFormula = ValidationFormula,
                 ValidationRuleNames = new List<string>(ValidationRuleNames),

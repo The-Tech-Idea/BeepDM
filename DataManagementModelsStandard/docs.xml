@@ -7047,6 +7047,14 @@
             Oracle Forms: MAX_LENGTH - Maximum text length
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.Width">
+            <summary>
+            Display width of the generated control, in pixels. 0 = the host's
+            own default sizing (no authored width). Overlaid from
+            <c>BlockFieldDefinition.Width</c> by
+            <c>PropertyClassManager.ApplyToItem</c>.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.FormatMask">
             <summary>
             Oracle Forms: FORMAT_MASK - Display format (e.g., "MM/DD/YYYY", "#,##0.00")

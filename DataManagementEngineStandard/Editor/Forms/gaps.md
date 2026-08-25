@@ -1076,6 +1076,56 @@ existing/default value). Two new direct unit tests,
 proven via revert (commenting out the assignment failed the first test with the predicted
 `"OrderId"` vs `"Order ID"` mismatch, full 125-test suite green before and after).
 
+### G0.38: `BlockFieldDefinition.FormatMask` reached `ItemInfo.FormatMask` but no host ever read it
+(FIXED 2026-08-25; not given its own entry at the time — added retroactively when G0.39 below
+touched this section again)
+
+**What:** `PropertyClassManager.ApplyToItem` has overlaid `fieldDefinition.FormatMask` onto
+`item.FormatMask` since G0.23, but neither runtime host's date/numeric presenters nor the grid
+column builder ever read `item.FormatMask` — an authored `"MM/DD/YYYY"` or `"999,999.99"` had no
+effect on what was displayed. The blocker was that Oracle's format-mask vocabulary is not .NET's:
+passing an authored mask straight into `DateTime.ToString` throws (uppercase `D` is not a
+recognised .NET custom date specifier) or renders wrong (Oracle's `/`/`:` are literals; .NET's
+are culture-dependent separators unless escaped).
+
+**Fix:** New `OracleFormatMaskTranslator` (`Helpers/OracleFormatMaskTranslator.cs`),
+`TryTranslateDate`/`TryTranslateNumeric`, translates the commonly-authored token subset for both
+and refuses (rather than guesses) on anything outside it (Oracle's `MI`/`PR`/`FM`/`V`/`SSSSS`/
+`IYYY`/`RN` and similar). WinForms wiring (Beep.Forms, `WinFormDateFieldPresenter`/
+`WinFormNumericFieldPresenter`.`ApplyFormatMask`, `WinFormBlockHost.GridMode.cs`) is the actual
+consumer; this repo change is the translator alone.
+
+**Where:** `Helpers/OracleFormatMaskTranslator.cs` (new).
+
+**Risk of fix:** Low, purely additive — no existing caller of anything in this file. 25 new unit
+tests (`OracleFormatMaskTranslatorTests.cs`) cover known-good masks (including a real
+`DateTime`/`decimal` round-trip through the produced format string) and confirm every unsupported
+case is refused.
+
+### G0.39: `BlockFieldDefinition.Width` never reached `ItemInfo.Width` — `ItemInfo` had no such
+property at all (FIXED 2026-08-25)
+
+**What:** Found sweeping the same `BlockFieldDefinition` properties G0.37/G0.38 came from. The IDE
+has authored, emitted, and read back `Width` (display width in pixels, 0 = auto) since the property
+was added; `ItemInfo` never had a `Width` member to carry it to either runtime host, so no control
+was ever sized from it — every field showed whatever its container's own default layout produced,
+authored width or not.
+
+**Fix:** New `ItemInfo.Width` (`int`, 0 = auto), wired into `Clone()`; `PropertyClassManager
+.ApplyToItem` overlays it directly from `fieldDefinition.Width` when authored (> 0) — like Label,
+`PropertyClass` has no `Width` member, so there is no class-fallback step. Host-side consumption
+(WinForms sizing a field's control or grid column) lands in the paired Beep.Forms commit.
+
+**Where:** `Models/ItemInfo.cs` (`Width`, `Clone()`), `Helpers/PropertyClassManager.cs`
+(`ApplyToItem`).
+
+**Risk of fix:** Low — a field that authors no `Width` is unaffected (`ItemInfo.Width` defaults to
+0, matching `BlockFieldDefinition.Width`'s own default). Two new direct unit tests
+(`PropertyClassApplyToItem_Width_OverlaysItemWidthDirectlyFromField` /
+`PropertyClassApplyToItem_NoAuthoredWidth_KeepsExistingWidth`); proven via revert (commenting out
+the assignment failed the first test with the predicted `220` vs `0` mismatch), full 152-test
+suite green before and after.
+
 ---
 ## P0 — Correctness / Existing-User Impact
 
