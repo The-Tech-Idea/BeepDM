@@ -854,9 +854,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 var recordCount = GetRecordCount(blockName);
-                
-                // Check configuration limits
-                var maxRecords = Configuration?.MaxRecordsPerBlock ?? 10000;
+
+                // Check configuration limits. A block explicitly registered in
+                // Configuration.BlockConfigurations carries its own MaxRecords
+                // (BlockConfiguration.cs: "the maximum number of records to
+                // load") -- that per-block override existed with no reader
+                // anywhere, so setting it had no effect and every block was
+                // silently governed by the manager-wide MaxRecordsPerBlock
+                // default instead. Only consulted when the block was actually
+                // registered in the dictionary (TryGetValue, not
+                // GetBlockConfiguration's own "or a fresh default" fallback) --
+                // BlockConfiguration.MaxRecords' compile-time default (1000)
+                // does not coincide with MaxRecordsPerBlock's (10000), so
+                // treating every never-configured block as if it had
+                // authored 1000 would silently tighten the limit for every
+                // existing block that never touched this API.
+                var maxRecords = Configuration?.BlockConfigurations.TryGetValue(blockName, out var blockConfig) == true
+                    ? blockConfig.MaxRecords
+                    : Configuration?.MaxRecordsPerBlock ?? 10000;
                 if (recordCount > maxRecords)
                 {
                     result.IsValid = false;
