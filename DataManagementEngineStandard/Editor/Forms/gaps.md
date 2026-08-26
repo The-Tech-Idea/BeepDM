@@ -1587,6 +1587,72 @@ never a duplicate), and a trivial null-list no-op guard — the first two proven
 Beep.Forms code change needed — both hosts were already consumers of `item.TabIndex`.
 
 ---
+
+### G0.47: Remaining `BlockFieldDefinition` properties surveyed — sweep closed, no further
+fixes found (INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Continuing the property-by-property sweep that produced G0.40/G0.41/G0.45/G0.46, every
+remaining `BlockFieldDefinition` property was checked for the same "IDE round-trips it, nothing
+reads it" shape. None of them are.
+
+**`IsCheck`/`IsUnique`/`IsIndexed` — schema-constraint metadata, not a behavioral flag.**
+`IsCheck`'s own doc comment says "Carries a check constraint" — this cluster (alongside
+`AllowDBNull`, and unlike `IsPrimaryKey`) describes what the *database* already enforces, not
+something the engine's own CRUD logic needs to act on. Confirmed by contrast with the one sibling
+that genuinely is consumed: `IsPrimaryKey` feeds `DefinitionBlockRegistrar.ApplyAuthoredKeys`,
+because a schemaless datasource (`.json`/`.csv`) cannot derive its own key and `UnitofWork`
+needs one to build WHERE clauses — a real functional need. A CHECK/UNIQUE/INDEX constraint has no
+analogous functional need at the UI layer; the database already enforces it. Zero consumers in
+either repo, and no reason to invent runtime behavior for them.
+
+**`Category` — weaker evidence than the four fixed properties; not force-fixed.** Editable
+(`BlockEntityEditorDialog.xaml`'s `CategoryName` TextBox is `TwoWay`-bound) and round-trips, but
+unlike `IsReadOnly`/`Order`, there is no already-existing, already-consumed runtime property
+sitting unfed and waiting — `FieldTypeMapper.GetCanonicalFieldType`/`ResolveCategory` (the
+engine's actual, working type-classification machinery, which both hosts' presenter registries
+and grid-mode column config already switch on) derive their answer from `DataType`/`Fieldtype`
+directly, never from the designer-authored `Category` string. Wiring this would mean *changing*
+that resolution logic to prefer an authored override, not feeding an existing pipeline — a
+larger, more speculative change than this series' other fixes, and not attempted without
+stronger evidence of an actual gap in behavior a user has hit.
+
+**`ControlType` — a likely-superseded duplicate of `EditorKey`, not a missing implementation.**
+Also editable (`BlockFieldsEditorDialog.xaml`'s `ControlType` TextBox, `TwoWay`) and round-trips
+identically to `EditorKey` (same load/save/emit shape), but both properties describe the same
+thing — "Platform control type hint" per its own doc comment — and only `EditorKey` is wired
+(`FieldTypeMapper.TryNormalizeEditorKey`, G0.41). Building a second control-selection path for
+`ControlType` would be exactly the "two owners of one fact" defect house rule 3 exists to
+prevent, not a gap to close. Left as a likely-vestigial duplicate; not deleted — a Block Fields
+editor UI change and a public model property are a bigger decision than this series' usual
+single-method removals, left for Fahad the same way `ViewStateSyncer` (G0.42) was.
+
+**`BindingProperty`/`DataSourceId`/`Description`/`Size` — schema/display metadata, same
+non-issue shape as `DataType`.** Zero consumers anywhere, no doc-comment evidence of an intended
+runtime role, and no confirmed downstream property already reading a related concept the way
+`InsertAllowed`/`UpdateAllowed`/`TabIndex` were for the fixed properties. Not chased further
+without a concrete lead.
+
+**`BlockNavigationDefinition`/`BlockNavigationCommand` — already fully wired, closed 2026-08-25,
+one day before this sweep reached it.** Both hosts' navigation bars (`WinFormBlockNavigationBar`,
+`BeepWpfBlockNavigationBar`) already consume this model; see each host's own
+`ENGINE-GAP-ANALYSIS.md` for the fix history ("Navigation bar auto-discovery", "gained its six
+missing command buttons"). Nothing to do here.
+
+**The one genuinely open item found this pass — deliberately not built, and not mine to
+settle:** `IBlockNavigationBar.BlockName` (added for the WinForms auto-discovery fix, 2026-08-25)
+has no consumer on the WPF side — `BeepWpfForms`'s own `ENGINE-GAP-ANALYSIS.md` already documents
+why: `BeepWpfForms` owns block placement as a single-active-block "content canvas," and
+"auto-discovering blocks or navigation bars the way WinForms does would mean first deciding
+whether that placement model changes to admit something dropped independently elsewhere in the
+tree, which is a design question this pass did not settle unilaterally." That reasoning still
+holds; re-litigating an architectural decision already deliberately deferred is not this sweep's
+call to make either.
+
+**This closes the `BlockFieldDefinition` property sweep this session's G0.40/G0.41/G0.45/G0.46
+passes opened.** BeepDM only (docs-only, no code change — every candidate this pass checked
+needed no fix).
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
