@@ -1743,7 +1743,7 @@ and the other eight `BlockConfiguration` properties remain as originally describ
 ### G0.49: `LOVColumn`'s per-column display config (`Width`/`Visible`/`Searchable`/`Format`/
 `Alignment`/`SortOrder`/`SortAscending`) is honored by the WPF LOV picker and not by
 `WinFormLovDialog` — real gap, needs a grid control WinForms doesn't use here yet
-(INVESTIGATED, NOT FIXED, 2026-08-26)
+(FIXED IN Beep.Forms, 2026-08-26 — see note at end of entry)
 
 **What:** Surveying `LOVDefinition`/`LOVColumn` for the same shape this session's other passes
 found. Most of `LOVDefinition`'s properties are genuinely wired — `LOVName`, `Title`,
@@ -1786,6 +1786,20 @@ already correct). `TheTechIdea.Beep.Forms.WinForms/Forms/ENGINE-GAP-ANALYSIS.md`
 ... | WinFormLovDialog | Implemented" row is accurate for LOV's core mechanics (return sentinel,
 related-field population, single-value display) but did not call out this narrower, real
 multi-column-rendering gap — corrected alongside this entry.
+
+**Fixed, same date, in Beep.Forms (not this repo) — Beep.Forms commit `2bbbae1`.** A later pass
+the same day did the control-authoring work this entry scoped out: `WinFormLovDialog.cs`'s
+`BeepListBox` is now a `BeepGridPro`, pre-populated with one `BeepColumnConfig` per visible
+authored `LOVColumn` (`FieldName`→`ColumnName`, `DisplayName`→`ColumnCaption`, `Width`, `Format`)
+before `DataSource` is set. `Alignment`/`Searchable`/`SortOrder`/`SortAscending` remain unwired —
+`Alignment` because `BeepColumnConfig.CellTextAlignment`/`HeaderTextAlignment` have `internal`
+setters in `Beep.Winform.Controls` with no `InternalsVisibleTo` grant into `Beep.Forms.WinForms` (a
+real cross-repo constraint, not an oversight), the other two because WinForms' LOV search is
+server-side (`IBeepFormsHost.LoadLovDataAsync`) unlike WPF's client-side filtering, so client-side
+re-sort was judged a separate, future gap. See
+`Beep.Forms/TheTechIdea.Beep.Forms.WinForms/Forms/ENGINE-GAP-ANALYSIS.md` for the full writeup;
+nothing in this repo (BeepDM) needed to change, since `LOVDefinition`/`LOVColumn` were already
+correctly shaped and already fully consumed by the WPF host.
 
 ---
 
