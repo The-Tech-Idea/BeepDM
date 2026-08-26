@@ -219,11 +219,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 if (recordCount > 0)
                 {
                     await FirstRecordAsync(blockName).ConfigureAwait(false);
-                    result.Message = $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode.";
                 }
-                else
+
+                // Only overwrite result.Message with the generic success text when
+                // there was nothing to warn about. Before this, the "Query executed
+                // but with warnings: ..." message set above (result.Flag stayed
+                // Warning, correctly) was unconditionally clobbered here on every
+                // path with at least one record -- so a caller reading only
+                // result.Message (the natural thing to show a user) never learned
+                // *why* the flag said Warning, for any validation warning past or
+                // future, not just the MaxRecords one this pass added a reader for.
+                if (validationResult.IsValid)
                 {
-                    result.Message = $"Query executed successfully. No records found. Block '{blockName}' in CRUD mode.";
+                    result.Message = recordCount > 0
+                        ? $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode."
+                        : $"Query executed successfully. No records found. Block '{blockName}' in CRUD mode.";
                 }
 
                 Status = result.Message;

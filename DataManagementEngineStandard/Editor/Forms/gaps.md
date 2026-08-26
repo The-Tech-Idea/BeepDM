@@ -1653,6 +1653,85 @@ passes opened.** BeepDM only (docs-only, no code change — every candidate this
 needed no fix).
 
 ---
+
+### G0.48: `BlockConfiguration.MaxRecords` (per-block) never reached
+`ValidateQueryResultsForModeTransition`, plus a warning-message-clobbering bug found proving it
+(FIXED 2026-08-26)
+
+**What:** Pivoting off the closed `BlockFieldDefinition` sweep to `Models/*.cs` more broadly,
+`BlockConfiguration` — a rich, developer-facing per-block settings object reachable via
+`Configuration.BlockConfigurations[blockName] = new BlockConfiguration{...}` — turned out to have
+**nine** properties (`EnableCaching`, `EnableValidation`, `EnableAuditTrail`, `QueryTimeout`,
+`MaxRecords`, `EnableOptimisticLocking`, `EnableBatchOperations`, `BatchSize`,
+`EnableChangeTracking`) with zero consumers anywhere in the engine, and five more (`PageSize`,
+`FetchAheadDepth`, `MaxRecordsPerFetch`, `EnableLazyLoad`, `CacheTtlMinutes`) that are write-only
+mirrors of `PagingManager`'s own, separately-consumed state (`FormsManager.SetBlockPageSize`
+writes to both `_pagingManager` — the real, read side — and `block.Configuration.PageSize`, which
+nothing reads back). `ApplyBlockConfiguration`'s own comment (`// Apply any specific
+configuration settings`) does nothing beyond the bare assignment that precedes it — a stub that
+never got filled in.
+
+Of the nine fully-dead properties, only `MaxRecords` had a genuinely tractable fix: sibling
+top-level settings on the containing `UnitofWorksManagerConfiguration` — `ValidateBeforeCommit`,
+`ConfirmBeforeClear`, `StopValidationOnFirstError`, `ClearCacheOnFormClose`, and critically
+**`MaxRecordsPerBlock`** (the manager-*wide* default) — are all genuinely wired (confirmed after
+correcting an initial grep that missed `Configuration?.` null-conditional chains, the same mistake
+the `CrossBlockValidationManager` false-positive taught this session to watch for). Since
+`Configuration?.MaxRecordsPerBlock ?? 10000` (`FormsManager.ModeTransitions.cs`) was already the
+real, live "cap query results" mechanism, the per-block `BlockConfiguration.MaxRecords` override
+sitting right next to it was the accepted-then-ignored gap — a developer who registered a tighter
+limit for one specific block via `Configuration.BlockConfigurations["Ord"]` got no effect; every
+block was silently governed by the same manager-wide default regardless.
+
+**Fix, and why it checks `TryGetValue` rather than `GetBlockConfiguration`:**
+`ValidateQueryResultsForModeTransition` now prefers the block's own `MaxRecords` when the block
+is genuinely present in `Configuration.BlockConfigurations` (`TryGetValue`), falling back to
+`MaxRecordsPerBlock ?? 10000` exactly as before for every block that never registered one.
+Deliberately not `GetBlockConfiguration(blockName)` (which returns a *fresh* `new
+BlockConfiguration()` — `MaxRecords = 1000` by its own compile-time default — for any
+unregistered block): since `1000` and `10000` do not coincide, treating "never configured" as "an
+authored 1000" would have silently *tightened* the effective limit for every block in the
+product that never touched this API, the exact self-inflicted-regression shape G0.40's
+`IsRequired` fix was written to avoid.
+
+**A second, unrelated bug found proving the first one, and fixed alongside it:**
+`ExecuteQueryAndEnterCrudModeAsync` sets `result.Message = "Query executed but with warnings:
+..."` (and correctly leaves `result.Flag = Errors.Warning`) the moment
+`ValidateQueryResultsForModeTransition` returns `IsValid = false` — then, a few lines later,
+**unconditionally overwrites `result.Message`** with the generic `"Query executed successfully.
+N records found..."` text regardless of whether a warning was just set. `Flag` correctly reports
+`Warning`, but the *reason* was silently discarded — for any validation warning this method could
+ever raise, not only the newly-wired `MaxRecords` one. First-drafted tests for the fix above
+failed on exactly this (message asserted the generic success text, not the limit detail), which
+is how it surfaced. Fixed by only reassigning `result.Message` with the generic success text when
+`validationResult.IsValid` is true; `FirstRecordAsync` still runs regardless of the warning,
+unchanged from before.
+
+**Where:** `FormsManager.ModeTransitions.cs` (`ValidateQueryResultsForModeTransition`,
+`ExecuteQueryAndEnterCrudModeAsync`).
+
+**Risk of fix:** Low. Two new tests —
+`ExecuteQueryAndEnterCrudModeAsync_RecordCountExceedsBlockSpecificMaxRecords_ReturnsWarningWithBlockLimit`
+and `..._NoBlockSpecificConfiguration_FallsBackToManagerWideMaxRecordsPerBlock` (the
+no-regression case) — each proven via revert independently: reverting the `MaxRecords` lookup
+alone failed the first test only (`Flag` came back `Ok` instead of `Warning`); reverting the
+message-preservation guard alone failed both tests identically to how they first failed before
+any fix (message asserted the clobbered generic text). Full 192-test suite green across 5
+consecutive runs before and after; full engine rebuild clean.
+
+**Not attempted in this pass, deliberately — a much larger, genuinely separate body of work:**
+the remaining eight dead `BlockConfiguration` properties (`EnableCaching` through
+`EnableChangeTracking`), the five `PagingManager`-mirroring properties, and the top-level
+`UnitofWorksManagerConfiguration.EnableLogging`/`DefaultSaveOptions`/`DefaultRollbackOptions`.
+Unlike `MaxRecords`, none of these have an already-existing, already-consumed sibling mechanism to
+redirect — `EnableValidation` would need a correctly-scoped guard added across (at least) three
+separate `_validationManager.ValidateItem`/`ValidateRecord` call sites; `QueryTimeout`/caching/
+optimistic-locking/batch-operations would each need genuinely new behavior built against
+`IUnitofWork`/`IDataSource`, which have no timeout, cache, or batch parameter today. That is real,
+separately-scoped design work, not a same-pass mechanical wire-up — left as a named, evidenced
+future work item rather than attempted piecemeal.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)

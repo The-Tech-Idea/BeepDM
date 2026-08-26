@@ -6,6 +6,7 @@ using TheTechIdea.Beep.Editor.Forms.Helpers;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOW;
 using TheTechIdea.Beep.Editor.UOWManager;
+using TheTechIdea.Beep.Editor.UOWManager.Configuration;
 using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
@@ -2619,6 +2620,58 @@ public class FormsManagerTests : IDisposable
 
         Assert.True(succeeded);
         variables.Verify(v => v.SetLastQuery(It.IsAny<string>()), Times.Never);
+    }
+
+    #endregion
+
+    #region ValidateQueryResultsForModeTransition -> per-block MaxRecords (2026-08-26)
+
+    // BlockConfiguration.MaxRecords ("the maximum number of records to load") had a full
+    // authoring path -- a developer could register it via Configuration.BlockConfigurations[block]
+    // -- but ValidateQueryResultsForModeTransition only ever checked the manager-wide
+    // Configuration.MaxRecordsPerBlock default, so a per-block override sat there with no reader.
+    // Fixed to prefer the block's own BlockConfiguration.MaxRecords when the block is actually
+    // registered in BlockConfigurations, falling back to MaxRecordsPerBlock exactly as before for
+    // any block that never configured one -- the two defaults (1000 vs 10000) do not coincide, so
+    // an unconditional overlay would have silently tightened the limit for every existing block.
+
+    [Fact]
+    public async Task ExecuteQueryAndEnterCrudModeAsync_RecordCountExceedsBlockSpecificMaxRecords_ReturnsWarningWithBlockLimit()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var units = new TheTechIdea.Beep.Editor.ObservableBindingList<TheTechIdea.Beep.Editor.Entity>(
+            new List<TheTechIdea.Beep.Editor.Entity> { new(), new(), new(), new(), new() });
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.Units).Returns(units);
+        uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        var manager = new FormsManager(_mockEditor.Object);
+        manager.Configuration.MaxRecordsPerBlock = 10000;
+        manager.Configuration.BlockConfigurations["EMP"] = new BlockConfiguration { MaxRecords = 2 };
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.ExecuteQueryAndEnterCrudModeAsync("EMP").ConfigureAwait(false);
+
+        Assert.Equal(Errors.Warning, result.Flag);
+        Assert.Contains("exceeding limit of 2", result.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteQueryAndEnterCrudModeAsync_NoBlockSpecificConfiguration_FallsBackToManagerWideMaxRecordsPerBlock()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var units = new TheTechIdea.Beep.Editor.ObservableBindingList<TheTechIdea.Beep.Editor.Entity>(
+            new List<TheTechIdea.Beep.Editor.Entity> { new(), new(), new(), new(), new() });
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.Units).Returns(units);
+        uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        var manager = new FormsManager(_mockEditor.Object);
+        manager.Configuration.MaxRecordsPerBlock = 3;
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.ExecuteQueryAndEnterCrudModeAsync("EMP").ConfigureAwait(false);
+
+        Assert.Equal(Errors.Warning, result.Flag);
+        Assert.Contains("exceeding limit of 3", result.Message);
     }
 
     #endregion
