@@ -2411,17 +2411,25 @@ than being lost in an agent transcript.
   reachable `EnterCrudModeForNewRecordAsync`; the master-block-cascade variant has no real caller.
 
 **Possible missing wiring (case b — a declared capability with no consumer, not obviously a
-duplicate of anything reachable):**
-- `SetSystemVariables` (`FormsSimulation.cs`) — its own doc comment says it was added specifically
-  because a lower-level helper had the capability and `FormsManager` didn't expose it; exposed,
-  still never called by anything.
-- `CountQueryAsync` (`BasicDataOps.cs`, test-only orphan) — Oracle Forms COUNT_QUERY equivalent,
-  sibling of the well-used `ExecuteQueryAsync`, with no UI/host hookup anywhere.
-- `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` / `ValidateAllBlocksForModeTransitionAsync`
-  (`ModeTransitions.cs`) — a mode-readiness API that only calls itself internally; no external
-  caller anywhere.
-- `CommitFormBatchAsync` / `CommitBlockBatchAsync` (`DataOperations.cs`) — a batched-commit-with-
-  progress API, referencing only each other, with zero host adoption.
+duplicate of anything reachable).** Checked each against `IUnitofWorksManager` — the interface
+both hosts hold `FormsManager` as (not the concrete class) — since that distinction changed the
+picture for `RegisterKeyTrigger` above: an interface-declared method is already reachable via
+`host.FormsManager.X(...)` for any caller who wants it (just never exercised, lower actionability);
+one that isn't interface-declared is genuinely unreachable from any host without an unsafe cast —
+the same shape `IBeepFormsHost.FireItemTriggerAsync` was in before this session fixed it, and
+correspondingly higher priority to look at next:
+  - **Interface-declared, reachable, just unused** — same standing as `RegisterKeyTrigger`, no
+    interface gap to close: `CountQueryAsync` (`BasicDataOps.cs`, test-only orphan) — Oracle Forms
+    COUNT_QUERY equivalent, sibling of the well-used `ExecuteQueryAsync`; `CommitFormBatchAsync` /
+    `CommitBlockBatchAsync` (`DataOperations.cs`) — a batched-commit-with-progress API, referencing
+    only each other.
+  - **Not declared on `IUnitofWorksManager` — genuinely unreachable from any host today, higher
+    priority:** `SetSystemVariables` (`FormsSimulation.cs`) — its own doc comment says it was added
+    specifically because a lower-level helper had the capability and `FormsManager` didn't expose
+    it; exposed on the concrete class, still not on the interface, still never called by anything.
+    `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
+    `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`) — a mode-readiness API that
+    only calls itself internally, not on the interface either.
 
 **Likely-unused feature clusters (case c — plausibly safe to leave, lowest priority to
 investigate further):**
