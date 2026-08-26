@@ -1793,13 +1793,39 @@ CRUD, navigation, validation, and schema-management capabilities that
 
 ---
 
-#### G3.2: Computed Columns (FIXED 2026-06-17)
+#### G3.2: Computed Columns (FIXED 2026-06-17; formula-string variant added 2026-08-26)
 
 **Fix:** Added `RegisterBlockComputed`, `UnregisterBlockComputed`, `GetBlockComputedValue`,
 `GetBlockComputedColumnNames`, `GetAllBlockComputedValues` to FormsManager.
 Thread-safe via `ConcurrentDictionary`. Evaluates computation against current UoW record.
 
-**Where:** `FormsManager.ExtendedOperations.cs:131-180`.
+**2026-08-26: `FieldFormulaEvaluator` (`Helpers/FieldFormulaEvaluator.cs`) — a complete infix
+formula parser for Oracle Forms' no-code `Calculation = Formula` item mode (+, -, *, / with
+parentheses and field-name references) — had zero callers anywhere in the engine.** Found during a
+sweep of `Helpers/*.cs` for the same "built, zero real callers" shape `SystemVariablesManager` had
+(G0.36). Confirmed it is a genuinely *different* capability from `RegisterBlockComputed` above, not
+a duplicate: `RegisterBlockComputed` takes a `Func<object, object>` — a delegate a *developer*
+writes in code — while `FieldFormulaEvaluator` parses a *text expression* (e.g. `"QTY * PRICE"`) a
+*form author* could type into a Formula property with no code at all, the actual Oracle Forms
+authoring experience for calculated items. New `RegisterBlockComputedFormula(blockName,
+columnName, formula)` is a thin adapter: it does not duplicate `RegisterBlockComputed`'s storage,
+lookup, or error handling, it only supplies the delegate `FieldFormulaEvaluator` needs, built from
+`RecordPropertyAccessor.GetAllReadable` (itself pre-existing, already used elsewhere for exactly
+this "record → field dictionary" job — no new record-reflection code needed either). A malformed
+formula throws inside the delegate; `GetBlockComputedValue` already catches, logs, and returns
+`null` for any computation failure, so a bad formula degrades exactly the way a throwing
+hand-written delegate always has — no new error handling needed. Two new tests
+(`RegisterBlockComputedFormula_MultiplicationFormula_EvaluatesAgainstCurrentRecord`,
+`RegisterBlockComputedFormula_MalformedFormula_ReturnsNullRatherThanThrowing`), proven via revert;
+full engine build plus `FormsManager.Tests` (178/178) green across 5 consecutive runs. This is
+engine-only: no IDE authoring surface (a `BlockFieldDefinition.Formula` property, a field-editor
+text box) exists yet for a form author to actually type a formula through the IDE — that remains
+its own, separately-scoped future piece of work; this pass only closes the "the evaluator exists
+but nothing can reach it" gap at the engine API level.
+
+**Where:** `FormsManager.ExtendedOperations.cs:131-180` (original); `RegisterBlockComputedFormula`
+added immediately after `UnregisterBlockComputed` in the same file; `Editor/Forms.Tests
+/FormsManagerTests.cs` (two new tests).
 
 ---
 

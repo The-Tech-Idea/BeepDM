@@ -21169,6 +21169,25 @@
             Applies audit defaults to a record (delegates to <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetAuditDefaults(System.Object,System.String)"/>).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlockComputedFormula(System.String,System.String,System.String)">
+            <summary>
+            Registers a computed column driven by an Oracle Forms <c>Calculation = Formula</c>
+            text expression (e.g. <c>"QTY * PRICE"</c>) instead of a hand-written delegate.
+            A thin adapter over <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlockComputed(System.String,System.String,System.Func{System.Object,System.Object})"/> — it does not duplicate that
+            method's storage, lookup, or error handling, it only supplies the
+            <see cref="T:System.Func`2"/> <see cref="T:TheTechIdea.Beep.Editor.Forms.Helpers.FieldFormulaEvaluator"/> needs.
+            </summary>
+            <remarks>
+            <see cref="T:TheTechIdea.Beep.Editor.Forms.Helpers.FieldFormulaEvaluator"/> (infix +, -, *, / with parentheses and field
+            references) existed with zero callers anywhere in the engine — a complete evaluator
+            for Oracle Forms' no-code calculated-item mode, with no path that ever reached it.
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetAllReadable(System.Object,TheTechIdea.Beep.Editor.IDMEEditor)"/> supplies the field dictionary the
+            formula resolves names against, so this needs no new record-reflection code either.
+            A malformed formula throws inside the delegate; <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetBlockComputedValue(System.String,System.String)"/>
+            already catches, logs, and returns <c>null</c> for any computation failure, so a bad
+            formula degrades the same way a throwing hand-written delegate always has.
+            </remarks>
+        </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnFormOpen">
             <summary>
             Raised before a form open operation is finalized.

@@ -2661,4 +2661,42 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region RegisterBlockComputedFormula (G3.2, continued, 2026-08-26)
+
+    // FieldFormulaEvaluator (infix +, -, *, / with parentheses and field references) existed
+    // with zero callers anywhere in the engine -- a complete Oracle Forms "Calculation = Formula"
+    // evaluator with no path that ever reached it. RegisterBlockComputedFormula is a thin adapter
+    // over the already-wired RegisterBlockComputed/GetBlockComputedValue (G3.2) machinery, so it
+    // inherits that machinery's existing error handling for free.
+
+    [Fact]
+    public void RegisterBlockComputedFormula_MultiplicationFormula_EvaluatesAgainstCurrentRecord()
+    {
+        var entity = CreateEntity("ORD", ("Qty", "int"), ("Price", "double"));
+        var uowMock = CreateUowMock(1, new { Qty = 3, Price = 9.5 });
+        _manager.RegisterBlock("ORD", uowMock.Object, entity);
+
+        _manager.RegisterBlockComputedFormula("ORD", "LineTotal", "Qty * Price");
+
+        var result = _manager.GetBlockComputedValue("ORD", "LineTotal");
+
+        Assert.Equal(28.5, result);
+    }
+
+    [Fact]
+    public void RegisterBlockComputedFormula_MalformedFormula_ReturnsNullRatherThanThrowing()
+    {
+        var entity = CreateEntity("ORD", ("Qty", "int"));
+        var uowMock = CreateUowMock(1, new { Qty = 3 });
+        _manager.RegisterBlock("ORD", uowMock.Object, entity);
+
+        _manager.RegisterBlockComputedFormula("ORD", "Broken", "Qty * (");
+
+        var result = _manager.GetBlockComputedValue("ORD", "Broken");
+
+        Assert.Null(result);
+    }
+
+    #endregion
 }

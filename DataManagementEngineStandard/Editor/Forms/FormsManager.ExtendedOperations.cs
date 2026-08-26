@@ -9,7 +9,9 @@ using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Helpers;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.Forms.Helpers;
 
 namespace TheTechIdea.Beep.Editor.UOWManager
 {
@@ -183,6 +185,34 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             if (_computedColumns.TryGetValue(blockName, out var dict))
                 dict.TryRemove(columnName, out _);
+        }
+
+        /// <summary>
+        /// Registers a computed column driven by an Oracle Forms <c>Calculation = Formula</c>
+        /// text expression (e.g. <c>"QTY * PRICE"</c>) instead of a hand-written delegate.
+        /// A thin adapter over <see cref="RegisterBlockComputed"/> — it does not duplicate that
+        /// method's storage, lookup, or error handling, it only supplies the
+        /// <see cref="Func{T, TResult}"/> <see cref="FieldFormulaEvaluator"/> needs.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="FieldFormulaEvaluator"/> (infix +, -, *, / with parentheses and field
+        /// references) existed with zero callers anywhere in the engine — a complete evaluator
+        /// for Oracle Forms' no-code calculated-item mode, with no path that ever reached it.
+        /// <see cref="RecordPropertyAccessor.GetAllReadable"/> supplies the field dictionary the
+        /// formula resolves names against, so this needs no new record-reflection code either.
+        /// A malformed formula throws inside the delegate; <see cref="GetBlockComputedValue"/>
+        /// already catches, logs, and returns <c>null</c> for any computation failure, so a bad
+        /// formula degrades the same way a throwing hand-written delegate always has.
+        /// </remarks>
+        public void RegisterBlockComputedFormula(string blockName, string columnName, string formula)
+        {
+            if (string.IsNullOrWhiteSpace(formula)) throw new ArgumentNullException(nameof(formula));
+
+            RegisterBlockComputed(blockName, columnName, record =>
+            {
+                var fields = RecordPropertyAccessor.GetAllReadable(record, _dmeEditor);
+                return new FieldFormulaEvaluator(formula, fields).Evaluate();
+            });
         }
 
         public object GetBlockComputedValue(string blockName, string columnName)
