@@ -346,6 +346,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         }
 
                         fm._systemVariablesManager?.SetFormStatus("QUERY");
+
+                        // Cross-form shared-block notification: SharedBlockManager.
+                        // NotifySharedBlockChanged / its SharedBlockChanged event existed
+                        // with no caller anywhere in the engine -- a form using
+                        // CreateSharedBlock/GetSharedBlock/TryLockSharedBlock to coordinate
+                        // a block with another form (the read/write half of the feature,
+                        // already wired) had no way to tell that other form its data just
+                        // changed (the notify half). A committed block that is ALSO a
+                        // published shared block (the same IUnitofWork instance registered
+                        // both ways) is exactly the "changes to a shared block were just
+                        // committed" moment the method's own doc comment describes.
+                        foreach (var committedBlockName in committedBlocks)
+                        {
+                            if (fm._sharedBlockManager?.SharedBlockExists(committedBlockName) == true)
+                            {
+                                fm._sharedBlockManager.NotifySharedBlockChanged(
+                                    committedBlockName, fm._currentFormName ?? "anonymous");
+                            }
+                        }
                     }
 
                     // Fire POST-COMMIT trigger on the initiating form. Same

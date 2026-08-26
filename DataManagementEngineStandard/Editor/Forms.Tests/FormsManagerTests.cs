@@ -2699,4 +2699,99 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region SharedBlockManager surface — SharedBlockExists / RemoveSharedBlock / NotifySharedBlockChanged (2026-08-26)
+
+    // SharedBlockManager's CreateSharedBlock/GetSharedBlock/TryLockSharedBlock/
+    // ReleaseSharedBlockLock were already wired through FormsManager.InterFormComm.cs.
+    // SharedBlockExists/RemoveSharedBlock existed on the concrete class and on
+    // ISharedBlockManager with no FormsManager-level wrapper at all, and
+    // NotifySharedBlockChanged existed on the concrete class only -- not even on
+    // ISharedBlockManager, despite SharedBlockChanged (the event it raises) already
+    // being part of the interface -- so no caller typed against the interface could
+    // ever raise it. CommitFormAsync is exactly the "changes to a shared block were
+    // just committed" moment NotifySharedBlockChanged's own doc comment describes;
+    // nothing called it.
+
+    [Fact]
+    public void SharedBlockExists_AfterCreateSharedBlock_ReturnsTrue()
+    {
+        var uow = CreateUowMock(0);
+
+        var created = _manager.CreateSharedBlock("SHARED_EMP", uow.Object);
+
+        Assert.True(created);
+        Assert.True(_manager.SharedBlockExists("SHARED_EMP"));
+    }
+
+    [Fact]
+    public void SharedBlockExists_UnknownBlock_ReturnsFalse()
+    {
+        Assert.False(_manager.SharedBlockExists("NO_SUCH_BLOCK"));
+    }
+
+    [Fact]
+    public void RemoveSharedBlock_RemovesIt_SharedBlockExistsThenReturnsFalse()
+    {
+        var uow = CreateUowMock(0);
+        _manager.CreateSharedBlock("SHARED_EMP", uow.Object);
+
+        var removed = _manager.RemoveSharedBlock("SHARED_EMP");
+
+        Assert.True(removed);
+        Assert.False(_manager.SharedBlockExists("SHARED_EMP"));
+    }
+
+    [Fact]
+    public void RemoveSharedBlock_UnknownBlock_ReturnsFalse()
+    {
+        Assert.False(_manager.RemoveSharedBlock("NO_SUCH_BLOCK"));
+    }
+
+    [Fact]
+    public async Task CommitFormAsync_CommittedBlockIsSharedBlock_NotifiesSharedBlockChanged()
+    {
+        var dataSource = new Mock<IDataSource>();
+        dataSource.Setup(d => d.BeginTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+        dataSource.Setup(d => d.Commit(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+
+        var entity = CreateEntity("EMP", ("Name", "string"));
+        var uow = CreateDirtyUowMock(dataSource.Object, new ErrorsInfo { Flag = Errors.Ok });
+        var sharedBlocks = new Mock<ISharedBlockManager>(MockBehavior.Loose);
+        sharedBlocks.Setup(s => s.SharedBlockExists("EMP")).Returns(true);
+        using var manager = new FormsManager(_mockEditor.Object, sharedBlockManager: sharedBlocks.Object);
+        manager.CurrentFormName = "OrderEntry";
+        manager.RegisterBlock("EMP", uow.Object, entity);
+        manager.GetBlock("EMP")!.Mode = DataBlockMode.CRUD;
+
+        var result = await manager.CommitFormAsync().ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        sharedBlocks.Verify(s => s.NotifySharedBlockChanged("EMP", "OrderEntry", It.IsAny<object>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CommitFormAsync_CommittedBlockIsNotSharedBlock_DoesNotNotify()
+    {
+        var dataSource = new Mock<IDataSource>();
+        dataSource.Setup(d => d.BeginTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+        dataSource.Setup(d => d.Commit(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+
+        var entity = CreateEntity("EMP", ("Name", "string"));
+        var uow = CreateDirtyUowMock(dataSource.Object, new ErrorsInfo { Flag = Errors.Ok });
+        var sharedBlocks = new Mock<ISharedBlockManager>(MockBehavior.Loose);
+        sharedBlocks.Setup(s => s.SharedBlockExists("EMP")).Returns(false);
+        using var manager = new FormsManager(_mockEditor.Object, sharedBlockManager: sharedBlocks.Object);
+        manager.RegisterBlock("EMP", uow.Object, entity);
+        manager.GetBlock("EMP")!.Mode = DataBlockMode.CRUD;
+
+        var result = await manager.CommitFormAsync().ConfigureAwait(false);
+
+        Assert.Equal(Errors.Ok, result.Flag);
+        sharedBlocks.Verify(
+            s => s.NotifySharedBlockChanged(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()),
+            Times.Never);
+    }
+
+    #endregion
 }

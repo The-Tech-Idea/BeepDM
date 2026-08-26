@@ -128,6 +128,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public void ReleaseSharedBlockLock(string blockName)
             => _sharedBlockManager?.ReleaseSharedBlockLock(blockName, _currentFormName ?? "anonymous");
 
+        /// <summary>Returns whether a shared block with this name has been published.</summary>
+        public bool SharedBlockExists(string blockName)
+            => _sharedBlockManager?.SharedBlockExists(blockName) == true;
+
+        /// <summary>
+        /// Unpublish a shared block, releasing any lock on it. Only the form that
+        /// coordinates its lifetime should call this — other forms may still hold a
+        /// reference to the underlying <see cref="IUnitofWork"/> obtained from an
+        /// earlier <see cref="GetSharedBlock"/>, so this does not invalidate their copy.
+        /// </summary>
+        public bool RemoveSharedBlock(string blockName)
+            => _sharedBlockManager?.RemoveSharedBlock(blockName) == true;
+
         #endregion
     }
 }

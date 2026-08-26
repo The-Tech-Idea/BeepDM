@@ -21510,6 +21510,17 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReleaseSharedBlockLock(System.String)">
             <summary>Release the write-lock this form holds on the shared block.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SharedBlockExists(System.String)">
+            <summary>Returns whether a shared block with this name has been published.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RemoveSharedBlock(System.String)">
+            <summary>
+            Unpublish a shared block, releasing any lock on it. Only the form that
+            coordinates its lifetime should call this — other forms may still hold a
+            reference to the underlying <see cref="T:TheTechIdea.Beep.Editor.IUnitofWork"/> obtained from an
+            earlier <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetSharedBlock(System.String)"/>, so this does not invalidate their copy.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterKeyTrigger(TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult})">
             <summary>
             Register a synchronous handler for a KEY-* trigger on the specified block.

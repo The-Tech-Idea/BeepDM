@@ -1382,6 +1382,62 @@ missing-caller gap of the same shape as `SystemVariablesManager`'s.
 `ViewState` property declarations are the only Beep.Forms-side reference).
 
 ---
+
+### G0.43: `SharedBlockManager.NotifySharedBlockChanged`/`SharedBlockExists`/`RemoveSharedBlock`
+had no `FormsManager`-level caller (FIXED 2026-08-26)
+
+**What:** The same Helpers-directory sweep that found G0.42 also checked
+`Helpers/SharedBlockManager.cs`. `CreateSharedBlock`/`GetSharedBlock`/`TryLockSharedBlock`/
+`ReleaseSharedBlockLock` were already wired through `FormsManager.InterFormComm.cs` — the
+read/write/lock half of Oracle Forms' cross-form shared-block coordination was live. But
+`SharedBlockExists`/`RemoveSharedBlock` had no `FormsManager` wrapper at all despite being on
+both the concrete class and `ISharedBlockManager`, and `NotifySharedBlockChanged` — the method
+that raises the `SharedBlockChanged` event `ISharedBlockManager` already declared — existed only
+on the **concrete** `SharedBlockManager` class, not the interface itself, so no caller typed
+against the interface (which is how `FormsManager` holds `_sharedBlockManager`) could ever raise
+it. A form that published a block via `CreateSharedBlock` and another form that fetched it via
+`GetSharedBlock` had no way to learn the first form committed a change to it.
+
+**Fix:**
+1. Added `void NotifySharedBlockChanged(string blockName, string changedBy, object changedRecord = null);`
+   to `ISharedBlockManager` (`IMultiForm.cs`) — `SharedBlockManager` was confirmed (grep) to be
+   the sole implementer, so no cascading breakage.
+2. Added `FormsManager.SharedBlockExists(string)` / `RemoveSharedBlock(string)` thin wrappers to
+   `FormsManager.InterFormComm.cs`, matching the existing `CreateSharedBlock`/`GetSharedBlock`
+   wrapper pattern.
+3. Wired the actual notification call into `CommitFormAsync`'s existing post-commit reset loop
+   (the same loop G0.36 added to reset `BLOCK_STATUS`/`RECORD_STATUS` to `"QUERY"`): for each
+   block just committed, if that block name is also a published shared block, call
+   `NotifySharedBlockChanged(blockName, fm._currentFormName ?? "anonymous")`. This is exactly the
+   "changes to a shared block were just committed" moment the method's own doc comment already
+   described — `CommitFormAsync` was simply never the caller.
+
+**Where:** `IMultiForm.cs` (interface addition), `FormsManager.InterFormComm.cs` (two new
+wrappers), `FormsManager.FormOperations.cs` (notify call inside `CommitFormAsync`'s per-form
+post-commit loop).
+
+**Tests:** `FormsManagerTests.cs` — `SharedBlockExists_AfterCreateSharedBlock_ReturnsTrue`,
+`SharedBlockExists_UnknownBlock_ReturnsFalse`, `RemoveSharedBlock_RemovesIt_SharedBlockExistsThenReturnsFalse`,
+`RemoveSharedBlock_UnknownBlock_ReturnsFalse`, `CommitFormAsync_CommittedBlockIsSharedBlock_NotifiesSharedBlockChanged`,
+`CommitFormAsync_CommittedBlockIsNotSharedBlock_DoesNotNotify`. Each of the wrapper/notify fixes
+was proven by temporarily reverting it and confirming its specific test fails, then restoring it.
+
+**Risk of fix:** Low. Purely additive — one new interface method (sole implementer already
+had it), two new thin wrappers, and one new conditional call inside an existing success path
+that only fires when a committed block is also a published shared block (a feature with no
+existing callers until now, so no existing behavior changes for anyone not using it).
+
+**Not done in this pass, deliberately:** `PagingManager`'s missing getter wrappers
+(`GetPageSize`/`GetCurrentPage`/`GetFetchAheadDepth`/`ResetPaging` have no `FormsManager`-level
+wrapper) were investigated alongside this fix and found to be a lower-priority case of the same
+shape — but unlike `NotifySharedBlockChanged`, they are already reachable through the pre-existing
+`public IPagingManager Paging => _pagingManager;` escape-hatch property, so "zero direct
+`FormsManager`-level wrapper" does not mean "zero real callers reachable" here. Adding redundant
+wrappers for state already reachable through `Paging` would grow the public surface without
+closing any actual gap (house rule: don't add features beyond what's needed) — left as-is rather
+than built.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)

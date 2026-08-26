@@ -4328,6 +4328,13 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.ReleaseSharedBlockLock(System.String,System.String)">
             <summary>Release a write lock held by the named caller. No-op if not locked by that caller.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.NotifySharedBlockChanged(System.String,System.String,System.Object)">
+            <summary>
+            Notify subscribers that a shared block's data has changed. Call this after
+            committing changes to any shared block, so other forms holding a reference
+            obtained from <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.GetSharedBlock(System.String)"/> know to refresh.
+            </summary>
+        </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockChanged">
             <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
         </member>
