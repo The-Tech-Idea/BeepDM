@@ -2261,6 +2261,94 @@ a bug matching its own doc comment's stated intent.
 record locking end to end. Every other WPF and WinForms `Examples` self-test re-run clean.
 
 ---
+
+### G0.61: `TriggerType.EnterQuery`/`ExitQuery` (Oracle Forms ENTER_QUERY/EXIT_QUERY) existed with
+no firing code anywhere (FIXED 2026-08-26)
+
+**What:** A systematic audit — cross-referencing every `TriggerType` enum member against every
+`Fire*TriggerAsync(TriggerType.X, ...)` call site anywhere in the engine — found `EnterQuery` and
+`ExitQuery` among a larger set of enum members with zero firing references. Most of that larger set
+falls into two explained, non-actionable categories: ~45 `Key*`-prefixed members
+(`KeyNextItem`, `KeyCommit`, `KeyF1`, …) are a vestigial, near-1:1-named duplicate of the separate
+`KeyTriggerType` enum, which already correctly implements key-triggered navigation/commands via
+`FireKeyTriggerAsync` — a rule-3 duplication question, not a rule-6 missing implementation, and not
+touched here; and roughly two dozen UI-widget/window-lifecycle members
+(`WhenButtonPressed`, `WhenMouseClick`, `WhenWindowActivated`, …) require new host-side event wiring
+across both WinForms and WPF, a materially larger undertaking documented below but not attempted in
+this pass. `EnterQuery`/`ExitQuery` stood out as genuinely missing, purely engine-side, and
+concretely testable: `EnterQueryModeAsync` (the real ENTER_QUERY implementation) only ever raised
+the generic `_eventManager.TriggerBlockEnter` .NET event, never the `TriggerType`-based system
+`RegisterBlockTrigger` feeds into — confirmed by grep, and `TriggerLibrary.cs` only ever
+registers/fires `PreQuery`/`PostQuery`, never `EnterQuery`/`ExitQuery`.
+
+**A second, unrelated defect surfaced while finding the right EXIT_QUERY choke point.** The obvious
+candidate, `ExecuteQueryAndEnterCrudModeAsync` (whose own doc comment says "equivalent to Oracle
+Forms EXECUTE_QUERY"), turned out to have zero callers anywhere outside its own unit tests
+(`FormsManagerTests.cs`) — grepped across the whole engine and Beep.Forms. Both WinForms and WPF
+hosts' `ExecuteQueryAsync` actually call a completely separate, parallel implementation
+(`FormsManager.BasicDataOps.cs`'s own `ExecuteQueryAsync` → `ExecuteQueryEnhancedAsync`). This is a
+genuine rule-3 "two implementations of one capability" situation — `ExecuteQueryAndEnterCrudModeAsync`
+appears to be an earlier or alternate implementation of query execution that nothing in any real
+caller path reaches — but resolving *that* (determining which implementation is authoritative,
+whether `ExecuteQueryAndEnterCrudModeAsync`'s own MaxRecords-warning behavior needs to be ported
+into the reachable path, and whether the orphaned method should be deleted or wired up) is a
+separate, larger question this pass does not attempt to resolve. Flagged here, not fixed.
+
+**Fix:** `EnterQuery` fires in `EnterQueryModeAsync` (`FormsManager.ModeTransitions.cs`), after the
+mode change and current-block update, matching where `PreQuery`/`PostQuery` fire relative to their
+own state changes. `ExitQuery` fires in the *reachable* `ExecuteQueryAsync`
+(`FormsManager.BasicDataOps.cs`), gated on whether the block was actually in `EnterQuery` mode
+before the call — matching Oracle Forms pairing EXIT_QUERY specifically with ENTER_QUERY, not with
+an ordinary re-query of a block already showing results. The same gated fire was also added to the
+orphaned `ExecuteQueryAndEnterCrudModeAsync`, so that method's own behavior is internally correct
+should it ever gain a caller; this does not change its status as unreached from any host today.
+
+**Where:** `Editor/Forms/FormsManager.ModeTransitions.cs` (`EnterQueryModeAsync`,
+`ExecuteQueryAndEnterCrudModeAsync`), `Editor/Forms/FormsManager.BasicDataOps.cs`
+(`ExecuteQueryAsync`).
+
+**Proven via revert:** disabled both fire points (the reachable `EnterQuery`/`ExitQuery` sites) and
+re-ran the new self-test: `EnterQuery` never fired on `EnterQueryModeAsync`, `ExitQuery` never fired
+on the subsequent `ExecuteQueryAsync` call, and the "does not fire twice" assertion also failed
+(comparing against a fixed expectation of 1 that a broken fix could never reach) — three checks
+failed with exactly the predicted "never invoked" symptom. Restoring both fire points made all six
+checks pass again.
+
+**Risk of fix:** Low. Purely additive — a trigger type that could never have fired before now fires
+at a fire point gated to match Oracle Forms' own pairing semantics; no existing caller could have
+depended on a trigger that never fired. Explicitly does **not** touch the ~45 `KeyTriggerType`
+duplicate members or the UI-widget/window-lifecycle members — see What, above.
+
+**Verified:** `FormsManager.Tests` (196/196 passing, unchanged). New
+`Examples.WPF/QueryModeTriggersSelfTest.cs` (`--selftest-querymode`) passes 6/6 checks. `SmokeTests`,
+`DesignerCompileCheck`, and every other WinForms/WPF `Examples` self-test (13 on WPF alone) re-run
+clean.
+
+**Not attempted in this pass, and why — for a future pass on its own terms:**
+
+- **`TriggerType.WhenLogon`/`PostLogon`/`OnLogoff`** (doc comments: "M5-RUN-002 — connection
+  lifecycle") are declared and, like `EnterQuery`/`ExitQuery` were, never fired anywhere — confirmed
+  by grep, zero references in the whole engine for any of the three. Unlike `EnterQuery`/`ExitQuery`,
+  there is no existing choke point: `FormsManager` does not own datasource connection open/close at
+  all (that lives in `DMEEditor`/`IDataSource`, a layer below Forms), so firing these correctly
+  requires an architectural decision about where connection-lifecycle awareness should live, not a
+  one-line addition to an existing method. No milestone document for "M5-RUN-002" exists anywhere in
+  this repo to consult for the intended design.
+- **~25 UI-widget and window-lifecycle members** (`WhenButtonPressed`, `WhenCheckboxChanged`,
+  `WhenImageActivated`/`WhenImagePressed`, `WhenListActivated`/`WhenListChanged`,
+  `WhenRadioChanged`, all seven `WhenMouse*` members, `WhenWindowActivated`/`WhenWindowClosed`/
+  `WhenWindowDeactivated`/`WhenWindowResized`, `WhenCustomItemEvent`, `WhenRecordModified`) are
+  declared with zero firing references anywhere in the engine **or** either host. The engine cannot
+  fire these itself — it has no knowledge of button clicks, mouse events or window state — so
+  implementing them means wiring real WinForms/WPF control and window events into
+  `FireBlockTriggerAsync`/`FireFormTriggerAsync` calls in both `TheTechIdea.Beep.Forms.WinForms` and
+  `TheTechIdea.Beep.Forms.Wpf`, a substantially larger, cross-repo undertaking than any single fix
+  landed this session.
+- **~45 `TriggerType.Key*` members** are the vestigial `KeyTriggerType` duplicate discussed above —
+  not a missing implementation, a rule-3 duplication question for a future pass to resolve (keep
+  as a documented alias, or remove — removal is not this implementer's call).
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
