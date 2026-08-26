@@ -1367,6 +1367,67 @@ public class FormsManagerTests : IDisposable
     }
 
     [Fact]
+    public void AssignTabIndexFromAuthoredOrder_RanksByAuthoredOrder_NotOriginalListPosition()
+    {
+        // BlockFieldDefinition.Order authors the Block Fields editor's
+        // drag-reorder sequence and round-trips perfectly, but nothing ever
+        // read it back into item.TabIndex -- RegisterItemsFromEntityStructure
+        // seeds TabIndex purely from the datasource's raw column order, so an
+        // author's reordering was invisible to Tab-key navigation. Field C is
+        // listed last but authored Order=0, so it must rank first.
+        var fieldA = new BlockFieldDefinition { FieldName = "A", Order = 2 };
+        var fieldB = new BlockFieldDefinition { FieldName = "B", Order = 1 };
+        var fieldC = new BlockFieldDefinition { FieldName = "C", Order = 0 };
+        var itemA = new ItemInfo { ItemName = "A" };
+        var itemB = new ItemInfo { ItemName = "B" };
+        var itemC = new ItemInfo { ItemName = "C" };
+        var resolved = new List<(BlockFieldDefinition Field, ItemInfo Item)>
+        {
+            (fieldA, itemA), (fieldB, itemB), (fieldC, itemC)
+        };
+
+        DefinitionBlockRegistrar.AssignTabIndexFromAuthoredOrder(resolved);
+
+        Assert.Equal(0, itemC.TabIndex);
+        Assert.Equal(1, itemB.TabIndex);
+        Assert.Equal(2, itemA.TabIndex);
+    }
+
+    [Fact]
+    public void AssignTabIndexFromAuthoredOrder_AllFieldsShareUnauthoredDefaultOrder_StillAssignsUniqueSequentialTabIndex()
+    {
+        // A legacy/hand-written block whose fields never went through the
+        // Block Fields editor has every Order at its unauthored int default
+        // (0). Ranking by stable sort -- never copying Order's raw value --
+        // means this must still produce a unique TabIndex per field, in
+        // original list order, exactly matching what
+        // RegisterItemsFromEntityStructure already gave it: no regression to
+        // a duplicate-TabIndex state for blocks that never authored Order.
+        var fieldA = new BlockFieldDefinition { FieldName = "A", Order = 0 };
+        var fieldB = new BlockFieldDefinition { FieldName = "B", Order = 0 };
+        var fieldC = new BlockFieldDefinition { FieldName = "C", Order = 0 };
+        var itemA = new ItemInfo { ItemName = "A" };
+        var itemB = new ItemInfo { ItemName = "B" };
+        var itemC = new ItemInfo { ItemName = "C" };
+        var resolved = new List<(BlockFieldDefinition Field, ItemInfo Item)>
+        {
+            (fieldA, itemA), (fieldB, itemB), (fieldC, itemC)
+        };
+
+        DefinitionBlockRegistrar.AssignTabIndexFromAuthoredOrder(resolved);
+
+        Assert.Equal(0, itemA.TabIndex);
+        Assert.Equal(1, itemB.TabIndex);
+        Assert.Equal(2, itemC.TabIndex);
+    }
+
+    [Fact]
+    public void AssignTabIndexFromAuthoredOrder_NullList_NoOp()
+    {
+        DefinitionBlockRegistrar.AssignTabIndexFromAuthoredOrder(null);
+    }
+
+    [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
         var entity = CreateEntity("ORD", ("Name", "string"));

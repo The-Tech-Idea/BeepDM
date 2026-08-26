@@ -1537,6 +1537,56 @@ engine rebuild clean. No Beep.Forms code change needed — both hosts were alrea
 `item.InsertAllowed`/`item.UpdateAllowed`.
 
 ---
+
+### G0.46: `BlockFieldDefinition.Order` never reached `ItemInfo.TabIndex` (FIXED 2026-08-26)
+
+**What:** Fourth instance of the `BlockFieldDefinition` "IDE round-trips perfectly, runtime never
+reads it" shape in this series (after `IsRequired` G0.40, `EditorKey` G0.41, `IsReadOnly` G0.45).
+`Order` has a complete authoring surface — the Block Fields editor's `BlockFieldsEditorDialogData`
+renumbers every row to its current position on every save
+(`for (var i = 0; i < FieldRows.Count; i++) FieldRows[i].Order = i;`), `DesignerBlockGenerator`
+emits it unconditionally for every field (`Ord.Fields[...].Order = N;`), and
+`FromEntityStructure` (the fresh-scaffold path) seeds it from column position at creation time —
+but `PropertyClassManager.ApplyToItem` never read it, and `ItemPropertyManager
+.RegisterItemsFromEntityStructure` sets every `item.TabIndex` purely from the raw datasource
+column iteration order (`TabIndex = tabIndex++` inside the `structure.Fields` loop), independent
+of anything the designer authored. `WinFormBlockHost.cs`/`BeepWpfBlock.cs` both already read
+`item.TabIndex` every refresh (`control.TabIndex = item.TabIndex;`) to drive the actual WinForms/
+WPF Tab-key navigation order. So an author who drag-reordered a block's fields in the Block
+Fields editor saw that new order everywhere the designer shows it (the field list, the emitted
+`Fields` collection) and nowhere the runtime's keyboard navigation did — Tab still walked fields
+in their original schema/column order.
+
+**Fix, and why it ranks rather than copies the raw value:** A naive `item.TabIndex =
+fieldDefinition.Order;` overlay (the `Width`/`Enabled`/`Visible` shape) has a real regression risk
+this field doesn't share with those: `Order` is a plain `int` with no "unauthored" state distinct
+from its default (`0`), and unlike `Enabled`/`Visible` (where the coincident default is `true` on
+both sides, a safe no-op), a **legacy or hand-written block that never went through the Block
+Fields editor** can have every field's `Order` sitting at the same unauthored `0` — copying that
+verbatim would collapse every item in the block onto a single duplicate `TabIndex`, discarding the
+unique, deterministic sequence `RegisterItemsFromEntityStructure` already gave it. New
+`DefinitionBlockRegistrar.AssignTabIndexFromAuthoredOrder` instead ranks the block's fields by a
+**stable sort** on `Order` and assigns sequential `TabIndex` values from that rank: a genuinely
+reordered block gets its new order; a legacy all-zero block gets the *same* unique sequence it
+already had, because `OrderBy` is stable and ties resolve to original list position. Extracted as
+its own `public static` method (previously inlined in `ApplyAuthoredFieldProperties`) specifically
+so the ranking algorithm is unit-testable without standing up the full datasource-backed
+`DefinitionBlockRegistrar.RegisterAll` integration path.
+
+**Where:** `Helpers/DefinitionBlockRegistrar.cs` (`ApplyAuthoredFieldProperties`, new
+`AssignTabIndexFromAuthoredOrder`).
+
+**Risk of fix:** Low. Three new direct unit tests —
+`AssignTabIndexFromAuthoredOrder_RanksByAuthoredOrder_NotOriginalListPosition` (a field authored
+last in the list but with the lowest `Order` ranks first), `AssignTabIndexFromAuthoredOrder
+_AllFieldsShareUnauthoredDefaultOrder_StillAssignsUniqueSequentialTabIndex` (the no-regression
+case — three fields all at `Order = 0` still get unique, list-order-preserving `TabIndex` values,
+never a duplicate), and a trivial null-list no-op guard — the first two proven via revert
+(commenting out the method body failed both with the predicted `1` vs `0` mismatch). Full
+190-test suite green across 5 consecutive runs before and after, full engine rebuild clean. No
+Beep.Forms code change needed — both hosts were already consumers of `item.TabIndex`.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
