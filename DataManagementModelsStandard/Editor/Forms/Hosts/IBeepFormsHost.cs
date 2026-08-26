@@ -190,6 +190,34 @@ public interface IBeepFormsHost
         string blockName,
         TriggerContext? context = null,
         CancellationToken ct = default);
+    /// <summary>
+    /// Fires an item-scoped trigger (e.g. WHEN-VALIDATE-ITEM, PRE-TEXT-ITEM,
+    /// POST-TEXT-ITEM, WHEN-NEW-ITEM-INSTANCE), consulting the engine's
+    /// item-trigger store in addition to block and global triggers.
+    /// </summary>
+    /// <remarks>
+    /// Added 2026-08-26. Before this, no host contract exposed a way to fire
+    /// an item-scoped trigger at all -- WinFormBlockHost.ItemNavigation.cs and
+    /// BeepWpfBlock.cs each had their own private FireItemTriggerAsync helper
+    /// that, for lack of anything else on this interface, called
+    /// FireBlockTriggerAsync with an item-shaped TriggerContext.
+    /// FireBlockTriggerAsync's engine-side implementation only ever consults
+    /// ITriggerManager's block-scoped store (GetBlockTriggersForExecution),
+    /// never the item-scoped one (GetItemTriggersForExecution) -- so a
+    /// WHEN-VALIDATE-ITEM/PRE-TEXT-ITEM/POST-TEXT-ITEM/WHEN-NEW-ITEM-INSTANCE
+    /// trigger registered through the standard, IDE-authored
+    /// RegisterItemTrigger path (item-scoped storage, keyed by block+item)
+    /// was silently never found and never invoked by either host, on either
+    /// platform, despite being correctly registered, stored, and readable
+    /// back through GetItemTriggers. This method gives hosts the correct
+    /// contract to call instead.
+    /// </remarks>
+    Task<TriggerResult> FireItemTriggerAsync(
+        TriggerType type,
+        string blockName,
+        string itemName,
+        TriggerContext? context = null,
+        CancellationToken ct = default);
     Task<TriggerResult> FireKeyTriggerAsync(
         KeyTriggerType keyType,
         string blockName);
