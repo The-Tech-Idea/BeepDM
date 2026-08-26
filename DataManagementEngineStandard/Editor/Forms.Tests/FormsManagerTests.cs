@@ -3086,4 +3086,42 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region DirtyStateManager.SaveDirtyBlocksAsync -> Configuration.DefaultSaveOptions (2026-08-26)
+
+    // SaveOptions.Default's own properties (MaxRetries, RetryDelayMs, ValidateBeforeSave, ...)
+    // are genuinely read by SaveBlockWithRetryAsync -- but SaveDirtyBlocksAsync always used the
+    // bare type default, ignoring UnitofWorksManagerConfiguration.DefaultSaveOptions entirely, so
+    // a developer who configured Configuration.DefaultSaveOptions on the manager had that setting
+    // silently discarded on every save.
+
+    [Fact]
+    public async Task SaveDirtyBlocksAsync_ConfiguredDefaultSaveOptions_UsesItsMaxRetries()
+    {
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+        uowMock.Setup(u => u.Commit())
+            .ReturnsAsync(new ErrorsInfo { Flag = Errors.Failed, Message = "connection timeout" });
+
+        var blockInfo = new DataBlockInfo { BlockName = "EMP", UnitOfWork = uowMock.Object };
+        var blocks = new ConcurrentDictionary<string, DataBlockInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["EMP"] = blockInfo
+        };
+        var dirtyStateManager = new DirtyStateManager(
+            _mockEditor.Object,
+            blocks,
+            getDetailBlocksFunc: _ => new List<string>(),
+            getBlockFunc: name => blocks.TryGetValue(name, out var b) ? b : null,
+            getRelationshipsFunc: _ => new List<DataBlockRelationship>(),
+            getDefaultSaveOptionsFunc: () => new SaveOptions { MaxRetries = 2, RetryDelayMs = 0 });
+
+        await dirtyStateManager.SaveDirtyBlocksAsync(new List<string> { "EMP" }).ConfigureAwait(false);
+
+        // MaxRetries = 2 means 1 initial attempt + 2 retries = 3 total Commit() calls.
+        // SaveOptions.Default's own MaxRetries (3) would have called Commit() 4 times instead.
+        uowMock.Verify(u => u.Commit(), Times.Exactly(3));
+    }
+
+    #endregion
 }

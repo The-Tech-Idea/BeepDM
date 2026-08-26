@@ -1731,6 +1731,13 @@ optimistic-locking/batch-operations would each need genuinely new behavior built
 separately-scoped design work, not a same-pass mechanical wire-up — left as a named, evidenced
 future work item rather than attempted piecemeal.
 
+**Correction (2026-08-26, see G0.54):** `DefaultSaveOptions` specifically turned out to be
+narrower than "not attempted" — `SaveOptions`'s own properties (`MaxRetries`, `RetryDelayMs`,
+`ValidateBeforeSave`, ...) are genuinely read by `DirtyStateManager.SaveBlockWithRetryAsync`; what
+was actually missing was `SaveDirtyBlocksAsync` ever consulting `Configuration.DefaultSaveOptions`
+rather than the bare `SaveOptions.Default`. Fixed; see G0.54. `EnableLogging`/`DefaultRollbackOptions`
+and the other eight `BlockConfiguration` properties remain as originally described above.
+
 ---
 
 ### G0.49: `LOVColumn`'s per-column display config (`Width`/`Visible`/`Searchable`/`Format`/
@@ -1926,6 +1933,110 @@ return false; // Placeholder`), always reports no errors. Unlike the two fixed h
 `ItemPropertyManager`/`ValidationManager` (which own `HasItemError`/validation state). Wiring it
 needs a new constructor dependency, not a redirect to an already-reachable sink — a smaller but
 real follow-on left for a future pass rather than guessed at here.
+
+---
+
+### G0.54: `DirtyStateManager.SaveDirtyBlocksAsync` ignored `Configuration.DefaultSaveOptions`,
+always using the bare type default instead (FIXED 2026-08-26)
+
+**What:** Double-checking G0.48's "SaveOptions has zero consumers, not even reachable as a
+parameter" characterization (prompted by finding `SaveBlockWithRetryAsync(DataBlockInfo,
+SaveOptions options)` reads `options.MaxRetries` at the exact call site next to G0.53's fix) found
+the characterization was too broad for `SaveOptions` specifically — its own properties
+(`MaxRetries`, `RetryDelayMs`, `ValidateBeforeSave`, ...) *are* genuinely read, gating real retry
+and validation behavior. What was actually missing: `SaveDirtyBlocksAsync` — the sole caller —
+hardcoded `var saveOptions = SaveOptions.Default;` rather than ever consulting
+`UnitofWorksManagerConfiguration.DefaultSaveOptions`, the developer-facing setting that exists
+specifically to configure this. A developer who set `Configuration.DefaultSaveOptions = new
+SaveOptions { MaxRetries = 5 }` (or `ValidateBeforeSave = false`, or any other override) had it
+silently discarded on every save — the manager always retried exactly 3 times with exactly Oracle
+Forms' own type defaults, never the configured ones.
+
+**Fix:** Added an optional `Func<SaveOptions> getDefaultSaveOptionsFunc` constructor parameter to
+`DirtyStateManager` (only two construction sites existed — `FormsManager.Core.cs` and this
+session's own test — so an additive optional parameter was zero-risk), wired from
+`FormsManager.Core.cs` as `() => Configuration?.DefaultSaveOptions`. `SaveDirtyBlocksAsync` now
+resolves `saveOptions` from that delegate, falling back to `SaveOptions.Default` when it returns
+null (matching `UnitofWorksManagerConfiguration.Default`'s own `DefaultSaveOptions = SaveOptions
+.Default` initializer, so an un-customized manager behaves byte-for-byte as before).
+
+**Where:** `Helpers/DirtyStateManager.cs` (new field, constructor parameter, `SaveDirtyBlocksAsync`);
+`FormsManager.Core.cs` (wiring the delegate at construction).
+
+**Risk of fix:** Low — additive constructor parameter, no-op fallback preserves prior behavior for
+every manager that never customizes `Configuration.DefaultSaveOptions`. One new test,
+`SaveDirtyBlocksAsync_ConfiguredDefaultSaveOptions_UsesItsMaxRetries`, injects `MaxRetries = 2,
+RetryDelayMs = 0` and a Commit that always fails with a retryable ("connection timeout") message,
+asserting exactly 3 `Commit()` calls (1 initial + 2 retries). Proven via revert: reverting to the
+hardcoded default reproduced 4 calls (the type default's `MaxRetries = 3`), taking ~6 real seconds
+due to the un-configured `RetryDelayMs = 1000` kicking in — itself a concrete demonstration of the
+defect (the configured `RetryDelayMs = 0` was also being silently ignored). Full 196-test suite
+green across 5 consecutive runs (all fast, ~1s, confirming the fix keeps normal runs fast); full
+engine rebuild clean.
+
+---
+
+### G0.55: `FormsManager.FormOperations.OpenFormAsync` — a superseded duplicate "open form"
+implementation, not a stub to fix (INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** `FormOperations.cs`'s `OpenFormAsync(string formName)` — doc-commented "equivalent to
+Oracle Forms WHEN-NEW-FORM-INSTANCE" — calls two private helpers,
+`PreInitializeFormAsync`/`PostInitializeFormAsync`, both literally `await Task.CompletedTask; //
+Placeholder for async operations` behind comments listing intended work ("Load form-specific
+configuration", "Trigger form-specific events", ...) that never happens. On the surface this
+looks like the same "wire the honest stub" shape as G0.52/G0.53. It is not: `OpenFormAsync`
+(this specific overload) has **zero callers anywhere in Beep.Forms** — neither runtime host calls
+it — and the `OnFormOpen` .NET event it raises has no subscriber in either host either.
+
+**Why this is a duplicate to resolve (house rule 3), not a gap to close.** The real
+"opening a form fires `WHEN-NEW-FORM-INSTANCE`" mechanism already exists and is already fully
+tested: `FormsManager.MultiFormNavigation.cs`'s `CallFormAsync`/`NewFormAsync`/
+`OpenFormModelessAsync` genuinely fire `TriggerType.WhenNewFormInstance` via `_triggerManager`
+(confirmed the only call site for that trigger in the whole engine) and are the machinery an
+earlier pass's "OPEN_FORM / NEW_FORM / CALL_FORM" tests already cover. `MultiFormNavigation.cs`
+even declares its *own* `OpenFormAsync(string, Dictionary<string,object>)` overload —
+`[Obsolete("Use OpenFormModelessAsync to avoid ambiguity with FormsManager.OpenFormAsync.")]`,
+whose own doc comment says *"Distinct from `FormOperations` `OpenFormAsync` which opens the LOCAL
+form"* — confirming both were known to exist side by side, and that the multi-form one is the
+live, exercised path. `FormOperations.OpenFormAsync` reads as an earlier, abandoned "open the
+local form" design — the same shape as `ViewStateSyncer` (G0.42): a fully-built parallel
+mechanism superseded by a different one that actually shipped, not a missing implementation.
+
+**Not fixed, and not deleted.** Wiring `PreInitializeFormAsync`/`PostInitializeFormAsync` would
+give real behavior to a method nothing calls — wasted effort, and inventing new callers for it
+would create the exact "two owners of one fact" situation house rule 3 exists to prevent, since
+`MultiFormNavigation`'s trigger-firing path already owns "what happens when a form opens." Public
+API surface, so removal is a call for Fahad, the same disposition as `ViewStateSyncer`.
+
+**Where:** `FormsManager.FormOperations.cs` (`OpenFormAsync`, `PreInitializeFormAsync`,
+`PostInitializeFormAsync`, `ApplyFormConfiguration`, `OnFormOpen` — all unchanged);
+`FormsManager.MultiFormNavigation.cs` (unchanged, already correct and already tested).
+
+---
+
+### G0.56: `PerformanceManager.PreloadFrequentBlocks` is unreachable and its own implementation
+is broken (inserts null placeholders) — needs real subsystem work, not attempted
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** `PreloadFrequentBlocks(IEnumerable<string> blockNames)` is explicitly marked *"This
+would typically load from a data source / For now, we just mark it as preloaded"* — it inserts a
+`CachedBlockInfo { BlockInfo = null, ..., IsPreloaded = true }` placeholder into the cache for
+each name, never actually loading anything. Unlike the working half of the same cache
+(`CacheBlockInfo`/`GetCachedBlockInfo`/`InvalidateBlockCache`/`SetBlockCacheTtl`/`GetCacheStats`,
+all genuinely wired through `FormsManager.Performance.cs` with real block data), `PreloadFrequentBlocks`
+has **no `FormsManager`-level wrapper at all** — it is unreachable from either runtime host or any
+engine call site, not merely unfed.
+
+**Why not fixed here.** Even if wired up, the implementation itself would need to actually build
+correctly given a block name with no live registration yet — realistically reusing
+`DefinitionBlockRegistrar`'s datasource-resolution logic (connection lookup, `GetEntityStructure`,
+row-type resolution) rather than duplicating it, which is real integration work, not a value
+needing to flow into an already-built sink the way G0.52–G0.54 were. Inserting a `BlockInfo = null`
+placeholder today would also be actively worse than doing nothing if anything ever did start
+reading it, since a caller checking "is this cached" and then dereferencing `.BlockInfo` would hit
+`null` rather than a cache miss it could recover from.
+
+**Where:** `Helpers/PerformanceManager.cs` (`PreloadFrequentBlocks`, unchanged).
 
 ---
 ## P0 — Correctness / Existing-User Impact

@@ -25,6 +25,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly Func<string, List<string>> _getDetailBlocksFunc;
         private readonly Func<string, DataBlockInfo> _getBlockFunc;
         private readonly Func<string, List<DataBlockRelationship>> _getRelationshipsFunc;
+        private readonly Func<SaveOptions> _getDefaultSaveOptionsFunc;
         private static bool IsNullOrEmpty(object value) =>
             value == null || value == DBNull.Value || (value is string text && string.IsNullOrWhiteSpace(text));
 
@@ -46,18 +47,26 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <param name="blocks">Registered block metadata keyed by block name.</param>
         /// <param name="getDetailBlocksFunc">Resolver for child blocks of a given master block.</param>
         /// <param name="getBlockFunc">Resolver for a block metadata record by name.</param>
+        /// <param name="getRelationshipsFunc">Resolver for a block's declared master-detail relationships.</param>
+        /// <param name="getDefaultSaveOptionsFunc">
+        /// Resolver for the manager-configured default <see cref="SaveOptions"/> (typically
+        /// <c>() =&gt; Configuration?.DefaultSaveOptions</c>). Optional; when null or when it
+        /// returns null, <see cref="SaveOptions.Default"/> is used, matching prior behavior.
+        /// </param>
         public DirtyStateManager(
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks,
             Func<string, List<string>> getDetailBlocksFunc,
             Func<string, DataBlockInfo> getBlockFunc,
-            Func<string, List<DataBlockRelationship>> getRelationshipsFunc)
+            Func<string, List<DataBlockRelationship>> getRelationshipsFunc,
+            Func<SaveOptions> getDefaultSaveOptionsFunc = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             _blocks = blocks ?? throw new ArgumentNullException(nameof(blocks));
             _getDetailBlocksFunc = getDetailBlocksFunc ?? throw new ArgumentNullException(nameof(getDetailBlocksFunc));
             _getBlockFunc = getBlockFunc ?? throw new ArgumentNullException(nameof(getBlockFunc));
             _getRelationshipsFunc = getRelationshipsFunc ?? throw new ArgumentNullException(nameof(getRelationshipsFunc));
+            _getDefaultSaveOptionsFunc = getDefaultSaveOptionsFunc;
         }
 
         #endregion
@@ -170,7 +179,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </summary>
         public async Task<bool> SaveDirtyBlocksAsync(List<string> dirtyBlocks)
         {
-            var saveOptions = SaveOptions.Default;
+            // SaveOptions.Default's own properties (ValidateBeforeSave, MaxRetries, ...) are
+            // genuinely read below and by SaveBlockWithRetryAsync -- this always used the bare
+            // type default, ignoring UnitofWorksManagerConfiguration.DefaultSaveOptions entirely,
+            // so a developer who configured Configuration.DefaultSaveOptions (e.g. MaxRetries = 5,
+            // or ValidateBeforeSave = false to skip the validation pass below) had that setting
+            // silently discarded on every save.
+            var saveOptions = _getDefaultSaveOptionsFunc?.Invoke() ?? SaveOptions.Default;
             var results = new List<SaveResult>();
             
             try

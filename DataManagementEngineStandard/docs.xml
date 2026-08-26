@@ -22582,7 +22582,7 @@
             Raised when an operation encounters unsaved changes and needs a caller decision.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}},System.Func{TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions})">
             <summary>
             Creates a dirty-state manager for the registered blocks owned by a FormsManager instance.
             </summary>
@@ -22590,6 +22590,12 @@
             <param name="blocks">Registered block metadata keyed by block name.</param>
             <param name="getDetailBlocksFunc">Resolver for child blocks of a given master block.</param>
             <param name="getBlockFunc">Resolver for a block metadata record by name.</param>
+            <param name="getRelationshipsFunc">Resolver for a block's declared master-detail relationships.</param>
+            <param name="getDefaultSaveOptionsFunc">
+            Resolver for the manager-configured default <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions"/> (typically
+            <c>() =&gt; Configuration?.DefaultSaveOptions</c>). Optional; when null or when it
+            returns null, <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions.Default"/> is used, matching prior behavior.
+            </param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.CheckAndHandleUnsavedChangesAsync(System.String)">
             <summary>
