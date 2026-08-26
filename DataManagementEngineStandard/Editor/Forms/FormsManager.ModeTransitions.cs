@@ -130,6 +130,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Trigger mode change events
                 _eventManager.TriggerBlockEnter(blockName);
 
+                // TriggerType.EnterQuery (Oracle Forms ENTER_QUERY) existed with
+                // no firing code anywhere -- confirmed by grepping the whole
+                // engine, and TriggerLibrary.cs only ever registers/fires
+                // PreQuery/PostQuery. A trigger registered for it through the
+                // standard RegisterBlockTrigger path was correctly stored and
+                // never once invoked, since this is the only place a block
+                // transitions into enter-query mode. Fired after the mode
+                // change and current-block update, matching where PreQuery/
+                // PostQuery fire relative to their own state changes. (2026-08-26)
+                await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.EnterQuery, blockName,
+                    TriggerContext.ForBlock(TriggerType.EnterQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
+
                 result.Message = $"Block '{blockName}' entered Query mode successfully";
                 Status = result.Message;
                 LogOperation($"Block '{blockName}' entered Query mode successfully", blockName);
@@ -180,6 +193,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Captured before the transition below, for the EXIT_QUERY fire
+                // point further down -- ExitQuery (Oracle Forms EXIT_QUERY) pairs
+                // specifically with a block that was actually in enter-query mode,
+                // not one that was already sitting in plain Query mode and simply
+                // re-executed.
+                var wasInEnterQueryMode = blockInfo.Mode == DataBlockMode.EnterQuery;
+
                 LogOperation($"Executing query and entering CRUD mode for block '{blockName}' (source mode={blockInfo.Mode})", blockName);
 
                 // Execute the query using enhanced query execution
@@ -214,6 +234,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // mode transition happened, even if the target mode was
                 // already set by the helper.
                 blockInfo.LastModeChange = DateTime.Now;
+
+                // TriggerType.ExitQuery (Oracle Forms EXIT_QUERY) existed with no
+                // firing code anywhere, same defect as EnterQuery above. Fired
+                // only when the block actually was in enter-query mode --
+                // matches Oracle Forms pairing EXIT_QUERY with ENTER_QUERY, not
+                // with an ordinary re-query of a block already showing results.
+                // (2026-08-26)
+                if (wasInEnterQueryMode)
+                {
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.ExitQuery, blockName,
+                        TriggerContext.ForBlock(TriggerType.ExitQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
+                }
 
                 // Navigate to first record if available
                 var recordCount = GetRecordCount(blockName);

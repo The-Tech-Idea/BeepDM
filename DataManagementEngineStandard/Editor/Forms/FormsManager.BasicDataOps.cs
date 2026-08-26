@@ -422,6 +422,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 var block = GetBlock(blockName);
 
+                // Captured before ExecuteQueryEnhancedAsync transitions the mode
+                // below, for the EXIT_QUERY fire point further down.
+                // ExecuteQueryAndEnterCrudModeAsync (ModeTransitions.cs) is the
+                // method that reads as the natural EXIT_QUERY choke point, but
+                // it has no callers anywhere outside its own unit tests -- this
+                // method, not that one, is what both hosts' ExecuteQueryAsync
+                // actually calls.
+                var wasInEnterQueryMode = block?.Mode == DataBlockMode.EnterQuery;
+
                 // Phase 6: security check. This runs BEFORE the CRUD flag
                 // guard below, and the order matters: SetBlockSecurity calls
                 // ApplyAllSecurityFlags, which writes the policy INTO those same
@@ -464,6 +473,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     Status = $"Query executed successfully for block '{blockName}'";
                     _messageManager?.ShowInfoMessage(blockName, Status);
+
+                    // TriggerType.ExitQuery (Oracle Forms EXIT_QUERY) existed
+                    // with no firing code anywhere -- confirmed by grepping the
+                    // whole engine. Fired only when the block actually was in
+                    // enter-query mode, matching Oracle Forms pairing
+                    // EXIT_QUERY with ENTER_QUERY, not with an ordinary
+                    // re-query of a block already showing results. (2026-08-26)
+                    if (wasInEnterQueryMode)
+                    {
+                        await _triggerManager.FireBlockTriggerAsync(
+                            TriggerType.ExitQuery, blockName,
+                            TriggerContext.ForBlock(TriggerType.ExitQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
