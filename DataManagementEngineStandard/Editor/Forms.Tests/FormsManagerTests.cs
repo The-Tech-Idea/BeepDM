@@ -1307,6 +1307,66 @@ public class FormsManagerTests : IDisposable
     }
 
     [Fact]
+    public void PropertyClassApplyToItem_AuthoredIsReadOnlyTrue_ForcesInsertAndUpdateNotAllowed()
+    {
+        // BlockFieldsEditorDialog's "Is Read Only" checkbox round-tripped
+        // perfectly (load, save, DesignerBlockGenerator emission) but
+        // item.InsertAllowed/item.UpdateAllowed -- the two flags both
+        // WinFormBlockHost.cs and BeepWpfBlock.cs actually read to compute
+        // presenter.IsReadOnly for the current block mode -- were never
+        // touched by ApplyToItem, so an authored Read Only field stayed
+        // fully editable at runtime.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "TotalPrice", InsertAllowed = true, UpdateAllowed = true };
+        var field = new BlockFieldDefinition { FieldName = "TotalPrice", IsReadOnly = true };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.False(item.InsertAllowed);
+        Assert.False(item.UpdateAllowed);
+    }
+
+    [Fact]
+    public void PropertyClassApplyToItem_UnauthoredIsReadOnly_KeepsExistingInsertUpdateAllowed()
+    {
+        // Same one-directional shape as IsRequired above: IsReadOnly is a
+        // plain bool with no "not authored" state distinct from false, so an
+        // unauthored field must never force an already-editable item back to
+        // read-only.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "TotalPrice", InsertAllowed = true, UpdateAllowed = true };
+        var field = new BlockFieldDefinition { FieldName = "TotalPrice" };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.True(item.InsertAllowed);
+        Assert.True(item.UpdateAllowed);
+    }
+
+    [Fact]
+    public void PropertyClassApplyToItem_AuthoredIsReadOnlyTrue_OverridesExplicitInsertUpdateAllowedTrue()
+    {
+        // IsReadOnly can only ADD the restriction, so it must win even over
+        // a contradictory explicit authoring (InsertAllowed/UpdateAllowed
+        // both explicitly true alongside IsReadOnly true) -- applied after
+        // the QueryAllowed/InsertAllowed/UpdateAllowed cluster, not before.
+        var propertyClasses = new PropertyClassManager();
+        var item = new ItemInfo { ItemName = "TotalPrice", InsertAllowed = false, UpdateAllowed = false };
+        var field = new BlockFieldDefinition
+        {
+            FieldName = "TotalPrice",
+            InsertAllowed = true,
+            UpdateAllowed = true,
+            IsReadOnly = true
+        };
+
+        propertyClasses.ApplyToItem(item, field);
+
+        Assert.False(item.InsertAllowed);
+        Assert.False(item.UpdateAllowed);
+    }
+
+    [Fact]
     public void CreateNewRecord_AppliesAuthoredDefaultValue()
     {
         var entity = CreateEntity("ORD", ("Name", "string"));

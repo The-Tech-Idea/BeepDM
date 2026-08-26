@@ -56,6 +56,33 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             item.InsertAllowed = fieldDefinition.InsertAllowed ?? propertyClass?.InsertAllowed ?? item.InsertAllowed;
             item.UpdateAllowed = fieldDefinition.UpdateAllowed ?? propertyClass?.UpdateAllowed ?? item.UpdateAllowed;
 
+            // IsReadOnly, like IsRequired below, is a plain bool with no
+            // PropertyClass member and no "not authored" state distinct from
+            // false -- so an authored `true` can only ADD the restriction on
+            // top of whatever InsertAllowed/UpdateAllowed/the class already
+            // computed above, never relax it. This was fully round-tripped
+            // by the IDE's Block Fields editor (BlockFieldsEditorDialogData,
+            // both load and save) and emitted into generated code
+            // (DesignerBlockGenerator: "Ord.Fields[...].IsReadOnly = true;")
+            // but never read by anything at runtime: both hosts'
+            // WinFormBlockHost.cs/BeepWpfBlock.cs already compute
+            // presenter.IsReadOnly from item.InsertAllowed/item.UpdateAllowed
+            // depending on the current block mode, so an author who marked a
+            // field Read Only in the IDE saw it round-trip perfectly and stay
+            // fully editable at runtime. Deliberately does not also touch
+            // item.Enabled -- that is IsEnabled's independent, already-wired
+            // concept (a fully disabled/greyed-out control), and Oracle Forms
+            // itself keeps "Enabled" and "Insert/Update Allowed" as separate
+            // item properties; conflating them here would remove an author's
+            // ability to set them independently, not fix a gap. QueryAllowed
+            // is untouched for the same reason a read-only field must still
+            // work as an Enter-Query search criterion.
+            if (fieldDefinition.IsReadOnly)
+            {
+                item.InsertAllowed = false;
+                item.UpdateAllowed = false;
+            }
+
             var formatMask = fieldDefinition.FormatMask ?? propertyClass?.FormatMask;
             if (formatMask != null) item.FormatMask = formatMask;
 

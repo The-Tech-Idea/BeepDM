@@ -1484,6 +1484,59 @@ that it is a defect in *this* product is not.
 **Where:** `Helpers/TypeBridgeAdapters.cs` (BeepDM, unchanged).
 
 ---
+
+### G0.45: `BlockFieldDefinition.IsReadOnly` never reached `ItemInfo.InsertAllowed`/
+`UpdateAllowed` through `PropertyClassManager.ApplyToItem` (FIXED 2026-08-26)
+
+**What:** Pivoting the survey away from the now-closed Helpers-directory sweep (G0.36–G0.44) to
+`Editor/Forms/Models/*.cs` for the same "accepted-then-ignored" shape G0.40/G0.41 already found
+twice on `BlockFieldDefinition`. `IsReadOnly` has a complete, working IDE authoring surface —
+`BlockFieldsEditorDialogData` both loads (`IsReadOnly = f.IsReadOnly`) and saves
+(`f.IsReadOnly = r.IsReadOnly`) it, and `DesignerBlockGenerator` emits
+`Ord.Fields[...].IsReadOnly = true;` into the user's generated `.Designer.cs` — but
+`PropertyClassManager.ApplyToItem` never once read it. Both runtime hosts already fully consume
+the two `ItemInfo` flags that would need to carry it: `WinFormBlockHost.cs`/`BeepWpfBlock.cs`
+compute `presenter.IsReadOnly` from `!item.InsertAllowed`/`!item.UpdateAllowed` depending on the
+current block mode (confirmed live in both single-record presenters and both grid-mode column
+configs), so the pipeline downstream of `ItemInfo` was complete — same as G0.40's `Required`
+pipeline. An author who checked "Is Read Only" on a field in the Block Fields editor — the
+functional equivalent of Oracle Forms' Insert/Update Allowed = No on an item — saw it compile and
+round-trip perfectly and had it silently discarded at runtime: the field stayed exactly as
+editable as `InsertAllowed`/`UpdateAllowed`/the Property Class already said, i.e. usually fully
+editable. Worse than most of this series' findings in one respect: an author relying on this to
+protect a computed or system-managed field (an order total, a generated key) got a false sense
+of protection, not just a missing convenience.
+
+**Fix, same one-directional shape as G0.40's `IsRequired`, deliberately not touching `Enabled`:**
+`BlockFieldDefinition.IsReadOnly` is a plain `bool` with no "not authored" state distinct from
+`false` and no `PropertyClass` member, so `ApplyToItem` only ever forces
+`item.InsertAllowed = false; item.UpdateAllowed = false;` when `fieldDefinition.IsReadOnly` is
+`true` — applied after the `QueryAllowed`/`InsertAllowed`/`UpdateAllowed` cluster so it wins even
+over a contradictory explicit authoring of those three. An unauthored field (the common case)
+leaves whatever `InsertAllowed`/`UpdateAllowed` already resolved to untouched. Deliberately does
+**not** also set `item.Enabled = false`: `IsEnabled` is `BlockFieldDefinition`'s own independent,
+already-wired flag (G0.38 or earlier) driving a *different* runtime concept — a fully
+disabled/greyed-out control (`presenter.IsEnabled`) — and Oracle Forms itself keeps Enabled and
+Insert/Update Allowed as separate item properties an author sets independently; conflating them
+would remove that independence rather than fix a gap. `QueryAllowed` is untouched for the same
+reason: a read-only display field must still work as an Enter-Query search criterion unless an
+author separately restricts that.
+
+**Where:** `Helpers/PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low in the direction that matters (adds a restriction, never removes one).
+Three new direct unit tests —
+`PropertyClassApplyToItem_AuthoredIsReadOnlyTrue_ForcesInsertAndUpdateNotAllowed`,
+`PropertyClassApplyToItem_UnauthoredIsReadOnly_KeepsExistingInsertUpdateAllowed` (the
+no-regression case), and `PropertyClassApplyToItem_AuthoredIsReadOnlyTrue_OverridesExplicit
+InsertUpdateAllowedTrue` (proves ordering: `IsReadOnly` wins even over an explicit contradictory
+`InsertAllowed`/`UpdateAllowed = true`) — each proven via revert (commenting out the new
+conditional failed both of the first two authored-true assertions with the predicted `True` vs
+`False` mismatch), full 187-test suite green across 5 consecutive runs before and after, full
+engine rebuild clean. No Beep.Forms code change needed — both hosts were already consumers of
+`item.InsertAllowed`/`item.UpdateAllowed`.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
