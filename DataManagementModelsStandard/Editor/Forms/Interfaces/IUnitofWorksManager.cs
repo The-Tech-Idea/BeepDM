@@ -40,6 +40,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Rolls back all currently dirty blocks.</summary>
         Task<bool> RollbackDirtyBlocksAsync();
 
+        /// <summary>
+        /// Gets the dirty-state manager: per-block unsaved-changes detail (dirty record
+        /// count, last-modified time, whether the block has validation errors), the
+        /// Save/Discard/Cancel prompt workflow (<c>CheckAndHandleUnsavedChangesAsync</c> +
+        /// <c>OnUnsavedChanges</c>), and save/rollback of a specific set of dirty blocks.
+        /// The properties above (<see cref="IsDirty"/>, <see cref="GetDirtyBlocks"/>,
+        /// <see cref="SaveDirtyBlocksAsync()"/>, <see cref="RollbackDirtyBlocksAsync()"/>)
+        /// are the simple, no-prompt primitives; this is the richer surface behind them.
+        /// </summary>
+        IDirtyStateManager DirtyStateManager { get; }
+
         /// <summary>Gets the latest status message emitted by the manager.</summary>
         string Status { get; }
 

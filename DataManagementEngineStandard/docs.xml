@@ -22582,7 +22582,7 @@
             Raised when an operation encounters unsaved changes and needs a caller decision.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}},System.Func{TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}},System.Func{TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions},System.Func{System.String,System.Boolean})">
             <summary>
             Creates a dirty-state manager for the registered blocks owned by a FormsManager instance.
             </summary>
@@ -22595,6 +22595,14 @@
             Resolver for the manager-configured default <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions"/> (typically
             <c>() =&gt; Configuration?.DefaultSaveOptions</c>). Optional; when null or when it
             returns null, <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions.Default"/> is used, matching prior behavior.
+            </param>
+            <param name="hasValidationErrorsFunc">
+            Resolver for whether a named block currently has any item in an error state
+            (typically <c>blockName =&gt; ItemProperties.GetItemsWithErrors(blockName).Count &gt; 0</c>,
+            the same live state <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager"/>
+            tracks from real validation-rule failures via <c>SetItemError</c>/<c>ClearItemError</c>).
+            Optional; when null, <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.HasValidationErrors(TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo)"/> conservatively reports false
+            (no known errors) rather than fabricating a state it cannot observe.
             </param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.CheckAndHandleUnsavedChangesAsync(System.String)">

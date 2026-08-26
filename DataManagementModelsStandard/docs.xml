@@ -3692,6 +3692,14 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.GetDirtyBlocks">
             <summary>Returns the names of blocks that currently have unsaved changes.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.GetDirtyBlocksWithDetails">
+            <summary>
+            Returns detailed information about each dirty block (dirty record count,
+            last-modified time, whether it has validation errors, whether it is a
+            master block) without raising <see cref="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.OnUnsavedChanges"/> or acting on
+            the result -- a read-only query, unlike <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.CheckAndHandleUnsavedChangesAsync(System.String)"/>.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager.CollectDirtyDetailBlocks(System.String,System.Collections.Generic.List{System.String})">
             <summary>Collects dirty detail blocks related to a master block into the supplied list.</summary>
         </member>
@@ -4998,6 +5006,17 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RollbackDirtyBlocksAsync">
             <summary>Rolls back all currently dirty blocks.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.DirtyStateManager">
+            <summary>
+            Gets the dirty-state manager: per-block unsaved-changes detail (dirty record
+            count, last-modified time, whether the block has validation errors), the
+            Save/Discard/Cancel prompt workflow (<c>CheckAndHandleUnsavedChangesAsync</c> +
+            <c>OnUnsavedChanges</c>), and save/rollback of a specific set of dirty blocks.
+            The properties above (<see cref="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.IsDirty"/>, <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetDirtyBlocks"/>,
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SaveDirtyBlocksAsync"/>, <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RollbackDirtyBlocksAsync"/>)
+            are the simple, no-prompt primitives; this is the richer surface behind them.
+            </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Status">
             <summary>Gets the latest status message emitted by the manager.</summary>

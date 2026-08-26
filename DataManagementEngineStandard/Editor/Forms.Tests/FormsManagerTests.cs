@@ -3168,4 +3168,93 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region DirtyStateManager.HasValidationErrors (gaps.md G0.53, closed 2026-08-27)
+
+    // HasValidationErrors always returned false ("Placeholder"), regardless of the block's real
+    // validation state. It feeds DirtyBlockInfo.HasErrors/IsValid -- the same data
+    // HandleUnsavedChangesPrompt's alert shows the user -- so a block with genuinely failing
+    // validation still reported "no errors" when asking Save/Discard/Cancel. Fixed via a new
+    // constructor resolver, hasValidationErrorsFunc, wired in FormsManager.Core.cs to
+    // ItemProperties.GetItemsWithErrors(blockName).Count > 0 -- the live per-item error state
+    // ItemPropertyManager already tracks from real validation-rule failures.
+
+    [Fact]
+    public void GetDirtyBlocksWithDetails_ResolverReportsErrors_HasErrorsIsTrue()
+    {
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+
+        var blockInfo = new DataBlockInfo { BlockName = "EMP", UnitOfWork = uowMock.Object };
+        var blocks = new ConcurrentDictionary<string, DataBlockInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["EMP"] = blockInfo
+        };
+        var dirtyStateManager = new DirtyStateManager(
+            _mockEditor.Object,
+            blocks,
+            getDetailBlocksFunc: _ => new List<string>(),
+            getBlockFunc: name => blocks.TryGetValue(name, out var b) ? b : null,
+            getRelationshipsFunc: _ => new List<DataBlockRelationship>(),
+            hasValidationErrorsFunc: name => string.Equals(name, "EMP", StringComparison.OrdinalIgnoreCase));
+
+        var details = dirtyStateManager.GetDirtyBlocksWithDetails();
+
+        var detail = Assert.Single(details);
+        Assert.True(detail.HasErrors);
+    }
+
+    [Fact]
+    public void GetDirtyBlocksWithDetails_ResolverReportsNoErrors_HasErrorsIsFalse()
+    {
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+
+        var blockInfo = new DataBlockInfo { BlockName = "EMP", UnitOfWork = uowMock.Object };
+        var blocks = new ConcurrentDictionary<string, DataBlockInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["EMP"] = blockInfo
+        };
+        var dirtyStateManager = new DirtyStateManager(
+            _mockEditor.Object,
+            blocks,
+            getDetailBlocksFunc: _ => new List<string>(),
+            getBlockFunc: name => blocks.TryGetValue(name, out var b) ? b : null,
+            getRelationshipsFunc: _ => new List<DataBlockRelationship>(),
+            hasValidationErrorsFunc: _ => false);
+
+        var details = dirtyStateManager.GetDirtyBlocksWithDetails();
+
+        var detail = Assert.Single(details);
+        Assert.False(detail.HasErrors);
+    }
+
+    [Fact]
+    public void GetDirtyBlocksWithDetails_NoResolverSupplied_HasErrorsIsFalse()
+    {
+        // Backward-compatible default: a caller that does not wire the resolver (the shape
+        // every FormsManagerTests DirtyStateManager construction above already used before
+        // this fix) gets the conservative "no known errors" answer, not a fabricated one.
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+
+        var blockInfo = new DataBlockInfo { BlockName = "EMP", UnitOfWork = uowMock.Object };
+        var blocks = new ConcurrentDictionary<string, DataBlockInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["EMP"] = blockInfo
+        };
+        var dirtyStateManager = new DirtyStateManager(
+            _mockEditor.Object,
+            blocks,
+            getDetailBlocksFunc: _ => new List<string>(),
+            getBlockFunc: name => blocks.TryGetValue(name, out var b) ? b : null,
+            getRelationshipsFunc: _ => new List<DataBlockRelationship>());
+
+        var details = dirtyStateManager.GetDirtyBlocksWithDetails();
+
+        var detail = Assert.Single(details);
+        Assert.False(detail.HasErrors);
+    }
+
+    #endregion
 }

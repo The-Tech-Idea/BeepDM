@@ -1939,14 +1939,14 @@ the raised `OnUnsavedChanges` event args — proven via revert independently for
 reverting `GetLastModifiedTime` alone failed the timestamp assertion with the fabricated
 "just now" value). Full 195-test suite green across 5 consecutive runs; full engine rebuild clean.
 
-**Not attempted in this pass, deliberately:** the third stub in the same method cluster,
+**Closed by G0.65 (2026-08-27):** the third stub in the same method cluster,
 `HasValidationErrors` (`"This would need to be implemented based on your validation logic" /
-return false; // Placeholder`), always reports no errors. Unlike the two fixed here,
-`DirtyStateManager` has no existing dependency it can reach for a real answer — it holds only
-`_getBlockFunc`/`_getDetailBlocksFunc`/`_getRelationshipsFunc` delegates, not a reference to
-`ItemPropertyManager`/`ValidationManager` (which own `HasItemError`/validation state). Wiring it
-needs a new constructor dependency, not a redirect to an already-reachable sink — a smaller but
-real follow-on left for a future pass rather than guessed at here.
+return false; // Placeholder`), always reported no errors. It needed exactly the new constructor
+dependency this note predicted — see G0.65 for the fix (a `hasValidationErrorsFunc` resolver to
+`ItemProperties.GetItemsWithErrors`) and the larger reachability gap it was found alongside
+(`IUnitofWorksManager` never declared `DirtyStateManager` at all, so none of this — G0.52's prompt,
+G0.53's/G0.54's real counts and options, and now `HasValidationErrors` — was reachable from either
+host in the first place).
 
 ---
 
@@ -2622,6 +2622,66 @@ after dirtying the block, and pins down the real (non-obvious) contract that
 `DesignerCompileCheck` re-run clean. Full regression sweep: all 22 WPF `Examples` self-tests and all
 12 WinForms `Examples` self-tests pass (WinForms benefits from the same engine fix through
 `WinFormFormHost`, which shares `FormsManager`/`RegisterBlock`).
+
+---
+
+### G0.65: `IUnitofWorksManager.DirtyStateManager` was genuinely unreachable, and closing
+that gap surfaced `HasValidationErrors`, G0.53's own deliberately-deferred follow-on
+(FIXED 2026-08-27)
+
+**What:** Closing the loop on G0.53's own "not attempted in this pass" note (`HasValidationErrors`
+needs a new constructor dependency `DirtyStateManager` didn't have) surfaced a second, larger gap
+first: `FormsManager.DirtyStateManager` — the richer per-block dirty detail
+(`GetDirtyBlocksWithDetails()`'s `DirtyRecordCount`/`LastModified`/`HasErrors`, and the
+`CheckAndHandleUnsavedChangesAsync`/`OnUnsavedChanges` Save/Discard/Cancel prompt workflow G0.52
+already wired to a real `ShowAlertAsync` dialog) was never declared on `IUnitofWorksManager` — the
+only type either host (`WinFormFormHost.FormsManager`, `BeepWpfForms.FormsManager`) is typed as.
+Same "declared but genuinely unreachable without an unsafe cast" shape as G0.59
+(`FireItemTriggerAsync`) and G0.63 (`SetSystemVariables`). Checked `Beep.Forms/…/
+WinFormDirtyStatePanel.cs`: 24 lines, uses only the simpler primitives already on the interface
+(`GetDirtyBlocks`/`SaveDirtyBlocksAsync`/`RollbackDirtyBlocksAsync`) — so the richer surface, and
+everything G0.52/G0.53/G0.54 built on top of it, had no path to either host at all.
+
+**Fix (reachability):** `IUnitofWorksManager.DirtyStateManager { get; }` (purely additive —
+`FormsManager.DirtyStateManager` already existed with this exact signature, zero concrete-class
+change) and `IDirtyStateManager.GetDirtyBlocksWithDetails()` (the concrete `DirtyStateManager`
+already implemented it) in `ICoreHelpers.cs`/`IUnitofWorksManager.cs`.
+
+**Fix (HasValidationErrors, G0.53's deferred item):** New constructor resolver on
+`DirtyStateManager`, `Func<string, bool> hasValidationErrorsFunc`, matching the existing
+`getDefaultSaveOptionsFunc` late-bound-closure shape (constructed before `_itemPropertyManager` in
+`FormsManager.Core.cs`'s init order, safe because the closure reads the field when invoked, not at
+construction). Wired to `ItemProperties.GetItemsWithErrors(blockName).Count > 0` — the live
+per-item error state `ItemPropertyManager` already tracks from real validation-rule failures
+(`SetItemError`/`ClearItemError`, `FormsManager.Validation.cs`), not a fresh validation run. No
+resolver supplied (every pre-existing `DirtyStateManager` construction in `FormsManagerTests.cs`)
+means "no known source of truth": conservatively `false`, never fabricated `true`.
+
+**Where:** `DataManagementModelsStandard/Editor/Forms/Interfaces/IUnitofWorksManager.cs`,
+`ICoreHelpers.cs`; `DataManagementEngineStandard/Editor/Forms/Helpers/DirtyStateManager.cs`,
+`FormsManager.Core.cs`.
+
+**Proven via revert, at both layers.** Three new `FormsManagerTests.cs` cases (resolver reports
+errors / reports none / absent-resolver default) — reverting `HasValidationErrors` to the hardcoded
+`false` failed exactly the "reports errors" case, the other two correctly unaffected. New
+`Beep.Forms/…/Examples.WinForms/DirtyStateSelfTest.cs` (`--selftest-dirtystate`) proves both fixes
+together through the real interface boundary — `masterHost.FormsManager!.DirtyStateManager` would
+not have compiled before the interface fix — with a real registered `ValidationRule`: an in-range
+edit reports `HasErrors=false`, an out-of-range edit reports `HasErrors=true`. One gotcha caught
+writing it, orthogonal to this fix: the rule needs `Timing = ValidationTiming.OnChange` explicit —
+`SetFieldValue`'s automatic validation runs at `OnChange`, and a rule left at the `ValidationRule`
+default (`OnBlur`, the default every IDE-authored rule takes) is filtered out of that pass entirely
+by `ValidationManager.GetApplicableRules`. Reverting the engine fix reproduced the exact predicted
+failure end to end through the host.
+
+**Not attempted here, deliberately:** wiring `HasErrors`/`DirtyRecordCount`/`LastModified` into
+`WinFormDirtyStatePanel`'s (or the WPF equivalent's) own display, or auto-invoking
+`CheckAndHandleUnsavedChangesAsync` from a host choke point (e.g. `Form.Closing`) — matching
+G0.63's own restraint of exposing a capability additively without deciding, in the same pass,
+exactly when a host should invoke it.
+
+**Verified:** `FormsManager.Tests` 201/201 (198 existing + 3 new). `SmokeTests`,
+`DesignerCompileCheck`, full `Beep.Forms.slnx` build, all green. New self-test 5/5.
 
 ---
 ## P0 — Correctness / Existing-User Impact

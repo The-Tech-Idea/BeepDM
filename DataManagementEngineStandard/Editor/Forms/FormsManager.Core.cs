@@ -147,7 +147,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             // Initialize helper managers with defaults if not provided
             _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(
                 _dmeEditor, _blocks, GetDetailBlocks, GetBlock, GetActiveRelationships,
-                getDefaultSaveOptionsFunc: () => Configuration?.DefaultSaveOptions);
+                getDefaultSaveOptionsFunc: () => Configuration?.DefaultSaveOptions,
+                // _itemPropertyManager is constructed later in this same method --
+                // safe because this closure reads the field when invoked, not now.
+                hasValidationErrorsFunc: blockName =>
+                    (_itemPropertyManager?.GetItemsWithErrors(blockName)?.Count ?? 0) > 0);
             _eventManager = eventManager ?? new EventManager(_dmeEditor);
             _formsSimulationHelper = formsSimulationHelper ?? new FormsSimulationHelper(_dmeEditor, _blocks);
             _performanceManager = performanceManager ?? new PerformanceManager(_dmeEditor);

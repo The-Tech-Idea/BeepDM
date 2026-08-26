@@ -26,6 +26,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly Func<string, DataBlockInfo> _getBlockFunc;
         private readonly Func<string, List<DataBlockRelationship>> _getRelationshipsFunc;
         private readonly Func<SaveOptions> _getDefaultSaveOptionsFunc;
+        private readonly Func<string, bool> _hasValidationErrorsFunc;
         private static bool IsNullOrEmpty(object value) =>
             value == null || value == DBNull.Value || (value is string text && string.IsNullOrWhiteSpace(text));
 
@@ -53,13 +54,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <c>() =&gt; Configuration?.DefaultSaveOptions</c>). Optional; when null or when it
         /// returns null, <see cref="SaveOptions.Default"/> is used, matching prior behavior.
         /// </param>
+        /// <param name="hasValidationErrorsFunc">
+        /// Resolver for whether a named block currently has any item in an error state
+        /// (typically <c>blockName =&gt; ItemProperties.GetItemsWithErrors(blockName).Count &gt; 0</c>,
+        /// the same live state <see cref="Editor.UOWManager.Interfaces.IItemPropertyManager"/>
+        /// tracks from real validation-rule failures via <c>SetItemError</c>/<c>ClearItemError</c>).
+        /// Optional; when null, <see cref="HasValidationErrors"/> conservatively reports false
+        /// (no known errors) rather than fabricating a state it cannot observe.
+        /// </param>
         public DirtyStateManager(
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks,
             Func<string, List<string>> getDetailBlocksFunc,
             Func<string, DataBlockInfo> getBlockFunc,
             Func<string, List<DataBlockRelationship>> getRelationshipsFunc,
-            Func<SaveOptions> getDefaultSaveOptionsFunc = null)
+            Func<SaveOptions> getDefaultSaveOptionsFunc = null,
+            Func<string, bool> hasValidationErrorsFunc = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             _blocks = blocks ?? throw new ArgumentNullException(nameof(blocks));
@@ -67,6 +77,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             _getBlockFunc = getBlockFunc ?? throw new ArgumentNullException(nameof(getBlockFunc));
             _getRelationshipsFunc = getRelationshipsFunc ?? throw new ArgumentNullException(nameof(getRelationshipsFunc));
             _getDefaultSaveOptionsFunc = getDefaultSaveOptionsFunc;
+            _hasValidationErrorsFunc = hasValidationErrorsFunc;
         }
 
         #endregion
@@ -513,8 +524,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                // This would need to be implemented based on your validation logic
-                return false; // Placeholder
+                // Always returned false regardless of the block's real state (gaps.md
+                // G0.53) -- DirtyBlockInfo.HasErrors/IsValid fed straight from here into
+                // the HandleUnsavedChangesPrompt alert, so a block with genuinely failing
+                // validation still told the user "no errors" when asking Save/Discard/
+                // Cancel. _hasValidationErrorsFunc is the live per-item error state
+                // ItemPropertyManager already tracks from real validation-rule failures
+                // (SetItemError/ClearItemError, wired in FormsManager.Validation.cs) --
+                // the same state an on-screen item error indicator reads. No resolver
+                // means no known source of truth: report false rather than guess true,
+                // since a false positive would block every save/discard/cancel decision
+                // for a form that never wired one.
+                return _hasValidationErrorsFunc?.Invoke(block.BlockName) ?? false;
             }
             catch
             {

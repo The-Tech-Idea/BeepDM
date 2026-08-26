@@ -28,6 +28,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Returns the names of blocks that currently have unsaved changes.</summary>
         List<string> GetDirtyBlocks();
 
+        /// <summary>
+        /// Returns detailed information about each dirty block (dirty record count,
+        /// last-modified time, whether it has validation errors, whether it is a
+        /// master block) without raising <see cref="OnUnsavedChanges"/> or acting on
+        /// the result -- a read-only query, unlike <see cref="CheckAndHandleUnsavedChangesAsync"/>.
+        /// </summary>
+        List<DirtyBlockInfo> GetDirtyBlocksWithDetails();
+
         /// <summary>Collects dirty detail blocks related to a master block into the supplied list.</summary>
         void CollectDirtyDetailBlocks(string blockName, List<string> dirtyBlocks);
 
