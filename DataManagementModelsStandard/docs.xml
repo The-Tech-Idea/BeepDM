@@ -5322,6 +5322,28 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ValidateForm">
             <summary>Validates the current form across its registered blocks.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ValidateAllBlocksForModeTransitionAsync">
+            <summary>
+            Validates every registered block for a safe form-level mode
+            transition (e.g. before EXIT_FORM): unsaved changes and
+            per-block validation state. Returns <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Warning"/>
+            (not <see cref="F:TheTechIdea.Beep.ConfigUtil.Errors.Failed"/>) when issues are found -- the
+            caller decides whether to block or merely warn.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetAllBlockModeInfo">
+            <summary>
+            Snapshot of every registered block's current mode, dirty state
+            and record count -- Oracle Forms form-status-line equivalent,
+            for a host status bar or diagnostic panel.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.IsFormReadyForModeTransitionAsync">
+            <summary>
+            True when <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ValidateAllBlocksForModeTransitionAsync"/>
+            found no blocking issue across the form.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetBlockUndoEnabled(System.String,System.Boolean,System.Int32)">
             <summary>Enable or disable undo tracking for a block.</summary>
         </member>

@@ -387,6 +387,38 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Validates the current form across its registered blocks.</summary>
         bool ValidateForm();
 
+        // ── Form-Level Mode-Transition Readiness ───────────────────────
+        // Added 2026-08-26 -- these three were implemented on FormsManager
+        // (looping every block, unlike the per-block ValidateBlock/ValidateForm
+        // above) but never declared here, so no host could reach a
+        // form-wide "is it safe to change mode / can I exit" check without
+        // an unsafe cast. The Oracle Forms parallel is EXIT_FORM prompting
+        // "Save changes?" when any block across the whole form is dirty --
+        // a check ValidateForm() alone doesn't make, since it doesn't
+        // inspect UnitOfWork.IsDirty.
+
+        /// <summary>
+        /// Validates every registered block for a safe form-level mode
+        /// transition (e.g. before EXIT_FORM): unsaved changes and
+        /// per-block validation state. Returns <see cref="Errors.Warning"/>
+        /// (not <see cref="Errors.Failed"/>) when issues are found -- the
+        /// caller decides whether to block or merely warn.
+        /// </summary>
+        Task<IErrorsInfo> ValidateAllBlocksForModeTransitionAsync();
+
+        /// <summary>
+        /// Snapshot of every registered block's current mode, dirty state
+        /// and record count -- Oracle Forms form-status-line equivalent,
+        /// for a host status bar or diagnostic panel.
+        /// </summary>
+        Dictionary<string, BlockModeInfo> GetAllBlockModeInfo();
+
+        /// <summary>
+        /// True when <see cref="ValidateAllBlocksForModeTransitionAsync"/>
+        /// found no blocking issue across the form.
+        /// </summary>
+        Task<bool> IsFormReadyForModeTransitionAsync();
+
 
         /// <summary>Enable or disable undo tracking for a block.</summary>
         void SetBlockUndoEnabled(string blockName, bool enable, int maxDepth = 50);

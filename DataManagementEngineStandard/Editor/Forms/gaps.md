@@ -2450,9 +2450,11 @@ correspondingly higher priority to look at next:
     checks `UnitOfWork.IsDirty` per block (a genuinely different "is it safe to switch modes"
     question `ValidateForm()` doesn't ask), but never fires `WhenValidateForm` itself — so a
     mode-transition readiness check specifically skips a trigger a form author would reasonably
-    expect to fire. Still genuinely unreachable from any host (confirmed: no bare or dotted caller
-    anywhere for `GetAllBlockModeInfo`/`IsFormReadyForModeTransitionAsync` themselves), just not for
-    the reason "duplicates an equally-unused ValidateForm()" the first version of this note gave.
+    expect to fire. **`GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
+    `ValidateAllBlocksForModeTransitionAsync` — FIXED, see G0.64.** Declared all three on
+    `IUnitofWorksManager`; writing the verifying self-test surfaced a second, more significant
+    defect (also closed by G0.64): `_currentBlockName` — the field `GetAllBlockModeInfo`'s
+    `IsCurrentBlock` reads — was never initialized for a form's first block.
 
 **Likely-unused feature clusters (case c — plausibly safe to leave, lowest priority to
 investigate further):**
@@ -2534,6 +2536,92 @@ already had to satisfy on the concrete type used everywhere in this codebase.
 handled gracefully (`RecordPropertyAccessor.TrySetValue` fails closed and reports through
 `DMEEditor.AddLogMessage`, not a thrown exception). `SmokeTests` and `DesignerCompileCheck` both
 re-run clean; every other WPF `Examples` self-test unaffected.
+
+---
+
+### G0.64: `_currentBlockName` was never initialized for a form's first block, so every
+"current block" fallback silently had no current block at all (FIXED 2026-08-26)
+
+**What:** Continuing G0.62's case-b inventory, `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync`
+/ `ValidateAllBlocksForModeTransitionAsync` were declared on `IUnitofWorksManager` (matching the
+G0.63 `SetSystemVariables` fix — purely additive, `FormsManager` already implemented all three).
+Writing `Examples.WPF/ModeTransitionReadinessSelfTest.cs` to prove `GetAllBlockModeInfo`'s
+`IsCurrentBlock` field against a real, single-block form surfaced a second, unrelated, and more
+significant defect: `IsCurrentBlock` was `false` for the block, even though it was the only block
+registered and had just been queried and navigated. Traced to `_currentBlockName`
+(`FormsManager.Core.cs`): it is set in exactly one place, `SwitchToBlockAsync` (and its delegate
+`GoBlockAsync`) — an *explicit* block-switch call, the kind a NEXT_BLOCK/PREVIOUS_BLOCK menu command
+or block-navigation UI element would issue. Grepped every caller of `SwitchToBlockAsync`/
+`GoBlockAsync`/the public `CurrentBlockName` setter across both this repo and BeepDM: neither host
+(`WinFormFormHost`, `BeepWpfForms`) nor either `Examples` app ever calls any of them — the only
+writers found were three unit tests using `CurrentBlockName = "EMP"` as setup convenience. So
+`_currentBlockName` stays `null` for the entire life of every real `FormsManager` instance created
+by either host, unless the application explicitly performs a block switch — which never happens for
+the initial, most common case: a single-block form, or the first block of a multi-block form before
+any switch has occurred.
+
+This is a genuine "accepted-then-ignored" defect (house rule 7: "ask what reads this value to make a
+decision") — `_currentBlockName` is read by five other consumers, all silently degraded for the same
+reason:
+- `GetAllBlockModeInfo`'s `IsCurrentBlock` (just found) — always `false`.
+- `FormsManager.DmlTriggers.cs` / `KeyTriggers.cs` / `Menu.cs` — each has a `blockName ??
+  _currentBlockName` fallback for firing a DML/KEY-*/menu-command trigger without an explicit block
+  name; all three silently resolve to no block (empty trigger context) instead of "the block the
+  user is presently in."
+- `FormsManager.Alerts.cs`'s `MessageScope()` — alerts raised without an explicit block name get an
+  empty scope instead of the current block's.
+- `SaveFormState`/`RestoreFormStateAsync` (`FormsManager.DataOperations.cs`) — `RestoreFormStateAsync`
+  explicitly skips restoring the current-block selection when the snapshot's `CurrentBlock` is empty
+  (`if (!string.IsNullOrEmpty(snapshot.CurrentBlock)) await SwitchToBlockAsync(...)`), so a
+  save/restore cycle silently never restored which block had focus.
+
+Oracle Forms itself always has a current block, defaulting to the first block in the form's
+navigation sequence — there is no "no current block" state in a running Oracle Forms session.
+
+**Fix:** `RegisterBlock` (`FormsManager.BlockRegistration.cs`), immediately after the existing
+`TriggerBlockEnter` call: if `_currentBlockName` is still empty, set it to the block just registered
+and call `_systemVariablesManager?.UpdateForBlockChange(blockName)` (the same system-variables sync
+`SwitchToBlockAsync` performs) so `:SYSTEM.CURRENT_BLOCK` doesn't drift out of sync with the field
+this fix populates. First-registered-block-becomes-current, only when nothing has already claimed
+that status — a later `RegisterBlock` call for a second block does not override an already-set
+current block, matching Oracle Forms' block-sequence-order default.
+
+**Where:** `Editor/Forms/FormsManager.BlockRegistration.cs` (`RegisterBlock`, one call site).
+
+**Proven via revert:** temporarily gated the new assignment behind `if (false && ...)`, reran the
+targeted xUnit tests: `RegisterBlock_FirstBlock_BecomesCurrentBlock` and
+`RegisterBlock_SecondBlock_DoesNotOverrideCurrentBlock` (new, this fix) both failed as predicted
+(`CurrentBlockName` stayed empty), and the two existing `SwitchToBlockAsync`/`GoBlockAsync` →
+`UpdateForBlockChange` tests failed their `Times.Exactly(2)` assertion, reporting exactly 1 — the
+explicit switch call's own invocation, with the registration-time one missing. Restoring the fix
+made all four pass again.
+
+**Existing-test correction:** `SwitchToBlockAsync_UpdatesSystemVariablesCurrentBlock` and
+`GoBlockAsync_DelegatesToSwitchToBlockAsync_UpdatesSystemVariables` (`FormsManagerTests.cs`, G0.36)
+asserted `UpdateForBlockChange` fires exactly once when the test's one registered block is
+explicitly switched to itself. That assumption predates this fix and is now stale for a legitimate
+reason, not a fix collateral: `RegisterBlock` now fires it once (establishing the initial current
+block) and the explicit `SwitchToBlockAsync`/`GoBlockAsync` call — switching to a block that is
+already current, which has no same-block short-circuit — fires it again. Updated both to
+`Times.Exactly(2)` with a comment explaining why.
+
+**Risk of fix:** Low. Purely additive for the case that was previously always broken (a still-null
+`_currentBlockName` was never a state anything could have correctly depended on); does not fire
+`PreBlock`/`WhenNewBlockInstance` (registration is not a navigation event, and deciding whether it
+should is a separate design question this fix does not make unilaterally, matching the restraint
+already applied to `WhenLogon`/`SetSystemVariables`'s auto-invocation question).
+
+**Verified:** `FormsManager.Tests` (198/198 passing — 196 existing + 2 new, 2 corrected). New
+`Examples.WPF/ModeTransitionReadinessSelfTest.cs` (`--selftest-modetransition`) passes 12/12 —
+`GetAllBlockModeInfo`, `ValidateAllBlocksForModeTransitionAsync`, and
+`IsFormReadyForModeTransitionAsync` all exercised through `IUnitofWorksManager`, both before and
+after dirtying the block, and pins down the real (non-obvious) contract that
+`IsFormReadyForModeTransitionAsync` only gates on `Errors.Failed`, not `Errors.Warning` — it stays
+`true` even with unsaved changes; a caller that wants to block on dirty state must read
+`ValidateAllBlocksForModeTransitionAsync`'s own result directly. `SmokeTests` and
+`DesignerCompileCheck` re-run clean. Full regression sweep: all 22 WPF `Examples` self-tests and all
+12 WinForms `Examples` self-tests pass (WinForms benefits from the same engine fix through
+`WinFormFormHost`, which shares `FormsManager`/`RegisterBlock`).
 
 ---
 ## P0 — Correctness / Existing-User Impact

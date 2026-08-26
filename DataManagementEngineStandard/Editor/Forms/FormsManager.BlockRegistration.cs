@@ -332,6 +332,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Trigger block enter event
                 _eventManager.TriggerBlockEnter(blockName);
+
+                // G0.64 (2026-08-26): _currentBlockName was never
+                // initialized for a form's first block -- only an
+                // explicit SwitchToBlockAsync/GoBlockAsync call (a
+                // block-navigation menu command) ever set it, and no host
+                // in this repo calls that on initial registration. Every
+                // consumer that falls back to "the current block" when no
+                // block name is given (DmlTriggers/KeyTriggers/Menu
+                // dispatch's blockName ?? _currentBlockName pattern, Alert
+                // MessageScope, GetAllBlockModeInfo's IsCurrentBlock,
+                // SaveFormState/RestoreFormStateAsync's block-position
+                // restore) silently treated every single-block form -- and
+                // the first block of every multi-block form, before any
+                // explicit switch -- as having no current block at all.
+                // Oracle Forms' own default is the first block in
+                // navigation sequence; mirrored here as "the first block
+                // registered becomes current, unless something already
+                // claimed that" -- purely additive, since a still-null
+                // _currentBlockName was never a state anything could have
+                // correctly depended on.
+                if (string.IsNullOrEmpty(_currentBlockName))
+                {
+                    _currentBlockName = blockName;
+                    _systemVariablesManager?.UpdateForBlockChange(blockName);
+                }
             }
             catch (Exception ex)
             {

@@ -120,6 +120,40 @@ public class FormsManagerTests : IDisposable
         Assert.False(removed);
     }
 
+    // G0.64 (2026-08-26): _currentBlockName was never initialized for a
+    // form's first block -- only an explicit SwitchToBlockAsync/
+    // GoBlockAsync call ever set it, and no host in this repo calls that
+    // on initial registration. Every "current block" fallback
+    // (DmlTriggers/KeyTriggers/Menu dispatch, Alert MessageScope,
+    // GetAllBlockModeInfo's IsCurrentBlock, SaveFormState/
+    // RestoreFormStateAsync) silently treated every single-block form as
+    // having no current block at all. Fixed by defaulting the first
+    // registered block to current, mirroring Oracle Forms' own default
+    // (first block in navigation sequence).
+
+    [Fact]
+    public void RegisterBlock_FirstBlock_BecomesCurrentBlock()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+
+        _manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        Assert.Equal("EMP", _manager.CurrentBlockName);
+    }
+
+    [Fact]
+    public void RegisterBlock_SecondBlock_DoesNotOverrideCurrentBlock()
+    {
+        var empEntity = CreateEntity("EMP", ("EMPNO", "int"));
+        var ordEntity = CreateEntity("ORD", ("OrderId", "int"));
+
+        _manager.RegisterBlock("EMP", CreateUowMock(1).Object, empEntity);
+        _manager.RegisterBlock("ORD", CreateUowMock(1).Object, ordEntity);
+
+        Assert.Equal("EMP", _manager.CurrentBlockName);
+    }
+
     #endregion
 
     #region Navigation
@@ -2476,7 +2510,14 @@ public class FormsManagerTests : IDisposable
         var switched = await manager.SwitchToBlockAsync("EMP").ConfigureAwait(false);
 
         Assert.True(switched);
-        variables.Verify(v => v.UpdateForBlockChange("EMP"), Times.Once);
+        // Twice, not once (G0.64, 2026-08-26): RegisterBlock now defaults
+        // _currentBlockName to the first block registered (nothing else
+        // had ever set it, silently breaking every consumer that falls
+        // back to "the current block"), which itself calls
+        // UpdateForBlockChange -- then this explicit SwitchToBlockAsync("EMP")
+        // call fires it again (EMP was already current, but
+        // SwitchToBlockAsync has no same-block short-circuit).
+        variables.Verify(v => v.UpdateForBlockChange("EMP"), Times.Exactly(2));
     }
 
     [Fact]
@@ -2494,7 +2535,10 @@ public class FormsManagerTests : IDisposable
         var switched = await manager.GoBlockAsync("ORD").ConfigureAwait(false);
 
         Assert.True(switched);
-        variables.Verify(v => v.UpdateForBlockChange("ORD"), Times.Once);
+        // Twice, not once -- see G0.64 note above: RegisterBlock's new
+        // first-block-becomes-current default fires it once, the explicit
+        // GoBlockAsync/SwitchToBlockAsync("ORD") call fires it again.
+        variables.Verify(v => v.UpdateForBlockChange("ORD"), Times.Exactly(2));
     }
 
     #endregion
