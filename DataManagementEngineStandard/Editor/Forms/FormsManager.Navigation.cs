@@ -112,7 +112,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Check for unsaved changes before navigation
-                if (!await CheckAndHandleUnsavedChangesAsync(blockName))
+                if (!await CheckAndHandleUnsavedChangesAsync(blockName).ConfigureAwait(false))
                     return false;
 
                 // Trigger navigation event
@@ -132,6 +132,25 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
+                // POST-RECORD on the record being left. NavigateToRecordInternalAsync
+                // (GO_RECORD / NavigateToRecordAsync / MoveToRecordAsync -- jumping to a
+                // specific index) never fired PostRecord/PreRecord/WhenNewRecordInstance
+                // at all until this fix (2026-08-26), unlike NavigateAsync (First/Next/
+                // Previous/Last), which has fired all three since 2026-08-02. A form
+                // that registers WHEN-NEW-RECORD-INSTANCE to react to the cursor moving
+                // between records never saw it fire for a direct index jump -- only for
+                // sequential navigation. Confirmed via a real registered handler in
+                // Examples.WPF's RecordNavigationSelfTest.cs. Mirrors NavigateAsync's
+                // fire points and TriggerContext.ForRecord usage exactly.
+                if (previousIndex >= 0)
+                {
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PostRecord, blockName,
+                        TriggerContext.ForRecord(
+                            TriggerType.PostRecord, blockName,
+                            blockInfo.UnitOfWork.CurrentItem, previousIndex, _dmeEditor)).ConfigureAwait(false);
+                }
+
                 // Perform the navigation
                 SuppressSync(blockName);
                 bool success;
@@ -140,7 +159,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     success = PerformRecordNavigation(blockInfo, recordIndex);
                 }
                 finally { ResumeSync(blockName); }
-                
+
                 if (success)
                 {
                     var currentIndex = blockInfo.UnitOfWork.Units != null
@@ -155,8 +174,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
                         _navHistoryManager.Push(blockName, previousIndex);
 
+                    // PRE-RECORD on entering the new record, then
+                    // WHEN-NEW-RECORD-INSTANCE once it is the current one.
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.PreRecord, blockName,
+                        TriggerContext.ForRecord(
+                            TriggerType.PreRecord, blockName,
+                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor)).ConfigureAwait(false);
+
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
+
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.WhenNewRecordInstance, blockName,
+                        TriggerContext.ForRecord(
+                            TriggerType.WhenNewRecordInstance, blockName,
+                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor)).ConfigureAwait(false);
 
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
@@ -202,7 +235,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Check for unsaved changes in current block and its children
                 if (!string.IsNullOrEmpty(_currentBlockName) && _currentBlockName != blockName)
                 {
-                    if (!await CheckAndHandleUnsavedChangesAsync(_currentBlockName))
+                    if (!await CheckAndHandleUnsavedChangesAsync(_currentBlockName).ConfigureAwait(false))
                     {
                         LogOperation($"Block switch cancelled due to unsaved changes in '{_currentBlockName}'");
                         return false;
@@ -250,7 +283,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostBlock, _currentBlockName,
                         TriggerContext.ForBlock(
-                            TriggerType.PostBlock, _currentBlockName, null, _dmeEditor));
+                            TriggerType.PostBlock, _currentBlockName, null, _dmeEditor)).ConfigureAwait(false);
 
                     _eventManager.TriggerBlockLeave(_currentBlockName);
                 }
@@ -261,12 +294,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // PRE-BLOCK on entering the target, before it becomes current.
                 await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreBlock, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreBlock, blockName, null, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreBlock, blockName, null, _dmeEditor)).ConfigureAwait(false);
 
                 // Fire WHEN-NEW-BLOCK-INSTANCE trigger (Oracle Forms equivalent)
                 await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.WhenNewBlockInstance, blockName,
-                    TriggerContext.ForBlock(TriggerType.WhenNewBlockInstance, blockName, null, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.WhenNewBlockInstance, blockName, null, _dmeEditor)).ConfigureAwait(false);
 
                 // B5 (audit pass 3, 2026-06): assign _currentBlockName
                 // AFTER the triggers fire, so a host subscriber that
@@ -406,7 +439,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             var result = await _triggerManager.FireBlockTriggerAsync(
                 TriggerType.WhenNewItemInstance,
                 blockName,
-                ctx);
+                ctx).ConfigureAwait(false);
             if (result is not TriggerResult.Success and not TriggerResult.Skipped)
                 return false;
 
@@ -507,7 +540,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 }
 
                 // Check for unsaved changes before navigation
-                if (!await CheckAndHandleUnsavedChangesAsync(blockName))
+                if (!await CheckAndHandleUnsavedChangesAsync(blockName).ConfigureAwait(false))
                 {
                     LogOperation($"Navigation cancelled due to unsaved changes in block '{blockName}'");
                     return false;
@@ -565,7 +598,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostRecord, blockName,
-                        TriggerContext.ForBlock(TriggerType.PostRecord, blockName, null, _dmeEditor));
+                        TriggerContext.ForRecord(
+                            TriggerType.PostRecord, blockName,
+                            blockInfo.UnitOfWork.CurrentItem, previousIndex, _dmeEditor)).ConfigureAwait(false);
                 }
 
                 // Perform the navigation
@@ -599,17 +634,33 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                     // PRE-RECORD on entering the new record, then
                     // WHEN-NEW-RECORD-INSTANCE once it is the current one.
+                    //
+                    // Both fire through TriggerContext.ForBlock (Scope=Block,
+                    // RecordIndex left at its -1 default) until this fix
+                    // (2026-08-26) even though both are genuinely
+                    // record-scoped triggers -- ForRecord exists specifically
+                    // for this shape (Scope=Record, carries the record and
+                    // its index) and was simply the wrong factory picked at
+                    // the 2026-08-02 fire-point addition. A handler reading
+                    // TriggerContext.RecordIndex to know which record just
+                    // became current -- the entire point of
+                    // WHEN-NEW-RECORD-INSTANCE, per the comment above -- saw
+                    // -1 on every fire. Confirmed via a real registered
+                    // handler in Examples.WPF's RecordNavigationSelfTest.cs.
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PreRecord, blockName,
-                        TriggerContext.ForBlock(TriggerType.PreRecord, blockName, null, _dmeEditor));
+                        TriggerContext.ForRecord(
+                            TriggerType.PreRecord, blockName,
+                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor)).ConfigureAwait(false);
 
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
 
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.WhenNewRecordInstance, blockName,
-                        TriggerContext.ForBlock(
-                            TriggerType.WhenNewRecordInstance, blockName, null, _dmeEditor));
+                        TriggerContext.ForRecord(
+                            TriggerType.WhenNewRecordInstance, blockName,
+                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor)).ConfigureAwait(false);
 
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
