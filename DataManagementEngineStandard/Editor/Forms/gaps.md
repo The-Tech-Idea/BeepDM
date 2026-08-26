@@ -1732,6 +1732,55 @@ separately-scoped design work, not a same-pass mechanical wire-up — left as a 
 future work item rather than attempted piecemeal.
 
 ---
+
+### G0.49: `LOVColumn`'s per-column display config (`Width`/`Visible`/`Searchable`/`Format`/
+`Alignment`/`SortOrder`/`SortAscending`) is honored by the WPF LOV picker and not by
+`WinFormLovDialog` — real gap, needs a grid control WinForms doesn't use here yet
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Surveying `LOVDefinition`/`LOVColumn` for the same shape this session's other passes
+found. Most of `LOVDefinition`'s properties are genuinely wired — `LOVName`, `Title`,
+`DataSourceName`, `EntityName`, `DisplayField`, `ReturnField`, `Columns`, `Filters`,
+`AllowSearch`, `SearchMode`, `Width`, `Height`, `AllowMultiSelect`, `AutoPopulateRelatedFields`,
+`RelatedFieldMappings`, `UseCache`, `ValidationType` are each consumed somewhere between
+`LOVManager` (BeepDM) and the two runtime hosts' LOV dialogs. A cluster with no reader anywhere
+(`WhereClause`, `OrderByClause`, `ShowRowNumbers`, `AutoSizeColumns`, `AutoRefresh`,
+`AutoDisplay`, `AutoDisplayMinChars`, `CacheDurationMinutes`) also has **no IDE authoring
+surface at all** — `LOVEditorDialogData.cs` never loads or saves any of them — so unlike
+`IsReadOnly`/`Order`/`MaxRecords`, there is no live round-trip promise being silently broken;
+these are developer-facing-only properties nothing has wired a consumer for, closer in shape to
+`ValidationRuleLibrary` (G0.… investigated in an earlier pass) than to a defect. Not chased
+further without a concrete case of code actually setting one and expecting an effect.
+
+**`LOVColumn` is where a real, confirmed asymmetry showed up.** `WpfLovPickerDialog.xaml.cs`
+consumes every one of `LOVColumn`'s display properties — `FieldName`, `DisplayName`, `Width`,
+`Visible`, `Searchable`, `Format`, `Alignment`, `SortOrder`, `SortAscending` — building a real
+multi-column grid. `WinFormLovDialog.cs` consumes only `Width`/`Height`/`Title` off the parent
+`LOVDefinition` and builds its list from a plain `BeepListBox`: one row per record, one column of
+text, computed by `GetDisplayText` from `LOVDefinition.DisplayField` alone. Every other column an
+author configured — including the common two-column "Code | Description" shape
+`LOVDefinition.CreateLookup`'s own factory method builds by default — is silently invisible on
+WinForms while fully rendered on WPF. Confirmed this is a display-only gap, not also a
+functional/search one: `LoadRecordsAsync`'s search delegates to `_host.LoadLovDataAsync`
+(the engine), so filtering itself is unaffected by which columns the dialog happens to render.
+
+**Why not fixed in this pass.** Closing this properly means giving `WinFormLovDialog` a real
+multi-column grid (`BeepGridPro`, the control the codebase already uses for other multi-column
+surfaces, rather than `BeepListBox`) and wiring all seven `LOVColumn` display properties into it —
+new column-binding, sorting, and formatting logic, not a value flowing into an already-built,
+already-consumed sink the way `IsReadOnly`/`Order`/`MaxRecords` were. That is real
+control-authoring work of the same kind as the already-documented WPF single-record
+date-format-mask gap and the WPF navigation-bar auto-discovery deferral — scoped out of this
+pass deliberately rather than attempted as a rushed control swap.
+
+**Where:** `TheTechIdea.Beep.Forms.WinForms/Forms/FeatureControls/WinFormLovDialog.cs` (Beep.Forms,
+unchanged); `TheTechIdea.Beep.Forms.Wpf/Dialogs/WpfLovPickerDialog.xaml.cs` (Beep.Forms, unchanged,
+already correct). `TheTechIdea.Beep.Forms.WinForms/Forms/ENGINE-GAP-ANALYSIS.md`'s "LOV |
+... | WinFormLovDialog | Implemented" row is accurate for LOV's core mechanics (return sentinel,
+related-field population, single-value display) but did not call out this narrower, real
+multi-column-rendering gap — corrected alongside this entry.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
