@@ -14178,6 +14178,38 @@
             Applies an undo or redo action.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ReconcileTrackingAfterUndoRedo(`0)">
+            <summary>
+            After an Undo/Redo property change, checks whether the item's
+            current values now match its <see cref="P:TheTechIdea.Beep.Editor.Tracking.OriginalValues"/>
+            snapshot for every property that snapshot recorded. If every one
+            matches, the item is genuinely clean again, so its tracking state
+            is reset to <see cref="F:TheTechIdea.Beep.Editor.EntityState.Unchanged"/> — the same
+            cleanup <see cref="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RejectChanges(`0)"/> already performs after a
+            full revert. If any still differs (a multi-property edit with
+            only one property undone), the item is correctly left <see
+            cref="F:TheTechIdea.Beep.Editor.EntityState.Modified"/> — <c>Item_PropertyChanged</c>'s own
+            Phase 1B already set that when <c>ApplyUndoAction</c>'s
+            <c>prop.SetValue</c> re-raised the property-changed event, so
+            there is nothing for this method to do in that case.
+            </summary>
+            <remarks>
+            Only ever narrows <see cref="F:TheTechIdea.Beep.Editor.EntityState.Modified"/> back to
+            <see cref="F:TheTechIdea.Beep.Editor.EntityState.Unchanged"/> — it does not widen the other
+            way. Re-mutating an item that is already <see cref="F:TheTechIdea.Beep.Editor.EntityState.Unchanged"/>
+            (a Redo landing on an item an Undo just fully reconciled) is a
+            separate, pre-existing gap in <c>Item_PropertyChanged</c>'s own
+            lazy <c>OriginalValues ??= SnapshotValues(item)</c> snapshot
+            timing — by the time that line runs the value has already
+            changed, so it captures the wrong "original". Not fixed here;
+            see <c>ObservableBindingListUndoRedoTests.cs</c>'s class doc
+            comment for the full account. <see cref="F:TheTechIdea.Beep.Editor.EntityState.Added"/>/
+            <see cref="F:TheTechIdea.Beep.Editor.EntityState.Deleted"/> items are unaffected — they are
+            handled entirely by <see cref="F:TheTechIdea.Beep.Editor.UndoActionType.Insert"/>/
+            <see cref="F:TheTechIdea.Beep.Editor.UndoActionType.Remove"/> above, not this
+            property-level path.
+            </remarks>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._annotationCache">
             <summary>
             Static cache of validation attributes per property for type T.

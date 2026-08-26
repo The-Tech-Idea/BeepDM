@@ -176,6 +176,14 @@ namespace TheTechIdea.Beep.Editor
                         // Undo: restore old value. Redo: re-apply new value.
                         var valueToSet = isRedo ? action.NewValue : action.OldValue;
                         prop.SetValue(action.Item, valueToSet);
+                        // prop.SetValue re-raises Item_PropertyChanged (a genuine
+                        // property set on an INotifyPropertyChanged item), but that
+                        // handler only ever transitions Unchanged -> Modified -- it
+                        // never checks whether the new value brought the item back
+                        // to its original snapshot, so an Undo that reverts a value
+                        // never clears the dirty flag RejectChanges/AcceptChanges
+                        // would clear for the same values. Reconcile explicitly.
+                        ReconcileTrackingAfterUndoRedo(action.Item);
                     }
                     break;
 
@@ -209,6 +217,58 @@ namespace TheTechIdea.Beep.Editor
                     }
                     break;
             }
+        }
+
+        /// <summary>
+        /// After an Undo/Redo property change, checks whether the item's
+        /// current values now match its <see cref="Tracking.OriginalValues"/>
+        /// snapshot for every property that snapshot recorded. If every one
+        /// matches, the item is genuinely clean again, so its tracking state
+        /// is reset to <see cref="EntityState.Unchanged"/> — the same
+        /// cleanup <see cref="RejectChanges(T)"/> already performs after a
+        /// full revert. If any still differs (a multi-property edit with
+        /// only one property undone), the item is correctly left <see
+        /// cref="EntityState.Modified"/> — <c>Item_PropertyChanged</c>'s own
+        /// Phase 1B already set that when <c>ApplyUndoAction</c>'s
+        /// <c>prop.SetValue</c> re-raised the property-changed event, so
+        /// there is nothing for this method to do in that case.
+        /// </summary>
+        /// <remarks>
+        /// Only ever narrows <see cref="EntityState.Modified"/> back to
+        /// <see cref="EntityState.Unchanged"/> — it does not widen the other
+        /// way. Re-mutating an item that is already <see cref="EntityState.Unchanged"/>
+        /// (a Redo landing on an item an Undo just fully reconciled) is a
+        /// separate, pre-existing gap in <c>Item_PropertyChanged</c>'s own
+        /// lazy <c>OriginalValues ??= SnapshotValues(item)</c> snapshot
+        /// timing — by the time that line runs the value has already
+        /// changed, so it captures the wrong "original". Not fixed here;
+        /// see <c>ObservableBindingListUndoRedoTests.cs</c>'s class doc
+        /// comment for the full account. <see cref="EntityState.Added"/>/
+        /// <see cref="EntityState.Deleted"/> items are unaffected — they are
+        /// handled entirely by <see cref="UndoActionType.Insert"/>/
+        /// <see cref="UndoActionType.Remove"/> above, not this
+        /// property-level path.
+        /// </remarks>
+        private void ReconcileTrackingAfterUndoRedo(T item)
+        {
+            var tracking = GetTrackingItem(item);
+            if (tracking == null || tracking.OriginalValues == null || tracking.EntityState != EntityState.Modified)
+                return;
+
+            foreach (var prop in GetCachedProperties())
+            {
+                if (!prop.CanRead) continue;
+                if (!tracking.OriginalValues.TryGetValue(prop.Name, out var originalValue)) continue;
+                if (!Equals(originalValue, prop.GetValue(item)))
+                    return;
+            }
+
+            tracking.EntityState = EntityState.Unchanged;
+            tracking.OriginalValues = null;
+            tracking.ModifiedProperties.Clear();
+            tracking.ModifiedAt = null;
+            tracking.ModifiedBy = null;
+            tracking.Version = 0;
         }
 
         #endregion
