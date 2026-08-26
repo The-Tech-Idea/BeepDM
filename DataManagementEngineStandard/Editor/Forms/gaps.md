@@ -1880,6 +1880,54 @@ a vivid demonstration of the stub silently attempting to save data the (mocked) 
 chosen to cancel. Full 194-test suite green across 5 consecutive runs; full engine rebuild clean.
 
 ---
+
+### G0.53: `DirtyStateManager.GetDirtyRecordCount`/`GetLastModifiedTime` were both hardcoded,
+feeding fabricated numbers into the alert `HandleUnsavedChangesPrompt` (G0.52) shows the user
+(FIXED 2026-08-26)
+
+**What:** Sweeping for the same "honest stub comment" shape that made G0.52 worth finding,
+`DirtyStateManager.cs` had two adjacent private methods, both explicitly marked: *"This would
+need to be implemented based on your UnitOfWork implementation."* `GetDirtyRecordCount` always
+returned `1` whenever a block was dirty at all, never the real count; `GetLastModifiedTime`
+always returned `DateTime.Now`, never when the block was actually last touched. Both feed
+`DirtyBlockInfo`/`UnsavedChangesEventArgs.TotalAffectedRecords` — exactly the numbers the alert
+dialog `HandleUnsavedChangesPrompt` now genuinely shows the user (G0.52, the previous pass) when
+asking Save/Discard/Cancel. So the prompt a user now actually sees would have said "1 record
+affected" no matter how many were really dirty, and any "last modified" display built on this data
+would always read "just now," regardless of how long ago the edit actually happened.
+
+**Fix:** Both already had a real, working sink to redirect into — the same shape as G0.52.
+`IUnitofWork.GetModifiedEntities()` already exists and reads `ObservableBindingList`'s own
+tracking state (`EntityState.Modified` per record); `GetDirtyRecordCount` now returns
+`Math.Max(1, modifiedCount)` — the real modified-record count, floored at 1 whenever `IsDirty` is
+true so a block dirtied by a new/deleted record (which `GetModifiedEntities()` does not cover)
+still reports at least one dirty record rather than 0. `IUnitofWork.GetChangeLog()` already exists
+and is populated with a real per-edit `Timestamp` by the existing `RecordChange` method;
+`GetLastModifiedTime` now returns the most recent change's timestamp (`null` when the log is
+genuinely empty).
+
+**Where:** `Helpers/DirtyStateManager.cs` (`GetDirtyRecordCount`, `GetLastModifiedTime`).
+
+**Risk of fix:** Low — both replace a fabricated value with the block's real state; any caller
+that happened to expect the literal placeholder values was already relying on a documented stub.
+One new test,
+`CheckAndHandleUnsavedChangesAsync_MultipleModifiedRecords_ReportsRealDirtyRecordCountAndLastModifiedTime`,
+constructs `DirtyStateManager` directly (not through `FormsManager`) and asserts both fields on
+the raised `OnUnsavedChanges` event args — proven via revert independently for each method
+(reverting `GetDirtyRecordCount` alone failed the count assertion with `Expected: 2, Actual: 1`;
+reverting `GetLastModifiedTime` alone failed the timestamp assertion with the fabricated
+"just now" value). Full 195-test suite green across 5 consecutive runs; full engine rebuild clean.
+
+**Not attempted in this pass, deliberately:** the third stub in the same method cluster,
+`HasValidationErrors` (`"This would need to be implemented based on your validation logic" /
+return false; // Placeholder`), always reports no errors. Unlike the two fixed here,
+`DirtyStateManager` has no existing dependency it can reach for a real answer — it holds only
+`_getBlockFunc`/`_getDetailBlocksFunc`/`_getRelationshipsFunc` delegates, not a reference to
+`ItemPropertyManager`/`ValidationManager` (which own `HasItemError`/validation state). Wiring it
+needs a new constructor dependency, not a redirect to an already-reachable sink — a smaller but
+real follow-on left for a future pass rather than guessed at here.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)

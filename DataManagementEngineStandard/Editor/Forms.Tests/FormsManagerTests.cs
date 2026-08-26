@@ -1,4 +1,5 @@
 ﻿using Moq;
+using System.Collections.Concurrent;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
@@ -3036,6 +3037,52 @@ public class FormsManagerTests : IDisposable
         alertProvider.Verify(a => a.ShowAlertAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<AlertStyle>(),
             "Save", "Discard", "Cancel", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    #endregion
+
+    #region DirtyStateManager.GetDirtyRecordCount / GetLastModifiedTime (2026-08-26)
+
+    // Both previously hardcoded a value regardless of the block's actual state: dirty-record
+    // count always reported 1 when the block was dirty at all, and last-modified time always
+    // reported DateTime.Now. Both feed UnsavedChangesEventArgs/DirtyBlockInfo -- the exact data
+    // HandleUnsavedChangesPrompt's alert (fixed the previous pass) shows the user -- so the count
+    // and timestamp the user saw when deciding Save/Discard/Cancel were both fabricated.
+
+    [Fact]
+    public async Task CheckAndHandleUnsavedChangesAsync_MultipleModifiedRecords_ReportsRealDirtyRecordCountAndLastModifiedTime()
+    {
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+        uowMock.Setup(u => u.GetModifiedEntities()).Returns(new[] { 0, 1 });
+        var changeTime = DateTime.UtcNow.AddMinutes(-5);
+        uowMock.Setup(u => u.GetChangeLog()).Returns(new List<ChangeRecord>
+        {
+            new() { Timestamp = changeTime.AddMinutes(-1) },
+            new() { Timestamp = changeTime }
+        });
+
+        var blockInfo = new DataBlockInfo { BlockName = "EMP", UnitOfWork = uowMock.Object };
+        var blocks = new ConcurrentDictionary<string, DataBlockInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["EMP"] = blockInfo
+        };
+        var dirtyStateManager = new DirtyStateManager(
+            _mockEditor.Object,
+            blocks,
+            getDetailBlocksFunc: _ => new List<string>(),
+            getBlockFunc: name => blocks.TryGetValue(name, out var b) ? b : null,
+            getRelationshipsFunc: _ => new List<DataBlockRelationship>());
+
+        UnsavedChangesEventArgs capturedArgs = null;
+        dirtyStateManager.OnUnsavedChanges += (_, e) => capturedArgs = e;
+
+        await dirtyStateManager.CheckAndHandleUnsavedChangesAsync("EMP").ConfigureAwait(false);
+
+        Assert.NotNull(capturedArgs);
+        var detail = Assert.Single(capturedArgs!.DirtyBlockDetails);
+        Assert.Equal(2, detail.DirtyRecordCount);
+        Assert.Equal(changeTime, detail.LastModified);
     }
 
     #endregion

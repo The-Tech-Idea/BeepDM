@@ -453,9 +453,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                // This would need to be implemented based on your UnitOfWork implementation
-                // For now, return 1 if dirty, 0 if not
-                return block.UnitOfWork?.IsDirty == true ? 1 : 0;
+                // IUnitofWork.GetModifiedEntities() already exists and is a real,
+                // working read of ObservableBindingList's own tracking state
+                // (EntityState.Modified per record) -- this used to hardcode 1
+                // whenever the block was dirty at all, so
+                // UnsavedChangesEventArgs.TotalAffectedRecords (the number the
+                // HandleUnsavedChangesPrompt alert actually shows the user) always
+                // read "1 record" regardless of how many records were really dirty.
+                // GetModifiedEntities() only covers EntityState.Modified rows, not a
+                // block dirtied by a new or deleted record, so floor at 1 whenever
+                // IsDirty is true (matching the old behavior's own floor) rather
+                // than ever reporting 0 for a block the caller was just told is dirty.
+                var uow = block.UnitOfWork;
+                if (uow?.IsDirty != true) return 0;
+                var modifiedCount = uow.GetModifiedEntities()?.Count() ?? 0;
+                return Math.Max(1, modifiedCount);
             }
             catch
             {
@@ -467,8 +479,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                // This would need to be implemented based on your UnitOfWork implementation
-                return DateTime.Now; // Placeholder
+                // GetChangeLog() already exists and is populated with a real,
+                // per-edit Timestamp by RecordChange -- this always returned
+                // DateTime.Now regardless of when the block was actually last
+                // touched, so a "last modified" display always read "just now."
+                var uow = block.UnitOfWork;
+                if (uow == null) return null;
+                var lastChange = uow.GetChangeLog()?.LastOrDefault();
+                return lastChange?.Timestamp;
             }
             catch
             {
