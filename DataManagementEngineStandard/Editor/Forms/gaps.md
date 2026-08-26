@@ -1837,6 +1837,49 @@ except the design decision above); `WinFormQueryPanel.cs`,
 load-and-apply method on both hosts equally, not a WinForms-vs-WPF asymmetry this time).
 
 ---
+
+### G0.52: `HandleUnsavedChangesPrompt` was a stub that always silently returned `Save`, never
+actually asking the user (FIXED 2026-08-26)
+
+**What:** Continuing the `Models/*.cs` survey to `UnsavedChangesAction`/`UnsavedChangesEventArgs`
+found their sole consumer in `CreateNewRecordInMasterBlockAsync`'s unsaved-changes branch was
+itself a stub. `HandleUnsavedChangesPrompt`'s own comment read *"In a real application, this
+would show a dialog to the user / For now, we'll use a simple default behavior"* — and the
+"default behavior" was to unconditionally return `UnsavedChangesAction.Save`, regardless of
+`validationIssues`, regardless of whether a real `IAlertProvider` was wired on the host. A user
+who deliberately wanted to *discard* an in-progress edit before creating a new master record — a
+legitimate, common Oracle Forms workflow — got that edit **silently committed instead**, with no
+way to say otherwise, on every runtime host, every time. This is a more severe defect than most
+of this series' findings: not a display gap or an unfed convenience property, but a data-handling
+decision silently made for the user in the wrong direction.
+
+**Fix:** `ShowAlertAsync` (Oracle Forms `SHOW_ALERT`, already fully implemented — the exact
+mechanism "Messages and alerts" already uses end to end on both runtime hosts via
+`IAlertProvider`) supports up to three buttons and reports back which one was pressed. Wired
+`HandleUnsavedChangesPrompt` to actually call it with "Save"/"Discard"/"Cancel" and map the result:
+`Button1`→`Save`, `Button2`→`Discard`, `Button3`→`Cancel`, and — critically —
+`AlertResult.None` (returned when a caller's custom provider genuinely dismisses without a
+choice) also maps to `Cancel`, the same safe default the method's own exception handler already
+used, since Cancel is the one outcome that neither silently commits data the user may not have
+wanted saved nor silently discards data they may have wanted kept. Note `DefaultAlertProvider`
+(used only when no host-specific `IAlertProvider` is wired at all — a headless engine, most test
+scenarios) documents itself as "No UI available — auto-accept" and always returns `Button1`, so
+that narrow no-UI-registered case is unchanged from before (still resolves to Save) — the real
+behavior change is for every caller running against an actual WinForms/WPF host, where the user's
+real answer is now genuinely asked and respected for the first time.
+
+**Where:** `FormsManager.ModeTransitions.cs` (`HandleUnsavedChangesPrompt`).
+
+**Risk of fix:** The behavior change is the fix — a caller relying on the old "always saves,
+never asks" behavior will now see a real prompt when a host `IAlertProvider` is wired, which is
+the documented, intended behavior the stub's own comment described as missing. One new test,
+`CreateNewRecordInMasterBlockAsync_AlertProviderChoosesCancel_CancelsOperation`, proven via
+revert — reverting to the old hardcoded `Save` reproduced the exact original defect concretely: the
+test's mock uow then failed to actually commit (`"Cannot create new record: Save failed - ..."`),
+a vivid demonstration of the stub silently attempting to save data the (mocked) user had just
+chosen to cancel. Full 194-test suite green across 5 consecutive runs; full engine rebuild clean.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)

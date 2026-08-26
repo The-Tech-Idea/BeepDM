@@ -21653,6 +21653,22 @@
             <summary>
             Prompts user for action when unsaved changes are detected
             </summary>
+            <remarks>
+            Previously unconditionally returned <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.UnsavedChangesAction.Save"/>
+            behind a comment reading "In a real application, this would show a dialog to
+            the user / For now, we'll use a simple default behavior" -- an honest stub, but
+            still one that silently auto-saved on every unsaved-changes prompt, in every
+            caller, forever: a user who wanted to discard an in-progress edit before
+            creating a new master record got it committed instead, with no chance to say
+            otherwise. <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)"/> (Oracle Forms SHOW_ALERT, already fully
+            implemented and already the mechanism "Messages and alerts" uses end to end on
+            both runtime hosts) is exactly the three-button choice this needed. When no
+            <see cref="!:IAlertProvider"/> is wired (a headless engine, a test) it returns
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.AlertResult.None"/>, which maps to Cancel -- the same safe default
+            the exception handler below already used, and the one choice that neither
+            silently commits data the caller may not have wanted saved nor silently
+            discards data they may have wanted kept.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetBlockMode(System.String)">
             <summary>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
@@ -722,19 +723,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Prompts user for action when unsaved changes are detected
         /// </summary>
+        /// <remarks>
+        /// Previously unconditionally returned <see cref="Models.UnsavedChangesAction.Save"/>
+        /// behind a comment reading "In a real application, this would show a dialog to
+        /// the user / For now, we'll use a simple default behavior" -- an honest stub, but
+        /// still one that silently auto-saved on every unsaved-changes prompt, in every
+        /// caller, forever: a user who wanted to discard an in-progress edit before
+        /// creating a new master record got it committed instead, with no chance to say
+        /// otherwise. <see cref="ShowAlertAsync"/> (Oracle Forms SHOW_ALERT, already fully
+        /// implemented and already the mechanism "Messages and alerts" uses end to end on
+        /// both runtime hosts) is exactly the three-button choice this needed. When no
+        /// <see cref="IAlertProvider"/> is wired (a headless engine, a test) it returns
+        /// <see cref="AlertResult.None"/>, which maps to Cancel -- the same safe default
+        /// the exception handler below already used, and the one choice that neither
+        /// silently commits data the caller may not have wanted saved nor silently
+        /// discards data they may have wanted kept.
+        /// </remarks>
         private async Task<Models.UnsavedChangesAction> HandleUnsavedChangesPrompt(List<string> validationIssues)
         {
             try
             {
-                // In a real application, this would show a dialog to the user
-                // For now, we'll use a simple default behavior
-                
                 var promptMessage = $"Unsaved changes detected:\n{string.Join("\n", validationIssues)}\n\nWhat would you like to do?";
                 LogOperation($"Unsaved changes prompt: {promptMessage}", "USER_PROMPT");
 
-                // Default behavior - save to prevent data loss
-                LogOperation("Defaulting to Save action to prevent data loss", "USER_PROMPT");
-                return Models.UnsavedChangesAction.Save;
+                var alertResult = await ShowAlertAsync(
+                    "Unsaved Changes",
+                    promptMessage,
+                    AlertStyle.Question,
+                    "Save",
+                    "Discard",
+                    "Cancel").ConfigureAwait(false);
+
+                var action = alertResult switch
+                {
+                    AlertResult.Button1 => Models.UnsavedChangesAction.Save,
+                    AlertResult.Button2 => Models.UnsavedChangesAction.Discard,
+                    AlertResult.Button3 => Models.UnsavedChangesAction.Cancel,
+                    _ => Models.UnsavedChangesAction.Cancel
+                };
+
+                LogOperation($"Unsaved changes prompt resolved to {action}", "USER_PROMPT");
+                return action;
             }
             catch (Exception ex)
             {

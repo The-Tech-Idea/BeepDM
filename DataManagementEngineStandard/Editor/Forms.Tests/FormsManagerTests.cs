@@ -3002,4 +3002,41 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region HandleUnsavedChangesPrompt -> ShowAlertAsync (2026-08-26)
+
+    // HandleUnsavedChangesPrompt previously always returned UnsavedChangesAction.Save behind a
+    // comment reading "In a real application, this would show a dialog to the user / For now,
+    // we'll use a simple default behavior" -- an honest stub, but one that silently auto-saved
+    // on every unsaved-changes prompt in CreateNewRecordInMasterBlockAsync, regardless of what a
+    // caller with a real IAlertProvider wired would have chosen. Fixed to actually call
+    // ShowAlertAsync (Oracle Forms SHOW_ALERT, already fully implemented) with a real three-button
+    // choice and respect whichever button the provider reports back.
+
+    [Fact]
+    public async Task CreateNewRecordInMasterBlockAsync_AlertProviderChoosesCancel_CancelsOperation()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+        uowMock.Setup(u => u.IsDirty).Returns(true);
+        var alertProvider = new Mock<IAlertProvider>();
+        alertProvider
+            .Setup(a => a.ShowAlertAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<AlertStyle>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AlertResult.Button3);
+        var manager = new FormsManager(_mockEditor.Object, alertProvider: alertProvider.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.CreateNewRecordInMasterBlockAsync("EMP").ConfigureAwait(false);
+
+        Assert.Equal(Errors.Failed, result.Flag);
+        Assert.Contains("cancelled by user", result.Message);
+        alertProvider.Verify(a => a.ShowAlertAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<AlertStyle>(),
+            "Save", "Discard", "Cancel", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    #endregion
 }
