@@ -1803,6 +1803,40 @@ assignment failed the predicted `Assert.NotNull` check). Full 193-test suite gre
 consecutive runs; full engine rebuild clean.
 
 ---
+
+### G0.51: Saved query templates can be created and listed but never loaded back and re-run —
+the "load" half of Query Templates is missing from both hosts' feature-control surface
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Continuing the `Models/*.cs` survey into `QueryTemplateInfo.cs`. `QueryBuilderManager
+.SaveQueryTemplate`/`.LoadQueryTemplate`/`.GetQueryTemplates` are all genuinely implemented in
+BeepDM, and both hosts expose all three through their `IBeepFormsHost` (`WinFormFormHost.Query.cs`
+`LoadQueryTemplate`, `BeepWpfForms.QueryTriggers.cs`'s equivalent). But `WinFormQueryPanel` — the
+actual feature-control surface an application uses (mirrored on the WPF side) — only exposes
+`SaveTemplate` and `GetTemplates`. Neither calls `LoadQueryTemplate`, and there is no method
+anywhere that takes a loaded template's `Filters` and actually re-applies them to the block before
+calling `ExecuteQueryAsync`. `ENGINE-GAP-ANALYSIS.md`'s "Query templates/history | ... |
+Implemented" row is accurate for save/list, but the entire point of a saved query template —
+running it again later — has no path to happen. A user can save a query as a template and see it
+in a list; there is no way to pick one and re-run it.
+
+**Why not fixed in this pass.** `IBlockView.ExecuteQueryAsync(CancellationToken)` takes no filter
+parameter, so there is no existing sink a loaded template's `Filters` could simply flow into —
+unlike `IsReadOnly`/`Order`/`MaxRecords`/`LastPopulatedAt`, this is not "a value sitting next to an
+already-consumed field." Making it work needs a real design decision this pass should not make
+unilaterally: should applying a saved template populate the on-screen Enter-Query fields visually
+(so the user sees the re-applied criteria before executing, matching Oracle Forms' own
+`GET_QUERY_FILTER`/`PUT_QUERY_FILTER` visual behavior) or apply the filters silently as a WHERE
+clause the user never sees? Either needs either a new `IBlockView`/`IBeepFormsHost` method or a
+way to push `AppFilter`s into the block's Enter-Query field state, not a same-pass property
+wire-up.
+
+**Where:** `Helpers/QueryBuilderManager.cs` (BeepDM, unchanged, already has everything needed
+except the design decision above); `WinFormQueryPanel.cs`,
+`BeepWpfBlockFeaturePanels.cs`/`BeepWpfForms.QueryTriggers.cs` (Beep.Forms, unchanged — missing the
+load-and-apply method on both hosts equally, not a WinForms-vs-WPF asymmetry this time).
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
