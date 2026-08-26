@@ -648,6 +648,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 _systemVariablesManager?.UpdateForRecordChange(blockName, recordIndex, totalRecords);
+                // Same choke-point reasoning as the two calls in
+                // FormsManager.Navigation.cs (G0.60 in gaps.md): a savepoint
+                // rollback changes the current record just as much as an
+                // ordinary navigation does, and LockManager's own index
+                // tracking needs to follow it the same way.
+                _lockManager.SetCurrentRecordIndex(blockName, recordIndex);
             }
             catch
             {

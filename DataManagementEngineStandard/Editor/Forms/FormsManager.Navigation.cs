@@ -171,6 +171,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     _systemVariablesManager?.UpdateForRecordChange(
                         blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount);
 
+                    // LockManager tracks "current index" per block itself
+                    // (_currentIndex), separately from the real UnitOfWork
+                    // index, specifically so LockCurrentRecordAsync/
+                    // IsCurrentRecordLocked/UnlockCurrentRecord (which take no
+                    // index parameter) know which record they mean. See
+                    // G0.60 in gaps.md -- this call was missing everywhere,
+                    // so that tracked index never left its default and every
+                    // lock operation silently operated on the wrong record.
+                    _lockManager.SetCurrentRecordIndex(blockName, currentIndex);
+
                     if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
                         _navHistoryManager.Push(blockName, previousIndex);
 
@@ -628,6 +638,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // point funnels through -- not scattered call sites.
                     _systemVariablesManager?.UpdateForRecordChange(
                         blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount);
+
+                    // See the identical call's comment in
+                    // NavigateToRecordInternalAsync (G0.60 in gaps.md).
+                    _lockManager.SetCurrentRecordIndex(blockName, currentIndex);
 
                     if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
                         _navHistoryManager.Push(blockName, previousIndex);
