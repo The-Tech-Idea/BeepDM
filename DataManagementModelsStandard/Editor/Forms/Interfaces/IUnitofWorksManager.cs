@@ -692,6 +692,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void RegisterKeyTriggerAsync(KeyTriggerType keyType, string blockName, Func<TriggerContext, CancellationToken, Task<TriggerResult>> asyncHandler);
         Task<TriggerResult> FireKeyTriggerAsync(KeyTriggerType keyType, string blockName);
 
+        // ── Forms Simulation ───────────────────────────────────────────
+        // Added 2026-08-26 -- FormsManager.SetSystemVariables existed with a
+        // doc comment saying it was exposed specifically for hosts to reach
+        // (B6, audit pass 3, 2026-06), but was never declared here, so a
+        // host or IDE-authored trigger handler holding only this interface
+        // (the only type either host exposes FormsManager as) had no way to
+        // call it. The Oracle Forms use case is a form author's own
+        // registered trigger (e.g. WHEN-CREATE-RECORD/PRE-INSERT) stamping
+        // :SYSTEM.CURRENT_DATE/:SYSTEM.USER-style audit fields onto the
+        // record it's given -- which requires exactly this kind of
+        // interface-level reach, not engine-side auto-invocation.
+        void SetSystemVariables(object record, SystemVariableType variableType, object value = null);
+
         // ── Multi-Form Navigation ──────────────────────────────────────
         Task<bool> CallFormAsync(string formName, Dictionary<string, object> parameters = null, FormCallMode callMode = FormCallMode.Modal, CancellationToken ct = default);
         Task<bool> OpenFormModelessAsync(string formName, Dictionary<string, object> parameters = null);

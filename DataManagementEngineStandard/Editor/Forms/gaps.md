@@ -2423,19 +2423,15 @@ correspondingly higher priority to look at next:
     COUNT_QUERY equivalent, sibling of the well-used `ExecuteQueryAsync`; `CommitFormBatchAsync` /
     `CommitBlockBatchAsync` (`DataOperations.cs`) — a batched-commit-with-progress API, referencing
     only each other.
-  - **Not declared on `IUnitofWorksManager` — genuinely unreachable from any host today, higher
-    priority:** `SetSystemVariables` (`FormsSimulation.cs`) — its own doc comment says it was added
-    specifically because a lower-level helper had the capability and `FormsManager` didn't expose
-    it; exposed on the concrete class, still not on the interface, still never called by anything.
-    Checked whether it duplicates the unrelated `Editor/Defaults/DefaultValueResolverManager`
+  - **`SetSystemVariables` — FIXED, see G0.63.** Was not declared on `IUnitofWorksManager`, so
+    genuinely unreachable from any host without an unsafe cast; now declared there (interface
+    exposure only — *when* the engine should auto-invoke it remains a deliberately undecided design
+    question). Checked whether it duplicates the unrelated `Editor/Defaults/DefaultValueResolverManager`
     subsystem (whose `UserContext`/`DateTime`/`SystemInfo` resolvers sound like they cover the same
     "stamp SYSTEM_USER/SYSTEM_DATE on a record" need) — they don't: grepped the whole `Editor/Forms/`
     tree and found zero references to `DefaultValueResolverManager`/`DefaultsManager` anywhere: the
     two subsystems are entirely disconnected, and neither auto-populates a new block record's
-    audit-style fields today. `SetSystemVariables` is a genuine case-b gap, not a case-a duplicate —
-    but *where* it should fire (a specific record-lifecycle event such as `WHEN-CREATE-RECORD`, vs.
-    staying a manual, on-demand call) is itself a design decision this pass does not make
-    unilaterally. `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
+    audit-style fields today. `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
     `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`, not on the interface either) —
     checked against `ValidateForm()` (`FormOperations.cs`), which loops every block calling
     `ValidateBlock` the same way. **Correction, same session:** an earlier version of this entry
@@ -2494,6 +2490,50 @@ not a reason to delete, so it stays listed rather than silently dropped.
 real user today. The risk is entirely in *not* tracking it: an orphan is usually the only surviving
 record that a capability was intended, and losing that record turns a known gap into an unknown
 one.
+
+---
+
+### G0.63: `FormsManager.SetSystemVariables` was implemented but not declared on
+`IUnitofWorksManager`, so no host or IDE-authored trigger handler could reach it (FIXED 2026-08-26)
+
+**What:** G0.62's case-b inventory flagged `SetSystemVariables` (`FormsSimulation.cs`) as the
+highest-priority open item in that list: fully implemented on the concrete `FormsManager` class,
+with its own doc comment saying it was exposed specifically for hosts to reach — but never declared
+on `IUnitofWorksManager`, the only type either host (`WinFormFormHost`/`BeepWpfForms`) exposes
+`FormsManager` as. A host, or an IDE-authored trigger handler holding only that interface, had no
+way to call it at all without an unsafe cast to the concrete class — the same "declared but
+genuinely unreachable" shape `IBeepFormsHost.FireItemTriggerAsync` was in before an earlier fix this
+session closed it. The Oracle Forms use case this blocks is a form author's own registered trigger
+(e.g. `WHEN-CREATE-RECORD`/`PRE-INSERT`) stamping `:SYSTEM.CURRENT_DATE`/`:SYSTEM.USER`-style audit
+fields onto the record it's handed — which needs exactly this interface-level reach, not
+engine-side auto-invocation at some fixed lifecycle point (deliberately not decided here; see
+below).
+
+**Fix:** Declared `void SetSystemVariables(object record, SystemVariableType variableType, object
+value = null)` on `IUnitofWorksManager`, matching the concrete method's signature exactly. Purely
+additive — `FormsManager` already implemented it, confirmed by `DataManagementModels` and
+`DataManagementEngine` both building with zero errors and no further change needed anywhere.
+
+**Where:** `DataManagementModelsStandard/Editor/Forms/Interfaces/IUnitofWorksManager.cs`.
+
+**Deliberately not decided here:** *when* the engine should auto-invoke this (a specific
+record-lifecycle trigger point vs. staying a manual, form-author-invoked utility) is an
+architectural decision this fix does not make unilaterally — matching the discipline already
+applied to `WhenLogon`/`PostLogon`/`OnLogoff` earlier this session. The fix is scoped to interface
+exposure only.
+
+**Risk of fix:** Low. Additive interface member on an interface `FormsManager` already fully
+implements; no existing implementer of `IUnitofWorksManager` is broken by gaining a member it
+already had to satisfy on the concrete type used everywhere in this codebase.
+
+**Verified:** `FormsManager.Tests` (196/196 passing, unchanged). New
+`Examples.WPF/SystemVariablesRecordSelfTest.cs` (`--selftest-systemvars`) passes 8/8 checks —
+`SystemDate`/`SystemDateTime`/`SystemUser` (with and without an explicit value)/`RecordStatus`
+(with and without an explicit value) against a plain POCO record, reached exclusively through
+`IUnitofWorksManager` (not the concrete class), plus confirms a record missing the target field is
+handled gracefully (`RecordPropertyAccessor.TrySetValue` fails closed and reports through
+`DMEEditor.AddLogMessage`, not a thrown exception). `SmokeTests` and `DesignerCompileCheck` both
+re-run clean; every other WPF `Examples` self-test unaffected.
 
 ---
 ## P0 — Correctness / Existing-User Impact
