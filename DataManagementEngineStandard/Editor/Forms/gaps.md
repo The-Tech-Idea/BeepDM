@@ -2427,7 +2427,15 @@ correspondingly higher priority to look at next:
     priority:** `SetSystemVariables` (`FormsSimulation.cs`) — its own doc comment says it was added
     specifically because a lower-level helper had the capability and `FormsManager` didn't expose
     it; exposed on the concrete class, still not on the interface, still never called by anything.
-    `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
+    Checked whether it duplicates the unrelated `Editor/Defaults/DefaultValueResolverManager`
+    subsystem (whose `UserContext`/`DateTime`/`SystemInfo` resolvers sound like they cover the same
+    "stamp SYSTEM_USER/SYSTEM_DATE on a record" need) — they don't: grepped the whole `Editor/Forms/`
+    tree and found zero references to `DefaultValueResolverManager`/`DefaultsManager` anywhere: the
+    two subsystems are entirely disconnected, and neither auto-populates a new block record's
+    audit-style fields today. `SetSystemVariables` is a genuine case-b gap, not a case-a duplicate —
+    but *where* it should fire (a specific record-lifecycle event such as `WHEN-CREATE-RECORD`, vs.
+    staying a manual, on-demand call) is itself a design decision this pass does not make
+    unilaterally. `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
     `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`) — a mode-readiness API that
     only calls itself internally, not on the interface either.
 
