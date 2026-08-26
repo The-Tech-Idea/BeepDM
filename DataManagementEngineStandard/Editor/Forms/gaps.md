@@ -1327,6 +1327,61 @@ target was neither too broad nor too narrow), full 165-test suite green before a
 consumption (both runtime presenter registries) lands in the paired Beep.Forms commit.
 
 ---
+
+### G0.42: `ViewStateSyncer`/`BeepViewState`/`IFormsNotificationService` — checked and found to be
+a superseded duplicate, not a missing implementation (INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** A research pass surveyed BeepDM's other `Helpers/*.cs` classes for the same
+"built, reachable, zero real callers" shape `SystemVariablesManager` had (G0.36). `ViewStateSyncer`
+(`Helpers/ViewStateSyncer.cs`) is a genuine candidate by that test: its own doc comment says
+"Syncs `BeepViewState` from `IUnitofWorksManager`. Shared by WPF and WinForms," and grepping the
+whole `Beep.Forms` tree found zero callers of `Attach`/`Sync`/`SyncBlock`/`TryGetCurrentMessage`
+anywhere in either host. `WinFormBlockHost.cs`/`BeepWpfBlock.cs` each declare
+`object ViewState { get; } = new BeepViewState();` (satisfying `IBlockView.ViewState`) but never
+populate it via `ViewStateSyncer` or anything else. `IFormsNotificationService`
+(`Hosts/IFormsNotificationService.cs`) — "Publishes messages into a `BeepViewState` for UI
+consumption" — has **zero implementations and zero callers anywhere**, not even a stub.
+
+**Why this is not the same shape as G0.36's fixes, despite looking identical on first grep:**
+`ViewStateSyncer.Sync(BeepViewState)` computes exactly six fields — `IsDirty`, `StatusText`,
+`ActiveBlockName`, `RecordPositionText`, `CurrentMessage`, `MessageSeverity` — reading from
+`IUnitofWorksManager.IsDirty`/`.Status`/`.CurrentBlockName`/`.GetBlock(...).UnitOfWork`/
+`.Messages.GetCurrentMessage(...)`. `WinFormFormStatusBar.cs` (and its WPF mirror) already show
+every one of those six, computed a **different**, already-shipped way: `IBeepFormsHost
+.GetBlockStatus(block)` for position/mode/dirty, and `IBeepFormsHost.MessageRaised`/
+`MessageCleared`/`ActiveBlockChanged` events for messages and the active block — and
+`WinFormFormStatusBar`'s own doc comment names this explicitly as an earlier fix of the identical
+"built, no consumer" shape: *"The engine end of this was already complete and had no consumer...
+until 2026-08-01 no UI layer did."* Wiring `ViewStateSyncer` into the hosts now would not add any
+user-visible capability — it would add a **second, parallel path** computing the same six facts a
+different way, which is exactly the "two owners of one fact" defect house rule 3 exists to prevent,
+not a gap to close.
+
+**`BeepViewState`'s richer, unpopulated fields are a different, deeper story — but not one to build
+either.** The model (`Models/BeepViewState.cs`) also declares `CoordinationText`, `WorkflowText`/
+`WorkflowHistory`, `SavepointText`, `AlertText`, `ErrorCount` + location, `AggregateText`,
+`ConnectionName`. None of these are ever set by `ViewStateSyncer.Sync` itself, let alone anything
+else — so this is not "wire an existing computation into the UI," it is "design and implement a
+computation that has never existed," a genuinely open-ended feature addition (what should a
+form-level "coordination" or "workflow history" status line even show?) rather than a mechanical
+fix matching this session's scope.
+
+**Not fixed, and deliberately not deleted.** `ViewStateSyncer`/`BeepViewState`/
+`IFormsNotificationService` together read as an earlier, abandoned design for a richer status
+surface, superseded by the `GetBlockStatus`/message-event mechanism that actually shipped —
+resolvable under house rule 3 (standardise on the one that is actually enforced) rather than a
+missing implementation under house rule 6. But `BeepViewState` is part of `IBlockView.ViewState`'s
+public contract (both hosts' property declarations reference it), so removing it is a larger,
+API-surface decision than deleting a single dead method — left for Fahad, the same disposition
+already used for the `UpdateBlockVariables`/`_blockVars` per-block snapshot dead-end found during
+G0.36 (see above): documented here so a future pass does not mistake this for a live,
+missing-caller gap of the same shape as `SystemVariablesManager`'s.
+
+**Where:** `Helpers/ViewStateSyncer.cs`, `Models/BeepViewState.cs`, `Hosts/IFormsNotificationService.cs`
+(all BeepDM, unchanged); `WinFormBlockHost.cs`, `BeepWpfBlock.cs` (Beep.Forms, unchanged — their
+`ViewState` property declarations are the only Beep.Forms-side reference).
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
