@@ -2968,4 +2968,38 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region PopulateRecordGroupAsync -> RecordGroup.LastPopulatedAt (2026-08-26)
+
+    // IsPopulated and LastPopulatedAt are evident siblings -- both describe the same populate
+    // event -- but only IsPopulated was ever set at the one call site that populates a group.
+    // LastPopulatedAt existed with no writer anywhere, so any caller reading it to show "last
+    // populated N minutes ago" got null forever.
+
+    [Fact]
+    public async Task PopulateRecordGroupAsync_OnSuccess_SetsLastPopulatedAt()
+    {
+        var entityStructure = new EntityStructure
+        {
+            EntityName = "EMP",
+            Fields = new List<EntityField> { new() { FieldName = "EMPNO" } }
+        };
+        var dataSource = new Mock<IDataSource>();
+        dataSource.Setup(d => d.GetEntityStructure("EMP", false)).Returns(entityStructure);
+        dataSource.Setup(d => d.GetEntity("EMP", It.IsAny<List<AppFilter>>()))
+            .Returns(new List<object> { new() });
+        _mockEditor.Setup(e => e.GetDataSource("DB")).Returns(dataSource.Object);
+        _manager.CreateRecordGroup("RG1", "DB", "EMP");
+
+        var before = DateTime.UtcNow;
+        var succeeded = await _manager.PopulateRecordGroupAsync("RG1").ConfigureAwait(false);
+
+        Assert.True(succeeded);
+        var group = _manager.GetRecordGroup("RG1");
+        Assert.NotNull(group!.LastPopulatedAt);
+        Assert.True(group.LastPopulatedAt >= before);
+        Assert.True(group.IsPopulated);
+    }
+
+    #endregion
 }

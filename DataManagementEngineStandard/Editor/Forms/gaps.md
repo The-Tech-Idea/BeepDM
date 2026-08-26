@@ -1781,6 +1781,28 @@ related-field population, single-value display) but did not call out this narrow
 multi-column-rendering gap — corrected alongside this entry.
 
 ---
+
+### G0.50: `RecordGroup.LastPopulatedAt` never set by `PopulateRecordGroupAsync` (FIXED 2026-08-26)
+
+**What:** Continuing the `Models/*.cs` survey into `RecordGroup.cs`. `IsPopulated` and
+`LastPopulatedAt` are evident siblings — both describe the same "this group was just queried"
+event, and both are exposed identically through `RecordGroupPanel.GetGroups()` on both hosts and
+through the IDE's Record Group navigator node — but `PopulateRecordGroupAsync` only ever set
+`IsPopulated = true`, immediately after building `rg.Records`, and never touched
+`LastPopulatedAt`. Any caller reading the timestamp to show "populated N minutes ago" got `null`
+forever, on every record group in the product.
+
+**Fix:** One line, at the exact call site that already sets `IsPopulated`:
+`rg.LastPopulatedAt = DateTime.UtcNow;`.
+
+**Where:** `FormsManager.RecordGroups.cs` (`PopulateRecordGroupAsync`).
+
+**Risk of fix:** Negligible — pure addition, no existing behavior changes. One new test,
+`PopulateRecordGroupAsync_OnSuccess_SetsLastPopulatedAt`, proven via revert (commenting out the
+assignment failed the predicted `Assert.NotNull` check). Full 193-test suite green across 3
+consecutive runs; full engine rebuild clean.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
