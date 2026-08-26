@@ -2212,6 +2212,55 @@ Both ancestor projects (`TheTechIdea.Beep.Winform.Data.Integrated.csproj`,
 implementation.
 
 ---
+
+### G0.60: `LockManager`'s own current-record-index tracking was never updated by navigation, so
+every lock operation silently operated on the wrong record (FIXED 2026-08-26)
+
+**What:** `LockManager` tracks a "current record index" per block internally (`_currentIndex`),
+separate from the real `UnitOfWork` index, specifically because `LockCurrentRecordAsync`/
+`IsCurrentRecordLocked`/`UnlockCurrentRecord`/`AutoLockIfNeededAsync` take no index parameter — they
+rely entirely on this tracked value to know which record is meant. Its own doc comment on
+`SetCurrentRecordIndex` says "Called by FormsManager on navigation" — but nothing in the engine
+ever called it, confirmed by grepping every reference to the method. The tracked index therefore
+never left its default (0) for the entire life of every `FormsManager` instance. Consequence:
+locking record 0, then navigating to record 1 and checking `IsCurrentRecordLocked`, incorrectly
+reported `true` — `LockManager` was still consulting index 0's lock entry regardless of which
+record the `UnitOfWork` actually considered current. Worse, `AutoLockIfNeededAsync` (the
+lock-on-edit hook `SetFieldValue` calls when `LockMode.Automatic` + `LockOnEdit=true` — Oracle
+Forms' default, most common locking configuration) checks `IsCurrentRecordLocked` first and skips
+locking if it returns true — so after the very first record was ever locked, *no other record in
+that block ever got locked again*, silently, for the rest of the block's life. Discovered while
+investigating the master tracker's "Feature panels" row, which listed Lock as implemented but never
+exercised by a live self-test — the same discipline that found G0.58 and G0.59 this session.
+
+**Fix:** Added `_lockManager.SetCurrentRecordIndex(blockName, currentIndex)` at the three real
+choke points every path that changes a block's current record funnels through: `NavigateAsync`
+(First/Next/Previous/Last), `NavigateToRecordInternalAsync` (`GO_RECORD`/`MoveToRecordAsync`) — the
+same two choke points G0.58 already identified for `SystemVariablesManager.UpdateForRecordChange`
+— and `TryUpdateSavepointSystemVariables` (a savepoint rollback changes the current record just as
+much as an ordinary navigation does).
+
+**Where:** `Editor/Forms/FormsManager.Navigation.cs` (two call sites), `Editor/Forms/
+FormsManager.BlockRegistration.cs` (`TryUpdateSavepointSystemVariables`, one call site).
+
+**Proven via revert:** reverted the two `Navigation.cs` call sites and re-ran the WPF self-test:
+locking record 0 then navigating to record 1 incorrectly reported record 1 as already locked;
+`GetAllLocks` reported only 1 tracked lock instead of 2 after explicitly locking both records
+(the second `LockCurrentRecordAsync` call was a no-op, since `LockManager` believed index 0 — the
+only index it ever tracks — was already locked); and unlocking "record 1" actually removed record
+0's lock entry. All three failures match the predicted mechanism exactly. Restoring the fix made
+all twelve checks pass again.
+
+**Risk of fix:** Low. Purely additive — a call to a method that already existed on the interface
+and had always been a correct no-op-if-unused implementation; no caller could have depended on the
+old, always-wrong-except-for-record-0 behavior, since that behavior was never anything other than
+a bug matching its own doc comment's stated intent.
+
+**Verified:** `FormsManager.Tests` (196/196 passing, unchanged). New `Examples.WPF/LockSelfTest.cs`
+(`--selftest-lock`) passes 12/12 checks — the first self-test anywhere in this repo to exercise
+record locking end to end. Every other WPF and WinForms `Examples` self-test re-run clean.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
