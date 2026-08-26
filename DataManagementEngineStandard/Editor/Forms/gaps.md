@@ -2379,6 +2379,88 @@ ENGINE-GAP-ANALYSIS.md` as "verified working, no fix needed" rather than as a fu
 entry, since it isn't a defect.
 
 ---
+
+### G0.62: Orphaned `FormsManager` public methods — an inventory, not individually resolved
+(2026-08-26)
+
+**What:** The sweep that found `RegisterKeyTrigger` (G0.61 follow-up, above) checked all ~285
+public methods on `FormsManager` across its partial-class files for zero-caller "orphans" — the
+same "two implementations of one capability, one unreachable" shape `ExecuteQueryAndEnterCrudModeAsync`
+turned out to be. It found roughly 85 true orphans (zero callers anywhere, including tests) and a
+further ~12 test-only orphans (called only from `FormsManagerTests.cs`). Two of the highest-
+confidence hits were spot-checked directly and confirmed exactly as reported — see below. The
+remaining ~95 are recorded here as an inventory for a future pass, not individually investigated
+or fixed in this one: verifying and resolving each would be a substantially larger undertaking than
+any single fix landed this session, and house rule 6 is explicit that "nothing reads it" opens the
+question rather than settling it — this entry exists so the question stays open and visible rather
+than being lost in an agent transcript.
+
+**Confirmed duplicates (case a — a reachable alternative already does the job):**
+- `LoadPageAsync` (`Performance.cs`) vs. the actually-called `GoToBlockPageAsync`
+  (`ExtendedOperations.cs`) — spot-checked directly: both WinForms and WPF hosts'
+  `GoToPageAsync`-style host methods call `GoToBlockPageAsync`; `LoadPageAsync` has zero
+  references anywhere in BeepDM or Beep.Forms.
+- `UpdateCurrentRecordAsync` (`EnhancedOperations.cs`, test-only orphan) vs. the host-called
+  `PostBlockAsync` (`BasicDataOps.cs`).
+- `ValidateField(object record, string, object, FieldConstraints)` (`FormsSimulation.cs`) vs. the
+  host-called `ValidateField(blockName, fieldName, value)` overload (`Validation.cs`) — same method
+  name, different signature, only one ever reached from a host.
+- `GetCurrentRecord(blockName)` (`EnhancedOperations.cs`) — both hosts bypass it, reading
+  `GetUnitOfWork(blockName)?.CurrentItem` directly instead.
+- `CreateNewRecordInMasterBlockAsync` (`ModeTransitions.cs`, test-only orphan) — sibling of the
+  reachable `EnterCrudModeForNewRecordAsync`; the master-block-cascade variant has no real caller.
+
+**Possible missing wiring (case b — a declared capability with no consumer, not obviously a
+duplicate of anything reachable):**
+- `SetSystemVariables` (`FormsSimulation.cs`) — its own doc comment says it was added specifically
+  because a lower-level helper had the capability and `FormsManager` didn't expose it; exposed,
+  still never called by anything.
+- `CountQueryAsync` (`BasicDataOps.cs`, test-only orphan) — Oracle Forms COUNT_QUERY equivalent,
+  sibling of the well-used `ExecuteQueryAsync`, with no UI/host hookup anywhere.
+- `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` / `ValidateAllBlocksForModeTransitionAsync`
+  (`ModeTransitions.cs`) — a mode-readiness API that only calls itself internally; no external
+  caller anywhere.
+- `CommitFormBatchAsync` / `CommitBlockBatchAsync` (`DataOperations.cs`) — a batched-commit-with-
+  progress API, referencing only each other, with zero host adoption.
+
+**Likely-unused feature clusters (case c — plausibly safe to leave, lowest priority to
+investigate further):**
+- Client-info cluster: `SetClientAction`/`SetClientHost`/`SetClientIpAddress`/`SetClientModule` +
+  their four `Get*` counterparts (`RecordGroups.cs`) — a full Oracle-Forms-style client-audit
+  feature with no caller; the coarser `SetClientInfo`/`GetClientInfo` pair is used.
+- Shared-block cluster: `GetSharedBlock` / `TryLockSharedBlock` / `ReleaseSharedBlockLock`
+  (`InterFormComm.cs`, true orphans) plus `CreateSharedBlock`/`RemoveSharedBlock` (test-only) — an
+  inter-form shared-block feature with no real-world caller found anywhere.
+- `RecordGroupExists` / `GetParameterList` / `ParameterListExists` / `HasParameter`
+  (`RecordGroups.cs`) — the creation/populate half of record groups and parameter lists is used
+  (see G0.60's sibling verification of `PopulateRecordGroupAsync`); these query/existence helpers
+  aren't.
+- `FindBlockRecordAsync` / `FindBlockRecordsAsync` / `CloneBlockRecordAsync`
+  (`ExtendedOperations.cs`) — unused LINQ-style block search/clone helpers.
+- `HasApplicationProperty` / `RemoveApplicationProperty` (`ExtendedOperations.cs`) — the sibling
+  `Set`/`GetApplicationProperty` are used; the existence-check and removal halves aren't.
+
+**Not a finding, explicitly checked and sound:** `OpenFormAsync(string, Dictionary)`
+(`MultiFormNavigation.cs`) duplicates `OpenFormAsync(string)`, but is already self-documented
+`[Obsolete]` pointing callers at `OpenFormModelessAsync` — a deliberate, already-marked
+deprecation, not a hidden orphan.
+
+**Why not resolved here:** Each case-a duplicate needs the same kind of direct verification
+`LoadPageAsync`/`GoToBlockPageAsync` got (confirm the "reachable" side really is reachable and
+behaviorally equivalent) before anything could safely be consolidated or removed — and removal is
+explicitly not this implementer's call per house rule 6. Each case-b item needs its own
+investigation into whether it's a real missing workflow (compare against Oracle Forms /
+Auth0-equivalent reasoning) or genuinely unneeded scope. The case-c cluster is lowest priority —
+plausibly dead, speculative feature surface — but "nothing reads it" is a reason to investigate,
+not a reason to delete, so it stays listed rather than silently dropped.
+
+**Risk of leaving as-is:** Low for now — every method in this list is either genuinely unreachable
+(true orphan) or reachable only from unit tests, so none of it is presenting broken behavior to a
+real user today. The risk is entirely in *not* tracking it: an orphan is usually the only surviving
+record that a capability was intended, and losing that record turns a known gap into an unknown
+one.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
