@@ -2080,6 +2080,70 @@ follow-on work, not attempted here.
 **Where:** `Editor/UOW/UnitofWork.Core.Extensions.cs` (`UpdateLog`, `SaveLog`, unchanged).
 
 ---
+
+### G0.58: Record-navigation triggers — missing `ConfigureAwait(false)`, wrong `TriggerContext`
+factory (`RecordIndex` always -1), and `GO_RECORD` never firing them at all (FIXED 2026-08-26)
+
+**What:** Building a WPF self-test that registers a real `WHEN-NEW-RECORD-INSTANCE` handler — the
+first anywhere in either host's test suite to do so — surfaced three distinct defects in the
+record-navigation trigger machinery added on 2026-08-02 (G0.… the original fire-point addition):
+
+1. **Missing `ConfigureAwait(false)`.** `TriggerDefinition.ExecuteAsync`/`ExecuteHandlerAsync` and
+   19 `_triggerManager.Fire*TriggerAsync` call sites across `FormsManager.BasicDataOps/
+   DmlTriggers/EnhancedOperations/FormOperations/KeyTriggers/Navigation/Relationships.cs` (plus 3
+   `CheckAndHandleUnsavedChangesAsync` call sites in `Navigation.cs`) awaited without it — a real
+   gap in an engine otherwise consistent about the convention, confirmed by grepping every such
+   call site across the whole `Editor/Forms/` tree. Necessary but not alone sufficient to fix the
+   deadlock below; see item 3.
+2. **Wrong `TriggerContext` factory.** `PreRecord`/`PostRecord`/`WhenNewRecordInstance` built their
+   context via `TriggerContext.ForBlock` (`Scope=Block`, `RecordIndex` left at its `-1` default)
+   instead of `TriggerContext.ForRecord` (`Scope=Record`, carries the record and its index) — the
+   wrong factory picked when these fire points were added. A handler reading `RecordIndex` to know
+   which record just became current — the entire point of `WHEN-NEW-RECORD-INSTANCE`, per this
+   file's own comment ("the trigger most Oracle Forms code uses to react to the cursor moving
+   between records") — saw `-1` on every fire, on both platforms, since the trigger's addition.
+3. **`GO_RECORD` never fired them at all.** `NavigateToRecordInternalAsync` (backing
+   `NavigateToRecordAsync`/`MoveToRecordAsync` — jumping to a specific record index) had no
+   `PostRecord`/`PreRecord`/`WhenNewRecordInstance` fire block whatsoever, unlike `NavigateAsync`
+   (`First`/`Next`/`Previous`/`Last`), which has fired all three since 2026-08-02. A form reacting
+   to record changes via `WHEN-NEW-RECORD-INSTANCE` never saw it fire for a direct index jump.
+
+**A fourth, related finding: not fixed here, by design.** Diagnosing item 1's deadlock (a WPF host
+blocking synchronously on the calling thread, with a *synchronous* trigger handler causing
+execution to hop onto a thread-pool thread via `Task.Run`) traced into
+`BeepWpfForms.RunOnUi`'s blocking `Dispatcher.Invoke` marshal for the `TriggerExecuting`/
+`TriggerExecuted` relay events — a Beep.Forms-repo concern, not BeepDM's, documented in that
+repo's own `TheTechIdea.Beep.Forms.Wpf/Forms/ENGINE-GAP-ANALYSIS.md` rather than here.
+
+**Fix:** `.ConfigureAwait(false)` added at all 22 sites; `PreRecord`/`PostRecord`/
+`WhenNewRecordInstance` now use `TriggerContext.ForRecord(type, blockName,
+blockInfo.UnitOfWork.CurrentItem, recordIndex, _dmeEditor)`; `NavigateToRecordInternalAsync` now
+fires all three, mirroring `NavigateAsync` exactly.
+
+**Where:** `Editor/Forms/Models/TriggerDefinition.cs`; `Editor/Forms/FormsManager
+.{BasicDataOps,DmlTriggers,EnhancedOperations,FormOperations,KeyTriggers,Navigation,
+Relationships}.cs`.
+
+**Proven via revert:** reverted the `ForRecord` fix back to `ForBlock` on both call sites and
+confirmed the WPF self-test's `RecordIndex` assertions failed with the exact predicted symptom
+(every fire reporting `-1`); restoring made all checks pass again. The missing-fire-point fix in
+`NavigateToRecordInternalAsync` was proven the same way during initial diagnosis: before the fix,
+the tracked fire list stayed unchanged after `MoveToRecordAsync` (zero fires); after, it grows by
+exactly one with the correct index.
+
+**Risk of fix:** Low for the `ConfigureAwait(false)` additions (behavior-preserving on any caller
+without an ambient `SynchronizationContext`, which is every non-UI-blocked caller). Low-to-medium
+for the `ForRecord`/new-fire-point changes: additive for `GO_RECORD` (a trigger that never fired
+now does — the same "additive, no existing caller could have depended on a trigger that never
+fired" reasoning the 2026-08-02 fire-point addition itself used), and the `RecordIndex` correction
+is a pure bugfix for a value that was always wrong, not a behavior removal.
+
+**Verified:** BeepDM's `FormsManager.Tests` (196/196 passing), `SmokeTests`,
+`DesignerCompileCheck`, and every WinForms/WPF `Examples` self-test in Beep.Forms all pass
+unchanged. New `Examples.WPF/RecordNavigationSelfTest.cs` (`--selftest-navigation`) exercises all
+three fixes end to end.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
