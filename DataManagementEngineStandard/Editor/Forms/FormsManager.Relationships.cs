@@ -202,7 +202,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             // Fire ON-POPULATE-DETAILS to allow triggers to intervene
             await _triggerManager.FireBlockTriggerAsync(
                 TriggerType.OnPopulateDetails, masterBlockName,
-                TriggerContext.ForBlock(TriggerType.OnPopulateDetails, masterBlockName, null, _dmeEditor));
+                TriggerContext.ForBlock(TriggerType.OnPopulateDetails, masterBlockName, null, _dmeEditor)).ConfigureAwait(false);
 
             await SynchronizeDetailHierarchyAsync(
                 masterBlockName,

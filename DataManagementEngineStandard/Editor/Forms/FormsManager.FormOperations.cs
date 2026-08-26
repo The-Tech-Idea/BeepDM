@@ -278,7 +278,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 var preCommitResult = await _triggerManager.FireFormTriggerAsync(
                     TriggerType.PreCommit,
                     _currentFormName,
-                    TriggerContext.ForForm(TriggerType.PreCommit, _currentFormName ?? "FORM", _dmeEditor));
+                    TriggerContext.ForForm(TriggerType.PreCommit, _currentFormName ?? "FORM", _dmeEditor)).ConfigureAwait(false);
                 if (preCommitResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -372,7 +372,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     await _triggerManager.FireFormTriggerAsync(
                         TriggerType.PostCommit,
                         _currentFormName,
-                        TriggerContext.ForForm(TriggerType.PostCommit, _currentFormName ?? "FORM", _dmeEditor));
+                        TriggerContext.ForForm(TriggerType.PostCommit, _currentFormName ?? "FORM", _dmeEditor)).ConfigureAwait(false);
 
                     // Raise .NET event for UI subscribers
                     var postCommitArgs = new FormTriggerEventArgs(_currentFormName, "Form commit completed")

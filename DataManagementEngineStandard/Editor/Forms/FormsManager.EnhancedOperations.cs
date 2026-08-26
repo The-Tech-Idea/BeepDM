@@ -267,7 +267,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire PRE-INSERT trigger — abort if cancelled
                 var preInsertResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreInsert, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreInsert, blockName, record, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreInsert, blockName, record, _dmeEditor)).ConfigureAwait(false);
                 if (preInsertResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -308,7 +308,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Fire POST-INSERT trigger after successful insert
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostInsert, blockName,
-                        TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
+                        TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor)).ConfigureAwait(false);
 
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     result.Message = "Record created in block; it is written on commit";
@@ -425,7 +425,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire PRE-UPDATE trigger — abort if cancelled
                 var preUpdateResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreUpdate, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreUpdate, blockName, currentRecord, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreUpdate, blockName, currentRecord, _dmeEditor)).ConfigureAwait(false);
                 if (preUpdateResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -474,7 +474,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Fire POST-UPDATE trigger after successful update
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostUpdate, blockName,
-                        TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor));
+                        TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor)).ConfigureAwait(false);
 
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     result.Message = "Record updated successfully";
@@ -538,7 +538,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire PRE-QUERY trigger — abort if cancelled
                 var preQueryResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreQuery, blockName, null, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
                 if (preQueryResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -592,7 +592,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire POST-QUERY trigger (before returning to caller)
                 await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PostQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.PostQuery, blockName, null, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PostQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
 
                 var recordCount = GetRecordCount(blockName);
                 

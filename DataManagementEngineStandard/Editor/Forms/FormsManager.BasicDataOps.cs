@@ -254,7 +254,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Fire POST-DELETE trigger after successful delete
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostDelete, blockName,
-                        TriggerContext.ForBlock(TriggerType.PostDelete, blockName, currentRecord, _dmeEditor));
+                        TriggerContext.ForBlock(TriggerType.PostDelete, blockName, currentRecord, _dmeEditor)).ConfigureAwait(false);
 
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     return true;
