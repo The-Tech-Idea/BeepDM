@@ -2144,6 +2144,74 @@ unchanged. New `Examples.WPF/RecordNavigationSelfTest.cs` (`--selftest-navigatio
 three fixes end to end.
 
 ---
+
+### G0.59: Item-scoped triggers (`WHEN-VALIDATE-ITEM`, `PRE-TEXT-ITEM`, `POST-TEXT-ITEM`,
+`WHEN-NEW-ITEM-INSTANCE`) registered via `RegisterItemTrigger` were silently never invoked, on
+either host platform (FIXED 2026-08-26)
+
+**What:** `ITriggerManager` stores triggers in two separate tiers — `_blockTriggers[blockName]
+[type]` (block-scoped, fed by `RegisterBlockTrigger`) and `_itemTriggers[GetItemKey(blockName,
+itemName)][type]` (item-scoped, fed by `RegisterItemTrigger` — exactly what the IDE's standard
+"Add Trigger" authoring path emits for these four trigger types).
+`GetBlockTriggersForExecution` — the lookup behind `FireBlockTriggerAsync` — only ever consults
+the block-scoped tier and global triggers; it never consults `_itemTriggers`.
+`IBeepFormsHost`, the shared contract both `BeepWpfForms` and `WinFormFormHost` implement, had
+only `FireBlockTriggerAsync` — no item-scoped alternative existed at all. Both hosts' block-level
+UIs (`BeepWpfBlock.cs`, `WinFormBlockHost.ItemNavigation.cs`) each carry a private
+`FireItemTriggerAsync` helper (for `PreTextItem`/`PostTextItem`/`WhenNewItemInstance`) plus a
+direct call in `ValidateItemExitAsync` (for `WhenValidateItem`); for lack of anything else on the
+host contract, both called `FireBlockTriggerAsync`. The result: a trigger registered through the
+standard, IDE-authored `RegisterItemTrigger` path was correctly stored and correctly readable back
+via `GetItemTriggers`, and never once invoked, on either platform, since these fire points
+existed. `WHEN-VALIDATE-ITEM` is one of the most heavily used triggers in Oracle Forms —
+arguably higher real-world severity than G0.58's record-navigation gap.
+
+**Fix:** Added `IBeepFormsHost.FireItemTriggerAsync(TriggerType, blockName, itemName,
+TriggerContext?, CancellationToken)`, delegating to the engine's existing
+`ITriggerManager.FireItemTriggerAsync` (which already correctly consulted `_itemTriggers` — only
+the host-side plumbing to reach it was missing). Implemented on both `BeepWpfForms` and
+`WinFormFormHost`. Updated all four call sites (`ValidateItemExitAsync` and the private
+`FireItemTriggerAsync` helper, on both `BeepWpfBlock.cs` and
+`WinFormBlockHost.ItemNavigation.cs`) to call the new item-scoped method instead of
+`FireBlockTriggerAsync`.
+
+**Where:** `Editor/Forms/Hosts/IBeepFormsHost.cs` (new interface member; engine-side
+`TriggerManager.FireItemTriggerAsync` itself was already correct and untouched). Consumer-side
+fix in the Beep.Forms repo: `TheTechIdea.Beep.Forms.Wpf/Forms/FormHost/BeepWpfForms.QueryTriggers.cs`,
+`TheTechIdea.Beep.Forms.Wpf/Forms/BlockHost/BeepWpfBlock.cs`,
+`TheTechIdea.Beep.Forms.WinForms/Forms/FormHost/WinFormFormHost.Triggers.cs`,
+`TheTechIdea.Beep.Forms.WinForms/Forms/BlockHost/WinFormBlockHost.ItemNavigation.cs`.
+
+**A related, self-inflicted consequence, also fixed here:** two other, pre-split ancestor
+projects outside Beep.Forms — `Beep.WPF/TheTechIdea.Beep.Wpf.Data.Integrated` and
+`Beep.Winform.Data.Integrated/Beep.Winform.Data.Integrated.Controls` — hold live
+`ProjectReference`s to this same `DataManagementModels.csproj` and directly implement
+`IBeepFormsHost`. Adding a required interface member would have broken their next build. Mirrored
+the identical two-line delegation into both (`BeepWpfForms.QueryTriggers.cs`,
+`WinFormFormHost.Triggers.cs` in those repos) so the interface addition doesn't regress a sibling
+codebase — their own internal `FireBlockTriggerAsync`-based caller-site bug (the likely-identical
+underlying defect) was left untouched, since those ancestor repos are explicitly out of scope for
+Beep.Forms and not otherwise touched, built, or tested by anything in this session's working set.
+
+**Proven via revert:** reverted all four Beep.Forms call sites back to `FireBlockTriggerAsync` and
+confirmed both platforms' new self-tests failed with the exact predicted symptom (registered
+handlers never invoked — `validateFired`/`newItemInstanceFired` stayed empty); restoring made all
+checks pass again on both platforms.
+
+**Risk of fix:** Low. Purely additive on the interface (a new method, not a signature change to an
+existing one); the four caller-site changes replace a call that could never have found an
+item-scoped trigger with one that can — no existing caller could have depended on the old,
+broken behavior. The two ancestor-repo mirrors are the identical low-risk delegation pattern
+already proven in Beep.Forms' own implementations.
+
+**Verified:** BeepDM's `FormsManager.Tests` (196/196 passing, unchanged). New
+`Examples.WPF/ItemTriggerSelfTest.cs` (`--selftest-itemtrigger`) and
+`Examples.WinForms/ItemTriggerSelfTest.cs` (`--selftest-itemtrigger`) both pass, 5/5 checks each.
+Both ancestor projects (`TheTechIdea.Beep.Winform.Data.Integrated.csproj`,
+`TheTechIdea.Beep.Wpf.Data.Integrated.csproj`) build clean with the mirrored interface
+implementation.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
