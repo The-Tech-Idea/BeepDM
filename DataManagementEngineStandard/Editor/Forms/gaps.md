@@ -2039,6 +2039,33 @@ reading it, since a caller checking "is this cached" and then dereferencing `.Bl
 **Where:** `Helpers/PerformanceManager.cs` (`PreloadFrequentBlocks`, unchanged).
 
 ---
+
+### G0.57: `IUnitofWork.SaveLog`/`UpdateLog` is a second, always-empty "what changed" mechanism —
+`GetChangeLog()`/`_changeLog` (the one G0.53's fix already uses) is the one that actually works
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Continuing the stub sweep into `Editor/UOW/*.cs` (outside `Editor/Forms/`, but directly
+relevant since every block's `IUnitofWork` is this same type) found `UnitofWork.Core.Extensions
+.cs`'s `UpdateLog` property marked *"placeholder — would need full implementation"*, right beside
+the genuinely-working `_changeLog`/`GetChangeLog()`/`RecordChange` this session already redirected
+`DirtyStateManager.GetLastModifiedTime` into (G0.53). `SaveLog(pathandname)` — a real, public,
+otherwise-correct method that serializes `UpdateLog` to a JSON file — silently no-ops every time
+it is called (`if (UpdateLog == null || UpdateLog.Count == 0) return true;`) because nothing
+anywhere ever writes to `UpdateLog` (`Dictionary<DateTime, EntityUpdateInsertLog>`); it always
+reports success while writing nothing.
+
+**Why this is not the same shape as G0.53's fix.** `_changeLog` (`List<ChangeRecord>`, populated by
+`RecordChange` on every property edit) and `UpdateLog` (`Dictionary<DateTime,
+EntityUpdateInsertLog>`) are genuinely different granularities, not the same fact stored twice:
+`ChangeRecord` is a per-property-change log; `EntityUpdateInsertLog` (`Id`/`RecordId`/`GuidKey`/
+`LogId`/...) is shaped for per-record insert/update tracking. Redirecting `SaveLog` to serialize
+`_changeLog` instead would need real translation logic between the two shapes, not a value flowing
+into an already-built sink the way `GetDirtyRecordCount`/`GetLastModifiedTime` were — genuine
+follow-on work, not attempted here.
+
+**Where:** `Editor/UOW/UnitofWork.Core.Extensions.cs` (`UpdateLog`, `SaveLog`, unchanged).
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
