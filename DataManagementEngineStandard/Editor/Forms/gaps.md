@@ -1438,6 +1438,52 @@ closing any actual gap (house rule: don't add features beyond what's needed) —
 than built.
 
 ---
+
+### G0.44: `Helpers/TypeBridgeAdapters.cs` (`ValidationBridge`/`TriggerBridge`/`LOVBridge`) —
+checked and found to be scoped to a different, excluded product, not a Beep.Forms gap
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Finishing the Helpers-directory sweep (G0.36/G0.42/G0.43) reached
+`TypeBridgeAdapters.cs` last: three static classes — `ValidationBridge.ToBeepDMRule`,
+`TriggerBridge.MapTriggerType`/`ToBeepDMTrigger`, `LOVBridge.ToBeepDMLOV` — plus a
+`LOVColumnInfo` DTO, none referenced anywhere in either `BeepDM` or `Beep.Forms`
+(confirmed by grep across both repos). On the surface this is the same "built, zero
+callers" shape as G0.42/G0.43.
+
+**Why this one is out of scope rather than a gap to close.** Every method's own doc
+comment names its intended caller: `ValidationBridge`'s says *"Call from BeepDataBlock
+when IsCoordinated..."*; `TriggerBridge.MapTriggerType`'s hard-coded integer ranges
+(`Form=1-6, Block=100-109, Record=200-214, Item=300-311, ...`) only correspond to a
+local, WinForms-specific enum that predates BeepDM's own `TriggerType`; `LOVColumnInfo`
+is explicitly *"used by LOVBridge to avoid referencing WinForms LOVColumn type"*.
+`BeepDataBlock` is a type from `Beep.Winform.Data.Integrated` — the pre-split ancestor
+project this repo's own `CLAUDE.md` states, as a deliberate, load-bearing boundary,
+that **"Beep.Forms takes no dependency on the Integrated projects... directly or
+transitively."** `WinFormBlockHost`/`BeepWpfBlock` (Beep.Forms' actual runtime hosts)
+are thin hosts with no local, pre-engine validation/trigger/LOV representation to
+bridge from — validation, triggers and LOVs are engine-owned from the start in this
+product's architecture, so there is no "local" registration on this side of the
+boundary for these adapters to ever convert. `BeepDM` is the shared engine behind more
+than one product; this file most plausibly still serves `Beep.Winform.Data.Integrated`
+directly (a sibling repo entirely outside this session's two-repo scope), which is
+exactly the same "caller lives outside the repo I can grep" shape the `FormMenuManager`
+and `OracleFormatMaskTranslator` false leads turned out to have — except here the real
+caller (if any) is in a repo Beep.Forms is contractually forbidden from depending on,
+not merely one this session happens not to have open.
+
+**Not fixed, and not investigated further.** Building a caller inside Beep.Forms would
+mean inventing a "local rule" concept in the runtime hosts that the thin-host
+architecture deliberately does not have — moving behavior into the host is the opposite
+of this product's engine-owns-everything design, not a missing implementation of it.
+Chasing the real caller down means opening `Beep.Winform.Data.Integrated`, which is
+outside this repo's boundary by explicit rule, not merely unswept. Recorded here so a
+future Helpers-directory sweep in this repo does not re-flag it as a live Beep.Forms
+gap — the "zero callers in the two repos I searched" finding is real; the conclusion
+that it is a defect in *this* product is not.
+
+**Where:** `Helpers/TypeBridgeAdapters.cs` (BeepDM, unchanged).
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
