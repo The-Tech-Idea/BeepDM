@@ -2267,12 +2267,17 @@ no firing code anywhere (FIXED 2026-08-26)
 
 **What:** A systematic audit — cross-referencing every `TriggerType` enum member against every
 `Fire*TriggerAsync(TriggerType.X, ...)` call site anywhere in the engine — found `EnterQuery` and
-`ExitQuery` among a larger set of enum members with zero firing references. Most of that larger set
-falls into two explained, non-actionable categories: ~45 `Key*`-prefixed members
-(`KeyNextItem`, `KeyCommit`, `KeyF1`, …) are a vestigial, near-1:1-named duplicate of the separate
-`KeyTriggerType` enum, which already correctly implements key-triggered navigation/commands via
-`FireKeyTriggerAsync` — a rule-3 duplication question, not a rule-6 missing implementation, and not
-touched here; and roughly two dozen UI-widget/window-lifecycle members
+`ExitQuery` among a larger set of enum members with zero *literal* firing references. Most of that
+larger set falls into two explained, non-actionable categories: ~45 `Key*`-prefixed members
+(`KeyNextItem`, `KeyCommit`, `KeyF1`, …) are never referenced as `TriggerType.KeyX` literals because
+they're reached only via `RegisterKeyTrigger`/`FireKeyTriggerAsync`'s `(TriggerType)(int)key` cast
+from the separate `KeyTriggerType` enum — deliberately, not vestigially: `KeyTriggerType`'s own
+values are assigned in the identical 100-168 numeric range (`KeyTriggerType.Commit = 122` ==
+`TriggerType.KeyCommit = 122`), confirmed by reading both enums' actual integer literals during a
+2026-08-26 follow-up. This is the interop bridge those two methods rely on, not a rule-3 duplication
+question — see that follow-up entry below for the full correction and the self-test that proved
+`RegisterKeyTrigger`/`FireKeyTriggerAsync` already work correctly end to end, just unused by any
+current caller. Not touched further here. Roughly two dozen UI-widget/window-lifecycle members
 (`WhenButtonPressed`, `WhenMouseClick`, `WhenWindowActivated`, …) require new host-side event wiring
 across both WinForms and WPF, a materially larger undertaking documented below but not attempted in
 this pass. `EnterQuery`/`ExitQuery` stood out as genuinely missing, purely engine-side, and
@@ -2344,9 +2349,34 @@ clean.
   `FireBlockTriggerAsync`/`FireFormTriggerAsync` calls in both `TheTechIdea.Beep.Forms.WinForms` and
   `TheTechIdea.Beep.Forms.Wpf`, a substantially larger, cross-repo undertaking than any single fix
   landed this session.
-- **~45 `TriggerType.Key*` members** are the vestigial `KeyTriggerType` duplicate discussed above —
-  not a missing implementation, a rule-3 duplication question for a future pass to resolve (keep
-  as a documented alias, or remove — removal is not this implementer's call).
+- **~45 `TriggerType.Key*` members** are `RegisterKeyTrigger`/`FireKeyTriggerAsync`'s deliberate
+  interop bridge to `KeyTriggerType`, not a duplication question — see the correction and
+  end-to-end proof below.
+
+**Follow-up, 2026-08-26 — `RegisterKeyTrigger`/`RegisterKeyTriggerAsync` have zero callers
+anywhere, but this is not a bug; verified working end to end, and corrects an earlier
+mischaracterization above.** A separate systematic sweep for orphaned `FormsManager` public
+methods (looking for the same "two implementations, one unreachable" shape
+`ExecuteQueryAndEnterCrudModeAsync` turned out to be, above) found
+`RegisterKeyTrigger`/`RegisterKeyTriggerAsync` with zero callers anywhere in BeepDM, Beep.Forms,
+Beep.WPF or Beep.Winform.Data.Integrated, while their sibling `FireKeyTriggerAsync` is heavily
+called by both hosts for Tab/Enter/F-key navigation. On its face this reads as the same
+"registered but never fires" shape as `EnterQuery`/`ExitQuery` above. It isn't: `KeyTriggerType`'s
+enum values are deliberately assigned in the identical 100-168 numeric range as `TriggerType`'s
+`Key*` sub-block (`KeyTriggerType.Commit = 122`, `TriggerType.KeyCommit = 122`), confirmed by
+reading both enums' actual assigned integers, not just member order — an initial hunch that the
+two might be misaligned turned out to be checking the wrong thing (ordinal position instead of
+declared value). `RegisterKeyTrigger`'s `(TriggerType)(int)key` cast therefore lands on exactly
+the `TriggerType` value `FireKeyTriggerAsync`'s identical cast fires against, and both methods are
+declared directly on `IUnitofWorksManager`, reachable today via `host.FormsManager
+.RegisterKeyTrigger(...)`. This also corrects the "vestigial duplicate" reading of `TriggerType
+.Key*` two paragraphs above — those members are the deliberate bridge this cast relies on, not
+dead weight. Proven with a new `Examples.WPF/KeyTriggerSelfTest.cs` (`--selftest-keytrigger`,
+Beep.Forms) — registers KEY-COMMIT and KEY-EXIT handlers and confirms the full documented
+contract, including that a `Cancelled` result genuinely suppresses the default action. 8/8 checks
+pass. No engine code change; documented in `TheTechIdea.Beep.Forms.Wpf/Forms/
+ENGINE-GAP-ANALYSIS.md` as "verified working, no fix needed" rather than as a further `gaps.md`
+entry, since it isn't a defect.
 
 ---
 ## P0 — Correctness / Existing-User Impact
