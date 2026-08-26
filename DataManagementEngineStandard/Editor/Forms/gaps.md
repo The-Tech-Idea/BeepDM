@@ -2436,8 +2436,15 @@ correspondingly higher priority to look at next:
     but *where* it should fire (a specific record-lifecycle event such as `WHEN-CREATE-RECORD`, vs.
     staying a manual, on-demand call) is itself a design decision this pass does not make
     unilaterally. `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
-    `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`) — a mode-readiness API that
-    only calls itself internally, not on the interface either.
+    `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`, not on the interface either) —
+    checked against the interface-declared, also-unused-by-hosts `ValidateForm()`
+    (`FormOperations.cs`), which loops every block calling `ValidateBlock` the same way. **Partial
+    overlap, not a clean duplicate**: `ValidateAllBlocksForModeTransitionAsync` additionally checks
+    `UnitOfWork.IsDirty` per block (a genuinely different "is it safe to switch modes" question
+    `ValidateForm()` doesn't ask), but — unlike `ValidateForm()` — never fires `WhenValidateForm`,
+    so a trigger a form author registered for that event would silently not run during a
+    mode-transition readiness check specifically. Worth resolving together with `ValidateForm()`'s
+    own exposure, not in isolation.
 
 **Likely-unused feature clusters (case c — plausibly safe to leave, lowest priority to
 investigate further):**
