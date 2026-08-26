@@ -79,7 +79,7 @@ always go through `GetFormSystemVariables()` or `GetSystemVariables(blockName)` 
 | Field | When updated |
 | --- | --- |
 | `CURRENT_BLOCK` | ✅ **live** — `UpdateForBlockChange(blockName)` is called from `SwitchToBlockAsync` (`FormsManager.Navigation.cs`, wired 2026-08-25) on every block switch, including through `GoBlockAsync`'s delegation. |
-| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | ⚠️ **partially live** — `UpdateForRecordChange(blockName, recordIndex, totalRecords)` is called from `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`) after a savepoint rollback, but **not** from ordinary record navigation (`NextRecordAsync`/`PreviousRecordAsync`/etc. do not call it) — these fields go stale between rollbacks. Also opportunistically refreshed by `UpdateForBlockChange` from the block's live `IUnitofWork` on block entry. |
+| `CURSOR_RECORD`, `LAST_RECORD`, `RECORDS_DISPLAYED` | ✅ **live** — `UpdateForRecordChange(blockName, recordIndex, totalRecords)` is called from the two real navigation choke points every entry point funnels through: `NavigateAsync` (`FirstRecordAsync`/`NextRecordAsync`/`PreviousRecordAsync`/`LastRecordAsync`, via `NavigateWithValidationAsync`) and `NavigateToRecordInternalAsync` (`NavigateToRecordAsync`/`GoRecordAsync`), both wired 2026-08-26. Pre-existing: `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`, savepoint rollback) and `UpdateForBlockChange`'s opportunistic refresh on block entry. |
 | `CURRENT_ITEM`, `CURSOR_ITEM`, `CURSOR_VALUE` | ✅ **live** — `UpdateForItemChange(blockName, itemName, itemValue)` is called from `GoItemAsync` (`FormsManager.Navigation.cs:406`) on every item-focus change. |
 | `MASTER_BLOCK` | ✅ **live** — same `UpdateForBlockChange` call as `CURRENT_BLOCK` above, when the block has a registered master. |
 | `MODE` | ✅ **live** — `SetMode(mode)` is called at all four sites that assign `blockInfo.Mode` directly (`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, `CoordinateChildBlocksForNewMasterRecord` in `FormsManager.ModeTransitions.cs`; `ExecuteQueryEnhancedAsync` in `FormsManager.EnhancedOperations.cs`, wired 2026-08-25), mapped through `ToSystemVariableMode(DataBlockMode)` onto Oracle's real two-value vocabulary (`NORMAL`/`ENTER-QUERY`). |
@@ -111,10 +111,31 @@ points, plus the post-commit/post-rollback reset back to `"QUERY"` described bel
 reset, described below), `SetLastQuery` (wired 2026-08-25, the same
 `ExecuteQueryEnhancedAsync` choke point `SetMode` already uses, once
 `DataSourceAppFilterExtensions.BuildSelectQueryDefinition` was found to already provide the
-filter-to-string serialization this was originally blocked on — see below), and `UpdateForItemChange`
-(pre-existing, in `GoItemAsync`). Partially live: `UpdateForRecordChange` (pre-existing, but only from
-savepoint rollback, not ordinary navigation). The only remaining unwired piece anywhere in this
-section is the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS` — see below.
+filter-to-string serialization this was originally blocked on — see below), `UpdateForItemChange`
+(pre-existing, in `GoItemAsync`), and `UpdateForRecordChange` (wired 2026-08-26 for ordinary
+navigation — see below; pre-existing from savepoint rollback). The only remaining unwired piece
+anywhere in this section is the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS` — see below.
+
+**`UpdateForRecordChange`: the last item this session's own gaps.md left open, closed the same way
+`SetBlockStatus`'s "QUERY"/"NEW" values were — by re-checking "only from savepoint rollback" rather
+than accepting it as a settled limitation.** Every record-navigation entry point (`FirstRecordAsync`/
+`NextRecordAsync`/`PreviousRecordAsync`/`LastRecordAsync`, `NavigateToRecordAsync`/`GoRecordAsync`)
+funnels through exactly two private methods: `NavigateAsync` (the first four, via
+`NavigateWithValidationAsync`) and `NavigateToRecordInternalAsync` (the last two) — not scattered
+call sites. Both already compute the post-navigation `currentIndex` for their own record-history
+bookkeeping, and `blockInfo.UnitOfWork.TotalItemCount` supplies the record count, so wiring
+`UpdateForRecordChange(blockName, currentIndex, totalItemCount)` into each success branch needed no
+new state. Two new tests
+(`NextRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition`,
+`NavigateToRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition`), each choke point proven via
+revert independently. The second test surfaced an unrelated but useful testing lesson: `PerformRecordNavigation`
+dynamic-dispatches `SetCurrentIndex`/`GetTotalRecords` against `Units`, and the C# dynamic binder
+(unlike plain reflection) enforces accessibility — closing a generic `ObservableBindingList<T>` over
+a `private` test-only `T` silently fails every dynamic member access from `FormsManager`'s assembly,
+with `GetTotalRecords`'s existing `catch`-and-`Debug.WriteLine` swallowing the `RuntimeBinderException`
+and returning `0`. Using a public entity type as `T` fixed the test; nothing in production needed to
+change; this is not a defect, `GetTotalRecords`/`SetCurrentIndex` already degrade the intended way for
+a `Units` implementation that cannot be dynamic-dispatched.
 
 **`SetLastQuery`: the "no existing serialization to reuse" premise was wrong — re-checked and
 landed (2026-08-25).** The original pass found `ExecuteQueryEnhancedAsync`'s one natural landing

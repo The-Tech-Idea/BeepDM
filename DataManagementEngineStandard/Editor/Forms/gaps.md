@@ -828,13 +828,14 @@ assignments failed exactly that test).
 caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
 (FOUND 2026-08-25; **trigger-context, block-switch, current-form, mode, last-error, last-query, the
 block/record-status "CHANGED"/"QUERY"/"NEW" transitions, the post-commit/post-rollback reset back to
-"QUERY", and SetFormStatus's first direct call site all FIXED same day** — `SetTriggerContext`/
-`ClearTriggerContext`, `UpdateForBlockChange`, `SetCurrentForm`, `SetMode`, `SetLastError`,
-`SetLastQuery`, `SetFormStatus`, and `SetBlockStatus`/`SetRecordStatus` (for `"CHANGED"`, `"QUERY"`,
-and `"NEW"`) now wired; `UpdateForItemChange`/`UpdateForRecordChange`(partial) turned out to be
-already wired, pre-dating this finding — the first pass's grep missed calls through the private
-field; the sole remaining unwired piece is the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS`,
-see "Still open" below)
+"QUERY", SetFormStatus's first direct call site, and ordinary-navigation record-position tracking all
+FIXED across 2026-08-25/26** — `SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`,
+`SetCurrentForm`, `SetMode`, `SetLastError`, `SetLastQuery`, `SetFormStatus`, `SetBlockStatus`/
+`SetRecordStatus` (for `"CHANGED"`, `"QUERY"`, and `"NEW"`), and `UpdateForRecordChange` (for ordinary
+First/Next/Previous/Last/GoRecord navigation, wired 2026-08-26) now wired; `UpdateForItemChange`
+turned out to be already wired, pre-dating this finding — the first pass's grep missed calls through
+the private field; the sole remaining unwired piece in the whole `SystemVariablesManager` surface is
+the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS`, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -967,10 +968,9 @@ until overwritten by the next error, which `SetLastError` already provides. One 
 `ExecuteQueryEnhancedAsync` and asserting the mock's `SetLastError` was invoked with a message
 containing the block name), proven via revert.
 
-**Still open — `UpdateForRecordChange`'s general (non-savepoint) case, plus one value.**
-`UpdateForRecordChange` only runs from savepoint rollback, not ordinary record navigation — not
-re-checked at the depth the other partial items got. `SetFormStatus` as a direct call is **no
-longer** on this list — see the `CommitFormAsync`/`RollbackFormAsync` entry below.
+**Still open — one value.** `SetFormStatus` as a direct call is **no longer** on this list — see
+the `CommitFormAsync`/`RollbackFormAsync` entry below — and neither is `UpdateForRecordChange`'s
+general (non-savepoint) case — see below.
 
 **`BLOCK_STATUS`/`RECORD_STATUS`'s `"INSERT"` value is also still open, but for a different reason
 than "scattered call sites."** Unlike `"NEW"`/`"QUERY"` (see below — both landed same day once
@@ -1109,6 +1109,35 @@ would silently discard whatever the form author's own handler decided. Four new 
 `RollbackFormAsync_OnRollbackRegistered_DoesNotOverrideThatBlocksStatus`), each proven via revert;
 full engine build plus `FormsManager.Tests` (174/174) green across 5 consecutive runs.
 
+**`UpdateForRecordChange`'s "only from savepoint rollback" limitation: re-checked and closed
+(2026-08-26).** The last item this pass's own earlier account had left open on the strength of the
+original grep, not individually re-checked. Every record-navigation entry point —
+`FirstRecordAsync`/`NextRecordAsync`/`PreviousRecordAsync`/`LastRecordAsync` (via
+`NavigateWithValidationAsync`) and `NavigateToRecordAsync`/`GoRecordAsync` — funnels through exactly
+two private methods, `NavigateAsync` and `NavigateToRecordInternalAsync`, both of which already
+compute the post-navigation `currentIndex` for their own record-history bookkeeping. Wiring
+`_systemVariablesManager?.UpdateForRecordChange(blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount)`
+into each success branch needed no new state — the same "two choke points, not one, but still a
+small enumerable set" shape `SetMode`/`SetCurrentForm` already had. Two new tests
+(`NextRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition`,
+`NavigateToRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition`), each choke point proven via
+revert independently.
+
+Getting the second test to actually exercise a *successful* navigation (rather than the pre-existing
+test's own caution of not asserting a return value at all) surfaced a real testing-infrastructure
+trap, not a production defect: `PerformRecordNavigation` (unlike `PerformNavigation`, which
+First/Next/Previous/Last use) dynamic-dispatches `SetCurrentIndex`/`GetTotalRecords` directly against
+`Units`. A bare `ICollection` mock has no `CurrentIndex` to dispatch to, so a first attempt used a
+real `ObservableBindingList<T>` closed over a `private` nested test class — which still failed,
+`GetTotalRecords` silently returning `0` instead of the real count. The cause: the C# dynamic binder
+(unlike plain reflection, which this engine's own doc comments call out as the reason `dynamic` was
+chosen over `GetProperty` reflection in the first place) enforces accessibility, and `FormsManager`'s
+dynamic-dispatch code runs in a different assembly than the test — so a `RuntimeBinderException` was
+being thrown and silently caught by `GetTotalRecords`'s existing `Debug.WriteLine`-only diagnostic
+(itself deliberate, documented "B2" behaviour, not something to change). Using a public entity type
+(`TheTechIdea.Beep.Editor.Entity`) as `Units`'s generic argument instead of the private test fixture
+fixed the test; nothing in `FormsManager` or `ObservableBindingList` needed to change.
+
 **Lesson carried forward, and now applied eight times: before assuming "no single choke point" (or
 "no existing capability to build on"), actually check.** `UpdateForItemChange`, `UpdateForBlockChange`,
 `SetCurrentForm`, `SetMode`, `SetLastError`, `SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` all
@@ -1144,8 +1173,9 @@ the `SetBlockStatus`/`SetRecordStatus("QUERY")` calls, all in `ExecuteQueryEnhan
 (the `ItemChanged` handler's `SetBlockStatus`/`SetRecordStatus("CHANGED")` calls);
 `FormsManager.FormOperations.cs` (`CommitFormAsync`'s `dirtyBlocksByForm` capture and post-commit
 `SetBlockStatus`/`SetRecordStatus`/`SetFormStatus("QUERY")` reset; `RollbackFormAsync`'s matching
-post-rollback reset, scoped to `blocksForDefaultRollback`);
-`Editor/Forms.Tests/FormsManagerTests.cs` (seventeen new tests total, two updated Strict mocks).
+post-rollback reset, scoped to `blocksForDefaultRollback`); `FormsManager.Navigation.cs`
+(`NavigateAsync`'s and `NavigateToRecordInternalAsync`'s `UpdateForRecordChange` calls);
+`Editor/Forms.Tests/FormsManagerTests.cs` (nineteen new tests total, two updated Strict mocks).
 
 ### G0.37: `BlockFieldDefinition.Label` never reached `ItemInfo.PromptText` (FIXED 2026-08-25)
 

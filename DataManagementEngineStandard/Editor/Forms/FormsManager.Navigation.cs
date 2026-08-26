@@ -147,16 +147,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
                         : previousIndex;
 
+                    // :SYSTEM.CURSOR_RECORD / :SYSTEM.LAST_RECORD / :SYSTEM.RECORDS_DISPLAYED
+                    // -- see G0.36 in gaps.md and NavigateAsync's identical call above.
+                    _systemVariablesManager?.UpdateForRecordChange(
+                        blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount);
+
                     if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
                         _navHistoryManager.Push(blockName, previousIndex);
 
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
-                    
+
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
                     OnCurrentChanged?.Invoke(this, currentChangedArgs);
-                    
+
                     Status = $"Navigated to record {recordIndex} in block '{blockName}'";
                     LogOperation($"Navigated to record {recordIndex}", blockName);
                 }
@@ -577,6 +582,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     var currentIndex = blockInfo.UnitOfWork.Units != null
                         ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
                         : previousIndex;
+
+                    // :SYSTEM.CURSOR_RECORD / :SYSTEM.LAST_RECORD / :SYSTEM.RECORDS_DISPLAYED
+                    // -- see G0.36 in gaps.md. Previously only updated after a
+                    // savepoint rollback (TryUpdateSavepointSystemVariables), so
+                    // ordinary First/Next/Previous/Last navigation left these
+                    // stale between rollbacks. This and
+                    // NavigateToRecordInternalAsync's identical call below are
+                    // the two real choke points every record-navigation entry
+                    // point funnels through -- not scattered call sites.
+                    _systemVariablesManager?.UpdateForRecordChange(
+                        blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount);
 
                     if (recordHistory && previousIndex >= 0 && previousIndex != currentIndex)
                         _navHistoryManager.Push(blockName, previousIndex);

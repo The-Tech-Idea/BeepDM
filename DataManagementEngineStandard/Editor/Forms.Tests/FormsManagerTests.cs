@@ -268,6 +268,60 @@ public class FormsManagerTests : IDisposable
             It.IsAny<object>()), Times.Never);
     }
 
+    // :SYSTEM.CURSOR_RECORD / :SYSTEM.LAST_RECORD / :SYSTEM.RECORDS_DISPLAYED (G0.36,
+    // continued, 2026-08-26). Previously only updated from
+    // TryUpdateSavepointSystemVariables (savepoint rollback only) -- ordinary record
+    // navigation left them stale. NavigateAsync (First/Next/Previous/Last, via
+    // NavigateWithValidationAsync) and NavigateToRecordInternalAsync
+    // (NavigateToRecordAsync/GoRecordAsync) are the two real choke points every
+    // record-navigation entry point funnels through.
+
+    [Fact]
+    public async Task NextRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition()
+    {
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(10);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.NextRecordAsync("EMP").ConfigureAwait(false);
+
+        Assert.True(result);
+        variables.Verify(v => v.UpdateForRecordChange("EMP", It.IsAny<int>(), 10), Times.Once);
+    }
+
+    [Fact]
+    public async Task NavigateToRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition()
+    {
+        // PerformRecordNavigation (unlike PerformNavigation, which First/Next/
+        // Previous/Last use) dynamic-dispatches SetCurrentIndex/GetTotalRecords
+        // against Units directly -- a bare ICollection mock has no CurrentIndex
+        // property to dispatch to, so it fails the dynamic bind and the
+        // navigation itself never succeeds. A real ObservableBindingList gives
+        // it something genuine to navigate. Must be closed over a PUBLIC type --
+        // FormsManager's dynamic dispatch runs in a different assembly, and the
+        // C# dynamic binder (unlike plain reflection) enforces accessibility, so
+        // ObservableBindingList<TestEntityRecord> (a private nested test class)
+        // fails to bind at all: GetTotalRecords silently caught a
+        // RuntimeBinderException and returned 0, never a "not navigable" 3 >= 0.
+        var entity = CreateEntity("EMP", ("EMPNO", "int"));
+        var units = new TheTechIdea.Beep.Editor.ObservableBindingList<TheTechIdea.Beep.Editor.Entity>(
+            new List<TheTechIdea.Beep.Editor.Entity> { new(), new(), new(), new(), new() });
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.Units).Returns(units);
+        uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        uowMock.Setup(u => u.IsDirty).Returns(false);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        manager.RegisterBlock("EMP", uowMock.Object, entity);
+
+        var result = await manager.NavigateToRecordAsync("EMP", 3).ConfigureAwait(false);
+
+        Assert.True(result, manager.Status);
+        variables.Verify(v => v.UpdateForRecordChange("EMP", 3, units.Count), Times.Once);
+    }
+
     #endregion
 
     #region Mode Transitions
