@@ -2437,14 +2437,26 @@ correspondingly higher priority to look at next:
     staying a manual, on-demand call) is itself a design decision this pass does not make
     unilaterally. `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
     `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`, not on the interface either) —
-    checked against the interface-declared, also-unused-by-hosts `ValidateForm()`
-    (`FormOperations.cs`), which loops every block calling `ValidateBlock` the same way. **Partial
-    overlap, not a clean duplicate**: `ValidateAllBlocksForModeTransitionAsync` additionally checks
-    `UnitOfWork.IsDirty` per block (a genuinely different "is it safe to switch modes" question
-    `ValidateForm()` doesn't ask), but — unlike `ValidateForm()` — never fires `WhenValidateForm`,
-    so a trigger a form author registered for that event would silently not run during a
-    mode-transition readiness check specifically. Worth resolving together with `ValidateForm()`'s
-    own exposure, not in isolation.
+    checked against `ValidateForm()` (`FormOperations.cs`), which loops every block calling
+    `ValidateBlock` the same way. **Correction, same session:** an earlier version of this entry
+    called `ValidateForm()` "also-host-unused" — wrong. `CommitFormAsync` calls it directly
+    (`if (Configuration?.ValidateBeforeCommit == true) { if (!ValidateForm()) ... }`,
+    `FormOperations.cs`), and `ValidateBeforeCommit` **defaults to `true`**
+    (`UnitofWorksManagerConfiguration.cs`) — so `ValidateForm()` runs, and fires `WhenValidateForm`,
+    on essentially every real commit. Missed on the first pass because it's a bare, same-class call
+    (`ValidateForm()`, no `this.`/`manager.` prefix) inside another `FormsManager` method — exactly
+    the blind spot the original orphaned-method sweep said it corrected for in ~20 cases; this one
+    slipped through that correction pass too, caught only by re-verifying this specific item rather
+    than trusting the list. **Treat the rest of this inventory as a starting point needing the same
+    spot-check before acting on it, not a verified-accurate list** — `ValidateForm()` is proof the
+    bare-call blind spot isn't fully closed. With that correction, `ValidateAllBlocksForModeTransitionAsync`'s
+    relationship to `ValidateForm()` is a **partial overlap, not a clean duplicate**: it additionally
+    checks `UnitOfWork.IsDirty` per block (a genuinely different "is it safe to switch modes"
+    question `ValidateForm()` doesn't ask), but never fires `WhenValidateForm` itself — so a
+    mode-transition readiness check specifically skips a trigger a form author would reasonably
+    expect to fire. Still genuinely unreachable from any host (confirmed: no bare or dotted caller
+    anywhere for `GetAllBlockModeInfo`/`IsFormReadyForModeTransitionAsync` themselves), just not for
+    the reason "duplicates an equally-unused ValidateForm()" the first version of this note gave.
 
 **Likely-unused feature clusters (case c — plausibly safe to leave, lowest priority to
 investigate further):**
