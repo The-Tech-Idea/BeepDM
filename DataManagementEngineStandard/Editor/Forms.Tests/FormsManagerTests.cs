@@ -3257,4 +3257,111 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region ExecuteSequence / Shared Blocks (IUnitofWorksManager reachability, closed 2026-08-27)
+
+    // Both were declared on FormsManager (Editor/Forms/FormsManager.InterFormComm.cs) with zero
+    // BeepDM test coverage of any kind and no path onto IUnitofWorksManager -- the interface
+    // either Beep.Forms host is typed as. See Beep.Forms' own ENGINE-GAP-ANALYSIS.md for the
+    // reachability self-test through the real host stack.
+
+    private sealed class SequenceTestRecord
+    {
+        public int Id { get; set; }
+    }
+
+    [Fact]
+    public void ExecuteSequence_PositiveSequenceValue_SetsFieldAndReturnsTrue()
+    {
+        var entity = CreateEntity("EMPLOYEES", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+        uowMock.Setup(u => u.GetSeq(It.IsAny<string>())).Returns(42);
+        _manager.RegisterBlock("EMP", uowMock.Object, entity, "DEFAULT_DB");
+
+        var record = new SequenceTestRecord();
+        var ok = _manager.ExecuteSequence("EMP", record, nameof(SequenceTestRecord.Id), "EMP_SEQ");
+
+        Assert.True(ok);
+        Assert.Equal(42, record.Id);
+    }
+
+    [Fact]
+    public void ExecuteSequence_NonPositiveSequenceValue_ReturnsFalseAndLeavesFieldUnset()
+    {
+        var entity = CreateEntity("EMPLOYEES", ("EMPNO", "int"));
+        var uowMock = CreateUowMock(1);
+        uowMock.Setup(u => u.GetSeq(It.IsAny<string>())).Returns(-1);
+        _manager.RegisterBlock("EMP", uowMock.Object, entity, "DEFAULT_DB");
+
+        var record = new SequenceTestRecord { Id = 7 };
+        var ok = _manager.ExecuteSequence("EMP", record, nameof(SequenceTestRecord.Id), "EMP_SEQ");
+
+        Assert.False(ok);
+        Assert.Equal(7, record.Id);
+    }
+
+    [Fact]
+    public void CreateSharedBlock_ThenGetSharedBlock_ReturnsThePublishedUow()
+    {
+        var uowMock = CreateUowMock(1);
+
+        var created = _manager.CreateSharedBlock("Shared1", uowMock.Object);
+        var retrieved = _manager.GetSharedBlock("Shared1");
+
+        Assert.True(created);
+        Assert.Same(uowMock.Object, retrieved);
+    }
+
+    [Fact]
+    public void SharedBlockExists_ReflectsCreateAndRemove()
+    {
+        var uowMock = CreateUowMock(1);
+
+        Assert.False(_manager.SharedBlockExists("Shared2"));
+        _manager.CreateSharedBlock("Shared2", uowMock.Object);
+        Assert.True(_manager.SharedBlockExists("Shared2"));
+        _manager.RemoveSharedBlock("Shared2");
+        Assert.False(_manager.SharedBlockExists("Shared2"));
+    }
+
+    [Fact]
+    public void TryLockSharedBlock_ThenReleaseSharedBlockLock_AllowsReacquire()
+    {
+        var uowMock = CreateUowMock(1);
+        _manager.CreateSharedBlock("Shared3", uowMock.Object);
+
+        var locked = _manager.TryLockSharedBlock("Shared3", TimeSpan.FromSeconds(1));
+        Assert.True(locked);
+
+        _manager.ReleaseSharedBlockLock("Shared3");
+
+        var relocked = _manager.TryLockSharedBlock("Shared3", TimeSpan.FromSeconds(1));
+        Assert.True(relocked);
+    }
+
+    [Fact]
+    public void IUnitofWorksManagerTyped_ExposesExecuteSequenceAndSharedBlocks()
+    {
+        // The reachability defect this section closes: before adding these members to
+        // IUnitofWorksManager, none of the calls below would compile against a
+        // manager reference held only through the interface (the only type either
+        // Beep.Forms host exposes FormsManager as).
+        IUnitofWorksManager manager = _manager;
+        var uowMock = CreateUowMock(1);
+        uowMock.Setup(u => u.GetSeq(It.IsAny<string>())).Returns(5);
+        manager.RegisterBlock("EMP", uowMock.Object, CreateEntity("EMPLOYEES", ("EMPNO", "int")), "DEFAULT_DB");
+
+        var record = new SequenceTestRecord();
+        Assert.True(manager.ExecuteSequence("EMP", record, nameof(SequenceTestRecord.Id), "EMP_SEQ"));
+        Assert.Equal(5, record.Id);
+
+        Assert.True(manager.CreateSharedBlock("Shared4", uowMock.Object));
+        Assert.True(manager.SharedBlockExists("Shared4"));
+        Assert.Same(uowMock.Object, manager.GetSharedBlock("Shared4"));
+        Assert.True(manager.TryLockSharedBlock("Shared4", TimeSpan.FromSeconds(1)));
+        manager.ReleaseSharedBlockLock("Shared4");
+        Assert.True(manager.RemoveSharedBlock("Shared4"));
+    }
+
+    #endregion
 }

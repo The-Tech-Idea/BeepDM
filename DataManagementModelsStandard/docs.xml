@@ -5125,6 +5125,16 @@
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Sequences">
             <summary>Gets the engine-owned named sequence provider.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ExecuteSequence(System.String,System.Object,System.String,System.String)">
+            <summary>
+            Reads the next value of a database-native sequence (via the block's own
+            <c>IUnitofWork.GetSeq</c>, not the in-memory <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Sequences"/> provider
+            above) and assigns it into <paramref name="record"/>'s <paramref name="FieldName"/>
+            -- the Oracle Forms PRE-INSERT idiom of auto-generating a primary key from a real
+            DB sequence. Returns false (and logs why) on a missing block, a non-positive or
+            non-numeric sequence value, or a failed field assignment.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Timers">
             <summary>Gets the engine-owned form timer manager.</summary>
         </member>
@@ -5499,6 +5509,24 @@
             same "declared on FormsManager but genuinely unreachable through this interface"
             shape as <c>FireItemTriggerAsync</c>/<c>SetSystemVariables</c>/<c>DirtyStateManager</c>.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateSharedBlock(System.String,TheTechIdea.Beep.Editor.IUnitofWork)">
+            <summary>Publishes this form's block UoW as a cross-form shared block. False if the name is already taken.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetSharedBlock(System.String)">
+            <summary>Retrieves a shared block UoW published by another form. Null when it doesn't exist.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.TryLockSharedBlock(System.String,System.TimeSpan)">
+            <summary>Attempts to acquire a write-lock on a shared block within the given timeout.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ReleaseSharedBlockLock(System.String)">
+            <summary>Releases the write-lock this form holds on a shared block.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SharedBlockExists(System.String)">
+            <summary>Whether a shared block with this name has been published.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RemoveSharedBlock(System.String)">
+            <summary>Unpublishes a shared block, releasing any lock on it.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ClearBlockRelationships(System.String)">
             <summary>Removes all master-detail relationships where the given block is master or detail.</summary>

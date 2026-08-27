@@ -2684,6 +2684,93 @@ exactly when a host should invoke it.
 `DesignerCompileCheck`, full `Beep.Forms.slnx` build, all green. New self-test 5/5.
 
 ---
+
+### G0.66: `RegisterBlockComputedFormula` was never carried onto `IUnitofWorksManager`
+(FIXED 2026-08-27)
+
+**What:** Added after `RegisterBlockComputed` (the delegate-based computed-column
+mechanism, already declared on `IUnitofWorksManager`) but never added to the interface
+itself — the same shape as G0.65, this time affecting only one method rather than a
+whole sub-manager. `RegisterBlockComputed`/`GetBlockComputedValue`/
+`GetBlockComputedColumnNames`/`GetAllBlockComputedValues` were all already reachable;
+only the newer, no-code formula-string convenience method was missed.
+
+**Fix:** `IUnitofWorksManager.RegisterBlockComputedFormula(string, string, string)` —
+purely additive.
+
+**Proven via revert:** commenting out the interface declaration reproduced a compile
+error in Beep.Forms' new `Examples.WinForms/ComputedFormulaSelfTest.cs`
+(`--selftest-computedformula`) — `masterHost.FormsManager!.RegisterBlockComputedFormula(...)`
+would not compile. Registers `"Qty * 2"` against a real queried block and reads back the
+correct computed value through the interface-typed reference. 3/3 checks.
+
+**Where corrected:** Beep.Forms' `future-requirements.md` F17 row also cited a fictional
+API (`BeepFieldDefinition.Calculation`/`BeepSummaryOperation`); corrected to describe
+the real, now-reachable pull-based mechanism and to correctly scope what remains
+genuinely missing — auto-recompute-on-change and an IDE authoring surface, neither
+attempted here.
+
+**Verified:** `FormsManager.Tests` 201/201 (no regressions from a pure interface
+addition — nothing new to test at the engine layer beyond reachability, already proven
+via the Beep.Forms self-test).
+
+---
+
+### G0.67: `ExecuteSequence` and the whole shared-block family (six methods) were
+declared on `FormsManager` with zero test coverage anywhere and no path onto
+`IUnitofWorksManager` (FIXED 2026-08-27)
+
+**What:** A systematic sweep of every `public` member on `FormsManager`'s partial
+classes against `IUnitofWorksManager`'s declared members (the same audit technique
+behind G0.62's orphan inventory, run again after G0.65/G0.66) found roughly 60
+candidates; most turned out to be redundant convenience wrappers already reachable via
+an already-exposed sub-manager (`Timers`/`Sequences`/`BlockProperties`/audit methods on
+the interface directly) and were left alone. Two genuine gaps survived that filter:
+
+- **`ExecuteSequence(blockName, record, FieldName, sequenceName)`**
+  (`FormsManager.FormsSimulation.cs`) — reads a *database-native* sequence via the
+  block's own `IUnitofWork.GetSeq` (not the in-memory `Sequences` provider, a
+  genuinely different mechanism) and assigns it into a record field: the Oracle Forms
+  PRE-INSERT idiom of auto-generating a primary key from a real DB sequence. Zero
+  callers anywhere in Beep.Forms, zero test coverage anywhere in BeepDM's own suite —
+  the deepest form of "accepted-then-ignored" this session has found: not merely
+  unreachable, never exercised at all.
+- **`CreateSharedBlock`/`GetSharedBlock`/`TryLockSharedBlock`/`ReleaseSharedBlockLock`/
+  `SharedBlockExists`/`RemoveSharedBlock`** (`FormsManager.InterFormComm.cs`) —
+  publishing a form's block as a cross-form shared UnitOfWork with a name-based lookup
+  and cooperative locking. The rest of that same file's Inter-Form section (globals,
+  parameter passing, the message bus) was already on the interface; only this cluster
+  of six was missed entirely.
+
+**Fix:** All seven added to `IUnitofWorksManager` — purely additive, zero
+concrete-class changes (both were already fully implemented on `FormsManager`).
+
+**Proven via revert, twice:** once against six new `FormsManagerTests.cs` cases
+(`ExecuteSequence` happy-path/non-positive-value, `CreateSharedBlock`→`GetSharedBlock`
+round-trip, `SharedBlockExists` reflecting create/remove, `TryLockSharedBlock`→
+`ReleaseSharedBlockLock`→reacquire, and one interface-typed test exercising all seven
+through an `IUnitofWorksManager` reference) — commenting out all seven interface
+declarations reproduced seven `CS1061` compile errors, restoring them fixed the build.
+Repeated a second time against Beep.Forms' new
+`Examples.WinForms/SharedBlockAndSequenceSelfTest.cs` (`--selftest-sharedblock`),
+reproducing nine `CS1061` errors in that file specifically (proving the Beep.Forms side
+independently, not just BeepDM's own test suite).
+
+**`ExecuteSequence` genuinely cannot demonstrate its happy path against the SQLite
+demo data source, and the self-test says so rather than faking it.**
+`DatabaseFeatureHelper.GenerateFetchNextSequenceValueQuery` only covers
+Oracle/Postgres/SqlServer/FireBird/DB2 — SQLite falls through to `null`, so
+`IUnitofWork.GetSeq` always returns `-1` against the seeded demo database, and
+`ExecuteSequence` correctly, gracefully returns `false`. The Beep.Forms self-test
+asserts exactly that (no exception, correct `false`) rather than a fabricated success;
+the happy path (a mocked `GetSeq` returning a positive value, assigned into a real
+field) is proven at the BeepDM layer instead, where the sequence source can be
+controlled directly.
+
+**Verified:** `FormsManager.Tests` 207/207 (201 existing + 6 new). Full `Beep.Forms.slnx`
+build, `SmokeTests`, `DesignerCompileCheck`, both new self-tests, all green.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)

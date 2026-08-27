@@ -9,6 +9,7 @@ using TheTechIdea.Beep.Utilities;
 
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor;
 
 
 namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
@@ -158,6 +159,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Gets the engine-owned named sequence provider.</summary>
         ISequenceProvider Sequences { get; }
+
+        /// <summary>
+        /// Reads the next value of a database-native sequence (via the block's own
+        /// <c>IUnitofWork.GetSeq</c>, not the in-memory <see cref="Sequences"/> provider
+        /// above) and assigns it into <paramref name="record"/>'s <paramref name="FieldName"/>
+        /// -- the Oracle Forms PRE-INSERT idiom of auto-generating a primary key from a real
+        /// DB sequence. Returns false (and logs why) on a missing block, a non-positive or
+        /// non-numeric sequence value, or a failed field assignment.
+        /// </summary>
+        bool ExecuteSequence(string blockName, object record, string FieldName, string sequenceName);
 
         /// <summary>Gets the engine-owned form timer manager.</summary>
         ITimerManager Timers { get; }
@@ -737,6 +748,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void BroadcastMessage(string messageType, object payload = null);
         void SubscribeToMessage(string messageType, Action<FormMessage> handler);
         void UnsubscribeFromMessage(string messageType);
+
+        // ── Shared Blocks (cross-form) ──────────────────────────────────
+        // Declared on FormsManager (Editor/Forms/FormsManager.InterFormComm.cs) but
+        // never carried onto this interface -- the same "genuinely unreachable
+        // without an unsafe cast" shape as SetSystemVariables/DirtyStateManager
+        // below/above. Unlike the rest of this Inter-Form section (globals,
+        // messages), a host had no path to any of these six at all.
+
+        /// <summary>Publishes this form's block UoW as a cross-form shared block. False if the name is already taken.</summary>
+        bool CreateSharedBlock(string blockName, IUnitofWork uow);
+
+        /// <summary>Retrieves a shared block UoW published by another form. Null when it doesn't exist.</summary>
+        IUnitofWork GetSharedBlock(string blockName);
+
+        /// <summary>Attempts to acquire a write-lock on a shared block within the given timeout.</summary>
+        bool TryLockSharedBlock(string blockName, TimeSpan timeout);
+
+        /// <summary>Releases the write-lock this form holds on a shared block.</summary>
+        void ReleaseSharedBlockLock(string blockName);
+
+        /// <summary>Whether a shared block with this name has been published.</summary>
+        bool SharedBlockExists(string blockName);
+
+        /// <summary>Unpublishes a shared block, releasing any lock on it.</summary>
+        bool RemoveSharedBlock(string blockName);
 
         // ── Key Triggers ───────────────────────────────────────────────
         void RegisterKeyTrigger(KeyTriggerType keyType, string blockName, Func<TriggerContext, TriggerResult> handler);
