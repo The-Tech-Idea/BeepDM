@@ -176,6 +176,48 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Removes a named sequence.</summary>
         bool DropSequence(string sequenceName);
 
+        // ── Paging / Performance (FormsManager.Performance.cs) ──────────
+        // Neither sub-manager, nor any of the FormsManager-level convenience
+        // wrappers around them, was ever carried onto this interface -- the
+        // same "genuinely unreachable" shape as G0.65/G0.67, this time for
+        // the whole Phase 7 (paging / lazy-load / cache) surface. Several of
+        // the wrappers below do more than delegate (they also sync
+        // DataBlockInfo.Configuration), so exposing only the sub-manager
+        // properties would not reproduce their real behavior.
+
+        /// <summary>Gets the engine-owned per-block paging state manager.</summary>
+        IPagingManager Paging { get; }
+
+        /// <summary>Gets the engine-owned cache/performance manager.</summary>
+        IPerformanceManager PerformanceManager { get; }
+
+        /// <summary>Sets a block's page size and syncs <c>DataBlockInfo.Configuration.PageSize</c>.</summary>
+        void SetBlockPageSize(string blockName, int pageSize);
+
+        /// <summary>
+        /// Returns the block's stored total record count, falling back to
+        /// <c>UnitOfWork.TotalItemCount</c> when none was stored.
+        /// </summary>
+        long GetTotalRecordCount(string blockName);
+
+        /// <summary>Configures how many pages beyond the current one should be pre-fetched.</summary>
+        void SetFetchAheadDepth(string blockName, int depth);
+
+        /// <summary>Sets a block's lazy-load strategy.</summary>
+        void SetLazyLoadMode(string blockName, LazyLoadMode mode);
+
+        /// <summary>Gets a block's current lazy-load strategy.</summary>
+        LazyLoadMode GetLazyLoadMode(string blockName);
+
+        /// <summary>Configures the maximum records fetched per lazy/paged load cycle.</summary>
+        void SetMaxRecordsPerFetch(string blockName, int max);
+
+        /// <summary>Overrides the cache TTL for one block and syncs <c>DataBlockInfo.Configuration.CacheTtlMinutes</c>.</summary>
+        void SetBlockCacheTtl(string blockName, TimeSpan ttl);
+
+        /// <summary>Gets the record count for a block's loaded units.</summary>
+        int GetRecordCount(string blockName);
+
         /// <summary>Sets the user stamped on subsequent audit entries.</summary>
         void SetAuditUser(string userName);
 
@@ -250,6 +292,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Returns whether a block is currently registered.</summary>
         bool BlockExists(string blockName);
+
+        /// <summary>
+        /// Creates a new record for a block using entity-type resolution, handling mode
+        /// transition awareness. Genuinely unreachable another way -- the CLR entity-type
+        /// resolution this performs is otherwise internal to <c>FormsManager</c>.
+        /// </summary>
+        object CreateNewRecord(string blockName);
+
+        /// <summary>
+        /// Returns a <see cref="NavigationInfo"/> snapshot combining current index, total
+        /// records, has-previous/next, the current record, block mode, and dirty state --
+        /// an aggregation this interface otherwise offers no single call to reproduce.
+        /// </summary>
+        NavigationInfo GetCurrentRecordInfo(string blockName);
+
+        /// <summary>Gets a read-only snapshot of this form's CALL_FORM call stack.</summary>
+        IReadOnlyList<FormCallStackEntry> GetCallStack();
 
         /// <summary>
         /// Opens the named datasource, fetches EntityStructure, creates a UnitOfWork,

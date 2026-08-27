@@ -5141,6 +5141,39 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.DropSequence(System.String)">
             <summary>Removes a named sequence.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Paging">
+            <summary>Gets the engine-owned per-block paging state manager.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.PerformanceManager">
+            <summary>Gets the engine-owned cache/performance manager.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetBlockPageSize(System.String,System.Int32)">
+            <summary>Sets a block's page size and syncs <c>DataBlockInfo.Configuration.PageSize</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetTotalRecordCount(System.String)">
+            <summary>
+            Returns the block's stored total record count, falling back to
+            <c>UnitOfWork.TotalItemCount</c> when none was stored.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetFetchAheadDepth(System.String,System.Int32)">
+            <summary>Configures how many pages beyond the current one should be pre-fetched.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetLazyLoadMode(System.String,TheTechIdea.Beep.Editor.Forms.Models.LazyLoadMode)">
+            <summary>Sets a block's lazy-load strategy.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetLazyLoadMode(System.String)">
+            <summary>Gets a block's current lazy-load strategy.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetMaxRecordsPerFetch(System.String,System.Int32)">
+            <summary>Configures the maximum records fetched per lazy/paged load cycle.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetBlockCacheTtl(System.String,System.TimeSpan)">
+            <summary>Overrides the cache TTL for one block and syncs <c>DataBlockInfo.Configuration.CacheTtlMinutes</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetRecordCount(System.String)">
+            <summary>Gets the record count for a block's loaded units.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetAuditUser(System.String)">
             <summary>Sets the user stamped on subsequent audit entries.</summary>
         </member>
@@ -5206,6 +5239,23 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.BlockExists(System.String)">
             <summary>Returns whether a block is currently registered.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.CreateNewRecord(System.String)">
+            <summary>
+            Creates a new record for a block using entity-type resolution, handling mode
+            transition awareness. Genuinely unreachable another way -- the CLR entity-type
+            resolution this performs is otherwise internal to <c>FormsManager</c>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetCurrentRecordInfo(System.String)">
+            <summary>
+            Returns a <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.NavigationInfo"/> snapshot combining current index, total
+            records, has-previous/next, the current record, block mode, and dirty state --
+            an aggregation this interface otherwise offers no single call to reproduce.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetCallStack">
+            <summary>Gets a read-only snapshot of this form's CALL_FORM call stack.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.SetupBlockAsync(System.String,System.String,System.String,System.Boolean,System.Threading.CancellationToken)">
             <summary>

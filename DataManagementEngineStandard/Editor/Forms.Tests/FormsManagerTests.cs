@@ -3364,4 +3364,151 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region Paging / Performance / Record Introspection (IUnitofWorksManager reachability, closed 2026-08-27)
+
+    // Neither IPagingManager nor IPerformanceManager, nor several FormsManager-level
+    // convenience wrappers around them (some of which sync DataBlockInfo.Configuration
+    // as well as delegating), nor CreateNewRecord/GetCurrentRecordInfo/GetCallStack, had
+    // any path onto IUnitofWorksManager. See Beep.Forms' own ENGINE-GAP-ANALYSIS.md for
+    // the reachability self-test through the real host stack.
+
+    [Fact]
+    public void SetBlockPageSize_SyncsPagingManagerAndBlockConfiguration()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(1).Object, entity);
+
+        _manager.SetBlockPageSize("ORD", 25);
+
+        Assert.Equal(25, _manager.Paging.GetPageSize("ORD"));
+        Assert.Equal(25, _manager.GetBlock("ORD").Configuration.PageSize);
+    }
+
+    [Fact]
+    public void GetTotalRecordCount_NoneStored_FallsBackToUnitOfWorkTotalItemCount()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(7).Object, entity);
+
+        Assert.Equal(7, _manager.GetTotalRecordCount("ORD"));
+    }
+
+    [Fact]
+    public void GetTotalRecordCount_StoredValue_TakesPrecedenceOverUnitOfWork()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(7).Object, entity);
+
+        _manager.Paging.SetTotalRecordCount("ORD", 500);
+
+        Assert.Equal(500, _manager.GetTotalRecordCount("ORD"));
+    }
+
+    [Fact]
+    public void SetFetchAheadDepth_SyncsBlockConfiguration()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(1).Object, entity);
+
+        _manager.SetFetchAheadDepth("ORD", 3);
+
+        Assert.Equal(3, _manager.GetBlock("ORD").Configuration.FetchAheadDepth);
+    }
+
+    [Fact]
+    public void SetLazyLoadMode_ThenGetLazyLoadMode_RoundTrips()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(1).Object, entity);
+
+        _manager.SetLazyLoadMode("ORD", LazyLoadMode.OnDemand);
+
+        Assert.Equal(LazyLoadMode.OnDemand, _manager.GetLazyLoadMode("ORD"));
+        Assert.True(_manager.GetBlock("ORD").Configuration.EnableLazyLoad);
+    }
+
+    [Fact]
+    public void SetMaxRecordsPerFetch_SetsBlockConfiguration()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(1).Object, entity);
+
+        _manager.SetMaxRecordsPerFetch("ORD", 250);
+
+        Assert.Equal(250, _manager.GetBlock("ORD").Configuration.MaxRecordsPerFetch);
+    }
+
+    [Fact]
+    public void SetBlockCacheTtl_SyncsPerformanceManagerAndBlockConfiguration()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        _manager.RegisterBlock("ORD", CreateUowMock(1).Object, entity);
+
+        _manager.SetBlockCacheTtl("ORD", TimeSpan.FromMinutes(10));
+
+        Assert.Equal(10, _manager.GetBlock("ORD").Configuration.CacheTtlMinutes);
+    }
+
+    [Fact]
+    public void GetRecordCount_ReturnsUnitOfWorkUnitsCount()
+    {
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        var uow = CreateUowMock(4);
+        var units = new List<object> { new(), new(), new(), new() };
+        uow.Setup(u => u.Units).Returns(units);
+        _manager.RegisterBlock("ORD", uow.Object, entity);
+
+        Assert.Equal(4, _manager.GetRecordCount("ORD"));
+    }
+
+    [Fact]
+    public void GetCallStack_ReturnsSnapshot_EmptyWhenNoMultiFormCallsMade()
+    {
+        Assert.Empty(_manager.GetCallStack());
+    }
+
+    [Fact]
+    public void IUnitofWorksManagerTyped_ExposesPagingPerformanceAndRecordIntrospection()
+    {
+        // The reachability defect this section closes: before adding these members to
+        // IUnitofWorksManager, none of the calls below would compile against a
+        // manager reference held only through the interface.
+        IUnitofWorksManager manager = _manager;
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        // GetCurrentRecordInfo dynamic-dispatches onto Units (CurrentIndex/Current/Count),
+        // which needs a real, PUBLIC-typed ObservableBindingList -- a bare mock or a
+        // private nested test class both fail the dynamic bind (see the established
+        // pattern/comment on NavigateToRecordAsync's own ObservableBindingList test above).
+        var units = new TheTechIdea.Beep.Editor.ObservableBindingList<TheTechIdea.Beep.Editor.Entity>(
+            new List<TheTechIdea.Beep.Editor.Entity> { new() });
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.Units).Returns(units);
+        uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        uowMock.Setup(u => u.CurrentItem).Returns(new TestRecord());
+        manager.RegisterBlock("ORD", uowMock.Object, entity);
+
+        Assert.NotNull(manager.Paging);
+        Assert.NotNull(manager.PerformanceManager);
+
+        manager.SetBlockPageSize("ORD", 10);
+        Assert.True(manager.GetTotalRecordCount("ORD") >= 0);
+        manager.SetFetchAheadDepth("ORD", 2);
+        manager.SetLazyLoadMode("ORD", LazyLoadMode.Deferred);
+        Assert.Equal(LazyLoadMode.Deferred, manager.GetLazyLoadMode("ORD"));
+        manager.SetMaxRecordsPerFetch("ORD", 50);
+        manager.SetBlockCacheTtl("ORD", TimeSpan.FromMinutes(5));
+        Assert.True(manager.GetRecordCount("ORD") >= 0);
+
+        var record = Assert.IsType<TestRecord>(manager.CreateNewRecord("ORD"));
+        Assert.NotNull(record);
+
+        var info = manager.GetCurrentRecordInfo("ORD");
+        Assert.NotNull(info);
+        Assert.Equal("ORD", info.BlockName);
+
+        Assert.NotNull(manager.GetCallStack());
+    }
+
+    #endregion
 }

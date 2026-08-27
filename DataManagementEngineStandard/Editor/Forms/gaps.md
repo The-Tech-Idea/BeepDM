@@ -2771,6 +2771,56 @@ controlled directly.
 build, `SmokeTests`, `DesignerCompileCheck`, both new self-tests, all green.
 
 ---
+
+### G0.68: the whole Phase 7 (paging / lazy-load / cache) surface, plus three
+record-introspection methods, were unreachable through `IUnitofWorksManager`
+(FIXED 2026-08-27)
+
+**What:** Completing the systematic sweep begun for G0.65/G0.67, checked the two
+sub-managers backing `FormsManager.Performance.cs` (Phase 7 — paging, lazy-load,
+cache) and found **neither `IPagingManager Paging` nor `IPerformanceManager
+PerformanceManager`** — both real properties on `FormsManager` — was ever declared
+on the interface, unlike `Timers`/`Sequences`/`BlockProperties` in the same file's
+neighborhood, which already were. Several of the FormsManager-level convenience
+methods around them do more than delegate — `SetBlockPageSize`/`SetFetchAheadDepth`/
+`SetBlockCacheTtl` also sync the matching `DataBlockInfo.Configuration` field, and
+`GetTotalRecordCount` falls back to `UnitOfWork.TotalItemCount` when nothing was
+explicitly stored — so exposing only the two sub-manager properties would not have
+reproduced their real behavior. `SetLazyLoadMode`/`GetLazyLoadMode`/
+`SetMaxRecordsPerFetch` operate directly on `DataBlockInfo` fields with no sub-manager
+at all. Also found in the same sweep, unrelated to Phase 7 but the same
+"genuinely unreachable" shape: `CreateNewRecord` (CLR entity-type resolution, no
+other path), `GetCurrentRecordInfo` (a `NavigationInfo` aggregation combining private
+helper methods this interface offers no other way to reproduce), and `GetCallStack`
+(a call-stack snapshot with no other exposed accessor). Ruled out as **not** gaps in
+the same pass: `GetCurrentRecord` (identical to the already-reachable
+`GetUnitOfWork(blockName)?.CurrentItem`), `HasUnsavedChanges` (identical to
+`DirtyStateManager.HasUnsavedChanges()`, reachable since G0.65), and `ShowInfoAsync`
+(a convenience overload fully reproducible via the already-reachable
+`ShowAlertAsync`).
+
+**Fix:** Thirteen additions to `IUnitofWorksManager` — `Paging`, `PerformanceManager`,
+`SetBlockPageSize`, `GetTotalRecordCount`, `SetFetchAheadDepth`, `SetLazyLoadMode`,
+`GetLazyLoadMode`, `SetMaxRecordsPerFetch`, `SetBlockCacheTtl`, `GetRecordCount`,
+`CreateNewRecord`, `GetCurrentRecordInfo`, `GetCallStack` — all purely additive, zero
+concrete-class changes (every one already fully implemented on `FormsManager`).
+
+**Proven via revert, twice:** ten new `FormsManagerTests.cs` cases (each Performance/
+Paging method individually, `GetCallStack`'s empty-by-default snapshot, and one
+interface-typed test exercising all thirteen — the latter needed a real, public-typed
+`ObservableBindingList<Entity>` for `Units`, not a bare mock or a private nested test
+class, both of which fail the dynamic dispatch `GetCurrentRecordInfo` performs, the
+same lesson an existing `NavigateToRecordAsync` test in this file already
+documents) — commenting out all thirteen interface declarations reproduced thirteen
+`CS1061` compile errors, restoring them fixed the build. Repeated independently
+against Beep.Forms' new `Examples.WinForms/PagingPerformanceSelfTest.cs`
+(`--selftest-paging`), reproducing sixteen `CS1061` errors in that file specifically.
+
+**Verified:** `FormsManager.Tests` 217/217 (207 existing + 10 new). Full
+`Beep.Forms.slnx` build, `SmokeTests`, `DesignerCompileCheck`, the new self-test
+(9/9), all green.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)
