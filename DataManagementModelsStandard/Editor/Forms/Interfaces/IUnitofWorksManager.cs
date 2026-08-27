@@ -679,6 +679,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         // ── Computed Columns (G3.2) ────────────────────────────────────
         void RegisterBlockComputed(string blockName, string columnName, Func<object, object> computation);
+        /// <summary>
+        /// Registers a computed column driven by an Oracle Forms <c>Calculation = Formula</c>
+        /// text expression (e.g. <c>"QTY * PRICE"</c>) instead of a hand-written delegate.
+        /// Added after <see cref="RegisterBlockComputed"/> and originally missed here — the
+        /// same "declared on FormsManager but genuinely unreachable through this interface"
+        /// shape as <c>FireItemTriggerAsync</c>/<c>SetSystemVariables</c>/<c>DirtyStateManager</c>.
+        /// </summary>
+        void RegisterBlockComputedFormula(string blockName, string columnName, string formula);
         void UnregisterBlockComputed(string blockName, string columnName);
         object GetBlockComputedValue(string blockName, string columnName);
         IReadOnlyList<string> GetBlockComputedColumnNames(string blockName);

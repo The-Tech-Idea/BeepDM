@@ -5491,6 +5491,15 @@
             edited value onto the block's current record.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RegisterBlockComputedFormula(System.String,System.String,System.String)">
+            <summary>
+            Registers a computed column driven by an Oracle Forms <c>Calculation = Formula</c>
+            text expression (e.g. <c>"QTY * PRICE"</c>) instead of a hand-written delegate.
+            Added after <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.RegisterBlockComputed(System.String,System.String,System.Func{System.Object,System.Object})"/> and originally missed here — the
+            same "declared on FormsManager but genuinely unreachable through this interface"
+            shape as <c>FireItemTriggerAsync</c>/<c>SetSystemVariables</c>/<c>DirtyStateManager</c>.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.ClearBlockRelationships(System.String)">
             <summary>Removes all master-detail relationships where the given block is master or detail.</summary>
         </member>
