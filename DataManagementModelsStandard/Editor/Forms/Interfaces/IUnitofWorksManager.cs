@@ -9,6 +9,7 @@ using TheTechIdea.Beep.Utilities;
 
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Configuration;
 using TheTechIdea.Beep.Editor;
 
 
@@ -55,8 +56,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the latest status message emitted by the manager.</summary>
         string Status { get; }
 
+        /// <summary>
+        /// Gets the latest status message as a full <see cref="StatusMessage"/> (text, severity
+        /// <see cref="MessageLevel"/>, and timestamp) -- richer than the plain <see cref="Status"/>
+        /// string above, useful for a status bar that wants to colour by severity.
+        /// </summary>
+        StatusMessage CurrentMessage { get; }
+
         /// <summary>Gets the number of currently registered blocks.</summary>
         int BlockCount { get; }
+
+        /// <summary>
+        /// Gets the manager-wide configuration object (<c>DefaultSaveOptions</c>,
+        /// <c>ValidateBeforeCommit</c>, and other manager-level settings). No other path reaches
+        /// this beyond the individual settings-driven behaviors that already consult it internally.
+        /// </summary>
+        UnitofWorksManagerConfiguration Configuration { get; }
 
         /// <summary>Gets the system variables manager</summary>
         ISystemVariablesManager SystemVariables { get; }
@@ -89,6 +104,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         
         /// <summary>Gets the trigger manager</summary>
         ITriggerManager Triggers { get; }
+
+        /// <summary>Execution log for all triggers fired by this form manager.</summary>
+        ITriggerExecutionLog TriggerLog { get; }
+
+        /// <summary>Dependency manager for trigger ordering and cycle detection.</summary>
+        ITriggerDependencyManager TriggerDependencies { get; }
+
+        /// <summary>
+        /// Fires a set of triggers in dependency order (<see cref="TriggerDefinition.DependsOn"/>),
+        /// honouring each definition's <see cref="TriggerDefinition.ChainMode"/>
+        /// (StopOnFailure/Continue/Rollback).
+        /// </summary>
+        Task<IReadOnlyList<TriggerResult>> FireTriggersInOrderAsync(
+            IReadOnlyList<TriggerDefinition> triggers,
+            string blockName,
+            CancellationToken cancellationToken = default);
 
         /// <summary>Gets the savepoint manager</summary>
         /// <remarks>
@@ -195,6 +226,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void SetBlockPageSize(string blockName, int pageSize);
 
         /// <summary>
+        /// Navigates the block's cursor to the first record of <paramref name="pageNumber"/> and
+        /// returns the resulting <see cref="PageInfo"/>. Combines <see cref="Paging"/>'s
+        /// <c>SetCurrentPage</c> with the actual cursor move -- calling <c>Paging</c> alone would
+        /// update the paging state without moving the cursor.
+        /// </summary>
+        Task<PageInfo> LoadPageAsync(string blockName, int pageNumber, CancellationToken ct = default);
+
+        /// <summary>
         /// Returns the block's stored total record count, falling back to
         /// <c>UnitOfWork.TotalItemCount</c> when none was stored.
         /// </summary>
@@ -217,6 +256,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Gets the record count for a block's loaded units.</summary>
         int GetRecordCount(string blockName);
+
+        /// <summary>
+        /// Gets the underlying audit manager -- <c>Configuration</c>/<c>CurrentUser</c>/<c>Store</c> and
+        /// <c>RecordFieldChange</c> beyond the individual convenience methods below (which cover
+        /// only <see cref="SetAuditUser"/>/<see cref="GetAuditLog"/>/export/purge/clear).
+        /// </summary>
+        IAuditManager AuditManager { get; }
+
+        /// <summary>Applies default values for common audit fields (CreatedBy/CreatedDate/etc.) to a record.</summary>
+        void SetAuditDefaults(object record, string currentUser = null);
 
         /// <summary>Sets the user stamped on subsequent audit entries.</summary>
         void SetAuditUser(string userName);
@@ -245,6 +294,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Clears the audit store.</summary>
         void ClearAudit();
+
+        /// <summary>
+        /// Gets the underlying security manager -- field-level security
+        /// (<c>SetFieldSecurity</c>/<c>GetFieldSecurity</c>/<c>GetMaskedValue</c>), permission
+        /// checks (<c>IsBlockAllowed</c>), row filters (<c>GetBlockRowFilter</c>), and the
+        /// <c>OnSecurityViolation</c> event, beyond the block-level convenience methods below.
+        /// </summary>
+        ISecurityManager Security { get; }
 
         /// <summary>Sets the active Forms security context and reapplies effective permissions.</summary>
         void SetSecurityContext(SecurityContext context);
@@ -799,6 +856,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
             string button1Text = "OK", string button2Text = null, string button3Text = null, CancellationToken ct = default);
 
         // ── Inter-Form ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Gets the shared multi-form registry: <c>ActiveFormName</c>/<c>SetActiveForm</c>,
+        /// <c>RegisterForm</c>/<c>UnregisterForm</c>/<c>GetForm</c>/<c>GetActiveFormNames</c>/
+        /// <c>FormExists</c>. Beyond the register/lookup path <c>CallFormAsync</c> already
+        /// uses internally -- a host wanting to enumerate or introspect other open forms had
+        /// no path to this at all.
+        /// </summary>
+        IFormRegistry Registry { get; }
+
+        /// <summary>
+        /// Gets the shared inter-form message bus directly -- <c>UnsubscribeAll</c> and the
+        /// <c>OnFormMessage</c> global observer event, beyond the per-message convenience
+        /// methods below (<see cref="PostMessage"/>/<see cref="BroadcastMessage"/>/
+        /// <see cref="SubscribeToMessage"/>/<see cref="UnsubscribeFromMessage"/>).
+        /// </summary>
+        IFormMessageBus MessageBus { get; }
+
         void SetGlobalVariable(string name, object value);
         object GetGlobalVariable(string name);
         T GetGlobalVariable<T>(string name);
@@ -832,6 +907,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Unpublishes a shared block, releasing any lock on it.</summary>
         bool RemoveSharedBlock(string blockName);
+
+        /// <summary>
+        /// Gets the shared-block manager directly -- <c>NotifySharedBlockChanged</c> and the
+        /// <c>SharedBlockChanged</c> event, beyond the six convenience methods above. A form
+        /// committing changes to a shared block had no path to notify other forms holding a
+        /// reference to it.
+        /// </summary>
+        ISharedBlockManager SharedBlocks { get; }
 
         // ── Key Triggers ───────────────────────────────────────────────
         void RegisterKeyTrigger(KeyTriggerType keyType, string blockName, Func<TriggerContext, TriggerResult> handler);

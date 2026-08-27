@@ -2821,6 +2821,111 @@ against Beep.Forms' new `Examples.WinForms/PagingPerformanceSelfTest.cs`
 (9/9), all green.
 
 ---
+
+### G0.69: the orphan-detection sweep itself had a blind spot -- missed expression-bodied
+properties and `async` methods -- closing it surfaced eight more genuinely
+unreachable sub-managers/methods (FIXED 2026-08-27)
+
+**What:** The regex-based sweep behind G0.65/G0.67/G0.68 (`public\s+[\w<>\[\],\?\.]+\s+
+\K\w+(?=\s*[\({])`) only matched a return type expressed as a single contiguous
+token followed by `(` or `{`. Two real shapes broke that assumption and were
+silently skipped for every prior pass: **expression-bodied properties**
+(`public IPagingManager Paging => _pagingManager;` has no `(`/`{` after the name)
+and **`async` methods** (`public async Task<X> Name(...)` has two tokens — `async`
+and `Task<X>` — before the name, so the single-token assumption fails and the whole
+line doesn't match). Re-running the sweep with a corrected pattern
+(`public\s+(async\s+)?...\s+\K\w+(?=\s*[\({]|\s*=>)`) found eight more genuinely
+unreachable members hiding behind exactly this blind spot:
+
+- **`AuditManager`** (`IAuditManager`) — `Configuration`/`CurrentUser`/`Store`/
+  `RecordFieldChange` beyond the four individual audit convenience methods already
+  on the interface.
+- **`Security`** (`ISecurityManager`) — `IsBlockAllowed`, `ApplyBlockSecurityFlags`,
+  `ClearBlockSecurity`, `GetBlockRowFilter`, field-level security
+  (`SetFieldSecurity`/`GetFieldSecurity`/`ApplyFieldSecurityFlags`/`GetMaskedValue`),
+  `OnSecurityViolation`, `RaiseViolation` — far more than the four individually-exposed
+  context/block-security methods covered.
+- **`Registry`** (`IFormRegistry`) — `ActiveFormName`/`SetActiveForm`,
+  `RegisterForm`/`UnregisterForm`/`GetForm`/`GetActiveFormNames`/`FormExists`. A host
+  could call the multi-form navigation convenience methods but never enumerate or
+  introspect other open forms.
+- **`MessageBus`** (`IFormMessageBus`) — `UnsubscribeAll` and the `OnFormMessage`
+  global observer event, beyond the four per-message convenience methods.
+- **`SharedBlocks`** (`ISharedBlockManager`) — `NotifySharedBlockChanged` and the
+  `SharedBlockChanged` event. G0.67 exposed the six create/get/lock/exists/remove
+  convenience methods but missed the sub-manager itself, so a form committing
+  changes to a shared block had no way to notify others holding a reference to it.
+- **`TriggerLog`**/**`TriggerDependencies`**/**`FireTriggersInOrderAsync`** —
+  Phase 4.3 trigger chaining, dependency ordering (topological sort with cycle
+  detection), and execution logging, entirely unreachable; `FireTriggersInOrderAsync`
+  itself is `async`, exactly the shape the old sweep missed.
+- **`Configuration`** (`UnitofWorksManagerConfiguration`) — the manager-wide settings
+  object (`DefaultSaveOptions`, `ValidateBeforeCommit`, etc.), an expression-bodied
+  property (`=> _configurationManager?.Configuration`).
+- **`CurrentMessage`** (`StatusMessage`) — the latest status message with severity
+  and timestamp, richer than the already-exposed plain `Status` string; also
+  expression-bodied.
+- **`SetAuditDefaults`** and **`LoadPageAsync`** — the former stamps common audit
+  fields onto a record (no other path; `ApplyAuditDefaults`, its sibling, is
+  `[Obsolete]` and correctly *not* exposed); the latter combines `Paging`'s
+  `SetCurrentPage` with the actual cursor move (`Paging` alone would update paging
+  state without navigating) — missed in G0.68 despite being in the same source
+  region as the rest of that fix, a straightforward oversight caught by rereading
+  the file rather than the regex.
+
+**Investigated in the same sweep and deliberately NOT added, each for a documented
+reason:**
+- `NextItemAsync`/`PreviousItemAsync` — their own bodies only fire the
+  `KEY-NEXT-ITEM`/`KEY-PREV-ITEM` trigger and return whether it was cancelled; they
+  do **not** actually move focus despite their doc comments claiming to ("Move focus
+  to the next item..."). Exposing a method whose behavior doesn't match its own
+  documented contract would add a misleading capability, not close a gap. Needs its
+  own investigation before any action — not resolved here.
+- `EnterQueryModeAsync` — a `Task<IErrorsInfo>`-returning method distinct from the
+  already-exposed, actually-used `EnterQueryAsync` (`Task<bool>`), which is what
+  `WinFormFormHost`/`BeepWpfForms` genuinely call. The same "two implementations of
+  one capability" shape as `ExecuteQueryAndEnterCrudModeAsync` (G0.61) — a duplicate
+  needing resolution under house rule 3, not a reachability fix.
+- `CreateNewRecordInMasterBlockAsync`, `EnterCrudModeForNewRecordAsync`,
+  `InsertRecordEnhancedAsync`, `RegisterBlockFromSourceAsync`,
+  `ExecuteQueryEnhancedAsync` — "Enhanced"/specialized variants with ad-hoc doc
+  comments ("This is the method that handles your specific scenario"). Plausibly
+  genuine higher-level convenience methods, but `ExecuteQueryEnhancedAsync`
+  specifically risks being another abandoned alternative to the actually-used
+  `ExecuteQueryAsync` (the same shape as `EnterQueryModeAsync` above) — needs
+  individual verification of which is canonical before exposing, not a same-pass
+  reachability fix.
+- `FireOnInsertAsync`/`FireOnUpdateAsync`/`FireOnDeleteAsync`/`FireOnLockAsync`/
+  `FireOnRollbackAsync`/`FireOnCheckDeleteMasterAsync` — DML trigger-firing methods
+  that read as internal machinery already invoked automatically by
+  `InsertRecordAsync`/`UpdateCurrentRecordAsync`/`DeleteCurrentRecordAsync` during
+  normal CRUD flow, not something a typical caller needs to invoke directly. Not
+  conclusively ruled in or out.
+- The Block Property family (`SetBlockProperty`/`GetBlockProperty`/
+  `SetInsertAllowed`/`SetUpdateAllowed`/`SetDeleteAllowed`/`SetQueryAllowed`/
+  `SetDefaultWhere`/`SetOrderBy`) and `GetBlockMode`/`TryGetBlockMode` — all either
+  pure passthroughs to the already-exposed `BlockProperties`, or trivially
+  reproducible via the already-exposed `GetBlock(blockName)?.Mode` — genuinely
+  redundant, not gaps.
+
+**Proven via revert, twice:** four new `FormsManagerTests.cs` cases
+(`SetAuditDefaults` stamping `CreatedBy`/`CreatedDate`, `LoadPageAsync` navigating to
+the right record via a real `ObservableBindingList`, `FireTriggersInOrderAsync`
+firing two dependent triggers in the correct order, and one interface-typed test
+exercising all eight sub-manager/property additions) — commenting out the ten
+single-line declarations reproduced ten `CS1061` errors (the two multi-line
+signatures, `FireTriggersInOrderAsync` and `LoadPageAsync`, were left alone to avoid
+a syntax-error cascade masking the individual member-not-found signal; both were
+already proven separately in the G0.68 and combined revert passes). Repeated
+independently against Beep.Forms' new
+`Examples.WinForms/RemainingSubManagerSelfTest.cs` (`--selftest-submanagers`),
+reproducing ten `CS1061` errors in that file specifically.
+
+**Verified:** `FormsManager.Tests` 221/221 (217 existing + 4 new). Full
+`Beep.Forms.slnx` build, `SmokeTests`, `DesignerCompileCheck`, the new self-test
+(11/11), all green.
+
+---
 ## P0 — Correctness / Existing-User Impact
 
 ### G0.1: Multi-form transactional rollback (FIXED 2026-06)

@@ -3511,4 +3511,101 @@ public class FormsManagerTests : IDisposable
     }
 
     #endregion
+
+    #region Remaining sub-manager exposure sweep (IUnitofWorksManager reachability, closed 2026-08-27)
+
+    // AuditManager, Security, Registry, MessageBus, SharedBlocks (as a sub-manager, beyond the
+    // six individual convenience methods G0.67 already exposed), TriggerLog,
+    // TriggerDependencies, FireTriggersInOrderAsync, Configuration, CurrentMessage,
+    // SetAuditDefaults, and LoadPageAsync were all declared on FormsManager -- several as
+    // expression-bodied properties (`=> _field`), which an earlier, less careful sweep missed --
+    // with no path onto IUnitofWorksManager. See Beep.Forms' own ENGINE-GAP-ANALYSIS.md for the
+    // reachability self-test through the real host stack.
+
+    private sealed class AuditableTestRecord
+    {
+        public string Name { get; set; }
+        public string CreatedBy { get; set; }
+        public DateTime CreatedDate { get; set; }
+    }
+
+    [Fact]
+    public void SetAuditDefaults_StampsCreatedByAndCreatedDate()
+    {
+        var record = new AuditableTestRecord();
+
+        _manager.SetAuditDefaults(record, "alice");
+
+        Assert.Equal("alice", record.CreatedBy);
+        Assert.True(record.CreatedDate > DateTime.MinValue);
+    }
+
+    [Fact]
+    public async Task LoadPageAsync_NavigatesCursorToFirstRecordOfThePage()
+    {
+        var units = new TheTechIdea.Beep.Editor.ObservableBindingList<TheTechIdea.Beep.Editor.Entity>(
+            new List<TheTechIdea.Beep.Editor.Entity> { new(), new(), new(), new(), new() });
+        var uowMock = new Mock<IUnitofWork>();
+        uowMock.Setup(u => u.Units).Returns(units);
+        uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        var variables = new Mock<ISystemVariablesManager>(MockBehavior.Loose);
+        var manager = new FormsManager(_mockEditor.Object, systemVariablesManager: variables.Object);
+        var entity = CreateEntity("ORD", ("Name", "string"));
+        manager.RegisterBlock("ORD", uowMock.Object, entity);
+        manager.SetBlockPageSize("ORD", 2);
+        manager.Paging.SetTotalRecordCount("ORD", units.Count);
+
+        var pageInfo = await manager.LoadPageAsync("ORD", 2).ConfigureAwait(false);
+
+        Assert.NotNull(pageInfo);
+        Assert.Equal(2, pageInfo.PageNumber);
+    }
+
+    [Fact]
+    public async Task FireTriggersInOrderAsync_FiresInDependencyOrder()
+    {
+        var order = new List<string>();
+        var first = new TriggerDefinition(TriggerType.WhenCreateRecord, TriggerScope.Block)
+        {
+            TriggerId = "first",
+            Handler = _ => { order.Add("first"); return TriggerResult.Success; }
+        };
+        var second = new TriggerDefinition(TriggerType.WhenCreateRecord, TriggerScope.Block)
+        {
+            TriggerId = "second",
+            DependsOn = new List<string> { "first" },
+            Handler = _ => { order.Add("second"); return TriggerResult.Success; }
+        };
+
+        var results = await _manager.FireTriggersInOrderAsync(
+            new List<TriggerDefinition> { second, first }, "EMP").ConfigureAwait(false);
+
+        Assert.Equal(new[] { "first", "second" }, order);
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r => Assert.Equal(TriggerResult.Success, r));
+    }
+
+    [Fact]
+    public void IUnitofWorksManagerTyped_ExposesRemainingSubManagers()
+    {
+        // The reachability defect this section closes: before adding these members to
+        // IUnitofWorksManager, none of the calls below would compile against a
+        // manager reference held only through the interface.
+        IUnitofWorksManager manager = _manager;
+
+        Assert.NotNull(manager.AuditManager);
+        Assert.NotNull(manager.Security);
+        Assert.NotNull(manager.Registry);
+        Assert.NotNull(manager.MessageBus);
+        Assert.NotNull(manager.SharedBlocks);
+        Assert.NotNull(manager.TriggerLog);
+        Assert.NotNull(manager.TriggerDependencies);
+        Assert.NotNull(manager.Configuration);
+
+        // CurrentMessage is null until a status message has actually been raised -- reachability,
+        // not a value assertion, is the point here.
+        _ = manager.CurrentMessage;
+    }
+
+    #endregion
 }
