@@ -81,7 +81,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
             TriggerResult result;
             if (string.IsNullOrEmpty(block))
-                result = await _triggerManager.FireFormTriggerAsync(type, _currentFormName ?? string.Empty, ctx);
+                result = await _triggerManager.FireFormTriggerAsync(type, _currentFormName ?? string.Empty, ctx).ConfigureAwait(false);
             else
                 result = await _triggerManager.FireBlockTriggerAsync(type, block, ctx).ConfigureAwait(false);
 

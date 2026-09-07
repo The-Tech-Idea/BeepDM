@@ -264,7 +264,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (string.IsNullOrEmpty(block))
             {
                 var ctx = TriggerContext.ForForm(type, _currentFormName ?? string.Empty, _dmeEditor);
-                return await _triggerManager.FireFormTriggerAsync(type, _currentFormName ?? string.Empty, ctx);
+                return await _triggerManager.FireFormTriggerAsync(type, _currentFormName ?? string.Empty, ctx).ConfigureAwait(false);
             }
             else
             {

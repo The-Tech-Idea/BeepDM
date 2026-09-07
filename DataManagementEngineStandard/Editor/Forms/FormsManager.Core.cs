@@ -145,7 +145,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (logger != null) Logger = logger;
 
             // Initialize helper managers with defaults if not provided
-            _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(_dmeEditor, _blocks, GetDetailBlocks, GetBlock, GetActiveRelationships);
+            _dirtyStateManager = dirtyStateManager ?? new DirtyStateManager(
+                _dmeEditor, _blocks, GetDetailBlocks, GetBlock, GetActiveRelationships,
+                getDefaultSaveOptionsFunc: () => Configuration?.DefaultSaveOptions,
+                // _itemPropertyManager is constructed later in this same method --
+                // safe because this closure reads the field when invoked, not now.
+                hasValidationErrorsFunc: blockName =>
+                    (_itemPropertyManager?.GetItemsWithErrors(blockName)?.Count ?? 0) > 0);
             _eventManager = eventManager ?? new EventManager(_dmeEditor);
             _formsSimulationHelper = formsSimulationHelper ?? new FormsSimulationHelper(_dmeEditor, _blocks);
             _performanceManager = performanceManager ?? new PerformanceManager(_dmeEditor);
@@ -155,6 +161,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             _lovManager = lovManager ?? new LOVManager(_dmeEditor, _blocks);
             _itemPropertyManager = itemPropertyManager ?? new ItemPropertyManager(_dmeEditor);
             _triggerManager = triggerManager ?? new TriggerManager(_dmeEditor, _blocks);
+            // Lets TriggerManager stamp :SYSTEM.TRIGGER_* into the live SystemVariables
+            // snapshot around every trigger firing (see G0.36 in gaps.md) -- a settable
+            // property, not a constructor parameter, so an injected TriggerManager still
+            // gets it even though it was already fully constructed above.
+            _triggerManager.SystemVariables = _systemVariablesManager;
             _savepointManager = savepointManager ?? new SavepointManager();
             _lockManager = lockManager ?? new LockManager();
             _queryBuilderManager = queryBuilderManager ?? new QueryBuilderManager();

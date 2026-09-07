@@ -66,6 +66,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     : new List<object>();
 
                 rg.IsPopulated = true;
+                // LastPopulatedAt existed with no writer anywhere -- IsPopulated,
+                // its evident sibling, was set right here while the timestamp its
+                // own name promises never was. RecordGroupPanel.GetGroups() (both
+                // hosts) already returns the live RecordGroup objects, so any
+                // caller reading this field to show "populated N minutes ago"
+                // simply got null forever.
+                rg.LastPopulatedAt = DateTime.UtcNow;
                 return true;
             }
             catch (Exception ex)

@@ -105,4 +105,34 @@ public static class FieldTypeMapper
         if (t.Contains("text") || t.Contains("char") || t.Contains("varchar") || t.Contains("nchar") || t.Contains("nvarchar")) return DbFieldCategory.String;
         return DbFieldCategory.String;
     }
+
+    /// <summary>
+    /// Recognizes an authored <c>BlockFieldDefinition.EditorKey</c> override
+    /// against the exact canonical categories <see cref="GetCanonicalFieldType(EntityField)"/>
+    /// itself returns ("Numeric", "Date", "Boolean", "Checkbox", "ReadOnly",
+    /// "Text") — case-insensitively, so a runtime presenter registry can
+    /// honor an author's explicit editor choice without hand-keeping a
+    /// second copy of the category vocabulary the two registries already
+    /// switch on. <c>BlockFieldsEditorDialog</c>'s <c>EditorKey</c> field is
+    /// a plain, freely-editable text box, not a constrained dropdown — an
+    /// unrecognised value (a typo, or a platform-specific control class name
+    /// the IDE's own designer-file scanner separately understands, e.g.
+    /// "BeepComboBox") returns false rather than guessing, so the caller
+    /// falls through to the field's own inferred type exactly as if nothing
+    /// had been authored.
+    /// </summary>
+    public static bool TryNormalizeEditorKey(string? editorKey, out string? canonicalType)
+    {
+        canonicalType = Normalize(editorKey) switch
+        {
+            "numeric" => "Numeric",
+            "date" => "Date",
+            "boolean" => "Boolean",
+            "checkbox" => "Checkbox",
+            "readonly" => "ReadOnly",
+            "text" => "Text",
+            _ => null,
+        };
+        return canonicalType != null;
+    }
 }

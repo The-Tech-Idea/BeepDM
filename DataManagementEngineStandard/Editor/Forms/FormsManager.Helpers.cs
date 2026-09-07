@@ -279,6 +279,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             if (!string.IsNullOrEmpty(blockName))
                 _errorLog?.LogError(blockName, ex ?? new InvalidOperationException(message), message);
 
+            // :SYSTEM.LAST_ERROR/LAST_ERROR_CODE -- see G0.36 in gaps.md. LogError
+            // is the one method every failure this manager logs already funnels
+            // through (114 catch blocks across FormsManager.*.cs at last count),
+            // so it is the single choke point for "the most recent error," the
+            // same way real Oracle Forms' :SYSTEM.LAST_ERROR reflects whatever
+            // runtime error the form most recently hit. There is no Oracle-style
+            // ORA-/FRM- error number to report in a .NET exception; ex.HResult is
+            // the closest native analog to a numeric code, 0 when there is none.
+            _systemVariablesManager?.SetLastError(message, ex?.HResult ?? 0);
+
             LogErrorStructured(message, ex, blockName);
         }
 

@@ -187,6 +187,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                             // value, so the old value is recorded as unknown
                             // rather than invented. (2026-08-02)
                             _itemPropertyManager?.MarkItemDirty(blockName, e.PropertyName, null);
+                            _systemVariablesManager?.SetBlockStatus(blockName, "CHANGED");
+                            _systemVariablesManager?.SetRecordStatus(blockName, "CHANGED");
 
                             PrepareValidationContext(blockName);
                             var itemValidation = _validationManager.ValidateItem(
@@ -330,6 +332,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Trigger block enter event
                 _eventManager.TriggerBlockEnter(blockName);
+
+                // G0.64 (2026-08-26): _currentBlockName was never
+                // initialized for a form's first block -- only an
+                // explicit SwitchToBlockAsync/GoBlockAsync call (a
+                // block-navigation menu command) ever set it, and no host
+                // in this repo calls that on initial registration. Every
+                // consumer that falls back to "the current block" when no
+                // block name is given (DmlTriggers/KeyTriggers/Menu
+                // dispatch's blockName ?? _currentBlockName pattern, Alert
+                // MessageScope, GetAllBlockModeInfo's IsCurrentBlock,
+                // SaveFormState/RestoreFormStateAsync's block-position
+                // restore) silently treated every single-block form -- and
+                // the first block of every multi-block form, before any
+                // explicit switch -- as having no current block at all.
+                // Oracle Forms' own default is the first block in
+                // navigation sequence; mirrored here as "the first block
+                // registered becomes current, unless something already
+                // claimed that" -- purely additive, since a still-null
+                // _currentBlockName was never a state anything could have
+                // correctly depended on.
+                if (string.IsNullOrEmpty(_currentBlockName))
+                {
+                    _currentBlockName = blockName;
+                    _systemVariablesManager?.UpdateForBlockChange(blockName);
+                }
             }
             catch (Exception ex)
             {
@@ -646,6 +673,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 _systemVariablesManager?.UpdateForRecordChange(blockName, recordIndex, totalRecords);
+                // Same choke-point reasoning as the two calls in
+                // FormsManager.Navigation.cs (G0.60 in gaps.md): a savepoint
+                // rollback changes the current record just as much as an
+                // ordinary navigation does, and LockManager's own index
+                // tracking needs to follow it the same way.
+                _lockManager.SetCurrentRecordIndex(blockName, recordIndex);
             }
             catch
             {

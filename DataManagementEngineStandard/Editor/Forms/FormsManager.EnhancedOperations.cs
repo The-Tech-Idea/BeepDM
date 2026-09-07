@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Extensions;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.ConfigUtil;
@@ -266,7 +267,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire PRE-INSERT trigger — abort if cancelled
                 var preInsertResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreInsert, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreInsert, blockName, record, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreInsert, blockName, record, _dmeEditor)).ConfigureAwait(false);
                 if (preInsertResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -307,7 +308,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Fire POST-INSERT trigger after successful insert
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostInsert, blockName,
-                        TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor));
+                        TriggerContext.ForBlock(TriggerType.PostInsert, blockName, record, _dmeEditor)).ConfigureAwait(false);
 
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     result.Message = "Record created in block; it is written on commit";
@@ -424,7 +425,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire PRE-UPDATE trigger — abort if cancelled
                 var preUpdateResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreUpdate, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreUpdate, blockName, currentRecord, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreUpdate, blockName, currentRecord, _dmeEditor)).ConfigureAwait(false);
                 if (preUpdateResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -473,7 +474,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // Fire POST-UPDATE trigger after successful update
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostUpdate, blockName,
-                        TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor));
+                        TriggerContext.ForBlock(TriggerType.PostUpdate, blockName, currentRecord, _dmeEditor)).ConfigureAwait(false);
 
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
                     result.Message = "Record updated successfully";
@@ -537,7 +538,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Fire PRE-QUERY trigger — abort if cancelled
                 var preQueryResult = await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PreQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreQuery, blockName, null, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PreQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
                 if (preQueryResult == TriggerResult.Cancelled)
                 {
                     result.Flag = Errors.Failed;
@@ -557,14 +558,41 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     await blockInfo.UnitOfWork.Get().ConfigureAwait(false);
                 }
 
+                // :SYSTEM.LAST_QUERY -- see G0.36 in gaps.md. DataSourceAppFilterExtensions
+                // (DataManagementModelsStandard/Extensions) already builds a parameterized
+                // SELECT statement from an AppFilter list -- no new serialization needed.
+                // Best-effort: an unresolvable data source (bad DataSourceName, block not yet
+                // wired to a real IDataSource in a test) leaves LAST_QUERY at its prior value
+                // rather than failing the query that already succeeded above.
+                var queryDataSource = string.IsNullOrWhiteSpace(blockInfo.DataSourceName)
+                    ? null
+                    : _dmeEditor?.GetDataSource(blockInfo.DataSourceName);
+                if (queryDataSource != null)
+                {
+                    var entityNameForQuery = blockInfo.EntityStructure?.EntityName ?? blockName;
+                    var queryDefinition = queryDataSource.BuildSelectQueryDefinition(entityNameForQuery, filters);
+                    _systemVariablesManager?.SetLastQuery(queryDefinition.QueryText);
+                }
+
+                // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS -- see G0.36 in gaps.md.
+                // A record just fetched by a query and not yet touched is Oracle Forms'
+                // "QUERY" status. Set unconditionally on a successful Get (whether or not
+                // it found rows), the same simplification SetMode already makes at this
+                // site -- ItemChanged (the "CHANGED" transition) takes over the moment a
+                // field on it is actually edited.
+                _systemVariablesManager?.SetBlockStatus(blockName, "QUERY");
+                _systemVariablesManager?.SetRecordStatus(blockName, "QUERY");
+
                 // CRITICAL: After successful query execution, transition to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
                 blockInfo.LastModeChange = DateTime.Now;
+                // :SYSTEM.MODE -- see G0.36 in gaps.md.
+                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
 
                 // Fire POST-QUERY trigger (before returning to caller)
                 await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.PostQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.PostQuery, blockName, null, _dmeEditor));
+                    TriggerContext.ForBlock(TriggerType.PostQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
 
                 var recordCount = GetRecordCount(blockName);
                 

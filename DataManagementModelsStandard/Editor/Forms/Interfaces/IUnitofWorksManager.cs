@@ -9,6 +9,8 @@ using TheTechIdea.Beep.Utilities;
 
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Editor.Forms.Models;
+using TheTechIdea.Beep.Editor.UOWManager.Configuration;
+using TheTechIdea.Beep.Editor;
 
 
 namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
@@ -40,11 +42,36 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Rolls back all currently dirty blocks.</summary>
         Task<bool> RollbackDirtyBlocksAsync();
 
+        /// <summary>
+        /// Gets the dirty-state manager: per-block unsaved-changes detail (dirty record
+        /// count, last-modified time, whether the block has validation errors), the
+        /// Save/Discard/Cancel prompt workflow (<c>CheckAndHandleUnsavedChangesAsync</c> +
+        /// <c>OnUnsavedChanges</c>), and save/rollback of a specific set of dirty blocks.
+        /// The properties above (<see cref="IsDirty"/>, <see cref="GetDirtyBlocks"/>,
+        /// <see cref="SaveDirtyBlocksAsync()"/>, <see cref="RollbackDirtyBlocksAsync()"/>)
+        /// are the simple, no-prompt primitives; this is the richer surface behind them.
+        /// </summary>
+        IDirtyStateManager DirtyStateManager { get; }
+
         /// <summary>Gets the latest status message emitted by the manager.</summary>
         string Status { get; }
 
+        /// <summary>
+        /// Gets the latest status message as a full <see cref="StatusMessage"/> (text, severity
+        /// <see cref="MessageLevel"/>, and timestamp) -- richer than the plain <see cref="Status"/>
+        /// string above, useful for a status bar that wants to colour by severity.
+        /// </summary>
+        StatusMessage CurrentMessage { get; }
+
         /// <summary>Gets the number of currently registered blocks.</summary>
         int BlockCount { get; }
+
+        /// <summary>
+        /// Gets the manager-wide configuration object (<c>DefaultSaveOptions</c>,
+        /// <c>ValidateBeforeCommit</c>, and other manager-level settings). No other path reaches
+        /// this beyond the individual settings-driven behaviors that already consult it internally.
+        /// </summary>
+        UnitofWorksManagerConfiguration Configuration { get; }
 
         /// <summary>Gets the system variables manager</summary>
         ISystemVariablesManager SystemVariables { get; }
@@ -77,6 +104,22 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         
         /// <summary>Gets the trigger manager</summary>
         ITriggerManager Triggers { get; }
+
+        /// <summary>Execution log for all triggers fired by this form manager.</summary>
+        ITriggerExecutionLog TriggerLog { get; }
+
+        /// <summary>Dependency manager for trigger ordering and cycle detection.</summary>
+        ITriggerDependencyManager TriggerDependencies { get; }
+
+        /// <summary>
+        /// Fires a set of triggers in dependency order (<see cref="TriggerDefinition.DependsOn"/>),
+        /// honouring each definition's <see cref="TriggerDefinition.ChainMode"/>
+        /// (StopOnFailure/Continue/Rollback).
+        /// </summary>
+        Task<IReadOnlyList<TriggerResult>> FireTriggersInOrderAsync(
+            IReadOnlyList<TriggerDefinition> triggers,
+            string blockName,
+            CancellationToken cancellationToken = default);
 
         /// <summary>Gets the savepoint manager</summary>
         /// <remarks>
@@ -148,11 +191,81 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Gets the engine-owned named sequence provider.</summary>
         ISequenceProvider Sequences { get; }
 
+        /// <summary>
+        /// Reads the next value of a database-native sequence (via the block's own
+        /// <c>IUnitofWork.GetSeq</c>, not the in-memory <see cref="Sequences"/> provider
+        /// above) and assigns it into <paramref name="record"/>'s <paramref name="FieldName"/>
+        /// -- the Oracle Forms PRE-INSERT idiom of auto-generating a primary key from a real
+        /// DB sequence. Returns false (and logs why) on a missing block, a non-positive or
+        /// non-numeric sequence value, or a failed field assignment.
+        /// </summary>
+        bool ExecuteSequence(string blockName, object record, string FieldName, string sequenceName);
+
         /// <summary>Gets the engine-owned form timer manager.</summary>
         ITimerManager Timers { get; }
 
         /// <summary>Removes a named sequence.</summary>
         bool DropSequence(string sequenceName);
+
+        // ── Paging / Performance (FormsManager.Performance.cs) ──────────
+        // Neither sub-manager, nor any of the FormsManager-level convenience
+        // wrappers around them, was ever carried onto this interface -- the
+        // same "genuinely unreachable" shape as G0.65/G0.67, this time for
+        // the whole Phase 7 (paging / lazy-load / cache) surface. Several of
+        // the wrappers below do more than delegate (they also sync
+        // DataBlockInfo.Configuration), so exposing only the sub-manager
+        // properties would not reproduce their real behavior.
+
+        /// <summary>Gets the engine-owned per-block paging state manager.</summary>
+        IPagingManager Paging { get; }
+
+        /// <summary>Gets the engine-owned cache/performance manager.</summary>
+        IPerformanceManager PerformanceManager { get; }
+
+        /// <summary>Sets a block's page size and syncs <c>DataBlockInfo.Configuration.PageSize</c>.</summary>
+        void SetBlockPageSize(string blockName, int pageSize);
+
+        /// <summary>
+        /// Navigates the block's cursor to the first record of <paramref name="pageNumber"/> and
+        /// returns the resulting <see cref="PageInfo"/>. Combines <see cref="Paging"/>'s
+        /// <c>SetCurrentPage</c> with the actual cursor move -- calling <c>Paging</c> alone would
+        /// update the paging state without moving the cursor.
+        /// </summary>
+        Task<PageInfo> LoadPageAsync(string blockName, int pageNumber, CancellationToken ct = default);
+
+        /// <summary>
+        /// Returns the block's stored total record count, falling back to
+        /// <c>UnitOfWork.TotalItemCount</c> when none was stored.
+        /// </summary>
+        long GetTotalRecordCount(string blockName);
+
+        /// <summary>Configures how many pages beyond the current one should be pre-fetched.</summary>
+        void SetFetchAheadDepth(string blockName, int depth);
+
+        /// <summary>Sets a block's lazy-load strategy.</summary>
+        void SetLazyLoadMode(string blockName, LazyLoadMode mode);
+
+        /// <summary>Gets a block's current lazy-load strategy.</summary>
+        LazyLoadMode GetLazyLoadMode(string blockName);
+
+        /// <summary>Configures the maximum records fetched per lazy/paged load cycle.</summary>
+        void SetMaxRecordsPerFetch(string blockName, int max);
+
+        /// <summary>Overrides the cache TTL for one block and syncs <c>DataBlockInfo.Configuration.CacheTtlMinutes</c>.</summary>
+        void SetBlockCacheTtl(string blockName, TimeSpan ttl);
+
+        /// <summary>Gets the record count for a block's loaded units.</summary>
+        int GetRecordCount(string blockName);
+
+        /// <summary>
+        /// Gets the underlying audit manager -- <c>Configuration</c>/<c>CurrentUser</c>/<c>Store</c> and
+        /// <c>RecordFieldChange</c> beyond the individual convenience methods below (which cover
+        /// only <see cref="SetAuditUser"/>/<see cref="GetAuditLog"/>/export/purge/clear).
+        /// </summary>
+        IAuditManager AuditManager { get; }
+
+        /// <summary>Applies default values for common audit fields (CreatedBy/CreatedDate/etc.) to a record.</summary>
+        void SetAuditDefaults(object record, string currentUser = null);
 
         /// <summary>Sets the user stamped on subsequent audit entries.</summary>
         void SetAuditUser(string userName);
@@ -181,6 +294,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Clears the audit store.</summary>
         void ClearAudit();
+
+        /// <summary>
+        /// Gets the underlying security manager -- field-level security
+        /// (<c>SetFieldSecurity</c>/<c>GetFieldSecurity</c>/<c>GetMaskedValue</c>), permission
+        /// checks (<c>IsBlockAllowed</c>), row filters (<c>GetBlockRowFilter</c>), and the
+        /// <c>OnSecurityViolation</c> event, beyond the block-level convenience methods below.
+        /// </summary>
+        ISecurityManager Security { get; }
 
         /// <summary>Sets the active Forms security context and reapplies effective permissions.</summary>
         void SetSecurityContext(SecurityContext context);
@@ -228,6 +349,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Returns whether a block is currently registered.</summary>
         bool BlockExists(string blockName);
+
+        /// <summary>
+        /// Creates a new record for a block using entity-type resolution, handling mode
+        /// transition awareness. Genuinely unreachable another way -- the CLR entity-type
+        /// resolution this performs is otherwise internal to <c>FormsManager</c>.
+        /// </summary>
+        object CreateNewRecord(string blockName);
+
+        /// <summary>
+        /// Returns a <see cref="NavigationInfo"/> snapshot combining current index, total
+        /// records, has-previous/next, the current record, block mode, and dirty state --
+        /// an aggregation this interface otherwise offers no single call to reproduce.
+        /// </summary>
+        NavigationInfo GetCurrentRecordInfo(string blockName);
+
+        /// <summary>Gets a read-only snapshot of this form's CALL_FORM call stack.</summary>
+        IReadOnlyList<FormCallStackEntry> GetCallStack();
 
         /// <summary>
         /// Opens the named datasource, fetches EntityStructure, creates a UnitOfWork,
@@ -386,6 +524,38 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>Validates the current form across its registered blocks.</summary>
         bool ValidateForm();
+
+        // ── Form-Level Mode-Transition Readiness ───────────────────────
+        // Added 2026-08-26 -- these three were implemented on FormsManager
+        // (looping every block, unlike the per-block ValidateBlock/ValidateForm
+        // above) but never declared here, so no host could reach a
+        // form-wide "is it safe to change mode / can I exit" check without
+        // an unsafe cast. The Oracle Forms parallel is EXIT_FORM prompting
+        // "Save changes?" when any block across the whole form is dirty --
+        // a check ValidateForm() alone doesn't make, since it doesn't
+        // inspect UnitOfWork.IsDirty.
+
+        /// <summary>
+        /// Validates every registered block for a safe form-level mode
+        /// transition (e.g. before EXIT_FORM): unsaved changes and
+        /// per-block validation state. Returns <see cref="Errors.Warning"/>
+        /// (not <see cref="Errors.Failed"/>) when issues are found -- the
+        /// caller decides whether to block or merely warn.
+        /// </summary>
+        Task<IErrorsInfo> ValidateAllBlocksForModeTransitionAsync();
+
+        /// <summary>
+        /// Snapshot of every registered block's current mode, dirty state
+        /// and record count -- Oracle Forms form-status-line equivalent,
+        /// for a host status bar or diagnostic panel.
+        /// </summary>
+        Dictionary<string, BlockModeInfo> GetAllBlockModeInfo();
+
+        /// <summary>
+        /// True when <see cref="ValidateAllBlocksForModeTransitionAsync"/>
+        /// found no blocking issue across the form.
+        /// </summary>
+        Task<bool> IsFormReadyForModeTransitionAsync();
 
 
         /// <summary>Enable or disable undo tracking for a block.</summary>
@@ -636,6 +806,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         // ── Computed Columns (G3.2) ────────────────────────────────────
         void RegisterBlockComputed(string blockName, string columnName, Func<object, object> computation);
+        /// <summary>
+        /// Registers a computed column driven by an Oracle Forms <c>Calculation = Formula</c>
+        /// text expression (e.g. <c>"QTY * PRICE"</c>) instead of a hand-written delegate.
+        /// Added after <see cref="RegisterBlockComputed"/> and originally missed here — the
+        /// same "declared on FormsManager but genuinely unreachable through this interface"
+        /// shape as <c>FireItemTriggerAsync</c>/<c>SetSystemVariables</c>/<c>DirtyStateManager</c>.
+        /// </summary>
+        void RegisterBlockComputedFormula(string blockName, string columnName, string formula);
         void UnregisterBlockComputed(string blockName, string columnName);
         object GetBlockComputedValue(string blockName, string columnName);
         IReadOnlyList<string> GetBlockComputedColumnNames(string blockName);
@@ -678,6 +856,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
             string button1Text = "OK", string button2Text = null, string button3Text = null, CancellationToken ct = default);
 
         // ── Inter-Form ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Gets the shared multi-form registry: <c>ActiveFormName</c>/<c>SetActiveForm</c>,
+        /// <c>RegisterForm</c>/<c>UnregisterForm</c>/<c>GetForm</c>/<c>GetActiveFormNames</c>/
+        /// <c>FormExists</c>. Beyond the register/lookup path <c>CallFormAsync</c> already
+        /// uses internally -- a host wanting to enumerate or introspect other open forms had
+        /// no path to this at all.
+        /// </summary>
+        IFormRegistry Registry { get; }
+
+        /// <summary>
+        /// Gets the shared inter-form message bus directly -- <c>UnsubscribeAll</c> and the
+        /// <c>OnFormMessage</c> global observer event, beyond the per-message convenience
+        /// methods below (<see cref="PostMessage"/>/<see cref="BroadcastMessage"/>/
+        /// <see cref="SubscribeToMessage"/>/<see cref="UnsubscribeFromMessage"/>).
+        /// </summary>
+        IFormMessageBus MessageBus { get; }
+
         void SetGlobalVariable(string name, object value);
         object GetGlobalVariable(string name);
         T GetGlobalVariable<T>(string name);
@@ -687,10 +883,56 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         void SubscribeToMessage(string messageType, Action<FormMessage> handler);
         void UnsubscribeFromMessage(string messageType);
 
+        // ── Shared Blocks (cross-form) ──────────────────────────────────
+        // Declared on FormsManager (Editor/Forms/FormsManager.InterFormComm.cs) but
+        // never carried onto this interface -- the same "genuinely unreachable
+        // without an unsafe cast" shape as SetSystemVariables/DirtyStateManager
+        // below/above. Unlike the rest of this Inter-Form section (globals,
+        // messages), a host had no path to any of these six at all.
+
+        /// <summary>Publishes this form's block UoW as a cross-form shared block. False if the name is already taken.</summary>
+        bool CreateSharedBlock(string blockName, IUnitofWork uow);
+
+        /// <summary>Retrieves a shared block UoW published by another form. Null when it doesn't exist.</summary>
+        IUnitofWork GetSharedBlock(string blockName);
+
+        /// <summary>Attempts to acquire a write-lock on a shared block within the given timeout.</summary>
+        bool TryLockSharedBlock(string blockName, TimeSpan timeout);
+
+        /// <summary>Releases the write-lock this form holds on a shared block.</summary>
+        void ReleaseSharedBlockLock(string blockName);
+
+        /// <summary>Whether a shared block with this name has been published.</summary>
+        bool SharedBlockExists(string blockName);
+
+        /// <summary>Unpublishes a shared block, releasing any lock on it.</summary>
+        bool RemoveSharedBlock(string blockName);
+
+        /// <summary>
+        /// Gets the shared-block manager directly -- <c>NotifySharedBlockChanged</c> and the
+        /// <c>SharedBlockChanged</c> event, beyond the six convenience methods above. A form
+        /// committing changes to a shared block had no path to notify other forms holding a
+        /// reference to it.
+        /// </summary>
+        ISharedBlockManager SharedBlocks { get; }
+
         // ── Key Triggers ───────────────────────────────────────────────
         void RegisterKeyTrigger(KeyTriggerType keyType, string blockName, Func<TriggerContext, TriggerResult> handler);
         void RegisterKeyTriggerAsync(KeyTriggerType keyType, string blockName, Func<TriggerContext, CancellationToken, Task<TriggerResult>> asyncHandler);
         Task<TriggerResult> FireKeyTriggerAsync(KeyTriggerType keyType, string blockName);
+
+        // ── Forms Simulation ───────────────────────────────────────────
+        // Added 2026-08-26 -- FormsManager.SetSystemVariables existed with a
+        // doc comment saying it was exposed specifically for hosts to reach
+        // (B6, audit pass 3, 2026-06), but was never declared here, so a
+        // host or IDE-authored trigger handler holding only this interface
+        // (the only type either host exposes FormsManager as) had no way to
+        // call it. The Oracle Forms use case is a form author's own
+        // registered trigger (e.g. WHEN-CREATE-RECORD/PRE-INSERT) stamping
+        // :SYSTEM.CURRENT_DATE/:SYSTEM.USER-style audit fields onto the
+        // record it's given -- which requires exactly this kind of
+        // interface-level reach, not engine-side auto-invocation.
+        void SetSystemVariables(object record, SystemVariableType variableType, object value = null);
 
         // ── Multi-Form Navigation ──────────────────────────────────────
         Task<bool> CallFormAsync(string formName, Dictionary<string, object> parameters = null, FormCallMode callMode = FormCallMode.Modal, CancellationToken ct = default);

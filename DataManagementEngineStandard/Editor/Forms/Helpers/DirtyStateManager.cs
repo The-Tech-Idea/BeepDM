@@ -25,6 +25,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         private readonly Func<string, List<string>> _getDetailBlocksFunc;
         private readonly Func<string, DataBlockInfo> _getBlockFunc;
         private readonly Func<string, List<DataBlockRelationship>> _getRelationshipsFunc;
+        private readonly Func<SaveOptions> _getDefaultSaveOptionsFunc;
+        private readonly Func<string, bool> _hasValidationErrorsFunc;
         private static bool IsNullOrEmpty(object value) =>
             value == null || value == DBNull.Value || (value is string text && string.IsNullOrWhiteSpace(text));
 
@@ -46,18 +48,36 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// <param name="blocks">Registered block metadata keyed by block name.</param>
         /// <param name="getDetailBlocksFunc">Resolver for child blocks of a given master block.</param>
         /// <param name="getBlockFunc">Resolver for a block metadata record by name.</param>
+        /// <param name="getRelationshipsFunc">Resolver for a block's declared master-detail relationships.</param>
+        /// <param name="getDefaultSaveOptionsFunc">
+        /// Resolver for the manager-configured default <see cref="SaveOptions"/> (typically
+        /// <c>() =&gt; Configuration?.DefaultSaveOptions</c>). Optional; when null or when it
+        /// returns null, <see cref="SaveOptions.Default"/> is used, matching prior behavior.
+        /// </param>
+        /// <param name="hasValidationErrorsFunc">
+        /// Resolver for whether a named block currently has any item in an error state
+        /// (typically <c>blockName =&gt; ItemProperties.GetItemsWithErrors(blockName).Count &gt; 0</c>,
+        /// the same live state <see cref="Editor.UOWManager.Interfaces.IItemPropertyManager"/>
+        /// tracks from real validation-rule failures via <c>SetItemError</c>/<c>ClearItemError</c>).
+        /// Optional; when null, <see cref="HasValidationErrors"/> conservatively reports false
+        /// (no known errors) rather than fabricating a state it cannot observe.
+        /// </param>
         public DirtyStateManager(
             IDMEEditor dmeEditor,
             ConcurrentDictionary<string, DataBlockInfo> blocks,
             Func<string, List<string>> getDetailBlocksFunc,
             Func<string, DataBlockInfo> getBlockFunc,
-            Func<string, List<DataBlockRelationship>> getRelationshipsFunc)
+            Func<string, List<DataBlockRelationship>> getRelationshipsFunc,
+            Func<SaveOptions> getDefaultSaveOptionsFunc = null,
+            Func<string, bool> hasValidationErrorsFunc = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
             _blocks = blocks ?? throw new ArgumentNullException(nameof(blocks));
             _getDetailBlocksFunc = getDetailBlocksFunc ?? throw new ArgumentNullException(nameof(getDetailBlocksFunc));
             _getBlockFunc = getBlockFunc ?? throw new ArgumentNullException(nameof(getBlockFunc));
             _getRelationshipsFunc = getRelationshipsFunc ?? throw new ArgumentNullException(nameof(getRelationshipsFunc));
+            _getDefaultSaveOptionsFunc = getDefaultSaveOptionsFunc;
+            _hasValidationErrorsFunc = hasValidationErrorsFunc;
         }
 
         #endregion
@@ -170,7 +190,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </summary>
         public async Task<bool> SaveDirtyBlocksAsync(List<string> dirtyBlocks)
         {
-            var saveOptions = SaveOptions.Default;
+            // SaveOptions.Default's own properties (ValidateBeforeSave, MaxRetries, ...) are
+            // genuinely read below and by SaveBlockWithRetryAsync -- this always used the bare
+            // type default, ignoring UnitofWorksManagerConfiguration.DefaultSaveOptions entirely,
+            // so a developer who configured Configuration.DefaultSaveOptions (e.g. MaxRetries = 5,
+            // or ValidateBeforeSave = false to skip the validation pass below) had that setting
+            // silently discarded on every save.
+            var saveOptions = _getDefaultSaveOptionsFunc?.Invoke() ?? SaveOptions.Default;
             var results = new List<SaveResult>();
             
             try
@@ -453,9 +479,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                // This would need to be implemented based on your UnitOfWork implementation
-                // For now, return 1 if dirty, 0 if not
-                return block.UnitOfWork?.IsDirty == true ? 1 : 0;
+                // IUnitofWork.GetModifiedEntities() already exists and is a real,
+                // working read of ObservableBindingList's own tracking state
+                // (EntityState.Modified per record) -- this used to hardcode 1
+                // whenever the block was dirty at all, so
+                // UnsavedChangesEventArgs.TotalAffectedRecords (the number the
+                // HandleUnsavedChangesPrompt alert actually shows the user) always
+                // read "1 record" regardless of how many records were really dirty.
+                // GetModifiedEntities() only covers EntityState.Modified rows, not a
+                // block dirtied by a new or deleted record, so floor at 1 whenever
+                // IsDirty is true (matching the old behavior's own floor) rather
+                // than ever reporting 0 for a block the caller was just told is dirty.
+                var uow = block.UnitOfWork;
+                if (uow?.IsDirty != true) return 0;
+                var modifiedCount = uow.GetModifiedEntities()?.Count() ?? 0;
+                return Math.Max(1, modifiedCount);
             }
             catch
             {
@@ -467,8 +505,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                // This would need to be implemented based on your UnitOfWork implementation
-                return DateTime.Now; // Placeholder
+                // GetChangeLog() already exists and is populated with a real,
+                // per-edit Timestamp by RecordChange -- this always returned
+                // DateTime.Now regardless of when the block was actually last
+                // touched, so a "last modified" display always read "just now."
+                var uow = block.UnitOfWork;
+                if (uow == null) return null;
+                var lastChange = uow.GetChangeLog()?.LastOrDefault();
+                return lastChange?.Timestamp;
             }
             catch
             {
@@ -480,8 +524,18 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         {
             try
             {
-                // This would need to be implemented based on your validation logic
-                return false; // Placeholder
+                // Always returned false regardless of the block's real state (gaps.md
+                // G0.53) -- DirtyBlockInfo.HasErrors/IsValid fed straight from here into
+                // the HandleUnsavedChangesPrompt alert, so a block with genuinely failing
+                // validation still told the user "no errors" when asking Save/Discard/
+                // Cancel. _hasValidationErrorsFunc is the live per-item error state
+                // ItemPropertyManager already tracks from real validation-rule failures
+                // (SetItemError/ClearItemError, wired in FormsManager.Validation.cs) --
+                // the same state an on-screen item error indicator reads. No resolver
+                // means no known source of truth: report false rather than guess true,
+                // since a false positive would block every save/discard/cancel decision
+                // for a form that never wired one.
+                return _hasValidationErrorsFunc?.Invoke(block.BlockName) ?? false;
             }
             catch
             {

@@ -824,9 +824,18 @@ exactly (`if (!f.IsEnabled) Line(...)` / `FB("IsEnabled", fallback: true)`).
 above it — no `IDataSource`/`IDMEEditor` chain needed); proven via revert (removing the two
 assignments failed exactly that test).
 
-### G0.36: `SystemVariablesManager` is fully built and reachable, but every `Update*`/`Set*` method
-has zero callers — every `:SYSTEM.*`-equivalent field is permanently stuck at its constructor default
-(FOUND 2026-08-25, **NOT FIXED** — documented and scoped, not attempted)
+### G0.36: `SystemVariablesManager` is reachable, but most of its `Update*`/`Set*` methods have no
+caller — most `:SYSTEM.*`-equivalent fields are permanently stuck at their constructor default
+(FOUND 2026-08-25; **trigger-context, block-switch, current-form, mode, last-error, last-query, the
+block/record-status "CHANGED"/"QUERY"/"NEW" transitions, the post-commit/post-rollback reset back to
+"QUERY", SetFormStatus's first direct call site, and ordinary-navigation record-position tracking all
+FIXED across 2026-08-25/26** — `SetTriggerContext`/`ClearTriggerContext`, `UpdateForBlockChange`,
+`SetCurrentForm`, `SetMode`, `SetLastError`, `SetLastQuery`, `SetFormStatus`, `SetBlockStatus`/
+`SetRecordStatus` (for `"CHANGED"`, `"QUERY"`, and `"NEW"`), and `UpdateForRecordChange` (for ordinary
+First/Next/Previous/Last/GoRecord navigation, wired 2026-08-26) now wired; `UpdateForItemChange`
+turned out to be already wired, pre-dating this finding — the first pass's grep missed calls through
+the private field; the sole remaining unwired piece in the whole `SystemVariablesManager` surface is
+the `"INSERT"` value of `BLOCK_STATUS`/`RECORD_STATUS`, see "Still open" below)
 
 **What:** Looking into this session's "`:SYSTEM.*` variables are ~4/90 implemented" framing (repeated
 across three rounds of scoping) to see whether it was a well-scoped next target turned up that the
@@ -848,34 +857,2073 @@ real `Func<TriggerContext, TriggerResult>` handler signature `DesignerHandlerSca
 emits. Corrected to describe the real implementation, verified field-by-field and method-by-method
 against source.
 
-**The gap that actually matters, found while correcting the doc:** every one of
-`SystemVariablesManager`'s update methods — `UpdateForBlockChange`, `UpdateForRecordChange`,
-`UpdateForItemChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`,
-`SetTriggerContext`/`ClearTriggerContext`, `SetLastError`/`ClearLastError`, `SetLastQuery`,
-`SetCurrentForm` — has **zero callers anywhere in `Editor/Forms`**, confirmed by grepping
-`SystemVariables.<MethodName>(` for each one. `FormsManager`'s own block-switch, record-navigation,
-item-focus, mode-transition, DML, query-execution and trigger-firing code never calls into this
-manager at all. The class is real, well-designed, reachable, and completely inert: a trigger handler
-can write `context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK` today, it will compile and
+**The gap that actually matters, found while correcting the doc — corrected once more, below, after an
+initial grep mistake:** the first pass at this claimed *every* `SystemVariablesManager` update method
+had zero callers, based on grepping `SystemVariables.<MethodName>(` — which only matches calls through
+the public property syntax. `FormsManager`'s own code calls the manager through its **private field**,
+`_systemVariablesManager.<MethodName>(...)`, which that grep never matched. Re-grepped correctly
+(`_systemVariablesManager\.` and a bare `.<MethodName>(` sweep) and found two real, pre-existing
+exceptions: `GoItemAsync` (`FormsManager.Navigation.cs:406`) already calls `UpdateForItemChange` on
+every item-focus change, and `TryUpdateSavepointSystemVariables` (`FormsManager.BlockRegistration.cs:648`)
+already calls `UpdateForRecordChange` — but only after a savepoint rollback, not on ordinary record
+navigation (`NextRecordAsync` etc. do not call it). Both predate this session; they were simply missed,
+not fixed here. Corrected the count: **six** methods have genuinely zero callers —
+`UpdateForBlockChange`, `SetMode`, `SetBlockStatus`, `SetFormStatus`, `SetRecordStatus`,
+`SetLastError`/`ClearLastError`, `SetLastQuery`, `SetCurrentForm` (eight names, still zero calls
+between them) — plus `UpdateForRecordChange`'s coverage is real but narrow (savepoint-restore only).
+`SetTriggerContext`/`ClearTriggerContext` are wired as of this same pass (see above). `FormsManager`'s
+block-switch, mode-transition, DML, and query-execution code still never calls into this manager for
+those eight names. The class is real, well-designed, reachable, and mostly-but-not-fully inert: a
+trigger handler can write `context.SystemVariables.GetFormSystemVariables().CURRENT_BLOCK` today, it
+will compile and
 return a value, and that value will be `string.Empty` forever regardless of what the form actually
 does, because nothing keeps it current.
 
-**Why not fixed in this pass:** wiring this up correctly means finding the right call site in each of
-~8-10 different `FormsManager.*.cs` operation files (block-switch, record-navigation, item-focus,
-mode-transition, each DML verb, query execution, and wherever `TriggerManager` invokes a trigger's
-callback) and calling the matching `Update*`/`Set*` method at the right moment relative to the
-operation completing — the doc's own "Updates that are NOT immediate" section (pre-existing content,
-kept) already establishes that ordering matters (e.g. `BLOCK_STATUS` must update only on a
-*successful* DML, `MODE` only on a completed, non-cancelled transition). That is real, valuable,
-well-scoped-**per-call-site** work, but it is a different shape from every fix in this session so far
-(all of which were "add the one missing caller") — this is "add eight-to-ten callers, each needing to
-find the right moment in an existing operation," genuinely larger and riskier to do correctly in one
-sitting. Documented here and in the doc itself so the next session (or the next scoping pass) starts
-from an accurate picture instead of rediscovering this from scratch.
+**Fixed, same day: the trigger-context slice.** Unlike the other nine `Update*`/`Set*` methods, `SetTriggerContext`/
+`ClearTriggerContext` had exactly ONE natural choke point rather than ~30 scattered call sites:
+`TriggerManager.ExecuteTriggerChain`/`ExecuteTriggerChainAsync` are the two internal methods every one
+of the ten public `Fire*Trigger(Async)` variants (Form/Block/Item/Global × sync/async) funnels
+through, so hooking there — not each Fire* method, and not each of the ~30 `FormsManager.*.cs` call
+sites that build a `TriggerContext` and hand it to one of those Fire* methods — covers every trigger
+firing in one place. Added `ITriggerManager.SystemVariables { get; set; }` (settable, not a
+constructor parameter, since `FormsManager` already constructs its `SystemVariablesManager` before its
+`TriggerManager` and just assigns it across), wired in `FormsManager.Core.cs` right after
+`_triggerManager` is built, and a private `ApplyTriggerContextToSystemVariables` helper that both
+populates `context.SystemVariables` (previously always null — a handler reading it would have NRE'd)
+and calls `SetTriggerContext(context.TriggerType.ToString(), context.BlockName, context.ItemName,
+context.RecordIndex)` before the chain runs; `ClearTriggerContext()` runs once after. Both null-safe
+(`SystemVariables` unset is a documented, tested no-op, not a throw) — a hand-constructed
+`TriggerManager` in a test or elsewhere that never gets it wired keeps working exactly as before.
+
+Three new direct tests against the real `TriggerManager` class (not mocked, the first in this file to
+test `TriggerManager`'s own behavior rather than `FormsManager`'s dispatch through a mocked one):
+firing a block trigger sets-then-clears the context and hands the real store through to the handler;
+firing an item trigger (async) does the same; firing with `SystemVariables` unset doesn't throw.
+Proven via revert — commenting out all four call sites failed the first two tests with exactly the
+predicted symptoms (`context.SystemVariables` null inside the handler; the mock's `VerifyAll()`
+reporting the setups were never matched). Fixing this also required updating two **pre-existing**
+Strict-mock tests (`GoItem_ValidItemUpdatesCursorAndFiresNewItemTrigger`,
+`GoItem_UnknownItemReturnsFalseWithoutTrigger`) to stub the new `ITriggerManager.SystemVariables`
+setter — a `MockBehavior.Strict` mock throws on any unconfigured member access, and
+`FormsManager`'s constructor now genuinely calls that setter on whatever `ITriggerManager` it's given.
+
+**Already wired, pre-existing, missed by the first pass's flawed grep:** `UpdateForItemChange` (called
+from `GoItemAsync` on every item-focus change) and `UpdateForRecordChange` (called from
+`TryUpdateSavepointSystemVariables`, but only after a savepoint rollback — ordinary record navigation
+such as `NextRecordAsync` does not call it, so this one is real but narrow).
+
+**Fixed, same day: `UpdateForBlockChange`.** Same shape as `UpdateForItemChange` turned out to be —
+one natural choke point, not a scattered set of call sites. `SwitchToBlockAsync` is the single method
+every block switch goes through (`GoBlockAsync` is a pure delegation to it: `=> SwitchToBlockAsync(blockName)`),
+so `_systemVariablesManager?.UpdateForBlockChange(blockName)` now runs there, right after
+`_currentBlockName` is committed to the new block and before the block-enter event/side effects. Two
+new tests (`SwitchToBlockAsync_UpdatesSystemVariablesCurrentBlock`,
+`GoBlockAsync_DelegatesToSwitchToBlockAsync_UpdatesSystemVariables` — the second pins the delegation
+itself, not just the method it forwards to), proven via revert.
+
+**Fixed, same day: `SetCurrentForm`.** `CurrentFormName` (the public property, `FormsManager.Properties.cs`)
+has exactly three writers — its own setter, and two direct `_currentFormName` field assignments in
+`OpenFormAsync`/`CloseFormAsync` (`FormsManager.FormOperations.cs`) that bypass the property (a
+class's own code never invokes its own property setter implicitly). All three now also call
+`_systemVariablesManager?.SetCurrentForm(...)` — the property setter for external callers, and both
+`FormOperations.cs` sites for the engine's own form open/close lifecycle (close passes `null`,
+mirroring the existing `_currentFormName = null` reset). One new test
+(`CurrentFormName_Set_UpdatesSystemVariablesCurrentForm`) covers the property-setter path directly;
+proven via revert. The other two sites use the identical one-line call and were not given their own
+tests — proportionate to how small and visually-verifiable a one-line addition next to an existing
+assignment is, versus building out `OpenFormAsync`/`CloseFormAsync` test scaffolding that doesn't
+exist yet in this file for any other purpose.
+
+**Fixed, same day: `SetMode`.** Re-checked rather than left as "no single choke point" — confirmed
+`blockInfo.Mode` is assigned directly at **four** sites, not three: the three already found in
+`FormsManager.ModeTransitions.cs` (`EnterQueryModeAsync`, `EnterCrudModeForNewRecordAsync`, and the
+child-block coordination inside `CreateNewRecordInMasterBlockAsync`), plus a fourth in
+`FormsManager.EnhancedOperations.cs`'s `ExecuteQueryEnhancedAsync` (the real implementation behind
+`ExecuteQueryAsync`/`ExecuteQueryAndEnterCrudModeAsync`, both of which delegate to it) that the
+original count missed. Four sites with no shared setter is not the same as "unwireable" — it is the
+same shape as `SetCurrentForm`'s three writers, just one site larger. Added a private
+`ToSystemVariableMode(DataBlockMode)` helper mapping the engine's five-value `DataBlockMode` enum onto
+Oracle's real two-value `:SYSTEM.MODE` vocabulary (`NORMAL`/`ENTER-QUERY` — Oracle Forms does not
+publish a third value for this variable, unlike `:SYSTEM.BLOCK_STATUS`, which does have `QUERY`), and
+called `_systemVariablesManager?.SetMode(ToSystemVariableMode(...))` at all four sites, right next to
+each direct `.Mode =` assignment. One new test (`EnterQueryModeAsync_SetsSystemVariablesModeToEnterQuery`,
+covering the simplest of the four); the other three share the identical one-line pattern and were
+verified by the full 122-test run rather than each getting a dedicated test, the same proportionality
+call made for `SetCurrentForm`'s `OpenFormAsync`/`CloseFormAsync` sites. Proven via revert.
+
+**Fixed, same day: `SetLastError`.** Unlike `SetMode`, this one turned out to have a genuine single
+choke point despite 114+ separate `catch` blocks scattered across `FormsManager.*.cs`: every one of
+them already reports through the shared `protected void LogError(string message, Exception ex = null,
+string blockName = null)` helper (`FormsManager.Helpers.cs`), which mirrors the failure into the
+per-block `IBlockErrorLog` when a block context is given. Hooking `LogError` itself — not each catch
+site — covers every failure this manager ever logs, the same shape Oracle Forms' own
+`:SYSTEM.LAST_ERROR` has: it reflects whatever runtime error the form most recently hit, from any
+operation, not just DML. Added `_systemVariablesManager?.SetLastError(message, ex?.HResult ?? 0)`
+right after `LogError`'s existing `_errorLog?.LogError(...)` mirror. There is no Oracle-style
+`ORA-`/`FRM-` error number available from a .NET exception; `ex.HResult` is the closest native analog
+to a numeric code (0 when there is no exception object). `ClearLastError()` was deliberately left
+unwired — real Oracle Forms has no "clear" semantic for `:SYSTEM.LAST_ERROR` either; it just persists
+until overwritten by the next error, which `SetLastError` already provides. One new test
+(`LogError_SetsSystemVariablesLastError`, forcing `IUnitofWork.Get()` to throw inside
+`ExecuteQueryEnhancedAsync` and asserting the mock's `SetLastError` was invoked with a message
+containing the block name), proven via revert.
+
+**Still open — one value.** `SetFormStatus` as a direct call is **no longer** on this list — see
+the `CommitFormAsync`/`RollbackFormAsync` entry below — and neither is `UpdateForRecordChange`'s
+general (non-savepoint) case — see below.
+
+**`BLOCK_STATUS`/`RECORD_STATUS`'s `"INSERT"` value is also still open, but for a different reason
+than "scattered call sites."** Unlike `"NEW"`/`"QUERY"` (see below — both landed same day once
+re-checked), `"INSERT"` needs the engine to know, at edit time, whether the record being edited was
+ever fetched by a query or was created blank — a genuinely per-record distinction the current
+`SystemVariables` snapshot (keyed per-block, one "current" value, not per-row) does not carry.
+Real Oracle Forms uses `"INSERT"` for an edited `"NEW"` record and reserves `"CHANGED"` for an
+edited `"QUERY"` record; this session's `ItemChanged` handler wiring (see below) does not make that
+distinction — it always sets `"CHANGED"`, regardless of whether the record was new or queried. This
+is a real, deliberate scope decision, not an oversight: making it correct needs either a per-record
+status field wired into whatever tracks the "current record" (a bigger design question) or accepting
+a per-block approximation and documenting its inaccuracy — left for its own pass.
+
+**`SetLastQuery`: the "no existing serializer" blocker turned out to be a search gap, not a real
+blocker — found and fixed same day.** `SetLastQuery` was checked directly: `ExecuteQueryEnhancedAsync`
+has a single natural landing spot right where it calls `blockInfo.UnitOfWork.Get(filters)`, the same
+shape that made `SetMode` and `SetLastError` tractable, but the original check concluded it was
+blocked on something those two weren't — there being no existing string form of "the query that ran"
+to hand it, since `ExecuteQueryEnhancedAsync` receives a `List<AppFilter>`, not a WHERE-clause string.
+A follow-up re-check found that conclusion itself was based on an incomplete grep:
+`DataManagementModelsStandard/Extensions/DataSourceAppFilterExtensions.cs`'s
+`BuildSelectQueryDefinition(this IDataSource, entityNameOrSelect, filters, selectedColumns)` already
+builds a full `"SELECT ... FROM ... WHERE ..."` string (plus a parameter dictionary) from exactly an
+`AppFilter` list — a real, existing, general-purpose capability, itself with zero callers anywhere in
+the engine before this pass (not Forms-specific, so not itself an instance of this gap's shape, but a
+sibling one worth noting: built, reachable, unused). `ExecuteQueryEnhancedAsync` now resolves the
+block's `IDataSource` via `_dmeEditor.GetDataSource(blockInfo.DataSourceName)` (the same pattern
+`FormsManager.Validation.cs` already uses for LOV validation) and calls
+`SetLastQuery(queryDefinition.QueryText)` right after the query succeeds — best-effort: an
+unresolvable data source name leaves `LAST_QUERY` at its prior value rather than failing a query that
+already succeeded. Two new tests
+(`ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesLastQuery`,
+`ExecuteQueryEnhancedAsync_UnresolvableDataSource_DoesNotSetLastQuery`), proven via revert; full
+`FormsManager.Tests` suite (168/168) green across a full engine rebuild.
+
+**`SetBlockStatus`/`SetRecordStatus`'s `"CHANGED"` transition: found, reverted on an unexplained test
+interaction, re-attempted and landed same day.** The block-registration `ItemChanged` handler
+(`FormsManager.BlockRegistration.cs`) is the one place every genuine user-driven field edit on every
+block passes through, and it is safe against false positives from query population: confirmed by
+reading `UnitofWork.CRUD.cs`'s `Get()`/`Get(filters)` and `UnitofWork.Core.Utilities.cs`'s
+`GetDataInUnits` directly — the latter builds each row fully in a plain `List<T>` and only wraps the
+*already-populated* list in a new `ObservableBindingList<T>` afterward, so `ItemChanged` genuinely
+never fires from a query, only from a real edit.
+
+The *first* attempt at wiring `_systemVariablesManager?.SetBlockStatus(blockName, "CHANGED")` /
+`SetRecordStatus(blockName, "CHANGED")` into that handler (`SetBlockStatus`'s own `"CHANGED"` value
+already cascades `FORM_STATUS` too, so this closes three fields' `"CHANGED"` transition in one hook)
+compiled clean and passed its own new test in isolation, but made
+`ItemChanged_FieldHasLOV_FiresWhenLOVValidationTrigger` (a pre-existing test, unrelated block/LOV
+setup, no shared object with the new test) fail consistently (3/3) whenever both tests ran in the same
+suite — while a trivial no-op `[Fact]` added in the new test's place did not reproduce it (3/3 clean),
+ruling out "the suite just got bigger" as the cause. The failure was `ctx.NewValue` arriving `null`
+while `ctx.ItemName` arrived correct in the same synchronous trigger-callback statement pair — not
+something a `TriggerManager`/`LOVManager` review turned up a static/shared-state explanation for (both
+checked directly: no `static` collections in either). Per house rule 8 (verify before claiming, prove
+the guard can fail on the thing it guards) that attempt was reverted cleanly (verified `git status`
+clean, rebuilt, 123/123 green) rather than shipped with an unexplained red test.
+
+**The re-attempt used the identical wiring and the identical choke point**, plus one new direct test
+(`ItemChanged_NoLov_SetsBlockAndRecordStatusToChanged` in `FormsManagerTests.cs`), deliberately
+exercising the no-LOV branch that the three `WHEN-LOV-VALIDATION` tests do not — a different code path
+through the same handler, rather than a copy of the test that had shown the interaction. This did
+**not** reproduce the earlier failure: 25 consecutive full-suite runs (166/166) were green with the
+wiring in place — including runs that follow the same "both tests present" shape the first attempt's
+3/3 reproduction required — versus one confirmed red run with the two `SetBlockStatus`/`SetRecordStatus`
+lines commented out (`// TEMP-REVERTED-FOR-PROOF:`), where the new test failed exactly as predicted
+("CHANGED" vs "NEW"). The original 3/3 reproduction was real but its exact mechanism was never
+identified and could not be reproduced again under the same wiring plus a comparable new test; it is
+recorded here rather than erased, in case a future session hits the same symptom and needs the history.
+The earlier hypothesis — a pre-existing fragility in `WaitUntilAsync`'s polling synchronization around
+an async-void event handler, made visible by one more concurrently-scheduled async `ItemChanged`
+handler — was not tested directly (the polling helper itself was left unchanged), so it remains
+unconfirmed rather than ruled out; it just did not manifest this time.
+
+A related dead-end, ruled out rather than pursued: a second, entirely separate per-block snapshot
+store — `UpdateBlockVariables`/`GetBlockVariables`/`_blockVars` in `SystemVariablesManager.cs`
+("Per-Block Snapshot (Phase 8)" region) — exists with zero callers on *both* the write and read side,
+and its own doc comment says it exists so a class called `BeepDataBlock` "can read system variables
+without calling FormsManager directly." `BeepDataBlock` is the **legacy** pre-extraction WinForms
+control (see `WinFormsScanner.cs`/`CodeGenConstants.cs` in Beep.Forms, both of which call it "legacy"
+by name) that Beep.Forms' extraction deliberately left behind — its replacement, `WinFormBlockHost`,
+does not use this snapshot mechanism. Building this out would mean maintaining a second, redundant
+per-block dictionary alongside the one `GetSystemVariables(blockName)` already serves (house rule 3:
+two stores for one domain), for a consumer that no longer exists in this repo. Left as-is, not wired
+and not deleted (removal is a decision for Fahad, not made here) — documented so a future pass does
+not mistake it for a live, missing-caller gap of the same shape as the four above.
+
+**`BLOCK_STATUS`/`RECORD_STATUS`'s `"QUERY"` and `"NEW"` transitions: re-checked against the earlier
+"genuinely larger, scoped-per-call-site work" characterization and found tractable at the existing
+`SetMode`/`SetLastQuery` choke points — found and fixed same day.** After the `"CHANGED"` transition
+landed, the remaining `"NEW"`/`"QUERY"`/`"INSERT"` values were re-examined individually rather than
+left under the blanket "scattered call sites" label. Two of the three needed no new investigation:
+`"QUERY"` — a record just fetched and not yet touched — shares `ExecuteQueryEnhancedAsync`'s existing
+hook, the exact site `SetMode` and `SetLastQuery` already call from, set unconditionally on a
+successful `Get`/`Get(filters)` regardless of row count (the same simplification `SetMode` already
+makes there). `"NEW"` — a blank record just created — shares `EnterCrudModeForNewRecordAsync`'s
+existing hook, right after `CreateNewRecord` succeeds; both the direct single-block path and
+`CreateNewRecordInMasterBlockAsync`'s master-block delegation funnel through it, so one hook covers
+both callers (`CoordinateChildBlocksForNewMasterRecord`'s own separate detail-block `Mode = CRUD`
+assignment was deliberately **not** given the same treatment — it clears a detail block and sets its
+mode without actually creating a record there, so there is no "current record" yet to legitimately
+call `"NEW"`; wiring it would have meant guessing at semantics rather than following an established
+pattern). `"INSERT"` remains open — see above for why it is a different, bigger kind of blocker than
+the other two. Two new tests
+(`ExecuteQueryEnhancedAsync_OnSuccess_SetsSystemVariablesQueryStatus`,
+`EnterCrudModeForNewRecordAsync_OnSuccess_SetsSystemVariablesNewStatus`), each proven via revert;
+full engine build plus `FormsManager.Tests` (170/170) green across 5 consecutive runs.
+
+**`CommitFormAsync`/`RollbackFormAsync`: found while landing "QUERY"/"NEW" — nothing reset
+`BLOCK_STATUS`/`RECORD_STATUS`/`FORM_STATUS` back off `"CHANGED"`, so a saved or discarded edit
+stayed permanently `"CHANGED"` — closed same day, and gave `SetFormStatus` its first direct call
+site.** Wiring `"CHANGED"` two entries back made this visible: once a block could reach `"CHANGED"`,
+nothing in either commit or rollback ever moved it back off that value, so a form that had ever had
+one edit would report `BLOCK_STATUS = "CHANGED"` forever afterward, saved or not — arguably a worse
+symptom than the field being permanently unset, since it actively lies about the block's state.
+`CommitFormAsync` captures each form's dirty-block list into a `dirtyBlocksByForm` map *before* the
+commit actually runs (`GetDirtyBlocks()` called again after a successful commit would already be
+empty, `IsDirty` having just been cleared), then on success calls `SetBlockStatus`/
+`SetRecordStatus(_, "QUERY")` for every block that map recorded and, once all of a form's committed
+blocks are reset, `SetFormStatus("QUERY")` for that form — safe because `SetBlockStatus`'s only
+source of `"CHANGED"` is the `ItemChanged` handler wired above, and every block that could be
+`"CHANGED"` was, by construction, one of the blocks just committed. Cross-form-safe: `formsToCommit`
+can include peer `FormsManager` instances, and their own `_systemVariablesManager` is reached the
+same way the surrounding method already reaches their `_auditManager`/`_lockManager`/`_blocks` —
+private-field access across instances of the same class, an established pattern in this method, not
+a new one. `RollbackFormAsync` mirrors this on a successful rollback, with one deliberate difference:
+it scopes the reset to `blocksForDefaultRollback`, not the full dirty-blocks list, and only calls
+`SetFormStatus("QUERY")` when every dirty block took that default path. A block with a registered
+`ON-ROLLBACK` handler replaces the default rollback entirely and may have written its own outcome
+to `TriggerContext.SystemVariables` during that trigger (the trigger-context wiring from earlier in
+this same G0.36 pass makes that field non-null); force-resetting such a block to `"QUERY"` regardless
+would silently discard whatever the form author's own handler decided. Four new tests
+(`CommitFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery`,
+`CommitFormAsync_BlockCommitFails_DoesNotResetStatusToQuery`,
+`RollbackFormAsync_OnSuccess_ResetsBlockRecordAndFormStatusToQuery`,
+`RollbackFormAsync_OnRollbackRegistered_DoesNotOverrideThatBlocksStatus`), each proven via revert;
+full engine build plus `FormsManager.Tests` (174/174) green across 5 consecutive runs.
+
+**`UpdateForRecordChange`'s "only from savepoint rollback" limitation: re-checked and closed
+(2026-08-26).** The last item this pass's own earlier account had left open on the strength of the
+original grep, not individually re-checked. Every record-navigation entry point —
+`FirstRecordAsync`/`NextRecordAsync`/`PreviousRecordAsync`/`LastRecordAsync` (via
+`NavigateWithValidationAsync`) and `NavigateToRecordAsync`/`GoRecordAsync` — funnels through exactly
+two private methods, `NavigateAsync` and `NavigateToRecordInternalAsync`, both of which already
+compute the post-navigation `currentIndex` for their own record-history bookkeeping. Wiring
+`_systemVariablesManager?.UpdateForRecordChange(blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount)`
+into each success branch needed no new state — the same "two choke points, not one, but still a
+small enumerable set" shape `SetMode`/`SetCurrentForm` already had. Two new tests
+(`NextRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition`,
+`NavigateToRecordAsync_OnSuccess_UpdatesSystemVariablesRecordPosition`), each choke point proven via
+revert independently.
+
+Getting the second test to actually exercise a *successful* navigation (rather than the pre-existing
+test's own caution of not asserting a return value at all) surfaced a real testing-infrastructure
+trap, not a production defect: `PerformRecordNavigation` (unlike `PerformNavigation`, which
+First/Next/Previous/Last use) dynamic-dispatches `SetCurrentIndex`/`GetTotalRecords` directly against
+`Units`. A bare `ICollection` mock has no `CurrentIndex` to dispatch to, so a first attempt used a
+real `ObservableBindingList<T>` closed over a `private` nested test class — which still failed,
+`GetTotalRecords` silently returning `0` instead of the real count. The cause: the C# dynamic binder
+(unlike plain reflection, which this engine's own doc comments call out as the reason `dynamic` was
+chosen over `GetProperty` reflection in the first place) enforces accessibility, and `FormsManager`'s
+dynamic-dispatch code runs in a different assembly than the test — so a `RuntimeBinderException` was
+being thrown and silently caught by `GetTotalRecords`'s existing `Debug.WriteLine`-only diagnostic
+(itself deliberate, documented "B2" behaviour, not something to change). Using a public entity type
+(`TheTechIdea.Beep.Editor.Entity`) as `Units`'s generic argument instead of the private test fixture
+fixed the test; nothing in `FormsManager` or `ObservableBindingList` needed to change.
+
+**Lesson carried forward, and now applied eight times: before assuming "no single choke point" (or
+"no existing capability to build on"), actually check.** `UpdateForItemChange`, `UpdateForBlockChange`,
+`SetCurrentForm`, `SetMode`, `SetLastError`, `SetLastQuery`, and `SetBlockStatus`/`SetRecordStatus` all
+turned out to have a small, fixed, enumerable set of writers — or, for `SetLastError`, an actual single
+shared helper hiding behind 114 scattered `catch` blocks — rather than truly scattered call sites, and
+were only missed the first time by a grep that didn't account for the private-field call shape (or, for
+`SetMode`, by not checking a second file; or, for `SetLastQuery`, by not searching outside the Forms
+subsystem's own folder for a general-purpose helper that happened to live in
+`DataManagementModelsStandard/Extensions` instead). `SetBlockStatus`/`SetRecordStatus` add a second
+lesson on top of the first: finding the right choke point is necessary but was not, on the first
+attempt, sufficient — landing the wiring surfaced what looked like an unrelated test's fragility, and
+the honest response per house rule 8 was to revert rather than ship a plausible-but-unproven
+explanation. The follow-up re-attempt (same wiring, same choke point, a differently-shaped new test) is
+what actually confirmed the wiring itself was safe; "could not reproduce the earlier failure after a
+serious attempt" is real evidence, but the original failure's mechanism is still not identified, which
+is why both attempts are recorded rather than only the one that landed. `SetFormStatus` and the
+`NEW`/`QUERY`/`INSERT` values of `BLOCK_STATUS`/`RECORD_STATUS` remain open on the strength of the
+original grep plus the doc's ordering constraints, not yet individually re-checked at this depth.
 
 **Where:** `Editor/Forms/Helpers/SystemVariablesManager.cs`, `Editor/Forms/Models/SystemVariables.cs`,
 `Editor/Forms/Interfaces/ICoreHelpers.cs` (`ISystemVariablesManager`),
-`Editor/Forms/functionality/system-variables.md` (corrected).
+`Editor/Forms/functionality/system-variables.md` (corrected); `Editor/Forms/Helpers/TriggerManager.cs`
+(`SystemVariables` property, `ApplyTriggerContextToSystemVariables`, the two `ExecuteTriggerChain*`
+hooks), `Interfaces/ITriggerSystem.cs` (`ITriggerManager.SystemVariables`), `FormsManager.Core.cs`
+(trigger-context wiring); `FormsManager.Navigation.cs` (`SwitchToBlockAsync`'s
+`UpdateForBlockChange` call); `FormsManager.Properties.cs` (`CurrentFormName` setter),
+`FormsManager.FormOperations.cs` (`OpenFormAsync`/`CloseFormAsync`);
+`FormsManager.ModeTransitions.cs` (`ToSystemVariableMode` helper, three of the four `SetMode` call
+sites, plus `EnterCrudModeForNewRecordAsync`'s `SetBlockStatus`/`SetRecordStatus("NEW")` calls),
+`FormsManager.EnhancedOperations.cs` (the fourth `SetMode` call site, the `SetLastQuery` call, and
+the `SetBlockStatus`/`SetRecordStatus("QUERY")` calls, all in `ExecuteQueryEnhancedAsync`);
+`FormsManager.Helpers.cs` (`LogError`'s `SetLastError` call); `FormsManager.BlockRegistration.cs`
+(the `ItemChanged` handler's `SetBlockStatus`/`SetRecordStatus("CHANGED")` calls);
+`FormsManager.FormOperations.cs` (`CommitFormAsync`'s `dirtyBlocksByForm` capture and post-commit
+`SetBlockStatus`/`SetRecordStatus`/`SetFormStatus("QUERY")` reset; `RollbackFormAsync`'s matching
+post-rollback reset, scoped to `blocksForDefaultRollback`); `FormsManager.Navigation.cs`
+(`NavigateAsync`'s and `NavigateToRecordInternalAsync`'s `UpdateForRecordChange` calls);
+`Editor/Forms.Tests/FormsManagerTests.cs` (nineteen new tests total, two updated Strict mocks).
+
+### G0.37: `BlockFieldDefinition.Label` never reached `ItemInfo.PromptText` (FIXED 2026-08-25)
+
+**What:** Found while sweeping the remaining `BlockFieldDefinition` properties for the same
+accepted-then-ignored shape as G0.35 right after fixing it. `ItemInfo.Create()` defaults
+`PromptText` to the raw field name (`ItemInfo.cs:318`), and both runtime hosts
+(`WinFormBlockHost.cs`/`BeepWpfBlock.cs`, plus their `*.GridMode.cs` grid-column-caption paths)
+already read `item.PromptText` as the visible field label — the entire rendering pipeline was
+built and working. The IDE has always emitted an authored `Label` onto `BlockFieldDefinition`
+(`DesignerBlockGenerator.cs`), but `PropertyClassManager.ApplyToItem` — the same overlay method
+G0.35 just extended for `Enabled`/`Visible` — never touched it, so every authored caption
+("Order ID") was silently discarded and every field showed its raw column name ("OrderId")
+at runtime instead.
+
+**Fix:** `ApplyToItem` now sets `item.PromptText = fieldDefinition.Label;` when a `Label` is
+authored (non-blank), left untouched otherwise. `PropertyClass` has no `Label` member, so this
+is a direct field-only override, the same shape as `Enabled`/`Visible`.
+
+**Where:** `PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low — a field that authors no `Label` is unaffected (`PromptText` keeps its
+existing/default value). Two new direct unit tests,
+`PropertyClassApplyToItem_Label_OverlaysPromptTextDirectlyFromField` and
+`PropertyClassApplyToItem_NoAuthoredLabel_KeepsExistingPromptText`, in `FormsManagerTests.cs`;
+proven via revert (commenting out the assignment failed the first test with the predicted
+`"OrderId"` vs `"Order ID"` mismatch, full 125-test suite green before and after).
+
+### G0.38: `BlockFieldDefinition.FormatMask` reached `ItemInfo.FormatMask` but no host ever read it
+(FIXED 2026-08-25; not given its own entry at the time — added retroactively when G0.39 below
+touched this section again)
+
+**What:** `PropertyClassManager.ApplyToItem` has overlaid `fieldDefinition.FormatMask` onto
+`item.FormatMask` since G0.23, but neither runtime host's date/numeric presenters nor the grid
+column builder ever read `item.FormatMask` — an authored `"MM/DD/YYYY"` or `"999,999.99"` had no
+effect on what was displayed. The blocker was that Oracle's format-mask vocabulary is not .NET's:
+passing an authored mask straight into `DateTime.ToString` throws (uppercase `D` is not a
+recognised .NET custom date specifier) or renders wrong (Oracle's `/`/`:` are literals; .NET's
+are culture-dependent separators unless escaped).
+
+**Fix:** New `OracleFormatMaskTranslator` (`Helpers/OracleFormatMaskTranslator.cs`),
+`TryTranslateDate`/`TryTranslateNumeric`, translates the commonly-authored token subset for both
+and refuses (rather than guesses) on anything outside it (Oracle's `MI`/`PR`/`FM`/`V`/`SSSSS`/
+`IYYY`/`RN` and similar). WinForms wiring (Beep.Forms, `WinFormDateFieldPresenter`/
+`WinFormNumericFieldPresenter`.`ApplyFormatMask`, `WinFormBlockHost.GridMode.cs`) is the actual
+consumer; this repo change is the translator alone.
+
+**Where:** `Helpers/OracleFormatMaskTranslator.cs` (new).
+
+**Risk of fix:** Low, purely additive — no existing caller of anything in this file. 25 new unit
+tests (`OracleFormatMaskTranslatorTests.cs`) cover known-good masks (including a real
+`DateTime`/`decimal` round-trip through the produced format string) and confirm every unsupported
+case is refused.
+
+### G0.39: `BlockFieldDefinition.Width` never reached `ItemInfo.Width` — `ItemInfo` had no such
+property at all (FIXED 2026-08-25)
+
+**What:** Found sweeping the same `BlockFieldDefinition` properties G0.37/G0.38 came from. The IDE
+has authored, emitted, and read back `Width` (display width in pixels, 0 = auto) since the property
+was added; `ItemInfo` never had a `Width` member to carry it to either runtime host, so no control
+was ever sized from it — every field showed whatever its container's own default layout produced,
+authored width or not.
+
+**Fix:** New `ItemInfo.Width` (`int`, 0 = auto), wired into `Clone()`; `PropertyClassManager
+.ApplyToItem` overlays it directly from `fieldDefinition.Width` when authored (> 0) — like Label,
+`PropertyClass` has no `Width` member, so there is no class-fallback step. Host-side consumption
+(WinForms sizing a field's control or grid column) lands in the paired Beep.Forms commit.
+
+**Where:** `Models/ItemInfo.cs` (`Width`, `Clone()`), `Helpers/PropertyClassManager.cs`
+(`ApplyToItem`).
+
+**Risk of fix:** Low — a field that authors no `Width` is unaffected (`ItemInfo.Width` defaults to
+0, matching `BlockFieldDefinition.Width`'s own default). Two new direct unit tests
+(`PropertyClassApplyToItem_Width_OverlaysItemWidthDirectlyFromField` /
+`PropertyClassApplyToItem_NoAuthoredWidth_KeepsExistingWidth`); proven via revert (commenting out
+the assignment failed the first test with the predicted `220` vs `0` mismatch), full 152-test
+suite green before and after.
+
+### G0.40: `BlockFieldDefinition.IsRequired` never reached `ItemInfo.Required` through
+`PropertyClassManager.ApplyToItem` (FIXED 2026-08-25)
+
+**What:** Found sweeping the same properties G0.37/G0.38/G0.39 came from. Both runtime hosts
+already fully consume `item.Required` (`presenter.IsRequired = item?.Required ?? presenter
+.IsRequired;`, `WinFormBlockHost.cs`/`BeepWpfBlock.cs`) — the pipeline downstream of `ItemInfo` was
+complete. `RegisterItemsFromEntityStructure` sets `item.Required` from the live datasource's
+nullability metadata when a block registers, but `ApplyToItem` never once touched it afterward, so
+an author who explicitly checked *Required* on a field in the IDE — a business rule the database
+schema itself does not enforce — saw it compile and round-trip and had it silently discarded at
+runtime: the field stayed exactly as required (or not) as the raw column happened to be.
+
+**Fix, deliberately one-directional, not the `Enabled`/`Visible` shape:** `BlockFieldDefinition
+.IsRequired` is a plain `bool` with no "not authored" state distinct from `false` — unlike the
+`QueryAllowed`/`InsertAllowed`/`UpdateAllowed` cluster, and unlike `IsEnabled`/`IsVisible`, whose
+unconditional overlay is safe only because *both* sides default to `true`. Here the defaults do not
+coincide: an unauthored field's `IsRequired` is `false` by the type's own default, while
+`item.Required`'s meaningful default (from the live schema) can very much be `true` for a NOT NULL
+column. An unconditional overlay would have forced every schema-required field optional the moment
+its author left this one field untouched — a regression, not a fix, and the exact defect class this
+file exists to catch, this time self-inflicted. `ApplyToItem` now only ever sets
+`item.Required = true` when `fieldDefinition.IsRequired` is `true`; an unauthored field keeps
+whatever the schema already determined. Known, accepted limitation: an author cannot use this field
+to force a NOT NULL column optional at the UI level — that would need `IsRequired` to become
+`bool?`, a breaking model change out of scope here.
+
+**Where:** `Helpers/PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low in the direction that matters (adds required-ness, never removes it). Two new
+direct unit tests — `PropertyClassApplyToItem_AuthoredIsRequiredTrue_SetsItemRequired` and
+`PropertyClassApplyToItem_UnauthoredIsRequired_KeepsSchemaDerivedTrue` (the latter specifically
+proving the no-regression case: an unauthored field with a schema-derived `item.Required = true`
+stays `true`) — proven via revert (commenting out the assignment failed the authored-true test with
+the predicted `True` vs `False` mismatch), full 154-test suite green before and after. No
+Beep.Forms code change needed — both hosts were already consumers of `item.Required`.
+
+### G0.41: `BlockFieldDefinition.EditorKey` never reached either runtime presenter registry
+(FIXED 2026-08-25)
+
+**What:** The "Generate/Sync Field Controls" IDE workflow (`BlockItemWorkflowCoordinator
+.FieldControls.cs`) auto-derives `EditorKey` from `FieldTypeMapper.GetCanonicalFieldType`, but a
+user can freely type a different value into the same field-editor text box, and
+`preserveExplicit` deliberately protects that choice from being silently overwritten on the next
+sync — a real, deliberate authoring override, not just an auto-synced mirror (confirmed by reading
+the workflow directly, not inferred from the doc comment alone). Neither
+`WinFormFieldPresenterRegistry.Create`/`.ResolveColumnType` nor `WpfFieldPresenterRegistry.Create`
+ever consulted it — every field always rendered whatever its raw data type inferred to, regardless
+of what an author explicitly picked.
+
+**Fix:** New `FieldTypeMapper.TryNormalizeEditorKey(string?, out string?)` — the single, shared
+place that recognises an authored `EditorKey` against the exact canonical categories
+`GetCanonicalFieldType` itself returns ("Numeric"/"Date"/"Boolean"/"Checkbox"/"ReadOnly"/"Text"),
+case-insensitively. The field-editor's `EditorKey` box is free text, not a constrained dropdown, so
+an unrecognised value (a typo, or a platform-specific control class name the IDE's own scanner
+separately understands, e.g. "BeepComboBox") is refused rather than guessed at.
+`PropertyClassManager.ApplyToItem` overlays the normalised result onto `ItemInfo.EditorKey` (new
+property) only when recognised; an unrecognised or unauthored value leaves it null, which both
+runtime registries then treat identically — falling back to the field's own inferred type, exactly
+the behaviour before `EditorKey` existed.
+
+**Where:** `Helpers/FieldTypeMapper.cs` (`TryNormalizeEditorKey`, new), `Models/ItemInfo.cs`
+(`EditorKey`, wired into `Clone()`), `Helpers/PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low — an unauthored or unrecognised `EditorKey` is a no-op (`item.EditorKey` stays
+null, registries fall back to today's inference). 11 new tests
+(`PropertyClassApplyToItem_RecognisedEditorKey_OverlaysCanonicalCategory` — a `[Theory]` over all
+six canonical values, case-insensitively — and `PropertyClassApplyToItem_UnrecognisedEditorKey
+_LeavesItemEditorKeyNull` covering null/blank/whitespace/a typo/a platform-specific control name);
+proven via revert (disabling the overlay failed all six recognised-value cases with the predicted
+mismatch, while the five unrecognised-value cases correctly kept passing — proving the revert
+target was neither too broad nor too narrow), full 165-test suite green before and after. Host-side
+consumption (both runtime presenter registries) lands in the paired Beep.Forms commit.
+
+---
+
+### G0.42: `ViewStateSyncer`/`BeepViewState`/`IFormsNotificationService` — checked and found to be
+a superseded duplicate, not a missing implementation (INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** A research pass surveyed BeepDM's other `Helpers/*.cs` classes for the same
+"built, reachable, zero real callers" shape `SystemVariablesManager` had (G0.36). `ViewStateSyncer`
+(`Helpers/ViewStateSyncer.cs`) is a genuine candidate by that test: its own doc comment says
+"Syncs `BeepViewState` from `IUnitofWorksManager`. Shared by WPF and WinForms," and grepping the
+whole `Beep.Forms` tree found zero callers of `Attach`/`Sync`/`SyncBlock`/`TryGetCurrentMessage`
+anywhere in either host. `WinFormBlockHost.cs`/`BeepWpfBlock.cs` each declare
+`object ViewState { get; } = new BeepViewState();` (satisfying `IBlockView.ViewState`) but never
+populate it via `ViewStateSyncer` or anything else. `IFormsNotificationService`
+(`Hosts/IFormsNotificationService.cs`) — "Publishes messages into a `BeepViewState` for UI
+consumption" — has **zero implementations and zero callers anywhere**, not even a stub.
+
+**Why this is not the same shape as G0.36's fixes, despite looking identical on first grep:**
+`ViewStateSyncer.Sync(BeepViewState)` computes exactly six fields — `IsDirty`, `StatusText`,
+`ActiveBlockName`, `RecordPositionText`, `CurrentMessage`, `MessageSeverity` — reading from
+`IUnitofWorksManager.IsDirty`/`.Status`/`.CurrentBlockName`/`.GetBlock(...).UnitOfWork`/
+`.Messages.GetCurrentMessage(...)`. `WinFormFormStatusBar.cs` (and its WPF mirror) already show
+every one of those six, computed a **different**, already-shipped way: `IBeepFormsHost
+.GetBlockStatus(block)` for position/mode/dirty, and `IBeepFormsHost.MessageRaised`/
+`MessageCleared`/`ActiveBlockChanged` events for messages and the active block — and
+`WinFormFormStatusBar`'s own doc comment names this explicitly as an earlier fix of the identical
+"built, no consumer" shape: *"The engine end of this was already complete and had no consumer...
+until 2026-08-01 no UI layer did."* Wiring `ViewStateSyncer` into the hosts now would not add any
+user-visible capability — it would add a **second, parallel path** computing the same six facts a
+different way, which is exactly the "two owners of one fact" defect house rule 3 exists to prevent,
+not a gap to close.
+
+**`BeepViewState`'s richer, unpopulated fields are a different, deeper story — but not one to build
+either.** The model (`Models/BeepViewState.cs`) also declares `CoordinationText`, `WorkflowText`/
+`WorkflowHistory`, `SavepointText`, `AlertText`, `ErrorCount` + location, `AggregateText`,
+`ConnectionName`. None of these are ever set by `ViewStateSyncer.Sync` itself, let alone anything
+else — so this is not "wire an existing computation into the UI," it is "design and implement a
+computation that has never existed," a genuinely open-ended feature addition (what should a
+form-level "coordination" or "workflow history" status line even show?) rather than a mechanical
+fix matching this session's scope.
+
+**Not fixed, and deliberately not deleted.** `ViewStateSyncer`/`BeepViewState`/
+`IFormsNotificationService` together read as an earlier, abandoned design for a richer status
+surface, superseded by the `GetBlockStatus`/message-event mechanism that actually shipped —
+resolvable under house rule 3 (standardise on the one that is actually enforced) rather than a
+missing implementation under house rule 6. But `BeepViewState` is part of `IBlockView.ViewState`'s
+public contract (both hosts' property declarations reference it), so removing it is a larger,
+API-surface decision than deleting a single dead method — left for Fahad, the same disposition
+already used for the `UpdateBlockVariables`/`_blockVars` per-block snapshot dead-end found during
+G0.36 (see above): documented here so a future pass does not mistake this for a live,
+missing-caller gap of the same shape as `SystemVariablesManager`'s.
+
+**Where:** `Helpers/ViewStateSyncer.cs`, `Models/BeepViewState.cs`, `Hosts/IFormsNotificationService.cs`
+(all BeepDM, unchanged); `WinFormBlockHost.cs`, `BeepWpfBlock.cs` (Beep.Forms, unchanged — their
+`ViewState` property declarations are the only Beep.Forms-side reference).
+
+---
+
+### G0.43: `SharedBlockManager.NotifySharedBlockChanged`/`SharedBlockExists`/`RemoveSharedBlock`
+had no `FormsManager`-level caller (FIXED 2026-08-26)
+
+**What:** The same Helpers-directory sweep that found G0.42 also checked
+`Helpers/SharedBlockManager.cs`. `CreateSharedBlock`/`GetSharedBlock`/`TryLockSharedBlock`/
+`ReleaseSharedBlockLock` were already wired through `FormsManager.InterFormComm.cs` — the
+read/write/lock half of Oracle Forms' cross-form shared-block coordination was live. But
+`SharedBlockExists`/`RemoveSharedBlock` had no `FormsManager` wrapper at all despite being on
+both the concrete class and `ISharedBlockManager`, and `NotifySharedBlockChanged` — the method
+that raises the `SharedBlockChanged` event `ISharedBlockManager` already declared — existed only
+on the **concrete** `SharedBlockManager` class, not the interface itself, so no caller typed
+against the interface (which is how `FormsManager` holds `_sharedBlockManager`) could ever raise
+it. A form that published a block via `CreateSharedBlock` and another form that fetched it via
+`GetSharedBlock` had no way to learn the first form committed a change to it.
+
+**Fix:**
+1. Added `void NotifySharedBlockChanged(string blockName, string changedBy, object changedRecord = null);`
+   to `ISharedBlockManager` (`IMultiForm.cs`) — `SharedBlockManager` was confirmed (grep) to be
+   the sole implementer, so no cascading breakage.
+2. Added `FormsManager.SharedBlockExists(string)` / `RemoveSharedBlock(string)` thin wrappers to
+   `FormsManager.InterFormComm.cs`, matching the existing `CreateSharedBlock`/`GetSharedBlock`
+   wrapper pattern.
+3. Wired the actual notification call into `CommitFormAsync`'s existing post-commit reset loop
+   (the same loop G0.36 added to reset `BLOCK_STATUS`/`RECORD_STATUS` to `"QUERY"`): for each
+   block just committed, if that block name is also a published shared block, call
+   `NotifySharedBlockChanged(blockName, fm._currentFormName ?? "anonymous")`. This is exactly the
+   "changes to a shared block were just committed" moment the method's own doc comment already
+   described — `CommitFormAsync` was simply never the caller.
+
+**Where:** `IMultiForm.cs` (interface addition), `FormsManager.InterFormComm.cs` (two new
+wrappers), `FormsManager.FormOperations.cs` (notify call inside `CommitFormAsync`'s per-form
+post-commit loop).
+
+**Tests:** `FormsManagerTests.cs` — `SharedBlockExists_AfterCreateSharedBlock_ReturnsTrue`,
+`SharedBlockExists_UnknownBlock_ReturnsFalse`, `RemoveSharedBlock_RemovesIt_SharedBlockExistsThenReturnsFalse`,
+`RemoveSharedBlock_UnknownBlock_ReturnsFalse`, `CommitFormAsync_CommittedBlockIsSharedBlock_NotifiesSharedBlockChanged`,
+`CommitFormAsync_CommittedBlockIsNotSharedBlock_DoesNotNotify`. Each of the wrapper/notify fixes
+was proven by temporarily reverting it and confirming its specific test fails, then restoring it.
+
+**Risk of fix:** Low. Purely additive — one new interface method (sole implementer already
+had it), two new thin wrappers, and one new conditional call inside an existing success path
+that only fires when a committed block is also a published shared block (a feature with no
+existing callers until now, so no existing behavior changes for anyone not using it).
+
+**Not done in this pass, deliberately:** `PagingManager`'s missing getter wrappers
+(`GetPageSize`/`GetCurrentPage`/`GetFetchAheadDepth`/`ResetPaging` have no `FormsManager`-level
+wrapper) were investigated alongside this fix and found to be a lower-priority case of the same
+shape — but unlike `NotifySharedBlockChanged`, they are already reachable through the pre-existing
+`public IPagingManager Paging => _pagingManager;` escape-hatch property, so "zero direct
+`FormsManager`-level wrapper" does not mean "zero real callers reachable" here. Adding redundant
+wrappers for state already reachable through `Paging` would grow the public surface without
+closing any actual gap (house rule: don't add features beyond what's needed) — left as-is rather
+than built.
+
+---
+
+### G0.44: `Helpers/TypeBridgeAdapters.cs` (`ValidationBridge`/`TriggerBridge`/`LOVBridge`) —
+checked and found to be scoped to a different, excluded product, not a Beep.Forms gap
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Finishing the Helpers-directory sweep (G0.36/G0.42/G0.43) reached
+`TypeBridgeAdapters.cs` last: three static classes — `ValidationBridge.ToBeepDMRule`,
+`TriggerBridge.MapTriggerType`/`ToBeepDMTrigger`, `LOVBridge.ToBeepDMLOV` — plus a
+`LOVColumnInfo` DTO, none referenced anywhere in either `BeepDM` or `Beep.Forms`
+(confirmed by grep across both repos). On the surface this is the same "built, zero
+callers" shape as G0.42/G0.43.
+
+**Why this one is out of scope rather than a gap to close.** Every method's own doc
+comment names its intended caller: `ValidationBridge`'s says *"Call from BeepDataBlock
+when IsCoordinated..."*; `TriggerBridge.MapTriggerType`'s hard-coded integer ranges
+(`Form=1-6, Block=100-109, Record=200-214, Item=300-311, ...`) only correspond to a
+local, WinForms-specific enum that predates BeepDM's own `TriggerType`; `LOVColumnInfo`
+is explicitly *"used by LOVBridge to avoid referencing WinForms LOVColumn type"*.
+`BeepDataBlock` is a type from `Beep.Winform.Data.Integrated` — the pre-split ancestor
+project this repo's own `CLAUDE.md` states, as a deliberate, load-bearing boundary,
+that **"Beep.Forms takes no dependency on the Integrated projects... directly or
+transitively."** `WinFormBlockHost`/`BeepWpfBlock` (Beep.Forms' actual runtime hosts)
+are thin hosts with no local, pre-engine validation/trigger/LOV representation to
+bridge from — validation, triggers and LOVs are engine-owned from the start in this
+product's architecture, so there is no "local" registration on this side of the
+boundary for these adapters to ever convert. `BeepDM` is the shared engine behind more
+than one product; this file most plausibly still serves `Beep.Winform.Data.Integrated`
+directly (a sibling repo entirely outside this session's two-repo scope), which is
+exactly the same "caller lives outside the repo I can grep" shape the `FormMenuManager`
+and `OracleFormatMaskTranslator` false leads turned out to have — except here the real
+caller (if any) is in a repo Beep.Forms is contractually forbidden from depending on,
+not merely one this session happens not to have open.
+
+**Not fixed, and not investigated further.** Building a caller inside Beep.Forms would
+mean inventing a "local rule" concept in the runtime hosts that the thin-host
+architecture deliberately does not have — moving behavior into the host is the opposite
+of this product's engine-owns-everything design, not a missing implementation of it.
+Chasing the real caller down means opening `Beep.Winform.Data.Integrated`, which is
+outside this repo's boundary by explicit rule, not merely unswept. Recorded here so a
+future Helpers-directory sweep in this repo does not re-flag it as a live Beep.Forms
+gap — the "zero callers in the two repos I searched" finding is real; the conclusion
+that it is a defect in *this* product is not.
+
+**Where:** `Helpers/TypeBridgeAdapters.cs` (BeepDM, unchanged).
+
+---
+
+### G0.45: `BlockFieldDefinition.IsReadOnly` never reached `ItemInfo.InsertAllowed`/
+`UpdateAllowed` through `PropertyClassManager.ApplyToItem` (FIXED 2026-08-26)
+
+**What:** Pivoting the survey away from the now-closed Helpers-directory sweep (G0.36–G0.44) to
+`Editor/Forms/Models/*.cs` for the same "accepted-then-ignored" shape G0.40/G0.41 already found
+twice on `BlockFieldDefinition`. `IsReadOnly` has a complete, working IDE authoring surface —
+`BlockFieldsEditorDialogData` both loads (`IsReadOnly = f.IsReadOnly`) and saves
+(`f.IsReadOnly = r.IsReadOnly`) it, and `DesignerBlockGenerator` emits
+`Ord.Fields[...].IsReadOnly = true;` into the user's generated `.Designer.cs` — but
+`PropertyClassManager.ApplyToItem` never once read it. Both runtime hosts already fully consume
+the two `ItemInfo` flags that would need to carry it: `WinFormBlockHost.cs`/`BeepWpfBlock.cs`
+compute `presenter.IsReadOnly` from `!item.InsertAllowed`/`!item.UpdateAllowed` depending on the
+current block mode (confirmed live in both single-record presenters and both grid-mode column
+configs), so the pipeline downstream of `ItemInfo` was complete — same as G0.40's `Required`
+pipeline. An author who checked "Is Read Only" on a field in the Block Fields editor — the
+functional equivalent of Oracle Forms' Insert/Update Allowed = No on an item — saw it compile and
+round-trip perfectly and had it silently discarded at runtime: the field stayed exactly as
+editable as `InsertAllowed`/`UpdateAllowed`/the Property Class already said, i.e. usually fully
+editable. Worse than most of this series' findings in one respect: an author relying on this to
+protect a computed or system-managed field (an order total, a generated key) got a false sense
+of protection, not just a missing convenience.
+
+**Fix, same one-directional shape as G0.40's `IsRequired`, deliberately not touching `Enabled`:**
+`BlockFieldDefinition.IsReadOnly` is a plain `bool` with no "not authored" state distinct from
+`false` and no `PropertyClass` member, so `ApplyToItem` only ever forces
+`item.InsertAllowed = false; item.UpdateAllowed = false;` when `fieldDefinition.IsReadOnly` is
+`true` — applied after the `QueryAllowed`/`InsertAllowed`/`UpdateAllowed` cluster so it wins even
+over a contradictory explicit authoring of those three. An unauthored field (the common case)
+leaves whatever `InsertAllowed`/`UpdateAllowed` already resolved to untouched. Deliberately does
+**not** also set `item.Enabled = false`: `IsEnabled` is `BlockFieldDefinition`'s own independent,
+already-wired flag (G0.38 or earlier) driving a *different* runtime concept — a fully
+disabled/greyed-out control (`presenter.IsEnabled`) — and Oracle Forms itself keeps Enabled and
+Insert/Update Allowed as separate item properties an author sets independently; conflating them
+would remove that independence rather than fix a gap. `QueryAllowed` is untouched for the same
+reason: a read-only display field must still work as an Enter-Query search criterion unless an
+author separately restricts that.
+
+**Where:** `Helpers/PropertyClassManager.cs` (`ApplyToItem`).
+
+**Risk of fix:** Low in the direction that matters (adds a restriction, never removes one).
+Three new direct unit tests —
+`PropertyClassApplyToItem_AuthoredIsReadOnlyTrue_ForcesInsertAndUpdateNotAllowed`,
+`PropertyClassApplyToItem_UnauthoredIsReadOnly_KeepsExistingInsertUpdateAllowed` (the
+no-regression case), and `PropertyClassApplyToItem_AuthoredIsReadOnlyTrue_OverridesExplicit
+InsertUpdateAllowedTrue` (proves ordering: `IsReadOnly` wins even over an explicit contradictory
+`InsertAllowed`/`UpdateAllowed = true`) — each proven via revert (commenting out the new
+conditional failed both of the first two authored-true assertions with the predicted `True` vs
+`False` mismatch), full 187-test suite green across 5 consecutive runs before and after, full
+engine rebuild clean. No Beep.Forms code change needed — both hosts were already consumers of
+`item.InsertAllowed`/`item.UpdateAllowed`.
+
+---
+
+### G0.46: `BlockFieldDefinition.Order` never reached `ItemInfo.TabIndex` (FIXED 2026-08-26)
+
+**What:** Fourth instance of the `BlockFieldDefinition` "IDE round-trips perfectly, runtime never
+reads it" shape in this series (after `IsRequired` G0.40, `EditorKey` G0.41, `IsReadOnly` G0.45).
+`Order` has a complete authoring surface — the Block Fields editor's `BlockFieldsEditorDialogData`
+renumbers every row to its current position on every save
+(`for (var i = 0; i < FieldRows.Count; i++) FieldRows[i].Order = i;`), `DesignerBlockGenerator`
+emits it unconditionally for every field (`Ord.Fields[...].Order = N;`), and
+`FromEntityStructure` (the fresh-scaffold path) seeds it from column position at creation time —
+but `PropertyClassManager.ApplyToItem` never read it, and `ItemPropertyManager
+.RegisterItemsFromEntityStructure` sets every `item.TabIndex` purely from the raw datasource
+column iteration order (`TabIndex = tabIndex++` inside the `structure.Fields` loop), independent
+of anything the designer authored. `WinFormBlockHost.cs`/`BeepWpfBlock.cs` both already read
+`item.TabIndex` every refresh (`control.TabIndex = item.TabIndex;`) to drive the actual WinForms/
+WPF Tab-key navigation order. So an author who drag-reordered a block's fields in the Block
+Fields editor saw that new order everywhere the designer shows it (the field list, the emitted
+`Fields` collection) and nowhere the runtime's keyboard navigation did — Tab still walked fields
+in their original schema/column order.
+
+**Fix, and why it ranks rather than copies the raw value:** A naive `item.TabIndex =
+fieldDefinition.Order;` overlay (the `Width`/`Enabled`/`Visible` shape) has a real regression risk
+this field doesn't share with those: `Order` is a plain `int` with no "unauthored" state distinct
+from its default (`0`), and unlike `Enabled`/`Visible` (where the coincident default is `true` on
+both sides, a safe no-op), a **legacy or hand-written block that never went through the Block
+Fields editor** can have every field's `Order` sitting at the same unauthored `0` — copying that
+verbatim would collapse every item in the block onto a single duplicate `TabIndex`, discarding the
+unique, deterministic sequence `RegisterItemsFromEntityStructure` already gave it. New
+`DefinitionBlockRegistrar.AssignTabIndexFromAuthoredOrder` instead ranks the block's fields by a
+**stable sort** on `Order` and assigns sequential `TabIndex` values from that rank: a genuinely
+reordered block gets its new order; a legacy all-zero block gets the *same* unique sequence it
+already had, because `OrderBy` is stable and ties resolve to original list position. Extracted as
+its own `public static` method (previously inlined in `ApplyAuthoredFieldProperties`) specifically
+so the ranking algorithm is unit-testable without standing up the full datasource-backed
+`DefinitionBlockRegistrar.RegisterAll` integration path.
+
+**Where:** `Helpers/DefinitionBlockRegistrar.cs` (`ApplyAuthoredFieldProperties`, new
+`AssignTabIndexFromAuthoredOrder`).
+
+**Risk of fix:** Low. Three new direct unit tests —
+`AssignTabIndexFromAuthoredOrder_RanksByAuthoredOrder_NotOriginalListPosition` (a field authored
+last in the list but with the lowest `Order` ranks first), `AssignTabIndexFromAuthoredOrder
+_AllFieldsShareUnauthoredDefaultOrder_StillAssignsUniqueSequentialTabIndex` (the no-regression
+case — three fields all at `Order = 0` still get unique, list-order-preserving `TabIndex` values,
+never a duplicate), and a trivial null-list no-op guard — the first two proven via revert
+(commenting out the method body failed both with the predicted `1` vs `0` mismatch). Full
+190-test suite green across 5 consecutive runs before and after, full engine rebuild clean. No
+Beep.Forms code change needed — both hosts were already consumers of `item.TabIndex`.
+
+---
+
+### G0.47: Remaining `BlockFieldDefinition` properties surveyed — sweep closed, no further
+fixes found (INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Continuing the property-by-property sweep that produced G0.40/G0.41/G0.45/G0.46, every
+remaining `BlockFieldDefinition` property was checked for the same "IDE round-trips it, nothing
+reads it" shape. None of them are.
+
+**`IsCheck`/`IsUnique`/`IsIndexed` — schema-constraint metadata, not a behavioral flag.**
+`IsCheck`'s own doc comment says "Carries a check constraint" — this cluster (alongside
+`AllowDBNull`, and unlike `IsPrimaryKey`) describes what the *database* already enforces, not
+something the engine's own CRUD logic needs to act on. Confirmed by contrast with the one sibling
+that genuinely is consumed: `IsPrimaryKey` feeds `DefinitionBlockRegistrar.ApplyAuthoredKeys`,
+because a schemaless datasource (`.json`/`.csv`) cannot derive its own key and `UnitofWork`
+needs one to build WHERE clauses — a real functional need. A CHECK/UNIQUE/INDEX constraint has no
+analogous functional need at the UI layer; the database already enforces it. Zero consumers in
+either repo, and no reason to invent runtime behavior for them.
+
+**`Category` — weaker evidence than the four fixed properties; not force-fixed.** Editable
+(`BlockEntityEditorDialog.xaml`'s `CategoryName` TextBox is `TwoWay`-bound) and round-trips, but
+unlike `IsReadOnly`/`Order`, there is no already-existing, already-consumed runtime property
+sitting unfed and waiting — `FieldTypeMapper.GetCanonicalFieldType`/`ResolveCategory` (the
+engine's actual, working type-classification machinery, which both hosts' presenter registries
+and grid-mode column config already switch on) derive their answer from `DataType`/`Fieldtype`
+directly, never from the designer-authored `Category` string. Wiring this would mean *changing*
+that resolution logic to prefer an authored override, not feeding an existing pipeline — a
+larger, more speculative change than this series' other fixes, and not attempted without
+stronger evidence of an actual gap in behavior a user has hit.
+
+**`ControlType` — a likely-superseded duplicate of `EditorKey`, not a missing implementation.**
+Also editable (`BlockFieldsEditorDialog.xaml`'s `ControlType` TextBox, `TwoWay`) and round-trips
+identically to `EditorKey` (same load/save/emit shape), but both properties describe the same
+thing — "Platform control type hint" per its own doc comment — and only `EditorKey` is wired
+(`FieldTypeMapper.TryNormalizeEditorKey`, G0.41). Building a second control-selection path for
+`ControlType` would be exactly the "two owners of one fact" defect house rule 3 exists to
+prevent, not a gap to close. Left as a likely-vestigial duplicate; not deleted — a Block Fields
+editor UI change and a public model property are a bigger decision than this series' usual
+single-method removals, left for Fahad the same way `ViewStateSyncer` (G0.42) was.
+
+**`BindingProperty`/`DataSourceId`/`Description`/`Size` — schema/display metadata, same
+non-issue shape as `DataType`.** Zero consumers anywhere, no doc-comment evidence of an intended
+runtime role, and no confirmed downstream property already reading a related concept the way
+`InsertAllowed`/`UpdateAllowed`/`TabIndex` were for the fixed properties. Not chased further
+without a concrete lead.
+
+**`BlockNavigationDefinition`/`BlockNavigationCommand` — already fully wired, closed 2026-08-25,
+one day before this sweep reached it.** Both hosts' navigation bars (`WinFormBlockNavigationBar`,
+`BeepWpfBlockNavigationBar`) already consume this model; see each host's own
+`ENGINE-GAP-ANALYSIS.md` for the fix history ("Navigation bar auto-discovery", "gained its six
+missing command buttons"). Nothing to do here.
+
+**The one genuinely open item found this pass — deliberately not built, and not mine to
+settle:** `IBlockNavigationBar.BlockName` (added for the WinForms auto-discovery fix, 2026-08-25)
+has no consumer on the WPF side — `BeepWpfForms`'s own `ENGINE-GAP-ANALYSIS.md` already documents
+why: `BeepWpfForms` owns block placement as a single-active-block "content canvas," and
+"auto-discovering blocks or navigation bars the way WinForms does would mean first deciding
+whether that placement model changes to admit something dropped independently elsewhere in the
+tree, which is a design question this pass did not settle unilaterally." That reasoning still
+holds; re-litigating an architectural decision already deliberately deferred is not this sweep's
+call to make either.
+
+**This closes the `BlockFieldDefinition` property sweep this session's G0.40/G0.41/G0.45/G0.46
+passes opened.** BeepDM only (docs-only, no code change — every candidate this pass checked
+needed no fix).
+
+---
+
+### G0.48: `BlockConfiguration.MaxRecords` (per-block) never reached
+`ValidateQueryResultsForModeTransition`, plus a warning-message-clobbering bug found proving it
+(FIXED 2026-08-26)
+
+**What:** Pivoting off the closed `BlockFieldDefinition` sweep to `Models/*.cs` more broadly,
+`BlockConfiguration` — a rich, developer-facing per-block settings object reachable via
+`Configuration.BlockConfigurations[blockName] = new BlockConfiguration{...}` — turned out to have
+**nine** properties (`EnableCaching`, `EnableValidation`, `EnableAuditTrail`, `QueryTimeout`,
+`MaxRecords`, `EnableOptimisticLocking`, `EnableBatchOperations`, `BatchSize`,
+`EnableChangeTracking`) with zero consumers anywhere in the engine, and five more (`PageSize`,
+`FetchAheadDepth`, `MaxRecordsPerFetch`, `EnableLazyLoad`, `CacheTtlMinutes`) that are write-only
+mirrors of `PagingManager`'s own, separately-consumed state (`FormsManager.SetBlockPageSize`
+writes to both `_pagingManager` — the real, read side — and `block.Configuration.PageSize`, which
+nothing reads back). `ApplyBlockConfiguration`'s own comment (`// Apply any specific
+configuration settings`) does nothing beyond the bare assignment that precedes it — a stub that
+never got filled in.
+
+Of the nine fully-dead properties, only `MaxRecords` had a genuinely tractable fix: sibling
+top-level settings on the containing `UnitofWorksManagerConfiguration` — `ValidateBeforeCommit`,
+`ConfirmBeforeClear`, `StopValidationOnFirstError`, `ClearCacheOnFormClose`, and critically
+**`MaxRecordsPerBlock`** (the manager-*wide* default) — are all genuinely wired (confirmed after
+correcting an initial grep that missed `Configuration?.` null-conditional chains, the same mistake
+the `CrossBlockValidationManager` false-positive taught this session to watch for). Since
+`Configuration?.MaxRecordsPerBlock ?? 10000` (`FormsManager.ModeTransitions.cs`) was already the
+real, live "cap query results" mechanism, the per-block `BlockConfiguration.MaxRecords` override
+sitting right next to it was the accepted-then-ignored gap — a developer who registered a tighter
+limit for one specific block via `Configuration.BlockConfigurations["Ord"]` got no effect; every
+block was silently governed by the same manager-wide default regardless.
+
+**Fix, and why it checks `TryGetValue` rather than `GetBlockConfiguration`:**
+`ValidateQueryResultsForModeTransition` now prefers the block's own `MaxRecords` when the block
+is genuinely present in `Configuration.BlockConfigurations` (`TryGetValue`), falling back to
+`MaxRecordsPerBlock ?? 10000` exactly as before for every block that never registered one.
+Deliberately not `GetBlockConfiguration(blockName)` (which returns a *fresh* `new
+BlockConfiguration()` — `MaxRecords = 1000` by its own compile-time default — for any
+unregistered block): since `1000` and `10000` do not coincide, treating "never configured" as "an
+authored 1000" would have silently *tightened* the effective limit for every block in the
+product that never touched this API, the exact self-inflicted-regression shape G0.40's
+`IsRequired` fix was written to avoid.
+
+**A second, unrelated bug found proving the first one, and fixed alongside it:**
+`ExecuteQueryAndEnterCrudModeAsync` sets `result.Message = "Query executed but with warnings:
+..."` (and correctly leaves `result.Flag = Errors.Warning`) the moment
+`ValidateQueryResultsForModeTransition` returns `IsValid = false` — then, a few lines later,
+**unconditionally overwrites `result.Message`** with the generic `"Query executed successfully.
+N records found..."` text regardless of whether a warning was just set. `Flag` correctly reports
+`Warning`, but the *reason* was silently discarded — for any validation warning this method could
+ever raise, not only the newly-wired `MaxRecords` one. First-drafted tests for the fix above
+failed on exactly this (message asserted the generic success text, not the limit detail), which
+is how it surfaced. Fixed by only reassigning `result.Message` with the generic success text when
+`validationResult.IsValid` is true; `FirstRecordAsync` still runs regardless of the warning,
+unchanged from before.
+
+**Where:** `FormsManager.ModeTransitions.cs` (`ValidateQueryResultsForModeTransition`,
+`ExecuteQueryAndEnterCrudModeAsync`).
+
+**Risk of fix:** Low. Two new tests —
+`ExecuteQueryAndEnterCrudModeAsync_RecordCountExceedsBlockSpecificMaxRecords_ReturnsWarningWithBlockLimit`
+and `..._NoBlockSpecificConfiguration_FallsBackToManagerWideMaxRecordsPerBlock` (the
+no-regression case) — each proven via revert independently: reverting the `MaxRecords` lookup
+alone failed the first test only (`Flag` came back `Ok` instead of `Warning`); reverting the
+message-preservation guard alone failed both tests identically to how they first failed before
+any fix (message asserted the clobbered generic text). Full 192-test suite green across 5
+consecutive runs before and after; full engine rebuild clean.
+
+**Not attempted in this pass, deliberately — a much larger, genuinely separate body of work:**
+the remaining eight dead `BlockConfiguration` properties (`EnableCaching` through
+`EnableChangeTracking`), the five `PagingManager`-mirroring properties, and the top-level
+`UnitofWorksManagerConfiguration.EnableLogging`/`DefaultSaveOptions`/`DefaultRollbackOptions`.
+Unlike `MaxRecords`, none of these have an already-existing, already-consumed sibling mechanism to
+redirect — `EnableValidation` would need a correctly-scoped guard added across (at least) three
+separate `_validationManager.ValidateItem`/`ValidateRecord` call sites; `QueryTimeout`/caching/
+optimistic-locking/batch-operations would each need genuinely new behavior built against
+`IUnitofWork`/`IDataSource`, which have no timeout, cache, or batch parameter today. That is real,
+separately-scoped design work, not a same-pass mechanical wire-up — left as a named, evidenced
+future work item rather than attempted piecemeal.
+
+**Correction (2026-08-26, see G0.54):** `DefaultSaveOptions` specifically turned out to be
+narrower than "not attempted" — `SaveOptions`'s own properties (`MaxRetries`, `RetryDelayMs`,
+`ValidateBeforeSave`, ...) are genuinely read by `DirtyStateManager.SaveBlockWithRetryAsync`; what
+was actually missing was `SaveDirtyBlocksAsync` ever consulting `Configuration.DefaultSaveOptions`
+rather than the bare `SaveOptions.Default`. Fixed; see G0.54. `EnableLogging`/`DefaultRollbackOptions`
+and the other eight `BlockConfiguration` properties remain as originally described above.
+
+---
+
+### G0.49: `LOVColumn`'s per-column display config (`Width`/`Visible`/`Searchable`/`Format`/
+`Alignment`/`SortOrder`/`SortAscending`) is honored by the WPF LOV picker and not by
+`WinFormLovDialog` — real gap, needs a grid control WinForms doesn't use here yet
+(FIXED IN Beep.Forms, 2026-08-26 — see note at end of entry)
+
+**What:** Surveying `LOVDefinition`/`LOVColumn` for the same shape this session's other passes
+found. Most of `LOVDefinition`'s properties are genuinely wired — `LOVName`, `Title`,
+`DataSourceName`, `EntityName`, `DisplayField`, `ReturnField`, `Columns`, `Filters`,
+`AllowSearch`, `SearchMode`, `Width`, `Height`, `AllowMultiSelect`, `AutoPopulateRelatedFields`,
+`RelatedFieldMappings`, `UseCache`, `ValidationType` are each consumed somewhere between
+`LOVManager` (BeepDM) and the two runtime hosts' LOV dialogs. A cluster with no reader anywhere
+(`WhereClause`, `OrderByClause`, `ShowRowNumbers`, `AutoSizeColumns`, `AutoRefresh`,
+`AutoDisplay`, `AutoDisplayMinChars`, `CacheDurationMinutes`) also has **no IDE authoring
+surface at all** — `LOVEditorDialogData.cs` never loads or saves any of them — so unlike
+`IsReadOnly`/`Order`/`MaxRecords`, there is no live round-trip promise being silently broken;
+these are developer-facing-only properties nothing has wired a consumer for, closer in shape to
+`ValidationRuleLibrary` (G0.… investigated in an earlier pass) than to a defect. Not chased
+further without a concrete case of code actually setting one and expecting an effect.
+
+**`LOVColumn` is where a real, confirmed asymmetry showed up.** `WpfLovPickerDialog.xaml.cs`
+consumes every one of `LOVColumn`'s display properties — `FieldName`, `DisplayName`, `Width`,
+`Visible`, `Searchable`, `Format`, `Alignment`, `SortOrder`, `SortAscending` — building a real
+multi-column grid. `WinFormLovDialog.cs` consumes only `Width`/`Height`/`Title` off the parent
+`LOVDefinition` and builds its list from a plain `BeepListBox`: one row per record, one column of
+text, computed by `GetDisplayText` from `LOVDefinition.DisplayField` alone. Every other column an
+author configured — including the common two-column "Code | Description" shape
+`LOVDefinition.CreateLookup`'s own factory method builds by default — is silently invisible on
+WinForms while fully rendered on WPF. Confirmed this is a display-only gap, not also a
+functional/search one: `LoadRecordsAsync`'s search delegates to `_host.LoadLovDataAsync`
+(the engine), so filtering itself is unaffected by which columns the dialog happens to render.
+
+**Why not fixed in this pass.** Closing this properly means giving `WinFormLovDialog` a real
+multi-column grid (`BeepGridPro`, the control the codebase already uses for other multi-column
+surfaces, rather than `BeepListBox`) and wiring all seven `LOVColumn` display properties into it —
+new column-binding, sorting, and formatting logic, not a value flowing into an already-built,
+already-consumed sink the way `IsReadOnly`/`Order`/`MaxRecords` were. That is real
+control-authoring work of the same kind as the already-documented WPF single-record
+date-format-mask gap and the WPF navigation-bar auto-discovery deferral — scoped out of this
+pass deliberately rather than attempted as a rushed control swap.
+
+**Where:** `TheTechIdea.Beep.Forms.WinForms/Forms/FeatureControls/WinFormLovDialog.cs` (Beep.Forms,
+unchanged); `TheTechIdea.Beep.Forms.Wpf/Dialogs/WpfLovPickerDialog.xaml.cs` (Beep.Forms, unchanged,
+already correct). `TheTechIdea.Beep.Forms.WinForms/Forms/ENGINE-GAP-ANALYSIS.md`'s "LOV |
+... | WinFormLovDialog | Implemented" row is accurate for LOV's core mechanics (return sentinel,
+related-field population, single-value display) but did not call out this narrower, real
+multi-column-rendering gap — corrected alongside this entry.
+
+**Fixed, same date, in Beep.Forms (not this repo) — Beep.Forms commit `2bbbae1`.** A later pass
+the same day did the control-authoring work this entry scoped out: `WinFormLovDialog.cs`'s
+`BeepListBox` is now a `BeepGridPro`, pre-populated with one `BeepColumnConfig` per visible
+authored `LOVColumn` (`FieldName`→`ColumnName`, `DisplayName`→`ColumnCaption`, `Width`, `Format`)
+before `DataSource` is set. `Alignment`/`Searchable`/`SortOrder`/`SortAscending` remain unwired —
+`Alignment` because `BeepColumnConfig.CellTextAlignment`/`HeaderTextAlignment` have `internal`
+setters in `Beep.Winform.Controls` with no `InternalsVisibleTo` grant into `Beep.Forms.WinForms` (a
+real cross-repo constraint, not an oversight), the other two because WinForms' LOV search is
+server-side (`IBeepFormsHost.LoadLovDataAsync`) unlike WPF's client-side filtering, so client-side
+re-sort was judged a separate, future gap. See
+`Beep.Forms/TheTechIdea.Beep.Forms.WinForms/Forms/ENGINE-GAP-ANALYSIS.md` for the full writeup;
+nothing in this repo (BeepDM) needed to change, since `LOVDefinition`/`LOVColumn` were already
+correctly shaped and already fully consumed by the WPF host.
+
+---
+
+### G0.50: `RecordGroup.LastPopulatedAt` never set by `PopulateRecordGroupAsync` (FIXED 2026-08-26)
+
+**What:** Continuing the `Models/*.cs` survey into `RecordGroup.cs`. `IsPopulated` and
+`LastPopulatedAt` are evident siblings — both describe the same "this group was just queried"
+event, and both are exposed identically through `RecordGroupPanel.GetGroups()` on both hosts and
+through the IDE's Record Group navigator node — but `PopulateRecordGroupAsync` only ever set
+`IsPopulated = true`, immediately after building `rg.Records`, and never touched
+`LastPopulatedAt`. Any caller reading the timestamp to show "populated N minutes ago" got `null`
+forever, on every record group in the product.
+
+**Fix:** One line, at the exact call site that already sets `IsPopulated`:
+`rg.LastPopulatedAt = DateTime.UtcNow;`.
+
+**Where:** `FormsManager.RecordGroups.cs` (`PopulateRecordGroupAsync`).
+
+**Risk of fix:** Negligible — pure addition, no existing behavior changes. One new test,
+`PopulateRecordGroupAsync_OnSuccess_SetsLastPopulatedAt`, proven via revert (commenting out the
+assignment failed the predicted `Assert.NotNull` check). Full 193-test suite green across 3
+consecutive runs; full engine rebuild clean.
+
+---
+
+### G0.51: Saved query templates can be created and listed but never loaded back and re-run —
+the "load" half of Query Templates is missing from both hosts' feature-control surface
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Continuing the `Models/*.cs` survey into `QueryTemplateInfo.cs`. `QueryBuilderManager
+.SaveQueryTemplate`/`.LoadQueryTemplate`/`.GetQueryTemplates` are all genuinely implemented in
+BeepDM, and both hosts expose all three through their `IBeepFormsHost` (`WinFormFormHost.Query.cs`
+`LoadQueryTemplate`, `BeepWpfForms.QueryTriggers.cs`'s equivalent). But `WinFormQueryPanel` — the
+actual feature-control surface an application uses (mirrored on the WPF side) — only exposes
+`SaveTemplate` and `GetTemplates`. Neither calls `LoadQueryTemplate`, and there is no method
+anywhere that takes a loaded template's `Filters` and actually re-applies them to the block before
+calling `ExecuteQueryAsync`. `ENGINE-GAP-ANALYSIS.md`'s "Query templates/history | ... |
+Implemented" row is accurate for save/list, but the entire point of a saved query template —
+running it again later — has no path to happen. A user can save a query as a template and see it
+in a list; there is no way to pick one and re-run it.
+
+**Why not fixed in this pass.** `IBlockView.ExecuteQueryAsync(CancellationToken)` takes no filter
+parameter, so there is no existing sink a loaded template's `Filters` could simply flow into —
+unlike `IsReadOnly`/`Order`/`MaxRecords`/`LastPopulatedAt`, this is not "a value sitting next to an
+already-consumed field." Making it work needs a real design decision this pass should not make
+unilaterally: should applying a saved template populate the on-screen Enter-Query fields visually
+(so the user sees the re-applied criteria before executing, matching Oracle Forms' own
+`GET_QUERY_FILTER`/`PUT_QUERY_FILTER` visual behavior) or apply the filters silently as a WHERE
+clause the user never sees? Either needs either a new `IBlockView`/`IBeepFormsHost` method or a
+way to push `AppFilter`s into the block's Enter-Query field state, not a same-pass property
+wire-up.
+
+**Where:** `Helpers/QueryBuilderManager.cs` (BeepDM, unchanged, already has everything needed
+except the design decision above); `WinFormQueryPanel.cs`,
+`BeepWpfBlockFeaturePanels.cs`/`BeepWpfForms.QueryTriggers.cs` (Beep.Forms, unchanged — missing the
+load-and-apply method on both hosts equally, not a WinForms-vs-WPF asymmetry this time).
+
+---
+
+### G0.52: `HandleUnsavedChangesPrompt` was a stub that always silently returned `Save`, never
+actually asking the user (FIXED 2026-08-26)
+
+**What:** Continuing the `Models/*.cs` survey to `UnsavedChangesAction`/`UnsavedChangesEventArgs`
+found their sole consumer in `CreateNewRecordInMasterBlockAsync`'s unsaved-changes branch was
+itself a stub. `HandleUnsavedChangesPrompt`'s own comment read *"In a real application, this
+would show a dialog to the user / For now, we'll use a simple default behavior"* — and the
+"default behavior" was to unconditionally return `UnsavedChangesAction.Save`, regardless of
+`validationIssues`, regardless of whether a real `IAlertProvider` was wired on the host. A user
+who deliberately wanted to *discard* an in-progress edit before creating a new master record — a
+legitimate, common Oracle Forms workflow — got that edit **silently committed instead**, with no
+way to say otherwise, on every runtime host, every time. This is a more severe defect than most
+of this series' findings: not a display gap or an unfed convenience property, but a data-handling
+decision silently made for the user in the wrong direction.
+
+**Fix:** `ShowAlertAsync` (Oracle Forms `SHOW_ALERT`, already fully implemented — the exact
+mechanism "Messages and alerts" already uses end to end on both runtime hosts via
+`IAlertProvider`) supports up to three buttons and reports back which one was pressed. Wired
+`HandleUnsavedChangesPrompt` to actually call it with "Save"/"Discard"/"Cancel" and map the result:
+`Button1`→`Save`, `Button2`→`Discard`, `Button3`→`Cancel`, and — critically —
+`AlertResult.None` (returned when a caller's custom provider genuinely dismisses without a
+choice) also maps to `Cancel`, the same safe default the method's own exception handler already
+used, since Cancel is the one outcome that neither silently commits data the user may not have
+wanted saved nor silently discards data they may have wanted kept. Note `DefaultAlertProvider`
+(used only when no host-specific `IAlertProvider` is wired at all — a headless engine, most test
+scenarios) documents itself as "No UI available — auto-accept" and always returns `Button1`, so
+that narrow no-UI-registered case is unchanged from before (still resolves to Save) — the real
+behavior change is for every caller running against an actual WinForms/WPF host, where the user's
+real answer is now genuinely asked and respected for the first time.
+
+**Where:** `FormsManager.ModeTransitions.cs` (`HandleUnsavedChangesPrompt`).
+
+**Risk of fix:** The behavior change is the fix — a caller relying on the old "always saves,
+never asks" behavior will now see a real prompt when a host `IAlertProvider` is wired, which is
+the documented, intended behavior the stub's own comment described as missing. One new test,
+`CreateNewRecordInMasterBlockAsync_AlertProviderChoosesCancel_CancelsOperation`, proven via
+revert — reverting to the old hardcoded `Save` reproduced the exact original defect concretely: the
+test's mock uow then failed to actually commit (`"Cannot create new record: Save failed - ..."`),
+a vivid demonstration of the stub silently attempting to save data the (mocked) user had just
+chosen to cancel. Full 194-test suite green across 5 consecutive runs; full engine rebuild clean.
+
+---
+
+### G0.53: `DirtyStateManager.GetDirtyRecordCount`/`GetLastModifiedTime` were both hardcoded,
+feeding fabricated numbers into the alert `HandleUnsavedChangesPrompt` (G0.52) shows the user
+(FIXED 2026-08-26)
+
+**What:** Sweeping for the same "honest stub comment" shape that made G0.52 worth finding,
+`DirtyStateManager.cs` had two adjacent private methods, both explicitly marked: *"This would
+need to be implemented based on your UnitOfWork implementation."* `GetDirtyRecordCount` always
+returned `1` whenever a block was dirty at all, never the real count; `GetLastModifiedTime`
+always returned `DateTime.Now`, never when the block was actually last touched. Both feed
+`DirtyBlockInfo`/`UnsavedChangesEventArgs.TotalAffectedRecords` — exactly the numbers the alert
+dialog `HandleUnsavedChangesPrompt` now genuinely shows the user (G0.52, the previous pass) when
+asking Save/Discard/Cancel. So the prompt a user now actually sees would have said "1 record
+affected" no matter how many were really dirty, and any "last modified" display built on this data
+would always read "just now," regardless of how long ago the edit actually happened.
+
+**Fix:** Both already had a real, working sink to redirect into — the same shape as G0.52.
+`IUnitofWork.GetModifiedEntities()` already exists and reads `ObservableBindingList`'s own
+tracking state (`EntityState.Modified` per record); `GetDirtyRecordCount` now returns
+`Math.Max(1, modifiedCount)` — the real modified-record count, floored at 1 whenever `IsDirty` is
+true so a block dirtied by a new/deleted record (which `GetModifiedEntities()` does not cover)
+still reports at least one dirty record rather than 0. `IUnitofWork.GetChangeLog()` already exists
+and is populated with a real per-edit `Timestamp` by the existing `RecordChange` method;
+`GetLastModifiedTime` now returns the most recent change's timestamp (`null` when the log is
+genuinely empty).
+
+**Where:** `Helpers/DirtyStateManager.cs` (`GetDirtyRecordCount`, `GetLastModifiedTime`).
+
+**Risk of fix:** Low — both replace a fabricated value with the block's real state; any caller
+that happened to expect the literal placeholder values was already relying on a documented stub.
+One new test,
+`CheckAndHandleUnsavedChangesAsync_MultipleModifiedRecords_ReportsRealDirtyRecordCountAndLastModifiedTime`,
+constructs `DirtyStateManager` directly (not through `FormsManager`) and asserts both fields on
+the raised `OnUnsavedChanges` event args — proven via revert independently for each method
+(reverting `GetDirtyRecordCount` alone failed the count assertion with `Expected: 2, Actual: 1`;
+reverting `GetLastModifiedTime` alone failed the timestamp assertion with the fabricated
+"just now" value). Full 195-test suite green across 5 consecutive runs; full engine rebuild clean.
+
+**Closed by G0.65 (2026-08-27):** the third stub in the same method cluster,
+`HasValidationErrors` (`"This would need to be implemented based on your validation logic" /
+return false; // Placeholder`), always reported no errors. It needed exactly the new constructor
+dependency this note predicted — see G0.65 for the fix (a `hasValidationErrorsFunc` resolver to
+`ItemProperties.GetItemsWithErrors`) and the larger reachability gap it was found alongside
+(`IUnitofWorksManager` never declared `DirtyStateManager` at all, so none of this — G0.52's prompt,
+G0.53's/G0.54's real counts and options, and now `HasValidationErrors` — was reachable from either
+host in the first place).
+
+---
+
+### G0.54: `DirtyStateManager.SaveDirtyBlocksAsync` ignored `Configuration.DefaultSaveOptions`,
+always using the bare type default instead (FIXED 2026-08-26)
+
+**What:** Double-checking G0.48's "SaveOptions has zero consumers, not even reachable as a
+parameter" characterization (prompted by finding `SaveBlockWithRetryAsync(DataBlockInfo,
+SaveOptions options)` reads `options.MaxRetries` at the exact call site next to G0.53's fix) found
+the characterization was too broad for `SaveOptions` specifically — its own properties
+(`MaxRetries`, `RetryDelayMs`, `ValidateBeforeSave`, ...) *are* genuinely read, gating real retry
+and validation behavior. What was actually missing: `SaveDirtyBlocksAsync` — the sole caller —
+hardcoded `var saveOptions = SaveOptions.Default;` rather than ever consulting
+`UnitofWorksManagerConfiguration.DefaultSaveOptions`, the developer-facing setting that exists
+specifically to configure this. A developer who set `Configuration.DefaultSaveOptions = new
+SaveOptions { MaxRetries = 5 }` (or `ValidateBeforeSave = false`, or any other override) had it
+silently discarded on every save — the manager always retried exactly 3 times with exactly Oracle
+Forms' own type defaults, never the configured ones.
+
+**Fix:** Added an optional `Func<SaveOptions> getDefaultSaveOptionsFunc` constructor parameter to
+`DirtyStateManager` (only two construction sites existed — `FormsManager.Core.cs` and this
+session's own test — so an additive optional parameter was zero-risk), wired from
+`FormsManager.Core.cs` as `() => Configuration?.DefaultSaveOptions`. `SaveDirtyBlocksAsync` now
+resolves `saveOptions` from that delegate, falling back to `SaveOptions.Default` when it returns
+null (matching `UnitofWorksManagerConfiguration.Default`'s own `DefaultSaveOptions = SaveOptions
+.Default` initializer, so an un-customized manager behaves byte-for-byte as before).
+
+**Where:** `Helpers/DirtyStateManager.cs` (new field, constructor parameter, `SaveDirtyBlocksAsync`);
+`FormsManager.Core.cs` (wiring the delegate at construction).
+
+**Risk of fix:** Low — additive constructor parameter, no-op fallback preserves prior behavior for
+every manager that never customizes `Configuration.DefaultSaveOptions`. One new test,
+`SaveDirtyBlocksAsync_ConfiguredDefaultSaveOptions_UsesItsMaxRetries`, injects `MaxRetries = 2,
+RetryDelayMs = 0` and a Commit that always fails with a retryable ("connection timeout") message,
+asserting exactly 3 `Commit()` calls (1 initial + 2 retries). Proven via revert: reverting to the
+hardcoded default reproduced 4 calls (the type default's `MaxRetries = 3`), taking ~6 real seconds
+due to the un-configured `RetryDelayMs = 1000` kicking in — itself a concrete demonstration of the
+defect (the configured `RetryDelayMs = 0` was also being silently ignored). Full 196-test suite
+green across 5 consecutive runs (all fast, ~1s, confirming the fix keeps normal runs fast); full
+engine rebuild clean.
+
+---
+
+### G0.55: `FormsManager.FormOperations.OpenFormAsync` — a superseded duplicate "open form"
+implementation, not a stub to fix (INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** `FormOperations.cs`'s `OpenFormAsync(string formName)` — doc-commented "equivalent to
+Oracle Forms WHEN-NEW-FORM-INSTANCE" — calls two private helpers,
+`PreInitializeFormAsync`/`PostInitializeFormAsync`, both literally `await Task.CompletedTask; //
+Placeholder for async operations` behind comments listing intended work ("Load form-specific
+configuration", "Trigger form-specific events", ...) that never happens. On the surface this
+looks like the same "wire the honest stub" shape as G0.52/G0.53. It is not: `OpenFormAsync`
+(this specific overload) has **zero callers anywhere in Beep.Forms** — neither runtime host calls
+it — and the `OnFormOpen` .NET event it raises has no subscriber in either host either.
+
+**Why this is a duplicate to resolve (house rule 3), not a gap to close.** The real
+"opening a form fires `WHEN-NEW-FORM-INSTANCE`" mechanism already exists and is already fully
+tested: `FormsManager.MultiFormNavigation.cs`'s `CallFormAsync`/`NewFormAsync`/
+`OpenFormModelessAsync` genuinely fire `TriggerType.WhenNewFormInstance` via `_triggerManager`
+(confirmed the only call site for that trigger in the whole engine) and are the machinery an
+earlier pass's "OPEN_FORM / NEW_FORM / CALL_FORM" tests already cover. `MultiFormNavigation.cs`
+even declares its *own* `OpenFormAsync(string, Dictionary<string,object>)` overload —
+`[Obsolete("Use OpenFormModelessAsync to avoid ambiguity with FormsManager.OpenFormAsync.")]`,
+whose own doc comment says *"Distinct from `FormOperations` `OpenFormAsync` which opens the LOCAL
+form"* — confirming both were known to exist side by side, and that the multi-form one is the
+live, exercised path. `FormOperations.OpenFormAsync` reads as an earlier, abandoned "open the
+local form" design — the same shape as `ViewStateSyncer` (G0.42): a fully-built parallel
+mechanism superseded by a different one that actually shipped, not a missing implementation.
+
+**Not fixed, and not deleted.** Wiring `PreInitializeFormAsync`/`PostInitializeFormAsync` would
+give real behavior to a method nothing calls — wasted effort, and inventing new callers for it
+would create the exact "two owners of one fact" situation house rule 3 exists to prevent, since
+`MultiFormNavigation`'s trigger-firing path already owns "what happens when a form opens." Public
+API surface, so removal is a call for Fahad, the same disposition as `ViewStateSyncer`.
+
+**Where:** `FormsManager.FormOperations.cs` (`OpenFormAsync`, `PreInitializeFormAsync`,
+`PostInitializeFormAsync`, `ApplyFormConfiguration`, `OnFormOpen` — all unchanged);
+`FormsManager.MultiFormNavigation.cs` (unchanged, already correct and already tested).
+
+---
+
+### G0.56: `PerformanceManager.PreloadFrequentBlocks` is unreachable and its own implementation
+is broken (inserts null placeholders) — needs real subsystem work, not attempted
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** `PreloadFrequentBlocks(IEnumerable<string> blockNames)` is explicitly marked *"This
+would typically load from a data source / For now, we just mark it as preloaded"* — it inserts a
+`CachedBlockInfo { BlockInfo = null, ..., IsPreloaded = true }` placeholder into the cache for
+each name, never actually loading anything. Unlike the working half of the same cache
+(`CacheBlockInfo`/`GetCachedBlockInfo`/`InvalidateBlockCache`/`SetBlockCacheTtl`/`GetCacheStats`,
+all genuinely wired through `FormsManager.Performance.cs` with real block data), `PreloadFrequentBlocks`
+has **no `FormsManager`-level wrapper at all** — it is unreachable from either runtime host or any
+engine call site, not merely unfed.
+
+**Why not fixed here.** Even if wired up, the implementation itself would need to actually build
+correctly given a block name with no live registration yet — realistically reusing
+`DefinitionBlockRegistrar`'s datasource-resolution logic (connection lookup, `GetEntityStructure`,
+row-type resolution) rather than duplicating it, which is real integration work, not a value
+needing to flow into an already-built sink the way G0.52–G0.54 were. Inserting a `BlockInfo = null`
+placeholder today would also be actively worse than doing nothing if anything ever did start
+reading it, since a caller checking "is this cached" and then dereferencing `.BlockInfo` would hit
+`null` rather than a cache miss it could recover from.
+
+**Where:** `Helpers/PerformanceManager.cs` (`PreloadFrequentBlocks`, unchanged).
+
+---
+
+### G0.57: `IUnitofWork.SaveLog`/`UpdateLog` is a second, always-empty "what changed" mechanism —
+`GetChangeLog()`/`_changeLog` (the one G0.53's fix already uses) is the one that actually works
+(INVESTIGATED, NOT FIXED, 2026-08-26)
+
+**What:** Continuing the stub sweep into `Editor/UOW/*.cs` (outside `Editor/Forms/`, but directly
+relevant since every block's `IUnitofWork` is this same type) found `UnitofWork.Core.Extensions
+.cs`'s `UpdateLog` property marked *"placeholder — would need full implementation"*, right beside
+the genuinely-working `_changeLog`/`GetChangeLog()`/`RecordChange` this session already redirected
+`DirtyStateManager.GetLastModifiedTime` into (G0.53). `SaveLog(pathandname)` — a real, public,
+otherwise-correct method that serializes `UpdateLog` to a JSON file — silently no-ops every time
+it is called (`if (UpdateLog == null || UpdateLog.Count == 0) return true;`) because nothing
+anywhere ever writes to `UpdateLog` (`Dictionary<DateTime, EntityUpdateInsertLog>`); it always
+reports success while writing nothing.
+
+**Why this is not the same shape as G0.53's fix.** `_changeLog` (`List<ChangeRecord>`, populated by
+`RecordChange` on every property edit) and `UpdateLog` (`Dictionary<DateTime,
+EntityUpdateInsertLog>`) are genuinely different granularities, not the same fact stored twice:
+`ChangeRecord` is a per-property-change log; `EntityUpdateInsertLog` (`Id`/`RecordId`/`GuidKey`/
+`LogId`/...) is shaped for per-record insert/update tracking. Redirecting `SaveLog` to serialize
+`_changeLog` instead would need real translation logic between the two shapes, not a value flowing
+into an already-built sink the way `GetDirtyRecordCount`/`GetLastModifiedTime` were — genuine
+follow-on work, not attempted here.
+
+**Where:** `Editor/UOW/UnitofWork.Core.Extensions.cs` (`UpdateLog`, `SaveLog`, unchanged).
+
+---
+
+### G0.58: Record-navigation triggers — missing `ConfigureAwait(false)`, wrong `TriggerContext`
+factory (`RecordIndex` always -1), and `GO_RECORD` never firing them at all (FIXED 2026-08-26)
+
+**What:** Building a WPF self-test that registers a real `WHEN-NEW-RECORD-INSTANCE` handler — the
+first anywhere in either host's test suite to do so — surfaced three distinct defects in the
+record-navigation trigger machinery added on 2026-08-02 (G0.… the original fire-point addition):
+
+1. **Missing `ConfigureAwait(false)`.** `TriggerDefinition.ExecuteAsync`/`ExecuteHandlerAsync` and
+   19 `_triggerManager.Fire*TriggerAsync` call sites across `FormsManager.BasicDataOps/
+   DmlTriggers/EnhancedOperations/FormOperations/KeyTriggers/Navigation/Relationships.cs` (plus 3
+   `CheckAndHandleUnsavedChangesAsync` call sites in `Navigation.cs`) awaited without it — a real
+   gap in an engine otherwise consistent about the convention, confirmed by grepping every such
+   call site across the whole `Editor/Forms/` tree. Necessary but not alone sufficient to fix the
+   deadlock below; see item 3.
+2. **Wrong `TriggerContext` factory.** `PreRecord`/`PostRecord`/`WhenNewRecordInstance` built their
+   context via `TriggerContext.ForBlock` (`Scope=Block`, `RecordIndex` left at its `-1` default)
+   instead of `TriggerContext.ForRecord` (`Scope=Record`, carries the record and its index) — the
+   wrong factory picked when these fire points were added. A handler reading `RecordIndex` to know
+   which record just became current — the entire point of `WHEN-NEW-RECORD-INSTANCE`, per this
+   file's own comment ("the trigger most Oracle Forms code uses to react to the cursor moving
+   between records") — saw `-1` on every fire, on both platforms, since the trigger's addition.
+3. **`GO_RECORD` never fired them at all.** `NavigateToRecordInternalAsync` (backing
+   `NavigateToRecordAsync`/`MoveToRecordAsync` — jumping to a specific record index) had no
+   `PostRecord`/`PreRecord`/`WhenNewRecordInstance` fire block whatsoever, unlike `NavigateAsync`
+   (`First`/`Next`/`Previous`/`Last`), which has fired all three since 2026-08-02. A form reacting
+   to record changes via `WHEN-NEW-RECORD-INSTANCE` never saw it fire for a direct index jump.
+
+**A fourth, related finding: not fixed here, by design.** Diagnosing item 1's deadlock (a WPF host
+blocking synchronously on the calling thread, with a *synchronous* trigger handler causing
+execution to hop onto a thread-pool thread via `Task.Run`) traced into
+`BeepWpfForms.RunOnUi`'s blocking `Dispatcher.Invoke` marshal for the `TriggerExecuting`/
+`TriggerExecuted` relay events — a Beep.Forms-repo concern, not BeepDM's, documented in that
+repo's own `TheTechIdea.Beep.Forms.Wpf/Forms/ENGINE-GAP-ANALYSIS.md` rather than here.
+
+**Fix:** `.ConfigureAwait(false)` added at all 22 sites; `PreRecord`/`PostRecord`/
+`WhenNewRecordInstance` now use `TriggerContext.ForRecord(type, blockName,
+blockInfo.UnitOfWork.CurrentItem, recordIndex, _dmeEditor)`; `NavigateToRecordInternalAsync` now
+fires all three, mirroring `NavigateAsync` exactly.
+
+**Where:** `Editor/Forms/Models/TriggerDefinition.cs`; `Editor/Forms/FormsManager
+.{BasicDataOps,DmlTriggers,EnhancedOperations,FormOperations,KeyTriggers,Navigation,
+Relationships}.cs`.
+
+**Proven via revert:** reverted the `ForRecord` fix back to `ForBlock` on both call sites and
+confirmed the WPF self-test's `RecordIndex` assertions failed with the exact predicted symptom
+(every fire reporting `-1`); restoring made all checks pass again. The missing-fire-point fix in
+`NavigateToRecordInternalAsync` was proven the same way during initial diagnosis: before the fix,
+the tracked fire list stayed unchanged after `MoveToRecordAsync` (zero fires); after, it grows by
+exactly one with the correct index.
+
+**Risk of fix:** Low for the `ConfigureAwait(false)` additions (behavior-preserving on any caller
+without an ambient `SynchronizationContext`, which is every non-UI-blocked caller). Low-to-medium
+for the `ForRecord`/new-fire-point changes: additive for `GO_RECORD` (a trigger that never fired
+now does — the same "additive, no existing caller could have depended on a trigger that never
+fired" reasoning the 2026-08-02 fire-point addition itself used), and the `RecordIndex` correction
+is a pure bugfix for a value that was always wrong, not a behavior removal.
+
+**Verified:** BeepDM's `FormsManager.Tests` (196/196 passing), `SmokeTests`,
+`DesignerCompileCheck`, and every WinForms/WPF `Examples` self-test in Beep.Forms all pass
+unchanged. New `Examples.WPF/RecordNavigationSelfTest.cs` (`--selftest-navigation`) exercises all
+three fixes end to end.
+
+---
+
+### G0.59: Item-scoped triggers (`WHEN-VALIDATE-ITEM`, `PRE-TEXT-ITEM`, `POST-TEXT-ITEM`,
+`WHEN-NEW-ITEM-INSTANCE`) registered via `RegisterItemTrigger` were silently never invoked, on
+either host platform (FIXED 2026-08-26)
+
+**What:** `ITriggerManager` stores triggers in two separate tiers — `_blockTriggers[blockName]
+[type]` (block-scoped, fed by `RegisterBlockTrigger`) and `_itemTriggers[GetItemKey(blockName,
+itemName)][type]` (item-scoped, fed by `RegisterItemTrigger` — exactly what the IDE's standard
+"Add Trigger" authoring path emits for these four trigger types).
+`GetBlockTriggersForExecution` — the lookup behind `FireBlockTriggerAsync` — only ever consults
+the block-scoped tier and global triggers; it never consults `_itemTriggers`.
+`IBeepFormsHost`, the shared contract both `BeepWpfForms` and `WinFormFormHost` implement, had
+only `FireBlockTriggerAsync` — no item-scoped alternative existed at all. Both hosts' block-level
+UIs (`BeepWpfBlock.cs`, `WinFormBlockHost.ItemNavigation.cs`) each carry a private
+`FireItemTriggerAsync` helper (for `PreTextItem`/`PostTextItem`/`WhenNewItemInstance`) plus a
+direct call in `ValidateItemExitAsync` (for `WhenValidateItem`); for lack of anything else on the
+host contract, both called `FireBlockTriggerAsync`. The result: a trigger registered through the
+standard, IDE-authored `RegisterItemTrigger` path was correctly stored and correctly readable back
+via `GetItemTriggers`, and never once invoked, on either platform, since these fire points
+existed. `WHEN-VALIDATE-ITEM` is one of the most heavily used triggers in Oracle Forms —
+arguably higher real-world severity than G0.58's record-navigation gap.
+
+**Fix:** Added `IBeepFormsHost.FireItemTriggerAsync(TriggerType, blockName, itemName,
+TriggerContext?, CancellationToken)`, delegating to the engine's existing
+`ITriggerManager.FireItemTriggerAsync` (which already correctly consulted `_itemTriggers` — only
+the host-side plumbing to reach it was missing). Implemented on both `BeepWpfForms` and
+`WinFormFormHost`. Updated all four call sites (`ValidateItemExitAsync` and the private
+`FireItemTriggerAsync` helper, on both `BeepWpfBlock.cs` and
+`WinFormBlockHost.ItemNavigation.cs`) to call the new item-scoped method instead of
+`FireBlockTriggerAsync`.
+
+**Where:** `Editor/Forms/Hosts/IBeepFormsHost.cs` (new interface member; engine-side
+`TriggerManager.FireItemTriggerAsync` itself was already correct and untouched). Consumer-side
+fix in the Beep.Forms repo: `TheTechIdea.Beep.Forms.Wpf/Forms/FormHost/BeepWpfForms.QueryTriggers.cs`,
+`TheTechIdea.Beep.Forms.Wpf/Forms/BlockHost/BeepWpfBlock.cs`,
+`TheTechIdea.Beep.Forms.WinForms/Forms/FormHost/WinFormFormHost.Triggers.cs`,
+`TheTechIdea.Beep.Forms.WinForms/Forms/BlockHost/WinFormBlockHost.ItemNavigation.cs`.
+
+**A related, self-inflicted consequence, also fixed here:** two other, pre-split ancestor
+projects outside Beep.Forms — `Beep.WPF/TheTechIdea.Beep.Wpf.Data.Integrated` and
+`Beep.Winform.Data.Integrated/Beep.Winform.Data.Integrated.Controls` — hold live
+`ProjectReference`s to this same `DataManagementModels.csproj` and directly implement
+`IBeepFormsHost`. Adding a required interface member would have broken their next build. Mirrored
+the identical two-line delegation into both (`BeepWpfForms.QueryTriggers.cs`,
+`WinFormFormHost.Triggers.cs` in those repos) so the interface addition doesn't regress a sibling
+codebase — their own internal `FireBlockTriggerAsync`-based caller-site bug (the likely-identical
+underlying defect) was left untouched, since those ancestor repos are explicitly out of scope for
+Beep.Forms and not otherwise touched, built, or tested by anything in this session's working set.
+
+**Proven via revert:** reverted all four Beep.Forms call sites back to `FireBlockTriggerAsync` and
+confirmed both platforms' new self-tests failed with the exact predicted symptom (registered
+handlers never invoked — `validateFired`/`newItemInstanceFired` stayed empty); restoring made all
+checks pass again on both platforms.
+
+**Risk of fix:** Low. Purely additive on the interface (a new method, not a signature change to an
+existing one); the four caller-site changes replace a call that could never have found an
+item-scoped trigger with one that can — no existing caller could have depended on the old,
+broken behavior. The two ancestor-repo mirrors are the identical low-risk delegation pattern
+already proven in Beep.Forms' own implementations.
+
+**Verified:** BeepDM's `FormsManager.Tests` (196/196 passing, unchanged). New
+`Examples.WPF/ItemTriggerSelfTest.cs` (`--selftest-itemtrigger`) and
+`Examples.WinForms/ItemTriggerSelfTest.cs` (`--selftest-itemtrigger`) both pass, 5/5 checks each.
+Both ancestor projects (`TheTechIdea.Beep.Winform.Data.Integrated.csproj`,
+`TheTechIdea.Beep.Wpf.Data.Integrated.csproj`) build clean with the mirrored interface
+implementation.
+
+---
+
+### G0.60: `LockManager`'s own current-record-index tracking was never updated by navigation, so
+every lock operation silently operated on the wrong record (FIXED 2026-08-26)
+
+**What:** `LockManager` tracks a "current record index" per block internally (`_currentIndex`),
+separate from the real `UnitOfWork` index, specifically because `LockCurrentRecordAsync`/
+`IsCurrentRecordLocked`/`UnlockCurrentRecord`/`AutoLockIfNeededAsync` take no index parameter — they
+rely entirely on this tracked value to know which record is meant. Its own doc comment on
+`SetCurrentRecordIndex` says "Called by FormsManager on navigation" — but nothing in the engine
+ever called it, confirmed by grepping every reference to the method. The tracked index therefore
+never left its default (0) for the entire life of every `FormsManager` instance. Consequence:
+locking record 0, then navigating to record 1 and checking `IsCurrentRecordLocked`, incorrectly
+reported `true` — `LockManager` was still consulting index 0's lock entry regardless of which
+record the `UnitOfWork` actually considered current. Worse, `AutoLockIfNeededAsync` (the
+lock-on-edit hook `SetFieldValue` calls when `LockMode.Automatic` + `LockOnEdit=true` — Oracle
+Forms' default, most common locking configuration) checks `IsCurrentRecordLocked` first and skips
+locking if it returns true — so after the very first record was ever locked, *no other record in
+that block ever got locked again*, silently, for the rest of the block's life. Discovered while
+investigating the master tracker's "Feature panels" row, which listed Lock as implemented but never
+exercised by a live self-test — the same discipline that found G0.58 and G0.59 this session.
+
+**Fix:** Added `_lockManager.SetCurrentRecordIndex(blockName, currentIndex)` at the three real
+choke points every path that changes a block's current record funnels through: `NavigateAsync`
+(First/Next/Previous/Last), `NavigateToRecordInternalAsync` (`GO_RECORD`/`MoveToRecordAsync`) — the
+same two choke points G0.58 already identified for `SystemVariablesManager.UpdateForRecordChange`
+— and `TryUpdateSavepointSystemVariables` (a savepoint rollback changes the current record just as
+much as an ordinary navigation does).
+
+**Where:** `Editor/Forms/FormsManager.Navigation.cs` (two call sites), `Editor/Forms/
+FormsManager.BlockRegistration.cs` (`TryUpdateSavepointSystemVariables`, one call site).
+
+**Proven via revert:** reverted the two `Navigation.cs` call sites and re-ran the WPF self-test:
+locking record 0 then navigating to record 1 incorrectly reported record 1 as already locked;
+`GetAllLocks` reported only 1 tracked lock instead of 2 after explicitly locking both records
+(the second `LockCurrentRecordAsync` call was a no-op, since `LockManager` believed index 0 — the
+only index it ever tracks — was already locked); and unlocking "record 1" actually removed record
+0's lock entry. All three failures match the predicted mechanism exactly. Restoring the fix made
+all twelve checks pass again.
+
+**Risk of fix:** Low. Purely additive — a call to a method that already existed on the interface
+and had always been a correct no-op-if-unused implementation; no caller could have depended on the
+old, always-wrong-except-for-record-0 behavior, since that behavior was never anything other than
+a bug matching its own doc comment's stated intent.
+
+**Verified:** `FormsManager.Tests` (196/196 passing, unchanged). New `Examples.WPF/LockSelfTest.cs`
+(`--selftest-lock`) passes 12/12 checks — the first self-test anywhere in this repo to exercise
+record locking end to end. Every other WPF and WinForms `Examples` self-test re-run clean.
+
+---
+
+### G0.61: `TriggerType.EnterQuery`/`ExitQuery` (Oracle Forms ENTER_QUERY/EXIT_QUERY) existed with
+no firing code anywhere (FIXED 2026-08-26)
+
+**What:** A systematic audit — cross-referencing every `TriggerType` enum member against every
+`Fire*TriggerAsync(TriggerType.X, ...)` call site anywhere in the engine — found `EnterQuery` and
+`ExitQuery` among a larger set of enum members with zero *literal* firing references. Most of that
+larger set falls into two explained, non-actionable categories: ~45 `Key*`-prefixed members
+(`KeyNextItem`, `KeyCommit`, `KeyF1`, …) are never referenced as `TriggerType.KeyX` literals because
+they're reached only via `RegisterKeyTrigger`/`FireKeyTriggerAsync`'s `(TriggerType)(int)key` cast
+from the separate `KeyTriggerType` enum — deliberately, not vestigially: `KeyTriggerType`'s own
+values are assigned in the identical 100-168 numeric range (`KeyTriggerType.Commit = 122` ==
+`TriggerType.KeyCommit = 122`), confirmed by reading both enums' actual integer literals during a
+2026-08-26 follow-up. This is the interop bridge those two methods rely on, not a rule-3 duplication
+question — see that follow-up entry below for the full correction and the self-test that proved
+`RegisterKeyTrigger`/`FireKeyTriggerAsync` already work correctly end to end, just unused by any
+current caller. Not touched further here. Roughly two dozen UI-widget/window-lifecycle members
+(`WhenButtonPressed`, `WhenMouseClick`, `WhenWindowActivated`, …) require new host-side event wiring
+across both WinForms and WPF, a materially larger undertaking documented below but not attempted in
+this pass. `EnterQuery`/`ExitQuery` stood out as genuinely missing, purely engine-side, and
+concretely testable: `EnterQueryModeAsync` (the real ENTER_QUERY implementation) only ever raised
+the generic `_eventManager.TriggerBlockEnter` .NET event, never the `TriggerType`-based system
+`RegisterBlockTrigger` feeds into — confirmed by grep, and `TriggerLibrary.cs` only ever
+registers/fires `PreQuery`/`PostQuery`, never `EnterQuery`/`ExitQuery`.
+
+**A second, unrelated defect surfaced while finding the right EXIT_QUERY choke point.** The obvious
+candidate, `ExecuteQueryAndEnterCrudModeAsync` (whose own doc comment says "equivalent to Oracle
+Forms EXECUTE_QUERY"), turned out to have zero callers anywhere outside its own unit tests
+(`FormsManagerTests.cs`) — grepped across the whole engine and Beep.Forms. Both WinForms and WPF
+hosts' `ExecuteQueryAsync` actually call a completely separate, parallel implementation
+(`FormsManager.BasicDataOps.cs`'s own `ExecuteQueryAsync` → `ExecuteQueryEnhancedAsync`). This is a
+genuine rule-3 "two implementations of one capability" situation — `ExecuteQueryAndEnterCrudModeAsync`
+appears to be an earlier or alternate implementation of query execution that nothing in any real
+caller path reaches — but resolving *that* (determining which implementation is authoritative,
+whether `ExecuteQueryAndEnterCrudModeAsync`'s own MaxRecords-warning behavior needs to be ported
+into the reachable path, and whether the orphaned method should be deleted or wired up) is a
+separate, larger question this pass does not attempt to resolve. Flagged here, not fixed.
+
+**Fix:** `EnterQuery` fires in `EnterQueryModeAsync` (`FormsManager.ModeTransitions.cs`), after the
+mode change and current-block update, matching where `PreQuery`/`PostQuery` fire relative to their
+own state changes. `ExitQuery` fires in the *reachable* `ExecuteQueryAsync`
+(`FormsManager.BasicDataOps.cs`), gated on whether the block was actually in `EnterQuery` mode
+before the call — matching Oracle Forms pairing EXIT_QUERY specifically with ENTER_QUERY, not with
+an ordinary re-query of a block already showing results. The same gated fire was also added to the
+orphaned `ExecuteQueryAndEnterCrudModeAsync`, so that method's own behavior is internally correct
+should it ever gain a caller; this does not change its status as unreached from any host today.
+
+**Where:** `Editor/Forms/FormsManager.ModeTransitions.cs` (`EnterQueryModeAsync`,
+`ExecuteQueryAndEnterCrudModeAsync`), `Editor/Forms/FormsManager.BasicDataOps.cs`
+(`ExecuteQueryAsync`).
+
+**Proven via revert:** disabled both fire points (the reachable `EnterQuery`/`ExitQuery` sites) and
+re-ran the new self-test: `EnterQuery` never fired on `EnterQueryModeAsync`, `ExitQuery` never fired
+on the subsequent `ExecuteQueryAsync` call, and the "does not fire twice" assertion also failed
+(comparing against a fixed expectation of 1 that a broken fix could never reach) — three checks
+failed with exactly the predicted "never invoked" symptom. Restoring both fire points made all six
+checks pass again.
+
+**Risk of fix:** Low. Purely additive — a trigger type that could never have fired before now fires
+at a fire point gated to match Oracle Forms' own pairing semantics; no existing caller could have
+depended on a trigger that never fired. Explicitly does **not** touch the ~45 `KeyTriggerType`
+duplicate members or the UI-widget/window-lifecycle members — see What, above.
+
+**Verified:** `FormsManager.Tests` (196/196 passing, unchanged). New
+`Examples.WPF/QueryModeTriggersSelfTest.cs` (`--selftest-querymode`) passes 6/6 checks. `SmokeTests`,
+`DesignerCompileCheck`, and every other WinForms/WPF `Examples` self-test (13 on WPF alone) re-run
+clean.
+
+**Not attempted in this pass, and why — for a future pass on its own terms:**
+
+- **`TriggerType.WhenLogon`/`PostLogon`/`OnLogoff`** (doc comments: "M5-RUN-002 — connection
+  lifecycle") are declared and, like `EnterQuery`/`ExitQuery` were, never fired anywhere — confirmed
+  by grep, zero references in the whole engine for any of the three. Unlike `EnterQuery`/`ExitQuery`,
+  there is no existing choke point: `FormsManager` does not own datasource connection open/close at
+  all (that lives in `DMEEditor`/`IDataSource`, a layer below Forms), so firing these correctly
+  requires an architectural decision about where connection-lifecycle awareness should live, not a
+  one-line addition to an existing method. No milestone document for "M5-RUN-002" exists anywhere in
+  this repo to consult for the intended design.
+- **~25 UI-widget and window-lifecycle members** (`WhenButtonPressed`, `WhenCheckboxChanged`,
+  `WhenImageActivated`/`WhenImagePressed`, `WhenListActivated`/`WhenListChanged`,
+  `WhenRadioChanged`, all seven `WhenMouse*` members, `WhenWindowActivated`/`WhenWindowClosed`/
+  `WhenWindowDeactivated`/`WhenWindowResized`, `WhenCustomItemEvent`, `WhenRecordModified`) are
+  declared with zero firing references anywhere in the engine **or** either host. The engine cannot
+  fire these itself — it has no knowledge of button clicks, mouse events or window state — so
+  implementing them means wiring real WinForms/WPF control and window events into
+  `FireBlockTriggerAsync`/`FireFormTriggerAsync` calls in both `TheTechIdea.Beep.Forms.WinForms` and
+  `TheTechIdea.Beep.Forms.Wpf`, a substantially larger, cross-repo undertaking than any single fix
+  landed this session.
+- **~45 `TriggerType.Key*` members** are `RegisterKeyTrigger`/`FireKeyTriggerAsync`'s deliberate
+  interop bridge to `KeyTriggerType`, not a duplication question — see the correction and
+  end-to-end proof below.
+
+**Follow-up, 2026-08-26 — `RegisterKeyTrigger`/`RegisterKeyTriggerAsync` have zero callers
+anywhere, but this is not a bug; verified working end to end, and corrects an earlier
+mischaracterization above.** A separate systematic sweep for orphaned `FormsManager` public
+methods (looking for the same "two implementations, one unreachable" shape
+`ExecuteQueryAndEnterCrudModeAsync` turned out to be, above) found
+`RegisterKeyTrigger`/`RegisterKeyTriggerAsync` with zero callers anywhere in BeepDM, Beep.Forms,
+Beep.WPF or Beep.Winform.Data.Integrated, while their sibling `FireKeyTriggerAsync` is heavily
+called by both hosts for Tab/Enter/F-key navigation. On its face this reads as the same
+"registered but never fires" shape as `EnterQuery`/`ExitQuery` above. It isn't: `KeyTriggerType`'s
+enum values are deliberately assigned in the identical 100-168 numeric range as `TriggerType`'s
+`Key*` sub-block (`KeyTriggerType.Commit = 122`, `TriggerType.KeyCommit = 122`), confirmed by
+reading both enums' actual assigned integers, not just member order — an initial hunch that the
+two might be misaligned turned out to be checking the wrong thing (ordinal position instead of
+declared value). `RegisterKeyTrigger`'s `(TriggerType)(int)key` cast therefore lands on exactly
+the `TriggerType` value `FireKeyTriggerAsync`'s identical cast fires against, and both methods are
+declared directly on `IUnitofWorksManager`, reachable today via `host.FormsManager
+.RegisterKeyTrigger(...)`. This also corrects the "vestigial duplicate" reading of `TriggerType
+.Key*` two paragraphs above — those members are the deliberate bridge this cast relies on, not
+dead weight. Proven with a new `Examples.WPF/KeyTriggerSelfTest.cs` (`--selftest-keytrigger`,
+Beep.Forms) — registers KEY-COMMIT and KEY-EXIT handlers and confirms the full documented
+contract, including that a `Cancelled` result genuinely suppresses the default action. 8/8 checks
+pass. No engine code change; documented in `TheTechIdea.Beep.Forms.Wpf/Forms/
+ENGINE-GAP-ANALYSIS.md` as "verified working, no fix needed" rather than as a further `gaps.md`
+entry, since it isn't a defect.
+
+---
+
+### G0.62: Orphaned `FormsManager` public methods — an inventory, not individually resolved
+(2026-08-26)
+
+**What:** The sweep that found `RegisterKeyTrigger` (G0.61 follow-up, above) checked all ~285
+public methods on `FormsManager` across its partial-class files for zero-caller "orphans" — the
+same "two implementations of one capability, one unreachable" shape `ExecuteQueryAndEnterCrudModeAsync`
+turned out to be. It found roughly 85 true orphans (zero callers anywhere, including tests) and a
+further ~12 test-only orphans (called only from `FormsManagerTests.cs`). Two of the highest-
+confidence hits were spot-checked directly and confirmed exactly as reported — see below. The
+remaining ~95 are recorded here as an inventory for a future pass, not individually investigated
+or fixed in this one: verifying and resolving each would be a substantially larger undertaking than
+any single fix landed this session, and house rule 6 is explicit that "nothing reads it" opens the
+question rather than settling it — this entry exists so the question stays open and visible rather
+than being lost in an agent transcript.
+
+**Confirmed duplicates (case a — a reachable alternative already does the job):**
+- `LoadPageAsync` (`Performance.cs`) vs. the actually-called `GoToBlockPageAsync`
+  (`ExtendedOperations.cs`) — spot-checked directly: both WinForms and WPF hosts'
+  `GoToPageAsync`-style host methods call `GoToBlockPageAsync`; `LoadPageAsync` has zero
+  references anywhere in BeepDM or Beep.Forms.
+- `UpdateCurrentRecordAsync` (`EnhancedOperations.cs`, test-only orphan) vs. the host-called
+  `PostBlockAsync` (`BasicDataOps.cs`).
+- `ValidateField(object record, string, object, FieldConstraints)` (`FormsSimulation.cs`) vs. the
+  host-called `ValidateField(blockName, fieldName, value)` overload (`Validation.cs`) — same method
+  name, different signature, only one ever reached from a host.
+- `GetCurrentRecord(blockName)` (`EnhancedOperations.cs`) — both hosts bypass it, reading
+  `GetUnitOfWork(blockName)?.CurrentItem` directly instead.
+- `CreateNewRecordInMasterBlockAsync` (`ModeTransitions.cs`, test-only orphan) — sibling of the
+  reachable `EnterCrudModeForNewRecordAsync`; the master-block-cascade variant has no real caller.
+
+**Possible missing wiring (case b — a declared capability with no consumer, not obviously a
+duplicate of anything reachable).** Checked each against `IUnitofWorksManager` — the interface
+both hosts hold `FormsManager` as (not the concrete class) — since that distinction changed the
+picture for `RegisterKeyTrigger` above: an interface-declared method is already reachable via
+`host.FormsManager.X(...)` for any caller who wants it (just never exercised, lower actionability);
+one that isn't interface-declared is genuinely unreachable from any host without an unsafe cast —
+the same shape `IBeepFormsHost.FireItemTriggerAsync` was in before this session fixed it, and
+correspondingly higher priority to look at next:
+  - **Interface-declared, reachable, just unused** — same standing as `RegisterKeyTrigger`, no
+    interface gap to close: `CountQueryAsync` (`BasicDataOps.cs`, test-only orphan) — Oracle Forms
+    COUNT_QUERY equivalent, sibling of the well-used `ExecuteQueryAsync`; `CommitFormBatchAsync` /
+    `CommitBlockBatchAsync` (`DataOperations.cs`) — a batched-commit-with-progress API, referencing
+    only each other.
+  - **`SetSystemVariables` — FIXED, see G0.63.** Was not declared on `IUnitofWorksManager`, so
+    genuinely unreachable from any host without an unsafe cast; now declared there (interface
+    exposure only — *when* the engine should auto-invoke it remains a deliberately undecided design
+    question). Checked whether it duplicates the unrelated `Editor/Defaults/DefaultValueResolverManager`
+    subsystem (whose `UserContext`/`DateTime`/`SystemInfo` resolvers sound like they cover the same
+    "stamp SYSTEM_USER/SYSTEM_DATE on a record" need) — they don't: grepped the whole `Editor/Forms/`
+    tree and found zero references to `DefaultValueResolverManager`/`DefaultsManager` anywhere: the
+    two subsystems are entirely disconnected, and neither auto-populates a new block record's
+    audit-style fields today. `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
+    `ValidateAllBlocksForModeTransitionAsync` (`ModeTransitions.cs`, not on the interface either) —
+    checked against `ValidateForm()` (`FormOperations.cs`), which loops every block calling
+    `ValidateBlock` the same way. **Correction, same session:** an earlier version of this entry
+    called `ValidateForm()` "also-host-unused" — wrong. `CommitFormAsync` calls it directly
+    (`if (Configuration?.ValidateBeforeCommit == true) { if (!ValidateForm()) ... }`,
+    `FormOperations.cs`), and `ValidateBeforeCommit` **defaults to `true`**
+    (`UnitofWorksManagerConfiguration.cs`) — so `ValidateForm()` runs, and fires `WhenValidateForm`,
+    on essentially every real commit. Missed on the first pass because it's a bare, same-class call
+    (`ValidateForm()`, no `this.`/`manager.` prefix) inside another `FormsManager` method — exactly
+    the blind spot the original orphaned-method sweep said it corrected for in ~20 cases; this one
+    slipped through that correction pass too, caught only by re-verifying this specific item rather
+    than trusting the list. **Treat the rest of this inventory as a starting point needing the same
+    spot-check before acting on it, not a verified-accurate list** — `ValidateForm()` is proof the
+    bare-call blind spot isn't fully closed. With that correction, `ValidateAllBlocksForModeTransitionAsync`'s
+    relationship to `ValidateForm()` is a **partial overlap, not a clean duplicate**: it additionally
+    checks `UnitOfWork.IsDirty` per block (a genuinely different "is it safe to switch modes"
+    question `ValidateForm()` doesn't ask), but never fires `WhenValidateForm` itself — so a
+    mode-transition readiness check specifically skips a trigger a form author would reasonably
+    expect to fire. **`GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync` /
+    `ValidateAllBlocksForModeTransitionAsync` — FIXED, see G0.64.** Declared all three on
+    `IUnitofWorksManager`; writing the verifying self-test surfaced a second, more significant
+    defect (also closed by G0.64): `_currentBlockName` — the field `GetAllBlockModeInfo`'s
+    `IsCurrentBlock` reads — was never initialized for a form's first block.
+
+**Likely-unused feature clusters (case c — plausibly safe to leave, lowest priority to
+investigate further):**
+- Client-info cluster: `SetClientAction`/`SetClientHost`/`SetClientIpAddress`/`SetClientModule` +
+  their four `Get*` counterparts (`RecordGroups.cs`) — a full Oracle-Forms-style client-audit
+  feature with no caller; the coarser `SetClientInfo`/`GetClientInfo` pair is used.
+- Shared-block cluster: `GetSharedBlock` / `TryLockSharedBlock` / `ReleaseSharedBlockLock`
+  (`InterFormComm.cs`, true orphans) plus `CreateSharedBlock`/`RemoveSharedBlock` (test-only) — an
+  inter-form shared-block feature with no real-world caller found anywhere.
+- `RecordGroupExists` / `GetParameterList` / `ParameterListExists` / `HasParameter`
+  (`RecordGroups.cs`) — the creation/populate half of record groups and parameter lists is used
+  (see G0.60's sibling verification of `PopulateRecordGroupAsync`); these query/existence helpers
+  aren't.
+- `FindBlockRecordAsync` / `FindBlockRecordsAsync` / `CloneBlockRecordAsync`
+  (`ExtendedOperations.cs`) — unused LINQ-style block search/clone helpers.
+- `HasApplicationProperty` / `RemoveApplicationProperty` (`ExtendedOperations.cs`) — the sibling
+  `Set`/`GetApplicationProperty` are used; the existence-check and removal halves aren't.
+
+**Not a finding, explicitly checked and sound:** `OpenFormAsync(string, Dictionary)`
+(`MultiFormNavigation.cs`) duplicates `OpenFormAsync(string)`, but is already self-documented
+`[Obsolete]` pointing callers at `OpenFormModelessAsync` — a deliberate, already-marked
+deprecation, not a hidden orphan.
+
+**Why not resolved here:** Each case-a duplicate needs the same kind of direct verification
+`LoadPageAsync`/`GoToBlockPageAsync` got (confirm the "reachable" side really is reachable and
+behaviorally equivalent) before anything could safely be consolidated or removed — and removal is
+explicitly not this implementer's call per house rule 6. Each case-b item needs its own
+investigation into whether it's a real missing workflow (compare against Oracle Forms /
+Auth0-equivalent reasoning) or genuinely unneeded scope. The case-c cluster is lowest priority —
+plausibly dead, speculative feature surface — but "nothing reads it" is a reason to investigate,
+not a reason to delete, so it stays listed rather than silently dropped.
+
+**Risk of leaving as-is:** Low for now — every method in this list is either genuinely unreachable
+(true orphan) or reachable only from unit tests, so none of it is presenting broken behavior to a
+real user today. The risk is entirely in *not* tracking it: an orphan is usually the only surviving
+record that a capability was intended, and losing that record turns a known gap into an unknown
+one.
+
+---
+
+### G0.63: `FormsManager.SetSystemVariables` was implemented but not declared on
+`IUnitofWorksManager`, so no host or IDE-authored trigger handler could reach it (FIXED 2026-08-26)
+
+**What:** G0.62's case-b inventory flagged `SetSystemVariables` (`FormsSimulation.cs`) as the
+highest-priority open item in that list: fully implemented on the concrete `FormsManager` class,
+with its own doc comment saying it was exposed specifically for hosts to reach — but never declared
+on `IUnitofWorksManager`, the only type either host (`WinFormFormHost`/`BeepWpfForms`) exposes
+`FormsManager` as. A host, or an IDE-authored trigger handler holding only that interface, had no
+way to call it at all without an unsafe cast to the concrete class — the same "declared but
+genuinely unreachable" shape `IBeepFormsHost.FireItemTriggerAsync` was in before an earlier fix this
+session closed it. The Oracle Forms use case this blocks is a form author's own registered trigger
+(e.g. `WHEN-CREATE-RECORD`/`PRE-INSERT`) stamping `:SYSTEM.CURRENT_DATE`/`:SYSTEM.USER`-style audit
+fields onto the record it's handed — which needs exactly this interface-level reach, not
+engine-side auto-invocation at some fixed lifecycle point (deliberately not decided here; see
+below).
+
+**Fix:** Declared `void SetSystemVariables(object record, SystemVariableType variableType, object
+value = null)` on `IUnitofWorksManager`, matching the concrete method's signature exactly. Purely
+additive — `FormsManager` already implemented it, confirmed by `DataManagementModels` and
+`DataManagementEngine` both building with zero errors and no further change needed anywhere.
+
+**Where:** `DataManagementModelsStandard/Editor/Forms/Interfaces/IUnitofWorksManager.cs`.
+
+**Deliberately not decided here:** *when* the engine should auto-invoke this (a specific
+record-lifecycle trigger point vs. staying a manual, form-author-invoked utility) is an
+architectural decision this fix does not make unilaterally — matching the discipline already
+applied to `WhenLogon`/`PostLogon`/`OnLogoff` earlier this session. The fix is scoped to interface
+exposure only.
+
+**Risk of fix:** Low. Additive interface member on an interface `FormsManager` already fully
+implements; no existing implementer of `IUnitofWorksManager` is broken by gaining a member it
+already had to satisfy on the concrete type used everywhere in this codebase.
+
+**Verified:** `FormsManager.Tests` (196/196 passing, unchanged). New
+`Examples.WPF/SystemVariablesRecordSelfTest.cs` (`--selftest-systemvars`) passes 8/8 checks —
+`SystemDate`/`SystemDateTime`/`SystemUser` (with and without an explicit value)/`RecordStatus`
+(with and without an explicit value) against a plain POCO record, reached exclusively through
+`IUnitofWorksManager` (not the concrete class), plus confirms a record missing the target field is
+handled gracefully (`RecordPropertyAccessor.TrySetValue` fails closed and reports through
+`DMEEditor.AddLogMessage`, not a thrown exception). `SmokeTests` and `DesignerCompileCheck` both
+re-run clean; every other WPF `Examples` self-test unaffected.
+
+---
+
+### G0.64: `_currentBlockName` was never initialized for a form's first block, so every
+"current block" fallback silently had no current block at all (FIXED 2026-08-26)
+
+**What:** Continuing G0.62's case-b inventory, `GetAllBlockModeInfo` / `IsFormReadyForModeTransitionAsync`
+/ `ValidateAllBlocksForModeTransitionAsync` were declared on `IUnitofWorksManager` (matching the
+G0.63 `SetSystemVariables` fix — purely additive, `FormsManager` already implemented all three).
+Writing `Examples.WPF/ModeTransitionReadinessSelfTest.cs` to prove `GetAllBlockModeInfo`'s
+`IsCurrentBlock` field against a real, single-block form surfaced a second, unrelated, and more
+significant defect: `IsCurrentBlock` was `false` for the block, even though it was the only block
+registered and had just been queried and navigated. Traced to `_currentBlockName`
+(`FormsManager.Core.cs`): it is set in exactly one place, `SwitchToBlockAsync` (and its delegate
+`GoBlockAsync`) — an *explicit* block-switch call, the kind a NEXT_BLOCK/PREVIOUS_BLOCK menu command
+or block-navigation UI element would issue. Grepped every caller of `SwitchToBlockAsync`/
+`GoBlockAsync`/the public `CurrentBlockName` setter across both this repo and BeepDM: neither host
+(`WinFormFormHost`, `BeepWpfForms`) nor either `Examples` app ever calls any of them — the only
+writers found were three unit tests using `CurrentBlockName = "EMP"` as setup convenience. So
+`_currentBlockName` stays `null` for the entire life of every real `FormsManager` instance created
+by either host, unless the application explicitly performs a block switch — which never happens for
+the initial, most common case: a single-block form, or the first block of a multi-block form before
+any switch has occurred.
+
+This is a genuine "accepted-then-ignored" defect (house rule 7: "ask what reads this value to make a
+decision") — `_currentBlockName` is read by five other consumers, all silently degraded for the same
+reason:
+- `GetAllBlockModeInfo`'s `IsCurrentBlock` (just found) — always `false`.
+- `FormsManager.DmlTriggers.cs` / `KeyTriggers.cs` / `Menu.cs` — each has a `blockName ??
+  _currentBlockName` fallback for firing a DML/KEY-*/menu-command trigger without an explicit block
+  name; all three silently resolve to no block (empty trigger context) instead of "the block the
+  user is presently in."
+- `FormsManager.Alerts.cs`'s `MessageScope()` — alerts raised without an explicit block name get an
+  empty scope instead of the current block's.
+- `SaveFormState`/`RestoreFormStateAsync` (`FormsManager.DataOperations.cs`) — `RestoreFormStateAsync`
+  explicitly skips restoring the current-block selection when the snapshot's `CurrentBlock` is empty
+  (`if (!string.IsNullOrEmpty(snapshot.CurrentBlock)) await SwitchToBlockAsync(...)`), so a
+  save/restore cycle silently never restored which block had focus.
+
+Oracle Forms itself always has a current block, defaulting to the first block in the form's
+navigation sequence — there is no "no current block" state in a running Oracle Forms session.
+
+**Fix:** `RegisterBlock` (`FormsManager.BlockRegistration.cs`), immediately after the existing
+`TriggerBlockEnter` call: if `_currentBlockName` is still empty, set it to the block just registered
+and call `_systemVariablesManager?.UpdateForBlockChange(blockName)` (the same system-variables sync
+`SwitchToBlockAsync` performs) so `:SYSTEM.CURRENT_BLOCK` doesn't drift out of sync with the field
+this fix populates. First-registered-block-becomes-current, only when nothing has already claimed
+that status — a later `RegisterBlock` call for a second block does not override an already-set
+current block, matching Oracle Forms' block-sequence-order default.
+
+**Where:** `Editor/Forms/FormsManager.BlockRegistration.cs` (`RegisterBlock`, one call site).
+
+**Proven via revert:** temporarily gated the new assignment behind `if (false && ...)`, reran the
+targeted xUnit tests: `RegisterBlock_FirstBlock_BecomesCurrentBlock` and
+`RegisterBlock_SecondBlock_DoesNotOverrideCurrentBlock` (new, this fix) both failed as predicted
+(`CurrentBlockName` stayed empty), and the two existing `SwitchToBlockAsync`/`GoBlockAsync` →
+`UpdateForBlockChange` tests failed their `Times.Exactly(2)` assertion, reporting exactly 1 — the
+explicit switch call's own invocation, with the registration-time one missing. Restoring the fix
+made all four pass again.
+
+**Existing-test correction:** `SwitchToBlockAsync_UpdatesSystemVariablesCurrentBlock` and
+`GoBlockAsync_DelegatesToSwitchToBlockAsync_UpdatesSystemVariables` (`FormsManagerTests.cs`, G0.36)
+asserted `UpdateForBlockChange` fires exactly once when the test's one registered block is
+explicitly switched to itself. That assumption predates this fix and is now stale for a legitimate
+reason, not a fix collateral: `RegisterBlock` now fires it once (establishing the initial current
+block) and the explicit `SwitchToBlockAsync`/`GoBlockAsync` call — switching to a block that is
+already current, which has no same-block short-circuit — fires it again. Updated both to
+`Times.Exactly(2)` with a comment explaining why.
+
+**Risk of fix:** Low. Purely additive for the case that was previously always broken (a still-null
+`_currentBlockName` was never a state anything could have correctly depended on); does not fire
+`PreBlock`/`WhenNewBlockInstance` (registration is not a navigation event, and deciding whether it
+should is a separate design question this fix does not make unilaterally, matching the restraint
+already applied to `WhenLogon`/`SetSystemVariables`'s auto-invocation question).
+
+**Verified:** `FormsManager.Tests` (198/198 passing — 196 existing + 2 new, 2 corrected). New
+`Examples.WPF/ModeTransitionReadinessSelfTest.cs` (`--selftest-modetransition`) passes 12/12 —
+`GetAllBlockModeInfo`, `ValidateAllBlocksForModeTransitionAsync`, and
+`IsFormReadyForModeTransitionAsync` all exercised through `IUnitofWorksManager`, both before and
+after dirtying the block, and pins down the real (non-obvious) contract that
+`IsFormReadyForModeTransitionAsync` only gates on `Errors.Failed`, not `Errors.Warning` — it stays
+`true` even with unsaved changes; a caller that wants to block on dirty state must read
+`ValidateAllBlocksForModeTransitionAsync`'s own result directly. `SmokeTests` and
+`DesignerCompileCheck` re-run clean. Full regression sweep: all 22 WPF `Examples` self-tests and all
+12 WinForms `Examples` self-tests pass (WinForms benefits from the same engine fix through
+`WinFormFormHost`, which shares `FormsManager`/`RegisterBlock`).
+
+---
+
+### G0.65: `IUnitofWorksManager.DirtyStateManager` was genuinely unreachable, and closing
+that gap surfaced `HasValidationErrors`, G0.53's own deliberately-deferred follow-on
+(FIXED 2026-08-27)
+
+**What:** Closing the loop on G0.53's own "not attempted in this pass" note (`HasValidationErrors`
+needs a new constructor dependency `DirtyStateManager` didn't have) surfaced a second, larger gap
+first: `FormsManager.DirtyStateManager` — the richer per-block dirty detail
+(`GetDirtyBlocksWithDetails()`'s `DirtyRecordCount`/`LastModified`/`HasErrors`, and the
+`CheckAndHandleUnsavedChangesAsync`/`OnUnsavedChanges` Save/Discard/Cancel prompt workflow G0.52
+already wired to a real `ShowAlertAsync` dialog) was never declared on `IUnitofWorksManager` — the
+only type either host (`WinFormFormHost.FormsManager`, `BeepWpfForms.FormsManager`) is typed as.
+Same "declared but genuinely unreachable without an unsafe cast" shape as G0.59
+(`FireItemTriggerAsync`) and G0.63 (`SetSystemVariables`). Checked `Beep.Forms/…/
+WinFormDirtyStatePanel.cs`: 24 lines, uses only the simpler primitives already on the interface
+(`GetDirtyBlocks`/`SaveDirtyBlocksAsync`/`RollbackDirtyBlocksAsync`) — so the richer surface, and
+everything G0.52/G0.53/G0.54 built on top of it, had no path to either host at all.
+
+**Fix (reachability):** `IUnitofWorksManager.DirtyStateManager { get; }` (purely additive —
+`FormsManager.DirtyStateManager` already existed with this exact signature, zero concrete-class
+change) and `IDirtyStateManager.GetDirtyBlocksWithDetails()` (the concrete `DirtyStateManager`
+already implemented it) in `ICoreHelpers.cs`/`IUnitofWorksManager.cs`.
+
+**Fix (HasValidationErrors, G0.53's deferred item):** New constructor resolver on
+`DirtyStateManager`, `Func<string, bool> hasValidationErrorsFunc`, matching the existing
+`getDefaultSaveOptionsFunc` late-bound-closure shape (constructed before `_itemPropertyManager` in
+`FormsManager.Core.cs`'s init order, safe because the closure reads the field when invoked, not at
+construction). Wired to `ItemProperties.GetItemsWithErrors(blockName).Count > 0` — the live
+per-item error state `ItemPropertyManager` already tracks from real validation-rule failures
+(`SetItemError`/`ClearItemError`, `FormsManager.Validation.cs`), not a fresh validation run. No
+resolver supplied (every pre-existing `DirtyStateManager` construction in `FormsManagerTests.cs`)
+means "no known source of truth": conservatively `false`, never fabricated `true`.
+
+**Where:** `DataManagementModelsStandard/Editor/Forms/Interfaces/IUnitofWorksManager.cs`,
+`ICoreHelpers.cs`; `DataManagementEngineStandard/Editor/Forms/Helpers/DirtyStateManager.cs`,
+`FormsManager.Core.cs`.
+
+**Proven via revert, at both layers.** Three new `FormsManagerTests.cs` cases (resolver reports
+errors / reports none / absent-resolver default) — reverting `HasValidationErrors` to the hardcoded
+`false` failed exactly the "reports errors" case, the other two correctly unaffected. New
+`Beep.Forms/…/Examples.WinForms/DirtyStateSelfTest.cs` (`--selftest-dirtystate`) proves both fixes
+together through the real interface boundary — `masterHost.FormsManager!.DirtyStateManager` would
+not have compiled before the interface fix — with a real registered `ValidationRule`: an in-range
+edit reports `HasErrors=false`, an out-of-range edit reports `HasErrors=true`. One gotcha caught
+writing it, orthogonal to this fix: the rule needs `Timing = ValidationTiming.OnChange` explicit —
+`SetFieldValue`'s automatic validation runs at `OnChange`, and a rule left at the `ValidationRule`
+default (`OnBlur`, the default every IDE-authored rule takes) is filtered out of that pass entirely
+by `ValidationManager.GetApplicableRules`. Reverting the engine fix reproduced the exact predicted
+failure end to end through the host.
+
+**Not attempted here, deliberately:** wiring `HasErrors`/`DirtyRecordCount`/`LastModified` into
+`WinFormDirtyStatePanel`'s (or the WPF equivalent's) own display, or auto-invoking
+`CheckAndHandleUnsavedChangesAsync` from a host choke point (e.g. `Form.Closing`) — matching
+G0.63's own restraint of exposing a capability additively without deciding, in the same pass,
+exactly when a host should invoke it.
+
+**Verified:** `FormsManager.Tests` 201/201 (198 existing + 3 new). `SmokeTests`,
+`DesignerCompileCheck`, full `Beep.Forms.slnx` build, all green. New self-test 5/5.
+
+---
+
+### G0.66: `RegisterBlockComputedFormula` was never carried onto `IUnitofWorksManager`
+(FIXED 2026-08-27)
+
+**What:** Added after `RegisterBlockComputed` (the delegate-based computed-column
+mechanism, already declared on `IUnitofWorksManager`) but never added to the interface
+itself — the same shape as G0.65, this time affecting only one method rather than a
+whole sub-manager. `RegisterBlockComputed`/`GetBlockComputedValue`/
+`GetBlockComputedColumnNames`/`GetAllBlockComputedValues` were all already reachable;
+only the newer, no-code formula-string convenience method was missed.
+
+**Fix:** `IUnitofWorksManager.RegisterBlockComputedFormula(string, string, string)` —
+purely additive.
+
+**Proven via revert:** commenting out the interface declaration reproduced a compile
+error in Beep.Forms' new `Examples.WinForms/ComputedFormulaSelfTest.cs`
+(`--selftest-computedformula`) — `masterHost.FormsManager!.RegisterBlockComputedFormula(...)`
+would not compile. Registers `"Qty * 2"` against a real queried block and reads back the
+correct computed value through the interface-typed reference. 3/3 checks.
+
+**Where corrected:** Beep.Forms' `future-requirements.md` F17 row also cited a fictional
+API (`BeepFieldDefinition.Calculation`/`BeepSummaryOperation`); corrected to describe
+the real, now-reachable pull-based mechanism and to correctly scope what remains
+genuinely missing — auto-recompute-on-change and an IDE authoring surface, neither
+attempted here.
+
+**Verified:** `FormsManager.Tests` 201/201 (no regressions from a pure interface
+addition — nothing new to test at the engine layer beyond reachability, already proven
+via the Beep.Forms self-test).
+
+---
+
+### G0.67: `ExecuteSequence` and the whole shared-block family (six methods) were
+declared on `FormsManager` with zero test coverage anywhere and no path onto
+`IUnitofWorksManager` (FIXED 2026-08-27)
+
+**What:** A systematic sweep of every `public` member on `FormsManager`'s partial
+classes against `IUnitofWorksManager`'s declared members (the same audit technique
+behind G0.62's orphan inventory, run again after G0.65/G0.66) found roughly 60
+candidates; most turned out to be redundant convenience wrappers already reachable via
+an already-exposed sub-manager (`Timers`/`Sequences`/`BlockProperties`/audit methods on
+the interface directly) and were left alone. Two genuine gaps survived that filter:
+
+- **`ExecuteSequence(blockName, record, FieldName, sequenceName)`**
+  (`FormsManager.FormsSimulation.cs`) — reads a *database-native* sequence via the
+  block's own `IUnitofWork.GetSeq` (not the in-memory `Sequences` provider, a
+  genuinely different mechanism) and assigns it into a record field: the Oracle Forms
+  PRE-INSERT idiom of auto-generating a primary key from a real DB sequence. Zero
+  callers anywhere in Beep.Forms, zero test coverage anywhere in BeepDM's own suite —
+  the deepest form of "accepted-then-ignored" this session has found: not merely
+  unreachable, never exercised at all.
+- **`CreateSharedBlock`/`GetSharedBlock`/`TryLockSharedBlock`/`ReleaseSharedBlockLock`/
+  `SharedBlockExists`/`RemoveSharedBlock`** (`FormsManager.InterFormComm.cs`) —
+  publishing a form's block as a cross-form shared UnitOfWork with a name-based lookup
+  and cooperative locking. The rest of that same file's Inter-Form section (globals,
+  parameter passing, the message bus) was already on the interface; only this cluster
+  of six was missed entirely.
+
+**Fix:** All seven added to `IUnitofWorksManager` — purely additive, zero
+concrete-class changes (both were already fully implemented on `FormsManager`).
+
+**Proven via revert, twice:** once against six new `FormsManagerTests.cs` cases
+(`ExecuteSequence` happy-path/non-positive-value, `CreateSharedBlock`→`GetSharedBlock`
+round-trip, `SharedBlockExists` reflecting create/remove, `TryLockSharedBlock`→
+`ReleaseSharedBlockLock`→reacquire, and one interface-typed test exercising all seven
+through an `IUnitofWorksManager` reference) — commenting out all seven interface
+declarations reproduced seven `CS1061` compile errors, restoring them fixed the build.
+Repeated a second time against Beep.Forms' new
+`Examples.WinForms/SharedBlockAndSequenceSelfTest.cs` (`--selftest-sharedblock`),
+reproducing nine `CS1061` errors in that file specifically (proving the Beep.Forms side
+independently, not just BeepDM's own test suite).
+
+**`ExecuteSequence` genuinely cannot demonstrate its happy path against the SQLite
+demo data source, and the self-test says so rather than faking it.**
+`DatabaseFeatureHelper.GenerateFetchNextSequenceValueQuery` only covers
+Oracle/Postgres/SqlServer/FireBird/DB2 — SQLite falls through to `null`, so
+`IUnitofWork.GetSeq` always returns `-1` against the seeded demo database, and
+`ExecuteSequence` correctly, gracefully returns `false`. The Beep.Forms self-test
+asserts exactly that (no exception, correct `false`) rather than a fabricated success;
+the happy path (a mocked `GetSeq` returning a positive value, assigned into a real
+field) is proven at the BeepDM layer instead, where the sequence source can be
+controlled directly.
+
+**Verified:** `FormsManager.Tests` 207/207 (201 existing + 6 new). Full `Beep.Forms.slnx`
+build, `SmokeTests`, `DesignerCompileCheck`, both new self-tests, all green.
+
+---
+
+### G0.68: the whole Phase 7 (paging / lazy-load / cache) surface, plus three
+record-introspection methods, were unreachable through `IUnitofWorksManager`
+(FIXED 2026-08-27)
+
+**What:** Completing the systematic sweep begun for G0.65/G0.67, checked the two
+sub-managers backing `FormsManager.Performance.cs` (Phase 7 — paging, lazy-load,
+cache) and found **neither `IPagingManager Paging` nor `IPerformanceManager
+PerformanceManager`** — both real properties on `FormsManager` — was ever declared
+on the interface, unlike `Timers`/`Sequences`/`BlockProperties` in the same file's
+neighborhood, which already were. Several of the FormsManager-level convenience
+methods around them do more than delegate — `SetBlockPageSize`/`SetFetchAheadDepth`/
+`SetBlockCacheTtl` also sync the matching `DataBlockInfo.Configuration` field, and
+`GetTotalRecordCount` falls back to `UnitOfWork.TotalItemCount` when nothing was
+explicitly stored — so exposing only the two sub-manager properties would not have
+reproduced their real behavior. `SetLazyLoadMode`/`GetLazyLoadMode`/
+`SetMaxRecordsPerFetch` operate directly on `DataBlockInfo` fields with no sub-manager
+at all. Also found in the same sweep, unrelated to Phase 7 but the same
+"genuinely unreachable" shape: `CreateNewRecord` (CLR entity-type resolution, no
+other path), `GetCurrentRecordInfo` (a `NavigationInfo` aggregation combining private
+helper methods this interface offers no other way to reproduce), and `GetCallStack`
+(a call-stack snapshot with no other exposed accessor). Ruled out as **not** gaps in
+the same pass: `GetCurrentRecord` (identical to the already-reachable
+`GetUnitOfWork(blockName)?.CurrentItem`), `HasUnsavedChanges` (identical to
+`DirtyStateManager.HasUnsavedChanges()`, reachable since G0.65), and `ShowInfoAsync`
+(a convenience overload fully reproducible via the already-reachable
+`ShowAlertAsync`).
+
+**Fix:** Thirteen additions to `IUnitofWorksManager` — `Paging`, `PerformanceManager`,
+`SetBlockPageSize`, `GetTotalRecordCount`, `SetFetchAheadDepth`, `SetLazyLoadMode`,
+`GetLazyLoadMode`, `SetMaxRecordsPerFetch`, `SetBlockCacheTtl`, `GetRecordCount`,
+`CreateNewRecord`, `GetCurrentRecordInfo`, `GetCallStack` — all purely additive, zero
+concrete-class changes (every one already fully implemented on `FormsManager`).
+
+**Proven via revert, twice:** ten new `FormsManagerTests.cs` cases (each Performance/
+Paging method individually, `GetCallStack`'s empty-by-default snapshot, and one
+interface-typed test exercising all thirteen — the latter needed a real, public-typed
+`ObservableBindingList<Entity>` for `Units`, not a bare mock or a private nested test
+class, both of which fail the dynamic dispatch `GetCurrentRecordInfo` performs, the
+same lesson an existing `NavigateToRecordAsync` test in this file already
+documents) — commenting out all thirteen interface declarations reproduced thirteen
+`CS1061` compile errors, restoring them fixed the build. Repeated independently
+against Beep.Forms' new `Examples.WinForms/PagingPerformanceSelfTest.cs`
+(`--selftest-paging`), reproducing sixteen `CS1061` errors in that file specifically.
+
+**Verified:** `FormsManager.Tests` 217/217 (207 existing + 10 new). Full
+`Beep.Forms.slnx` build, `SmokeTests`, `DesignerCompileCheck`, the new self-test
+(9/9), all green.
+
+---
+
+### G0.69: the orphan-detection sweep itself had a blind spot -- missed expression-bodied
+properties and `async` methods -- closing it surfaced eight more genuinely
+unreachable sub-managers/methods (FIXED 2026-08-27)
+
+**What:** The regex-based sweep behind G0.65/G0.67/G0.68 (`public\s+[\w<>\[\],\?\.]+\s+
+\K\w+(?=\s*[\({])`) only matched a return type expressed as a single contiguous
+token followed by `(` or `{`. Two real shapes broke that assumption and were
+silently skipped for every prior pass: **expression-bodied properties**
+(`public IPagingManager Paging => _pagingManager;` has no `(`/`{` after the name)
+and **`async` methods** (`public async Task<X> Name(...)` has two tokens — `async`
+and `Task<X>` — before the name, so the single-token assumption fails and the whole
+line doesn't match). Re-running the sweep with a corrected pattern
+(`public\s+(async\s+)?...\s+\K\w+(?=\s*[\({]|\s*=>)`) found eight more genuinely
+unreachable members hiding behind exactly this blind spot:
+
+- **`AuditManager`** (`IAuditManager`) — `Configuration`/`CurrentUser`/`Store`/
+  `RecordFieldChange` beyond the four individual audit convenience methods already
+  on the interface.
+- **`Security`** (`ISecurityManager`) — `IsBlockAllowed`, `ApplyBlockSecurityFlags`,
+  `ClearBlockSecurity`, `GetBlockRowFilter`, field-level security
+  (`SetFieldSecurity`/`GetFieldSecurity`/`ApplyFieldSecurityFlags`/`GetMaskedValue`),
+  `OnSecurityViolation`, `RaiseViolation` — far more than the four individually-exposed
+  context/block-security methods covered.
+- **`Registry`** (`IFormRegistry`) — `ActiveFormName`/`SetActiveForm`,
+  `RegisterForm`/`UnregisterForm`/`GetForm`/`GetActiveFormNames`/`FormExists`. A host
+  could call the multi-form navigation convenience methods but never enumerate or
+  introspect other open forms.
+- **`MessageBus`** (`IFormMessageBus`) — `UnsubscribeAll` and the `OnFormMessage`
+  global observer event, beyond the four per-message convenience methods.
+- **`SharedBlocks`** (`ISharedBlockManager`) — `NotifySharedBlockChanged` and the
+  `SharedBlockChanged` event. G0.67 exposed the six create/get/lock/exists/remove
+  convenience methods but missed the sub-manager itself, so a form committing
+  changes to a shared block had no way to notify others holding a reference to it.
+- **`TriggerLog`**/**`TriggerDependencies`**/**`FireTriggersInOrderAsync`** —
+  Phase 4.3 trigger chaining, dependency ordering (topological sort with cycle
+  detection), and execution logging, entirely unreachable; `FireTriggersInOrderAsync`
+  itself is `async`, exactly the shape the old sweep missed.
+- **`Configuration`** (`UnitofWorksManagerConfiguration`) — the manager-wide settings
+  object (`DefaultSaveOptions`, `ValidateBeforeCommit`, etc.), an expression-bodied
+  property (`=> _configurationManager?.Configuration`).
+- **`CurrentMessage`** (`StatusMessage`) — the latest status message with severity
+  and timestamp, richer than the already-exposed plain `Status` string; also
+  expression-bodied.
+- **`SetAuditDefaults`** and **`LoadPageAsync`** — the former stamps common audit
+  fields onto a record (no other path; `ApplyAuditDefaults`, its sibling, is
+  `[Obsolete]` and correctly *not* exposed); the latter combines `Paging`'s
+  `SetCurrentPage` with the actual cursor move (`Paging` alone would update paging
+  state without navigating) — missed in G0.68 despite being in the same source
+  region as the rest of that fix, a straightforward oversight caught by rereading
+  the file rather than the regex.
+
+**Investigated in the same sweep and deliberately NOT added, each for a documented
+reason:**
+- `NextItemAsync`/`PreviousItemAsync` — their own bodies only fire the
+  `KEY-NEXT-ITEM`/`KEY-PREV-ITEM` trigger and return whether it was cancelled; they
+  do **not** actually move focus despite their doc comments claiming to ("Move focus
+  to the next item..."). Exposing a method whose behavior doesn't match its own
+  documented contract would add a misleading capability, not close a gap. Needs its
+  own investigation before any action — not resolved here.
+- `EnterQueryModeAsync` — a `Task<IErrorsInfo>`-returning method distinct from the
+  already-exposed, actually-used `EnterQueryAsync` (`Task<bool>`), which is what
+  `WinFormFormHost`/`BeepWpfForms` genuinely call. The same "two implementations of
+  one capability" shape as `ExecuteQueryAndEnterCrudModeAsync` (G0.61) — a duplicate
+  needing resolution under house rule 3, not a reachability fix.
+- `CreateNewRecordInMasterBlockAsync`, `EnterCrudModeForNewRecordAsync`,
+  `InsertRecordEnhancedAsync`, `RegisterBlockFromSourceAsync`,
+  `ExecuteQueryEnhancedAsync` — "Enhanced"/specialized variants with ad-hoc doc
+  comments ("This is the method that handles your specific scenario"). Plausibly
+  genuine higher-level convenience methods, but `ExecuteQueryEnhancedAsync`
+  specifically risks being another abandoned alternative to the actually-used
+  `ExecuteQueryAsync` (the same shape as `EnterQueryModeAsync` above) — needs
+  individual verification of which is canonical before exposing, not a same-pass
+  reachability fix.
+- `FireOnInsertAsync`/`FireOnUpdateAsync`/`FireOnDeleteAsync`/`FireOnLockAsync`/
+  `FireOnRollbackAsync`/`FireOnCheckDeleteMasterAsync` — DML trigger-firing methods
+  that read as internal machinery already invoked automatically by
+  `InsertRecordAsync`/`UpdateCurrentRecordAsync`/`DeleteCurrentRecordAsync` during
+  normal CRUD flow, not something a typical caller needs to invoke directly. Not
+  conclusively ruled in or out.
+- The Block Property family (`SetBlockProperty`/`GetBlockProperty`/
+  `SetInsertAllowed`/`SetUpdateAllowed`/`SetDeleteAllowed`/`SetQueryAllowed`/
+  `SetDefaultWhere`/`SetOrderBy`) and `GetBlockMode`/`TryGetBlockMode` — all either
+  pure passthroughs to the already-exposed `BlockProperties`, or trivially
+  reproducible via the already-exposed `GetBlock(blockName)?.Mode` — genuinely
+  redundant, not gaps.
+
+**Proven via revert, twice:** four new `FormsManagerTests.cs` cases
+(`SetAuditDefaults` stamping `CreatedBy`/`CreatedDate`, `LoadPageAsync` navigating to
+the right record via a real `ObservableBindingList`, `FireTriggersInOrderAsync`
+firing two dependent triggers in the correct order, and one interface-typed test
+exercising all eight sub-manager/property additions) — commenting out the ten
+single-line declarations reproduced ten `CS1061` errors (the two multi-line
+signatures, `FireTriggersInOrderAsync` and `LoadPageAsync`, were left alone to avoid
+a syntax-error cascade masking the individual member-not-found signal; both were
+already proven separately in the G0.68 and combined revert passes). Repeated
+independently against Beep.Forms' new
+`Examples.WinForms/RemainingSubManagerSelfTest.cs` (`--selftest-submanagers`),
+reproducing ten `CS1061` errors in that file specifically.
+
+**Verified:** `FormsManager.Tests` 221/221 (217 existing + 4 new). Full
+`Beep.Forms.slnx` build, `SmokeTests`, `DesignerCompileCheck`, the new self-test
+(11/11), all green.
 
 ---
 ## P0 — Correctness / Existing-User Impact
@@ -1289,13 +3337,39 @@ CRUD, navigation, validation, and schema-management capabilities that
 
 ---
 
-#### G3.2: Computed Columns (FIXED 2026-06-17)
+#### G3.2: Computed Columns (FIXED 2026-06-17; formula-string variant added 2026-08-26)
 
 **Fix:** Added `RegisterBlockComputed`, `UnregisterBlockComputed`, `GetBlockComputedValue`,
 `GetBlockComputedColumnNames`, `GetAllBlockComputedValues` to FormsManager.
 Thread-safe via `ConcurrentDictionary`. Evaluates computation against current UoW record.
 
-**Where:** `FormsManager.ExtendedOperations.cs:131-180`.
+**2026-08-26: `FieldFormulaEvaluator` (`Helpers/FieldFormulaEvaluator.cs`) — a complete infix
+formula parser for Oracle Forms' no-code `Calculation = Formula` item mode (+, -, *, / with
+parentheses and field-name references) — had zero callers anywhere in the engine.** Found during a
+sweep of `Helpers/*.cs` for the same "built, zero real callers" shape `SystemVariablesManager` had
+(G0.36). Confirmed it is a genuinely *different* capability from `RegisterBlockComputed` above, not
+a duplicate: `RegisterBlockComputed` takes a `Func<object, object>` — a delegate a *developer*
+writes in code — while `FieldFormulaEvaluator` parses a *text expression* (e.g. `"QTY * PRICE"`) a
+*form author* could type into a Formula property with no code at all, the actual Oracle Forms
+authoring experience for calculated items. New `RegisterBlockComputedFormula(blockName,
+columnName, formula)` is a thin adapter: it does not duplicate `RegisterBlockComputed`'s storage,
+lookup, or error handling, it only supplies the delegate `FieldFormulaEvaluator` needs, built from
+`RecordPropertyAccessor.GetAllReadable` (itself pre-existing, already used elsewhere for exactly
+this "record → field dictionary" job — no new record-reflection code needed either). A malformed
+formula throws inside the delegate; `GetBlockComputedValue` already catches, logs, and returns
+`null` for any computation failure, so a bad formula degrades exactly the way a throwing
+hand-written delegate always has — no new error handling needed. Two new tests
+(`RegisterBlockComputedFormula_MultiplicationFormula_EvaluatesAgainstCurrentRecord`,
+`RegisterBlockComputedFormula_MalformedFormula_ReturnsNullRatherThanThrowing`), proven via revert;
+full engine build plus `FormsManager.Tests` (178/178) green across 5 consecutive runs. This is
+engine-only: no IDE authoring surface (a `BlockFieldDefinition.Formula` property, a field-editor
+text box) exists yet for a form author to actually type a formula through the IDE — that remains
+its own, separately-scoped future piece of work; this pass only closes the "the evaluator exists
+but nothing can reach it" gap at the engine API level.
+
+**Where:** `FormsManager.ExtendedOperations.cs:131-180` (original); `RegisterBlockComputedFormula`
+added immediately after `UnregisterBlockComputed` in the same file; `Editor/Forms.Tests
+/FormsManagerTests.cs` (two new tests).
 
 ---
 

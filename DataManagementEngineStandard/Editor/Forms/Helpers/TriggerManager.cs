@@ -64,7 +64,14 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         
         /// <inheritdoc />
         public event EventHandler<TriggerChainCompletedEventArgs> TriggerChainCompleted;
-        
+
+        #endregion
+
+        #region System Variables
+
+        /// <inheritdoc />
+        public ISystemVariablesManager SystemVariables { get; set; }
+
         #endregion
         
         #region Properties
@@ -1002,11 +1009,36 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             return new List<TriggerDefinition>();
         }
         
+        /// <summary>
+        /// Stamps <c>:SYSTEM.TRIGGER_TYPE</c>/<c>TRIGGER_BLOCK</c>/<c>TRIGGER_ITEM</c>/
+        /// <c>TRIGGER_RECORD</c> into <see cref="SystemVariables"/> before a chain fires,
+        /// and hands the context a reference to the same store so a handler reading
+        /// <c>context.SystemVariables</c> gets the real thing rather than null. Both
+        /// <see cref="ExecuteTriggerChain"/> and <see cref="ExecuteTriggerChainAsync"/>
+        /// are the two places every <c>Fire*Trigger(Async)</c> variant funnels through,
+        /// so hooking here — not each of the ten Fire* methods — is the one place this
+        /// needs doing. No-ops when <see cref="SystemVariables"/> is null (not wired,
+        /// e.g. a hand-constructed <see cref="TriggerManager"/> in a test).
+        /// </summary>
+        private void ApplyTriggerContextToSystemVariables(TriggerContext context)
+        {
+            if (SystemVariables == null || context == null) return;
+
+            context.SystemVariables ??= SystemVariables;
+            SystemVariables.SetTriggerContext(
+                context.TriggerType.ToString(),
+                context.BlockName,
+                context.ItemName,
+                context.RecordIndex < 0 ? 0 : context.RecordIndex);
+        }
+
         private TriggerResult ExecuteTriggerChain(List<TriggerDefinition> triggers, TriggerType type, TriggerContext context)
         {
             if (triggers == null || triggers.Count == 0)
                 return TriggerResult.Skipped;
-            
+
+            ApplyTriggerContextToSystemVariables(context);
+
             var startTime = DateTime.UtcNow;
             int successCount = 0, failureCount = 0, skippedCount = 0;
             TriggerResult overallResult = TriggerResult.Success;
@@ -1125,6 +1157,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 OverallResult = overallResult
             });
 
+            SystemVariables?.ClearTriggerContext();
             return overallResult;
         }
 
@@ -1132,7 +1165,9 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (triggers == null || triggers.Count == 0)
                 return TriggerResult.Skipped;
-            
+
+            ApplyTriggerContextToSystemVariables(context);
+
             var startTime = DateTime.UtcNow;
             int successCount = 0, failureCount = 0, skippedCount = 0;
             TriggerResult overallResult = TriggerResult.Success;
@@ -1255,7 +1290,8 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 CancelMessage = cancelMessage,
                 OverallResult = overallResult
             });
-            
+
+            SystemVariables?.ClearTriggerContext();
             return overallResult;
         }
         

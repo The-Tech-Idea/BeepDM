@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
@@ -17,6 +18,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     public partial class FormsManager
     {
         #region Mode Transition Operations
+
+        /// <summary>
+        /// Maps a <see cref="DataBlockMode"/> transition onto Oracle Forms'
+        /// :SYSTEM.MODE vocabulary. Oracle publishes exactly two values for
+        /// this variable -- NORMAL and ENTER-QUERY -- so every mode other
+        /// than EnterQuery collapses to NORMAL, same as real Oracle Forms.
+        /// </summary>
+        private static string ToSystemVariableMode(DataBlockMode mode) =>
+            mode == DataBlockMode.EnterQuery ? "ENTER-QUERY" : "NORMAL";
 
         public async void EnteringQueryModeAsync(string blockName)
         {
@@ -108,11 +118,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 blockInfo.Mode = DataBlockMode.EnterQuery;
                 blockInfo.LastModeChange = DateTime.Now;
 
+                // :SYSTEM.MODE -- see G0.36 in gaps.md. blockInfo.Mode has no
+                // single choke point (four direct assignment sites across two
+                // files); wired individually, same shape as CurrentFormName's
+                // three writers.
+                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.EnterQuery));
+
                 // Update current block reference
                 _currentBlockName = blockName;
 
                 // Trigger mode change events
                 _eventManager.TriggerBlockEnter(blockName);
+
+                // TriggerType.EnterQuery (Oracle Forms ENTER_QUERY) existed with
+                // no firing code anywhere -- confirmed by grepping the whole
+                // engine, and TriggerLibrary.cs only ever registers/fires
+                // PreQuery/PostQuery. A trigger registered for it through the
+                // standard RegisterBlockTrigger path was correctly stored and
+                // never once invoked, since this is the only place a block
+                // transitions into enter-query mode. Fired after the mode
+                // change and current-block update, matching where PreQuery/
+                // PostQuery fire relative to their own state changes. (2026-08-26)
+                await _triggerManager.FireBlockTriggerAsync(
+                    TriggerType.EnterQuery, blockName,
+                    TriggerContext.ForBlock(TriggerType.EnterQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
 
                 result.Message = $"Block '{blockName}' entered Query mode successfully";
                 Status = result.Message;
@@ -164,6 +193,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
+                // Captured before the transition below, for the EXIT_QUERY fire
+                // point further down -- ExitQuery (Oracle Forms EXIT_QUERY) pairs
+                // specifically with a block that was actually in enter-query mode,
+                // not one that was already sitting in plain Query mode and simply
+                // re-executed.
+                var wasInEnterQueryMode = blockInfo.Mode == DataBlockMode.EnterQuery;
+
                 LogOperation($"Executing query and entering CRUD mode for block '{blockName}' (source mode={blockInfo.Mode})", blockName);
 
                 // Execute the query using enhanced query execution
@@ -199,16 +235,39 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // already set by the helper.
                 blockInfo.LastModeChange = DateTime.Now;
 
+                // TriggerType.ExitQuery (Oracle Forms EXIT_QUERY) existed with no
+                // firing code anywhere, same defect as EnterQuery above. Fired
+                // only when the block actually was in enter-query mode --
+                // matches Oracle Forms pairing EXIT_QUERY with ENTER_QUERY, not
+                // with an ordinary re-query of a block already showing results.
+                // (2026-08-26)
+                if (wasInEnterQueryMode)
+                {
+                    await _triggerManager.FireBlockTriggerAsync(
+                        TriggerType.ExitQuery, blockName,
+                        TriggerContext.ForBlock(TriggerType.ExitQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
+                }
+
                 // Navigate to first record if available
                 var recordCount = GetRecordCount(blockName);
                 if (recordCount > 0)
                 {
                     await FirstRecordAsync(blockName).ConfigureAwait(false);
-                    result.Message = $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode.";
                 }
-                else
+
+                // Only overwrite result.Message with the generic success text when
+                // there was nothing to warn about. Before this, the "Query executed
+                // but with warnings: ..." message set above (result.Flag stayed
+                // Warning, correctly) was unconditionally clobbered here on every
+                // path with at least one record -- so a caller reading only
+                // result.Message (the natural thing to show a user) never learned
+                // *why* the flag said Warning, for any validation warning past or
+                // future, not just the MaxRecords one this pass added a reader for.
+                if (validationResult.IsValid)
                 {
-                    result.Message = $"Query executed successfully. No records found. Block '{blockName}' in CRUD mode.";
+                    result.Message = recordCount > 0
+                        ? $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode."
+                        : $"Query executed successfully. No records found. Block '{blockName}' in CRUD mode.";
                 }
 
                 Status = result.Message;
@@ -275,6 +334,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Set to CRUD mode
                 blockInfo.Mode = DataBlockMode.CRUD;
                 blockInfo.LastModeChange = DateTime.Now;
+                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
 
                 // Create a new record
                 var newRecord = CreateNewRecord(blockName);
@@ -285,6 +345,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     Status = result.Message;
                     return result;
                 }
+
+                // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS -- see G0.36 in gaps.md.
+                // A blank record created directly (not from a query) is Oracle Forms'
+                // "NEW" status -- distinct from "CHANGED", which the ItemChanged handler
+                // sets once the user actually edits a field on it.
+                _systemVariablesManager?.SetBlockStatus(blockName, "NEW");
+                _systemVariablesManager?.SetRecordStatus(blockName, "NEW");
 
                 // CRITICAL: Handle master-detail coordination for new record
                 await HandleMasterDetailCoordinationForNewRecord(blockName).ConfigureAwait(false);
@@ -594,6 +661,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         // Detail blocks should be in CRUD mode to allow new records
                         detailBlockInfo.Mode = DataBlockMode.CRUD;
                         detailBlockInfo.LastModeChange = DateTime.Now;
+                        _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
 
                         LogOperation($"Child block '{detailBlockName}' cleared and set to CRUD mode", detailBlockName);
                     }
@@ -688,19 +756,47 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>
         /// Prompts user for action when unsaved changes are detected
         /// </summary>
+        /// <remarks>
+        /// Previously unconditionally returned <see cref="Models.UnsavedChangesAction.Save"/>
+        /// behind a comment reading "In a real application, this would show a dialog to
+        /// the user / For now, we'll use a simple default behavior" -- an honest stub, but
+        /// still one that silently auto-saved on every unsaved-changes prompt, in every
+        /// caller, forever: a user who wanted to discard an in-progress edit before
+        /// creating a new master record got it committed instead, with no chance to say
+        /// otherwise. <see cref="ShowAlertAsync"/> (Oracle Forms SHOW_ALERT, already fully
+        /// implemented and already the mechanism "Messages and alerts" uses end to end on
+        /// both runtime hosts) is exactly the three-button choice this needed. When no
+        /// <see cref="IAlertProvider"/> is wired (a headless engine, a test) it returns
+        /// <see cref="AlertResult.None"/>, which maps to Cancel -- the same safe default
+        /// the exception handler below already used, and the one choice that neither
+        /// silently commits data the caller may not have wanted saved nor silently
+        /// discards data they may have wanted kept.
+        /// </remarks>
         private async Task<Models.UnsavedChangesAction> HandleUnsavedChangesPrompt(List<string> validationIssues)
         {
             try
             {
-                // In a real application, this would show a dialog to the user
-                // For now, we'll use a simple default behavior
-                
                 var promptMessage = $"Unsaved changes detected:\n{string.Join("\n", validationIssues)}\n\nWhat would you like to do?";
                 LogOperation($"Unsaved changes prompt: {promptMessage}", "USER_PROMPT");
 
-                // Default behavior - save to prevent data loss
-                LogOperation("Defaulting to Save action to prevent data loss", "USER_PROMPT");
-                return Models.UnsavedChangesAction.Save;
+                var alertResult = await ShowAlertAsync(
+                    "Unsaved Changes",
+                    promptMessage,
+                    AlertStyle.Question,
+                    "Save",
+                    "Discard",
+                    "Cancel").ConfigureAwait(false);
+
+                var action = alertResult switch
+                {
+                    AlertResult.Button1 => Models.UnsavedChangesAction.Save,
+                    AlertResult.Button2 => Models.UnsavedChangesAction.Discard,
+                    AlertResult.Button3 => Models.UnsavedChangesAction.Cancel,
+                    _ => Models.UnsavedChangesAction.Cancel
+                };
+
+                LogOperation($"Unsaved changes prompt resolved to {action}", "USER_PROMPT");
+                return action;
             }
             catch (Exception ex)
             {
@@ -830,9 +926,24 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             try
             {
                 var recordCount = GetRecordCount(blockName);
-                
-                // Check configuration limits
-                var maxRecords = Configuration?.MaxRecordsPerBlock ?? 10000;
+
+                // Check configuration limits. A block explicitly registered in
+                // Configuration.BlockConfigurations carries its own MaxRecords
+                // (BlockConfiguration.cs: "the maximum number of records to
+                // load") -- that per-block override existed with no reader
+                // anywhere, so setting it had no effect and every block was
+                // silently governed by the manager-wide MaxRecordsPerBlock
+                // default instead. Only consulted when the block was actually
+                // registered in the dictionary (TryGetValue, not
+                // GetBlockConfiguration's own "or a fresh default" fallback) --
+                // BlockConfiguration.MaxRecords' compile-time default (1000)
+                // does not coincide with MaxRecordsPerBlock's (10000), so
+                // treating every never-configured block as if it had
+                // authored 1000 would silently tighten the limit for every
+                // existing block that never touched this API.
+                var maxRecords = Configuration?.BlockConfigurations.TryGetValue(blockName, out var blockConfig) == true
+                    ? blockConfig.MaxRecords
+                    : Configuration?.MaxRecordsPerBlock ?? 10000;
                 if (recordCount > maxRecords)
                 {
                     result.IsValid = false;

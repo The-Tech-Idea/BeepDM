@@ -21169,6 +21169,25 @@
             Applies audit defaults to a record (delegates to <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetAuditDefaults(System.Object,System.String)"/>).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlockComputedFormula(System.String,System.String,System.String)">
+            <summary>
+            Registers a computed column driven by an Oracle Forms <c>Calculation = Formula</c>
+            text expression (e.g. <c>"QTY * PRICE"</c>) instead of a hand-written delegate.
+            A thin adapter over <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterBlockComputed(System.String,System.String,System.Func{System.Object,System.Object})"/> — it does not duplicate that
+            method's storage, lookup, or error handling, it only supplies the
+            <see cref="T:System.Func`2"/> <see cref="T:TheTechIdea.Beep.Editor.Forms.Helpers.FieldFormulaEvaluator"/> needs.
+            </summary>
+            <remarks>
+            <see cref="T:TheTechIdea.Beep.Editor.Forms.Helpers.FieldFormulaEvaluator"/> (infix +, -, *, / with parentheses and field
+            references) existed with zero callers anywhere in the engine — a complete evaluator
+            for Oracle Forms' no-code calculated-item mode, with no path that ever reached it.
+            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.RecordPropertyAccessor.GetAllReadable(System.Object,TheTechIdea.Beep.Editor.IDMEEditor)"/> supplies the field dictionary the
+            formula resolves names against, so this needs no new record-reflection code either.
+            A malformed formula throws inside the delegate; <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetBlockComputedValue(System.String,System.String)"/>
+            already catches, logs, and returns <c>null</c> for any computation failure, so a bad
+            formula degrades the same way a throwing hand-written delegate always has.
+            </remarks>
+        </member>
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.FormsManager.OnFormOpen">
             <summary>
             Raised before a form open operation is finalized.
@@ -21491,6 +21510,17 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ReleaseSharedBlockLock(System.String)">
             <summary>Release the write-lock this form holds on the shared block.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SharedBlockExists(System.String)">
+            <summary>Returns whether a shared block with this name has been published.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RemoveSharedBlock(System.String)">
+            <summary>
+            Unpublish a shared block, releasing any lock on it. Only the form that
+            coordinates its lifetime should call this — other forms may still hold a
+            reference to the underlying <see cref="T:TheTechIdea.Beep.Editor.IUnitofWork"/> obtained from an
+            earlier <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetSharedBlock(System.String)"/>, so this does not invalidate their copy.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.RegisterKeyTrigger(TheTechIdea.Beep.Editor.Forms.Models.KeyTriggerType,System.String,System.Func{TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,TheTechIdea.Beep.Editor.Forms.Models.TriggerResult})">
             <summary>
             Register a synchronous handler for a KEY-* trigger on the specified block.
@@ -21549,6 +21579,14 @@
             operation; a MenuItemTrigger fires <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.TriggerType.WhenMenuItem"/>
             with the item id in context so one handler can dispatch on it; a
             CallForm calls the named form. A separator or submenu is a no-op.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ToSystemVariableMode(TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode)">
+            <summary>
+            Maps a <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockMode"/> transition onto Oracle Forms'
+            :SYSTEM.MODE vocabulary. Oracle publishes exactly two values for
+            this variable -- NORMAL and ENTER-QUERY -- so every mode other
+            than EnterQuery collapses to NORMAL, same as real Oracle Forms.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnterQueryModeAsync(System.String)">
@@ -21615,6 +21653,22 @@
             <summary>
             Prompts user for action when unsaved changes are detected
             </summary>
+            <remarks>
+            Previously unconditionally returned <see cref="F:TheTechIdea.Beep.Editor.UOWManager.Models.UnsavedChangesAction.Save"/>
+            behind a comment reading "In a real application, this would show a dialog to
+            the user / For now, we'll use a simple default behavior" -- an honest stub, but
+            still one that silently auto-saved on every unsaved-changes prompt, in every
+            caller, forever: a user who wanted to discard an in-progress edit before
+            creating a new master record got it committed instead, with no chance to say
+            otherwise. <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ShowAlertAsync(System.String,System.String,TheTechIdea.Beep.Editor.Forms.Models.AlertStyle,System.String,System.String,System.String,System.Threading.CancellationToken)"/> (Oracle Forms SHOW_ALERT, already fully
+            implemented and already the mechanism "Messages and alerts" uses end to end on
+            both runtime hosts) is exactly the three-button choice this needed. When no
+            <see cref="!:IAlertProvider"/> is wired (a headless engine, a test) it returns
+            <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.AlertResult.None"/>, which maps to Cancel -- the same safe default
+            the exception handler below already used, and the one choice that neither
+            silently commits data the caller may not have wanted saved nor silently
+            discards data they may have wanted kept.
+            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetBlockMode(System.String)">
             <summary>
@@ -22528,7 +22582,7 @@
             Raised when an operation encounters unsaved changes and needs a caller decision.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}})">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,System.Collections.Concurrent.ConcurrentDictionary{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{System.String}},System.Func{System.String,TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo},System.Func{System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockRelationship}},System.Func{TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions},System.Func{System.String,System.Boolean})">
             <summary>
             Creates a dirty-state manager for the registered blocks owned by a FormsManager instance.
             </summary>
@@ -22536,6 +22590,20 @@
             <param name="blocks">Registered block metadata keyed by block name.</param>
             <param name="getDetailBlocksFunc">Resolver for child blocks of a given master block.</param>
             <param name="getBlockFunc">Resolver for a block metadata record by name.</param>
+            <param name="getRelationshipsFunc">Resolver for a block's declared master-detail relationships.</param>
+            <param name="getDefaultSaveOptionsFunc">
+            Resolver for the manager-configured default <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions"/> (typically
+            <c>() =&gt; Configuration?.DefaultSaveOptions</c>). Optional; when null or when it
+            returns null, <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.SaveOptions.Default"/> is used, matching prior behavior.
+            </param>
+            <param name="hasValidationErrorsFunc">
+            Resolver for whether a named block currently has any item in an error state
+            (typically <c>blockName =&gt; ItemProperties.GetItemsWithErrors(blockName).Count &gt; 0</c>,
+            the same live state <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemPropertyManager"/>
+            tracks from real validation-rule failures via <c>SetItemError</c>/<c>ClearItemError</c>).
+            Optional; when null, <see cref="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.HasValidationErrors(TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo)"/> conservatively reports false
+            (no known errors) rather than fabricating a state it cannot observe.
+            </param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.DirtyStateManager.CheckAndHandleUnsavedChangesAsync(System.String)">
             <summary>
@@ -24219,6 +24287,30 @@
             (2026-08-22)
             </remarks>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.AssignTabIndexFromAuthoredOrder(System.Collections.Generic.IReadOnlyList{System.ValueTuple{TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition,TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo}})">
+            <summary>
+            Assigns each item's <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.TabIndex"/> from the rank of
+            its field's authored <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.Order"/>.
+            </summary>
+            <remarks>
+            <c>Order</c> authors the Block Fields editor's drag-reorder sequence,
+            round-trips through <c>DesignerBlockGenerator</c> and back, but was
+            never read by <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.ApplyAuthoredFieldProperties(TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager,TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition)"/> or anything
+            else — <c>RegisterItemsFromEntityStructure</c> seeds every
+            <c>item.TabIndex</c> purely from the datasource's raw column order
+            before this ever runs, so an author who reordered a block's fields
+            saw the new order everywhere the designer shows it and nowhere the
+            runtime's Tab-key navigation does.
+            <para>
+            Ranked by stable sort rather than copying the raw <c>Order</c> value:
+            a legacy/hand-written block where every field's <c>Order</c> is still
+            its unauthored <c>int</c> default (0) still gets a unique TabIndex
+            per field, in the same order the fields already had (<c>OrderBy</c>
+            is a stable sort) — never collapsing distinct items onto one
+            duplicate TabIndex the way copying <c>Order</c> verbatim could.
+            </para>
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.DefinitionBlockRegistrar.ApplyAuthoredKeys(TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.Editor.Forms.Models.BlockDefinition,TheTechIdea.Beep.Editor.IDMEEditor)">
             <summary>
             Overlays the key metadata the designer authored onto the entity
@@ -24281,6 +24373,23 @@
             <c>Nullable&lt;Int32&gt;</c> resolve like the underlying type.
             </para>
             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FieldTypeMapper.TryNormalizeEditorKey(System.String,System.String@)">
+            <summary>
+            Recognizes an authored <c>BlockFieldDefinition.EditorKey</c> override
+            against the exact canonical categories <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.FieldTypeMapper.GetCanonicalFieldType(TheTechIdea.Beep.DataBase.EntityField)"/>
+            itself returns ("Numeric", "Date", "Boolean", "Checkbox", "ReadOnly",
+            "Text") — case-insensitively, so a runtime presenter registry can
+            honor an author's explicit editor choice without hand-keeping a
+            second copy of the category vocabulary the two registries already
+            switch on. <c>BlockFieldsEditorDialog</c>'s <c>EditorKey</c> field is
+            a plain, freely-editable text box, not a constrained dropdown — an
+            unrecognised value (a typo, or a platform-specific control class name
+            the IDE's own designer-file scanner separately understands, e.g.
+            "BeepComboBox") returns false rather than guessing, so the caller
+            falls through to the field's own inferred type exactly as if nothing
+            had been authored.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.FileAuditStore">
             <summary>
@@ -24634,6 +24743,59 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.MasterDetailKeyResolver.TryParseMappings(System.String,System.String,System.Collections.Generic.List{TheTechIdea.Beep.Editor.Forms.Models.DataBlockFieldMapping}@,System.String@)">
             <summary>Parses explicit master/detail key strings into field mappings.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator">
+            <summary>
+            Translates an Oracle Forms FORMAT_MASK (<see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockFieldDefinition.FormatMask"/>)
+            into the .NET-native shapes the runtime hosts' presenter controls actually
+            consume. Oracle format masks use their own token vocabulary (<c>YYYY</c>,
+            <c>MON</c>, <c>HH24</c>, <c>9</c>, <c>0</c>, ...), which is not
+            interchangeable with .NET custom format strings — passing an authored mask
+            straight into <see cref="M:System.DateTime.ToString(System.String)"/> either throws
+            (uppercase <c>D</c> is not a recognised custom specifier) or silently
+            renders wrong (Oracle's <c>/</c> and <c>:</c> are literals; .NET's are
+            culture-dependent separators unless escaped).
+            <para>
+            Only the commonly-authored subset of each spec is supported. An
+            unsupported token — anything outside the tables below — fails the
+            translation rather than emit a best-effort, possibly-wrong format string;
+            callers must leave the control's own default format in place when a
+            translation is refused, never guess.
+            </para>
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator.TryTranslateDate(System.String,System.String@)">
+            <summary>
+            Translates an Oracle date/time format mask (e.g. <c>"MM/DD/YYYY"</c>,
+            <c>"YYYY-MM-DD HH24:MI:SS"</c>) into a .NET custom date/time format
+            string. Returns false — leaving <paramref name="netFormat"/> null —
+            when the mask is blank or contains a token this translator does not
+            recognise (e.g. Oracle's <c>SSSSS</c>, <c>IYYY</c>, <c>RN</c>).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator.TryTranslateNumeric(System.String,TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec@)">
+            <summary>
+            Translates an Oracle numeric format mask (e.g. <c>"999,999.99"</c>,
+            <c>"$999,999.00"</c>, <c>"0000"</c>) into the pieces the runtime hosts
+            need: a .NET numeric format string for the grid's
+            <c>IFormattable.ToString(format)</c> path, plus the decomposed
+            decimal-places / grouping / prefix a single-record numeric control
+            configures itself with rather than a free-form format string. Returns
+            false when the mask contains anything beyond digit placeholders
+            (<c>9</c>/<c>0</c>), a single decimal point, group separators, and an
+            optional leading currency symbol — Oracle's <c>MI</c>, <c>PR</c>,
+            <c>FM</c>, <c>V</c>, <c>EEEE</c> and similar suffixes are not
+            supported.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec">
+            <summary>
+            The decomposed result of translating an Oracle numeric FORMAT_MASK — see
+            <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.OracleFormatMaskTranslator.TryTranslateNumeric(System.String,TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec@)"/>.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.NumericFormatSpec.NetFormatString">
+            <summary>A .NET custom numeric format string, e.g. "#,##0.00".</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager">
             <summary>
             Manages per-block paging state for virtual scrolling — Phase 7.
@@ -24928,6 +25090,9 @@
         <member name="E:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.TriggerChainCompleted">
             <inheritdoc />
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.SystemVariables">
+            <inheritdoc />
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.TriggerCount">
             <inheritdoc />
         </member>
@@ -25068,6 +25233,19 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ResumeTriggers">
             <inheritdoc />
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ApplyTriggerContextToSystemVariables(TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)">
+            <summary>
+            Stamps <c>:SYSTEM.TRIGGER_TYPE</c>/<c>TRIGGER_BLOCK</c>/<c>TRIGGER_ITEM</c>/
+            <c>TRIGGER_RECORD</c> into <see cref="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.SystemVariables"/> before a chain fires,
+            and hands the context a reference to the same store so a handler reading
+            <c>context.SystemVariables</c> gets the real thing rather than null. Both
+            <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ExecuteTriggerChain(System.Collections.Generic.List{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition},TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext)"/> and <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.ExecuteTriggerChainAsync(System.Collections.Generic.List{TheTechIdea.Beep.Editor.Forms.Models.TriggerDefinition},TheTechIdea.Beep.Editor.Forms.Models.TriggerType,TheTechIdea.Beep.Editor.Forms.Models.TriggerContext,System.Threading.CancellationToken)"/>
+            are the two places every <c>Fire*Trigger(Async)</c> variant funnels through,
+            so hooking here — not each of the ten Fire* methods — is the one place this
+            needs doing. No-ops when <see cref="P:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.SystemVariables"/> is null (not wired,
+            e.g. a hand-constructed <see cref="T:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager"/> in a test).
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerManager.GetTriggerStatistics(System.String)">
             <inheritdoc />

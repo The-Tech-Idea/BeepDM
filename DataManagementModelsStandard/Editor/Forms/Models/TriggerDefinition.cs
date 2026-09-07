@@ -290,7 +290,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
                     
                     try
                     {
-                        result = await ExecuteHandlerAsync(context, cts.Token);
+                        result = await ExecuteHandlerAsync(context, cts.Token).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
@@ -301,7 +301,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
                 }
                 else
                 {
-                    result = await ExecuteHandlerAsync(context, cancellationToken);
+                    result = await ExecuteHandlerAsync(context, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
@@ -392,11 +392,23 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         {
             if (AsyncHandler != null)
             {
-                return await AsyncHandler(context, cancellationToken);
+                return await AsyncHandler(context, cancellationToken).ConfigureAwait(false);
             }
             else if (Handler != null)
             {
-                return await Task.Run(() => Handler(context), cancellationToken);
+                // ConfigureAwait(false) matters here specifically: this is
+                // engine code, reached from a WPF host's UI thread (a
+                // BeepWpfForms deriving from FrameworkElement/DispatcherObject
+                // carries a captured SynchronizationContext even without a
+                // running Dispatcher.Run() loop). Without it, resuming after
+                // Task.Run tries to post back onto that captured context --
+                // which nothing is pumping -- while the caller sits blocked on
+                // .GetAwaiter().GetResult() waiting for exactly that
+                // continuation. Confirmed by reproduction: a block trigger
+                // registered via the sync RegisterBlockTrigger overload and
+                // fired during MoveFirstAsync hung indefinitely until this fix
+                // (2026-08-26).
+                return await Task.Run(() => Handler(context), cancellationToken).ConfigureAwait(false);
             }
             return TriggerResult.Skipped;
         }

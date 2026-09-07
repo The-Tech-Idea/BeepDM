@@ -124,6 +124,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// <summary>Release a write lock held by the named caller. No-op if not locked by that caller.</summary>
         void ReleaseSharedBlockLock(string blockName, string lockedBy);
 
+        /// <summary>
+        /// Notify subscribers that a shared block's data has changed. Call this after
+        /// committing changes to any shared block, so other forms holding a reference
+        /// obtained from <see cref="GetSharedBlock"/> know to refresh.
+        /// </summary>
+        void NotifySharedBlockChanged(string blockName, string changedBy, object changedRecord = null);
+
         /// <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
         event EventHandler<SharedBlockChangedEventArgs> SharedBlockChanged;
     }

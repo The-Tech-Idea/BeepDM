@@ -276,6 +276,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             var fields = block.EntityDefinition?.Fields;
             if (fields == null || fields.Count == 0) return;
 
+            var resolved = new List<(BlockFieldDefinition Field, ItemInfo Item)>();
             foreach (var field in fields)
             {
                 if (field == null || string.IsNullOrWhiteSpace(field.FieldName)) continue;
@@ -288,7 +289,41 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
                 if (item == null) continue;
 
                 manager.PropertyClasses?.ApplyToItem(item, field);
+                resolved.Add((field, item));
             }
+
+            AssignTabIndexFromAuthoredOrder(resolved);
+        }
+
+        /// <summary>
+        /// Assigns each item's <see cref="ItemInfo.TabIndex"/> from the rank of
+        /// its field's authored <see cref="BlockFieldDefinition.Order"/>.
+        /// </summary>
+        /// <remarks>
+        /// <c>Order</c> authors the Block Fields editor's drag-reorder sequence,
+        /// round-trips through <c>DesignerBlockGenerator</c> and back, but was
+        /// never read by <see cref="ApplyAuthoredFieldProperties"/> or anything
+        /// else — <c>RegisterItemsFromEntityStructure</c> seeds every
+        /// <c>item.TabIndex</c> purely from the datasource's raw column order
+        /// before this ever runs, so an author who reordered a block's fields
+        /// saw the new order everywhere the designer shows it and nowhere the
+        /// runtime's Tab-key navigation does.
+        /// <para>
+        /// Ranked by stable sort rather than copying the raw <c>Order</c> value:
+        /// a legacy/hand-written block where every field's <c>Order</c> is still
+        /// its unauthored <c>int</c> default (0) still gets a unique TabIndex
+        /// per field, in the same order the fields already had (<c>OrderBy</c>
+        /// is a stable sort) — never collapsing distinct items onto one
+        /// duplicate TabIndex the way copying <c>Order</c> verbatim could.
+        /// </para>
+        /// </remarks>
+        public static void AssignTabIndexFromAuthoredOrder(
+            IReadOnlyList<(BlockFieldDefinition Field, ItemInfo Item)> resolved)
+        {
+            if (resolved == null) return;
+            var tabIndex = 0;
+            foreach (var pair in resolved.OrderBy(p => p.Field.Order))
+                pair.Item.TabIndex = tabIndex++;
         }
 
         /// <summary>
