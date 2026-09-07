@@ -42764,7 +42764,16 @@
             <summary>Downloads components on-demand during installation with progress.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ComRegistrationStep">
-            <summary>Registers/unregisters COM components.</summary>
+             <summary>
+             Registers/unregisters COM components by invoking their own <c>DllRegisterServer</c> through
+             regsvr32, driven by the loose <c>ComComponents</c> context key.
+            
+             Distinct from <see cref="T:TheTechIdea.Beep.Installer.Steps.ComServerRegistrationStep"/>, which writes the CLSID tree itself
+             from <c>InstallConfig</c> and is scope-aware. Both once answered to
+             <c>installer.com.register</c>, so any graph containing the two failed to build at all
+             (<c>SetupWizardBuilder</c> rejects duplicate ids). Self-registration is the narrower,
+             legacy mechanism, so it is the one that took a new id.
+             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ScheduledTaskStep">
             <summary>Creates/removes Windows Scheduled Tasks.</summary>
