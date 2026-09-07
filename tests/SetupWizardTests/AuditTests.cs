@@ -165,12 +165,16 @@ public class AuditTests : IDisposable
     [Fact]
     public void PerStep_Spans_AreEmitted()
     {
-        var stepNames = new List<string>();
+        // ActivityStarted fires on whichever thread starts the activity, and the listener is
+        // attached to a process-wide ActivitySource, so it also sees wizards run by test classes
+        // executing in parallel. Appending to a plain List raced and intermittently lost the very
+        // names being asserted on.
+        var stepNames = new System.Collections.Concurrent.ConcurrentQueue<string>();
         using var listener = new ActivityListener
         {
             ShouldListenTo = s => s.Name == Telemetry.SetupActivitySource.Name,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-            ActivityStarted = a => stepNames.Add(a.OperationName)
+            ActivityStarted = a => stepNames.Enqueue(a.OperationName)
         };
         ActivitySource.AddActivityListener(listener);
 
@@ -178,7 +182,8 @@ public class AuditTests : IDisposable
             .AddStep(new OkStep("alpha")).AddStep(new OkStep("beta")).Build();
         wizard.Run(NewContext());
 
-        Assert.Contains("setup.step.alpha", stepNames);
-        Assert.Contains("setup.step.beta", stepNames);
+        var observed = stepNames.ToArray();
+        Assert.Contains("setup.step.alpha", observed);
+        Assert.Contains("setup.step.beta", observed);
     }
 }
