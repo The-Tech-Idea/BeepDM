@@ -137,15 +137,32 @@ namespace TheTechIdea.Beep.Installer.Steps
                     };
 
                     process.Start();
-                    var output = process.StandardOutput.ReadToEnd();
-                    var error = process.StandardError.ReadToEnd();
+
+                    // Drain both pipes concurrently and wait with a timeout, in that order.
+                    // Reading stdout to completion first made the timeout below unreachable: a
+                    // custom action that never exits blocked the installer indefinitely, because
+                    // ReadToEnd has no timeout of its own, and an action that filled the stderr
+                    // buffer while we sat on stdout deadlocked the pair outright.
+                    var stdout = process.StandardOutput.ReadToEndAsync();
+                    var stderr = process.StandardError.ReadToEndAsync();
 
                     if (!process.WaitForExit(action.TimeoutMs > 0 ? action.TimeoutMs : 300_000))
                     {
-                        process.Kill();
+                        try { process.Kill(entireProcessTree: true); }
+                        catch (Exception killEx)
+                        {
+                            errors.Add($"Action timed out and could not be killed: {action.Description} ({killEx.Message})");
+                            continue;
+                        }
                         errors.Add($"Action timed out: {action.Description}");
                         continue;
                     }
+
+                    // The child has exited, so both reads are finished or about to be; the bound is
+                    // belt and braces against a grandchild holding the pipes open.
+                    Task.WaitAll(new Task[] { stdout, stderr }, 30_000);
+                    var output = stdout.IsCompletedSuccessfully ? stdout.Result : "";
+                    var error = stderr.IsCompletedSuccessfully ? stderr.Result : "";
 
                     if (process.ExitCode != 0 && action.FailOnError)
                     {
