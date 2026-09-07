@@ -42593,6 +42593,41 @@
         <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.VerifyFileHash(System.String,System.String)">
             <summary>Verifies a file matches the expected SHA256 hash.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallHelpers.ProcessRunResult">
+            <summary>
+            Outcome of a child process the installer launched. Never a thrown exception: an install
+            step decides what a failure means, and a prerequisite that timed out is a different
+            thing from one that could not be started.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallHelpers.ProcessRunResult.Error">
+            <summary>Why the run could not be completed, or empty when it ran to completion.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RunProcess(System.Diagnostics.ProcessStartInfo,System.Int32)">
+             <summary>
+             Runs a child process to completion or to <paramref name="timeoutMs"/>, whichever comes
+             first, and returns what happened.
+            
+             Every launch site in the installer previously grew its own version of this and each got
+             some part of it wrong:
+            
+             <list type="bullet">
+             <item>Reading a redirected stream to the end <em>before</em> waiting. ReadToEnd has no
+             timeout, so the timeout underneath it never applied and a child that never exited hung
+             the install for good.</item>
+             <item>Redirecting a stream and never draining it, so a chatty child filled the pipe
+             buffer and blocked — and its output was lost for diagnostics either way.</item>
+             <item>Reading <c>ExitCode</c> after a wait that may have timed out. On a process still
+             running that throws <c>InvalidOperationException</c>, which surfaced as "install failed"
+             rather than "timed out".</item>
+             <item>Not killing a child that overran its timeout, leaving it running — including
+             elevated prerequisite installers — while the install carried on around it.</item>
+             </list>
+            
+             Redirected streams are drained concurrently with the wait; nothing is read from a stream
+             that was not redirected.
+             </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.ScheduleFileForRestart(System.String,System.String)">
             <summary>
             Schedules a file to be replaced/removed on next reboot.

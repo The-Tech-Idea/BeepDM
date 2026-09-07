@@ -102,13 +102,12 @@ namespace TheTechIdea.Beep.Installer.Steps
         {
             try
             {
-                var p = Process.Start(new ProcessStartInfo("sc", arguments)
+                var run = InstallHelpers.RunProcess(new ProcessStartInfo("sc", arguments)
                 {
                     UseShellExecute = false, CreateNoWindow = true,
                     RedirectStandardOutput = true
-                });
-                p?.WaitForExit(15000);
-                return p?.ExitCode ?? -1;
+                }, 15_000);
+                return run.Started && !run.TimedOut ? run.ExitCode : -1;
             }
             catch { return -1; }
         }

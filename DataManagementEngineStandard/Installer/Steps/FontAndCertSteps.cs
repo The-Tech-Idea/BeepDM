@@ -122,12 +122,11 @@ namespace TheTechIdea.Beep.Installer.Steps
                     ? $"certutil -delstore -{storeArg} \"{cert.StoreName}\" \"{cert.Thumbprint}\""
                     : $"certutil -addstore -{storeArg} \"{cert.StoreName}\" \"{certPath}\"";
 
-                var p = Process.Start(new ProcessStartInfo("certutil", args)
-                {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true
-                });
-                p?.WaitForExit(30000);
-                if (p?.ExitCode == 0) processed++;
+                if (InstallHelpers.RunProcess(new ProcessStartInfo("certutil", args)
+                    {
+                        UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true
+                    }, 30_000).Succeeded)
+                    processed++;
             }
 
             return StepErrorHelpers.Ok($"{processed} certificates {(_isUninstall ? "removed" : "installed")}.");

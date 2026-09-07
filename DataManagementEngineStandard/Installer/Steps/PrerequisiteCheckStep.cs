@@ -202,9 +202,11 @@ namespace TheTechIdea.Beep.Installer.Steps
                         CreateNoWindow = true
                     }
                 };
-                process.Start();
-                var output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit(5000);
+                // Prerequisite detection runs before anything else in an install, so a `dotnet`
+                // that never returns must not be able to stall it: the read is drained alongside
+                // the wait rather than ahead of it.
+                var run = InstallHelpers.RunProcess(process.StartInfo, 5_000);
+                var output = run.StandardOutput;
 
                 var matches = Regex.Matches(output, @"Microsoft\.NETCore\.App\s+([\d.]+)");
                 Version? best = null;
@@ -294,12 +296,11 @@ namespace TheTechIdea.Beep.Installer.Steps
                         CreateNoWindow = true
                     }
                 };
-                process.Start();
-                var output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit(10000);
+                var run = InstallHelpers.RunProcess(process.StartInfo, 10_000);
+                if (!run.Started || run.TimedOut) return false;
 
-                if (string.IsNullOrWhiteSpace(pattern)) return process.ExitCode == 0;
-                return Regex.IsMatch(output, pattern, RegexOptions.IgnoreCase);
+                if (string.IsNullOrWhiteSpace(pattern)) return run.ExitCode == 0;
+                return Regex.IsMatch(run.StandardOutput, pattern, RegexOptions.IgnoreCase);
             }
             catch
             {

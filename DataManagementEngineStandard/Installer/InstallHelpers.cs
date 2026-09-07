@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace TheTechIdea.Beep.Installer
@@ -30,6 +31,101 @@ namespace TheTechIdea.Beep.Installer
         {
             var actual = ComputeFileHash(filePath);
             return string.Equals(actual, expectedHash, StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
+
+        #region Process execution
+
+        /// <summary>
+        /// Outcome of a child process the installer launched. Never a thrown exception: an install
+        /// step decides what a failure means, and a prerequisite that timed out is a different
+        /// thing from one that could not be started.
+        /// </summary>
+        public sealed class ProcessRunResult
+        {
+            public bool Started { get; init; }
+            public bool TimedOut { get; init; }
+            public int ExitCode { get; init; } = -1;
+            public string StandardOutput { get; init; } = "";
+            public string StandardError { get; init; } = "";
+            /// <summary>Why the run could not be completed, or empty when it ran to completion.</summary>
+            public string Error { get; init; } = "";
+
+            public bool Succeeded => Started && !TimedOut && ExitCode == 0;
+        }
+
+        /// <summary>
+        /// Runs a child process to completion or to <paramref name="timeoutMs"/>, whichever comes
+        /// first, and returns what happened.
+        ///
+        /// Every launch site in the installer previously grew its own version of this and each got
+        /// some part of it wrong:
+        ///
+        /// <list type="bullet">
+        /// <item>Reading a redirected stream to the end <em>before</em> waiting. ReadToEnd has no
+        /// timeout, so the timeout underneath it never applied and a child that never exited hung
+        /// the install for good.</item>
+        /// <item>Redirecting a stream and never draining it, so a chatty child filled the pipe
+        /// buffer and blocked — and its output was lost for diagnostics either way.</item>
+        /// <item>Reading <c>ExitCode</c> after a wait that may have timed out. On a process still
+        /// running that throws <c>InvalidOperationException</c>, which surfaced as "install failed"
+        /// rather than "timed out".</item>
+        /// <item>Not killing a child that overran its timeout, leaving it running — including
+        /// elevated prerequisite installers — while the install carried on around it.</item>
+        /// </list>
+        ///
+        /// Redirected streams are drained concurrently with the wait; nothing is read from a stream
+        /// that was not redirected.
+        /// </summary>
+        public static ProcessRunResult RunProcess(System.Diagnostics.ProcessStartInfo startInfo, int timeoutMs)
+        {
+            if (startInfo is null)
+                return new ProcessRunResult { Error = "No process start information was supplied." };
+
+            try
+            {
+                using var process = System.Diagnostics.Process.Start(startInfo);
+                if (process is null)
+                    return new ProcessRunResult { Error = $"'{startInfo.FileName}' could not be started." };
+
+                // UseShellExecute forbids redirection, so only drain what was actually redirected.
+                var stdout = startInfo.RedirectStandardOutput ? process.StandardOutput.ReadToEndAsync() : null;
+                var stderr = startInfo.RedirectStandardError ? process.StandardError.ReadToEndAsync() : null;
+
+                if (!process.WaitForExit(timeoutMs > 0 ? timeoutMs : 300_000))
+                {
+                    var killError = "";
+                    try { process.Kill(entireProcessTree: true); }
+                    catch (Exception ex) { killError = $" It could not be killed: {ex.Message}"; }
+
+                    return new ProcessRunResult
+                    {
+                        Started = true,
+                        TimedOut = true,
+                        Error = $"'{startInfo.FileName}' did not finish within {timeoutMs}ms.{killError}"
+                    };
+                }
+
+                // The child has exited, so the drains are finished or about to be. The bound guards
+                // against a grandchild that inherited the pipes and is still holding them open.
+                var pending = new List<Task>(2);
+                if (stdout is not null) pending.Add(stdout);
+                if (stderr is not null) pending.Add(stderr);
+                if (pending.Count > 0) Task.WaitAll(pending.ToArray(), 30_000);
+
+                return new ProcessRunResult
+                {
+                    Started = true,
+                    ExitCode = process.ExitCode,
+                    StandardOutput = stdout is { IsCompletedSuccessfully: true } ? stdout.Result : "",
+                    StandardError = stderr is { IsCompletedSuccessfully: true } ? stderr.Result : ""
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ProcessRunResult { Error = $"'{startInfo.FileName}' failed to run: {ex.Message}" };
+            }
         }
 
         #endregion
@@ -121,9 +217,7 @@ namespace TheTechIdea.Beep.Installer
                         CreateNoWindow = true
                     }
                 };
-                process.Start();
-                process.WaitForExit(10000);
-                return process.ExitCode == 0;
+                return RunProcess(process.StartInfo, 10_000).Succeeded;
             }
             catch { return false; }
         }
@@ -144,9 +238,7 @@ namespace TheTechIdea.Beep.Installer
                         CreateNoWindow = true
                     }
                 };
-                process.Start();
-                process.WaitForExit(10000);
-                return process.ExitCode == 0;
+                return RunProcess(process.StartInfo, 10_000).Succeeded;
             }
             catch { return false; }
         }

@@ -162,15 +162,17 @@ namespace TheTechIdea.Beep.Installer.Steps
         {
             try
             {
-                var p = Process.Start(new ProcessStartInfo
+                // stdout was redirected and never drained here, so a chatty gacutil could block
+                // on a full pipe until the wait expired.
+                var run = InstallHelpers.RunProcess(new ProcessStartInfo
                 {
                     FileName = exe, Arguments = args,
                     UseShellExecute = false, CreateNoWindow = true,
                     RedirectStandardOutput = true, RedirectStandardError = true
-                })!;
-                p.WaitForExit(30_000);
-                error = p.StandardError.ReadToEnd().Trim();
-                return p.ExitCode == 0;
+                }, 30_000);
+
+                error = run.Started && !run.TimedOut ? run.StandardError.Trim() : run.Error;
+                return run.Succeeded;
             }
             catch (Exception ex) { error = ex.Message; return false; }
         }

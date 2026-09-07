@@ -28,7 +28,15 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers
             return dataSourceType switch
             {
                 DataSourceType.SqlServer => $"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+
+                // Azure SQL *is* SQL Server, and SQL Server Compact 4.0 uses the same OFFSET/FETCH
+                // form. Both used to fall through to the LIMIT/OFFSET default below, which is a
+                // syntax error on either — so every paged read failed on those two engines.
+                DataSourceType.AzureSQL => $"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+                DataSourceType.SqlCompact => $"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
+
                 DataSourceType.Mysql => $"LIMIT {pageSize} OFFSET {offset}",
+                DataSourceType.MariaDB => $"LIMIT {pageSize} OFFSET {offset}",
                 DataSourceType.Postgre => $"LIMIT {pageSize} OFFSET {offset}",
                 DataSourceType.Oracle => $"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 DataSourceType.SqlLite => $"LIMIT {pageSize} OFFSET {offset}",

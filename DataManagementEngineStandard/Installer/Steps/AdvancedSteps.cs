@@ -180,13 +180,14 @@ namespace TheTechIdea.Beep.Installer.Steps
                 try
                 {
                     var args = _isUninstall ? $"/u \"{path}\" /s" : $"\"{path}\" /s";
-                    var p = Process.Start(new ProcessStartInfo("regsvr32", args)
+                    var run = InstallHelpers.RunProcess(new ProcessStartInfo("regsvr32", args)
                     {
                         UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true
-                    });
-                    p?.WaitForExit(30000);
-                    if (p?.ExitCode == 0) processed++;
-                    else errors.Add($"regsvr32 exit {p?.ExitCode}: {relPath}");
+                    }, 30_000);
+
+                    if (run.Succeeded) processed++;
+                    else if (run.TimedOut || !run.Started) errors.Add($"{relPath}: {run.Error}");
+                    else errors.Add($"regsvr32 exit {run.ExitCode}: {relPath}");
                 }
                 catch (Exception ex) { errors.Add($"{relPath}: {ex.Message}"); }
             }
@@ -250,12 +251,11 @@ namespace TheTechIdea.Beep.Installer.Steps
                         args += $" /sc hourly /mo {task.Interval}";
                 }
 
-                var p = Process.Start(new ProcessStartInfo("schtasks", args)
-                {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true
-                });
-                p?.WaitForExit(15000);
-                if (p?.ExitCode == 0) processed++;
+                if (InstallHelpers.RunProcess(new ProcessStartInfo("schtasks", args)
+                    {
+                        UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true
+                    }, 15_000).Succeeded)
+                    processed++;
             }
 
             return StepErrorHelpers.Ok($"{processed} tasks {(_isUninstall ? "removed" : "created")}.");

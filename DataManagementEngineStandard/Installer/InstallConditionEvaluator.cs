@@ -116,12 +116,11 @@ namespace TheTechIdea.Beep.Installer
                         RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
                     }
                 };
-                p.Start();
-                var output = p.StandardOutput.ReadToEnd().Trim();
-                p.WaitForExit(10000);
+                var run = InstallHelpers.RunProcess(p.StartInfo, 10_000);
+                if (!run.Started || run.TimedOut) return false;
 
-                if (string.IsNullOrEmpty(expectedOutput)) return p.ExitCode == 0;
-                return output.Contains(expectedOutput, StringComparison.OrdinalIgnoreCase);
+                if (string.IsNullOrEmpty(expectedOutput)) return run.ExitCode == 0;
+                return run.StandardOutput.Trim().Contains(expectedOutput, StringComparison.OrdinalIgnoreCase);
             }
             catch { return false; }
         }
