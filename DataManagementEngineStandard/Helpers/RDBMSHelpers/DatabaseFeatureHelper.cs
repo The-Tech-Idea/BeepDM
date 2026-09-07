@@ -30,7 +30,19 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
         Partitioning,
         
         /// <summary>Columnar storage format</summary>
-        ColumnStore
+        ColumnStore,
+
+        /// <summary>
+        /// A single INSERT can carry several rows in one VALUES clause --
+        /// <c>INSERT INTO t (a, b) VALUES (1, 2), (3, 4)</c>.
+        /// </summary>
+        /// <remarks>
+        /// This is grammar, not throughput: engines that reject it need a different statement shape
+        /// entirely (Oracle's <c>INSERT ALL</c>, Firebird's <c>INSERT INTO ... SELECT ... UNION
+        /// ALL</c>), not a smaller batch. A caller that batches rows into one INSERT must check this
+        /// first, and fall back to one statement per row when it is false.
+        /// </remarks>
+        MultiRowInsert
     }
 
     /// <summary>
@@ -226,6 +238,28 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
                 (DataSourceType.AWSRedshift, DatabaseFeature.ColumnStore) => true,
                 (DataSourceType.SnowFlake, DatabaseFeature.ColumnStore) => true,
                 (DataSourceType.ClickHouse, DatabaseFeature.ColumnStore) => true,
+
+                // Multi-row VALUES. Listed only where the grammar is certain -- a false negative
+                // costs a slower row-at-a-time path, a false positive is a syntax error on every
+                // bulk insert. Deliberately absent: Oracle (needs INSERT ALL), Firebird (needs
+                // INSERT INTO ... SELECT ... UNION ALL), Hana, SQL Server Compact and VistaDB.
+                (DataSourceType.SqlServer, DatabaseFeature.MultiRowInsert) => true, // 2008+, max 1000 rows per statement
+                (DataSourceType.AzureSQL, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.Mysql, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.MariaDB, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.Postgre, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.SqlLite, DatabaseFeature.MultiRowInsert) => true, // 3.7.11+
+                (DataSourceType.Cockroach, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.DuckDB, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.DB2, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.SnowFlake, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.Spanner, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.Presto, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.Trino, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.TimeScale, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.AWSRedshift, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.GoogleBigQuery, DatabaseFeature.MultiRowInsert) => true,
+                (DataSourceType.ClickHouse, DatabaseFeature.MultiRowInsert) => true,
 
                 // Default case - feature not supported
                 _ => false

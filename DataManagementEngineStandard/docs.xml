@@ -38837,6 +38837,18 @@
         <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelpers.DatabaseFeature.ColumnStore">
             <summary>Columnar storage format</summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelpers.DatabaseFeature.MultiRowInsert">
+            <summary>
+            A single INSERT can carry several rows in one VALUES clause --
+            <c>INSERT INTO t (a, b) VALUES (1, 2), (3, 4)</c>.
+            </summary>
+            <remarks>
+            This is grammar, not throughput: engines that reject it need a different statement shape
+            entirely (Oracle's <c>INSERT ALL</c>, Firebird's <c>INSERT INTO ... SELECT ... UNION
+            ALL</c>), not a smaller batch. A caller that batches rows into one INSERT must check this
+            first, and fall back to one statement per row when it is false.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelpers.TransactionOperation">
             <summary>
             Defines transaction operations that can be performed
