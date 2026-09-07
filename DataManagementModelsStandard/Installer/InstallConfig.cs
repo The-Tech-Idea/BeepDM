@@ -25,6 +25,7 @@ namespace TheTechIdea.Beep.Installer
         public string? ConfigDirectory { get; set; }
 
         public string ProductName { get; set; } = "Beep Application";
+        public string AppId { get; set; } = "";
         public string ProductVersion { get; set; } = "1.0.0";
         public string Publisher { get; set; } = "The Tech Idea";
         public string DefaultInstallPath { get; set; }
@@ -77,6 +78,13 @@ namespace TheTechIdea.Beep.Installer
         /// Empty/null means always available.
         /// </summary>
         public List<InstallCondition> Conditions { get; set; } = new();
+
+        /// <summary>
+        /// How component conditions are combined. All is the default professional-safe mode:
+        /// every rule must pass. Any enables optional capability groups, and Not inverts
+        /// the grouped result for exclusion rules.
+        /// </summary>
+        public ConditionExpressionMode ConditionExpression { get; set; } = ConditionExpressionMode.All;
     }
 
     /// <summary>File copy definition for installation.</summary>
@@ -205,5 +213,12 @@ public enum UpdateMode { Optional, Required }
         AlwaysTrue, AlwaysFalse, OsVersion, Architecture,
         RegistryExists, RegistryValue, FileExists, DirectoryExists,
         CommandReturns, IsAdmin
+    }
+
+    public enum ConditionExpressionMode
+    {
+        All,
+        Any,
+        Not
     }
 }

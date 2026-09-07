@@ -40,6 +40,19 @@ namespace TheTechIdea.Beep.Installer
         public static bool EvaluateAny(List<InstallCondition>? conditions)
             => conditions == null || conditions.Count == 0 || conditions.Any(Evaluate);
 
+        public static bool Evaluate(List<InstallCondition>? conditions, ConditionExpressionMode expression)
+        {
+            if (conditions == null || conditions.Count == 0)
+                return true;
+
+            return expression switch
+            {
+                ConditionExpressionMode.Any => conditions.Any(Evaluate),
+                ConditionExpressionMode.Not => !conditions.All(Evaluate),
+                _ => conditions.All(Evaluate)
+            };
+        }
+
         private static bool CheckOsVersion(string op, string? value)
         {
             if (string.IsNullOrWhiteSpace(value)) return true;

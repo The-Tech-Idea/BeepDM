@@ -16079,6 +16079,13 @@
             Empty/null means always available.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallComponent.ConditionExpression">
+            <summary>
+            How component conditions are combined. All is the default professional-safe mode:
+            every rule must pass. Any enables optional capability groups, and Not inverts
+            the grouped result for exclusion rules.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.FileCopyOperation">
             <summary>File copy definition for installation.</summary>
         </member>

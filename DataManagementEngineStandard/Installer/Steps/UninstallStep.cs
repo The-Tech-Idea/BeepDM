@@ -230,7 +230,7 @@ namespace TheTechIdea.Beep.Installer.Steps
                 try
                 {
                     using var regBase = InstallScope.OpenBaseKey(context, config);
-                    new UpgradeEngine().UnregisterInstall(config.ProductName, regBase);
+                    new UpgradeEngine().UnregisterInstall(config.AppId, regBase);
                 }
                 catch (Exception ex) { progress?.Report(new PassedArgs { Messege = $"UninstallStep: unregister skipped: {ex.Message}" }); }
             }
