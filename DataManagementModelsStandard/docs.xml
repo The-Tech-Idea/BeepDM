@@ -15754,6 +15754,24 @@
             Returns a datasource-aware parameter token prefix.
             </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.DirectComparisonOperators">
+            <summary>
+            The only operators the WHERE builders may interpolate directly into SQL. Everything else
+            is either handled by a dedicated case (LIKE, IN, BETWEEN, IS NULL) or rejected.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.QuoteIdentifierPart(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>
+            Quotes a single identifier part, escaping the closing delimiter.
+            </summary>
+            <remarks>
+            The previous implementation gave up — returning the identifier UNQUOTED — precisely when
+            it contained a space, bracket, quote or backtick, which is exactly when quoting is
+            required. The result is concatenated into the WHERE clause, so a crafted
+            AppFilter.FieldName was injected verbatim. Escaping the closing delimiter also stops a
+            name from terminating its own quoting early.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute">
             <summary>
             Decorate any <c>IFileFormatReader</c> implementation with this attribute.
@@ -16414,6 +16432,31 @@
         </member>
         <member name="P:TheTechIdea.Beep.Installer.InstallConfig.UpdateMode">
             <summary>How the on-launch updater behaves when a newer version is available (Track B3).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.SelfContained">
+            <summary>
+            The app ships its own .NET runtime, so runtime prerequisites do not apply.
+            <c>PrerequisiteCheckStep</c> reads this to skip framework checks.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.PayloadFolderName">
+            <summary>
+            Folder holding the payload, relative to the config. Was hardcoded as "payload" in
+            <c>ConfigManager.ResolvePayloadRoot</c>, so an installer built with any other folder
+            name could not resolve its own files from the config alone.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.DefaultPerUser">
+            <summary>
+            The scope the installer was authored for. <c>RequireAdminPrivileges</c> says what the
+            install <em>needs</em>; this says what it <em>prefers</em> when both are possible.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.CreateRestorePoint">
+            <summary>Take a Windows System Restore point before installing.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallConfig.CreateUninstallEntry">
+            <summary>Register the product in Add/Remove Programs.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.InstallComponent">
             <summary>Selectable feature in the installer.</summary>
