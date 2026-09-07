@@ -43020,6 +43020,13 @@
         <member name="T:TheTechIdea.Beep.Installer.Steps.SystemRestoreStep">
             <summary>Creates a Windows System Restore point before installation begins.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.SystemRestoreStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Skipped unless the project asked for a restore point. It used to return false
+            unconditionally, which is one reason this step was never wired into a graph:
+            adding it would have taken a restore point on every install regardless.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.UninstallStep">
             <summary>
             Reads the install-manifest.json, reverses all install operations, and removes the application.
