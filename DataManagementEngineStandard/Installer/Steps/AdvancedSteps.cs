@@ -119,14 +119,25 @@ namespace TheTechIdea.Beep.Installer.Steps
         public bool Required { get; set; } = true;
     }
 
-    /// <summary>Registers/unregisters COM components.</summary>
+    /// <summary>
+    /// Registers/unregisters COM components by invoking their own <c>DllRegisterServer</c> through
+    /// regsvr32, driven by the loose <c>ComComponents</c> context key.
+    ///
+    /// Distinct from <see cref="ComServerRegistrationStep"/>, which writes the CLSID tree itself
+    /// from <c>InstallConfig</c> and is scope-aware. Both once answered to
+    /// <c>installer.com.register</c>, so any graph containing the two failed to build at all
+    /// (<c>SetupWizardBuilder</c> rejects duplicate ids). Self-registration is the narrower,
+    /// legacy mechanism, so it is the one that took a new id.
+    /// </summary>
     public class ComRegistrationStep : ISetupStep
     {
         private readonly bool _isUninstall;
 
-        public string StepId => _isUninstall ? "installer.com.unregister" : "installer.com.register";
-        public string StepName => _isUninstall ? "Unregister COM" : "Register COM";
-        public string Description => _isUninstall ? "Unregisters COM components." : "Registers COM components.";
+        public string StepId => _isUninstall ? "installer.com.selfunregister" : "installer.com.selfregister";
+        public string StepName => _isUninstall ? "Unregister COM (self-registration)" : "Register COM (self-registration)";
+        public string Description => _isUninstall
+            ? "Unregisters COM components via regsvr32 /u."
+            : "Registers COM components via regsvr32.";
         public IReadOnlyList<string> DependsOn { get; }
 
         public ComRegistrationStep(bool isUninstall = false, string? dependsOn = null)
