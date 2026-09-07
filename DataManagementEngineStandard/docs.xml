@@ -42821,6 +42821,13 @@
             Actions are read from context.Properties["CustomActions"] filtered by timing.
             </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Installer.Steps.CustomActionStep.AllowScriptCommandsKey">
+            <summary>
+            Context key carrying the deployer's decision about executing authored custom actions.
+            A boolean: <c>false</c> refuses them, <c>true</c> permits them explicitly, and an absent
+            key means "no decision", which permits them so existing deployments keep working.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.DirectoryCreateStep">
             <summary>
             Creates the installation directory structure. Reads paths from context properties.
