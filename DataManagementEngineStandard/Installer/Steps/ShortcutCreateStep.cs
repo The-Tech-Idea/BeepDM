@@ -75,6 +75,44 @@ namespace TheTechIdea.Beep.Installer.Steps
             return StepErrorHelpers.Ok($"{created.Count} shortcuts created.");
         }
 
+        public bool SupportsRollback => true;
+
+        /// <summary>
+        /// Deletes the shortcuts this step created, resolving each link path the same way Execute
+        /// did -- through the shared <c>ShortcutPathResolver</c>, so create and undo cannot drift
+        /// onto different locations.
+        /// </summary>
+        public Task<IErrorsInfo> RollbackAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+        {
+            var created = context.TryGetProperty<List<ShortcutDefinition>>("ShortcutsCreated");
+            if (created == null || created.Count == 0)
+                return Task.FromResult(StepErrorHelpers.Ok("No shortcuts to undo."));
+
+            var config = context.TryGetProperty<InstallConfig>("InstallConfig");
+            var perUser = InstallScope.IsPerUser(context);
+            var removed = 0;
+
+            foreach (var shortcut in created)
+            {
+                try
+                {
+                    var linkPath = ShortcutPathResolver.Resolve(shortcut, config, perUser);
+                    if (!string.IsNullOrEmpty(linkPath) && File.Exists(linkPath))
+                    {
+                        File.Delete(linkPath);
+                        removed++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    progress?.Report(new PassedArgs { Messege = $"Could not remove shortcut {shortcut.Name}: {ex.Message}" });
+                }
+            }
+
+            context.Properties["ShortcutsCreated"] = new List<ShortcutDefinition>();
+            return Task.FromResult(StepErrorHelpers.Ok($"{removed} shortcut(s) removed."));
+        }
+
         public Task<IErrorsInfo> ExecuteAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
             => Task.FromResult(Execute(context, progress));
 

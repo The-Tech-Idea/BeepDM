@@ -66,6 +66,7 @@ namespace TheTechIdea.Beep.Installer.Steps
             }
 
             var copied = new List<string>();
+            var createdByThisStep = new List<string>();
             int total = allFiles.Count;
             long totalBytes = 0;
 
@@ -87,6 +88,8 @@ namespace TheTechIdea.Beep.Installer.Steps
                     progress?.Report(new PassedArgs { Messege = $"Skipped (missing): {op.SourcePath}", ParameterInt1 = (int)((i + 1) * 100.0 / total) });
                     continue;
                 }
+
+                var existedBefore = File.Exists(destPath);
 
                 if (File.Exists(destPath) && !op.Overwrite)
                 {
@@ -129,6 +132,10 @@ namespace TheTechIdea.Beep.Installer.Steps
 
 
                 copied.Add(destPath);
+                // Only files this step brought into existence may be deleted on rollback. A copy
+                // that replaced an existing file must be restored from the upgrade backup, not
+                // deleted -- deleting it would remove something the machine had before we ran.
+                if (!existedBefore) createdByThisStep.Add(destPath);
 
                 // Register rollback so a later step failure undoes this copy.
                 (context.TryGetProperty<RollbackManager>("RollbackManager"))?.RegisterFileCreated(destPath);
@@ -138,8 +145,41 @@ namespace TheTechIdea.Beep.Installer.Steps
             }
 
             context.Properties["InstalledFiles"] = copied;
+            context.Properties["FilesCreatedByCopy"] = createdByThisStep;
             context.Properties["TotalBytesInstalled"] = totalBytes;
             return StepErrorHelpers.Ok($"{copied.Count} files copied ({FormatBytes(totalBytes)}).");
+        }
+
+        public bool SupportsRollback => true;
+
+        /// <summary>
+        /// Deletes only the files this step created, newest first so emptied directories can go
+        /// with them. A file that already existed and was overwritten is deliberately left alone:
+        /// the upgrade backup owns restoring those, and deleting one would take away something the
+        /// machine had before the install ran.
+        /// </summary>
+        public Task<IErrorsInfo> RollbackAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+        {
+            var created = context.TryGetProperty<List<string>>("FilesCreatedByCopy");
+            if (created == null || created.Count == 0)
+                return Task.FromResult(StepErrorHelpers.Ok("No copied files to undo."));
+
+            var removed = 0;
+            foreach (var path in Enumerable.Reverse(created))
+            {
+                try
+                {
+                    if (File.Exists(path)) { File.Delete(path); removed++; }
+                }
+                catch (Exception ex)
+                {
+                    // Best-effort: a file we cannot delete must not abort the rest of the rollback.
+                    progress?.Report(new PassedArgs { Messege = $"Could not remove {path}: {ex.Message}" });
+                }
+            }
+
+            context.Properties["FilesCreatedByCopy"] = new List<string>();
+            return Task.FromResult(StepErrorHelpers.Ok($"{removed} copied file(s) removed."));
         }
 
         public Task<IErrorsInfo> ExecuteAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)

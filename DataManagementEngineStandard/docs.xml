@@ -42839,6 +42839,12 @@
             Runs after <see cref="T:TheTechIdea.Beep.Installer.Steps.FileCopyStep"/>. Reversed by <see cref="T:TheTechIdea.Beep.Installer.Steps.UninstallStep"/>.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.ComServerRegistrationStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Removes the CLSID and ProgId trees this step wrote, through the same scope-aware base key
+            it registered under — the reverse of Execute, and the same shape UninstallStep uses.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.GacInstallStep">
             <summary>
             Installs assemblies into the GAC via <c>gacutil.exe</c> (Track A3.3). Best-effort: if
@@ -42909,6 +42915,14 @@
             <summary>
             Copies installation files with per-file progress reporting.
             Reads <see cref="T:TheTechIdea.Beep.Installer.InstallConfig"/> from context properties.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.FileCopyStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Deletes only the files this step created, newest first so emptied directories can go
+            with them. A file that already existed and was overwritten is deliberately left alone:
+            the upgrade backup owns restoring those, and deleting one would take away something the
+            machine had before the install ran.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Installer.Steps.FileCopyStep.TrySchedulePendingReplace(System.String,System.String)">
@@ -43028,6 +43042,13 @@
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ShortcutCreateStep">
             <summary>Creates Windows shortcuts (.lnk files) for desktop, start menu, and startup.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.ShortcutCreateStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Deletes the shortcuts this step created, resolving each link path the same way Execute
+            did -- through the shared <c>ShortcutPathResolver</c>, so create and undo cannot drift
+            onto different locations.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.SystemRestoreStep">
             <summary>Creates a Windows System Restore point before installation begins.</summary>

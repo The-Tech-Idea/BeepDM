@@ -87,6 +87,52 @@ namespace TheTechIdea.Beep.Installer.Steps
                 : StepErrorHelpers.Ok($"Registered {written.Count} COM server(s).");
         }
 
+        public bool SupportsRollback => true;
+
+        /// <summary>
+        /// Removes the CLSID and ProgId trees this step wrote, through the same scope-aware base key
+        /// it registered under — the reverse of Execute, and the same shape UninstallStep uses.
+        /// </summary>
+        public Task<IErrorsInfo> RollbackAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
+        {
+            var written = context.TryGetProperty<List<ComRegistration>>("ComRegistrationsWritten");
+            if (written == null || written.Count == 0)
+                return Task.FromResult(StepErrorHelpers.Ok("No COM registrations to undo."));
+
+            var config = context.TryGetProperty<InstallConfig>("InstallConfig");
+            var removed = 0;
+            try
+            {
+                using var classes = InstallScope.OpenBaseKey(context, config)
+                    .OpenSubKey(@"Software\Classes", writable: true);
+                if (classes == null)
+                    return Task.FromResult(StepErrorHelpers.Ok("The Software classes key is not writable; nothing undone."));
+
+                foreach (var com in written)
+                {
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(com.Clsid))
+                            classes.DeleteSubKeyTree($@"CLSID\{com.Clsid}", throwOnMissingSubKey: false);
+                        if (!string.IsNullOrWhiteSpace(com.ProgId))
+                            classes.DeleteSubKeyTree(com.ProgId, throwOnMissingSubKey: false);
+                        removed++;
+                    }
+                    catch (Exception ex)
+                    {
+                        progress?.Report(new PassedArgs { Messege = $"Could not unregister {com.Clsid}: {ex.Message}" });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(StepErrorHelpers.Ok($"COM rollback skipped: {ex.Message}"));
+            }
+
+            context.Properties["ComRegistrationsWritten"] = new List<ComRegistration>();
+            return Task.FromResult(StepErrorHelpers.Ok($"{removed} COM server registration(s) removed."));
+        }
+
         public Task<IErrorsInfo> ExecuteAsync(SetupContext context, IProgress<PassedArgs>? progress = null, CancellationToken token = default)
             => Task.FromResult(Execute(context, progress));
 
