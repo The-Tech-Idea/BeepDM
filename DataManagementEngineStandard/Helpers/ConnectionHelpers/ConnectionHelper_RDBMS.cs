@@ -426,7 +426,11 @@ namespace TheTechIdea.Beep.Helpers
                 DbConnectionType = "Npgsql.NpgsqlConnection",
                 ConnectionString = "User ID={UserID};Password={Password};Host={Host};Port={Port};Database={DataBase};",
                 iconname = "cockroach.svg",
-                classHandler = "CockroachDBDataSource",
+                // Matches the actual class name, DataSourcesPluginsCore/CockroachDBDataSourceCore/
+                // CockRoachDataSource.cs -- "CockroachDBDataSource" (no capital R, no "DB") never
+                // matched anything, so this driver never appeared in the connection UI even though
+                // AddinAttribute-based discovery could still construct it directly.
+                classHandler = "CockRoachDataSource",
                 ADOType = true,
                 CreateLocal = false,
                 InMemory = false,
