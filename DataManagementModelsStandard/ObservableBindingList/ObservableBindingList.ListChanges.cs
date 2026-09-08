@@ -161,6 +161,7 @@ namespace TheTechIdea.Beep.Editor
                 _insertionOrderList.Remove(removedItem);
                 tracking.EntityState = EntityState.Deleted;
                 tracking.IsSaved = false; // Optional, mark as pending
+                RememberDeletedTracking(removedItem, tracking);
             }
             else
             {
@@ -177,6 +178,7 @@ namespace TheTechIdea.Beep.Editor
                         IsSaved = false
                     };
                     AddTracking(newTracking);
+                    RememberDeletedTracking(removedItem, newTracking);
                 }
             }
 

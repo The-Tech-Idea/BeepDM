@@ -75,6 +75,7 @@ namespace TheTechIdea.Beep.Editor
                     originalList.Clear();
                     _insertionOrderList.Clear();
                     DeletedList.Clear();
+                    ForgetAllDeletedTrackings();
                     UpdateLog?.Clear();
                     ChangedValues?.Clear();
                     _currentWorkingSet = null;

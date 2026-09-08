@@ -112,11 +112,17 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>
-        /// Legacy nugget manager for backward compatibility.
+        /// Legacy nugget manager for backward compatibility. Lazily constructed on first access —
+        /// most hosts (e.g. a web app with every addon statically referenced) never touch package
+        /// download features at all, and NuggetManager's constructor does eager filesystem I/O
+        /// against the OS NuGet global-packages folder that can fail under a constrained service
+        /// account (no real user profile). Building it here, on demand, means that failure surfaces
+        /// only to a caller that actually asked for package-download capability — not to every host
+        /// merely constructing an AssemblyHandler.
         /// </summary>
         public NuggetManager NuggetManager
         {
-            get => _nuggetManager;
+            get => _nuggetManager ??= new NuggetManager(Logger, ErrorObject, Utilfunction);
             set => _nuggetManager = value;
         }
 
@@ -140,9 +146,8 @@ namespace TheTechIdea.Beep.Tools
             CurrentDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
             CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-            
-            // Initialize legacy NuggetManager
-            _nuggetManager = new NuggetManager(Logger, ErrorObject, Utilfunction);
+
+            // NuggetManager is no longer constructed eagerly here — see the NuggetManager property.
 
             // Initialize loaded assemblies from dependency context
             InitializeLoadedAssemblies();

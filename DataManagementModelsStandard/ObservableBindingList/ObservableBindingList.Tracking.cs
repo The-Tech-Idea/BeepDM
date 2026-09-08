@@ -10,6 +10,53 @@ namespace TheTechIdea.Beep.Editor
 {
     public partial class ObservableBindingList<T>
     {
+        #region "Deleted-item tracking link"
+
+        /// <summary>
+        /// The <see cref="Tracking"/> that staged each item currently in <c>DeletedList</c>.
+        ///
+        /// <para>Deleting an item removes it from <c>originalList</c> — which is what stops a
+        /// deleted row reappearing when a filter is cleared, since <c>originalList</c> is the
+        /// unfiltered view's backing set. But <see cref="GetTrackingItem"/> resolves a deleted item's
+        /// tracking BY its position in <c>originalList</c>, so once the item was removed from it
+        /// nothing could find that tracking again: <see cref="GetPendingChanges"/> matched no entity
+        /// to the Deleted tracking and reported no deletions at all, <c>CommitAllAsync</c> was handed
+        /// an empty work list, and every Delete-then-Commit reported success while the row stayed in
+        /// the database. Keyed by reference, because two rows that compare equal are still two rows.
+        /// (2026-09-06)</para>
+        /// </summary>
+        private readonly Dictionary<T, Tracking> _deletedItemTrackings = new Dictionary<T, Tracking>(DeletedItemComparer.Instance);
+
+        private sealed class DeletedItemComparer : IEqualityComparer<T>
+        {
+            public static readonly DeletedItemComparer Instance = new DeletedItemComparer();
+            public bool Equals(T x, T y) => ReferenceEquals(x, y);
+            public int GetHashCode(T obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+        }
+
+        /// <summary>Records which tracking staged this item's deletion. Call it wherever an item is added to <c>DeletedList</c>.</summary>
+        private void RememberDeletedTracking(T item, Tracking tracking)
+        {
+            if (item != null && tracking != null)
+                _deletedItemTrackings[item] = tracking;
+        }
+
+        /// <summary>Drops the link for one item. Call it wherever an item leaves <c>DeletedList</c>.</summary>
+        private void ForgetDeletedTracking(T item)
+        {
+            if (item != null)
+                _deletedItemTrackings.Remove(item);
+        }
+
+        /// <summary>Drops every link. Call it wherever <c>DeletedList</c> is cleared.</summary>
+        private void ForgetAllDeletedTrackings() => _deletedItemTrackings.Clear();
+
+        /// <summary>The tracking that staged this item's deletion, or null when it was not deleted here.</summary>
+        private Tracking FindDeletedTracking(T item)
+            => item != null && _deletedItemTrackings.TryGetValue(item, out var tracking) ? tracking : null;
+
+        #endregion "Deleted-item tracking link"
+
         #region "Dirty-State Aggregate Properties"
 
         /// <summary>True if any tracked entity has a state other than Unchanged.</summary>
@@ -230,6 +277,12 @@ namespace TheTechIdea.Beep.Editor
             // First check if item is in deleted list
             if (DeletedList.Count > 0 && DeletedList.Contains(item))
             {
+                // The tracking recorded when the item was removed. Read directly rather than through
+                // originalList, which by definition no longer holds a deleted item.
+                var stagedByDelete = FindDeletedTracking(item);
+                if (stagedByDelete != null)
+                    return stagedByDelete;
+
                 int originalIndex = originalList.IndexOf(item);
                 if (originalIndex >= 0)
                 {
@@ -280,6 +333,7 @@ namespace TheTechIdea.Beep.Editor
                 if (DeletedList.Contains(item))
                 {
                     DeletedList.Remove(item);
+                    ForgetDeletedTracking(item);
                     originalList.Remove(item);
                     _insertionOrderList.Remove(item);
                 }
@@ -309,6 +363,7 @@ namespace TheTechIdea.Beep.Editor
                     _insertionOrderList.Remove(deletedItem);
                 }
                 DeletedList.Clear();
+                ForgetAllDeletedTrackings();
             }
 
             // 2. Clear update log (optional: only for entries that are saved)
@@ -418,6 +473,7 @@ namespace TheTechIdea.Beep.Editor
                         if (deleteResult.Flag == Errors.Ok)
                         {
                             DeletedList.Remove(item);
+                            ForgetDeletedTracking(item);
                             originalList.Remove(item);
                             _insertionOrderList.Remove(item);
                             Items.Remove(item);
@@ -593,6 +649,7 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 // Defer physical removal — mark tracking
                                 DeletedList.Remove(item);
+                                ForgetDeletedTracking(item);
                                 originalList.Remove(item);
                                 _insertionOrderList.Remove(item);
                                 Items.Remove(item);
@@ -837,6 +894,7 @@ namespace TheTechIdea.Beep.Editor
                     _insertionOrderList.Remove(deletedItem);
                 }
                 DeletedList.Clear();
+                ForgetAllDeletedTrackings();
 
                 // Reset all tracking records to Unchanged
                 foreach (var tr in _trackingsByGuid.Values.ToList())
@@ -892,6 +950,7 @@ namespace TheTechIdea.Beep.Editor
                 if (item is INotifyPropertyChanged npc)
                     npc.PropertyChanged -= Item_PropertyChanged;
                 DeletedList.Remove(item);
+                ForgetDeletedTracking(item);
                 originalList.Remove(item);
                 _insertionOrderList.Remove(item);
                 _trackingsByGuid.Remove(tracking.UniqueId);

@@ -56,6 +56,15 @@ namespace TheTechIdea.Beep.Tools
         // NuGet & tracking infrastructure
         private NuGetPackageManager _nugetPackageManager;
         private NuggetPackageDownloader _packageDownloader; // Kept for backward compatibility
+
+        /// <summary>
+        /// Lazily constructed on first actual package-download call — see the identical rationale
+        /// on AssemblyHandler.NuggetManager: its constructor does eager filesystem I/O against the OS
+        /// NuGet global-packages folder, which can be inaccessible under a constrained service
+        /// account. Deferring construction means that failure surfaces only to a caller that actually
+        /// invoked a download operation, not to every host merely constructing this handler.
+        /// </summary>
+        private NuggetPackageDownloader PackageDownloader => _packageDownloader ??= new NuggetPackageDownloader(Logger);
         private List<NuGetSourceConfig> _nugetSources;
         private string _nugetSourcesFilePath;
         private List<DriverPackageMapping> _driverPackageMappings;
@@ -159,8 +168,7 @@ namespace TheTechIdea.Beep.Tools
             // Initialize new NuGet Package Manager (enhanced)
             _nugetPackageManager = new NuGetPackageManager(Logger, this, Path.Combine(ConfigEditor?.ExePath ?? AppContext.BaseDirectory, "Plugins"));
             
-            // Initialize singleton NuGet package downloader (legacy - kept for backward compatibility)
-            _packageDownloader = new NuggetPackageDownloader(Logger);
+            // NuGet package downloader (legacy) is no longer constructed eagerly here — see PackageDownloader.
 
             // CRITICAL: Explicitly register all currently loaded AppDomain assemblies
             // This ensures project references and PackageReferences are visible to shared contexts
@@ -1940,7 +1948,7 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 var sources = GetActiveSourceUrls();
-                return await _packageDownloader.SearchPackagesAsync(searchTerm, skip, take, includePrerelease, sources, token);
+                return await PackageDownloader.SearchPackagesAsync(searchTerm, skip, take, includePrerelease, sources, token);
             }
             catch (Exception ex)
             {
@@ -1960,7 +1968,7 @@ namespace TheTechIdea.Beep.Tools
             try
             {
                 var sources = GetActiveSourceUrls();
-                var versions = await _packageDownloader.GetPackageVersionsAsync(packageId, includePrerelease, sources, token);
+                var versions = await PackageDownloader.GetPackageVersionsAsync(packageId, includePrerelease, sources, token);
                 return versions.Select(v => v.ToNormalizedString()).ToList();
             }
             catch (Exception ex)
@@ -1990,7 +1998,7 @@ namespace TheTechIdea.Beep.Tools
                 }
 
                 var sourceList = sources?.ToList() ?? GetActiveSourceUrls();
-                var results = await _packageDownloader.DownloadPackageWithDependenciesAsync(packageName, version, sourceList);
+                var results = await PackageDownloader.DownloadPackageWithDependenciesAsync(packageName, version, sourceList);
 
                 foreach (var kvp in results)
                 {
@@ -2012,7 +2020,7 @@ namespace TheTechIdea.Beep.Tools
                         try
                         {
                             var installPath = appInstallPath ?? Path.Combine(ConfigEditor.ExePath, "Plugins");
-                            _packageDownloader.InstallPackageToAppDirectory(path, installPath, packageName, version);
+                            PackageDownloader.InstallPackageToAppDirectory(path, installPath, packageName, version);
                             if (useProcessHost)
                             {
                                 var exe = Directory.GetFiles(installPath, "*.exe", SearchOption.AllDirectories).FirstOrDefault();

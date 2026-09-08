@@ -79,6 +79,11 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>An observable binding list of entities</returns>
         public virtual async Task<ObservableBindingList<T>> Get()
         {
+            // A tenant-scoped unit of work has no unfiltered read: the whole point of the scope is
+            // that "everything" means "everything of this tenant". Routed through the filtered
+            // overload so the predicate reaches the query rather than being applied afterwards.
+            if (IsTenantScoped && TenantFiltersReads) return await Get(new List<AppFilter>()).ConfigureAwait(false);
+
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreQuery };
             PreQuery?.Invoke(this, ps);
             if (ps.Cancel)
@@ -125,6 +130,11 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>A task that represents the asynchronous operation containing the filtered list</returns>
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
+            // Applied here rather than at the call site — see UnitofWork.Tenancy.cs for why.
+            // A null filter list stays null for an unscoped unit of work, preserving the
+            // "no filtering requested" branch below.
+            if (IsTenantScoped) filters = ApplyTenantFilter(filters);
+
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreQuery };
             PreQuery?.Invoke(this, ps);
             if (ps.Cancel)
@@ -369,6 +379,10 @@ namespace TheTechIdea.Beep.Editor.UOW
             {
                 return;
             }
+
+            // A row inserted through a scoped unit of work belongs to that tenant. Stamped before
+            // validation events see it, so a handler reading the tenant field sees the real value.
+            StampTenant(entity);
             
             // Raise pre-create event
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreCreate };
@@ -475,6 +489,16 @@ namespace TheTechIdea.Beep.Editor.UOW
         public IErrorsInfo Update(T entity)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
+
+            // Isolation is not only about what a query returns: an entity obtained elsewhere must not
+            // be written through a unit of work scoped to a different tenant.
+            if (BelongsToAnotherTenant(entity))
+            {
+                errorsInfo.Message = CrossTenantRefusal("Update");
+                errorsInfo.Flag = Errors.Failed;
+                return errorsInfo;
+            }
+
             if (!Validateall())
             {
                 errorsInfo.Message = "Validation Failed";

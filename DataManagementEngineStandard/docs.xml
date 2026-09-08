@@ -113,7 +113,13 @@
         </member>
         <member name="P:TheTechIdea.Beep.Tools.AssemblyHandler.NuggetManager">
             <summary>
-            Legacy nugget manager for backward compatibility.
+            Legacy nugget manager for backward compatibility. Lazily constructed on first access —
+            most hosts (e.g. a web app with every addon statically referenced) never touch package
+            download features at all, and NuggetManager's constructor does eager filesystem I/O
+            against the OS NuGet global-packages folder that can fail under a constrained service
+            account (no real user profile). Building it here, on demand, means that failure surfaces
+            only to a caller that actually asked for package-download capability — not to every host
+            merely constructing an AssemblyHandler.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.#ctor(TheTechIdea.Beep.ConfigUtil.IConfigEditor,TheTechIdea.Beep.ConfigUtil.IErrorsInfo,TheTechIdea.Beep.Logger.IDMLogger,TheTechIdea.Beep.Utilities.IUtil)">
@@ -2569,6 +2575,15 @@
             <summary>
             Modern AssemblyHandler implementation using SharedContextManager as the core loading system
             This provides unified loading/unloading for DLLs, plugins, nuggets, and assemblies
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.PackageDownloader">
+            <summary>
+            Lazily constructed on first actual package-download call — see the identical rationale
+            on AssemblyHandler.NuggetManager: its constructor does eager filesystem I/O against the OS
+            NuGet global-packages folder, which can be inaccessible under a constrained service
+            account. Deferring construction means that failure surfaces only to a caller that actually
+            invoked a download operation, not to every host merely constructing this handler.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Tools.SharedContextAssemblyHandler.LoaderExtensionInstances">
@@ -31356,6 +31371,95 @@
             <summary>
             Invalidates all cached pages, forcing a re-fetch on next access.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.TenantFieldName">
+             <summary>
+             Optional tenant boundary. When set, <b>every read this unit of work performs carries the
+             discriminator in its filter, and every insert is stamped with it.</b>
+            
+             <para><b>Why it belongs here and not in the caller.</b> A multi-tenant application that
+             keeps every tenant's rows in one table has to add that predicate to every single query.
+             Leaving it to each call site means it is applied wherever someone remembered — which, in
+             the application this was built for, measured as roughly two thirds of reads, with the
+             remainder silently returning every tenant's data. Odoo solves the same problem the same
+             way: its ORM appends the company domain below where feature code runs, so a developer
+             cannot forget it. This is that hook.</para>
+            
+             <para>It is deliberately expressed as a field name and a value rather than a typed
+             interface, so this layer needs no knowledge of the consuming application's entity base
+             class.</para>
+             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.TenantId">
+            <summary>The tenant value applied to reads and stamped onto inserts. See <see cref="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.TenantFieldName"/>.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.IsTenantScoped">
+            <summary>True when this unit of work is confined to a single tenant.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.TenantFiltersReads">
+             <summary>
+             Whether the tenant predicate is added to reads, as opposed to only being stamped onto
+             inserts.
+            
+             <para><b>Why the two can be separated.</b> Adopting the boundary in an application that has
+             been running without one is a sequence, not a switch: rows written before the stamp existed
+             carry no tenant, so turning filtering on first makes that history *disappear* rather than
+             become correct. Stamping first is safe and immediate — it only affects new rows — and
+             filtering follows once the old rows have been backfilled. This flag is what lets a caller
+             take those two steps separately, per table, instead of all at once.</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ScopeToTenant(System.String,System.String,System.Boolean)">
+             <summary>
+             Confines this unit of work to one tenant: reads gain <paramref name="fieldName"/> =
+             <paramref name="tenantId"/>, and inserts are stamped with it.
+            
+             <para>An empty <paramref name="tenantId"/> is rejected rather than treated as "all
+             tenants". A caller that does not know its tenant must not silently read across every one
+             of them — that is the failure this exists to prevent, and it should surface where the
+             scope was requested.</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ApplyTenantFilter(System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
+             <summary>
+             Returns the caller's filters with the tenant predicate added, or the filters unchanged when
+             this unit of work is not scoped.
+            
+             <para>A filter the caller already supplied on the same field is left alone: it is either the
+             same value, or a deliberate attempt to read another tenant that must fail loudly at the
+             database rather than be silently rewritten into something that succeeds.</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.StampTenant(`0)">
+             <summary>
+             Stamps the tenant onto an entity being inserted, when this unit of work is scoped and the
+             entity does not already carry one.
+            
+             <para>An existing non-empty value is never overwritten — an insert that deliberately names
+             its tenant (a platform process acting for a specific one) stays as written. A blank one is
+             filled, because a row saved with no tenant belongs to nobody: it is invisible to every
+             scoped read and visible to every unscoped one, which is precisely how a missing filter and
+             a missing stamp hide each other.</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.BelongsToAnotherTenant(`0)">
+             <summary>
+             True when this entity belongs to a different tenant than the one this unit of work is
+             confined to — i.e. modifying or deleting it would reach across the boundary.
+            
+             <para>Filtering reads is only half of isolation. A caller that already holds an entity —
+             fetched before the scope was applied, handed in by an API request, or carried over from
+             another operation — can otherwise update or delete another tenant's row through a scoped
+             unit of work, because nothing on the write path looks at the discriminator. Reading is the
+             half people remember; this is the half that changes someone else's data.</para>
+            
+             <para>A blank tenant on the entity is <b>not</b> treated as foreign: those are rows written
+             before stamping existed, and refusing to update them would make historical data
+             uneditable rather than safe. They are the backfill's problem, not this check's.</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CrossTenantRefusal(System.String)">
+            <summary>The refusal message used when a write is rejected for crossing the boundary.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.UnitOfWorkFactory">
             <summary>

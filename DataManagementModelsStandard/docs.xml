@@ -14222,6 +14222,33 @@
             Releases a reader or writer lock on dispose.
             </summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Editor.ObservableBindingList`1._deletedItemTrackings">
+             <summary>
+             The <see cref="T:TheTechIdea.Beep.Editor.Tracking"/> that staged each item currently in <c>DeletedList</c>.
+            
+             <para>Deleting an item removes it from <c>originalList</c> — which is what stops a
+             deleted row reappearing when a filter is cleared, since <c>originalList</c> is the
+             unfiltered view's backing set. But <see cref="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetTrackingItem(`0)"/> resolves a deleted item's
+             tracking BY its position in <c>originalList</c>, so once the item was removed from it
+             nothing could find that tracking again: <see cref="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetPendingChanges"/> matched no entity
+             to the Deleted tracking and reported no deletions at all, <c>CommitAllAsync</c> was handed
+             an empty work list, and every Delete-then-Commit reported success while the row stayed in
+             the database. Keyed by reference, because two rows that compare equal are still two rows.
+             (2026-09-06)</para>
+             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RememberDeletedTracking(`0,TheTechIdea.Beep.Editor.Tracking)">
+            <summary>Records which tracking staged this item's deletion. Call it wherever an item is added to <c>DeletedList</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ForgetDeletedTracking(`0)">
+            <summary>Drops the link for one item. Call it wherever an item leaves <c>DeletedList</c>.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ForgetAllDeletedTrackings">
+            <summary>Drops every link. Call it wherever <c>DeletedList</c> is cleared.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.FindDeletedTracking(`0)">
+            <summary>The tracking that staged this item's deletion, or null when it was not deleted here.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.ObservableBindingList`1.HasChanges">
             <summary>True if any tracked entity has a state other than Unchanged.</summary>
         </member>

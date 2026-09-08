@@ -108,6 +108,13 @@ namespace TheTechIdea.Beep.Editor.UOW
             {
                 return new ErrorsInfo { Flag = Errors.Failed, Message = "Entity is null" };
             }
+
+            // Same reasoning as Update: deleting across the boundary is the most destructive form of
+            // the leak, and the one a read filter alone does nothing about.
+            if (BelongsToAnotherTenant(entity))
+            {
+                return new ErrorsInfo { Flag = Errors.Failed, Message = CrossTenantRefusal("Delete") };
+            }
             var result = Delete(e => ReferenceEquals(e, entity) || Equals(e, entity));
             return result;
         }

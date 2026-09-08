@@ -88,8 +88,27 @@ namespace TheTechIdea.Beep.Tools.PluginSystem
 
             _logger?.LogWithContext($"Using NuGet global packages folder: {_globalPackagesFolder}", null);
 
-            if (!Directory.Exists(_globalPackagesFolder))
-                Directory.CreateDirectory(_globalPackagesFolder);
+            // This constructor runs unconditionally whenever an AssemblyHandler is built (see
+            // AssemblyHandler.Core.cs / SharedContextAssemblyHandler), even for hosts that never
+            // download a plugin package. Under a constrained service account with no real user
+            // profile (IIS app pool identities, some Windows Services), the default folder resolves
+            // under a path the process cannot write to (e.g. C:\Windows\system32\config\systemprofile)
+            // and CreateDirectory throws UnauthorizedAccessException — which, uncaught here, took
+            // down an unrelated ASP.NET Core host at startup with no plugin-download feature in use.
+            // Package-download methods below still need the folder to exist when actually invoked;
+            // they retry creation (and will fail loudly there, which is correct — that IS the
+            // moment the capability is actually needed).
+            try
+            {
+                if (!Directory.Exists(_globalPackagesFolder))
+                    Directory.CreateDirectory(_globalPackagesFolder);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWithContext(
+                    $"NuGet global packages folder '{_globalPackagesFolder}' is not accessible ({ex.Message}); " +
+                    "package download features will be unavailable until this is resolved.", null);
+            }
         }
 
         /// <summary>

@@ -121,6 +121,7 @@ namespace TheTechIdea.Beep.Editor
                             _insertionOrderList.Remove(item);
                             tracking.EntityState = EntityState.Deleted;
                             tracking.IsSaved = false;
+                            RememberDeletedTracking(item, tracking);
 
                             // Fix index-shift for remaining trackings
                             foreach (var tr in _trackingsByGuid.Values)
@@ -142,6 +143,7 @@ namespace TheTechIdea.Beep.Editor
                                     IsSaved = false
                                 };
                                 AddTracking(newTr);
+                                RememberDeletedTracking(item, newTr);
                             }
                         }
 
