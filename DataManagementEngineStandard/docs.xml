@@ -38941,6 +38941,18 @@
         <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelpers.DatabaseFeature.ColumnStore">
             <summary>Columnar storage format</summary>
         </member>
+        <member name="F:TheTechIdea.Beep.Helpers.RDBMSHelpers.DatabaseFeature.MultiRowInsert">
+            <summary>
+            A single INSERT can carry several rows in one VALUES clause --
+            <c>INSERT INTO t (a, b) VALUES (1, 2), (3, 4)</c>.
+            </summary>
+            <remarks>
+            This is grammar, not throughput: engines that reject it need a different statement shape
+            entirely (Oracle's <c>INSERT ALL</c>, Firebird's <c>INSERT INTO ... SELECT ... UNION
+            ALL</c>), not a smaller batch. A caller that batches rows into one INSERT must check this
+            first, and fall back to one statement per row when it is false.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Helpers.RDBMSHelpers.TransactionOperation">
             <summary>
             Defines transaction operations that can be performed
@@ -42697,6 +42709,41 @@
         <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.VerifyFileHash(System.String,System.String)">
             <summary>Verifies a file matches the expected SHA256 hash.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Installer.InstallHelpers.ProcessRunResult">
+            <summary>
+            Outcome of a child process the installer launched. Never a thrown exception: an install
+            step decides what a failure means, and a prerequisite that timed out is a different
+            thing from one that could not be started.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Installer.InstallHelpers.ProcessRunResult.Error">
+            <summary>Why the run could not be completed, or empty when it ran to completion.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.RunProcess(System.Diagnostics.ProcessStartInfo,System.Int32)">
+             <summary>
+             Runs a child process to completion or to <paramref name="timeoutMs"/>, whichever comes
+             first, and returns what happened.
+            
+             Every launch site in the installer previously grew its own version of this and each got
+             some part of it wrong:
+            
+             <list type="bullet">
+             <item>Reading a redirected stream to the end <em>before</em> waiting. ReadToEnd has no
+             timeout, so the timeout underneath it never applied and a child that never exited hung
+             the install for good.</item>
+             <item>Redirecting a stream and never draining it, so a chatty child filled the pipe
+             buffer and blocked — and its output was lost for diagnostics either way.</item>
+             <item>Reading <c>ExitCode</c> after a wait that may have timed out. On a process still
+             running that throws <c>InvalidOperationException</c>, which surfaced as "install failed"
+             rather than "timed out".</item>
+             <item>Not killing a child that overran its timeout, leaving it running — including
+             elevated prerequisite installers — while the install carried on around it.</item>
+             </list>
+            
+             Redirected streams are drained concurrently with the wait; nothing is read from a stream
+             that was not redirected.
+             </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Installer.InstallHelpers.ScheduleFileForRestart(System.String,System.String)">
             <summary>
             Schedules a file to be replaced/removed on next reboot.
@@ -42868,7 +42915,16 @@
             <summary>Downloads components on-demand during installation with progress.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ComRegistrationStep">
-            <summary>Registers/unregisters COM components.</summary>
+             <summary>
+             Registers/unregisters COM components by invoking their own <c>DllRegisterServer</c> through
+             regsvr32, driven by the loose <c>ComComponents</c> context key.
+            
+             Distinct from <see cref="T:TheTechIdea.Beep.Installer.Steps.ComServerRegistrationStep"/>, which writes the CLSID tree itself
+             from <c>InstallConfig</c> and is scope-aware. Both once answered to
+             <c>installer.com.register</c>, so any graph containing the two failed to build at all
+             (<c>SetupWizardBuilder</c> rejects duplicate ids). Self-registration is the narrower,
+             legacy mechanism, so it is the one that took a new id.
+             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.ScheduledTaskStep">
             <summary>Creates/removes Windows Scheduled Tasks.</summary>
@@ -42885,6 +42941,12 @@
             <see cref="T:TheTechIdea.Beep.Installer.ComRegistration"/>, writes the HKCR\CLSID\{Clsid}\InprocServer32 tree and the
             ProgId alias. Scope-aware: per-user → HKCU\Software\Classes, per-machine → HKLM\Software\Classes.
             Runs after <see cref="T:TheTechIdea.Beep.Installer.Steps.FileCopyStep"/>. Reversed by <see cref="T:TheTechIdea.Beep.Installer.Steps.UninstallStep"/>.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.ComServerRegistrationStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Removes the CLSID and ProgId trees this step wrote, through the same scope-aware base key
+            it registered under — the reverse of Execute, and the same shape UninstallStep uses.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.GacInstallStep">
@@ -42914,6 +42976,13 @@
             <summary>
             Executes custom actions (scripts, executables) at defined install points.
             Actions are read from context.Properties["CustomActions"] filtered by timing.
+            </summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.Installer.Steps.CustomActionStep.AllowScriptCommandsKey">
+            <summary>
+            Context key carrying the deployer's decision about executing authored custom actions.
+            A boolean: <c>false</c> refuses them, <c>true</c> permits them explicitly, and an absent
+            key means "no decision", which permits them so existing deployments keep working.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.DirectoryCreateStep">
@@ -42950,6 +43019,14 @@
             <summary>
             Copies installation files with per-file progress reporting.
             Reads <see cref="T:TheTechIdea.Beep.Installer.InstallConfig"/> from context properties.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.FileCopyStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Deletes only the files this step created, newest first so emptied directories can go
+            with them. A file that already existed and was overwritten is deliberately left alone:
+            the upgrade backup owns restoring those, and deleting one would take away something the
+            machine had before the install ran.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Installer.Steps.FileCopyStep.TrySchedulePendingReplace(System.String,System.String)">
@@ -43070,8 +43147,22 @@
         <member name="T:TheTechIdea.Beep.Installer.Steps.ShortcutCreateStep">
             <summary>Creates Windows shortcuts (.lnk files) for desktop, start menu, and startup.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.ShortcutCreateStep.RollbackAsync(TheTechIdea.Beep.SetUp.SetupContext,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+            <summary>
+            Deletes the shortcuts this step created, resolving each link path the same way Execute
+            did -- through the shared <c>ShortcutPathResolver</c>, so create and undo cannot drift
+            onto different locations.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.SystemRestoreStep">
             <summary>Creates a Windows System Restore point before installation begins.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Installer.Steps.SystemRestoreStep.CanSkip(TheTechIdea.Beep.SetUp.SetupContext)">
+            <summary>
+            Skipped unless the project asked for a restore point. It used to return false
+            unconditionally, which is one reason this step was never wired into a graph:
+            adding it would have taken a restore point on every install regardless.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Installer.Steps.UninstallStep">
             <summary>

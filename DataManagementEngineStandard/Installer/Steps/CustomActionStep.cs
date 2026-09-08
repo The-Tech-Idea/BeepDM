@@ -30,6 +30,13 @@ namespace TheTechIdea.Beep.Installer.Steps
         public string Description => $"Executes custom scripts for {_timing} phase.";
         public IReadOnlyList<string> DependsOn { get; }
 
+        /// <summary>
+        /// Context key carrying the deployer's decision about executing authored custom actions.
+        /// A boolean: <c>false</c> refuses them, <c>true</c> permits them explicitly, and an absent
+        /// key means "no decision", which permits them so existing deployments keep working.
+        /// </summary>
+        public const string AllowScriptCommandsKey = "AllowScriptCommands";
+
         public CustomActionStep(CustomActionTiming timing, string? dependsOn = null)
         {
             _timing = timing;
@@ -59,6 +66,26 @@ namespace TheTechIdea.Beep.Installer.Steps
             var actions = GetActions(context);
             if (actions.Count == 0)
                 return StepErrorHelpers.Ok($"No {_timing} actions.");
+
+            // Consent gate. Custom actions launch arbitrary executables, and until now the only way
+            // to stop them was not to run the installer. A deployer pushing a third-party package
+            // through Intune or SCCM can now refuse them, and a managed environment can refuse them
+            // by policy. Absent an explicit decision this runs as it always has.
+            if (context.Properties.TryGetValue(AllowScriptCommandsKey, out var consent)
+                && consent is bool allowed && !allowed)
+            {
+                var refused = actions.OrderBy(a => a.Order).Select(a => a.Description ?? a.Path).ToList();
+                var required = actions.Where(a => a.Required).Select(a => a.Description ?? a.Path).ToList();
+                var summary = $"{actions.Count} {_timing} action(s) were refused: {string.Join(", ", refused)}.";
+
+                // A refused *required* action means the install cannot be what the author intended,
+                // so it fails rather than quietly producing a half-configured product.
+                return required.Count > 0
+                    ? StepErrorHelpers.Fail(
+                        summary + $" {required.Count} of them are required, so the installation cannot continue. " +
+                        "Pass /ALLOWSCRIPTCMDS to permit them.")
+                    : StepErrorHelpers.Ok(summary + " None were required, so the installation continues.");
+            }
 
             // Custom actions launch arbitrary executables, so honouring DryRun matters more
             // here than anywhere else: a "preview" that silently runs the author's scripts is
@@ -110,15 +137,32 @@ namespace TheTechIdea.Beep.Installer.Steps
                     };
 
                     process.Start();
-                    var output = process.StandardOutput.ReadToEnd();
-                    var error = process.StandardError.ReadToEnd();
+
+                    // Drain both pipes concurrently and wait with a timeout, in that order.
+                    // Reading stdout to completion first made the timeout below unreachable: a
+                    // custom action that never exits blocked the installer indefinitely, because
+                    // ReadToEnd has no timeout of its own, and an action that filled the stderr
+                    // buffer while we sat on stdout deadlocked the pair outright.
+                    var stdout = process.StandardOutput.ReadToEndAsync();
+                    var stderr = process.StandardError.ReadToEndAsync();
 
                     if (!process.WaitForExit(action.TimeoutMs > 0 ? action.TimeoutMs : 300_000))
                     {
-                        process.Kill();
+                        try { process.Kill(entireProcessTree: true); }
+                        catch (Exception killEx)
+                        {
+                            errors.Add($"Action timed out and could not be killed: {action.Description} ({killEx.Message})");
+                            continue;
+                        }
                         errors.Add($"Action timed out: {action.Description}");
                         continue;
                     }
+
+                    // The child has exited, so both reads are finished or about to be; the bound is
+                    // belt and braces against a grandchild holding the pipes open.
+                    Task.WaitAll(new Task[] { stdout, stderr }, 30_000);
+                    var output = stdout.IsCompletedSuccessfully ? stdout.Result : "";
+                    var error = stderr.IsCompletedSuccessfully ? stderr.Result : "";
 
                     if (process.ExitCode != 0 && action.FailOnError)
                     {

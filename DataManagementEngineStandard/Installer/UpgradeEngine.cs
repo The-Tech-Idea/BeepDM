@@ -23,20 +23,25 @@ namespace TheTechIdea.Beep.Installer
         /// literal is used for register, detect, unregister and test cleanup — a drift here was
         /// exactly what let registration and detection target different keys.
         /// </summary>
-        public static string RegistrationKeyPath(string productName)
-            => $@"SOFTWARE\TheTechIdea\{productName}";
+        public static string RegistrationKeyPath(string appId)
+        {
+            if (!Guid.TryParseExact(appId, "D", out var identity) || identity == Guid.Empty)
+                throw new ArgumentException("Installation registration requires a nonzero AppId GUID.", nameof(appId));
+            return $@"SOFTWARE\TheTechIdea\Installations\{identity:D}";
+        }
 
         /// <summary>
         /// Detects an existing installation under the given base key (hive + bitness view) and
         /// returns its version and path, or null. The caller owns <paramref name="baseKey"/> and
         /// is responsible for disposing it; only the opened subkey is disposed here.
         /// </summary>
-        public ExistingInstall? DetectExisting(string productName, RegistryKey baseKey)
+        public ExistingInstall? DetectExisting(string appId, RegistryKey baseKey)
         {
+            var registrationPath = RegistrationKeyPath(appId);
             if (baseKey == null) return null;
             try
             {
-                using var key = baseKey.OpenSubKey(RegistrationKeyPath(productName));
+                using var key = baseKey.OpenSubKey(registrationPath);
                 if (key == null) return null;
 
                 var path = key.GetValue("InstallPath")?.ToString();
@@ -46,7 +51,7 @@ namespace TheTechIdea.Beep.Installer
 
                 return new ExistingInstall
                 {
-                    ProductName = productName,
+                    ProductName = key.GetValue("ProductName")?.ToString() ?? "",
                     InstalledVersion = version ?? "unknown",
                     InstallPath = path,
                     ManifestPath = Path.Combine(path, "install-manifest.json")
@@ -144,13 +149,16 @@ namespace TheTechIdea.Beep.Installer
         /// </summary>
         public void RegisterInstall(InstallConfig config, string installPath, RegistryKey baseKey)
         {
+            var registrationPath = RegistrationKeyPath(config.AppId);
             if (baseKey == null) return;
             try
             {
-                using var key = baseKey.CreateSubKey(RegistrationKeyPath(config.ProductName));
+                using var key = baseKey.CreateSubKey(registrationPath);
+                key?.SetValue("ProductName", config.ProductName);
                 key?.SetValue("InstallPath", installPath);
                 key?.SetValue("Version", config.ProductVersion);
                 key?.SetValue("Publisher", config.Publisher);
+                key?.SetValue("AppId", config.AppId);
                 _logger?.Info("Upgrade", $"Registered install: {config.ProductName} v{config.ProductVersion}");
             }
             catch (Exception ex)
@@ -160,13 +168,14 @@ namespace TheTechIdea.Beep.Installer
         }
 
         /// <summary>Removes the install registration under the given base key. Best-effort.</summary>
-        public void UnregisterInstall(string productName, RegistryKey baseKey)
+        public void UnregisterInstall(string appId, RegistryKey baseKey)
         {
+            var registrationPath = RegistrationKeyPath(appId);
             if (baseKey == null) return;
             try
             {
-                baseKey.DeleteSubKeyTree(RegistrationKeyPath(productName), throwOnMissingSubKey: false);
-                _logger?.Info("Upgrade", $"Unregistered install: {productName}");
+                baseKey.DeleteSubKeyTree(registrationPath, throwOnMissingSubKey: false);
+                _logger?.Info("Upgrade", $"Unregistered install: {appId}");
             }
             catch (Exception ex)
             {

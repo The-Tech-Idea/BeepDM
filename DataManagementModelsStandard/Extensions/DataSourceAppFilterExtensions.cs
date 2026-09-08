@@ -337,6 +337,16 @@ namespace TheTechIdea.Beep.Extensions
 
                     default:
                     {
+                        // This arm interpolates the operator into the SQL, so it accepts only the
+                        // simple comparisons. NormalizeOperator already rejects anything outside the
+                        // alias table; this is the second lock on the same door, so a future alias —
+                        // or a caller that bypasses normalisation — cannot reach the concatenation
+                        // below with an arbitrary token.
+                        if (!DirectComparisonOperators.Contains(op))
+                        {
+                            continue;
+                        }
+
                         var p = parameterBase;
                         clauses.Add($"{quotedField} {op} {parameterPrefix}{p}");
                         parameters[p] = ConvertFilterValue(filter.FilterValue, filter.valueType, filter.FieldType);
@@ -423,6 +433,16 @@ namespace TheTechIdea.Beep.Extensions
 
                     default:
                     {
+                        // This arm interpolates the operator into the SQL, so it accepts only the
+                        // simple comparisons. NormalizeOperator already rejects anything outside the
+                        // alias table; this is the second lock on the same door, so a future alias —
+                        // or a caller that bypasses normalisation — cannot reach the concatenation
+                        // below with an arbitrary token.
+                        if (!DirectComparisonOperators.Contains(op))
+                        {
+                            continue;
+                        }
+
                         var p = parameterBase;
                         clauses.Add($"{quotedField} {op} {parameterPrefix}{p}");
                         parameters[p] = ConvertFilterValue(filter.FilterValue, filter.valueType, filter.FieldType);
@@ -524,6 +544,13 @@ namespace TheTechIdea.Beep.Extensions
             };
         }
 
+        /// <summary>
+        /// The only operators the WHERE builders may interpolate directly into SQL. Everything else
+        /// is either handled by a dedicated case (LIKE, IN, BETWEEN, IS NULL) or rejected.
+        /// </summary>
+        private static readonly HashSet<string> DirectComparisonOperators =
+            new HashSet<string>(StringComparer.Ordinal) { "=", "!=", ">", ">=", "<", "<=" };
+
         private static string NormalizeOperator(string op)
         {
             if (string.IsNullOrWhiteSpace(op))
@@ -537,7 +564,18 @@ namespace TheTechIdea.Beep.Extensions
                 return normalized;
             }
 
-            return token.ToLowerInvariant();
+            // Anything not in the alias table is rejected rather than passed through.
+            //
+            // This used to `return token.ToLowerInvariant()`, and the WHERE builder's default arm
+            // emits the operator verbatim — clauses.Add($"{quotedField} {op} {parameterPrefix}{p}")
+            // — so an AppFilter carrying an Operator of "= 1 OR 1=1 --" was concatenated straight
+            // into the predicate. Filter VALUES are parameterised; the operator was not.
+            //
+            // Callers drop a filter whose operator normalises to empty, which is deliberately the
+            // safe direction: an unrecognised operator is a programming error, and the alias table
+            // already covers every comparison, range, set, pattern and null test the builder can
+            // emit.
+            return string.Empty;
         }
 
         private static string QuoteIdentifier(string identifier, DataSourceType type)
@@ -548,16 +586,55 @@ namespace TheTechIdea.Beep.Extensions
             }
 
             var clean = identifier.Trim();
-            if (clean.Contains(" ") || clean.Contains(".") || clean.Contains("[") || clean.Contains("\"") || clean.Contains("`"))
+
+            // A dotted name is a qualified one (schema.table.column): quote each part separately so
+            // the separator keeps its meaning.
+            if (clean.Contains("."))
+            {
+                var parts = clean.Split('.');
+                for (var i = 0; i < parts.Length; i++)
+                {
+                    parts[i] = QuoteIdentifierPart(parts[i], type);
+                }
+                return string.Join(".", parts);
+            }
+
+            return QuoteIdentifierPart(clean, type);
+        }
+
+        /// <summary>
+        /// Quotes a single identifier part, escaping the closing delimiter.
+        /// </summary>
+        /// <remarks>
+        /// The previous implementation gave up — returning the identifier UNQUOTED — precisely when
+        /// it contained a space, bracket, quote or backtick, which is exactly when quoting is
+        /// required. The result is concatenated into the WHERE clause, so a crafted
+        /// AppFilter.FieldName was injected verbatim. Escaping the closing delimiter also stops a
+        /// name from terminating its own quoting early.
+        /// </remarks>
+        private static string QuoteIdentifierPart(string part, DataSourceType type)
+        {
+            if (string.IsNullOrWhiteSpace(part))
+            {
+                return part;
+            }
+
+            var clean = part.Trim();
+
+            // Already delimited — leave it as the caller wrote it.
+            if (clean.Length > 1 &&
+                ((clean[0] == '[' && clean[clean.Length - 1] == ']') ||
+                 (clean[0] == '"' && clean[clean.Length - 1] == '"') ||
+                 (clean[0] == '`' && clean[clean.Length - 1] == '`')))
             {
                 return clean;
             }
 
             return type switch
             {
-                DataSourceType.SqlServer or DataSourceType.AzureSQL => $"[{clean}]",
-                DataSourceType.Mysql or DataSourceType.MariaDB => $"`{clean}`",
-                _ => $"\"{clean}\""
+                DataSourceType.SqlServer or DataSourceType.AzureSQL => "[" + clean.Replace("]", "]]") + "]",
+                DataSourceType.Mysql or DataSourceType.MariaDB => "`" + clean.Replace("`", "``") + "`",
+                _ => "\"" + clean.Replace("\"", "\"\"") + "\""
             };
         }
 

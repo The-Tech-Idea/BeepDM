@@ -40,6 +40,19 @@ namespace TheTechIdea.Beep.Installer
         public static bool EvaluateAny(List<InstallCondition>? conditions)
             => conditions == null || conditions.Count == 0 || conditions.Any(Evaluate);
 
+        public static bool Evaluate(List<InstallCondition>? conditions, ConditionExpressionMode expression)
+        {
+            if (conditions == null || conditions.Count == 0)
+                return true;
+
+            return expression switch
+            {
+                ConditionExpressionMode.Any => conditions.Any(Evaluate),
+                ConditionExpressionMode.Not => !conditions.All(Evaluate),
+                _ => conditions.All(Evaluate)
+            };
+        }
+
         private static bool CheckOsVersion(string op, string? value)
         {
             if (string.IsNullOrWhiteSpace(value)) return true;
@@ -103,12 +116,11 @@ namespace TheTechIdea.Beep.Installer
                         RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
                     }
                 };
-                p.Start();
-                var output = p.StandardOutput.ReadToEnd().Trim();
-                p.WaitForExit(10000);
+                var run = InstallHelpers.RunProcess(p.StartInfo, 10_000);
+                if (!run.Started || run.TimedOut) return false;
 
-                if (string.IsNullOrEmpty(expectedOutput)) return p.ExitCode == 0;
-                return output.Contains(expectedOutput, StringComparison.OrdinalIgnoreCase);
+                if (string.IsNullOrEmpty(expectedOutput)) return run.ExitCode == 0;
+                return run.StandardOutput.Trim().Contains(expectedOutput, StringComparison.OrdinalIgnoreCase);
             }
             catch { return false; }
         }

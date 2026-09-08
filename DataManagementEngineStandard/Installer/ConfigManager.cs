@@ -116,7 +116,9 @@ namespace TheTechIdea.Beep.Installer
         /// </summary>
         public static string ResolvePayloadRoot(InstallConfig config)
         {
-            var folder = "payload";
+            // The authored folder name, not an assumption. An installer built with any other
+            // payload folder could not resolve its own files from the config alone.
+            var folder = string.IsNullOrWhiteSpace(config?.PayloadFolderName) ? "payload" : config.PayloadFolderName;
             var bases = new List<string>();
             if (!string.IsNullOrWhiteSpace(config.ConfigDirectory))
                 bases.Add(config.ConfigDirectory);

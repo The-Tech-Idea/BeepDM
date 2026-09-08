@@ -15,7 +15,13 @@ namespace TheTechIdea.Beep.Installer.Steps
         public string Description => "Creates a system restore point before installation.";
         public IReadOnlyList<string> DependsOn => Array.Empty<string>();
 
-        public bool CanSkip(SetupContext context) => false;
+        /// <summary>
+        /// Skipped unless the project asked for a restore point. It used to return false
+        /// unconditionally, which is one reason this step was never wired into a graph:
+        /// adding it would have taken a restore point on every install regardless.
+        /// </summary>
+        public bool CanSkip(SetupContext context)
+            => context.TryGetProperty<InstallConfig>("InstallConfig")?.CreateRestorePoint != true;
 
         public IErrorsInfo Validate(SetupContext context) => StepErrorHelpers.Ok("Validated.");
 

@@ -25,6 +25,7 @@ namespace TheTechIdea.Beep.Installer
         public string? ConfigDirectory { get; set; }
 
         public string ProductName { get; set; } = "Beep Application";
+        public string AppId { get; set; } = "";
         public string ProductVersion { get; set; } = "1.0.0";
         public string Publisher { get; set; } = "The Tech Idea";
         public string DefaultInstallPath { get; set; }
@@ -51,6 +52,39 @@ namespace TheTechIdea.Beep.Installer
 
         /// <summary>How the on-launch updater behaves when a newer version is available (Track B3).</summary>
         public UpdateMode UpdateMode { get; set; } = UpdateMode.Optional;
+
+        // ── Runtime-relevant authoring choices (D3) ──────────────────────────────
+        //
+        // These five used to travel only as loose SetupContext keys, which left the shipped
+        // install-config.json unable to describe its own installation: nothing in the file said
+        // where the payload lived, whether the app carried its own runtime, or which scope it was
+        // built for. ResolvePayloadRoot could not even find the payload without assuming the
+        // folder was called "payload".
+
+        /// <summary>
+        /// The app ships its own .NET runtime, so runtime prerequisites do not apply.
+        /// <c>PrerequisiteCheckStep</c> reads this to skip framework checks.
+        /// </summary>
+        public bool SelfContained { get; set; }
+
+        /// <summary>
+        /// Folder holding the payload, relative to the config. Was hardcoded as "payload" in
+        /// <c>ConfigManager.ResolvePayloadRoot</c>, so an installer built with any other folder
+        /// name could not resolve its own files from the config alone.
+        /// </summary>
+        public string PayloadFolderName { get; set; } = "payload";
+
+        /// <summary>
+        /// The scope the installer was authored for. <c>RequireAdminPrivileges</c> says what the
+        /// install <em>needs</em>; this says what it <em>prefers</em> when both are possible.
+        /// </summary>
+        public bool DefaultPerUser { get; set; }
+
+        /// <summary>Take a Windows System Restore point before installing.</summary>
+        public bool CreateRestorePoint { get; set; }
+
+        /// <summary>Register the product in Add/Remove Programs.</summary>
+        public bool CreateUninstallEntry { get; set; } = true;
     }
 
     /// <summary>Selectable feature in the installer.</summary>
@@ -77,6 +111,13 @@ namespace TheTechIdea.Beep.Installer
         /// Empty/null means always available.
         /// </summary>
         public List<InstallCondition> Conditions { get; set; } = new();
+
+        /// <summary>
+        /// How component conditions are combined. All is the default professional-safe mode:
+        /// every rule must pass. Any enables optional capability groups, and Not inverts
+        /// the grouped result for exclusion rules.
+        /// </summary>
+        public ConditionExpressionMode ConditionExpression { get; set; } = ConditionExpressionMode.All;
     }
 
     /// <summary>File copy definition for installation.</summary>
@@ -205,5 +246,12 @@ public enum UpdateMode { Optional, Required }
         AlwaysTrue, AlwaysFalse, OsVersion, Architecture,
         RegistryExists, RegistryValue, FileExists, DirectoryExists,
         CommandReturns, IsAdmin
+    }
+
+    public enum ConditionExpressionMode
+    {
+        All,
+        Any,
+        Not
     }
 }

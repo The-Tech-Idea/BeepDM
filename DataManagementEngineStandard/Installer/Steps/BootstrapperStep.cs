@@ -87,21 +87,28 @@ namespace TheTechIdea.Beep.Installer.Steps
                 try
                 {
                     var args = item.SilentArgs ?? "/quiet /norestart";
-                    var p = Process.Start(new ProcessStartInfo(installerPath!, args)
+                    // UseShellExecute is required to elevate, which rules out redirection; the
+                    // run is still bounded and the child still killed if it overruns, so a stuck
+                    // prerequisite installer no longer keeps running behind the install.
+                    var run = InstallHelpers.RunProcess(new ProcessStartInfo(installerPath!, args)
                     {
                         UseShellExecute = true,
                         Verb = "runas" // Elevate for prerequisites
-                    });
-                    p?.WaitForExit(item.TimeoutMs > 0 ? item.TimeoutMs : 600_000);
+                    }, item.TimeoutMs > 0 ? item.TimeoutMs : 600_000);
 
-                    if (p?.ExitCode == 0 || p?.ExitCode == 3010) // 3010 = reboot required
+                    if (!run.Started || run.TimedOut)
+                    {
+                        errors.Add($"{item.Name}: {run.Error}");
+                        if (item.Required) return StepErrorHelpers.Fail($"Required prerequisite failed: {item.Name}");
+                    }
+                    else if (run.ExitCode == 0 || run.ExitCode == 3010) // 3010 = reboot required
                     {
                         installed++;
                         progress?.Report(new PassedArgs { Messege = $"{item.Name} installed." });
                     }
                     else
                     {
-                        errors.Add($"{item.Name} installer exit code: {p?.ExitCode}");
+                        errors.Add($"{item.Name} installer exit code: {run.ExitCode}");
                         if (item.Required) return StepErrorHelpers.Fail($"Required prerequisite failed: {item.Name}");
                     }
                 }
@@ -125,12 +132,10 @@ namespace TheTechIdea.Beep.Installer.Steps
             try
             {
                 var parts = command.Split(' ', 2);
-                var p = Process.Start(new ProcessStartInfo(parts[0], parts.Length > 1 ? parts[1] : "")
+                return InstallHelpers.RunProcess(new ProcessStartInfo(parts[0], parts.Length > 1 ? parts[1] : "")
                 {
                     RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
-                });
-                p?.WaitForExit(10000);
-                return p?.ExitCode == 0;
+                }, 10_000).Succeeded;
             }
             catch { return false; }
         }

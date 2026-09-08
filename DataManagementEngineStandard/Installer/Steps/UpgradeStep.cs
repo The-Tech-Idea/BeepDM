@@ -64,7 +64,7 @@ namespace TheTechIdea.Beep.Installer.Steps
             // install written to HKCU would be invisible to a per-machine (HKLM) lookup.
             ExistingInstall? existing;
             using (var baseKey = InstallScope.OpenBaseKey(context, config))
-                existing = engine.DetectExisting(config.ProductName, baseKey);
+                existing = engine.DetectExisting(config.AppId, baseKey);
 
             if (existing == null)
             {
@@ -72,6 +72,7 @@ namespace TheTechIdea.Beep.Installer.Steps
                 return StepErrorHelpers.Ok("Fresh install — no previous version to upgrade.");
             }
 
+            context.Properties["ResourceExecutionMode"] = "update";
             var newVersion = config.ProductVersion;
             var existingVersion = existing.InstalledVersion;
 
