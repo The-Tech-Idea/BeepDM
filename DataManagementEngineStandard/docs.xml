@@ -55478,6 +55478,17 @@
             optional (an app without a module channel simply gets app-level updates).
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Updates.AppUpdateService.FeedBaseOf(System.String)">
+            <summary>
+            The location a feed's relative URLs are relative to: the feed document's own folder.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Updates.AppUpdateService.ResolveAgainstFeed(System.String,System.String)">
+            <summary>
+            Resolves a feed-relative URL against <paramref name="feedBase"/>. An absolute URL is
+            returned untouched, so a feed that publishes fully-qualified locations still works.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Updates.AppUpdateService.ReportAsync(System.String,System.String,System.Boolean,System.String,System.Threading.CancellationToken)">
             <summary>
             Best-effort telemetry POST to the configured <see cref="P:TheTechIdea.Beep.Updates.UpdateSettings.TelemetryUrl"/>.

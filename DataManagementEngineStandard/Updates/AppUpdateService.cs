@@ -95,8 +95,15 @@ namespace TheTechIdea.Beep.Updates
             if (release.Delta is not { } delta)
                 return Fail($"Release {release.Version} has no delta blob store; a full re-install via Setup.exe is required.");
 
+            // The feed publishes these as paths relative to itself ("1.1.0/_payload-manifest.json",
+            // "1.1.0/_blobs/"), which is what makes a feed relocatable. Handing them to the
+            // transport unresolved made it read them relative to the *process working directory*,
+            // so a delta could only ever be applied by a process that happened to be running inside
+            // the feed folder -- for every other caller the manifest simply was not there.
+            var feedBase = FeedBaseOf(Settings.FeedUrl);
+
             PayloadManifest remote;
-            try { remote = await _feed.FetchManifestAsync(delta.ManifestUrl, ct).ConfigureAwait(false); }
+            try { remote = await _feed.FetchManifestAsync(ResolveAgainstFeed(feedBase, delta.ManifestUrl), ct).ConfigureAwait(false); }
             catch (UpdateFeedException ex) { return Fail(ex.Message, ex); }
 
             // Too old to delta from → materialize the whole version from blobs (local = null).
@@ -110,7 +117,8 @@ namespace TheTechIdea.Beep.Updates
                 NewVersion = release.Version,
                 Plan = plan,
                 CurrentVersion = string.IsNullOrWhiteSpace(Settings.CurrentVersion) ? null : Settings.CurrentVersion,
-                FetchBlob = (hash, token) => _feed.FetchBlobAsync(CombineUrl(delta.BlobBaseUrl, hash), token),
+                FetchBlob = (hash, token) => _feed.FetchBlobAsync(
+                    ResolveAgainstFeed(feedBase, CombineUrl(delta.BlobBaseUrl, hash)), token),
                 OnApplied = v => _recordVersion?.Invoke(v)
             };
             var applied = await applier.ApplyAsync(request, progress, ct).ConfigureAwait(false);
@@ -159,6 +167,44 @@ namespace TheTechIdea.Beep.Updates
 
         private static string CombineUrl(string baseUrl, string tail)
             => baseUrl.EndsWith('/') ? baseUrl + tail : baseUrl + "/" + tail;
+
+        /// <summary>
+        /// The location a feed's relative URLs are relative to: the feed document's own folder.
+        /// </summary>
+        private static string FeedBaseOf(string feedUrl)
+        {
+            if (string.IsNullOrWhiteSpace(feedUrl)) return "";
+
+            if (Uri.TryCreate(feedUrl, UriKind.Absolute, out var absolute) && !absolute.IsFile)
+            {
+                // http(s): everything up to and including the last '/'.
+                var text = absolute.GetLeftPart(UriPartial.Path);
+                var cut = text.LastIndexOf('/');
+                return cut > 0 ? text[..(cut + 1)] : text;
+            }
+
+            // A local path, which may name feed.json itself or the folder holding it.
+            var path = absolute is { IsFile: true } ? absolute.LocalPath : feedUrl;
+            if (File.Exists(path)) return Path.GetDirectoryName(Path.GetFullPath(path)) ?? "";
+            return Directory.Exists(path) ? Path.GetFullPath(path) : Path.GetDirectoryName(Path.GetFullPath(path)) ?? "";
+        }
+
+        /// <summary>
+        /// Resolves a feed-relative URL against <paramref name="feedBase"/>. An absolute URL is
+        /// returned untouched, so a feed that publishes fully-qualified locations still works.
+        /// </summary>
+        private static string ResolveAgainstFeed(string feedBase, string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return url;
+            if (string.IsNullOrWhiteSpace(feedBase)) return url;
+            if (Uri.TryCreate(url, UriKind.Absolute, out _)) return url;
+            if (Path.IsPathRooted(url)) return url;
+
+            if (Uri.TryCreate(feedBase, UriKind.Absolute, out var baseUri) && !baseUri.IsFile)
+                return new Uri(baseUri, url).ToString();
+
+            return Path.GetFullPath(Path.Combine(feedBase, url.Replace('/', Path.DirectorySeparatorChar)));
+        }
 
         private static readonly HttpClient _telemetryHttp = new();
 
