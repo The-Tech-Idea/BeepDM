@@ -486,6 +486,48 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         /// <param name="entity">The entity to be updated</param>
         /// <returns>An ErrorsInfo object containing information about the update operation</returns>
+        /// <summary>
+        /// Loads the row this entity represents into this unit of work so it has something to update.
+        ///
+        /// <para>Only when nothing is pending. <c>GetDataInUnits</c> replaces the whole collection, so
+        /// doing this with uncommitted work in flight would discard it — a fresh unit of work opened to
+        /// write one row, which is the case this exists for, has nothing to lose.</para>
+        ///
+        /// <para>The tenant predicate is applied to the lookup, so an entity belonging to another
+        /// company is not found and the update is refused rather than silently reaching across the
+        /// boundary — the same answer <see cref="BelongsToAnotherTenant"/> gives for an entity that
+        /// arrives already carrying a foreign company.</para>
+        /// </summary>
+        /// <returns>True when the row was found and is now tracked.</returns>
+        private bool TryLoadForUpdate(T entity)
+        {
+            if (entity == null || IsInListMode || DataSource == null) return false;
+            if (string.IsNullOrEmpty(PrimaryKey)) return false;
+            if (GetIsDirty()) return false;
+
+            try
+            {
+                var key = GetIDValue(entity);
+                if (key == null) return false;
+
+                var filters = new List<AppFilter>
+                {
+                    new AppFilter { FieldName = PrimaryKey, Operator = "=", FilterValue = key.ToString() }
+                };
+                if (IsTenantScoped) filters = ApplyTenantFilter(filters);
+
+                GetDataInUnits(DataSource.GetEntity(EntityName, filters));
+                return DocExistByKey(entity) >= 0;
+            }
+            catch (Exception ex)
+            {
+                DMEEditor.AddLogMessage("UnitofWork",
+                    $"Could not load {typeof(T).Name} by key for update: {ex.Message}",
+                    DateTime.Now, -1, null, Errors.Failed);
+                return false;
+            }
+        }
+
         public IErrorsInfo Update(T entity)
         {
             ErrorsInfo errorsInfo = new ErrorsInfo();
@@ -529,6 +571,17 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
 
             var index = DocExistByKey(entity);
+
+            // The entity may have been read through a DIFFERENT unit of work — the ordinary shape when
+            // a service loads a row in one helper and writes it in another, or receives it from its
+            // caller. Nothing is tracking it here, so without this the update matched nothing, returned
+            // "Object not found", and Commit() then reported Ok because there was nothing pending: the
+            // caller was told the write succeeded and the database never changed. Measured 2026-09-08 in
+            // CostingService.RecordReceiptAsync, which returned a recomputed weighted-average cost of
+            // 7.50 while the stored Product.AverageCost stayed 0.
+            if (index < 0 && TryLoadForUpdate(entity))
+                index = DocExistByKey(entity);
+
             if (index >= 0)
             {
                 // OBL handles state tracking automatically when item is replaced

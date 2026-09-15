@@ -401,8 +401,10 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             if (retval == null)
             {
-                var dt = mappings.FirstOrDefault(x => 
-                    x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
+                var dt = mappings.FirstOrDefault(x =>
+                    x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav)
+                    ?? mappings.FirstOrDefault(x =>
+                        x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
                 retval = dt?.DataType;
             }
 

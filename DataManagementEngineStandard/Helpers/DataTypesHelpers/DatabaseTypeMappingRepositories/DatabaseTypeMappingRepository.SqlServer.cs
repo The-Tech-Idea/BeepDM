@@ -24,7 +24,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 new DatatypeMapping { ID = 4, GuidID = Guid.NewGuid().ToString(), DataType = "char", DataSourceName = "SQLServerDataSource", NetDataType = "System.String", Fav = false },
                 new DatatypeMapping { ID = 5, GuidID = Guid.NewGuid().ToString(), DataType = "date", DataSourceName = "SQLServerDataSource", NetDataType = "System.DateTime", Fav = false },
                 new DatatypeMapping { ID = 6, GuidID = Guid.NewGuid().ToString(), DataType = "datetime", DataSourceName = "SQLServerDataSource", NetDataType = "System.DateTime", Fav = false },
-                new DatatypeMapping { ID = 7, GuidID = Guid.NewGuid().ToString(), DataType = "datetime2", DataSourceName = "SQLServerDataSource", NetDataType = "System.DateTime", Fav = false },
+                // Preserve time and fractional seconds when mapping CLR DateTime to SQL Server.
+                new DatatypeMapping { ID = 7, GuidID = Guid.NewGuid().ToString(), DataType = "datetime2", DataSourceName = "SQLServerDataSource", NetDataType = "System.DateTime", Fav = true },
                 new DatatypeMapping { ID = 8, GuidID = Guid.NewGuid().ToString(), DataType = "decimal", DataSourceName = "SQLServerDataSource", NetDataType = "System.Decimal", Fav = false },
                 new DatatypeMapping { ID = 9, GuidID = Guid.NewGuid().ToString(), DataType = "float", DataSourceName = "SQLServerDataSource", NetDataType = "System.Double", Fav = false },
                 new DatatypeMapping { ID = 10, GuidID = Guid.NewGuid().ToString(), DataType = "image", DataSourceName = "SQLServerDataSource", NetDataType = "System.Byte[]", Fav = false },

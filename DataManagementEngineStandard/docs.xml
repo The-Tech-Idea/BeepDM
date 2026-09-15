@@ -31004,12 +31004,25 @@
             <param name="updatedEntity">The updated entity</param>
             <returns>Result of the update operation</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Update(`0)">
-            <summary>
-            Updates an entity with default values applied
-            </summary>
-            <param name="entity">The entity to be updated</param>
-            <returns>An ErrorsInfo object containing information about the update operation</returns>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.TryLoadForUpdate(`0)">
+             <summary>
+             Updates an entity with default values applied
+             </summary>
+             <param name="entity">The entity to be updated</param>
+             <returns>An ErrorsInfo object containing information about the update operation</returns>
+             <summary>
+             Loads the row this entity represents into this unit of work so it has something to update.
+            
+             <para>Only when nothing is pending. <c>GetDataInUnits</c> replaces the whole collection, so
+             doing this with uncommitted work in flight would discard it — a fresh unit of work opened to
+             write one row, which is the case this exists for, has nothing to lose.</para>
+            
+             <para>The tenant predicate is applied to the lookup, so an entity belonging to another
+             company is not found and the update is refused rather than silently reaching across the
+             boundary — the same answer <see cref="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.BelongsToAnotherTenant(`0)"/> gives for an entity that
+             arrives already carrying a foreign company.</para>
+             </summary>
+             <returns>True when the row was found and is now tracked.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.Update(System.String,`0)">
             <summary>
